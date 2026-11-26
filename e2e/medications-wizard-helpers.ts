@@ -16,8 +16,11 @@ import { settleLocaleSync } from "./setup/locale-sync";
  *   daily      = 7 steps (1, 2, 3, 4, 5, 7, 8)
  *   recurring  = 8 steps (1, 2, 3, 4, 5, 6, 7, 8)
  *
- * `expectStep(page, displayIndex, totalSteps)` pins the visible
- * "Schritt X von Y" string the dialog header renders.
+ * `expectStep(page, displayIndex, totalSteps)` pins that path counter
+ * through the root's `data-display-step` / `data-total-steps`. The progress
+ * band the person sees has four fixed phases (Medication, Dose, Schedule,
+ * Review) whatever the path, so every call also holds `data-phase-count` at
+ * 4: a cadence choice moves the fill inside Schedule, never the count.
  */
 
 export const STUB_MEDICATION_ID = "med_e2e_wizard";
@@ -247,9 +250,8 @@ export async function expectStep(
   displayIndex: number,
   totalSteps?: number,
 ): Promise<void> {
-  // The "Schritt X von Y" caption is mobile-only (`sm:hidden`) since the dot
-  // stepper landed, so it is hidden on the desktop e2e viewport. Assert the
-  // viewport-independent root data-attributes the dialog always carries.
+  // The band shows the four phases, not the path slot, so the path counter
+  // is read from the root's data attributes the dialog always carries.
   const root = page.locator('[data-slot="medication-wizard-dialog"]');
   // Each step advance waits on per-step form validation; on a loaded CI runner
   // that settle can exceed the default 5s expect timeout (the dialog sits at
@@ -265,6 +267,7 @@ export async function expectStep(
   if (totalSteps != null) {
     await expect(root).toHaveAttribute("data-total-steps", String(totalSteps));
   }
+  await expect(root).toHaveAttribute("data-phase-count", "4");
 }
 
 /**

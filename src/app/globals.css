@@ -158,6 +158,7 @@ body,
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-switch-off: var(--switch-off);
+  --color-progress-track: var(--progress-track);
   --color-primary-disabled: var(--primary-disabled);
   --color-primary-disabled-foreground: var(--primary-disabled-foreground);
   --color-input-focus: var(--input-focus);
@@ -349,6 +350,8 @@ body,
   /* An off switch's track, and a disabled primary button. Dark keeps the
    * look these had (input at 80 %, primary at half strength). */
   --switch-off: color-mix(in oklab, var(--input) 80%, transparent);
+  /* The unfilled part of a progress band (`ui/stepper.tsx`). */
+  --progress-track: #44475a;
   --primary-disabled: color-mix(
     in oklab,
     var(--primary) 50%,
@@ -494,6 +497,10 @@ body,
    * off switch all but vanished. ~3.5:1 on --card clears the 3:1 floor for
    * a control boundary. */
   --switch-off: oklch(0.62 0.012 295);
+  /* The unfilled part of a progress band: `--muted` sat at 0.955 on a
+   * 0.964 background and vanished, so the band looked as if it ended at the
+   * current step. */
+  --progress-track: oklch(0.84 0.012 295);
   /* A disabled primary button: opacity-50 left white text on a washed
    * violet at ~2:1. A pale violet fill with a dark violet label (~5.5:1)
    * still reads as the primary action, and as unavailable. */

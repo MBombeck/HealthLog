@@ -52,6 +52,14 @@ export interface ResponsiveSheetProps {
    */
   hideHeader?: boolean;
   /**
+   * A band under the title row, inside the header: a flow's progress band
+   * (`ui/stepper.tsx`). The close button keeps its place on the title row,
+   * and only the title clears it, so the band runs the full width with the
+   * same inset on both sides. Ignored with `hideHeader`; takes the place of
+   * `headerAction`.
+   */
+  subheader?: React.ReactNode;
+  /**
    * Footer slot. Pass the action `<Button>`s directly (a fragment is
    * fine) — never a wrapper `<div className="flex …">`. The two
    * branches deliberately stack differently and both rely on owning
@@ -252,6 +260,7 @@ export function ResponsiveSheet({
   description,
   headerAction,
   hideHeader = false,
+  subheader,
   footer,
   className,
   bodyClassName,
@@ -288,13 +297,15 @@ export function ResponsiveSheet({
               className,
             )}
           >
-            {hideHeader ? (
-              <SheetHeader className="sr-only">
-                <SheetTitle>{title}</SheetTitle>
-                {description ? (
-                  <SheetDescription>{description}</SheetDescription>
-                ) : null}
-              </SheetHeader>
+            {hideHeader || subheader ? (
+              <BandHeader
+                variant="sheet"
+                hidden={hideHeader}
+                title={title}
+                description={description}
+                showCloseButton={showCloseButton}
+                band={subheader}
+              />
             ) : (
               <SheetHeader
                 data-slot="responsive-sheet-header"
@@ -412,13 +423,15 @@ export function ResponsiveSheet({
             className,
           )}
         >
-          {hideHeader ? (
-            <DialogHeader className="sr-only">
-              <DialogTitle>{title}</DialogTitle>
-              {description ? (
-                <DialogDescription>{description}</DialogDescription>
-              ) : null}
-            </DialogHeader>
+          {hideHeader || subheader ? (
+            <BandHeader
+              variant="dialog"
+              hidden={hideHeader}
+              title={title}
+              description={description}
+              showCloseButton={showCloseButton}
+              band={subheader}
+            />
           ) : (
             <DialogHeader
               data-slot="responsive-sheet-header"
@@ -496,5 +509,92 @@ export function ResponsiveSheet({
       </Dialog>
       {discard}
     </>
+  );
+}
+
+/**
+ * The header of a sheet that carries a band under its title (`subheader`),
+ * or the screen-reader-only header of one that draws its own (`hideHeader`).
+ * The title clears the close button; the band does not, so it keeps the same
+ * inset on both sides. In the dialog the rule under the band runs edge to
+ * edge, like the sheet's header rule on a phone.
+ */
+function BandHeader({
+  variant,
+  hidden,
+  title,
+  description,
+  showCloseButton,
+  band,
+}: {
+  variant: "sheet" | "dialog";
+  /** `hideHeader`: the title stays mounted for the accessible name only. */
+  hidden: boolean;
+  title: React.ReactNode;
+  description?: React.ReactNode;
+  showCloseButton: boolean;
+  band: React.ReactNode;
+}) {
+  if (hidden && variant === "sheet") {
+    return (
+      <SheetHeader className="sr-only">
+        <SheetTitle>{title}</SheetTitle>
+        {description ? (
+          <SheetDescription>{description}</SheetDescription>
+        ) : null}
+      </SheetHeader>
+    );
+  }
+  if (hidden) {
+    return (
+      <DialogHeader className="sr-only">
+        <DialogTitle>{title}</DialogTitle>
+        {description ? (
+          <DialogDescription>{description}</DialogDescription>
+        ) : null}
+      </DialogHeader>
+    );
+  }
+  if (variant === "sheet") {
+    return (
+      <SheetHeader
+        data-slot="responsive-sheet-header"
+        className="border-border/70 touch-none gap-3 border-b p-4"
+      >
+        <SheetTitle
+          className={cn(
+            "truncate text-base font-semibold",
+            showCloseButton && "pr-12",
+          )}
+        >
+          {title}
+        </SheetTitle>
+        {description ? (
+          <SheetDescription className="text-muted-foreground text-xs">
+            {description}
+          </SheetDescription>
+        ) : null}
+        {band}
+      </SheetHeader>
+    );
+  }
+  return (
+    <DialogHeader
+      data-slot="responsive-sheet-header"
+      className="shrink-0 gap-4 pr-0"
+    >
+      <DialogTitle
+        className={cn(
+          "truncate text-base leading-tight",
+          showCloseButton && "pr-9",
+        )}
+      >
+        {title}
+      </DialogTitle>
+      {description ? (
+        <DialogDescription>{description}</DialogDescription>
+      ) : null}
+      <div className="border-border/70 -mx-6 border-b px-6 pb-4">{band}</div>
+    </DialogHeader>
   );
 }

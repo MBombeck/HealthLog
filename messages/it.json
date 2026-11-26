@@ -721,9 +721,9 @@
     },
     "enrollMfa": {
       "title": "Configura un secondo fattore",
-      "body": "Il tuo amministratore richiede un secondo fattore su questo account. Aggiungi un'app di autenticazione o una chiave di sicurezza per continuare.",
+      "body": "Questo server richiede un secondo fattore su questo account. Aggiungi un'app di autenticazione o una chiave di sicurezza per continuare.",
       "signOut": "Esci",
-      "graceBanner": "Il tuo amministratore richiede un secondo fattore su questo account. Aggiungilo entro il {date}; dopo quella data l'account servirà solo a configurarlo.",
+      "graceBanner": "Questo server richiede un secondo fattore su questo account. Aggiungilo entro il {date}; dopo quella data l'account servirà solo a configurarlo.",
       "graceAction": "Configuralo ora",
       "graceDismiss": "Nascondi questo avviso"
     },
@@ -1871,15 +1871,17 @@
         "createTitle": "Nuovo farmaco",
         "editTitle": "Modifica {name}"
       },
+      "phase": {
+        "medication": "Farmaco",
+        "dose": "Dose",
+        "schedule": "Programma",
+        "review": "Riepilogo"
+      },
       "nav": {
         "back": "Indietro",
         "next": "Avanti",
         "save": "Salva",
-        "saveEdit": "Salva modifiche",
-        "nextHint": "Avanti: {step}",
-        "reviewHint": "Avanti: Salva",
-        "jumpFirst": "Vai al primo passaggio",
-        "jumpLast": "Vai a revisione e salvataggio"
+        "saveEdit": "Salva modifiche"
       },
       "nl": {
         "button": "Descrivi"
@@ -1889,13 +1891,11 @@
           "title": "Come si chiama il farmaco?",
           "subline": "Esattamente come riportato sulla confezione.",
           "label": "Nome",
-          "placeholder": "ad es. Ramipril",
-          "short": "Nome"
+          "placeholder": "ad es. Ramipril"
         },
         "step2": {
           "title": "Che tipo di farmaco è?",
-          "subline": "Facoltativo. Serve a scegliere i modelli e le analisi giusti; senza scelta il farmaco va sotto «Altro».",
-          "short": "Tipo"
+          "subline": "Facoltativo; senza scelta il farmaco va sotto «Altro»."
         },
         "step3": {
           "title": "Qual è la dose?",
@@ -1926,20 +1926,17 @@
           "dosesPerUnitLabel": "Dimensione confezione",
           "dosesPerUnitPlaceholder": "es. 4",
           "dosesPerUnitHint": "Quante compresse o unità contiene una nuova confezione o penna, ad es. 28 compresse o una penna da 4 dosi. Precompila la quantità quando aggiungi una confezione; lascia vuoto se le confezioni variano.",
-          "short": "Dose",
           "unitsPerDoseLabel": "Compresse o unità per dose",
           "unitsPerDoseHint": "ad es. 2 compresse da 2 mg per una dose da 4 mg, oppure ½ compressa per una dose divisa",
           "packSizeToggle": "Dimensione confezione (facoltativa)"
         },
         "step4": {
           "title": "Per quanto tempo lo assumi?",
-          "subline": "Per oggi basta una data di inizio. Potrai aggiungere una data di fine in seguito.",
-          "short": "Quando"
+          "subline": "Basta una data di inizio; quella di fine può arrivare in seguito."
         },
         "step5": {
           "title": "Con quale frequenza lo assumi?",
-          "subline": "Scegli la cadenza: i dettagli arrivano al passo successivo.",
-          "short": "Frequenza"
+          "subline": "Scegli ciò che corrisponde alla tua assunzione."
         },
         "step6": {
           "title": "Come si presenta nel dettaglio?",
@@ -1955,8 +1952,7 @@
           "rollingDays": {
             "label": "Ogni",
             "suffix": "giorni dall’ultima assunzione"
-          },
-          "short": "Dettaglio"
+          }
         },
         "step7": {
           "title": "Quando lo assumi?",
@@ -1973,7 +1969,6 @@
           "doseOverridePlaceholder": "es. mezza compressa",
           "unitsOverrideLabel": "Unità consumate a questo orario",
           "unitsOverrideInherit": "Predefinito",
-          "short": "Orari",
           "overrideToggle": "Un'altra dose a quest'ora?"
         },
         "step8": {
@@ -1982,8 +1977,7 @@
           "remindersLabel": "Promemoria attivi",
           "remindersDescription": "I promemoria arrivano come li hai impostati in Notifiche: push web, Telegram o ntfy. L’app per iPhone pianifica da sola i propri promemoria.",
           "noChannelHint": "I promemoria richiedono un canale di notifica, ma al momento nessuno è attivo.",
-          "noChannelHintLink": "Configura le notifiche",
-          "short": "Fatto"
+          "noChannelHintLink": "Configura le notifiche"
         }
       },
       "classRow": {

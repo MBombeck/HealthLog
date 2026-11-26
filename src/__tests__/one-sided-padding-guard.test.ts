@@ -29,8 +29,6 @@ const SRC = join(__dirname, "..");
 const RESERVES: Record<string, string> = {
   "components/ui/sheet.tsx: p-4 pr-12":
     "the sheet header, under the close button",
-  "components/medications/wizard/medication-wizard-dialog.tsx: p-4 pr-12 sm:p-6 sm:pr-14":
-    "the wizard's stepper band, under the sheet's close button",
   "components/medications/sections/api-tokens-row.tsx: p-3 pr-10":
     "a token's code block, under its copy button",
   "components/settings/coach-conversations-memory-card.tsx: p-1.5 pl-3":

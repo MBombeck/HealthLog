@@ -721,9 +721,9 @@
     },
     "enrollMfa": {
       "title": "Skonfiguruj drugi składnik",
-      "body": "Administrator wymaga drugiego składnika na tym koncie. Dodaj aplikację uwierzytelniającą lub klucz bezpieczeństwa, aby kontynuować.",
+      "body": "Ten serwer wymaga drugiego składnika na tym koncie. Dodaj aplikację uwierzytelniającą lub klucz bezpieczeństwa, aby kontynuować.",
       "signOut": "Wyloguj się",
-      "graceBanner": "Administrator wymaga drugiego składnika dla tego konta. Dodaj go do {date}; po tej dacie konto posłuży już tylko do jego konfiguracji.",
+      "graceBanner": "Ten serwer wymaga drugiego składnika dla tego konta. Dodaj go do {date}; po tej dacie konto posłuży już tylko do jego konfiguracji.",
       "graceAction": "Skonfiguruj teraz",
       "graceDismiss": "Ukryj to powiadomienie"
     },
@@ -1871,15 +1871,17 @@
         "createTitle": "Nowy lek",
         "editTitle": "Edytuj {name}"
       },
+      "phase": {
+        "medication": "Lek",
+        "dose": "Dawka",
+        "schedule": "Harmonogram",
+        "review": "Podsumowanie"
+      },
       "nav": {
         "back": "Wstecz",
         "next": "Dalej",
         "save": "Zapisz",
-        "saveEdit": "Zapisz zmiany",
-        "nextHint": "Dalej: {step}",
-        "reviewHint": "Dalej: Zapisz",
-        "jumpFirst": "Przejdź do pierwszego kroku",
-        "jumpLast": "Przejdź do podsumowania i zapisu"
+        "saveEdit": "Zapisz zmiany"
       },
       "nl": {
         "button": "Opisz"
@@ -1889,13 +1891,11 @@
           "title": "Jak nazywa się lek?",
           "subline": "Dokładnie tak, jak na opakowaniu.",
           "label": "Nazwa",
-          "placeholder": "np. Ramipryl",
-          "short": "Nazwa"
+          "placeholder": "np. Ramipryl"
         },
         "step2": {
           "title": "Jaki to rodzaj leku?",
-          "subline": "Opcjonalnie. Pozwala dobrać szablony i analizy; bez wyboru lek trafi do kategorii „Inne”.",
-          "short": "Rodzaj"
+          "subline": "Opcjonalnie; bez wyboru lek trafi do kategorii „Inne”."
         },
         "step3": {
           "title": "Jaka jest dawka?",
@@ -1926,20 +1926,17 @@
           "dosesPerUnitLabel": "Wielkość opakowania",
           "dosesPerUnitPlaceholder": "np. 4",
           "dosesPerUnitHint": "Ile tabletek lub jednostek zawiera nowe opakowanie lub wstrzykiwacz, np. 28 tabletek albo wstrzykiwacz na 4 dawki. Uzupełnia ilość przy dodawaniu opakowania; zostaw puste, jeśli opakowania się różnią.",
-          "short": "Dawka",
           "unitsPerDoseLabel": "Tabletki lub jednostki na dawkę",
           "unitsPerDoseHint": "np. 2 tabletki po 2 mg na dawkę 4 mg lub ½ tabletki przy dzielonej dawce",
           "packSizeToggle": "Wielkość opakowania (opcjonalnie)"
         },
         "step4": {
           "title": "Przez jaki okres go przyjmujesz?",
-          "subline": "Na dziś wystarczy data rozpoczęcia. Datę zakończenia możesz dodać później.",
-          "short": "Kiedy"
+          "subline": "Wystarczy data rozpoczęcia, datę zakończenia możesz dodać później."
         },
         "step5": {
           "title": "Jak często go przyjmujesz?",
-          "subline": "Wybierz częstotliwość, szczegóły w następnym kroku.",
-          "short": "Częstotliwość"
+          "subline": "Wybierz to, co pasuje do twojego przyjęcia."
         },
         "step6": {
           "title": "Jak to wygląda szczegółowo?",
@@ -1955,12 +1952,11 @@
           "rollingDays": {
             "label": "Co",
             "suffix": "dni od ostatniego przyjęcia"
-          },
-          "short": "Szczegóły"
+          }
         },
         "step7": {
           "title": "Kiedy go przyjmujesz?",
-          "subline": "Jedna lub więcej pór dnia. Przypomnienia opierają się na tej liście.",
+          "subline": "Jedna lub więcej pór dnia, przypomnienia opierają się na tej liście.",
           "presetsLabel": "Ustawienia wstępne pory dnia",
           "presets": {
             "morning": "Rano",
@@ -1973,7 +1969,6 @@
           "doseOverridePlaceholder": "np. pół tabletki",
           "unitsOverrideLabel": "Jednostki zużyte o tej porze",
           "unitsOverrideInherit": "Domyślnie",
-          "short": "Godziny",
           "overrideToggle": "Inna dawka o tej porze?"
         },
         "step8": {
@@ -1982,8 +1977,7 @@
           "remindersLabel": "Przypomnienia włączone",
           "remindersDescription": "Przypomnienia docierają tak, jak ustawisz je w Powiadomieniach: web push, Telegram lub ntfy. Aplikacja na iPhone’a sama planuje swoje przypomnienia.",
           "noChannelHint": "Przypomnienia wymagają kanału powiadomień, a obecnie żaden nie jest aktywny.",
-          "noChannelHintLink": "Skonfiguruj powiadomienia",
-          "short": "Gotowe"
+          "noChannelHintLink": "Skonfiguruj powiadomienia"
         }
       },
       "classRow": {

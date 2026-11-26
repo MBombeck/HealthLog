@@ -721,9 +721,9 @@
     },
     "enrollMfa": {
       "title": "Stel een tweede factor in",
-      "body": "Je beheerder vereist een tweede factor voor dit account. Voeg een authenticator-app of een beveiligingssleutel toe om verder te gaan.",
+      "body": "Deze server vereist een tweede factor voor dit account. Voeg een authenticator-app of een beveiligingssleutel toe om verder te gaan.",
       "signOut": "Uitloggen",
-      "graceBanner": "Je beheerder vereist een tweede factor voor dit account. Voeg er een toe vóór {date}; daarna kan het account alleen nog worden gebruikt om die in te stellen.",
+      "graceBanner": "Deze server vereist een tweede factor voor dit account. Voeg er een toe vóór {date}; daarna kan het account alleen nog worden gebruikt om die in te stellen.",
       "graceAction": "Nu instellen",
       "graceDismiss": "Deze melding verbergen"
     },
@@ -1871,15 +1871,17 @@
         "createTitle": "Nieuw medicijn",
         "editTitle": "{name} bewerken"
       },
+      "phase": {
+        "medication": "Medicijn",
+        "dose": "Dosis",
+        "schedule": "Schema",
+        "review": "Overzicht"
+      },
       "nav": {
         "back": "Terug",
         "next": "Volgende",
         "save": "Opslaan",
-        "saveEdit": "Wijzigingen opslaan",
-        "nextHint": "Volgende: {step}",
-        "reviewHint": "Volgende: Opslaan",
-        "jumpFirst": "Naar de eerste stap",
-        "jumpLast": "Naar controleren en opslaan"
+        "saveEdit": "Wijzigingen opslaan"
       },
       "nl": {
         "button": "Beschrijven"
@@ -1889,13 +1891,11 @@
           "title": "Hoe heet het medicijn?",
           "subline": "Precies zoals het op de verpakking staat.",
           "label": "Naam",
-          "placeholder": "bijv. Ramipril",
-          "short": "Naam"
+          "placeholder": "bijv. Ramipril"
         },
         "step2": {
           "title": "Wat voor soort medicijn is het?",
-          "subline": "Optioneel. Hiermee kiezen we de juiste sjablonen en analyses; zonder keuze komt het medicijn onder ‘Overig’.",
-          "short": "Soort"
+          "subline": "Optioneel; zonder keuze komt het medicijn onder ‘Overig’."
         },
         "step3": {
           "title": "Wat is de dosis?",
@@ -1926,20 +1926,17 @@
           "dosesPerUnitLabel": "Verpakkingsgrootte",
           "dosesPerUnitPlaceholder": "bijv. 4",
           "dosesPerUnitHint": "Hoeveel tabletten of eenheden een nieuwe verpakking of pen bevat, bijv. 28 tabletten of een pen met 4 doses. Vult de hoeveelheid in bij het toevoegen van een verpakking; laat leeg als verpakkingen verschillen.",
-          "short": "Dosis",
           "unitsPerDoseLabel": "Tabletten of eenheden per dosis",
           "unitsPerDoseHint": "bijv. 2 tabletten van 2 mg voor een dosis van 4 mg, of ½ tablet voor een gedeelde dosis",
           "packSizeToggle": "Verpakkingsgrootte (optioneel)"
         },
         "step4": {
           "title": "Over welke periode neem je het in?",
-          "subline": "Een begindatum is voor nu genoeg. Je kunt later een einddatum toevoegen.",
-          "short": "Periode"
+          "subline": "Een begindatum is genoeg; een einddatum kan later volgen."
         },
         "step5": {
           "title": "Hoe vaak neem je het in?",
-          "subline": "Kies de frequentie. De details volgen in de volgende stap.",
-          "short": "Frequentie"
+          "subline": "Kies wat bij je inname past."
         },
         "step6": {
           "title": "Hoe ziet dat er precies uit?",
@@ -1955,12 +1952,11 @@
           "rollingDays": {
             "label": "Elke",
             "suffix": "dagen na de laatste inname"
-          },
-          "short": "Details"
+          }
         },
         "step7": {
           "title": "Wanneer neem je het in?",
-          "subline": "Een of meer tijdstippen per dag. Herinneringen volgen deze lijst.",
+          "subline": "Een of meer tijdstippen per dag; herinneringen volgen deze lijst.",
           "presetsLabel": "Standaardtijdstippen",
           "presets": {
             "morning": "Ochtend",
@@ -1973,7 +1969,6 @@
           "doseOverridePlaceholder": "bijv. een halve tablet",
           "unitsOverrideLabel": "Verbruikte eenheden op dit tijdstip",
           "unitsOverrideInherit": "Standaard",
-          "short": "Tijdstippen",
           "overrideToggle": "Een andere dosis op dit tijdstip?"
         },
         "step8": {
@@ -1982,8 +1977,7 @@
           "remindersLabel": "Herinneringen aan",
           "remindersDescription": "Herinneringen komen aan zoals je ze bij Meldingen hebt ingesteld: webpush, Telegram of ntfy. De iPhone-app plant zijn herinneringen zelf.",
           "noChannelHint": "Voor herinneringen is een meldingskanaal nodig, en er is er op dit moment geen actief.",
-          "noChannelHintLink": "Meldingen instellen",
-          "short": "Klaar"
+          "noChannelHintLink": "Meldingen instellen"
         }
       },
       "classRow": {
