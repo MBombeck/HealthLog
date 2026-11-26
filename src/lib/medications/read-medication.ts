@@ -46,6 +46,7 @@ import {
   buildLeafletSearch,
   type MedicineRegistryChoice,
 } from "@/lib/medications/leaflet-registries";
+import { resolvedLowStockTriggerDays } from "@/lib/medications/low-stock-trigger";
 
 export type ReadUser = Pick<SessionUser, "id" | "timezone" | "locale">;
 type MedicationWithSchedules = Medication & {
@@ -187,7 +188,22 @@ async function loadStock(
           isRecordOnly(medication) ? [] : schedulesDto,
           Number(medication.unitsPerDose),
         );
-  return { schedulesDto, stockUnitsRemaining, stockDosesRemaining, runwayDays };
+  const prefsRow = await prisma.user.findUnique({
+    where: { id: medication.userId },
+    select: { notificationPrefs: true },
+  });
+  const lowStockTriggerDays = resolvedLowStockTriggerDays({
+    notificationPrefs: prefsRow?.notificationPrefs ?? null,
+    reorderLeadDays: medication.reorderLeadDays,
+    schedules: isRecordOnly(medication) ? [] : schedulesDto,
+  });
+  return {
+    schedulesDto,
+    stockUnitsRemaining,
+    stockDosesRemaining,
+    runwayDays,
+    lowStockTriggerDays,
+  };
 }
 
 /** The detail answer of one medication, or null for the route's 404. */
@@ -261,8 +277,13 @@ export async function medicationDetail(input: {
     });
   }
 
-  const { schedulesDto, stockUnitsRemaining, stockDosesRemaining, runwayDays } =
-    await loadStock(user, id, medication);
+  const {
+    schedulesDto,
+    stockUnitsRemaining,
+    stockDosesRemaining,
+    runwayDays,
+    lowStockTriggerDays,
+  } = await loadStock(user, id, medication);
 
   // The composition per unit, labelled in the account language.
   const ingredientRows = await prisma.medicationIngredient.findMany({
@@ -312,6 +333,7 @@ export async function medicationDetail(input: {
     stockUnitsRemaining,
     stockDosesRemaining,
     runwayDays,
+    lowStockTriggerDays,
     ingredients: toIngredientDtos(ingredientRows, user.locale ?? null),
     // #1430 — the official registry search for this medication, built from
     // the static template table; null when the caller chose no registry.

@@ -46,6 +46,7 @@ import { resolveIntakeActionability } from "@/lib/medications/intake-actionable"
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
 import { withMedicationNote } from "@/lib/medications/medication-note";
+import { resolvedLowStockTriggerDays } from "@/lib/medications/low-stock-trigger";
 
 export type MedicationsListResult = Array<Record<string, unknown>>;
 
@@ -81,6 +82,7 @@ export async function buildMedicationsList(
     eraFloors,
     usableStock,
     inventoryCounts,
+    prefsRow,
   ] = await Promise.all([
     prisma.medication.findMany({
       where: { userId },
@@ -166,6 +168,12 @@ export async function buildMedicationsList(
       by: ["medicationId"],
       where: { userId },
       _count: { id: true },
+    }),
+    // The low-stock floor and the default reorder lead, for the resolved
+    // `lowStockTriggerDays`.
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { notificationPrefs: true },
     }),
   ]);
 
@@ -356,6 +364,12 @@ export async function buildMedicationsList(
       stockUnitsRemaining,
       stockDosesRemaining,
       runwayDays,
+      // v1.50 — the runway at or below which this row is low on stock.
+      lowStockTriggerDays: resolvedLowStockTriggerDays({
+        notificationPrefs: prefsRow?.notificationPrefs ?? null,
+        reorderLeadDays: m.reorderLeadDays,
+        schedules: liveSchedulesDto,
+      }),
     };
   });
 }

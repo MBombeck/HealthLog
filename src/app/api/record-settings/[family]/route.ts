@@ -16,6 +16,7 @@ import {
 import { auditLog } from "@/lib/auth/audit";
 import {
   invalidateUserInsightsLayout,
+  invalidateUserMedications,
   invalidateUserProfile,
 } from "@/lib/cache/invalidate";
 import { prisma, toJson } from "@/lib/db";
@@ -145,6 +146,10 @@ async function patchNotificationsSettings(
       select: { moodReminderEnabled: true, notificationPrefs: true },
     });
   });
+  // The medication answers carry the resolved low-stock trigger.
+  if (patch.notificationPreferences) {
+    invalidateUserMedications(recordId, { evict: true });
+  }
   const preferences = parseNotificationPrefs(record.notificationPrefs);
   const settings = {
     moodReminderEnabled: record.moodReminderEnabled,
