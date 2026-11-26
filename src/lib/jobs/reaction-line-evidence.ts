@@ -20,6 +20,7 @@ export function buildEvidence(
     score: {
       value: number;
       band: string;
+      numberBand?: string;
       delta: number | null;
       composition?: readonly string[];
       bandSetter?: string | null;
@@ -46,7 +47,7 @@ export function buildEvidence(
         ? `; the ${digest.score.bandSetter} area is ${digest.score.bandSetterBand}`
         : "";
     parts.push(
-      `- Health score: ${Math.round(digest.score.value)} (${digest.score.band}${setter}), ${delta}.`,
+      `- Health score: ${Math.round(digest.score.value)} (${digest.score.numberBand ?? digest.score.band}${setter}), ${delta}.`,
     );
   }
   if (digest.topSignal) {

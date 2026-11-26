@@ -43,9 +43,10 @@ export const SCORE_YELLOW_FLOOR = 50;
  * carries the version, so each account is told once that the method
  * moved.
  *
- * Since 1.50 this is the whole band rule for the health score too: the
- * composite no longer takes the worse of this band and its worst pillar's.
- * A pillar in a worse band is named beside the score (`bandSetter`).
+ * Since 1.50 this is the health score's `numberBand`, the band the web
+ * draws. Its wire `band` still takes the worse of this band and its worst
+ * pillar's, which is what shipped apps colour by; the pillar is named
+ * beside the score (`bandSetter`).
  */
 export function scoreBand(score: number): ScoreBand {
   if (score >= SCORE_GREEN_FLOOR) return "green";
@@ -77,8 +78,8 @@ export type HealthLogScoreKind = keyof typeof SCORE_BAND_DIRECTION;
  * vendor's own number (`"vendor"`: a WHOOP recovery, an Oura or Garmin sleep
  * score) gets no HealthLog band at all and returns `null`; the vendor colours
  * its number by its own scale, and HealthLog does not restate it. The health
- * score follows this rule as it stands; its worst pillar is named beside
- * the band, never folded into it.
+ * score's `numberBand` follows this rule as it stands; its wire `band`
+ * also folds in the worst pillar, for the apps that colour by it.
  */
 export function bandForScoreKind(
   kind: HealthLogScoreKind,

@@ -27,6 +27,9 @@ import {
   derivedCoverage,
   derivedProvenance,
   glucoseClinicalSchema,
+  HEALTH_SCORE_BAND_DESCRIPTION,
+  HEALTH_SCORE_BAND_SETTER_DESCRIPTION,
+  HEALTH_SCORE_NUMBER_BAND_DESCRIPTION,
   healthScoreBasis,
 } from "./insights/schemas";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
@@ -313,12 +316,16 @@ const pillarValue = z.object({
 
 const compositeValue = z.object({
   score: z.number(),
-  band: z.enum(["green", "yellow", "red"]),
+  band: z
+    .enum(["green", "yellow", "red"])
+    .describe(HEALTH_SCORE_BAND_DESCRIPTION),
+  numberBand: z
+    .enum(["green", "yellow", "red"])
+    .optional()
+    .describe(HEALTH_SCORE_NUMBER_BAND_DESCRIPTION),
   bandSetter: scorePillarIdEnum
     .nullable()
-    .describe(
-      "The worst counted pillar when its band is worse than the score's own band, null otherwise. Since 1.50 it names that pillar beside the score; it no longer lowers `band`, which follows the number like every HealthLog score (green from 70, yellow from 50).",
-    ),
+    .describe(HEALTH_SCORE_BAND_SETTER_DESCRIPTION),
   composition: z
     .array(scorePillarIdEnum)
     .describe(

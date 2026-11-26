@@ -325,6 +325,7 @@ describe("the axis states the recommendation only where it is met", () => {
         value: {
           score: 78,
           band: "green",
+          numberBand: "green",
           bandSetter: null,
           composition: ["BLOOD_PRESSURE"],
           configured: false,

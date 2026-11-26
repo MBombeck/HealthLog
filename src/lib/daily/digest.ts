@@ -128,7 +128,10 @@ function moduleEnabled(map: DigestModuleMap, key: ModuleKey): boolean {
 
 export interface DailyDigestScore {
   value: number;
+  /** The worse of the number's band and the worst pillar's (shipped apps). */
   band: string;
+  /** 1.50: the number's own band; the web draws this. Old caches lack it. */
+  numberBand?: string;
   delta: number | null;
   /** Additive score identity; omitted by older cached digests. */
   deltaReason?: ScoreDeltaReason | null;
