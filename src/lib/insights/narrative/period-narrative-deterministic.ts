@@ -77,15 +77,23 @@ function labelFor(type: string, locale: Locale): string {
 }
 
 /**
- * Fraction digits a change is written with, by the unit it is narrated in.
- * A step count, a pressure, a heart rate or a glucose reading in mg/dL is
- * a whole number on every screen; kilograms, pounds, percentages, hours
- * and mmol/L carry one decimal. Anything else gets one decimal too.
+ * Fraction digits a change is written with. A step count, a blood pressure, a
+ * heart rate, a heart-rate variability and a breathing rate are whole numbers
+ * on every screen; weight, body fat, sleep hours, glucose and anything else
+ * carry one decimal, in whichever unit the reader chose.
  */
-const WHOLE_UNITS = new Set(["", "mmHg", "bpm", "ms", "mg/dL", "breaths/min"]);
+const WHOLE_NUMBER_TYPES = new Set<string>([
+  "ACTIVITY_STEPS",
+  "BLOOD_PRESSURE_SYS",
+  "BLOOD_PRESSURE_DIA",
+  "PULSE",
+  "RESTING_HEART_RATE",
+  "HEART_RATE_VARIABILITY",
+  "RESPIRATORY_RATE",
+]);
 
-function fractionDigitsFor(unit: string): number {
-  return WHOLE_UNITS.has(unit) ? 0 : 1;
+function fractionDigitsFor(type: string): number {
+  return WHOLE_NUMBER_TYPES.has(type) ? 0 : 1;
 }
 
 /**
@@ -117,7 +125,7 @@ function fmtPercent(n: number, locale: Locale): string {
  */
 function isNotable(d: MetricDelta): boolean {
   if (d.delta === null) return false;
-  const factor = 10 ** fractionDigitsFor(d.unit);
+  const factor = 10 ** fractionDigitsFor(d.type);
   return Math.round(Math.abs(d.delta) * factor) !== 0;
 }
 
@@ -141,7 +149,7 @@ function deltaPhrase(d: MetricDelta, locale: Locale): string {
   const unitWord =
     d.unit === "" && d.type === "ACTIVITY_STEPS" ? STEP_WORD[locale] : d.unit;
   const unit = unitWord ? ` ${unitWord}` : "";
-  const amount = `${fmtSigned(d.delta as number, locale, fractionDigitsFor(d.unit))}${unit}`;
+  const amount = `${fmtSigned(d.delta as number, locale, fractionDigitsFor(d.type))}${unit}`;
   // One bracket: the change and its percent side by side, not nested.
   const pct =
     d.deltaPercent !== null && Math.round(d.deltaPercent * 10) !== 0
