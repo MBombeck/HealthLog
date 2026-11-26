@@ -31,6 +31,10 @@ vi.mock("@/lib/insights/derived/baseline", () => ({
     .mockResolvedValue({ ageYears: null, sex: "MALE", heightCm: 180 }),
 }));
 
+vi.mock("@/lib/rollups/measurement-read", () => ({
+  loadUserSourcePriority: vi.fn(async () => null),
+}));
+
 import {
   stressExternalId,
   stressMeasuredAt,
@@ -49,28 +53,32 @@ function okBaseline(center: number, spread: number) {
   };
 }
 
-function makePrisma(sdnnValues: number[]) {
-  // The day's intra-day SDNN is counted and averaged in SQL; the fake
-  // aggregates the fixture values the same way.
-  const aggregate = vi.fn().mockResolvedValue({
-    _count: { _all: sdnnValues.length },
-    _avg: {
-      value:
-        sdnnValues.length === 0
-          ? null
-          : sdnnValues.reduce((s, v) => s + v, 0) / sdnnValues.length,
-    },
-  });
+function makePrisma(
+  sdnnValues: number[],
+  bySource: Record<string, number[]> = { APPLE_HEALTH: sdnnValues },
+) {
+  // The day's intra-day SDNN is counted and summed in SQL per source and
+  // device; the fake groups the fixture values the same way.
+  const groupBy = vi.fn().mockResolvedValue(
+    Object.entries(bySource).map(([source, values]) => ({
+      source,
+      deviceType: null,
+      _count: { _all: values.length },
+      _sum: {
+        value: values.length === 0 ? null : values.reduce((s, v) => s + v, 0),
+      },
+    })),
+  );
   const upsert = vi.fn().mockResolvedValue({});
   const findUnique = vi
     .fn()
     .mockResolvedValue({ dateOfBirth: null, gender: "MALE", heightCm: 180 });
   return {
     prisma: {
-      measurement: { aggregate, upsert },
+      measurement: { groupBy, upsert },
       user: { findUnique },
     } as unknown as Parameters<typeof persistStressScore>[0],
-    aggregate,
+    groupBy,
     upsert,
   };
 }
@@ -139,6 +147,23 @@ describe("persistStressScore", () => {
       unit: "score",
       externalId: "stress:2026-06-01",
     });
+  });
+
+  it("scores the ladder's source when two sources report SDNN for the day", async () => {
+    // WHOOP outranks Apple Health on the default `hrv` ladder. Mixed, the
+    // mean would be 50 and score lower; the picked source alone sits at
+    // baseline and scores no stress.
+    const { prisma, upsert } = makePrisma([], {
+      APPLE_HEALTH: [40, 40, 40, 40],
+      WHOOP: [60, 60, 60, 60],
+    });
+    computeVitalsBaselineMock.mockResolvedValue(okBaseline(60, 10));
+
+    const result = await persistStressScore(prisma, "user-1", NOW);
+
+    expect(result.outcome).toBe("stored");
+    expect(result.score).toBe(0);
+    expect(upsert).toHaveBeenCalledTimes(1);
   });
 
   it("writes NOTHING when there are too few intra-day samples", async () => {

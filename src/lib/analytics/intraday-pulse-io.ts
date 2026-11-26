@@ -19,6 +19,8 @@ import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { mergeRestingWithProxy } from "@/lib/analytics/resting-pulse";
 import { readRestingPulseProxy } from "@/lib/analytics/resting-pulse-read";
+import { pickCanonicalSourceRows } from "@/lib/analytics/source-priority";
+import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { readLocalDayMinuteBuckets } from "@/lib/measurements/dense-bucket-read";
 import { CUMULATIVE_SAMPLE_SOURCES } from "@/lib/measurements/intraday-cumulative-profile";
 import { localDayWindow } from "@/lib/tz/local-day";
@@ -104,12 +106,26 @@ async function resolveBaseline(
   mature: boolean;
   source: "resting" | "proxy" | "none";
 }> {
-  const restingRows = await prisma.measurement.findMany({
-    where: { userId, type: "RESTING_HEART_RATE", deletedAt: null },
-    orderBy: { measuredAt: "desc" },
-    take: 90,
-    select: { value: true, measuredAt: true },
-  });
+  const dayKeyOf = (d: Date) => userDayKey(d, timezone);
+  // A day with resting rows from two sources keeps the one the person's
+  // ladder puts first, so the median weighs each day once.
+  const restingRows = pickCanonicalSourceRows(
+    await prisma.measurement.findMany({
+      where: { userId, type: "RESTING_HEART_RATE", deletedAt: null },
+      orderBy: [{ measuredAt: "desc" }, { id: "desc" }],
+      take: 90,
+      select: {
+        value: true,
+        measuredAt: true,
+        source: true,
+        deviceType: true,
+        type: true,
+      },
+    }),
+    "restingHeartRate",
+    await loadUserSourcePriority(userId),
+    dayKeyOf,
+  ).canonicalRows;
 
   // Only reach for the heavier PULSE-proxy read when the resting rows
   // cannot carry the baseline on their own: too few of them, OR the newest
@@ -144,7 +160,7 @@ async function resolveBaseline(
       value: r.value,
     })),
     proxySamples,
-    dayKeyOf: (d) => userDayKey(d, timezone),
+    dayKeyOf,
   });
 
   const recentMedian = median(resolved.series.slice(-30).map((p) => p.value));

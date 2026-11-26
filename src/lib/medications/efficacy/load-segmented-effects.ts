@@ -15,6 +15,7 @@ import {
 import { dueSchedules } from "@/lib/medications/intake-tracking";
 import { dayKeyOfDate } from "@/lib/medications/course-window";
 import { readDayAggregates } from "@/lib/measurements/day-aggregates";
+import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { plausibleMetricRange } from "@/lib/measurements/value-domain";
 import { userDayKey } from "@/lib/tz/format";
 import { dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
@@ -219,6 +220,7 @@ export async function loadSegmentedEffects(params: {
     userDayKey(dc.effectiveFrom, timezone),
   );
 
+  const sourcePriority = await loadUserSourcePriority(userId);
   for (const target of targets) {
     const rows = await readDayAggregates({
       userId,
@@ -227,6 +229,7 @@ export async function loadSegmentedEffects(params: {
       until,
       timeZone: timezone,
       valueRange: plausibleMetricRange(target),
+      sourcePriority,
     });
     out.set(
       target,
