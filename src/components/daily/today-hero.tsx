@@ -325,7 +325,10 @@ export function TodayHero({
      footprint, so the column never collapses. The meta lines under it are
      capped to the dial's width on a phone so the column stays compact. */
   const hasScoreMeta =
-    (deltaShown && digest.score?.delta != null) || !!steadyLine || !!basisLine;
+    (deltaShown && digest.score?.delta != null) ||
+    !!steadyLine ||
+    !!basisLine ||
+    !!digest.score?.bandSetterLine;
 
   const scoreRing = (size: "sm" | "responsive", className?: string) => (
     <div data-slot="today-hero-score" className={className}>
@@ -353,6 +356,17 @@ export function TodayHero({
      line; beside a dial it wraps at the dial column's width. */
   const scoreMetaLines = (size: "sm" | "responsive") => (
     <>
+      {digest.score?.bandSetterLine ? (
+        <span
+          data-slot="today-hero-score-setter"
+          className={cn(
+            "text-foreground text-xs text-balance md:max-w-[11rem] md:text-center",
+            size === "sm" && "max-w-[11rem]",
+          )}
+        >
+          {digest.score.bandSetterLine}
+        </span>
+      ) : null}
       {deltaShown && digest.score?.delta != null ? (
         <span
           data-slot="today-hero-score-delta"

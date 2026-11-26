@@ -521,6 +521,28 @@ describe("<TodayHero> score basis", () => {
     expect(html).not.toContain('data-slot="today-hero-score-basis"');
   });
 
+  it("names the pillar a green score leaves unsaid", () => {
+    const base = withBasis(3, "full");
+    const html = render(
+      <TodayHero
+        digest={{
+          ...base,
+          score: {
+            ...base.score!,
+            value: 79,
+            bandSetter: "BLOOD_PRESSURE",
+            bandSetterBand: "red",
+            bandSetterLine: "Blood pressure: outside the reference range",
+          },
+        }}
+      />,
+    );
+    expect(html).toContain('data-slot="today-hero-score-setter"');
+    expect(visibleText(html)).toContain(
+      "Blood pressure: outside the reference range",
+    );
+  });
+
   it("says nothing for a digest carrying no basis at all", () => {
     // An older cached digest. The hero never counts areas out of
     // `composition` — three pillars can be one area.

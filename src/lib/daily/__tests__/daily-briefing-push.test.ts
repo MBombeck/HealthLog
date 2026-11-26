@@ -153,6 +153,26 @@ describe("buildDailyBriefingPush — content detail", () => {
     expect(body).toBe(t("daily.push.band.yellow"));
   });
 
+  it("never calls a day steady while a pillar under the score is red", () => {
+    // Since 1.50 the band follows the number: 79 is green over a red blood
+    // pressure. The push takes the worse of the two.
+    const digest = makeDigest({
+      briefingLead: null,
+      score: {
+        value: 79,
+        band: "green",
+        delta: null,
+        bandSetter: "BLOOD_PRESSURE",
+        bandSetterBand: "red",
+        bandSetterLine: "Blood pressure: outside the reference range",
+      },
+      line: t("daily.line.scoreReady"),
+    });
+    const { body } = buildDailyBriefingPush(digest, t, { showFigures: true });
+    expect(body).toBe(t("daily.push.band.red"));
+    expect(body).not.toBe(t("daily.push.band.green"));
+  });
+
   it("detailed without a score falls back to the plain title", () => {
     const { title } = buildDailyBriefingPush(makeDigest({ score: null }), t, {
       showFigures: true,

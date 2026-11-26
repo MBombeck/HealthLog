@@ -848,4 +848,28 @@ describe("loadDailyDigest — Today overview inputs", () => {
     const digest = await loadDailyDigest(USER, NOW);
     expect(digest.score?.steadyWeeks).toBe(3);
   });
+
+  it("carries the pillar a green score leaves unsaid, worded by the snapshot", async () => {
+    vi.mocked(readDashboardSnapshotCached).mockResolvedValueOnce({
+      ...SNAPSHOT,
+      body: {
+        ...SNAPSHOT.body,
+        healthScore: {
+          score: 79,
+          band: "green",
+          delta: null,
+          bandSetter: "BLOOD_PRESSURE",
+          bandSetterBand: "red",
+          bandSetterLine: "Blood pressure: outside the reference range",
+        },
+      },
+    } as Awaited<ReturnType<typeof readDashboardSnapshotCached>>);
+    const digest = await loadDailyDigest(USER, NOW);
+    expect(digest.score).toMatchObject({
+      band: "green",
+      bandSetter: "BLOOD_PRESSURE",
+      bandSetterBand: "red",
+      bandSetterLine: "Blood pressure: outside the reference range",
+    });
+  });
 });

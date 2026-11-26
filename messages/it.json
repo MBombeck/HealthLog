@@ -1129,7 +1129,7 @@
     "typePhq9Score": "Punteggio PHQ-9",
     "typeGad7Score": "Punteggio GAD-7",
     "typeGripStrength": "Forza di presa",
-    "typePainNrs": "Dolore (0–10)",
+    "typePainNrs": "Dolore (0-10)",
     "typeWaistCircumference": "Circonferenza vita",
     "typeWaistToHeight": "Rapporto vita-altezza",
     "unitScore": "pti",
@@ -5268,9 +5268,9 @@
       "coachPrefill": "Non ho ancora registrato la forza di presa. Cosa dice sulla salute dei miei muscoli e come la misuro e la miglioro?"
     },
     "pain": {
-      "title": "Dolore (0–10)",
+      "title": "Dolore (0-10)",
       "description": "Intensità del dolore riferita dal paziente sulla scala numerica 0–10, dove 0 è nessun dolore e 10 il peggiore immaginabile. Una variazione costante di 2 punti è il segnale da osservare.",
-      "chartTitle": "Dolore (0–10)",
+      "chartTitle": "Dolore (0-10)",
       "emptyState": {
         "title": "Ancora nessun punteggio del dolore",
         "description": "Registra come senti il dolore in questo momento sulla scala 0–10 e l'andamento apparirà qui.",

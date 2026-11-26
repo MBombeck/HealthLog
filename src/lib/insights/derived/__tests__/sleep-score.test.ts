@@ -406,6 +406,29 @@ describe("computeSleepScore", () => {
     }
   });
 
+  it("is fresh only for the night that ended this morning", async () => {
+    const rows = [
+      ...night("2026-05-31", [["ASLEEP", 420, "06:00"]]),
+      ...night("2026-06-01", [["ASLEEP", 430, "06:10"]]),
+    ];
+    findMany.mockResolvedValue(rows);
+    const stale = await computeSleepScore("u1", PROFILE, {
+      now: NOW,
+      tz: "UTC",
+    });
+    expect(stale.status === "ok" && stale.value.night).toBe("2026-06-01");
+    expect(stale.status === "ok" && stale.value.fresh).toBe(false);
+    findMany.mockResolvedValue([
+      ...rows,
+      ...night("2026-06-02", [["ASLEEP", 410, "06:05"]]),
+    ]);
+    const fresh = await computeSleepScore("u1", PROFILE, {
+      now: NOW,
+      tz: "UTC",
+    });
+    expect(fresh.status === "ok" && fresh.value.fresh).toBe(true);
+  });
+
   it("reweights around composition on a legacy ASLEEP-only night", async () => {
     const rows = [
       ...night("2026-05-31", [["ASLEEP", 420, "06:00"]]),

@@ -5575,18 +5575,18 @@
       "terms": {
         "de": {
           "name": "Hinweis auf unregelmäßigen Rhythmus",
-          "short": "Unregelmäßiger Rhythmus"
+          "short": "Rhythmus-Hinweis"
         },
         "en": {
           "name": "Irregular rhythm notification",
-          "short": "Irregular rhythm"
+          "short": "Rhythm alert"
         },
         "fr": {
           "name": "Notification de rythme irrégulier"
         },
         "es": {
           "name": "Aviso de ritmo irregular",
-          "short": "Ritmo irregular"
+          "short": "Aviso de ritmo"
         },
         "it": {
           "name": "Notifica di ritmo irregolare"
@@ -5599,7 +5599,7 @@
         },
         "nl": {
           "name": "Melding onregelmatig ritme",
-          "short": "Onregelmatig ritme"
+          "short": "Ritmemelding"
         },
         "pt-BR": {
           "name": "Notificação de ritmo irregular"
@@ -5636,18 +5636,18 @@
       "terms": {
         "de": {
           "name": "Hinweis auf hohe Herzfrequenz",
-          "short": "Hoher Puls"
+          "short": "Hinweis hoher Puls"
         },
         "en": {
           "name": "High heart rate notification",
-          "short": "High heart rate"
+          "short": "High heart rate alert"
         },
         "fr": {
           "name": "Notification de fréquence cardiaque élevée"
         },
         "es": {
           "name": "Aviso de frecuencia cardíaca alta",
-          "short": "Pulso alto"
+          "short": "Aviso pulso alto"
         },
         "it": {
           "name": "Notifica di frequenza cardiaca alta"
@@ -5696,18 +5696,18 @@
       "terms": {
         "de": {
           "name": "Hinweis auf niedrige Herzfrequenz",
-          "short": "Niedriger Puls"
+          "short": "Hinweis niedriger Puls"
         },
         "en": {
           "name": "Low heart rate notification",
-          "short": "Low heart rate"
+          "short": "Low heart rate alert"
         },
         "fr": {
           "name": "Notification de fréquence cardiaque basse"
         },
         "es": {
           "name": "Aviso de frecuencia cardíaca baja",
-          "short": "Pulso bajo"
+          "short": "Aviso pulso bajo"
         },
         "it": {
           "name": "Notifica di frequenza cardiaca bassa"
@@ -5719,8 +5719,7 @@
           "name": "낮은 심박수 알림"
         },
         "nl": {
-          "name": "Melding lage hartslag",
-          "short": "Lage hartslag"
+          "name": "Melding lage hartslag"
         },
         "pt-BR": {
           "name": "Notificação de frequência cardíaca baixa"
@@ -5816,18 +5815,18 @@
       "terms": {
         "de": {
           "name": "Hinweis auf niedrige Cardiofitness",
-          "short": "Niedrige Cardiofitness"
+          "short": "Cardiofitness-Hinweis"
         },
         "en": {
           "name": "Low cardio fitness notification",
-          "short": "Low cardio fitness"
+          "short": "Cardio fitness alert"
         },
         "fr": {
           "name": "Notification de faible forme cardio"
         },
         "es": {
           "name": "Aviso de baja forma cardiovascular",
-          "short": "Baja forma cardiovascular"
+          "short": "Aviso forma cardio"
         },
         "it": {
           "name": "Notifica di bassa forma cardio"
@@ -5839,8 +5838,7 @@
           "name": "낮은 심폐 체력 알림"
         },
         "nl": {
-          "name": "Melding lage cardiofitheid",
-          "short": "Lage cardiofitheid"
+          "name": "Melding lage cardiofitheid"
         },
         "pt-BR": {
           "name": "Notificação de baixo condicionamento cardio"
@@ -10483,37 +10481,37 @@
     },
     {
       "id": "metric.painNrs",
-      "description": "The Pain (0–10) metric (PAIN_NRS).",
+      "description": "The Pain (0-10) metric (PAIN_NRS).",
       "terms": {
         "de": {
-          "name": "Schmerz (0–10)"
+          "name": "Schmerz (0-10)"
         },
         "en": {
-          "name": "Pain (0–10)"
+          "name": "Pain (0-10)"
         },
         "fr": {
-          "name": "Douleur (0–10)"
+          "name": "Douleur (0-10)"
         },
         "es": {
-          "name": "Dolor (0–10)"
+          "name": "Dolor (0-10)"
         },
         "it": {
-          "name": "Dolore (0–10)"
+          "name": "Dolore (0-10)"
         },
         "pl": {
-          "name": "Ból (0–10)"
+          "name": "Ból (0-10)"
         },
         "ko": {
-          "name": "통증 (0–10)"
+          "name": "통증 (0-10)"
         },
         "nl": {
-          "name": "Pijn (0–10)"
+          "name": "Pijn (0-10)"
         },
         "pt-BR": {
-          "name": "Dor (0–10)"
+          "name": "Dor (0-10)"
         },
         "ru": {
-          "name": "Боль (0–10)"
+          "name": "Боль (0-10)"
         }
       },
       "anchors": [

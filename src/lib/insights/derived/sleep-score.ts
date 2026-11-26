@@ -39,7 +39,7 @@ import type {
 } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
-import { shiftDateKey } from "@/lib/tz/format";
+import { shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { startOfLocalDayKey } from "@/lib/tz/local-day";
 import {
   asleepMidpointMinutes,
@@ -102,6 +102,13 @@ export interface SleepScoreValue {
   band: "green" | "yellow" | "red";
   /** The night this score describes (YYYY-MM-DD of the wake day). */
   night: string;
+  /**
+   * 1.50 — `night` is the night that ended this morning (its wake day is the
+   * reader's local today). A score of an older night is not this morning's:
+   * a surface shows it as "last <score> on <night>", like a readiness that
+   * is not fresh, never as today's ring. Additive.
+   */
+  fresh: boolean;
   /** Total asleep minutes that night. */
   asleepMinutes: number;
   /** Total in-bed minutes that night (asleep + awake-in-bed), when known. */
@@ -631,6 +638,7 @@ export async function computeSleepScore(
       score,
       band: bandForScoreKind("sleep", score),
       night: latest.night,
+      fresh: latest.night === userDayKey(now, tz),
       // Emit whole minutes (iOS #18) — the canonical totals sum second-
       // precision segments and can otherwise serialise as e.g. 433.4999.
       // Null-preserving on the in-bed signal.
