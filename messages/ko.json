@@ -976,7 +976,7 @@
     "typeTotalBodyWater": "체수분",
     "typeBoneMass": "골량",
     "typeOxygenSaturation": "산소포화도",
-    "typeHeartRateVariability": "심박변이도",
+    "typeHeartRateVariability": "심박변이도 (SDNN)",
     "typeRestingHeartRate": "안정 시 심박수",
     "typeActiveEnergyBurned": "활동 에너지",
     "typeBasalEnergyBurned": "휴식 에너지",
@@ -1136,7 +1136,7 @@
     "unitRatio": "비율",
     "unitRating": "단계",
     "typeWho5Score": "WHO-5 점수",
-    "typeSciScore": "SCI 점수",
+    "typeSciScore": "Sleep Condition Indicator (SCI)",
     "typeExerciseMinutes": "운동 시간(분)",
     "typeStandMinutes": "서 있기 시간(분)",
     "typeStandHours": "일어서기 시간",
@@ -1211,7 +1211,12 @@
     "shortTypeIndoorHumidity": "실내 습도",
     "shortTypeAcuteTrainingLoad": "급성 훈련 부하",
     "shortTypeWaistCircumference": "허리둘레",
-    "shortTypeWaistToHeight": "허리-키 비율"
+    "shortTypeWaistToHeight": "허리-키 비율",
+    "shortTypeAfibBurden": "심방세동 부담",
+    "shortTypeSciScore": "SCI 점수",
+    "shortTypeHrvRmssd": "심박변이도 (RMSSD)",
+    "shortTypeBodyMassIndex": "BMI",
+    "shortTypeHeartRateVariability": "심박변이도 (SDNN)"
   },
   "metricCatalog": {
     "title": "HealthLog가 기록할 수 있는 것",
@@ -3306,9 +3311,9 @@
       "viewDetail": "{metric} 자세히 보기"
     },
     "vo2Max": {
-      "cardioLinkTitle": "심폐 체력 (VO₂ max)",
+      "cardioLinkTitle": "VO₂ max",
       "cardioLinkBody": "VO₂ max는 유산소 체력을 대표하는 지표예요. 전체 차트와 평가는 별도 페이지에 있어요.",
-      "cardioLinkCta": "심폐 체력 열기"
+      "cardioLinkCta": "VO₂ max 열기"
     },
     "trendAnnotation": {
       "emptyBp": "이 추이에 설명을 붙이려면 데이터가 더 필요해요.",
@@ -3617,7 +3622,7 @@
         "medications": "제 복약 순응도는 어떤가요? 요즘 컨디션과 맞물리나요?",
         "steps": "걸음 수로 볼 때 요즘 얼마나 활동적이었나요? 건강한 기준값과 비교하면 어떤가요?",
         "activeEnergy": "활동 에너지 추이는 요즘 제 활동량에 대해 뭘 말해 주나요?",
-        "cardioFitness": "심폐 체력(VO₂ max) 추이는 무슨 뜻인가요? 어떻게 하면 좋은 방향으로 올릴 수 있나요?",
+        "cardioFitness": "VO₂ max 추이는 무슨 뜻인가요? 어떻게 하면 좋은 방향으로 올릴 수 있나요?",
         "bloodGlucose": "최근 혈당 측정값을 설명해 주세요. 건강한 범위 안인가요?",
         "oxygenSaturation": "제 산소포화도(SpO₂) 추이는 무엇을 말해 주나요?",
         "respiratoryRate": "제 호흡수 추이는 건강에 대해 뭘 말해 주나요?",
@@ -5014,15 +5019,15 @@
       }
     },
     "cardioFitness": {
-      "title": "심폐 체력",
+      "title": "VO₂ max",
       "description": "시간에 따른 VO₂ max로, 유산소 체력을 대표하는 지표예요.",
       "chartTitle": "VO₂ max (mL/(kg·min))",
       "emptyState": {
-        "title": "아직 심폐 체력 데이터가 없어요",
+        "title": "아직 VO₂ max 데이터가 없어요",
         "description": "Apple Health가 운동 기록을 동기화하면 VO₂ max 측정값이 여기에 표시돼요."
       }
     },
-    "navCardioFitness": "심폐 체력",
+    "navCardioFitness": "VO₂ max",
     "cardioRecovery": {
       "title": "운동 후 회복",
       "description": "최고 강도 운동 1분 뒤 심박수가 얼마나 떨어지는지 보여줘요.",
@@ -14193,7 +14198,6 @@
     "leafEmergency": "응급 정보 (혈액형, 연락처, 사전지시)",
     "leafMedicationEffect": "각 약 시작 전후의 변화 (약 목록 필요)",
     "leafWorkouts": "운동(종목별 요약)",
-    "leafHrvSdnn": "심박변이도 (SDNN)",
     "leafSeizures": "발작 일지"
   },
   "recordSharing": {

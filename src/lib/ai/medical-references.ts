@@ -5,7 +5,7 @@
  * < 140/90", "BMI 18.5-24.9", "≥ 7h sleep") MUST cite an entry in
  * this list via `recommendation.referenceId`. The schema in
  * `src/lib/ai/schema.ts` validates `referenceId` against
- * `MEDICAL_REFERENCE_IDS`, so the model cannot fabricate a guideline
+ * `MEDICAL_REFERENCE_IDS` (`./medical-reference-ids.ts`), so the model cannot fabricate a guideline
  * citation pointing at a source that does not exist.
  *
  * Curation policy:
@@ -28,6 +28,8 @@
  * model emits an id, the UI renders a labelled link.
  */
 
+import type { MedicalReferenceId } from "./medical-reference-ids";
+
 export type MedicalReferenceOrg = "AHA" | "ESH" | "ESC" | "WHO" | "DGE" | "ADA";
 
 export type MedicalReferenceMetric =
@@ -35,7 +37,7 @@ export type MedicalReferenceMetric =
 
 export interface MedicalReference {
   /** Stable slug — used as `recommendation.referenceId`. */
-  id: string;
+  id: MedicalReferenceId;
   /** Issuing body. Stable contract value, do not translate. */
   org: MedicalReferenceOrg;
   /** Title in English (canonical UI text). */
@@ -137,11 +139,6 @@ export const MEDICAL_REFERENCES: MedicalReference[] = [
     metricApplicability: ["pulse"],
   },
 ];
-
-/** Stable list of all valid `recommendation.referenceId` values. */
-export const MEDICAL_REFERENCE_IDS: readonly string[] = MEDICAL_REFERENCES.map(
-  (r) => r.id,
-);
 
 /** Stable list of all distinct issuing bodies. */
 export const MEDICAL_REFERENCE_ORGS: readonly MedicalReferenceOrg[] =

@@ -174,8 +174,8 @@ function render(d: DoctorReportData) {
 describe("doctor report v1.44 sections", () => {
   it("labels SDNN and RMSSD as separate rows and keeps recorded precision", async () => {
     const text = await textOf(render(data()));
-    expect(text).toContain("HRV (SDNN)");
-    expect(text).toContain("HRV (RMSSD)");
+    expect(text).toContain("Heart rate variability (SDNN)");
+    expect(text).toContain("Heart rate variability (RMSSD)");
     // #1228: the row keeps the digits the readings carry, up to three
     // significant ones (40.125 ms reads 40.1, never 40).
     expect(text).toContain("40.1");

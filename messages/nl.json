@@ -976,7 +976,7 @@
     "typeTotalBodyWater": "Totaal lichaamswater",
     "typeBoneMass": "Botmassa",
     "typeOxygenSaturation": "Zuurstofsaturatie",
-    "typeHeartRateVariability": "Hartslagvariabiliteit",
+    "typeHeartRateVariability": "Hartslagvariabiliteit (SDNN)",
     "typeRestingHeartRate": "Rusthartslag",
     "typeActiveEnergyBurned": "Actieve energie",
     "typeBasalEnergyBurned": "Rustenergie",
@@ -1092,7 +1092,7 @@
     "typeRecoveryScore": "Herstelscore",
     "typeStressScore": "Stressscore",
     "typeStrainScore": "Belastingsscore",
-    "typeHrvRmssd": "HRV (RMSSD)",
+    "typeHrvRmssd": "Hartslagvariabiliteit (RMSSD)",
     "typeDayStrain": "Dagbelasting",
     "typeWorkoutStrain": "Trainingsbelasting",
     "typeSleepPerformance": "Slaapprestatie",
@@ -1136,7 +1136,7 @@
     "unitRatio": "verhouding",
     "unitRating": "beoordeling",
     "typeWho5Score": "WHO-5-score",
-    "typeSciScore": "SCI-score",
+    "typeSciScore": "Sleep Condition Indicator (SCI)",
     "typeExerciseMinutes": "Trainingsminuten",
     "typeStandMinutes": "Staminuten",
     "typeStandHours": "Stauren",
@@ -1211,7 +1211,12 @@
     "shortTypeIndoorHumidity": "Vochtigheid binnen",
     "shortTypeAcuteTrainingLoad": "Acute belasting",
     "shortTypeWaistCircumference": "Middelomtrek",
-    "shortTypeWaistToHeight": "Middel/lengte"
+    "shortTypeWaistToHeight": "Middel/lengte",
+    "shortTypeAfibBurden": "AF-belasting",
+    "shortTypeSciScore": "SCI-score",
+    "shortTypeHrvRmssd": "HRV (RMSSD)",
+    "shortTypeBodyMassIndex": "BMI",
+    "shortTypeHeartRateVariability": "HRV (SDNN)"
   },
   "metricCatalog": {
     "title": "Wat HealthLog kan bijhouden",
@@ -3306,9 +3311,9 @@
       "viewDetail": "Details van {metric} bekijken"
     },
     "vo2Max": {
-      "cardioLinkTitle": "Cardiofitheid (VO₂max)",
+      "cardioLinkTitle": "VO₂max",
       "cardioLinkBody": "VO₂max is de belangrijkste maat voor aerobe fitheid. De volledige grafiek en beoordeling staan op een eigen pagina.",
-      "cardioLinkCta": "Cardiofitheid openen"
+      "cardioLinkCta": "VO₂max openen"
     },
     "trendAnnotation": {
       "emptyBp": "Wachten op meer gegevens om deze trend toe te lichten.",
@@ -3617,7 +3622,7 @@
         "medications": "Hoe staat het met mijn therapietrouw, en past die bij hoe ik me heb gevoeld?",
         "steps": "Hoe actief ben ik de laatste tijd geweest op basis van mijn stappen, en hoe verhoudt dat zich tot een gezond niveau?",
         "activeEnergy": "Wat zegt mijn trend in actieve energie over mijn activiteitsniveau de laatste tijd?",
-        "cardioFitness": "Wat betekent de trend van mijn cardiofitheid (VO₂ max), en hoe krijg ik die de goede kant op?",
+        "cardioFitness": "Wat betekent de trend van mijn VO₂max, en hoe krijg ik die de goede kant op?",
         "bloodGlucose": "Neem mijn recente glucosemetingen met me door. Liggen ze binnen een gezond bereik?",
         "oxygenSaturation": "Wat zegt mijn trend in zuurstofsaturatie (SpO₂)?",
         "respiratoryRate": "Wat zegt mijn trend in ademhalingsfrequentie over mijn gezondheid?",
@@ -5014,15 +5019,15 @@
       }
     },
     "cardioFitness": {
-      "title": "Cardiofitheid",
+      "title": "VO₂max",
       "description": "Je VO₂ max door de tijd heen, de belangrijkste maatstaf voor aerobe fitheid.",
       "chartTitle": "VO₂ max (mL/(kg·min))",
       "emptyState": {
-        "title": "Nog geen gegevens over cardiofitheid",
+        "title": "Nog geen VO₂max-gegevens",
         "description": "VO₂ max-metingen verschijnen hier zodra Apple Health je trainingen synchroniseert."
       }
     },
-    "navCardioFitness": "Cardiofitheid",
+    "navCardioFitness": "VO₂max",
     "cardioRecovery": {
       "title": "Cardioherstel",
       "description": "Hoeveel je hartslag daalt in de eerste minuut na maximale inspanning.",
@@ -14193,7 +14198,6 @@
     "leafEmergency": "Noodinformatie (bloedgroep, contactpersonen, wilsverklaringen)",
     "leafMedicationEffect": "Verandering rond de start van elk medicijn (vereist de medicatielijst)",
     "leafWorkouts": "Trainingen (overzicht per sport)",
-    "leafHrvSdnn": "HRV (SDNN)",
     "leafSeizures": "Aanvalsdagboek"
   },
   "recordSharing": {

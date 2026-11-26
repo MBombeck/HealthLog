@@ -494,25 +494,13 @@ export const SENSITIVE_LEAF_IDS: readonly ReportLeafId[] = ALL_LEAF_IDS.filter(
 );
 
 /**
- * Measurement labels the report artefacts print differently from the app.
- * Heart-rate variability comes as two statistics that are not
- * interchangeable (SDNN from Apple Health and Withings, RMSSD from Oura,
- * WHOOP, Polar and Fitbit); the app's generic "Heart-rate variability" label
- * on the SDNN series sits beside "HRV (RMSSD)" on a clinician's page, so the
- * report names the statistic on both.
+ * The i18n label key a report artefact prints a measurement type under: the
+ * metric's full name. Heart-rate variability comes as two statistics that
+ * are not interchangeable (SDNN from Apple Health and Withings, RMSSD from
+ * Oura, WHOOP, Polar and Fitbit), and both full names say which one it is.
  */
-const REPORT_MEASUREMENT_LABEL_OVERRIDES: Partial<
-  Record<MeasurementType, string>
-> = {
-  HEART_RATE_VARIABILITY: "reportSelection.leafHrvSdnn",
-};
-
-/** The i18n label key a report artefact prints a measurement type under. */
 export function reportMeasurementLabelKey(type: MeasurementType): string {
-  return (
-    REPORT_MEASUREMENT_LABEL_OVERRIDES[type] ??
-    MEASUREMENT_TYPE_LABEL_KEYS[type]
-  );
+  return MEASUREMENT_TYPE_LABEL_KEYS[type];
 }
 
 /** The i18n label key for any leaf. */

@@ -7111,6 +7111,4391 @@
         "pt-BR": [],
         "ru": []
       }
+    },
+    {
+      "id": "metric.weight",
+      "description": "The Weight metric (WEIGHT).",
+      "terms": {
+        "de": {
+          "name": "Gewicht"
+        },
+        "en": {
+          "name": "Weight"
+        },
+        "fr": {
+          "name": "Poids"
+        },
+        "es": {
+          "name": "Peso"
+        },
+        "it": {
+          "name": "Peso"
+        },
+        "pl": {
+          "name": "Waga"
+        },
+        "ko": {
+          "name": "체중"
+        },
+        "nl": {
+          "name": "Gewicht"
+        },
+        "pt-BR": {
+          "name": "Peso"
+        },
+        "ru": {
+          "name": "Вес"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeWeight",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.bloodPressure",
+      "description": "The Blood pressure label (measurements.typeBloodPressure), named by its source rather than by a measurement type of its own.",
+      "decision": "Sentence case, as every other metric name.",
+      "terms": {
+        "de": {
+          "name": "Blutdruck"
+        },
+        "en": {
+          "name": "Blood pressure"
+        },
+        "fr": {
+          "name": "Tension artérielle"
+        },
+        "es": {
+          "name": "Presión arterial"
+        },
+        "it": {
+          "name": "Pressione arteriosa"
+        },
+        "pl": {
+          "name": "Ciśnienie krwi"
+        },
+        "ko": {
+          "name": "혈압"
+        },
+        "nl": {
+          "name": "Bloeddruk"
+        },
+        "pt-BR": {
+          "name": "Pressão arterial"
+        },
+        "ru": {
+          "name": "АД"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeBloodPressure",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "dashboard.metric.title.bloodPressure",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.bpSys",
+      "description": "The Sys metric (BLOOD_PRESSURE_SYS).",
+      "terms": {
+        "de": {
+          "name": "Sys"
+        },
+        "en": {
+          "name": "Sys"
+        },
+        "fr": {
+          "name": "Sys"
+        },
+        "es": {
+          "name": "Sis"
+        },
+        "it": {
+          "name": "Sis"
+        },
+        "pl": {
+          "name": "Skur"
+        },
+        "ko": {
+          "name": "수축기"
+        },
+        "nl": {
+          "name": "Sys"
+        },
+        "pt-BR": {
+          "name": "Sistólica"
+        },
+        "ru": {
+          "name": "Сист."
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeBpSys",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.bpDia",
+      "description": "The Dia metric (BLOOD_PRESSURE_DIA).",
+      "terms": {
+        "de": {
+          "name": "Dia"
+        },
+        "en": {
+          "name": "Dia"
+        },
+        "fr": {
+          "name": "Dia"
+        },
+        "es": {
+          "name": "Dia"
+        },
+        "it": {
+          "name": "Dia"
+        },
+        "pl": {
+          "name": "Rozk"
+        },
+        "ko": {
+          "name": "이완기"
+        },
+        "nl": {
+          "name": "Dia"
+        },
+        "pt-BR": {
+          "name": "Diastólica"
+        },
+        "ru": {
+          "name": "Диаст."
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeBpDia",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.pulse",
+      "description": "The Pulse metric (PULSE).",
+      "terms": {
+        "de": {
+          "name": "Puls"
+        },
+        "en": {
+          "name": "Pulse"
+        },
+        "fr": {
+          "name": "Pouls"
+        },
+        "es": {
+          "name": "Pulso"
+        },
+        "it": {
+          "name": "Polso"
+        },
+        "pl": {
+          "name": "Tętno"
+        },
+        "ko": {
+          "name": "맥박"
+        },
+        "nl": {
+          "name": "Hartslag"
+        },
+        "pt-BR": {
+          "name": "Pulso"
+        },
+        "ru": {
+          "name": "Пульс"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typePulse",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.bodyFat",
+      "description": "The Body fat metric (BODY_FAT).",
+      "decision": "Sentence case, as every other metric name.",
+      "terms": {
+        "de": {
+          "name": "Körperfett"
+        },
+        "en": {
+          "name": "Body fat"
+        },
+        "fr": {
+          "name": "Graisse corporelle"
+        },
+        "es": {
+          "name": "Grasa corporal"
+        },
+        "it": {
+          "name": "Grasso corporeo"
+        },
+        "pl": {
+          "name": "Tkanka tłuszczowa"
+        },
+        "ko": {
+          "name": "체지방"
+        },
+        "nl": {
+          "name": "Vetpercentage"
+        },
+        "pt-BR": {
+          "name": "Gordura corporal"
+        },
+        "ru": {
+          "name": "Процент жировой массы"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeBodyFat",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.sleep",
+      "description": "The Sleep metric (SLEEP_DURATION).",
+      "terms": {
+        "de": {
+          "name": "Schlaf"
+        },
+        "en": {
+          "name": "Sleep"
+        },
+        "fr": {
+          "name": "Sommeil"
+        },
+        "es": {
+          "name": "Sueño"
+        },
+        "it": {
+          "name": "Sonno"
+        },
+        "pl": {
+          "name": "Sen"
+        },
+        "ko": {
+          "name": "수면"
+        },
+        "nl": {
+          "name": "Slaap"
+        },
+        "pt-BR": {
+          "name": "Sono"
+        },
+        "ru": {
+          "name": "Сон"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeSleep",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.steps",
+      "description": "The Steps metric (ACTIVITY_STEPS).",
+      "terms": {
+        "de": {
+          "name": "Schritte"
+        },
+        "en": {
+          "name": "Steps"
+        },
+        "fr": {
+          "name": "Pas"
+        },
+        "es": {
+          "name": "Pasos"
+        },
+        "it": {
+          "name": "Passi"
+        },
+        "pl": {
+          "name": "Kroki"
+        },
+        "ko": {
+          "name": "걸음 수"
+        },
+        "nl": {
+          "name": "Stappen"
+        },
+        "pt-BR": {
+          "name": "Passos"
+        },
+        "ru": {
+          "name": "Шаги"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeSteps",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.bloodKetones",
+      "description": "The Blood ketones metric (BLOOD_KETONES).",
+      "terms": {
+        "de": {
+          "name": "Blutketone"
+        },
+        "en": {
+          "name": "Blood ketones"
+        },
+        "fr": {
+          "name": "Cétones sanguines"
+        },
+        "es": {
+          "name": "Cetonas en sangre"
+        },
+        "it": {
+          "name": "Chetoni nel sangue"
+        },
+        "pl": {
+          "name": "Ketony we krwi"
+        },
+        "ko": {
+          "name": "혈중 케톤"
+        },
+        "nl": {
+          "name": "Bloedketonen"
+        },
+        "pt-BR": {
+          "name": "Cetonas no sangue"
+        },
+        "ru": {
+          "name": "Кетоны в крови"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeBloodKetones",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.boneMass",
+      "description": "The Bone mass metric (BONE_MASS).",
+      "terms": {
+        "de": {
+          "name": "Knochenmasse"
+        },
+        "en": {
+          "name": "Bone mass"
+        },
+        "fr": {
+          "name": "Masse osseuse"
+        },
+        "es": {
+          "name": "Masa ósea"
+        },
+        "it": {
+          "name": "Massa ossea"
+        },
+        "pl": {
+          "name": "Masa kostna"
+        },
+        "ko": {
+          "name": "골량"
+        },
+        "nl": {
+          "name": "Botmassa"
+        },
+        "pt-BR": {
+          "name": "Massa óssea"
+        },
+        "ru": {
+          "name": "Костная масса"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeBoneMass",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.heartRateVariability",
+      "description": "The Heart rate variability (SDNN) metric (HEART_RATE_VARIABILITY).",
+      "decision": "HRV comes as two statistics that cannot be compared: SDNN from Apple Health and Withings, RMSSD from Oura, WHOOP, Polar and Fitbit. Both names carry theirs, on every surface and in the doctor report; the short form is the HRV the Insights page already uses.",
+      "terms": {
+        "de": {
+          "name": "Herzfrequenzvariabilität (SDNN)",
+          "short": "HRV (SDNN)"
+        },
+        "en": {
+          "name": "Heart rate variability (SDNN)",
+          "short": "HRV (SDNN)"
+        },
+        "fr": {
+          "name": "Variabilité de la fréquence cardiaque (SDNN)",
+          "short": "VFC (SDNN)"
+        },
+        "es": {
+          "name": "Variabilidad de la frecuencia cardiaca (SDNN)",
+          "short": "VFC (SDNN)"
+        },
+        "it": {
+          "name": "Variabilità della frequenza cardiaca (SDNN)",
+          "short": "HRV (SDNN)"
+        },
+        "pl": {
+          "name": "Zmienność rytmu serca (SDNN)",
+          "short": "HRV (SDNN)"
+        },
+        "ko": {
+          "name": "심박변이도 (SDNN)"
+        },
+        "nl": {
+          "name": "Hartslagvariabiliteit (SDNN)",
+          "short": "HRV (SDNN)"
+        },
+        "pt-BR": {
+          "name": "Variabilidade da frequência cardíaca (SDNN)",
+          "short": "VFC (SDNN)"
+        },
+        "ru": {
+          "name": "Вариабельность сердечного ритма (SDNN)",
+          "short": "HRV (SDNN)"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeHeartRateVariability",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeHeartRateVariability",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.activeEnergyBurned",
+      "description": "The Active energy metric (ACTIVE_ENERGY_BURNED).",
+      "terms": {
+        "de": {
+          "name": "Aktive Energie"
+        },
+        "en": {
+          "name": "Active energy"
+        },
+        "fr": {
+          "name": "Énergie active"
+        },
+        "es": {
+          "name": "Energía activa"
+        },
+        "it": {
+          "name": "Energia attiva"
+        },
+        "pl": {
+          "name": "Aktywna energia"
+        },
+        "ko": {
+          "name": "활동 에너지"
+        },
+        "nl": {
+          "name": "Actieve energie"
+        },
+        "pt-BR": {
+          "name": "Energia ativa"
+        },
+        "ru": {
+          "name": "Активная энергия"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeActiveEnergyBurned",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.basalEnergyBurned",
+      "description": "The Resting energy metric (BASAL_ENERGY_BURNED).",
+      "terms": {
+        "de": {
+          "name": "Ruheenergie"
+        },
+        "en": {
+          "name": "Resting energy"
+        },
+        "fr": {
+          "name": "Énergie au repos"
+        },
+        "es": {
+          "name": "Energía en reposo"
+        },
+        "it": {
+          "name": "Energia a riposo"
+        },
+        "pl": {
+          "name": "Energia spoczynkowa"
+        },
+        "ko": {
+          "name": "휴식 에너지"
+        },
+        "nl": {
+          "name": "Rustenergie"
+        },
+        "pt-BR": {
+          "name": "Energia em repouso"
+        },
+        "ru": {
+          "name": "Энергия в покое"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeBasalEnergyBurned",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.rowingDistance",
+      "description": "The Rowing distance metric (ROWING_DISTANCE).",
+      "terms": {
+        "de": {
+          "name": "Ruderstrecke"
+        },
+        "en": {
+          "name": "Rowing distance"
+        },
+        "fr": {
+          "name": "Distance d'aviron"
+        },
+        "es": {
+          "name": "Distancia de remo"
+        },
+        "it": {
+          "name": "Distanza di canottaggio"
+        },
+        "pl": {
+          "name": "Dystans wioślarski"
+        },
+        "ko": {
+          "name": "조정 거리"
+        },
+        "nl": {
+          "name": "Roeiafstand"
+        },
+        "pt-BR": {
+          "name": "Distância de remo"
+        },
+        "ru": {
+          "name": "Расстояние гребли"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeRowingDistance",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.rowingSpeed",
+      "description": "The Rowing speed metric (ROWING_SPEED).",
+      "terms": {
+        "de": {
+          "name": "Rudergeschwindigkeit"
+        },
+        "en": {
+          "name": "Rowing speed"
+        },
+        "fr": {
+          "name": "Vitesse d'aviron"
+        },
+        "es": {
+          "name": "Velocidad de remo"
+        },
+        "it": {
+          "name": "Velocità di canottaggio"
+        },
+        "pl": {
+          "name": "Prędkość wiosłowania"
+        },
+        "ko": {
+          "name": "조정 속도"
+        },
+        "nl": {
+          "name": "Roeisnelheid"
+        },
+        "pt-BR": {
+          "name": "Velocidade de remo"
+        },
+        "ru": {
+          "name": "Скорость гребли"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeRowingSpeed",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.runningSpeed",
+      "description": "The Running speed metric (RUNNING_SPEED).",
+      "terms": {
+        "de": {
+          "name": "Laufgeschwindigkeit"
+        },
+        "en": {
+          "name": "Running speed"
+        },
+        "fr": {
+          "name": "Vitesse de course"
+        },
+        "es": {
+          "name": "Velocidad de carrera"
+        },
+        "it": {
+          "name": "Velocità di corsa"
+        },
+        "pl": {
+          "name": "Prędkość biegu"
+        },
+        "ko": {
+          "name": "달리기 속도"
+        },
+        "nl": {
+          "name": "Hardloopsnelheid"
+        },
+        "pt-BR": {
+          "name": "Velocidade de corrida"
+        },
+        "ru": {
+          "name": "Скорость бега"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeRunningSpeed",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.runningPower",
+      "description": "The Running power metric (RUNNING_POWER).",
+      "terms": {
+        "de": {
+          "name": "Laufleistung"
+        },
+        "en": {
+          "name": "Running power"
+        },
+        "fr": {
+          "name": "Puissance de course"
+        },
+        "es": {
+          "name": "Potencia de carrera"
+        },
+        "it": {
+          "name": "Potenza di corsa"
+        },
+        "pl": {
+          "name": "Moc biegu"
+        },
+        "ko": {
+          "name": "달리기 파워"
+        },
+        "nl": {
+          "name": "Hardloopvermogen"
+        },
+        "pt-BR": {
+          "name": "Potência de corrida"
+        },
+        "ru": {
+          "name": "Мощность бега"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeRunningPower",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.vo2Max",
+      "description": "The VO₂ max metric (VO2_MAX).",
+      "decision": "One name for the metric and the page that charts it: VO₂ max is what the value is (mL/(kg·min)) and what the devices print. Cardio fitness is retired on the page; it stays only in Apple's low cardio fitness notification and in prose about fitness.",
+      "terms": {
+        "de": {
+          "name": "VO₂max"
+        },
+        "en": {
+          "name": "VO₂ max"
+        },
+        "fr": {
+          "name": "VO₂ max"
+        },
+        "es": {
+          "name": "VO₂ máx"
+        },
+        "it": {
+          "name": "VO₂ max"
+        },
+        "pl": {
+          "name": "VO₂ max"
+        },
+        "ko": {
+          "name": "VO₂ max"
+        },
+        "nl": {
+          "name": "VO₂max"
+        },
+        "pt-BR": {
+          "name": "VO₂ máx"
+        },
+        "ru": {
+          "name": "VO₂ max"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeVo2Max",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.cardioFitness.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.navCardioFitness",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.vo2Max.cardioLinkTitle",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "dashboard.vo2Max",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [
+          {
+            "text": "fitness",
+            "keys": "insights.cardioFitness.title"
+          },
+          {
+            "text": "fitness",
+            "keys": "insights.cardioFitness.emptyState.title"
+          },
+          {
+            "text": "fitness",
+            "keys": "insights.navCardioFitness"
+          },
+          {
+            "text": "fitness",
+            "keys": "insights.vo2Max.cardioLinkTitle"
+          },
+          {
+            "text": "fitness",
+            "keys": "insights.vo2Max.cardioLinkCta"
+          },
+          {
+            "text": "fitness",
+            "keys": "insights.coach.seed.cardioFitness"
+          }
+        ],
+        "en": [
+          {
+            "text": "cardio fitness",
+            "keys": "insights.cardioFitness.title"
+          },
+          {
+            "text": "cardio fitness",
+            "keys": "insights.cardioFitness.emptyState.title"
+          },
+          {
+            "text": "cardio fitness",
+            "keys": "insights.navCardioFitness"
+          },
+          {
+            "text": "cardio fitness",
+            "keys": "insights.vo2Max.cardioLinkTitle"
+          },
+          {
+            "text": "cardio fitness",
+            "keys": "insights.vo2Max.cardioLinkCta"
+          },
+          {
+            "text": "cardio fitness",
+            "keys": "insights.coach.seed.cardioFitness"
+          },
+          {
+            "text": "cardio-fitness",
+            "keys": "insights.cardioFitness.title"
+          },
+          {
+            "text": "cardio-fitness",
+            "keys": "insights.cardioFitness.emptyState.title"
+          },
+          {
+            "text": "cardio-fitness",
+            "keys": "insights.navCardioFitness"
+          },
+          {
+            "text": "cardio-fitness",
+            "keys": "insights.vo2Max.cardioLinkTitle"
+          },
+          {
+            "text": "cardio-fitness",
+            "keys": "insights.vo2Max.cardioLinkCta"
+          },
+          {
+            "text": "cardio-fitness",
+            "keys": "insights.coach.seed.cardioFitness"
+          }
+        ],
+        "fr": [
+          {
+            "text": "condition physique",
+            "keys": "insights.cardioFitness.title"
+          },
+          {
+            "text": "condition physique",
+            "keys": "insights.cardioFitness.emptyState.title"
+          },
+          {
+            "text": "condition physique",
+            "keys": "insights.navCardioFitness"
+          },
+          {
+            "text": "condition physique",
+            "keys": "insights.vo2Max.cardioLinkTitle"
+          },
+          {
+            "text": "condition physique",
+            "keys": "insights.vo2Max.cardioLinkCta"
+          },
+          {
+            "text": "condition physique",
+            "keys": "insights.coach.seed.cardioFitness"
+          },
+          {
+            "text": "condition cardio",
+            "keys": "insights.cardioFitness.title"
+          },
+          {
+            "text": "condition cardio",
+            "keys": "insights.cardioFitness.emptyState.title"
+          },
+          {
+            "text": "condition cardio",
+            "keys": "insights.navCardioFitness"
+          },
+          {
+            "text": "condition cardio",
+            "keys": "insights.vo2Max.cardioLinkTitle"
+          },
+          {
+            "text": "condition cardio",
+            "keys": "insights.vo2Max.cardioLinkCta"
+          },
+          {
+            "text": "condition cardio",
+            "keys": "insights.coach.seed.cardioFitness"
+          }
+        ],
+        "es": [
+          {
+            "text": "condición física",
+            "keys": "insights.cardioFitness.title"
+          },
+          {
+            "text": "condición física",
+            "keys": "insights.cardioFitness.emptyState.title"
+          },
+          {
+            "text": "condición física",
+            "keys": "insights.navCardioFitness"
+          },
+          {
+            "text": "condición física",
+            "keys": "insights.vo2Max.cardioLinkTitle"
+          },
+          {
+            "text": "condición física",
+            "keys": "insights.vo2Max.cardioLinkCta"
+          },
+          {
+            "text": "condición física",
+            "keys": "insights.coach.seed.cardioFitness"
+          },
+          {
+            "text": "forma cardiovascular",
+            "keys": "insights.cardioFitness.title"
+          },
+          {
+            "text": "forma cardiovascular",
+            "keys": "insights.cardioFitness.emptyState.title"
+          },
+          {
+            "text": "forma cardiovascular",
+            "keys": "insights.navCardioFitness"
+          },
+          {
+            "text": "forma cardiovascular",
+            "keys": "insights.vo2Max.cardioLinkTitle"
+          },
+          {
+            "text": "forma cardiovascular",
+            "keys": "insights.vo2Max.cardioLinkCta"
+          },
+          {
+            "text": "forma cardiovascular",
+            "keys": "insights.coach.seed.cardioFitness"
+          },
+          {
+            "text": "capacidad cardiorrespiratoria",
+            "keys": "insights.cardioFitness.title"
+          },
+          {
+            "text": "capacidad cardiorrespiratoria",
+            "keys": "insights.cardioFitness.emptyState.title"
+          },
+          {
+            "text": "capacidad cardiorrespiratoria",
+            "keys": "insights.navCardioFitness"
+          },
+          {
+            "text": "capacidad cardiorrespiratoria",
+            "keys": "insights.vo2Max.cardioLinkTitle"
+          },
+          {
+            "text": "capacidad cardiorrespiratoria",
+            "keys": "insights.vo2Max.cardioLinkCta"
+          },
+          {
+            "text": "capacidad cardiorrespiratoria",
+            "keys": "insights.coach.seed.cardioFitness"
+          }
+        ],
+        "it": [
+          {
+            "text": "forma fisica",
+            "keys": "insights.cardioFitness.title"
+          },
+          {
+            "text": "forma fisica",
+            "keys": "insights.cardioFitness.emptyState.title"
+          },
+          {
+            "text": "forma fisica",
+            "keys": "insights.navCardioFitness"
+          },
+          {
+            "text": "forma fisica",
+            "keys": "insights.vo2Max.cardioLinkTitle"
+          },
+          {
+            "text": "forma fisica",
+            "keys": "insights.vo2Max.cardioLinkCta"
+          },
+          {
+            "text": "forma fisica",
+            "keys": "insights.coach.seed.cardioFitness"
+          },
+          {
+            "text": "forma cardio",
+            "keys": "insights.cardioFitness.title"
+          },
+          {
+            "text": "forma cardio",
+            "keys": "insights.cardioFitness.emptyState.title"
+          },
+          {
+            "text": "forma cardio",
+            "keys": "insights.navCardioFitness"
+          },
+          {
+            "text": "forma cardio",
+            "keys": "insights.vo2Max.cardioLinkTitle"
+          },
+          {
+            "text": "forma cardio",
+            "keys": "insights.vo2Max.cardioLinkCta"
+          },
+          {
+            "text": "forma cardio",
+            "keys": "insights.coach.seed.cardioFitness"
+          }
+        ],
+        "pl": [
+          {
+            "text": "wydolnoś",
+            "keys": "insights.cardioFitness.title"
+          },
+          {
+            "text": "wydolnoś",
+            "keys": "insights.cardioFitness.emptyState.title"
+          },
+          {
+            "text": "wydolnoś",
+            "keys": "insights.navCardioFitness"
+          },
+          {
+            "text": "wydolnoś",
+            "keys": "insights.vo2Max.cardioLinkTitle"
+          },
+          {
+            "text": "wydolnoś",
+            "keys": "insights.vo2Max.cardioLinkCta"
+          },
+          {
+            "text": "wydolnoś",
+            "keys": "insights.coach.seed.cardioFitness"
+          }
+        ],
+        "ko": [
+          {
+            "text": "심폐 체력",
+            "keys": "insights.cardioFitness.title"
+          },
+          {
+            "text": "심폐 체력",
+            "keys": "insights.cardioFitness.emptyState.title"
+          },
+          {
+            "text": "심폐 체력",
+            "keys": "insights.navCardioFitness"
+          },
+          {
+            "text": "심폐 체력",
+            "keys": "insights.vo2Max.cardioLinkTitle"
+          },
+          {
+            "text": "심폐 체력",
+            "keys": "insights.vo2Max.cardioLinkCta"
+          },
+          {
+            "text": "심폐 체력",
+            "keys": "insights.coach.seed.cardioFitness"
+          }
+        ],
+        "nl": [
+          {
+            "text": "cardiofitheid",
+            "keys": "insights.cardioFitness.title"
+          },
+          {
+            "text": "cardiofitheid",
+            "keys": "insights.cardioFitness.emptyState.title"
+          },
+          {
+            "text": "cardiofitheid",
+            "keys": "insights.navCardioFitness"
+          },
+          {
+            "text": "cardiofitheid",
+            "keys": "insights.vo2Max.cardioLinkTitle"
+          },
+          {
+            "text": "cardiofitheid",
+            "keys": "insights.vo2Max.cardioLinkCta"
+          },
+          {
+            "text": "cardiofitheid",
+            "keys": "insights.coach.seed.cardioFitness"
+          }
+        ],
+        "pt-BR": [
+          {
+            "text": "aptidão cardiorrespiratória",
+            "keys": "insights.cardioFitness.title"
+          },
+          {
+            "text": "aptidão cardiorrespiratória",
+            "keys": "insights.cardioFitness.emptyState.title"
+          },
+          {
+            "text": "aptidão cardiorrespiratória",
+            "keys": "insights.navCardioFitness"
+          },
+          {
+            "text": "aptidão cardiorrespiratória",
+            "keys": "insights.vo2Max.cardioLinkTitle"
+          },
+          {
+            "text": "aptidão cardiorrespiratória",
+            "keys": "insights.vo2Max.cardioLinkCta"
+          },
+          {
+            "text": "aptidão cardiorrespiratória",
+            "keys": "insights.coach.seed.cardioFitness"
+          }
+        ],
+        "ru": [
+          {
+            "text": "кардио-фитнес",
+            "keys": "insights.cardioFitness.title"
+          },
+          {
+            "text": "кардио-фитнес",
+            "keys": "insights.cardioFitness.emptyState.title"
+          },
+          {
+            "text": "кардио-фитнес",
+            "keys": "insights.navCardioFitness"
+          },
+          {
+            "text": "кардио-фитнес",
+            "keys": "insights.vo2Max.cardioLinkTitle"
+          },
+          {
+            "text": "кардио-фитнес",
+            "keys": "insights.vo2Max.cardioLinkCta"
+          },
+          {
+            "text": "кардио-фитнес",
+            "keys": "insights.coach.seed.cardioFitness"
+          },
+          {
+            "text": "кардио-форм",
+            "keys": "insights.cardioFitness.title"
+          },
+          {
+            "text": "кардио-форм",
+            "keys": "insights.cardioFitness.emptyState.title"
+          },
+          {
+            "text": "кардио-форм",
+            "keys": "insights.navCardioFitness"
+          },
+          {
+            "text": "кардио-форм",
+            "keys": "insights.vo2Max.cardioLinkTitle"
+          },
+          {
+            "text": "кардио-форм",
+            "keys": "insights.vo2Max.cardioLinkCta"
+          },
+          {
+            "text": "кардио-форм",
+            "keys": "insights.coach.seed.cardioFitness"
+          }
+        ]
+      }
+    },
+    {
+      "id": "metric.bodyTemperature",
+      "description": "The Body temperature metric (BODY_TEMPERATURE).",
+      "terms": {
+        "de": {
+          "name": "Körpertemperatur"
+        },
+        "en": {
+          "name": "Body temperature"
+        },
+        "fr": {
+          "name": "Température corporelle"
+        },
+        "es": {
+          "name": "Temperatura corporal"
+        },
+        "it": {
+          "name": "Temperatura corporea"
+        },
+        "pl": {
+          "name": "Temperatura ciała"
+        },
+        "ko": {
+          "name": "체온"
+        },
+        "nl": {
+          "name": "Lichaamstemperatuur"
+        },
+        "pt-BR": {
+          "name": "Temperatura corporal"
+        },
+        "ru": {
+          "name": "Температура тела"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeBodyTemperature",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.fatFreeMass",
+      "description": "The Fat-free mass metric (FAT_FREE_MASS).",
+      "decision": "Обезжиренная is skimmed, as of milk; the body-composition term is безжировая масса, now on every fat-free mass surface.",
+      "terms": {
+        "de": {
+          "name": "Fettfreie Masse"
+        },
+        "en": {
+          "name": "Fat-free mass"
+        },
+        "fr": {
+          "name": "Masse non grasse"
+        },
+        "es": {
+          "name": "Masa libre de grasa"
+        },
+        "it": {
+          "name": "Massa libera da grasso"
+        },
+        "pl": {
+          "name": "Masa beztłuszczowa"
+        },
+        "ko": {
+          "name": "무지방량"
+        },
+        "nl": {
+          "name": "Vetvrije massa"
+        },
+        "pt-BR": {
+          "name": "Massa livre de gordura"
+        },
+        "ru": {
+          "name": "Безжировая масса"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeFatFreeMass",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": ["обезжиренн"]
+      }
+    },
+    {
+      "id": "metric.fatMass",
+      "description": "The Fat mass metric (FAT_MASS).",
+      "terms": {
+        "de": {
+          "name": "Fettmasse"
+        },
+        "en": {
+          "name": "Fat mass"
+        },
+        "fr": {
+          "name": "Masse grasse"
+        },
+        "es": {
+          "name": "Masa grasa"
+        },
+        "it": {
+          "name": "Massa grassa"
+        },
+        "pl": {
+          "name": "Masa tłuszczu"
+        },
+        "ko": {
+          "name": "체지방량"
+        },
+        "nl": {
+          "name": "Vetmassa"
+        },
+        "pt-BR": {
+          "name": "Massa de gordura"
+        },
+        "ru": {
+          "name": "Жировая масса"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeFatMass",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.muscleMass",
+      "description": "The Muscle mass metric (MUSCLE_MASS).",
+      "terms": {
+        "de": {
+          "name": "Muskelmasse"
+        },
+        "en": {
+          "name": "Muscle mass"
+        },
+        "fr": {
+          "name": "Masse musculaire"
+        },
+        "es": {
+          "name": "Masa muscular"
+        },
+        "it": {
+          "name": "Massa muscolare"
+        },
+        "pl": {
+          "name": "Masa mięśniowa"
+        },
+        "ko": {
+          "name": "근육량"
+        },
+        "nl": {
+          "name": "Spiermassa"
+        },
+        "pt-BR": {
+          "name": "Massa muscular"
+        },
+        "ru": {
+          "name": "Мышечная масса"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeMuscleMass",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.pulseWaveVelocity",
+      "description": "The Pulse-wave velocity metric (PULSE_WAVE_VELOCITY).",
+      "terms": {
+        "de": {
+          "name": "Pulswellengeschwindigkeit"
+        },
+        "en": {
+          "name": "Pulse-wave velocity"
+        },
+        "fr": {
+          "name": "Vitesse de l’onde de pouls"
+        },
+        "es": {
+          "name": "Velocidad de la onda de pulso"
+        },
+        "it": {
+          "name": "Velocità dell’onda di polso"
+        },
+        "pl": {
+          "name": "Prędkość fali tętna"
+        },
+        "ko": {
+          "name": "맥파 속도"
+        },
+        "nl": {
+          "name": "Polsgolfsnelheid"
+        },
+        "pt-BR": {
+          "name": "Velocidade de onda de pulso"
+        },
+        "ru": {
+          "name": "Скорость пульсовой волны"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typePulseWaveVelocity",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.vascularAge",
+      "description": "The Vascular age metric (VASCULAR_AGE).",
+      "terms": {
+        "de": {
+          "name": "Gefäßalter"
+        },
+        "en": {
+          "name": "Vascular age"
+        },
+        "fr": {
+          "name": "Âge vasculaire"
+        },
+        "es": {
+          "name": "Edad vascular"
+        },
+        "it": {
+          "name": "Età vascolare"
+        },
+        "pl": {
+          "name": "Wiek naczyniowy"
+        },
+        "ko": {
+          "name": "혈관 나이"
+        },
+        "nl": {
+          "name": "Vaatleeftijd"
+        },
+        "pt-BR": {
+          "name": "Idade vascular"
+        },
+        "ru": {
+          "name": "Сосудистый возраст"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeVascularAge",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.walkingSteadiness",
+      "description": "The Walking steadiness metric (WALKING_STEADINESS).",
+      "decision": "Sentence case, as every other metric name.",
+      "terms": {
+        "de": {
+          "name": "Gehstabilität"
+        },
+        "en": {
+          "name": "Walking steadiness"
+        },
+        "fr": {
+          "name": "Stabilité à la marche"
+        },
+        "es": {
+          "name": "Estabilidad al caminar"
+        },
+        "it": {
+          "name": "Stabilità nel cammino"
+        },
+        "pl": {
+          "name": "Stabilność chodu"
+        },
+        "ko": {
+          "name": "보행 안정성"
+        },
+        "nl": {
+          "name": "Loopstabiliteit"
+        },
+        "pt-BR": {
+          "name": "Estabilidade ao caminhar"
+        },
+        "ru": {
+          "name": "Устойчивость ходьбы"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeWalkingSteadiness",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.bodyMassIndex",
+      "description": "The Body mass index metric (BODY_MASS_INDEX).",
+      "decision": "English writes body mass index unhyphenated (WHO). BMI is the short form every surface already shows on its own, so one-line slots carry it and the full name stays in running text and the report.",
+      "terms": {
+        "de": {
+          "name": "Body-Mass-Index",
+          "short": "BMI"
+        },
+        "en": {
+          "name": "Body mass index",
+          "short": "BMI"
+        },
+        "fr": {
+          "name": "Indice de masse corporelle",
+          "short": "IMC"
+        },
+        "es": {
+          "name": "Índice de masa corporal",
+          "short": "IMC"
+        },
+        "it": {
+          "name": "Indice di massa corporea",
+          "short": "IMC"
+        },
+        "pl": {
+          "name": "Wskaźnik masy ciała",
+          "short": "BMI"
+        },
+        "ko": {
+          "name": "체질량지수",
+          "short": "BMI"
+        },
+        "nl": {
+          "name": "Body-mass-index",
+          "short": "BMI"
+        },
+        "pt-BR": {
+          "name": "Índice de massa corporal",
+          "short": "IMC"
+        },
+        "ru": {
+          "name": "Индекс массы тела",
+          "short": "ИМТ"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeBodyMassIndex",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeBodyMassIndex",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.walkingAsymmetry",
+      "description": "The Walking asymmetry metric (WALKING_ASYMMETRY).",
+      "terms": {
+        "de": {
+          "name": "Gang-Asymmetrie"
+        },
+        "en": {
+          "name": "Walking asymmetry"
+        },
+        "fr": {
+          "name": "Asymétrie de la marche"
+        },
+        "es": {
+          "name": "Asimetría al caminar"
+        },
+        "it": {
+          "name": "Asimmetria del cammino"
+        },
+        "pl": {
+          "name": "Asymetria chodu"
+        },
+        "ko": {
+          "name": "보행 비대칭"
+        },
+        "nl": {
+          "name": "Loopasymmetrie"
+        },
+        "pt-BR": {
+          "name": "Assimetria ao caminhar"
+        },
+        "ru": {
+          "name": "Асимметрия ходьбы"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeWalkingAsymmetry",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.walkingStepLength",
+      "description": "The Walking step length metric (WALKING_STEP_LENGTH).",
+      "terms": {
+        "de": {
+          "name": "Schrittlänge"
+        },
+        "en": {
+          "name": "Walking step length"
+        },
+        "fr": {
+          "name": "Longueur du pas"
+        },
+        "es": {
+          "name": "Longitud de zancada"
+        },
+        "it": {
+          "name": "Lunghezza del passo"
+        },
+        "pl": {
+          "name": "Długość kroku"
+        },
+        "ko": {
+          "name": "보폭"
+        },
+        "nl": {
+          "name": "Staplengte"
+        },
+        "pt-BR": {
+          "name": "Comprimento do passo ao caminhar"
+        },
+        "ru": {
+          "name": "Длина шага при ходьбе"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeWalkingStepLength",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.fallCount",
+      "description": "The Falls metric (FALL_COUNT).",
+      "terms": {
+        "de": {
+          "name": "Stürze"
+        },
+        "en": {
+          "name": "Falls"
+        },
+        "fr": {
+          "name": "Chutes"
+        },
+        "es": {
+          "name": "Caídas"
+        },
+        "it": {
+          "name": "Cadute"
+        },
+        "pl": {
+          "name": "Upadki"
+        },
+        "ko": {
+          "name": "낙상"
+        },
+        "nl": {
+          "name": "Valpartijen"
+        },
+        "pt-BR": {
+          "name": "Quedas"
+        },
+        "ru": {
+          "name": "Падения"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeFallCount",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.stairDescentSpeed",
+      "description": "The Stair descent speed metric (STAIR_DESCENT_SPEED).",
+      "terms": {
+        "de": {
+          "name": "Treppab-Tempo"
+        },
+        "en": {
+          "name": "Stair descent speed"
+        },
+        "fr": {
+          "name": "Vitesse en descente d'escaliers"
+        },
+        "es": {
+          "name": "Velocidad bajando escaleras"
+        },
+        "it": {
+          "name": "Velocità in discesa scale"
+        },
+        "pl": {
+          "name": "Prędkość schodzenia po schodach"
+        },
+        "ko": {
+          "name": "계단 내려가기 속도"
+        },
+        "nl": {
+          "name": "Snelheid trap af"
+        },
+        "pt-BR": {
+          "name": "Velocidade de descida de escadas"
+        },
+        "ru": {
+          "name": "Скорость спуска по лестнице"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeStairDescentSpeed",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.breathingDisturbances",
+      "description": "The Sleep breathing disturbances metric (BREATHING_DISTURBANCES).",
+      "decision": "Atemaussetzer reads as apnoea; the wearable counts breathing disturbances and says it is no apnoea diagnosis. German now matches the single event, Atemstörung.",
+      "terms": {
+        "de": {
+          "name": "Atemstörungen im Schlaf"
+        },
+        "en": {
+          "name": "Sleep breathing disturbances"
+        },
+        "fr": {
+          "name": "Troubles respiratoires du sommeil"
+        },
+        "es": {
+          "name": "Alteraciones respiratorias del sueño"
+        },
+        "it": {
+          "name": "Disturbi respiratori nel sonno"
+        },
+        "pl": {
+          "name": "Zaburzenia oddychania we śnie"
+        },
+        "ko": {
+          "name": "수면 중 호흡 장애"
+        },
+        "nl": {
+          "name": "Ademhalingsstoornissen tijdens slaap"
+        },
+        "pt-BR": {
+          "name": "Distúrbios respiratórios do sono"
+        },
+        "ru": {
+          "name": "Нарушения дыхания во сне"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeBreathingDisturbances",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": ["Atemaussetzer"],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.menopausalState",
+      "description": "The Menopausal state metric (MENOPAUSAL_STATE).",
+      "terms": {
+        "de": {
+          "name": "Menopausenstatus"
+        },
+        "en": {
+          "name": "Menopausal state"
+        },
+        "fr": {
+          "name": "Statut ménopausique"
+        },
+        "es": {
+          "name": "Estado menopáusico"
+        },
+        "it": {
+          "name": "Stato menopausale"
+        },
+        "pl": {
+          "name": "Stan menopauzalny"
+        },
+        "ko": {
+          "name": "폐경 상태"
+        },
+        "nl": {
+          "name": "Menopauzestatus"
+        },
+        "pt-BR": {
+          "name": "Estado menopausal"
+        },
+        "ru": {
+          "name": "Менопаузальный статус"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeMenopausalState",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.bleedingAfterMenopause",
+      "description": "The Bleeding after menopause metric (BLEEDING_AFTER_MENOPAUSE).",
+      "terms": {
+        "de": {
+          "name": "Blutung nach der Menopause"
+        },
+        "en": {
+          "name": "Bleeding after menopause"
+        },
+        "fr": {
+          "name": "Saignement après la ménopause"
+        },
+        "es": {
+          "name": "Sangrado tras la menopausia"
+        },
+        "it": {
+          "name": "Sanguinamento dopo la menopausa"
+        },
+        "pl": {
+          "name": "Krwawienie po menopauzie"
+        },
+        "ko": {
+          "name": "폐경 후 출혈"
+        },
+        "nl": {
+          "name": "Bloeding na de menopauze"
+        },
+        "pt-BR": {
+          "name": "Sangramento após a menopausa"
+        },
+        "ru": {
+          "name": "Кровотечение после менопаузы"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeBleedingAfterMenopause",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.inhalerUsage",
+      "description": "The Inhaler usage metric (INHALER_USAGE).",
+      "terms": {
+        "de": {
+          "name": "Inhalatornutzung"
+        },
+        "en": {
+          "name": "Inhaler usage"
+        },
+        "fr": {
+          "name": "Utilisation de l'inhalateur"
+        },
+        "es": {
+          "name": "Uso del inhalador"
+        },
+        "it": {
+          "name": "Uso dell'inalatore"
+        },
+        "pl": {
+          "name": "Użycie inhalatora"
+        },
+        "ko": {
+          "name": "흡입기 사용"
+        },
+        "nl": {
+          "name": "Inhalatorgebruik"
+        },
+        "pt-BR": {
+          "name": "Uso do inalador"
+        },
+        "ru": {
+          "name": "Использование ингалятора"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeInhalerUsage",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.fev1",
+      "description": "The FEV1 metric (FEV1).",
+      "terms": {
+        "de": {
+          "name": "FEV1"
+        },
+        "en": {
+          "name": "FEV1"
+        },
+        "fr": {
+          "name": "VEMS"
+        },
+        "es": {
+          "name": "FEV1"
+        },
+        "it": {
+          "name": "FEV1"
+        },
+        "pl": {
+          "name": "FEV1"
+        },
+        "ko": {
+          "name": "FEV1"
+        },
+        "nl": {
+          "name": "FEV1"
+        },
+        "pt-BR": {
+          "name": "VEF1"
+        },
+        "ru": {
+          "name": "ОФВ1"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeFev1",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.fvc",
+      "description": "The Forced vital capacity metric (FVC).",
+      "terms": {
+        "de": {
+          "name": "Forcierte Vitalkapazität"
+        },
+        "en": {
+          "name": "Forced vital capacity"
+        },
+        "fr": {
+          "name": "Capacité vitale forcée"
+        },
+        "es": {
+          "name": "Capacidad vital forzada"
+        },
+        "it": {
+          "name": "Capacità vitale forzata"
+        },
+        "pl": {
+          "name": "Natężona pojemność życiowa"
+        },
+        "ko": {
+          "name": "노력성 폐활량"
+        },
+        "nl": {
+          "name": "Geforceerde vitale capaciteit"
+        },
+        "pt-BR": {
+          "name": "Capacidade vital forçada"
+        },
+        "ru": {
+          "name": "Форсированная жизненная ёмкость"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeFvc",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.stressScore",
+      "description": "The Stress score metric (STRESS_SCORE).",
+      "terms": {
+        "de": {
+          "name": "Stressscore"
+        },
+        "en": {
+          "name": "Stress score"
+        },
+        "fr": {
+          "name": "Score de stress"
+        },
+        "es": {
+          "name": "Puntuación de estrés"
+        },
+        "it": {
+          "name": "Punteggio di stress"
+        },
+        "pl": {
+          "name": "Wynik stresu"
+        },
+        "ko": {
+          "name": "스트레스 점수"
+        },
+        "nl": {
+          "name": "Stressscore"
+        },
+        "pt-BR": {
+          "name": "Pontuação de estresse"
+        },
+        "ru": {
+          "name": "Балл стресса"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeStressScore",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "clinicianView.wellness.stress",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [
+          "Stress-Score",
+          {
+            "text": "Stresswert",
+            "keys": "clinicianView"
+          }
+        ],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      },
+      "decision": "One name on the measurement and the clinician view (de had Stress-Score and Stresswert); German writes the score as one word, as Schlafscore."
+    },
+    {
+      "id": "metric.strainScore",
+      "description": "The Strain score metric (STRAIN_SCORE).",
+      "terms": {
+        "de": {
+          "name": "Belastungsscore"
+        },
+        "en": {
+          "name": "Strain score"
+        },
+        "fr": {
+          "name": "Score d'effort"
+        },
+        "es": {
+          "name": "Puntuación de esfuerzo diario"
+        },
+        "it": {
+          "name": "Punteggio di sforzo"
+        },
+        "pl": {
+          "name": "Wynik obciążenia"
+        },
+        "ko": {
+          "name": "부하 점수"
+        },
+        "nl": {
+          "name": "Belastingsscore"
+        },
+        "pt-BR": {
+          "name": "Pontuação de esforço"
+        },
+        "ru": {
+          "name": "Балл напряжения"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeStrainScore",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "clinicianView.wellness.strain",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [
+          "Belastungs-Score",
+          {
+            "text": "Belastungswert",
+            "keys": "clinicianView"
+          }
+        ],
+        "en": [],
+        "fr": [
+          {
+            "text": "score de charge",
+            "keys": "clinicianView"
+          }
+        ],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      },
+      "decision": "One name on the measurement and the clinician view, which had drifted apart in de and fr. German writes the score as one word, as Schlafscore and Erholungsscore. Spanish says diario: Puntuación de esfuerzo alone is the short form of Apple workout effort, a different value."
+    },
+    {
+      "id": "metric.hrvRmssd",
+      "description": "The Heart rate variability (RMSSD) metric (HRV_RMSSD).",
+      "decision": "The RMSSD sibling of the SDNN metric, named alike so the two read as one family with different statistics.",
+      "terms": {
+        "de": {
+          "name": "Herzfrequenzvariabilität (RMSSD)",
+          "short": "HRV (RMSSD)"
+        },
+        "en": {
+          "name": "Heart rate variability (RMSSD)",
+          "short": "HRV (RMSSD)"
+        },
+        "fr": {
+          "name": "Variabilité de la fréquence cardiaque (RMSSD)",
+          "short": "VFC (RMSSD)"
+        },
+        "es": {
+          "name": "Variabilidad de la frecuencia cardiaca (RMSSD)",
+          "short": "VFC (RMSSD)"
+        },
+        "it": {
+          "name": "Variabilità della frequenza cardiaca (RMSSD)",
+          "short": "HRV (RMSSD)"
+        },
+        "pl": {
+          "name": "Zmienność rytmu serca (RMSSD)",
+          "short": "HRV (RMSSD)"
+        },
+        "ko": {
+          "name": "심박변이도 (RMSSD)"
+        },
+        "nl": {
+          "name": "Hartslagvariabiliteit (RMSSD)",
+          "short": "HRV (RMSSD)"
+        },
+        "pt-BR": {
+          "name": "Variabilidade da frequência cardíaca (RMSSD)",
+          "short": "VFC (RMSSD)"
+        },
+        "ru": {
+          "name": "Вариабельность сердечного ритма (RMSSD)",
+          "short": "HRV (RMSSD)"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeHrvRmssd",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeHrvRmssd",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.dayStrain",
+      "description": "The Day strain metric (DAY_STRAIN).",
+      "terms": {
+        "de": {
+          "name": "Tagesbelastung"
+        },
+        "en": {
+          "name": "Day strain"
+        },
+        "fr": {
+          "name": "Effort du jour"
+        },
+        "es": {
+          "name": "Esfuerzo del día"
+        },
+        "it": {
+          "name": "Sforzo giornaliero"
+        },
+        "pl": {
+          "name": "Obciążenie dzienne"
+        },
+        "ko": {
+          "name": "하루 부하"
+        },
+        "nl": {
+          "name": "Dagbelasting"
+        },
+        "pt-BR": {
+          "name": "Esforço do dia"
+        },
+        "ru": {
+          "name": "Напряжение дня"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeDayStrain",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.workoutStrain",
+      "description": "The Workout strain metric (WORKOUT_STRAIN).",
+      "terms": {
+        "de": {
+          "name": "Trainingsbelastung"
+        },
+        "en": {
+          "name": "Workout strain"
+        },
+        "fr": {
+          "name": "Effort de la séance"
+        },
+        "es": {
+          "name": "Esfuerzo del entrenamiento"
+        },
+        "it": {
+          "name": "Sforzo dell'allenamento"
+        },
+        "pl": {
+          "name": "Obciążenie treningowe"
+        },
+        "ko": {
+          "name": "운동 부하"
+        },
+        "nl": {
+          "name": "Trainingsbelasting"
+        },
+        "pt-BR": {
+          "name": "Esforço do treino"
+        },
+        "ru": {
+          "name": "Напряжение тренировки"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeWorkoutStrain",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.sleepPerformance",
+      "description": "The Sleep performance metric (SLEEP_PERFORMANCE).",
+      "terms": {
+        "de": {
+          "name": "Schlafleistung"
+        },
+        "en": {
+          "name": "Sleep performance"
+        },
+        "fr": {
+          "name": "Performance du sommeil"
+        },
+        "es": {
+          "name": "Rendimiento del sueño"
+        },
+        "it": {
+          "name": "Prestazione del sonno"
+        },
+        "pl": {
+          "name": "Wydajność snu"
+        },
+        "ko": {
+          "name": "수면 성과"
+        },
+        "nl": {
+          "name": "Slaapprestatie"
+        },
+        "pt-BR": {
+          "name": "Desempenho do sono"
+        },
+        "ru": {
+          "name": "Качество сна"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeSleepPerformance",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.sleepEfficiency",
+      "description": "The Sleep efficiency metric (SLEEP_EFFICIENCY).",
+      "terms": {
+        "de": {
+          "name": "Schlafeffizienz"
+        },
+        "en": {
+          "name": "Sleep efficiency"
+        },
+        "fr": {
+          "name": "Efficacité du sommeil"
+        },
+        "es": {
+          "name": "Eficiencia del sueño"
+        },
+        "it": {
+          "name": "Efficienza del sonno"
+        },
+        "pl": {
+          "name": "Efektywność snu"
+        },
+        "ko": {
+          "name": "수면 효율"
+        },
+        "nl": {
+          "name": "Slaapefficiëntie"
+        },
+        "pt-BR": {
+          "name": "Eficiência do sono"
+        },
+        "ru": {
+          "name": "Эффективность сна"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeSleepEfficiency",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.sleepConsistency",
+      "description": "The Sleep consistency metric (SLEEP_CONSISTENCY).",
+      "terms": {
+        "de": {
+          "name": "Schlafkonsistenz"
+        },
+        "en": {
+          "name": "Sleep consistency"
+        },
+        "fr": {
+          "name": "Régularité du sommeil"
+        },
+        "es": {
+          "name": "Consistencia del sueño"
+        },
+        "it": {
+          "name": "Costanza del sonno"
+        },
+        "pl": {
+          "name": "Regularność snu"
+        },
+        "ko": {
+          "name": "수면 규칙성"
+        },
+        "nl": {
+          "name": "Slaapregelmaat"
+        },
+        "pt-BR": {
+          "name": "Consistência do sono"
+        },
+        "ru": {
+          "name": "Постоянство сна"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeSleepConsistency",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.energyExpenditureKj",
+      "description": "The Energy expenditure metric (ENERGY_EXPENDITURE_KJ).",
+      "terms": {
+        "de": {
+          "name": "Energieverbrauch"
+        },
+        "en": {
+          "name": "Energy expenditure"
+        },
+        "fr": {
+          "name": "Dépense énergétique"
+        },
+        "es": {
+          "name": "Gasto energético"
+        },
+        "it": {
+          "name": "Dispendio energetico"
+        },
+        "pl": {
+          "name": "Wydatek energetyczny"
+        },
+        "ko": {
+          "name": "에너지 소비량"
+        },
+        "nl": {
+          "name": "Energieverbruik"
+        },
+        "pt-BR": {
+          "name": "Gasto energético"
+        },
+        "ru": {
+          "name": "Расход энергии"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeEnergyExpenditureKj",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.sleepDisturbanceCount",
+      "description": "The Sleep disturbances metric (SLEEP_DISTURBANCE_COUNT).",
+      "decision": "A count of nightly disturbances, not sleep disorders: Schlafstörungen, disturbi del sonno, distúrbios do sono and нарушения сна each name a diagnosis.",
+      "terms": {
+        "de": {
+          "name": "Schlafunterbrechungen"
+        },
+        "en": {
+          "name": "Sleep disturbances"
+        },
+        "fr": {
+          "name": "Perturbations du sommeil"
+        },
+        "es": {
+          "name": "Interrupciones del sueño"
+        },
+        "it": {
+          "name": "Interruzioni del sonno"
+        },
+        "pl": {
+          "name": "Zakłócenia snu"
+        },
+        "ko": {
+          "name": "수면 방해"
+        },
+        "nl": {
+          "name": "Slaapverstoringen"
+        },
+        "pt-BR": {
+          "name": "Interrupções do sono"
+        },
+        "ru": {
+          "name": "Прерывания сна"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeSleepDisturbanceCount",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [
+          {
+            "text": "Schlafstörung",
+            "keys": "measurements.typeSleepDisturbance"
+          }
+        ],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [
+          {
+            "text": "disturbi del sonno",
+            "keys": "measurements.typeSleepDisturbance"
+          }
+        ],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [
+          {
+            "text": "distúrbios do sono",
+            "keys": "measurements.typeSleepDisturbance"
+          }
+        ],
+        "ru": [
+          {
+            "text": "нарушения сна",
+            "keys": "measurements.typeSleepDisturbance"
+          }
+        ]
+      }
+    },
+    {
+      "id": "metric.ansCharge",
+      "description": "The ANS charge metric (ANS_CHARGE).",
+      "terms": {
+        "de": {
+          "name": "ANS-Ladung"
+        },
+        "en": {
+          "name": "ANS charge"
+        },
+        "fr": {
+          "name": "Charge SNA"
+        },
+        "es": {
+          "name": "Carga del SNA"
+        },
+        "it": {
+          "name": "Carica SNA"
+        },
+        "pl": {
+          "name": "Ładunek ANS"
+        },
+        "ko": {
+          "name": "ANS 충전도"
+        },
+        "nl": {
+          "name": "ANS-lading"
+        },
+        "pt-BR": {
+          "name": "Carga do SNA"
+        },
+        "ru": {
+          "name": "Заряд ВНС"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeAnsCharge",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.cardioLoad",
+      "description": "The Cardio load metric (CARDIO_LOAD).",
+      "terms": {
+        "de": {
+          "name": "Kardio-Belastung"
+        },
+        "en": {
+          "name": "Cardio load"
+        },
+        "fr": {
+          "name": "Charge cardio"
+        },
+        "es": {
+          "name": "Carga cardio"
+        },
+        "it": {
+          "name": "Carico cardio"
+        },
+        "pl": {
+          "name": "Obciążenie kardio"
+        },
+        "ko": {
+          "name": "심폐 부하"
+        },
+        "nl": {
+          "name": "Cardiobelasting"
+        },
+        "pt-BR": {
+          "name": "Carga cardiovascular"
+        },
+        "ru": {
+          "name": "Кардионагрузка"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeCardioLoad",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.resilience",
+      "description": "The Resilience metric (RESILIENCE).",
+      "terms": {
+        "de": {
+          "name": "Resilienz"
+        },
+        "en": {
+          "name": "Resilience"
+        },
+        "fr": {
+          "name": "Résilience"
+        },
+        "es": {
+          "name": "Resiliencia"
+        },
+        "it": {
+          "name": "Resilienza"
+        },
+        "pl": {
+          "name": "Odporność"
+        },
+        "ko": {
+          "name": "회복 탄력성"
+        },
+        "nl": {
+          "name": "Veerkracht"
+        },
+        "pt-BR": {
+          "name": "Resiliência"
+        },
+        "ru": {
+          "name": "Устойчивость"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeResilience",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.phq9Score",
+      "description": "The PHQ-9 score metric (PHQ9_SCORE).",
+      "terms": {
+        "de": {
+          "name": "PHQ-9-Wert"
+        },
+        "en": {
+          "name": "PHQ-9 score"
+        },
+        "fr": {
+          "name": "Score PHQ-9"
+        },
+        "es": {
+          "name": "Puntuación PHQ-9"
+        },
+        "it": {
+          "name": "Punteggio PHQ-9"
+        },
+        "pl": {
+          "name": "Wynik PHQ-9"
+        },
+        "ko": {
+          "name": "PHQ-9 점수"
+        },
+        "nl": {
+          "name": "PHQ-9-score"
+        },
+        "pt-BR": {
+          "name": "Pontuação PHQ-9"
+        },
+        "ru": {
+          "name": "Балл PHQ-9"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typePhq9Score",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.gad7Score",
+      "description": "The GAD-7 score metric (GAD7_SCORE).",
+      "terms": {
+        "de": {
+          "name": "GAD-7-Wert"
+        },
+        "en": {
+          "name": "GAD-7 score"
+        },
+        "fr": {
+          "name": "Score GAD-7"
+        },
+        "es": {
+          "name": "Puntuación GAD-7"
+        },
+        "it": {
+          "name": "Punteggio GAD-7"
+        },
+        "pl": {
+          "name": "Wynik GAD-7"
+        },
+        "ko": {
+          "name": "GAD-7 점수"
+        },
+        "nl": {
+          "name": "GAD-7-score"
+        },
+        "pt-BR": {
+          "name": "Pontuação GAD-7"
+        },
+        "ru": {
+          "name": "Балл GAD-7"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeGad7Score",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.gripStrength",
+      "description": "The Grip strength metric (GRIP_STRENGTH).",
+      "terms": {
+        "de": {
+          "name": "Griffstärke"
+        },
+        "en": {
+          "name": "Grip strength"
+        },
+        "fr": {
+          "name": "Force de préhension"
+        },
+        "es": {
+          "name": "Fuerza de agarre"
+        },
+        "it": {
+          "name": "Forza di presa"
+        },
+        "pl": {
+          "name": "Siła chwytu"
+        },
+        "ko": {
+          "name": "악력"
+        },
+        "nl": {
+          "name": "Knijpkracht"
+        },
+        "pt-BR": {
+          "name": "Força de preensão"
+        },
+        "ru": {
+          "name": "Сила хвата"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeGripStrength",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.painNrs",
+      "description": "The Pain (0–10) metric (PAIN_NRS).",
+      "terms": {
+        "de": {
+          "name": "Schmerz (0–10)"
+        },
+        "en": {
+          "name": "Pain (0–10)"
+        },
+        "fr": {
+          "name": "Douleur (0–10)"
+        },
+        "es": {
+          "name": "Dolor (0–10)"
+        },
+        "it": {
+          "name": "Dolore (0–10)"
+        },
+        "pl": {
+          "name": "Ból (0–10)"
+        },
+        "ko": {
+          "name": "통증 (0–10)"
+        },
+        "nl": {
+          "name": "Pijn (0–10)"
+        },
+        "pt-BR": {
+          "name": "Dor (0–10)"
+        },
+        "ru": {
+          "name": "Боль (0–10)"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typePainNrs",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.pain.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "insights.pain.chartTitle",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.sciScore",
+      "description": "The Sleep Condition Indicator (SCI) metric (SCI_SCORE).",
+      "decision": "SCI alone means nothing to most readers; the instrument's own name (Sleep Condition Indicator, Espie 2014) is kept untranslated like every validated questionnaire name. The old label is the short form.",
+      "terms": {
+        "de": {
+          "name": "Sleep Condition Indicator (SCI)",
+          "short": "SCI-Wert"
+        },
+        "en": {
+          "name": "Sleep Condition Indicator (SCI)",
+          "short": "SCI score"
+        },
+        "fr": {
+          "name": "Sleep Condition Indicator (SCI)",
+          "short": "Score SCI"
+        },
+        "es": {
+          "name": "Sleep Condition Indicator (SCI)",
+          "short": "Puntuación SCI"
+        },
+        "it": {
+          "name": "Sleep Condition Indicator (SCI)",
+          "short": "Punteggio SCI"
+        },
+        "pl": {
+          "name": "Sleep Condition Indicator (SCI)",
+          "short": "Wynik SCI"
+        },
+        "ko": {
+          "name": "Sleep Condition Indicator (SCI)",
+          "short": "SCI 점수"
+        },
+        "nl": {
+          "name": "Sleep Condition Indicator (SCI)",
+          "short": "SCI-score"
+        },
+        "pt-BR": {
+          "name": "Sleep Condition Indicator (SCI)",
+          "short": "Pontuação SCI"
+        },
+        "ru": {
+          "name": "Sleep Condition Indicator (SCI)",
+          "short": "Балл SCI"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeSciScore",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeSciScore",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.exerciseMinutes",
+      "description": "The Exercise minutes metric (EXERCISE_MINUTES).",
+      "terms": {
+        "de": {
+          "name": "Trainingsminuten"
+        },
+        "en": {
+          "name": "Exercise minutes"
+        },
+        "fr": {
+          "name": "Minutes d’exercice"
+        },
+        "es": {
+          "name": "Minutos de ejercicio"
+        },
+        "it": {
+          "name": "Minuti di esercizio"
+        },
+        "pl": {
+          "name": "Minuty ćwiczeń"
+        },
+        "ko": {
+          "name": "운동 시간(분)"
+        },
+        "nl": {
+          "name": "Trainingsminuten"
+        },
+        "pt-BR": {
+          "name": "Minutos de exercício"
+        },
+        "ru": {
+          "name": "Минуты упражнений"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeExerciseMinutes",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.standMinutes",
+      "description": "The Stand minutes metric (STAND_MINUTES).",
+      "decision": "Stand minutes, as Stand hours and as Apple names it.",
+      "terms": {
+        "de": {
+          "name": "Stehminuten"
+        },
+        "en": {
+          "name": "Stand minutes"
+        },
+        "fr": {
+          "name": "Minutes debout"
+        },
+        "es": {
+          "name": "Minutos de pie"
+        },
+        "it": {
+          "name": "Minuti in piedi"
+        },
+        "pl": {
+          "name": "Minuty stania"
+        },
+        "ko": {
+          "name": "서 있기 시간(분)"
+        },
+        "nl": {
+          "name": "Staminuten"
+        },
+        "pt-BR": {
+          "name": "Minutos em pé"
+        },
+        "ru": {
+          "name": "Минуты стояния"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeStandMinutes",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.standHours",
+      "description": "The Stand hours metric (STAND_HOURS).",
+      "terms": {
+        "de": {
+          "name": "Stehstunden"
+        },
+        "en": {
+          "name": "Stand hours"
+        },
+        "fr": {
+          "name": "Heures debout"
+        },
+        "es": {
+          "name": "Horas de pie"
+        },
+        "it": {
+          "name": "Ore in piedi"
+        },
+        "pl": {
+          "name": "Godziny stania"
+        },
+        "ko": {
+          "name": "일어서기 시간"
+        },
+        "nl": {
+          "name": "Stauren"
+        },
+        "pt-BR": {
+          "name": "Horas em pé"
+        },
+        "ru": {
+          "name": "Часы стояния"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeStandHours",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.afibBurden",
+      "description": "The AFib burden metric (AFIB_BURDEN).",
+      "decision": "The value is the weekly share of time spent in atrial fibrillation (HealthKit AFib burden), not a list of past episodes, so it is a burden, never a history. Apple's feature name AFib History is retired as a name for the value.",
+      "terms": {
+        "de": {
+          "name": "VHF-Last"
+        },
+        "en": {
+          "name": "AFib burden"
+        },
+        "fr": {
+          "name": "Charge de FA"
+        },
+        "es": {
+          "name": "Carga de FA"
+        },
+        "it": {
+          "name": "Carico di FA"
+        },
+        "pl": {
+          "name": "Obciążenie AF"
+        },
+        "ko": {
+          "name": "심방세동 부담"
+        },
+        "nl": {
+          "name": "AF-belasting"
+        },
+        "pt-BR": {
+          "name": "Carga de FA"
+        },
+        "ru": {
+          "name": "Бремя фибрилляции предсердий",
+          "short": "Бремя ФП"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeAfibBurden",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeAfibBurden",
+      "forbidden": {
+        "de": [],
+        "en": ["AFib history"],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.indoorCo2",
+      "description": "The Indoor CO₂ metric (INDOOR_CO2).",
+      "terms": {
+        "de": {
+          "name": "CO₂ (innen)"
+        },
+        "en": {
+          "name": "Indoor CO₂"
+        },
+        "fr": {
+          "name": "CO₂ intérieur"
+        },
+        "es": {
+          "name": "CO₂ interior"
+        },
+        "it": {
+          "name": "CO₂ interna"
+        },
+        "pl": {
+          "name": "CO₂ w pomieszczeniu"
+        },
+        "ko": {
+          "name": "실내 CO₂"
+        },
+        "nl": {
+          "name": "CO₂ binnen"
+        },
+        "pt-BR": {
+          "name": "CO₂ interno"
+        },
+        "ru": {
+          "name": "CO₂ в помещении"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeIndoorCo2",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.indoorTemperature",
+      "description": "The Indoor temperature metric (INDOOR_TEMPERATURE).",
+      "terms": {
+        "de": {
+          "name": "Raumtemperatur"
+        },
+        "en": {
+          "name": "Indoor temperature"
+        },
+        "fr": {
+          "name": "Température intérieure"
+        },
+        "es": {
+          "name": "Temperatura interior"
+        },
+        "it": {
+          "name": "Temperatura interna"
+        },
+        "pl": {
+          "name": "Temperatura w pomieszczeniu"
+        },
+        "ko": {
+          "name": "실내 온도"
+        },
+        "nl": {
+          "name": "Binnentemperatuur"
+        },
+        "pt-BR": {
+          "name": "Temperatura interna"
+        },
+        "ru": {
+          "name": "Температура в помещении"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeIndoorTemperature",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.bodyBattery",
+      "description": "The Body Battery metric (BODY_BATTERY).",
+      "terms": {
+        "de": {
+          "name": "Body Battery"
+        },
+        "en": {
+          "name": "Body Battery"
+        },
+        "fr": {
+          "name": "Body Battery"
+        },
+        "es": {
+          "name": "Body Battery"
+        },
+        "it": {
+          "name": "Body Battery"
+        },
+        "pl": {
+          "name": "Body Battery"
+        },
+        "ko": {
+          "name": "바디 배터리"
+        },
+        "nl": {
+          "name": "Body Battery"
+        },
+        "pt-BR": {
+          "name": "Body Battery"
+        },
+        "ru": {
+          "name": "Body Battery"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeBodyBattery",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.stressLevel",
+      "description": "The Stress level metric (STRESS_LEVEL).",
+      "terms": {
+        "de": {
+          "name": "Stresslevel"
+        },
+        "en": {
+          "name": "Stress level"
+        },
+        "fr": {
+          "name": "Niveau de stress"
+        },
+        "es": {
+          "name": "Nivel de estrés"
+        },
+        "it": {
+          "name": "Livello di stress"
+        },
+        "pl": {
+          "name": "Poziom stresu"
+        },
+        "ko": {
+          "name": "스트레스 수준"
+        },
+        "nl": {
+          "name": "Stressniveau"
+        },
+        "pt-BR": {
+          "name": "Nível de estresse"
+        },
+        "ru": {
+          "name": "Уровень стресса"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeStressLevel",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.trainingReadiness",
+      "description": "The Training readiness metric (TRAINING_READINESS).",
+      "terms": {
+        "de": {
+          "name": "Trainingsbereitschaft"
+        },
+        "en": {
+          "name": "Training readiness"
+        },
+        "fr": {
+          "name": "Disponibilité à l'entraînement"
+        },
+        "es": {
+          "name": "Disposición para entrenar"
+        },
+        "it": {
+          "name": "Prontezza all'allenamento"
+        },
+        "pl": {
+          "name": "Gotowość do treningu"
+        },
+        "ko": {
+          "name": "트레이닝 준비도"
+        },
+        "nl": {
+          "name": "Trainingsgereedheid"
+        },
+        "pt-BR": {
+          "name": "Prontidão para treinar"
+        },
+        "ru": {
+          "name": "Готовность к тренировке"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeTrainingReadiness",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.recoveryScoreWhoop",
+      "description": "The WHOOP Recovery label (measurements.typeRecoveryScoreWhoop), named by its source rather than by a measurement type of its own.",
+      "terms": {
+        "de": {
+          "name": "WHOOP Recovery"
+        },
+        "en": {
+          "name": "WHOOP Recovery"
+        },
+        "fr": {
+          "name": "WHOOP Recovery"
+        },
+        "es": {
+          "name": "WHOOP Recovery"
+        },
+        "it": {
+          "name": "WHOOP Recovery"
+        },
+        "pl": {
+          "name": "WHOOP Recovery"
+        },
+        "ko": {
+          "name": "WHOOP Recovery"
+        },
+        "nl": {
+          "name": "WHOOP Recovery"
+        },
+        "pt-BR": {
+          "name": "WHOOP Recovery"
+        },
+        "ru": {
+          "name": "WHOOP Recovery"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeRecoveryScoreWhoop",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.recoveryScoreOura",
+      "description": "The Oura Readiness label (measurements.typeRecoveryScoreOura), named by its source rather than by a measurement type of its own.",
+      "terms": {
+        "de": {
+          "name": "Oura Readiness"
+        },
+        "en": {
+          "name": "Oura Readiness"
+        },
+        "fr": {
+          "name": "Oura Readiness"
+        },
+        "es": {
+          "name": "Oura Readiness"
+        },
+        "it": {
+          "name": "Oura Readiness"
+        },
+        "pl": {
+          "name": "Oura Readiness"
+        },
+        "ko": {
+          "name": "Oura Readiness"
+        },
+        "nl": {
+          "name": "Oura Readiness"
+        },
+        "pt-BR": {
+          "name": "Oura Readiness"
+        },
+        "ru": {
+          "name": "Oura Readiness"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeRecoveryScoreOura",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.recoveryScorePolar",
+      "description": "The Polar Nightly Recharge label (measurements.typeRecoveryScorePolar), named by its source rather than by a measurement type of its own.",
+      "terms": {
+        "de": {
+          "name": "Polar Nightly Recharge"
+        },
+        "en": {
+          "name": "Polar Nightly Recharge"
+        },
+        "fr": {
+          "name": "Polar Nightly Recharge"
+        },
+        "es": {
+          "name": "Polar Nightly Recharge"
+        },
+        "it": {
+          "name": "Polar Nightly Recharge"
+        },
+        "pl": {
+          "name": "Polar Nightly Recharge"
+        },
+        "ko": {
+          "name": "Polar Nightly Recharge"
+        },
+        "nl": {
+          "name": "Polar Nightly Recharge"
+        },
+        "pt-BR": {
+          "name": "Polar Nightly Recharge"
+        },
+        "ru": {
+          "name": "Polar Nightly Recharge"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeRecoveryScorePolar",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.recoveryScoreComputed",
+      "description": "The Readiness (HealthLog) label (measurements.typeRecoveryScoreComputed), named by its source rather than by a measurement type of its own.",
+      "terms": {
+        "de": {
+          "name": "Bereitschaft (HealthLog)"
+        },
+        "en": {
+          "name": "Readiness (HealthLog)"
+        },
+        "fr": {
+          "name": "Disponibilité (HealthLog)"
+        },
+        "es": {
+          "name": "Disposición (HealthLog)"
+        },
+        "it": {
+          "name": "Prontezza (HealthLog)"
+        },
+        "pl": {
+          "name": "Gotowość (HealthLog)"
+        },
+        "ko": {
+          "name": "준비도(HealthLog)"
+        },
+        "nl": {
+          "name": "Paraatheid (HealthLog)"
+        },
+        "pt-BR": {
+          "name": "Prontidão (HealthLog)"
+        },
+        "ru": {
+          "name": "Готовность (HealthLog)"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeRecoveryScoreComputed",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.sleepScoreOura",
+      "description": "The Oura sleep score label (measurements.typeSleepScoreOura), named by its source rather than by a measurement type of its own.",
+      "terms": {
+        "de": {
+          "name": "Oura Schlafscore"
+        },
+        "en": {
+          "name": "Oura sleep score"
+        },
+        "fr": {
+          "name": "Score de sommeil Oura"
+        },
+        "es": {
+          "name": "Puntuación de sueño Oura"
+        },
+        "it": {
+          "name": "Punteggio del sonno Oura"
+        },
+        "pl": {
+          "name": "Wynik snu Oura"
+        },
+        "ko": {
+          "name": "Oura 수면 점수"
+        },
+        "nl": {
+          "name": "Oura-slaapscore"
+        },
+        "pt-BR": {
+          "name": "Pontuação de sono Oura"
+        },
+        "ru": {
+          "name": "Балл сна Oura"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeSleepScoreOura",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.sleepScoreGarmin",
+      "description": "The Garmin sleep score label (measurements.typeSleepScoreGarmin), named by its source rather than by a measurement type of its own.",
+      "terms": {
+        "de": {
+          "name": "Garmin Schlafscore"
+        },
+        "en": {
+          "name": "Garmin sleep score"
+        },
+        "fr": {
+          "name": "Score de sommeil Garmin"
+        },
+        "es": {
+          "name": "Puntuación de sueño Garmin"
+        },
+        "it": {
+          "name": "Punteggio del sonno Garmin"
+        },
+        "pl": {
+          "name": "Wynik snu Garmin"
+        },
+        "ko": {
+          "name": "Garmin 수면 점수"
+        },
+        "nl": {
+          "name": "Garmin-slaapscore"
+        },
+        "pt-BR": {
+          "name": "Pontuação de sono Garmin"
+        },
+        "ru": {
+          "name": "Балл сна Garmin"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeSleepScoreGarmin",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.sleepScoreWithings",
+      "description": "The Withings sleep score label (measurements.typeSleepScoreWithings), named by its source rather than by a measurement type of its own.",
+      "terms": {
+        "de": {
+          "name": "Withings Schlafscore"
+        },
+        "en": {
+          "name": "Withings sleep score"
+        },
+        "fr": {
+          "name": "Score de sommeil Withings"
+        },
+        "es": {
+          "name": "Puntuación de sueño Withings"
+        },
+        "it": {
+          "name": "Punteggio del sonno Withings"
+        },
+        "pl": {
+          "name": "Wynik snu Withings"
+        },
+        "ko": {
+          "name": "Withings 수면 점수"
+        },
+        "nl": {
+          "name": "Withings-slaapscore"
+        },
+        "pt-BR": {
+          "name": "Pontuação de sono Withings"
+        },
+        "ru": {
+          "name": "Балл сна Withings"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeSleepScoreWithings",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
     }
   ],
   "allow": [

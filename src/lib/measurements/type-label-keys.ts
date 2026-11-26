@@ -206,6 +206,11 @@ export const MEASUREMENT_TYPE_SHORT_LABEL_KEYS: Partial<
   ACUTE_TRAINING_LOAD: "measurements.shortTypeAcuteTrainingLoad",
   WAIST_CIRCUMFERENCE: "measurements.shortTypeWaistCircumference",
   WAIST_TO_HEIGHT: "measurements.shortTypeWaistToHeight",
+  BODY_MASS_INDEX: "measurements.shortTypeBodyMassIndex",
+  HEART_RATE_VARIABILITY: "measurements.shortTypeHeartRateVariability",
+  HRV_RMSSD: "measurements.shortTypeHrvRmssd",
+  SCI_SCORE: "measurements.shortTypeSciScore",
+  AFIB_BURDEN: "measurements.shortTypeAfibBurden",
 };
 
 /** A metric's full name and the form for a one-line slot. */

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
+import { MEDICAL_REFERENCE_IDS } from "../medical-reference-ids";
 import {
   MEDICAL_REFERENCES,
-  MEDICAL_REFERENCE_IDS,
   MEDICAL_REFERENCE_ORGS,
   selectReferencesForMetrics,
 } from "../medical-references";
@@ -111,11 +111,10 @@ describe("MEDICAL_REFERENCES bundle", () => {
     }
   });
 
-  it("MEDICAL_REFERENCE_IDS is the same length as the bundle", () => {
-    expect(MEDICAL_REFERENCE_IDS.length).toBe(MEDICAL_REFERENCES.length);
-    for (const ref of MEDICAL_REFERENCES) {
-      expect(MEDICAL_REFERENCE_IDS).toContain(ref.id);
-    }
+  it("MEDICAL_REFERENCE_IDS lists every bundle id once, and nothing else", () => {
+    expect([...MEDICAL_REFERENCE_IDS].sort()).toEqual(
+      MEDICAL_REFERENCES.map((r) => r.id).sort(),
+    );
   });
 
   it("MEDICAL_REFERENCE_ORGS is the union of orgs", () => {

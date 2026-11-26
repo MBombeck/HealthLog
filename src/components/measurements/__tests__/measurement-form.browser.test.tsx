@@ -281,7 +281,7 @@ describe("<MeasurementForm> type", () => {
     await screen.getByRole("option", { name: "Body temperature" }).click();
     await expect.element(screen.getByLabelText("Value (°C)")).toBeVisible();
     await screen.getByRole("combobox", { name: /^Type/ }).click();
-    await screen.getByRole("option", { name: "Blood Pressure" }).click();
+    await screen.getByRole("option", { name: "Blood pressure" }).click();
     await expect.element(screen.getByLabelText(/^Systolic/)).toBeVisible();
   });
 
@@ -291,7 +291,7 @@ describe("<MeasurementForm> type", () => {
       { modules: { glucose: false } },
     );
     const type = screen.getByRole("combobox", { name: /^Type/ });
-    await expect.element(type).toHaveTextContent("Blood Pressure");
+    await expect.element(type).toHaveTextContent("Blood pressure");
     await type.click();
     await expect
       .element(screen.getByRole("option", { name: "Weight" }))
@@ -389,7 +389,7 @@ describe("<MeasurementForm> the person's own habits", () => {
     const options = screen.getByRole("option").elements();
     expect(options.slice(0, 2).map((o) => o.textContent)).toEqual([
       "Weight",
-      "Blood Pressure",
+      "Blood pressure",
     ]);
     await userEvent.keyboard("{Escape}");
 
