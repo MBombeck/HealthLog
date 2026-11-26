@@ -15,8 +15,6 @@ export const MEDICATION_PHASES = [
   "review",
 ] as const;
 
-export type MedicationPhase = (typeof MEDICATION_PHASES)[number];
-
 const STEP_PHASE: Record<number, { phase: number; fraction: number }> = {
   1: { phase: 0, fraction: 0.5 },
   2: { phase: 0, fraction: 1 },
