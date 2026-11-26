@@ -88,14 +88,19 @@ const BUDGET = {
   // medication created before today's slot, which is every real one; the
   // fixture's medication was created at seed time, so by day it had no slot
   // left to project and the read went uncounted (see the clock note above).
-  dashboardSummary: 38,
+  // 38 → 37: the user's source order is read once per GET request
+  // (`loadUserSourcePriority`): every reader shares one pending read, where
+  // before each read on its own and Prisma batched whichever landed in the
+  // same tick, so the count followed the scheduling.
+  dashboardSummary: 37,
   // 101 → 89 (1.49.0): the summaries slice reads the source ladder and the
   // zone once instead of four and two times, and the year-ago baseline of
   // every type in one statement instead of one per type.
   // 90 → 88 (1.49.0): the rollup coverage probe is answered once per GET
   // request (`coverage-inflight.ts`); the score narrative probed again after
   // the snapshot's own probe had settled.
-  dashboardSnapshot: 88,
+  // 88 → 86: one read of the source order per GET request (see the summary).
+  dashboardSnapshot: 86,
   // The digest composes the snapshot (its own cell, rebuilt here) and adds
   // its rail's reads; 143 before the slice change above.
   // 133 → 134, targets 21 → 22 (1.49.0): the 90-day window aggregate folds
@@ -109,7 +114,10 @@ const BUDGET = {
   // and their two score readers sent two to four probes on the same fixture,
   // and a run that sent four failed at 134. The readers of the user's source
   // order now meet in one batched read instead of two.
-  dailyDigest: 131,
+  // 131 → 128: one read of the source order per GET request (see the
+  // summary); the digest sent it in up to five statements and flickered
+  // between 131 and 132.
+  dailyDigest: 128,
   // The target cards; their seven-day means come from the slice when a
   // fresh one is cached, here (evicted) from the slice's window aggregate.
   // 22 → 23, health status 59 → 60 (1.49.0): both grade weight and BMI, and
@@ -124,7 +132,8 @@ const BUDGET = {
   series3650: 5,
   dayView: 47,
   // 60 → 59: one coverage probe per GET request (see the digest).
-  healthStatus: 59,
+  // 59 → 51: one read of the source order per GET request (see the summary).
+  healthStatus: 51,
   correlations: 43,
   batchIngest500: 28,
   // The Apple Health card and the phone's sync read (1.49.0). The newest and
