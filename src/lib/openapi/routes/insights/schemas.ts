@@ -1433,7 +1433,7 @@ export const dashboardSnapshotResponse = z
         .array(z.string())
         .optional()
         .describe(
-          'v1.50 — every widget whose tile is switched on, in the order the tile row shows them: pinned widgets (`widgets[].pinned`) first, then those in `attention` (range, change, today), then the rest; each group by saved order. A client shows as many as fit one row and puts the rest behind "All values" (open state in `layout.tilesExpanded`). Widgets without data are not removed here; skip them when rendering.',
+          'v1.50 — every widget whose tile is switched on, in the order the tile row shows them: pinned widgets (`widgets[].pinned`) first, then those in `attention` (range, change, today), then the rest; each group by saved order. A client shows as many as fit one row and puts the rest behind "All values" (open state in `layout.tilesExpanded`). The web counts columns as max(2, floor((width + 12) / 188)) for the strip width in CSS px (11 rem tiles, 0.75 rem gap): two on a phone, three from about 600 px, six at 1440 px; never one tile alone, never a partial second row. Widgets without data are not removed here; skip them when rendering.',
         ),
       directions: z
         .record(z.string(), trendVerdict)

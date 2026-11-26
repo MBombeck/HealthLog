@@ -42,7 +42,7 @@ test.describe("dashboard tile strip, one row", () => {
     );
   });
 
-  test("a phone shows one row and opens the rest in place", async ({
+  test("a phone shows two tiles and opens the rest in place", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
@@ -70,9 +70,8 @@ test.describe("dashboard tile strip, one row", () => {
 
     // One row: the front of the list, never a second row.
     const visible = strip.locator("[data-tile-id]:visible");
-    const shown = await visible.count();
-    expect(shown).toBeGreaterThan(0);
-    expect(shown).toBeLessThan(await tiles.count());
+    // A phone shows two compact tiles side by side, never a single one.
+    await expect(visible).toHaveCount(2);
     const tops = await visible.evaluateAll((els) =>
       els.map((el) => Math.round(el.getBoundingClientRect().top)),
     );

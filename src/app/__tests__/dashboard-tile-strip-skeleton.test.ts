@@ -210,9 +210,11 @@ describe("v1.4.43 W11 — dashboard tile-strip skeleton (wiring)", () => {
 
   it("renders the skeleton with the same auto-fit grid track the real strip uses", () => {
     const src = dashboardSource();
+    // One grid definition for both (`ONE_ROW_GRID` in `one-row.ts`).
     expect(src).toMatch(
-      /showTileStripSkeleton\s*&&\s*\(\s*<div[\s\S]*?\[grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,11rem\),1fr\)\)\]/,
+      /showTileStripSkeleton\s*&&\s*\([\s\S]*?className=\{ONE_ROW_GRID\}/,
     );
+    expect(src.match(/className=\{ONE_ROW_GRID\}/g)?.length).toBe(2);
   });
 
   it("keys the skeleton card count off configuredTileCount", () => {

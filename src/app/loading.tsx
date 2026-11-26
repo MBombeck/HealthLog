@@ -18,7 +18,10 @@
  */
 import { ChartSkeleton } from "@/components/charts/chart-skeleton";
 import { TrendCardSkeleton } from "@/components/charts/trend-card-skeleton";
-import { oneRowItemClass } from "@/components/dashboard/tiles/one-row";
+import {
+  ONE_ROW_GRID,
+  oneRowItemClass,
+} from "@/components/dashboard/tiles/one-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   DASHBOARD_WIDGET_IDS,
@@ -50,18 +53,20 @@ export default function RootLoading() {
       </div>
       {/* Tile strip — same auto-fit grid track + structured silhouettes as
           the in-page `data-slot="dashboard-tile-strip-skeleton"` phase. */}
-      <div
-        aria-hidden="true"
-        data-slot="dashboard-tile-strip-skeleton"
-        className="@container grid auto-rows-fr [grid-template-columns:repeat(auto-fit,minmax(min(100%,11rem),1fr))] gap-3"
-      >
-        {/* One row, as the closed strip shows it (`one-row.ts`). */}
-        {Array.from({ length: DEFAULT_TILE_COUNT }).map((_, i) => (
-          <TrendCardSkeleton
-            key={`tile-skeleton-${i}`}
-            className={oneRowItemClass(i)}
-          />
-        ))}
+      <div className="@container">
+        <div
+          aria-hidden="true"
+          data-slot="dashboard-tile-strip-skeleton"
+          className={ONE_ROW_GRID}
+        >
+          {/* One row, as the closed strip shows it (`one-row.ts`). */}
+          {Array.from({ length: DEFAULT_TILE_COUNT }).map((_, i) => (
+            <TrendCardSkeleton
+              key={`tile-skeleton-${i}`}
+              className={oneRowItemClass(i)}
+            />
+          ))}
+        </div>
       </div>
       {/* Chart band — the first chart cell's silhouette (header row + range
           tabs + chart area), identical to the reveal-gated cells' overlay. */}

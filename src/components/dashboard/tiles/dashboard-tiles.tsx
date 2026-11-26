@@ -25,7 +25,7 @@ import { queryKeys } from "@/lib/query-keys";
 import type { DashboardSnapshot } from "@/lib/dashboard/snapshot";
 import { cn } from "@/lib/utils";
 
-import { oneRowItemClass, oneRowToggleClass } from "./one-row";
+import { ONE_ROW_GRID, oneRowItemClass, oneRowToggleClass } from "./one-row";
 
 import type { ChartEntry } from "./chart-tiles";
 import type { StripEntry } from "./strip-tiles";
@@ -109,22 +109,21 @@ export function DashboardTiles({
   return (
     <>
       {showTileStripSkeleton && (
-        <div
-          // Mirrors the real grid track, keyed off the configured tile count:
-          // a strip trimmed to three tiles shows three silhouettes.
-          aria-hidden="true"
-          data-slot="dashboard-tile-strip-skeleton"
-          className={cn(
-            "@container grid auto-rows-fr gap-3",
-            "[grid-template-columns:repeat(auto-fit,minmax(min(100%,11rem),1fr))]",
-          )}
-        >
-          {Array.from({ length: configuredTileCount }).map((_, idx) => (
-            <TrendCardSkeleton
-              key={`tile-skeleton-${idx}`}
-              className={expanded ? undefined : oneRowItemClass(idx)}
-            />
-          ))}
+        <div className="@container">
+          <div
+            // Mirrors the real grid track, keyed off the configured tile
+            // count: a strip trimmed to three tiles shows three silhouettes.
+            aria-hidden="true"
+            data-slot="dashboard-tile-strip-skeleton"
+            className={ONE_ROW_GRID}
+          >
+            {Array.from({ length: configuredTileCount }).map((_, idx) => (
+              <TrendCardSkeleton
+                key={`tile-skeleton-${idx}`}
+                className={expanded ? undefined : oneRowItemClass(idx)}
+              />
+            ))}
+          </div>
         </div>
       )}
       {stripEntries.length > 0 && (
@@ -224,10 +223,7 @@ function TileStrip({
         // then the ones with something to say. With every tile switched
         // off the strip is not rendered at all.
         id={stripId}
-        className={cn(
-          "grid auto-rows-fr gap-3",
-          "[grid-template-columns:repeat(auto-fit,minmax(min(100%,11rem),1fr))]",
-        )}
+        className={ONE_ROW_GRID}
         data-slot="dashboard-tile-strip"
         data-tour-id="dashboard-tile-strip"
         data-tile-count={entries.length}
