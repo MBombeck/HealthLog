@@ -9,6 +9,13 @@ import { checkAuthSurfaceRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { passwordStrengthRequestSchema } from "@/lib/validations/auth";
 
 /**
+ * Per address and minute. The meter asks once typing pauses for 200 ms, so a
+ * person filling in a form spends a handful of requests; an address that
+ * needs more is not typing.
+ */
+const REQUESTS_PER_MINUTE = 20;
+
+/**
  * Scores a password for the strength meter on the registration, profile-claim
  * and admin reset forms. Anonymous, because the person registering has no
  * session yet. It stores nothing, compares against no account and annotates
@@ -16,15 +23,18 @@ import { passwordStrengthRequestSchema } from "@/lib/validations/auth";
  * route runs on submit, so the browser does not have to download its
  * dictionaries.
  *
- * Rate limited per address before the body is read. The meter waits for a
- * pause in typing before it asks, so a person entering a password spends a
- * handful of requests, not one per key.
+ * The estimator runs on the request thread, so its cost is bounded where it
+ * is called (`passwordEstimateInput`): at most `PASSWORD_STRENGTH_MAX_LENGTH`
+ * characters, and the schema refuses anything longer. Rate limited per
+ * address before the body is read, with an untrusted forwarding chain
+ * collapsed into the shared anonymous bucket; a cross-site browser POST is
+ * refused by `apiHandler` before this runs.
  */
 export const POST = apiHandler(async (request: NextRequest) => {
   const rl = await checkAuthSurfaceRateLimit(
     request,
     "auth:password-strength",
-    60,
+    REQUESTS_PER_MINUTE,
     60 * 1000,
   );
   if (!rl.allowed) {
@@ -35,7 +45,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   }
 
   const parsed = await parseJsonBody(request, passwordStrengthRequestSchema, {
-    maxBytes: 4 * 1024,
+    maxBytes: 512,
   });
   if (!parsed.ok) return parsed.error;
 

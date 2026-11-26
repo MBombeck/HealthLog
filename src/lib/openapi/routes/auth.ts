@@ -11,6 +11,7 @@
  * runtime request parsing, so the wire contract stays single-source.
  */
 import { HANDOVER_METHODS, claimSsoSchema } from "@/lib/validations/claim-sso";
+import { PASSWORD_STRENGTH_MAX_LENGTH } from "@/lib/zxcvbn-i18n";
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 import {
@@ -2360,8 +2361,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       security: [],
       tags: ["Auth"],
       summary: "Score a password for the strength meter",
-      description:
-        "Anonymous. Runs the same estimator the registration and password routes run on submit and answers its score and untranslated feedback; stores nothing and compares against no account. The account-specific check (the password against the username and e-mail) happens only on submit. Rate-limited to 60 requests a minute per address.",
+      description: `Anonymous. Runs the same estimator the registration and password routes run on submit and answers its score and untranslated feedback; stores nothing and compares against no account. Scores at most the first ${PASSWORD_STRENGTH_MAX_LENGTH} characters, on submit as here. The account-specific check (the password against the username and e-mail) happens only on submit. Rate-limited to 20 requests a minute per address.`,
       requestBody: {
         required: true,
         content: { "application/json": { schema: passwordStrengthRequest } },

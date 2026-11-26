@@ -8,11 +8,17 @@
 import type { Locale } from "@/lib/i18n/config";
 
 /**
- * The longest password the strength meter scores. Past it every password
- * scores 4 anyway, and zxcvbn's matching grows faster than linearly with the
- * length; the meter sends at most this many characters.
+ * How much of a password the strength estimator reads: the meter sends at
+ * most this many characters, and the server scores at most this many on
+ * every path, meter and submit alike (`src/lib/auth/password.ts`).
+ *
+ * zxcvbn's matching grows with the square of the length times the number of
+ * l33t substitutions it tries, and it runs on the request thread: 256
+ * characters cost seconds of CPU per call. A password whose first 32
+ * characters are hard to guess is strong whatever follows; a long one whose
+ * first 32 are easy reads weaker than it is, which errs on the safe side.
  */
-export const PASSWORD_STRENGTH_MAX_LENGTH = 256;
+export const PASSWORD_STRENGTH_MAX_LENGTH = 32;
 
 const warningsDe: Record<string, string> = {
   "Straight rows of keys are easy to guess":
