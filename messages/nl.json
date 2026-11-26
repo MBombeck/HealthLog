@@ -6990,6 +6990,7 @@
         "deleteConfirmBodyUsed": "Taken die deze keten gebruiken ({count}) gaan bij het opslaan terug naar Standaard. Is het de standaardketen, dan neemt de terugvalketen het weer over. Je providers en sleutels blijven zoals ze zijn.",
         "bindingHint": "Met één provider is de keten een vaste binding: kan die niet antwoorden, dan stopt de taak in plaats van een andere provider te proberen.",
         "bindingShort": "Vast aan deze provider, geen terugval.",
+        "taskNoProvider": "Geen enkele provider in deze keten is ingesteld, dus deze taak draait niet: de actie wordt pas aangeboden als je er een instelt of een andere keten kiest.",
         "egressLocal": "Blijft op deze machine",
         "egressExternal": "Verlaat deze machine",
         "notSetUp": "Nog niet ingesteld",

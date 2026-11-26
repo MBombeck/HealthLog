@@ -6990,6 +6990,7 @@
         "deleteConfirmBodyUsed": "Le attività che usano questa catena ({count}) tornano su Predefinita al salvataggio. Se è la catena predefinita, torna a valere la catena di fallback. I tuoi provider e le tue chiavi restano come sono.",
         "bindingHint": "Con un solo provider la catena è un vincolo: se non può rispondere, l'attività si ferma invece di provare un altro provider.",
         "bindingShort": "Vincolata a questo provider, senza fallback.",
+        "taskNoProvider": "Nessun provider di questa catena è configurato, quindi questa attività non viene eseguita: la sua azione non viene offerta finché non ne configuri uno o scegli un'altra catena.",
         "egressLocal": "Resta su questa macchina",
         "egressExternal": "Esce da questa macchina",
         "notSetUp": "Non ancora configurato",

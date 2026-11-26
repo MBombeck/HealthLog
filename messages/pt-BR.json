@@ -6990,6 +6990,7 @@
         "deleteConfirmBodyUsed": "As tarefas que usam esta cadeia ({count}) voltam para Padrão quando você salvar. Se ela for a cadeia padrão, a cadeia de fallback volta a valer. Seus provedores e chaves continuam como estão.",
         "bindingHint": "Com um único provedor, a cadeia é um vínculo fixo: se ele não puder responder, a tarefa para em vez de tentar outro provedor.",
         "bindingShort": "Vinculada a este provedor, sem fallback.",
+        "taskNoProvider": "Nenhum provedor desta cadeia está configurado, então esta tarefa não é executada: a ação dela só aparece quando você configurar um ou escolher outra cadeia.",
         "egressLocal": "Fica nesta máquina",
         "egressExternal": "Sai desta máquina",
         "notSetUp": "Ainda não configurado",

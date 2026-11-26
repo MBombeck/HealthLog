@@ -359,6 +359,12 @@ export function TaskList({
             const attached = chains.find(
               (c) => c.id === attachments[capability],
             );
+            // A bound task reads only its chain. With nothing in it set up
+            // the task does not run, and its action is withheld wherever it
+            // would appear, so this row is where to say why (#1404).
+            const unusable =
+              attached !== undefined &&
+              !attached.entries.some((type) => providers.get(type)?.available);
 
             return (
               <li
@@ -380,9 +386,17 @@ export function TaskList({
                       ))}
                     </ul>
                   ) : null}
-                  {attached?.entries.length === 1 && (
+                  {attached && !unusable && attached.entries.length === 1 && (
                     <p className="text-muted-foreground mt-1 text-xs">
                       {t("settings.ai.namedChains.bindingShort")}
+                    </p>
+                  )}
+                  {unusable && (
+                    <p
+                      className="text-muted-foreground mt-1 text-xs"
+                      data-slot="named-chain-task-no-provider"
+                    >
+                      {t("settings.ai.namedChains.taskNoProvider")}
                     </p>
                   )}
                 </div>

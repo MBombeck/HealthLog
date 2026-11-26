@@ -6990,6 +6990,7 @@
         "deleteConfirmBodyUsed": "Zadania korzystające z tego łańcucha ({count}) po zapisaniu wrócą do Domyślnego. Jeśli to łańcuch domyślny, ponownie zacznie obowiązywać łańcuch zapasowy. Twoi dostawcy i klucze pozostaną bez zmian.",
         "bindingHint": "Z jednym dostawcą łańcuch jest stałym powiązaniem: jeśli dostawca nie może odpowiedzieć, zadanie się zatrzymuje zamiast próbować innego.",
         "bindingShort": "Powiązany z tym dostawcą, bez zapasu.",
+        "taskNoProvider": "Żaden dostawca w tym łańcuchu nie jest skonfigurowany, więc to zadanie się nie uruchamia: jego akcja nie jest dostępna, dopóki nie skonfigurujesz dostawcy albo nie wybierzesz innego łańcucha.",
         "egressLocal": "Zostaje na tym komputerze",
         "egressExternal": "Opuszcza ten komputer",
         "notSetUp": "Jeszcze nieskonfigurowany",
