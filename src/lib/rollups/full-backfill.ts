@@ -379,3 +379,59 @@ export async function enqueueBootTimeRollupBackfill(
     };
   }
 }
+
+/** How long one process waits before asking again for the same account. */
+export const ROLLUP_FOLD_REQUEST_INTERVAL_MS = 10 * 60 * 1000;
+
+const lastFoldRequestAt = new Map<string, number>();
+
+/**
+ * Ask for a full fold of one account outside boot: a reader found readings
+ * inside the fold window that the rollup tier does not cover.
+ *
+ * The write hooks fold the days they touch and the read path warms the last
+ * 90 days, so readings that arrive older than that without a write hook (a
+ * seeded or restored account, an import that wrote straight to the table)
+ * stay uncovered until the next boot's discovery. Until then the dashboard
+ * keeps its second phase back, and with it the health score, while
+ * `/api/analytics` computes the same score live. This closes that gap from the
+ * reader that noticed it instead of waiting for a restart.
+ *
+ * Coalesced on the boot key, so a fold already queued or running for the
+ * account absorbs the request, and asked at most once per interval per
+ * process, so a dashboard polling a cold account does not send on every read.
+ * Without a queue (a dev server with no worker attached) the fold runs here,
+ * the way `ensureUserRollupsFresh` folds the last 90 days in place.
+ */
+export async function requestRollupHistoryFold(
+  userId: string,
+  now: number = Date.now(),
+): Promise<"sent" | "coalesced" | "folded" | "throttled"> {
+  const last = lastFoldRequestAt.get(userId);
+  if (last !== undefined && now - last < ROLLUP_FOLD_REQUEST_INTERVAL_MS) {
+    return "throttled";
+  }
+  lastFoldRequestAt.set(userId, now);
+  const boss = getGlobalBoss();
+  if (!boss) {
+    await foldUserRollupHistory(userId, {
+      statementTimeoutMs: ROLLUP_FULL_BACKFILL_STATEMENT_BUDGET_MS,
+    });
+    return "folded";
+  }
+  const payload: RollupFullBackfillPayload = {
+    userId,
+    enqueuedAt: new Date(now).toISOString(),
+  };
+  const jobId = await boss.send(ROLLUP_FULL_BACKFILL_QUEUE, payload, {
+    ...RETRY_OPTIONS,
+    expireInSeconds: ROLLUP_FULL_BACKFILL_EXPIRE_SECONDS,
+    singletonKey: `boot-backfill|${userId}`,
+  });
+  return jobId ? "sent" : "coalesced";
+}
+
+/** Test-only: forget every request, so a test starts unthrottled. */
+export function _resetRollupFoldRequestsForTests(): void {
+  lastFoldRequestAt.clear();
+}

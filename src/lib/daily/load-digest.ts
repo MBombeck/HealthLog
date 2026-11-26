@@ -98,10 +98,13 @@ import {
 import type {
   TodayCycle,
   TodayRestMode,
-  TodaySleep,
   TodayVital,
 } from "@/lib/daily/today-overview";
 import { nextDoseOpensAt } from "@/lib/daily/today-medications-fact";
+import {
+  lastNightFromSnapshot,
+  peekMorningSleepScore,
+} from "@/lib/daily/last-night";
 import { translateOrNull } from "@/lib/i18n/translate-code";
 import {
   loadQuietSources,
@@ -764,17 +767,24 @@ export async function loadDailyDigest(
       }
     : null;
 
-  const sleepSlot = snapshot.tiles.lastSeenByType["SLEEP_DURATION"];
-  const sleepLastSeenDaysAgo = sleepSlot ? sleepSlot.daysAgo : null;
-
-  // S4 freshness (§E) — the day is `final` once the sleep-arrival morning
-  // refresh has stamped `User.morningDigestRefreshedOn` with the user's current
-  // local date (profile tz). Read fresh off the row here, so it flips the
-  // instant the refresh job runs — ahead of the snapshot cache that feeds
-  // `sleepLastSeenDaysAgo`.
-  const morningRefreshedToday =
-    user.morningDigestRefreshedOn !== null &&
-    user.morningDigestRefreshedOn === todayLocalDate;
+  // Last night by the morning's one rule (`resolveLastNight`): the sleep
+  // score's night, read from the morning's own cell when the morning has been
+  // read today, else the latest sleep row's wake day. The
+  // `morningDigestRefreshedOn` stamp is read fresh off the row, so the day
+  // settles the instant the sleep-arrival refresh runs, ahead of the
+  // snapshot cache.
+  const sleepOn = modules.sleep !== false;
+  const { lastNight } = lastNightFromSnapshot({
+    snapshot,
+    tz: user.timezone,
+    todayKey: todayLocalDate,
+    sleepOn,
+    morningRefreshedToday: user.morningDigestRefreshedOn === todayLocalDate,
+    sleepScore: peekMorningSleepScore(user.id, todayLocalDate, {
+      sleep: sleepOn,
+      recovery: modules.recovery !== false,
+    }),
+  });
 
   const syncIssues: DailyDigestSyncIssue[] = syncRows.map((row) => ({
     integration: row.integration,
@@ -827,25 +837,6 @@ export async function loadDailyDigest(
                 userDayKey(new Date(restModeContext.since), user.timezone),
               ),
             ) + 1,
-        }
-      : null;
-
-  // Last night, when it is in: the snapshot's sleep summary carries per-night
-  // time asleep in minutes, `latest` being the newest night and `avg30` the
-  // person's own trailing mean. "In" means the freshest night ended on the
-  // reader's local today, which is the same test the freshness phase uses.
-  const sleepSummary = snapshot.tiles.summaries?.SLEEP_DURATION;
-  const sleepLastNight: TodaySleep | null =
-    sleepLastSeenDaysAgo === 0 &&
-    sleepSummary?.latest !== null &&
-    sleepSummary?.latest !== undefined &&
-    sleepSummary.latest > 0
-      ? {
-          minutes: sleepSummary.latest,
-          usualMinutes:
-            sleepSummary.avg30 !== null && sleepSummary.avg30 > 0
-              ? sleepSummary.avg30
-              : null,
         }
       : null;
 
@@ -963,8 +954,7 @@ export async function loadDailyDigest(
       reactionLanguage,
       firstName: firstNameFromDisplayName(user.displayName),
       nextDoseTimeLabel: nextOpensAt ? localTime(new Date(nextOpensAt)) : null,
-      sleepLastSeenDaysAgo,
-      morningRefreshedToday,
+      lastNight,
       syncIssues,
       quietSources: wordQuietSources(quietRows, now, user.timezone, locale),
       preventiveDue,
@@ -981,7 +971,6 @@ export async function loadDailyDigest(
         .filter((a): a is DailyDigestArrival => a !== null),
       locale: resolvedLocale,
       restMode,
-      sleepLastNight,
       vitals: (vitals ?? []).map((v) =>
         toTodayVital(v, units, resolvedLocale, t),
       ),
