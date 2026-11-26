@@ -25,11 +25,10 @@ zero=0000000000000000000000000000000000000000
 unsigned=""
 while read -r _local_ref local_sha _remote_ref remote_sha; do
   case "$local_sha" in "$zero"|"") continue ;; esac
-  if [ "$remote_sha" = "$zero" ]; then
-    range="$local_sha --not --remotes"
-  else
-    range="$remote_sha..$local_sha"
-  fi
+  # Only the commits this push brings to a remote: a branch that merged
+  # main in carries main's history, and a commit already on any remote is
+  # not this push's to fix (it cannot be rewritten there anyway).
+  range="$local_sha --not --remotes"
   # shellcheck disable=SC2086 # the range is two words on purpose
   for sha in $(git rev-list $range); do
     [ "$(git log -1 --format=%ce "$sha")" = "$me" ] || continue
