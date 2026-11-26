@@ -104,7 +104,10 @@ export async function computeRecoveryScore(
   // injected client. We only pass `prisma` through for the profile read in
   // the helper below so the job can share one client. `now` is injected so
   // the result is deterministic for tests.
-  const readiness = await computeReadiness(userId, profile, { now });
+  const readiness = await computeReadiness(userId, profile, {
+    now,
+    blendOnly: true,
+  });
   const score = readiness.status === "ok" ? readiness.value.score : null;
   // Rest Mode context as of the scored day — annotation only, never folded
   // into `score`. An active episode frames a low recovery number; it does not

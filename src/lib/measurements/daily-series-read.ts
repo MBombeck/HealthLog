@@ -27,7 +27,10 @@ import { buildSourceRankCase } from "@/lib/analytics/source-rank-sql";
 import { annotate } from "@/lib/logging/context";
 import { isValidTimezone } from "@/lib/tz/format";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
-import type { MeasurementType } from "@/generated/prisma/client";
+import type {
+  MeasurementSource,
+  MeasurementType,
+} from "@/generated/prisma/client";
 import {
   BP_DAY_START_HOUR,
   BP_PART_HOURS,
@@ -65,8 +68,13 @@ export async function readDailySeries(opts: {
   timeZone?: string;
   /** Only the readings of this part of the day (#1331). */
   partOfDay?: BpPartOfDay;
+  /**
+   * Only this source's readings: one device's own score, never filled in
+   * from another source on the days it did not write.
+   */
+  sourceEq?: MeasurementSource;
 }): Promise<DailySeriesRow[]> {
-  const { userId, type, from, to, priorityJson, partOfDay } = opts;
+  const { userId, type, from, to, priorityJson, partOfDay, sourceEq } = opts;
   const cap = Math.min(opts.limit ?? BUCKET_CAP.daily, BUCKET_CAP.daily);
 
   // v1.19.2 — whole-history step-up for very long ranges. When the
@@ -88,6 +96,22 @@ export async function readDailySeries(opts: {
   // days and cannot say which hour a reading was taken in.
   if (partOfDay) {
     return readPartOfDaySeries({ ...opts, partOfDay, windowDaysFull, cap });
+  }
+  // The rollups hold the canonical pick across sources, so one source alone
+  // is folded live, weekly past the day cap like a part of the day.
+  if (sourceEq) {
+    const weekly = windowDaysFull > cap;
+    return readLiveBuckets({
+      userId,
+      type,
+      from,
+      to,
+      cap: weekly ? Math.ceil(windowDaysFull / 7) + 2 : cap,
+      priorityJson,
+      grain: weekly ? "weekly" : "daily",
+      timeZone: opts.timeZone ?? (await resolveUserTimezone(userId)),
+      sourceEq,
+    });
   }
   if (windowDaysFull > cap) {
     // A rollup-table throw here (statement_timeout, deadlock, connection reset)
@@ -346,6 +370,8 @@ export async function readLiveBuckets(opts: {
   timeZone: string;
   /** Only the readings of this part of the day (`localClockSql`). */
   partOfDay?: BpPartOfDay;
+  /** Only this source's readings (bound as a parameter). */
+  sourceEq?: MeasurementSource;
 }): Promise<DailySeriesRow[]> {
   const { userId, type, from, to, cap, priorityJson, grain } = opts;
   // A zone Postgres does not know would 500 the read; the resolver already
@@ -376,6 +402,9 @@ export async function readLiveBuckets(opts: {
   );
   const typeFilter = type
     ? Prisma.sql`AND m."type" = ${type}::measurement_type`
+    : Prisma.empty;
+  const sourceFilter = opts.sourceEq
+    ? Prisma.sql`AND m."source" = ${opts.sourceEq}::measurement_source`
     : Prisma.empty;
   const clock = localClockSql(timeZone, opts.partOfDay);
   // measured_at is a UTC wall-clock timestamp: pin it to UTC, re-read it in
@@ -430,6 +459,7 @@ export async function readLiveBuckets(opts: {
         AND m."measured_at" <= ${to}
         AND m."deleted_at" IS NULL
         ${typeFilter}
+        ${sourceFilter}
         ${clock.filter}
       GROUP BY m."type", m."source", 3, 4
     ),

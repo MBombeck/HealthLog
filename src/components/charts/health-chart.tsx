@@ -103,6 +103,7 @@ export function HealthChart({
   showDataTable = false,
   dayLinks = false,
   partOfDay,
+  sourceEq,
 }: HealthChartProps) {
   const { isAuthenticated, user } = useAuth();
   // Never a fixed Berlin: a mount without the prop cuts the profile's days.
@@ -176,6 +177,7 @@ export function HealthChart({
       enabled: isAuthenticated,
       onDataReady,
       partOfDay,
+      sourceEq,
     });
 
   const {

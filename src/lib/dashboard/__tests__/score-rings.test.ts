@@ -267,6 +267,16 @@ describe("buildScoreRingsBlock() — 1.50 freshness and the proxy rule", () => {
     expect(rings.map((r) => r.id)).toEqual(["READINESS"]);
   });
 
+  it("keeps the proxy ring beside a stale READINESS ring, which shipped apps skip", async () => {
+    setRecoverySource("COMPUTED");
+    engine({ score: 70, band: "green", fresh: false, asOfDay: "2026-06-30" });
+    const rings = await build(["RECOVERY_SCORE", "READINESS"]);
+    expect(rings.map((r) => [r.id, r.band])).toEqual([
+      ["RECOVERY_SCORE", "red"],
+      ["READINESS", null],
+    ]);
+  });
+
   it("keeps the proxy ring when READINESS is not selected (until 1.51)", async () => {
     setRecoverySource("COMPUTED");
     engine({ score: 70, band: "green", fresh: true, asOfDay: "2026-07-01" });

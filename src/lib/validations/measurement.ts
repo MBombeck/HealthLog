@@ -462,7 +462,11 @@ export const listMeasurementsSchema = z
     // filter rides a distinct param. Validated against `MeasurementSource`;
     // threaded into the plain-list `where`. Backed by the `(userId, source,
     // measuredAt)` index (migration 0136).
-    sourceEq: measurementSourceEnum.optional(),
+    sourceEq: measurementSourceEnum
+      .optional()
+      .describe(
+        "Only this source's rows. Narrows the plain list and, since 1.50, the chart's daily series (`source=rollup` with `aggregate=daily`), which then shows one source alone instead of the canonical pick across sources.",
+      ),
     // Only the rows the HealthLog app writes into Apple Health
     // (`appleHealthMirror`, #1272): the app's historical backfill pages this
     // instead of one fetch per source. A plain-list filter.

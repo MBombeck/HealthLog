@@ -53,6 +53,7 @@ async function readDailySeries({
   dayKeyFormatter,
   tzFmt,
   partOfDay,
+  sourceEq,
 }: {
   types: string[];
   fetchWindow: ReturnType<typeof openEndedFetchWindow>;
@@ -63,6 +64,7 @@ async function readDailySeries({
   dayKeyFormatter: Intl.DateTimeFormat;
   tzFmt: ReturnType<typeof makeBucketLabelFormatters>;
   partOfDay?: string;
+  sourceEq?: string;
 }): Promise<ChartDataPoint[]> {
   const dailyAggregates = new Map<
     string,
@@ -117,7 +119,12 @@ async function readDailySeries({
       await fetchSleepNights();
       return;
     }
-    const typeParams = chartSeriesParams(type, fetchWindow, partOfDay);
+    const typeParams = chartSeriesParams(
+      type,
+      fetchWindow,
+      partOfDay,
+      sourceEq,
+    );
 
     // The batched slice reads through the same rollup path as the
     // per-type read, so the bucketed result is identical. A covered type
@@ -243,6 +250,7 @@ export function useHealthChartSeries({
   enabled,
   onDataReady,
   partOfDay,
+  sourceEq,
 }: {
   types: string[];
   valueMode: "raw" | "bmi";
@@ -259,6 +267,7 @@ export function useHealthChartSeries({
   enabled: boolean;
   onDataReady?: () => void;
   partOfDay?: string;
+  sourceEq?: string;
 }) {
   const todayKey = localDayKeyFor(new Date(), userTimezone);
   const fetchWindow = useMemo(() => {
@@ -279,7 +288,7 @@ export function useHealthChartSeries({
   // Without an explicit coverage (a legacy mount) the slice is bypassed
   // rather than trusted blindly.
   const usePreloaded = useMemo(() => {
-    if (!preloadedSeries || partOfDay) return false;
+    if (!preloadedSeries || partOfDay || sourceEq) return false;
     if (fetchWindow.windowDays <= 7) return false;
     const coverage = preloadedCoverageDays ?? 0;
     if (fetchWindow.windowDays > coverage) return false;
@@ -292,6 +301,7 @@ export function useHealthChartSeries({
     fetchWindow.windowDays,
     types,
     partOfDay,
+    sourceEq,
   ]);
 
   const chartQuery = useQuery({
@@ -316,6 +326,7 @@ export function useHealthChartSeries({
       valueScale,
       preloadedSeries ? (usePreloaded ? "preloaded" : "fetch") : "",
       partOfDay ?? "",
+      sourceEq ?? "",
     ),
     // A minute of freshness so moving between metric pages does not refire
     // every chart; five minutes of cache for a quick back-and-forth.
@@ -332,6 +343,7 @@ export function useHealthChartSeries({
         dayKeyFormatter,
         tzFmt,
         partOfDay,
+        sourceEq,
       }),
     // The BMI view: the cached raw WEIGHT series divided at read time, so the
     // entry is shared with the weight chart. No height → no series. The range

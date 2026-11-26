@@ -334,7 +334,7 @@ export const readinessValue = z
       .number()
       .int()
       .describe(
-        "The 0–100 readiness blend. Only a statement about today when `fresh` is true; otherwise it is the last blend, from `asOfDay`.",
+        "The 0–100 readiness blend. Only a statement about today when `fresh` is true; otherwise it is the readiness the nightly job stored for `asOfDay`, never a live blend of inputs from different days.",
       ),
     band: z
       .enum(["green", "yellow", "red"])
@@ -360,7 +360,9 @@ export const readinessValue = z
             ),
         }),
       )
-      .describe("All five contributors, present and dropped."),
+      .describe(
+        "All five contributors, present and dropped. When `fresh` is false none carries a value: the stored day keeps no breakdown.",
+      ),
     series: z
       .array(z.number())
       .optional()
@@ -370,12 +372,12 @@ export const readinessValue = z
     asOfDay: z
       .string()
       .describe(
-        "1.50 — the oldest local day (YYYY-MM-DD, the account's zone) a counted input rests on: a vital's latest day mean or the wake day of the scored night. Mood carries no day and is not counted. Today when `fresh` is true.",
+        "1.50 — the local day (YYYY-MM-DD, the account's zone) `score` belongs to. Today when `fresh` is true; otherwise the wake day of the last stored readiness.",
       ),
     fresh: z
       .boolean()
       .describe(
-        '1.50 — true only when every counted vital (resting pulse, HRV, respiratory rate) is from the reader\'s today and the sleep score describes the night that ended this morning. When false, show no number, no band and no sentence about readiness, at most "last {score} on {asOfDay}".',
+        '1.50 — true when every input the account still delivers (resting pulse, HRV, respiratory rate, the scored night) is from the reader\'s today. An input last seen before yesterday, or yesterday after local noon, is left out of the blend instead of holding it stale; mood never counts. When false, show no number, no band and no sentence about readiness, at most "last {score} on {asOfDay}".',
       ),
   })
   .meta({ id: "ReadinessValue" });
@@ -1653,7 +1655,7 @@ export const dashboardSnapshotResponse = z
             .number()
             .int()
             .describe(
-              "The rounded 0..100 score. On a READINESS ring that is not `fresh` it is the last blend, from `asOfDay`, for a 'last {score} on {asOfDay}' line, never shown as today's.",
+              "The rounded 0..100 score. On a READINESS ring that is not `fresh` it is the readiness stored for `asOfDay`, for a 'last {score} on {asOfDay}' line, never shown as today's.",
             ),
           band: z
             .enum(["green", "yellow", "red"])
@@ -1671,13 +1673,13 @@ export const dashboardSnapshotResponse = z
             .string()
             .optional()
             .describe(
-              "1.50, READINESS only: the local day (YYYY-MM-DD) the blend rests on (`ReadinessValue.asOfDay`).",
+              "1.50, READINESS only: the local day (YYYY-MM-DD) the score belongs to (`ReadinessValue.asOfDay`).",
             ),
           source: z
             .string()
             .optional()
             .describe(
-              "1.50, RECOVERY_SCORE only: the `MeasurementSource` of the row the ring shows. `COMPUTED` is HealthLog's own readiness blend stored at 04:45 (the proxy ring): it is left out when a READINESS ring is also present, and the proxy ring retires in 1.51. Any other source is the device's own score, named after it (WHOOP Recovery, Oura Readiness, Polar Nightly Recharge).",
+              "1.50, RECOVERY_SCORE only: the `MeasurementSource` of the row the ring shows. `COMPUTED` is HealthLog's own readiness blend stored at 04:45 (the proxy ring): it is left out when a READINESS ring with a band (fresh) is also present, and stays beside a stale READINESS ring (band null) so a client that skips that ring still shows one; the proxy ring retires in 1.51. Any other source is the device's own score, named after it (WHOOP Recovery, Oura Readiness, Polar Nightly Recharge).",
             ),
           doses: z
             .object({
@@ -1692,7 +1694,7 @@ export const dashboardSnapshotResponse = z
       )
       .optional()
       .describe(
-        "User-selected hero score rings (max 3, `selectedScoreRings` on the dashboard layout), resolved server-side: READINESS / RECOVERY_SCORE / SLEEP_SCORE via the derived engines (module-gated like `/api/insights/derived`); MED_COMPLIANCE is TODAY's dose progress off the snapshot's medsToday tally — `score` is the rounded 0..100 progress, `doses` carries the taken/scheduled pair, the band is progress semantics (green once every scheduled dose is taken, yellow while doses remain, never red), and the ring is absent when no dose is scheduled today. Only rings with data appear, in selection order — a missing entry means no data or a disabled module, never zero; since 1.50 a RECOVERY_SCORE ring whose `source` is `COMPUTED` is also left out when a READINESS ring is present (the same blend twice). Clients render what arrives and never recompute.",
+        "User-selected hero score rings (max 3, `selectedScoreRings` on the dashboard layout), resolved server-side: READINESS / RECOVERY_SCORE / SLEEP_SCORE via the derived engines (module-gated like `/api/insights/derived`); MED_COMPLIANCE is TODAY's dose progress off the snapshot's medsToday tally — `score` is the rounded 0..100 progress, `doses` carries the taken/scheduled pair, the band is progress semantics (green once every scheduled dose is taken, yellow while doses remain, never red), and the ring is absent when no dose is scheduled today. Only rings with data appear, in selection order — a missing entry means no data or a disabled module, never zero; since 1.50 a RECOVERY_SCORE ring whose `source` is `COMPUTED` is also left out when a fresh READINESS ring (non-null band) is present (the same blend twice), but kept beside a stale one. Clients render what arrives and never recompute.",
       ),
     briefing: z.record(z.string(), z.unknown()).nullable(),
     // v1.21.2 — server-resolved recall + forward-look for the

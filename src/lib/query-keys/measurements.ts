@@ -129,6 +129,9 @@ export const measurementKeys = {
     // when set (behind the read mode, which then always rides), so the
     // whole-day key of every chart stays as it was.
     partOfDay: string = "",
+    // One source's readings only (the device-scores page). Appended only
+    // when set, like the part of the day.
+    sourceEq: string = "",
   ) => {
     const base = [
       "chart-data",
@@ -140,6 +143,7 @@ export const measurementKeys = {
       toIso,
       valueScale,
     ] as const;
+    if (sourceEq) return [...base, readMode, partOfDay, sourceEq] as const;
     if (partOfDay) return [...base, readMode, partOfDay] as const;
     return readMode ? ([...base, readMode] as const) : base;
   },

@@ -33,7 +33,11 @@ import {
 import { dayGroupedListResponse } from "@/lib/measurements/list/day-grouped";
 import { sleepListResponse } from "@/lib/measurements/list/sleep-list";
 import { resolveStoredTimezone, resolveUserTimezone } from "@/lib/tz/resolver";
-import type { MeasurementType, Prisma } from "@/generated/prisma/client";
+import type {
+  MeasurementSource,
+  MeasurementType,
+  Prisma,
+} from "@/generated/prisma/client";
 import type { BpPartOfDay } from "@/lib/analytics/bp-time-of-day";
 
 /**
@@ -161,7 +165,7 @@ export async function measurementListResponse(
     const series = await rollupSeriesResponse(
       user.id,
       type as MeasurementType,
-      { from, to, limit, partOfDay },
+      { from, to, limit, partOfDay, sourceEq },
     );
     if (series) return series;
     // An empty result means the window genuinely holds no rows. Fall
@@ -234,9 +238,15 @@ async function drillDownResponse(
 async function rollupSeriesResponse(
   userId: string,
   type: MeasurementType,
-  window: { from: Date; to: Date; limit: number; partOfDay?: BpPartOfDay },
+  window: {
+    from: Date;
+    to: Date;
+    limit: number;
+    partOfDay?: BpPartOfDay;
+    sourceEq?: MeasurementSource;
+  },
 ): Promise<Response | null> {
-  const { from, to, limit, partOfDay } = window;
+  const { from, to, limit, partOfDay, sourceEq } = window;
   // Shared with the batched series endpoint, so both read the same rows.
   const cap = Math.min(limit, BUCKET_CAP.daily);
   const priorityJson = await loadUserSourcePriority(userId);
@@ -248,8 +258,11 @@ async function rollupSeriesResponse(
     limit,
     priorityJson,
     partOfDay,
+    sourceEq,
   });
-  if (measurements.length === 0 && !partOfDay) return null;
+  // A narrowed read answers even when empty: the live branch below knows
+  // neither a part of the day nor a source.
+  if (measurements.length === 0 && !partOfDay && !sourceEq) return null;
   return apiSuccess({
     measurements,
     meta: {

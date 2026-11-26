@@ -51,7 +51,11 @@ export function quietSourceItems(
       actions: [
         {
           labelKey: "daily.action.openSource",
-          intent: "sync.open",
+          // `sync.reconnect`, not a new token: every shipped iOS build routes
+          // it to the integrations screen and shows its generic label for a
+          // label key it does not know. A new intent would be a dead button
+          // there. The href names the source's own card for the web.
+          intent: "sync.reconnect",
           href: q.href,
         },
       ],
