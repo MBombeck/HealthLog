@@ -1019,6 +1019,48 @@ describe("GET /api/insights/generate — read-only advisor read", () => {
     expect(enqueueForceWarm).toHaveBeenCalledTimes(1);
   });
 
+  // A block written before the commit gate, or by an older build, that the
+  // shared reader rejects: stamped a minute ago, generated today, in the
+  // reader's language. It is not a briefing the card can show, so the read
+  // must ask for a warm rather than call it fresh.
+  it.each([
+    [
+      "a briefing the card cannot render",
+      JSON.stringify({
+        dailyBriefing: { paragraph: "Today.", keyFindings: "not a list" },
+        briefingGeneratedAt: new Date().toISOString(),
+      }),
+    ],
+    [
+      "a briefing missing from today's text",
+      JSON.stringify({
+        changed: "today, but no briefing",
+        briefingGeneratedAt: new Date().toISOString(),
+      }),
+    ],
+    ["cached text that does not parse", "{not json"],
+  ])("does not call %s fresh, and asks for a warm", async (_label, text) => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
+      insightsCachedAt: new Date(Date.now() - 60_000),
+      insightsCachedTextEncrypted: sealInsightsCachedText(text),
+      insightsCachedLocale: "en",
+      locale: "en",
+      timezone: "UTC",
+    } as unknown as Awaited<ReturnType<typeof prisma.user.findUnique>>);
+
+    const res = await (GET as unknown as (req: Request) => Promise<Response>)(
+      new Request("http://localhost/api/insights/generate"),
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { data: { revalidating: boolean } };
+    expect(body.data.revalidating).toBe(true);
+    expect(enqueueForceWarm).toHaveBeenCalledWith({
+      userId: "u-1",
+      locale: "en",
+    });
+    expect(resolveProviderChain).not.toHaveBeenCalled();
+  });
+
   it("serves today's signals with deltas at display precision", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
       insightsCachedAt: new Date(),

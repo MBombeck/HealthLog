@@ -266,7 +266,7 @@ describe("release container inputs", () => {
     const cliPackage = JSON.parse(
       readRepoFile("docker/prisma-cli/package.json"),
     ) as { dependencies: Record<string, string> };
-    expect(cliPackage.dependencies.tsx).toBe("4.23.1");
+    expect(cliPackage.dependencies.tsx).toBe("4.23.15");
     expect(dockerfile).toContain(
       "ln -sfn /opt/prisma-cli/node_modules/.bin/tsx /usr/local/bin/healthlog-tsx",
     );
