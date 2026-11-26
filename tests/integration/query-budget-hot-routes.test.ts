@@ -114,7 +114,10 @@ const BUDGET = {
   // integration watches and the iPhones, come back in one statement; a
   // connection's health is read only when one is stamped, never on this
   // fixture.
-  dailyDigest: 132,
+  // 132 → 133 (1.50.0): a readiness left with too few fresh inputs reads
+  // the stored day before today ("last N on D") instead of answering
+  // nothing, one statement, on this fixture through the snapshot's ring.
+  dailyDigest: 133,
   // The morning read (1.50.0): the snapshot (its own cell, rebuilt here, 88
   // of them), the coincident engine, readiness and the sleep score in one day
   // cell, the floor ledger, the quiet-source stamps and the day's first
@@ -126,7 +129,10 @@ const BUDGET = {
   // only after a confirmed floor (the cuff readings, and glucose as its two
   // extremes), so a single reading past a floor keeps the sentence from
   // calling the day in range.
-  dailyMorning: 126,
+  // 126 → 127 (1.50.0): readiness with too few fresh inputs reads its stored
+  // day before today, one statement (126 locally, the runner's extra
+  // source-order read on top).
+  dailyMorning: 127,
   // The target cards; their seven-day means come from the slice when a
   // fresh one is cached, here (evicted) from the slice's window aggregate.
   // 22 → 23, health status 59 → 60 (1.49.0): both grade weight and BMI, and
