@@ -25,6 +25,11 @@ import { annotate } from "@/lib/logging/context";
 import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { DASHBOARD_REFETCH_INTERVAL_MS } from "@/lib/queries/refetch-interval";
 import { readDashboardSnapshotCached } from "@/lib/dashboard/snapshot-read";
+import {
+  lastNightFromSnapshot,
+  morningCacheKey,
+  morningExtrasCacheKey,
+} from "@/lib/daily/last-night";
 import { resolveModuleMap } from "@/lib/modules/gate";
 import { resolveRestMode } from "@/lib/illness/rest-mode";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
@@ -58,7 +63,6 @@ import {
 import { vitalDisplayDecimals } from "@/lib/measurements/vital-precision";
 import { CONNECTION_LABELS } from "@/lib/integrations/connection-health";
 import { loadQuietSources } from "@/lib/sync-stall/quiet-load";
-import { isSleepExpected } from "@/lib/daily/digest";
 import {
   floorFromReadings,
   type MorningFloor,
@@ -66,7 +70,6 @@ import {
 import type { TodayRestMode, TodayVital } from "@/lib/daily/today-overview";
 import {
   buildDailyMorning,
-  resolveLastNight,
   type Band,
   type DailyMorning,
   type DeviceSourceValue,
@@ -125,10 +128,6 @@ interface MorningExtras {
   readiness: MorningReadiness | null;
   sleepScore: MorningSleepScore | null;
   deviceScores: DeviceScoreRow[];
-}
-
-export function morningCacheKey(userId: string, dateKey: string): string {
-  return `${userId}|daily-morning|${dateKey}`;
 }
 
 async function readVitals(
@@ -273,7 +272,7 @@ function loadMorningExtrasCached(
 ): Promise<MorningExtras> {
   return cachedSwr(
     caches.analytics as ServerCache<MorningExtras>,
-    `${morningCacheKey(user.id, todayKey)}|${modules.sleep ? "s" : "-"}${modules.recovery ? "r" : "-"}`,
+    morningExtrasCacheKey(user.id, todayKey, modules),
     async () => {
       const profile = await loadBaselineProfile(prisma, user.id);
       const [vitals, readiness, sleepScore, deviceScores] = await Promise.all([
@@ -599,41 +598,16 @@ export async function loadDailyMorning(
   // Sleep: whether sleep is tracked at all comes from the snapshot; whether
   // last night is in comes from one rule, the sleep score's night
   // (`resolveLastNight`), which the sentence, the line, the ring and the
-  // pending state all read.
-  const sleepSlot = snapshot.tiles.lastSeenByType["SLEEP_DURATION"];
-  const sleepLastSeenDaysAgo = sleepSlot ? sleepSlot.daysAgo : null;
+  // pending state all read. The digest reads it through the same helper.
   const sleepOn = modules.sleep !== false;
-  const sleepExpected = sleepOn && isSleepExpected(sleepLastSeenDaysAgo);
-  const sleepSummary = snapshot.tiles.summaries?.SLEEP_DURATION;
   const sleepScore = extras.sleepScore;
-  const lastNight = resolveLastNight({
+  const { lastNight, sleepExpected } = lastNightFromSnapshot({
+    snapshot,
+    tz,
     todayKey,
     sleepOn,
-    sleepExpected,
     morningRefreshedToday: user.morningDigestRefreshedOn === todayKey,
-    sleepScore: sleepScore
-      ? {
-          night: sleepScore.night,
-          asleepMinutes:
-            sleepScore.asleepMinutes ??
-            (sleepSlot &&
-            userDayKey(new Date(sleepSlot.lastSeenAt), tz) === sleepScore.night
-              ? (sleepSummary?.latest ?? 0)
-              : 0),
-        }
-      : null,
-    latestSleep: sleepSlot
-      ? {
-          wakeDay: userDayKey(new Date(sleepSlot.lastSeenAt), tz),
-          minutes: sleepSummary?.latest ?? null,
-        }
-      : null,
-    usualMinutes:
-      sleepSummary?.avg30 !== null &&
-      sleepSummary?.avg30 !== undefined &&
-      sleepSummary.avg30 > 0
-        ? sleepSummary.avg30
-        : null,
+    sleepScore,
   });
 
   const restMode: TodayRestMode | null =
