@@ -113,33 +113,27 @@ export function Step8Summary({
                 >
                   {t("medications.wizard.compose.list.edit")}
                 </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground hover:text-foreground h-8 gap-1 px-2 text-xs"
-                  onClick={() => onRemoveSchedule(index)}
-                  disabled={!canRemove}
-                  data-slot="wizard-schedule-remove"
-                  data-index={index}
-                  aria-label={t("medications.wizard.compose.list.remove")}
-                >
-                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                  {t("medications.wizard.compose.list.remove")}
-                </Button>
+                {/* A medication keeps at least one schedule: with one, there
+                    is nothing to remove, so no button says it cannot. */}
+                {canRemove && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-foreground h-8 gap-1 px-2 text-xs"
+                    onClick={() => onRemoveSchedule(index)}
+                    data-slot="wizard-schedule-remove"
+                    data-index={index}
+                    aria-label={t("medications.wizard.compose.list.remove")}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                    {t("medications.wizard.compose.list.remove")}
+                  </Button>
+                )}
               </div>
             </div>
           );
         })}
-
-        {!canRemove && (
-          <p
-            className="text-muted-foreground text-xs"
-            data-slot="wizard-schedule-remove-disabled-hint"
-          >
-            {t("medications.wizard.compose.list.removeDisabled")}
-          </p>
-        )}
 
         {/* As-needed and one-shot carry one schedule: no "add another". */}
         {payload.mode !== "oneShot" && payload.mode !== "asNeeded" && (

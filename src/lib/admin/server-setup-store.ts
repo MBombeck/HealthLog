@@ -10,6 +10,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { withAppSettingsRowLock } from "@/lib/app-settings-row-lock";
 import { isOidcConfigured, isOidcOnly } from "@/lib/auth/oidc";
 import { isEmailConfigured } from "@/lib/notifications/senders/email-config";
+import { accountPushState } from "@/lib/push-relay/capability";
 
 import {
   applyServerSetupStep,
@@ -57,22 +58,28 @@ async function readRow(
 export async function readServerSetupState(
   adminUserId: string,
 ): Promise<ServerSetupState> {
-  const [row, admin] = await Promise.all([
+  const [row, admin, push] = await Promise.all([
     readRow(),
     prisma.user.findUnique({
       where: { id: adminUserId },
       select: { adminNoticesDismissed: true },
     }),
+    accountPushState(adminUserId, undefined, { isAdmin: true }),
   ]);
   const offered = serverSetupOfferedHere();
   const completedAt = row?.serverSetupCompletedAt?.toISOString() ?? null;
+  // The relay question lives on the admin start page; an admin who never
+  // opens it learns of an open question from this notice, which an upgraded
+  // server (setup stamped finished) would otherwise never show.
+  const relayUndecided =
+    push.relay.canDecide && push.relay.operatorDecision === "undecided";
   return {
     offered,
     completedAt,
     steps: parseServerSetupSteps(row?.serverSetupStepsJson ?? null),
     noticePending:
       offered &&
-      completedAt === null &&
+      (completedAt === null || relayUndecided) &&
       !(admin?.adminNoticesDismissed ?? []).includes(SERVER_SETUP_NOTICE_ID),
     facts: readServerSetupFacts(),
   };

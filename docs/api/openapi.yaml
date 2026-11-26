@@ -65367,8 +65367,8 @@ components:
           description: Every step, in order. A missing stored step reads pending.
         noticePending:
           type: boolean
-          description: "Whether the start-page notice shows for the calling admin: offered, not finished, not dismissed by this
-            admin."
+          description: "Whether the notice shows for the calling admin: offered, not dismissed by this admin, and either the setup
+            is not finished or the push relay is still undecided."
         facts:
           type: object
           properties:

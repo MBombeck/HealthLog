@@ -1899,7 +1899,7 @@
         },
         "step3": {
           "title": "What's the dose?",
-          "subline": "How much you take each time, as on the pack or the prescription: 5 mg, or 2 tablets.",
+          "subline": "As on the pack or the prescription.",
           "amountLabel": "Amount",
           "amountPlaceholder": "e.g. 5",
           "unitLabel": "Unit",
@@ -1925,9 +1925,9 @@
           },
           "dosesPerUnitLabel": "Pack size",
           "dosesPerUnitPlaceholder": "e.g. 4",
-          "dosesPerUnitHint": "How many tablets or units one new pack or pen holds, e.g. 28 tablets or a 4-dose pen. Fills in the amount when you add a pack; leave empty if packs vary.",
+          "dosesPerUnitHint": "What one new pack holds, e.g. 28 tablets.",
           "unitsPerDoseLabel": "Tablets or units per dose",
-          "unitsPerDoseHint": "e.g. 2 tablets of 2 mg for a 4 mg dose, or ½ a tablet for a split dose",
+          "unitsPerDoseHint": "E.g. 2 tablets of 2 mg for a 4 mg dose.",
           "packSizeToggle": "Pack size (optional)"
         },
         "step4": {
@@ -1935,12 +1935,10 @@
           "subline": "A start date is enough; an end date can follow later."
         },
         "step5": {
-          "title": "How often do you take it?",
-          "subline": "Pick the one that matches how you take it."
+          "title": "How often do you take it?"
         },
         "step6": {
           "title": "What does that look like in detail?",
-          "subline": "Set weekdays, intervals, or the day of the month.",
           "intervalWeeks": {
             "label": "Every",
             "suffix": "weeks"
@@ -1964,7 +1962,7 @@
             "evening": "Evening",
             "night": "Night"
           },
-          "overrideHint": "Optional: set a different dose or unit count just for this time of day. Leave blank to use the medication's default.",
+          "overrideHint": "Leave blank to use the usual dose.",
           "doseOverrideLabel": "Dose for this time (optional)",
           "doseOverridePlaceholder": "e.g. half a tablet",
           "unitsOverrideLabel": "Units consumed at this time",
@@ -1973,7 +1971,6 @@
         },
         "step8": {
           "title": "All done. Should HealthLog remind you?",
-          "subline": "Review everything below before you save.",
           "remindersLabel": "Reminders on",
           "remindersDescription": "Reminders arrive the way you set them up under Notifications: web push, Telegram or ntfy. The iPhone app plans its own reminders.",
           "noChannelHint": "Reminders need a notification channel, and none is active right now.",
@@ -2008,7 +2005,7 @@
         },
         "everyNWeeks": {
           "label": "Every few weeks",
-          "description": "E.g. every 2 weeks on Thursdays (GLP-1, biologics)."
+          "description": "E.g. every 2 weeks on Thursdays."
         },
         "monthly": {
           "label": "Monthly",
@@ -2016,15 +2013,15 @@
         },
         "rolling": {
           "label": "Flexible from last dose",
-          "description": "Leave the next dose open. When you tap Take, the count starts again from that moment."
+          "description": "Next dose counts from when you tap Take."
         },
         "oneShot": {
           "label": "Single dose",
-          "description": "One administration, e.g. a vaccine or an injection at the doctor's."
+          "description": "One dose, e.g. a vaccine."
         },
         "asNeeded": {
           "label": "As needed",
-          "description": "No fixed plan. Log an intake whenever you need one (e.g. pain relief)."
+          "description": "No fixed plan; log an intake when needed."
         }
       },
       "summary": {
@@ -2056,8 +2053,7 @@
         "list": {
           "add": "Add another schedule",
           "edit": "Edit",
-          "remove": "Remove",
-          "removeDisabled": "At least one schedule is required."
+          "remove": "Remove"
         }
       },
       "errors": {
@@ -2522,7 +2518,7 @@
         "saved": "Schedule saved",
         "failed": "Could not save the schedule",
         "window": {
-          "intro": "For each dose, set when an intake still counts as on time: a precise time (±1h) or your own window such as 07:00–09:00.",
+          "intro": "On time means ±1 h, or a window you set.",
           "explicitToggle": "Custom window",
           "startLabel": "Window start",
           "endLabel": "Window end",
@@ -9834,7 +9830,9 @@
         "title": "Set up this server",
         "body": "Five short steps for sign-ups, notifications, AI and privacy; skip or change any of them later.",
         "open": "Start the setup",
-        "dismiss": "Not now"
+        "dismiss": "Not now",
+        "relayBody": "iPhone reminders and Wallet wait for this answer, on the admin start page.",
+        "relayOpen": "Open admin"
       },
       "accounts": {
         "title": "Who can use this server",

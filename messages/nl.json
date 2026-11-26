@@ -1899,7 +1899,7 @@
         },
         "step3": {
           "title": "Wat is de dosis?",
-          "subline": "Hoeveel je elke keer neemt, zoals op de verpakking of het recept: 5 mg of 2 tabletten.",
+          "subline": "Zoals op de verpakking of het recept.",
           "amountLabel": "Hoeveelheid",
           "amountPlaceholder": "bijv. 5",
           "unitLabel": "Eenheid",
@@ -1925,9 +1925,9 @@
           },
           "dosesPerUnitLabel": "Verpakkingsgrootte",
           "dosesPerUnitPlaceholder": "bijv. 4",
-          "dosesPerUnitHint": "Hoeveel tabletten of eenheden een nieuwe verpakking of pen bevat, bijv. 28 tabletten of een pen met 4 doses. Vult de hoeveelheid in bij het toevoegen van een verpakking; laat leeg als verpakkingen verschillen.",
+          "dosesPerUnitHint": "Wat een nieuwe verpakking bevat, bijv. 28 tabletten.",
           "unitsPerDoseLabel": "Tabletten of eenheden per dosis",
-          "unitsPerDoseHint": "bijv. 2 tabletten van 2 mg voor een dosis van 4 mg, of ½ tablet voor een gedeelde dosis",
+          "unitsPerDoseHint": "Bijv. 2 tabletten van 2 mg voor 4 mg.",
           "packSizeToggle": "Verpakkingsgrootte (optioneel)"
         },
         "step4": {
@@ -1935,12 +1935,10 @@
           "subline": "Een begindatum is genoeg; een einddatum kan later volgen."
         },
         "step5": {
-          "title": "Hoe vaak neem je het in?",
-          "subline": "Kies wat bij je inname past."
+          "title": "Hoe vaak neem je het in?"
         },
         "step6": {
           "title": "Hoe ziet dat er precies uit?",
-          "subline": "Stel weekdagen, intervallen of de dag van de maand in.",
           "intervalWeeks": {
             "label": "Elke",
             "suffix": "weken"
@@ -1964,7 +1962,7 @@
             "evening": "Avond",
             "night": "Nacht"
           },
-          "overrideHint": "Optioneel: stel alleen voor dit tijdstip een andere dosis of een ander aantal eenheden in. Laat leeg om de standaardwaarde van het medicijn te gebruiken.",
+          "overrideHint": "Laat leeg voor de gewone dosis.",
           "doseOverrideLabel": "Dosis voor dit tijdstip (optioneel)",
           "doseOverridePlaceholder": "bijv. een halve tablet",
           "unitsOverrideLabel": "Verbruikte eenheden op dit tijdstip",
@@ -1973,7 +1971,6 @@
         },
         "step8": {
           "title": "Klaar. Moet HealthLog je eraan herinneren?",
-          "subline": "Controleer alles hieronder voordat je opslaat.",
           "remindersLabel": "Herinneringen aan",
           "remindersDescription": "Herinneringen komen aan zoals je ze bij Meldingen hebt ingesteld: webpush, Telegram of ntfy. De iPhone-app plant zijn herinneringen zelf.",
           "noChannelHint": "Voor herinneringen is een meldingskanaal nodig, en er is er op dit moment geen actief.",
@@ -2008,7 +2005,7 @@
         },
         "everyNWeeks": {
           "label": "Om de paar weken",
-          "description": "Bijv. om de 2 weken op donderdag (GLP-1, biologicals)."
+          "description": "Bijv. om de 2 weken op donderdag."
         },
         "monthly": {
           "label": "Maandelijks",
@@ -2016,15 +2013,15 @@
         },
         "rolling": {
           "label": "Flexibel vanaf laatste dosis",
-          "description": "Laat de volgende dosis open. Als je op 'Innemen' tikt, begint de telling vanaf dat moment opnieuw."
+          "description": "De volgende dosis telt vanaf ‘Innemen’."
         },
         "oneShot": {
           "label": "Eenmalige dosis",
-          "description": "Eén toediening, bijv. een vaccin of een injectie bij de arts."
+          "description": "Eén dosis, bijv. een vaccin."
         },
         "asNeeded": {
           "label": "Zo nodig",
-          "description": "Geen vast schema. Leg een inname vast wanneer je er een nodig hebt (bijv. pijnstilling)."
+          "description": "Geen vast schema; leg een inname vast als nodig."
         }
       },
       "summary": {
@@ -2056,8 +2053,7 @@
         "list": {
           "add": "Nog een schema toevoegen",
           "edit": "Bewerken",
-          "remove": "Verwijderen",
-          "removeDisabled": "Er is minimaal één schema nodig."
+          "remove": "Verwijderen"
         }
       },
       "errors": {
@@ -2522,7 +2518,7 @@
         "saved": "Schema opgeslagen",
         "failed": "Het schema kan niet worden opgeslagen",
         "window": {
-          "intro": "Stel per dosis in wanneer een inname nog als op tijd telt: een exact tijdstip (±1 u) of je eigen tijdvenster, zoals 07:00–09:00.",
+          "intro": "Op tijd betekent ±1 u, of een eigen tijdvenster.",
           "explicitToggle": "Eigen tijdvenster",
           "startLabel": "Begin van tijdvenster",
           "endLabel": "Einde van tijdvenster",
@@ -9834,7 +9830,9 @@
         "title": "Deze server inrichten",
         "body": "Vijf korte stappen over aanmeldingen, meldingen, AI en privacy; elke stap kun je overslaan of later wijzigen.",
         "open": "Inrichting starten",
-        "dismiss": "Niet nu"
+        "dismiss": "Niet nu",
+        "relayBody": "Herinneringen op de iPhone en Wallet wachten op dit antwoord, op de beheerstartpagina.",
+        "relayOpen": "Beheer openen"
       },
       "accounts": {
         "title": "Wie deze server kan gebruiken",

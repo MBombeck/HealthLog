@@ -160,7 +160,10 @@ export interface ServerSetupState {
   offered: boolean;
   completedAt: string | null;
   steps: ServerSetupStepState[];
-  /** The start-page notice shows while this is true (per admin). */
+  /**
+   * The notice shows while this is true (per admin): the setup is not
+   * finished, or the push relay is still undecided.
+   */
   noticePending: boolean;
   facts: ServerSetupFacts;
 }

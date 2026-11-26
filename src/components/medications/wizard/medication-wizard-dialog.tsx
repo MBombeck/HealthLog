@@ -36,6 +36,7 @@ import { toast } from "sonner";
 import { Loader2, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { DialogClose } from "@/components/ui/dialog";
 import { InlineAction } from "@/components/ui/inline-action";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Stepper } from "@/components/ui/stepper";
@@ -92,6 +93,12 @@ export interface MedicationWizardDialogProps {
 }
 
 type StepNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+
+/**
+ * Steps whose heading carries a sentence under it. The cadence, its details
+ * and the review say what they ask in the heading and the choices alone.
+ */
+const STEPS_WITH_SUBLINE: ReadonlySet<number> = new Set([1, 2, 3, 4, 7]);
 
 /**
  * Whether closing would lose input: what a save would send now against what
@@ -373,7 +380,11 @@ function WizardDialogShell({
       : t("medications.wizard.header.createTitle");
 
   const stepTitle = t(`medications.wizard.steps.step${step}.title`);
-  const stepSubline = t(`medications.wizard.steps.step${step}.subline`);
+  // One sentence under the heading only where it adds something the heading
+  // and the choices do not say already.
+  const stepSubline = STEPS_WITH_SUBLINE.has(step)
+    ? t(`medications.wizard.steps.step${step}.subline`)
+    : null;
   const phaseCount = t("medications.wizard.header.stepOf", {
     current: phase + 1,
     total: MEDICATION_PHASES.length,
@@ -476,7 +487,9 @@ function WizardDialogShell({
               >
                 {stepTitle}
               </h3>
-              <p className="text-muted-foreground text-sm">{stepSubline}</p>
+              {stepSubline && (
+                <p className="text-muted-foreground text-sm">{stepSubline}</p>
+              )}
             </div>
 
             <div data-slot="wizard-step-field">
@@ -552,9 +565,15 @@ function WizardDialogShell({
 }
 
 /**
- * Back, then Next or Save. A disabled Next or Save says what still holds the
- * step (`blocker`, from the same gate that disables it) instead of leaving
- * the person to guess.
+ * Back (Cancel on the first step), then Next or Save. A disabled Next or Save
+ * names what still holds the step to a screen reader (`blocker`, from the
+ * same gate that disables it); on screen the step's own heading and the
+ * disabled button say it already.
+ *
+ * Cancel stands where Back stands on every later step, in the same style. It
+ * closes through the sheet itself (Radix's close, which both the bottom sheet
+ * and the dialog are built on), so typed input meets the sheet's shared
+ * discard question exactly as the close button and Escape do.
  */
 function WizardFooter({
   blocker,
@@ -582,7 +601,7 @@ function WizardFooter({
       {blocker && (
         <p
           id="wizard-blocked-hint"
-          className="text-foreground text-right text-sm"
+          className="sr-only"
           data-slot="wizard-blocked-hint"
           aria-live="polite"
         >
@@ -590,16 +609,30 @@ function WizardFooter({
         </p>
       )}
       <div className="flex w-full items-center justify-between gap-2">
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={onBack}
-          disabled={isFirstStep || submitting}
-          data-slot="wizard-back"
-          className="h-11"
-        >
-          {t("medications.wizard.nav.back")}
-        </Button>
+        {isFirstStep ? (
+          <DialogClose asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={submitting}
+              data-slot="wizard-cancel"
+              className="h-11"
+            >
+              {t("common.cancel")}
+            </Button>
+          </DialogClose>
+        ) : (
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onBack}
+            disabled={submitting}
+            data-slot="wizard-back"
+            className="h-11"
+          >
+            {t("medications.wizard.nav.back")}
+          </Button>
+        )}
         {!isLastStep ? (
           <Button
             type="button"

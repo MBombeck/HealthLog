@@ -1899,7 +1899,7 @@
         },
         "step3": {
           "title": "Jaka jest dawka?",
-          "subline": "Ile przyjmujesz za każdym razem, jak na opakowaniu lub recepcie: 5 mg albo 2 tabletki.",
+          "subline": "Tak jak na opakowaniu lub recepcie.",
           "amountLabel": "Ilość",
           "amountPlaceholder": "np. 5",
           "unitLabel": "Jednostka",
@@ -1925,9 +1925,9 @@
           },
           "dosesPerUnitLabel": "Wielkość opakowania",
           "dosesPerUnitPlaceholder": "np. 4",
-          "dosesPerUnitHint": "Ile tabletek lub jednostek zawiera nowe opakowanie lub wstrzykiwacz, np. 28 tabletek albo wstrzykiwacz na 4 dawki. Uzupełnia ilość przy dodawaniu opakowania; zostaw puste, jeśli opakowania się różnią.",
+          "dosesPerUnitHint": "Zawartość nowego opakowania, np. 28 tabletek.",
           "unitsPerDoseLabel": "Tabletki lub jednostki na dawkę",
-          "unitsPerDoseHint": "np. 2 tabletki po 2 mg na dawkę 4 mg lub ½ tabletki przy dzielonej dawce",
+          "unitsPerDoseHint": "Np. 2 tabletki po 2 mg na 4 mg.",
           "packSizeToggle": "Wielkość opakowania (opcjonalnie)"
         },
         "step4": {
@@ -1935,12 +1935,10 @@
           "subline": "Wystarczy data rozpoczęcia, datę zakończenia możesz dodać później."
         },
         "step5": {
-          "title": "Jak często go przyjmujesz?",
-          "subline": "Wybierz to, co pasuje do twojego przyjęcia."
+          "title": "Jak często go przyjmujesz?"
         },
         "step6": {
           "title": "Jak to wygląda szczegółowo?",
-          "subline": "Ustaw dni tygodnia, interwały lub dzień miesiąca.",
           "intervalWeeks": {
             "label": "Co",
             "suffix": "tygodni"
@@ -1964,7 +1962,7 @@
             "evening": "Wieczór",
             "night": "Noc"
           },
-          "overrideHint": "Opcjonalnie: ustaw inną dawkę lub liczbę jednostek tylko dla tej pory. Pozostaw puste, aby użyć wartości domyślnej leku.",
+          "overrideHint": "Zostaw puste, by użyć zwykłej dawki.",
           "doseOverrideLabel": "Dawka dla tej pory (opcjonalnie)",
           "doseOverridePlaceholder": "np. pół tabletki",
           "unitsOverrideLabel": "Jednostki zużyte o tej porze",
@@ -1973,7 +1971,6 @@
         },
         "step8": {
           "title": "Gotowe. Czy HealthLog ma Ci przypominać?",
-          "subline": "Sprawdź wszystko poniżej przed zapisaniem.",
           "remindersLabel": "Przypomnienia włączone",
           "remindersDescription": "Przypomnienia docierają tak, jak ustawisz je w Powiadomieniach: web push, Telegram lub ntfy. Aplikacja na iPhone’a sama planuje swoje przypomnienia.",
           "noChannelHint": "Przypomnienia wymagają kanału powiadomień, a obecnie żaden nie jest aktywny.",
@@ -2008,7 +2005,7 @@
         },
         "everyNWeeks": {
           "label": "Co kilka tygodni",
-          "description": "Np. co 2 tygodnie w czwartki (GLP-1, leki biologiczne)."
+          "description": "Np. co 2 tygodnie w czwartki."
         },
         "monthly": {
           "label": "Co miesiąc",
@@ -2016,15 +2013,15 @@
         },
         "rolling": {
           "label": "Elastycznie od ostatniej dawki",
-          "description": "Pozostaw kolejną dawkę otwartą. Po naciśnięciu „Przyjmij” liczenie zaczyna się od nowa od tego momentu."
+          "description": "Następna dawka liczy się od „Przyjmij”."
         },
         "oneShot": {
           "label": "Jednorazowo",
-          "description": "Jednorazowe podanie, np. szczepionka lub zastrzyk u lekarza."
+          "description": "Jedna dawka, np. szczepionka."
         },
         "asNeeded": {
           "label": "W razie potrzeby",
-          "description": "Bez stałego planu: zapisz przyjęcie, gdy go potrzebujesz (np. lek przeciwbólowy)."
+          "description": "Bez stałego planu; zapisz przyjęcie w razie potrzeby."
         }
       },
       "summary": {
@@ -2056,8 +2053,7 @@
         "list": {
           "add": "Dodaj kolejny harmonogram",
           "edit": "Edytuj",
-          "remove": "Usuń",
-          "removeDisabled": "Wymagany jest co najmniej jeden harmonogram."
+          "remove": "Usuń"
         }
       },
       "errors": {
@@ -2522,7 +2518,7 @@
         "saved": "Zapisano harmonogram",
         "failed": "Nie udało się zapisać harmonogramu",
         "window": {
-          "intro": "Dla każdej dawki ustal, kiedy przyjęcie jest jeszcze punktualne: dokładna godzina (±1 h) lub własne okno, np. 07:00–09:00.",
+          "intro": "Punktualnie znaczy ±1 h lub własne okno.",
           "explicitToggle": "Własne okno",
           "startLabel": "Początek okna",
           "endLabel": "Koniec okna",
@@ -9834,7 +9830,9 @@
         "title": "Skonfiguruj ten serwer",
         "body": "Pięć krótkich kroków o rejestracji, powiadomieniach, AI i prywatności; każdy możesz pominąć lub zmienić później.",
         "open": "Rozpocznij konfigurację",
-        "dismiss": "Nie teraz"
+        "dismiss": "Nie teraz",
+        "relayBody": "Przypomnienia na iPhonie i Wallet czekają na tę odpowiedź, na stronie startowej administracji.",
+        "relayOpen": "Otwórz administrację"
       },
       "accounts": {
         "title": "Kto może korzystać z tego serwera",
