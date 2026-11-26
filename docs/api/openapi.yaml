@@ -1429,6 +1429,28 @@ paths:
         "403": *a18
         "422": *a4
         "429": *a5
+  /api/emergency-card/wallet/apple/ready-push/dismiss:
+    post:
+      tags:
+        - Records
+      summary: Dismiss the Wallet ready push
+      description: 'v1.50. The app reports the dismiss action of the `EMERGENCY_CARD_WALLET_READY` notification ("your
+        emergency card is ready for Wallet"; category = the event name, tap = the add-pass sheet). The no is stored per
+        person, not per device: one report silences the push on every device, and it is never sent again, a pass made
+        anew included. A tap that finds the pass no longer available (withdrawn, `state` not `available`, the download
+        answering 404 or 503) opens the emergency card screen as it is, shows no error and is not reported here: it is
+        not a dismissal. Idempotent. Cookie or a full-access token.'
+      responses:
+        "200":
+          description: Dismissed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmergencyWalletReadyPushDismissed"
+        "401": *a1
+        "403": *a18
+        "422": *a4
+        "429": *a5
   /api/emergency-card/wallet/apple/pass:
     get:
       tags:
@@ -44176,6 +44198,7 @@ components:
             - BACKUP_HEALTH
             - SEIZURE_CLUSTER
             - SYNC_STALLED
+            - EMERGENCY_CARD_WALLET_READY
         enabled:
           type: boolean
       required:
@@ -49275,6 +49298,30 @@ components:
         - data
         - error
       additionalProperties: false
+    EmergencyWalletReadyPushDismissed:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            dismissed:
+              type: boolean
+              const: true
+          required:
+            - dismissed
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
     WalletUpdatedSerials:
       type: object
       properties:
@@ -49862,6 +49909,7 @@ components:
               - sleep.night-overlays
               - profile.emergency-card-apple-wallet
               - profile.emergency-card-apple-wallet-state
+              - profile.emergency-card-wallet-ready-push
               - notifications.sync-stalled
               - insights.same-time-daily-total
               - push.live-activity-token-state
@@ -49963,9 +50011,15 @@ components:
             | relay_not_ready | not_configured | no_https_origin | api_disabled | not_allowed), relayAction (enable |
             ask_admin, only with relay_off, by the caller's own role) and relayHintDismissed; POST
             /api/emergency-card/wallet/apple/relay-hint records the caller's no. A server that signs with its own
-            WALLET_APPLE_* never reads relay_off. `notifications.sync-stalled`: SYNC_STALLED is a notification category
-            (default on, toggled per channel in the notification preferences): once per stall and in daytime, the owner
-            is told that a daily source went quiet, among them an iPhone whose Apple Health upload stopped; GET
+            WALLET_APPLE_* never reads relay_off. `profile.emergency-card-wallet-ready-push`:
+            EMERGENCY_CARD_WALLET_READY is a notification event (default on): once per Wallet pass, at most twice per
+            person, while the pass is live, emergencyCard.wallet.apple.state is available, no device registered the pass
+            and the card shows something; never for a managed profile. Its category is the event name and its tap opens
+            the add-pass sheet (web: /emergency-card#wallet). POST /api/emergency-card/wallet/apple/ready-push/dismiss
+            records the person's no, per person, and it is never sent again; a tap that finds the pass no longer
+            available is not a no. `notifications.sync-stalled`: SYNC_STALLED is a notification category (default on,
+            toggled per channel in the notification preferences): once per stall and in daytime, the owner is told that
+            a daily source went quiet, among them an iPhone whose Apple Health upload stopped; GET
             /api/integrations/healthkit carries quietDevices (model, quietSince). The push names the source as a
             connection key (apple-health, garmin, google-health, nightscout, oura, polar, whoop, withings), and its deep
             link is always /settings/integrations#<source>, the source's card on the integrations page: a direct push
@@ -105181,6 +105235,7 @@ components:
               - BACKUP_HEALTH
               - SEIZURE_CLUSTER
               - SYNC_STALLED
+              - EMERGENCY_CARD_WALLET_READY
             description: Notification category a per-channel preference can toggle.
           additionalProperties:
             type: boolean
@@ -105206,6 +105261,7 @@ components:
             - BACKUP_HEALTH
             - SEIZURE_CLUSTER
             - SYNC_STALLED
+            - EMERGENCY_CARD_WALLET_READY
           description: What each event does on a channel with no stored row, resolved for this account by the function delivery
             uses. Most are constant per category; the mood reminder follows the account's mood-reminder setting
             (`moodReminderEnabled` on `/api/user/profile`). Render a switch without a row from this map rather than from
@@ -105280,6 +105336,7 @@ components:
             - BACKUP_HEALTH
             - SEIZURE_CLUSTER
             - SYNC_STALLED
+            - EMERGENCY_CARD_WALLET_READY
           description: Notification category a per-channel preference can toggle.
         enabled:
           type: boolean

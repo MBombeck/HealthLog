@@ -10494,7 +10494,9 @@
     "relayTest": {
       "title": "Powiadomienie testowe HealthLog",
       "body": "Twój serwer dotarł do tego urządzenia przez przekaźnik push."
-    }
+    },
+    "eventEmergencyCardWalletReady": "Karta ratunkowa gotowa do Wallet",
+    "eventEmergencyCardWalletReadyDesc": "Twoja karta w Apple Wallet, gdy tylko powstanie jej przepustka."
   },
   "i18n": {
     "maintainershipBanner": {
@@ -16472,6 +16474,10 @@
         "askAdmin": "Poproś osobę, która administruje serwerem, o włączenie powiadomień przez przekaźnik push.",
         "notNow": "Nie teraz",
         "starting": "Przekaźnik push się uruchamia. Przepustka pojawi się za minutę."
+      },
+      "readyPush": {
+        "title": "Twoja karta ratunkowa jest gotowa",
+        "body": "Dodaj ją do Apple Wallet na tym iPhonie."
       }
     }
   },

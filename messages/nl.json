@@ -10494,7 +10494,9 @@
     "relayTest": {
       "title": "HealthLog-testmelding",
       "body": "Je server heeft dit apparaat via de pushrelay bereikt."
-    }
+    },
+    "eventEmergencyCardWalletReady": "Noodkaart klaar voor Wallet",
+    "eventEmergencyCardWalletReadyDesc": "Je kaart in Apple Wallet, zodra er een pas van is gemaakt."
   },
   "i18n": {
     "maintainershipBanner": {
@@ -16472,6 +16474,10 @@
         "askAdmin": "Vraag de beheerder van de server om meldingen via de pushrelay aan te zetten.",
         "notNow": "Niet nu",
         "starting": "De pushrelay start. De pas volgt binnen een minuut."
+      },
+      "readyPush": {
+        "title": "Je noodkaart is klaar",
+        "body": "Voeg hem op deze iPhone toe aan Apple Wallet."
       }
     }
   },

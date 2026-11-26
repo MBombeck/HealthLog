@@ -105,6 +105,14 @@ printed card's, with the same rules: read-only, rate-limited, every opening on
 your audit log, an optional end. Revoking the printed card's link leaves the
 pass alone, and withdrawing the pass leaves the printed card's link alone.
 
+**On your iPhone.** Made the pass on a computer? About ten minutes later the
+HealthLog app on your iPhone shows one notification that the card is ready;
+tapping it opens Apple's add sheet. It comes once per pass, twice at most,
+not when a device already has the pass, and never again once you dismiss it.
+The server's admin has to have Wallet signing on: with the push relay, an
+admin can switch it on right from **Add to Apple Wallet**; anybody else is
+told to ask them.
+
 **On another device.** Once a device has the pass, the card page offers
 **Add to another device**: the same pass, for an iPad or a Mac as well.
 

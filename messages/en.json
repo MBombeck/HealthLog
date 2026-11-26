@@ -10494,7 +10494,9 @@
     "relayTest": {
       "title": "HealthLog test notification",
       "body": "Your server reached this device through the push relay."
-    }
+    },
+    "eventEmergencyCardWalletReady": "Emergency card ready for Wallet",
+    "eventEmergencyCardWalletReadyDesc": "Your card in Apple Wallet, once a pass of it was made."
   },
   "i18n": {
     "maintainershipBanner": {
@@ -16472,6 +16474,10 @@
         "askAdmin": "Ask this server's administrator to turn on notifications over the push relay.",
         "notNow": "Not now",
         "starting": "The push relay is starting. The pass follows in a minute."
+      },
+      "readyPush": {
+        "title": "Your emergency card is ready",
+        "body": "Add it to Apple Wallet on this iPhone."
       }
     }
   },

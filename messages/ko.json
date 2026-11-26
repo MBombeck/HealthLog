@@ -10494,7 +10494,9 @@
     "relayTest": {
       "title": "HealthLog 테스트 알림",
       "body": "서버가 푸시 릴레이를 통해 이 기기에 도달했습니다."
-    }
+    },
+    "eventEmergencyCardWalletReady": "지갑용 응급 카드 준비 완료",
+    "eventEmergencyCardWalletReadyDesc": "패스가 만들어지면 Apple 지갑에 카드를 넣을 수 있어요."
   },
   "i18n": {
     "maintainershipBanner": {
@@ -16472,6 +16474,10 @@
         "askAdmin": "서버 관리자에게 푸시 릴레이를 통한 알림을 켜 달라고 요청하세요.",
         "notNow": "나중에",
         "starting": "푸시 릴레이를 시작하는 중이에요. 패스는 1분 안에 준비돼요."
+      },
+      "readyPush": {
+        "title": "응급 카드가 준비됐어요",
+        "body": "이 iPhone에서 Apple 지갑에 추가하세요."
       }
     }
   },

@@ -10,6 +10,7 @@ import {
   WALLET_PASS_SWEEP_QUEUE,
   WALLET_PASS_VOID_PUSH_CRON,
   WALLET_PASS_VOID_PUSH_QUEUE,
+  WALLET_READY_PUSH_QUEUE,
 } from "@/lib/emergency-card/wallet-pass/queues";
 import { cronIsTheRetry } from "@/lib/jobs/reminder/registrar-shared";
 
@@ -49,5 +50,17 @@ export const MAINTENANCE_WALLET_JOBS: readonly JobDefinition[] = [
     scheduleOptions: cronIsTheRetry,
     work: { localConcurrency: 1 },
     load: async () => (await handlers()).handleWalletPassVoidPush,
+  }),
+  // No cron: sent when a pass is made and when the relay starts signing;
+  // the sweep runs the same pass for the rest.
+  defineJob({
+    queue: WALLET_READY_PUSH_QUEUE,
+    policy: {
+      policy: "short",
+      reason:
+        "Per-person singleton key, one global key for the relay's start; each send is claimed on its pass row, so a repeat sends nothing.",
+    },
+    work: { localConcurrency: 1 },
+    load: async () => (await handlers()).handleWalletReadyPush,
   }),
 ];

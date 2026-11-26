@@ -2786,6 +2786,7 @@
         "rt-User-adminNoticesDismissed"
       ],
       "walletRelayHintDismissed": true,
+      "walletReadyPushDismissed": true,
       "fullName": "rt-User-fullName",
       "insurerName": "rt-User-insurerName",
       "insuranceNumberEncrypted": "<sealed:v1:rt-User-insuranceNumberEncrypted>",

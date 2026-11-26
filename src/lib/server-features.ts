@@ -41,6 +41,7 @@ export const SERVER_FEATURES = [
   "sleep.night-overlays",
   "profile.emergency-card-apple-wallet",
   "profile.emergency-card-apple-wallet-state",
+  "profile.emergency-card-wallet-ready-push",
   "notifications.sync-stalled",
   "insights.same-time-daily-total",
   "push.live-activity-token-state",
@@ -125,6 +126,8 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "GET /api/emergency-card/wallet/apple (also emergencyCard.wallet.apple on /api/auth/me) says whether an Apple Wallet pass of the emergency card can be made, who signs it and the pass it has; GET /api/emergency-card/wallet/apple/pass serves the signed .pkpass to a cookie or a full-access token, and an installed pass is kept current. Making and withdrawing the pass are cookie-only.",
   "profile.emergency-card-apple-wallet-state":
     "emergencyCard.wallet.apple carries state (available | relay_off | relay_not_ready | not_configured | no_https_origin | api_disabled | not_allowed), relayAction (enable | ask_admin, only with relay_off, by the caller's own role) and relayHintDismissed; POST /api/emergency-card/wallet/apple/relay-hint records the caller's no. A server that signs with its own WALLET_APPLE_* never reads relay_off.",
+  "profile.emergency-card-wallet-ready-push":
+    "EMERGENCY_CARD_WALLET_READY is a notification event (default on): once per Wallet pass, at most twice per person, while the pass is live, emergencyCard.wallet.apple.state is available, no device registered the pass and the card shows something; never for a managed profile. Its category is the event name and its tap opens the add-pass sheet (web: /emergency-card#wallet). POST /api/emergency-card/wallet/apple/ready-push/dismiss records the person's no, per person, and it is never sent again; a tap that finds the pass no longer available is not a no.",
   "notifications.sync-stalled":
     "SYNC_STALLED is a notification category (default on, toggled per channel in the notification preferences): once per stall and in daytime, the owner is told that a daily source went quiet, among them an iPhone whose Apple Health upload stopped; GET /api/integrations/healthkit carries quietDevices (model, quietSince). The push names the source as a connection key (apple-health, garmin, google-health, nightscout, oura, polar, whoop, withings), and its deep link is always /settings/integrations#<source>, the source's card on the integrations page: a direct push carries it as url, a relay push carries only d.source and the client builds the same path.",
   "insights.same-time-daily-total":

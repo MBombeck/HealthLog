@@ -10494,7 +10494,9 @@
     "relayTest": {
       "title": "Notification de test HealthLog",
       "body": "Votre serveur a atteint cet appareil via le relais push."
-    }
+    },
+    "eventEmergencyCardWalletReady": "Carte d'urgence prête pour Wallet",
+    "eventEmergencyCardWalletReadyDesc": "Votre carte dans Apple Wallet, dès qu'un pass en a été créé."
   },
   "i18n": {
     "maintainershipBanner": {
@@ -16472,6 +16474,10 @@
         "askAdmin": "Demandez à la personne qui administre le serveur d'activer les notifications via le relais push.",
         "notNow": "Pas maintenant",
         "starting": "Le relais push démarre. Le pass suit dans une minute."
+      },
+      "readyPush": {
+        "title": "Votre carte d'urgence est prête",
+        "body": "Ajoutez-la à Apple Wallet sur cet iPhone."
       }
     }
   },

@@ -10494,7 +10494,9 @@
     "relayTest": {
       "title": "HealthLog-Testbenachrichtigung",
       "body": "Dein Server hat dieses Gerät über das Push-Relay erreicht."
-    }
+    },
+    "eventEmergencyCardWalletReady": "Notfallkarte bereit für Wallet",
+    "eventEmergencyCardWalletReadyDesc": "Deine Karte in Apple Wallet, sobald ein Pass davon angelegt wurde."
   },
   "i18n": {
     "maintainershipBanner": {
@@ -16472,6 +16474,10 @@
         "askAdmin": "Bitte die Person, die den Server betreibt, Benachrichtigungen über das Push-Relay einzuschalten.",
         "notNow": "Nicht jetzt",
         "starting": "Das Push-Relay startet. Der Pass folgt in einer Minute."
+      },
+      "readyPush": {
+        "title": "Deine Notfallkarte ist bereit",
+        "body": "Füge sie auf diesem iPhone zu Apple Wallet hinzu."
       }
     }
   },

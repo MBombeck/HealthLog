@@ -15,6 +15,11 @@
  *   five-minute cron for the ones stamped inside another transaction
  *   (password change, handover, deletion request).
  *
+ * - `wallet-ready-push`: "your emergency card is ready for Wallet", for one
+ *   person ten minutes after a pass is made (the browser that made it may be
+ *   the iPhone, which registers it by then), or for everyone with a pass
+ *   once the relay starts signing. The sweep catches the rest.
+ *
  * Every send is best effort: no worker attached (tests, scripts) or a failed
  * send changes nothing the next cron would not fix.
  */
@@ -83,6 +88,36 @@ export async function enqueueWalletVoidPush(): Promise<void> {
     );
   } catch (err) {
     annotate({ meta: { wallet_void_push_enqueue: "failed" } });
+    void err;
+  }
+}
+
+export const WALLET_READY_PUSH_QUEUE = "wallet-ready-push";
+/** How long after a pass is made its ready push waits. */
+export const WALLET_READY_PUSH_DELAY_SECONDS = 10 * 60;
+
+export interface WalletReadyPushPayload {
+  /** One person; absent, every live pass not yet announced. */
+  userId?: string;
+}
+
+/** Queue the ready push for `userId`, or for everyone when omitted. */
+export async function enqueueWalletReadyPush(
+  userId?: string,
+  delaySeconds: number = WALLET_READY_PUSH_DELAY_SECONDS,
+): Promise<void> {
+  try {
+    const boss = getGlobalBoss();
+    if (!boss) return;
+    const payload: WalletReadyPushPayload = userId ? { userId } : {};
+    await boss.send(WALLET_READY_PUSH_QUEUE, payload, {
+      singletonKey: `wallet-ready-push|${userId ?? "all"}`,
+      startAfter: Math.max(1, Math.ceil(delaySeconds)),
+      retryLimit: 2,
+      retryDelay: 60,
+    });
+  } catch (err) {
+    annotate({ meta: { wallet_ready_push_enqueue: "failed" } });
     void err;
   }
 }

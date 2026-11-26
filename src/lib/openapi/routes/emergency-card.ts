@@ -512,6 +512,29 @@ export const emergencyCardPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       },
     },
   },
+  "/api/emergency-card/wallet/apple/ready-push/dismiss": {
+    post: {
+      tags: ["Records"],
+      summary: "Dismiss the Wallet ready push",
+      description:
+        'v1.50. The app reports the dismiss action of the `EMERGENCY_CARD_WALLET_READY` notification ("your emergency card is ready for Wallet"; category = the event name, tap = the add-pass sheet). The no is stored per person, not per device: one report silences the push on every device, and it is never sent again, a pass made anew included. A tap that finds the pass no longer available (withdrawn, `state` not `available`, the download answering 404 or 503) opens the emergency card screen as it is, shows no error and is not reported here: it is not a dismissal. Idempotent. Cookie or a full-access token.',
+      responses: {
+        "200": {
+          description: "Dismissed.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ dismissed: z.literal(true) }),
+                "EmergencyWalletReadyPushDismissed",
+              ),
+            },
+          },
+        },
+        ...recordRefusal(),
+        ...stdResponses,
+      },
+    },
+  },
   "/api/emergency-card/wallet/apple/pass": {
     get: {
       tags: ["Records"],

@@ -2682,6 +2682,7 @@
       "passkeyUpgradeNudgeDismissed": true,
       "adminNoticesDismissed": [],
       "walletRelayHintDismissed": false,
+      "walletReadyPushDismissed": false,
       "fullName": "rt-User-fullName",
       "insurerName": "rt-User-insurerName",
       "insuranceNumberEncrypted": "<sealed:v2:rt-User-insuranceNumberEncrypted>",
