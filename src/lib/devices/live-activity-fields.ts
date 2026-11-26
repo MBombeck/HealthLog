@@ -5,7 +5,6 @@
  * server does not take is left out and named in the answer's `ignored`
  * instead of failing the whole registration with 422.
  */
-import { START_ID_PATTERN } from "@/lib/push-relay/live-activity-started";
 import { z } from "zod/v4";
 
 import { annotate } from "@/lib/logging/context";
@@ -15,6 +14,7 @@ import {
   liveActivityStartSchema,
   type IgnoredDeviceField,
 } from "@/lib/push-relay/device-registration";
+import { START_ID_PATTERN } from "@/lib/push-relay/live-activity-started";
 import { isoDateTime } from "@/lib/validations/datetime";
 
 /** An ActivityKit token (update or the legacy single token), hex. */
@@ -32,9 +32,9 @@ export const liveActivityTokenEntry = z
       .min(8)
       .max(APNS_TOKEN_MAX_HEX)
       .regex(/^[A-Fa-f0-9]+$/),
-    // A relay-started Activity knows no dose; the server fills in the dose
-    // it started, by the start id the relay wrote into its attributes (`s`)
-    // when the app sends it, else by its records.
+    // A relay-started Activity knows no dose; the server fills in
+    // the dose it started, by the start id the relay wrote into its
+    // attributes (`s`) when the app sends it, else by its records.
     medicationId: z.string().min(1).max(64).optional(),
     relayStart: z.boolean().optional(),
     startId: z.string().regex(START_ID_PATTERN).optional(),
