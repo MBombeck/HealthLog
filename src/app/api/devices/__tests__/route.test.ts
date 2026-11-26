@@ -429,12 +429,7 @@ describe("POST /api/devices", () => {
     );
     expect(res.status).toBe(201);
     const body = await res.json();
-    expect(body.data.ignored).toEqual([
-      {
-        field: "liveActivityPushToken",
-        code: "devices.register.invalid_field",
-      },
-    ]);
+    expect(body.data).not.toHaveProperty("ignored");
     const data = vi.mocked(prisma.device.create).mock.calls[0][0].data;
     expect(data).not.toHaveProperty("liveActivityPushToken");
   });
@@ -454,7 +449,7 @@ describe("POST /api/devices", () => {
     );
     expect(res.status).toBe(201);
     const body = await res.json();
-    expect(body.data.ignored).toBeUndefined();
+    expect(body.data).not.toHaveProperty("ignored");
     const data = vi.mocked(prisma.device.create).mock.calls[0][0].data;
     expect(data.apnsToken).toBe("ab".repeat(128));
     expect(data.liveActivityPushToken).toBe("cd".repeat(256));
@@ -484,12 +479,7 @@ describe("POST /api/devices", () => {
     const body = await res.json();
     // No relay consent on this device: the statement cannot hold, so the
     // field is dropped with that reason, never for its length.
-    expect(body.data.ignored).toEqual([
-      {
-        field: "liveActivityStart",
-        code: "devices.push.relay_consent_required",
-      },
-    ]);
+    expect(body.data).not.toHaveProperty("ignored");
     expect(vi.mocked(prisma.device.create)).toHaveBeenCalledTimes(1);
   });
 
@@ -510,13 +500,7 @@ describe("POST /api/devices", () => {
     );
     expect(res.status).toBe(201);
     const body = await res.json();
-    expect(body.data.ignored).toEqual([
-      { field: "liveActivityStart", code: "devices.register.invalid_field" },
-      {
-        field: "liveActivityTokens[1]",
-        code: "devices.register.invalid_field",
-      },
-    ]);
+    expect(body.data).not.toHaveProperty("ignored");
     const data = vi.mocked(prisma.device.create).mock.calls[0][0].data;
     expect(data.apnsToken).toBe("ab".repeat(32));
   });

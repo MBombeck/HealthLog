@@ -74,7 +74,7 @@ import {
 import {
   LIVE_ACTIVITY_TOKENS_MAX,
   dropInvalidLiveActivityFields,
-  ignoredFieldsAnswer,
+  noteIgnoredFields,
   liveActivityHexToken,
   liveActivityTokenEntry,
 } from "@/lib/devices/live-activity-fields";
@@ -738,12 +738,6 @@ export const POST = apiHandler(async (request: NextRequest) => {
     await endSupersededAfterRegistration(id);
   }
 
-  return apiSuccess(
-    {
-      id,
-      push: pushBlock,
-      ...ignoredFieldsAnswer([...ignored, ...push.ignored]),
-    },
-    201,
-  );
+  noteIgnoredFields([...ignored, ...push.ignored]);
+  return apiSuccess({ id, push: pushBlock }, 201);
 });
