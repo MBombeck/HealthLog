@@ -11,6 +11,7 @@ import {
 } from "@/lib/insights/trend-sentiment";
 import { TileHeader } from "@/components/insights/tile-header";
 import { TrendTile } from "@/components/ui/trend-tile";
+import type { MetricName } from "@/lib/measurements/type-label-keys";
 
 /**
  * v1.10.0 — the Apple-Health-Highlights grid tile.
@@ -43,7 +44,8 @@ const DeltaSparkline = dynamic(
 );
 
 export interface SparklineDeltaTileProps {
-  label: string;
+  /** A metric's `MetricName` shows its short form; see `TileHeader`. */
+  label: string | MetricName;
   /** Latest reading; `null` renders the empty state. */
   value: number | null;
   unit: string;

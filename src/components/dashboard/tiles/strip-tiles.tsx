@@ -33,7 +33,11 @@ import { summaryToTrend7Delta } from "@/lib/analytics/trend-delta";
 import { isWindowSufficient } from "@/lib/analytics/window-confidence";
 import { headlineValue } from "@/lib/dashboard/headline-value";
 import { convertGlucose, glucoseFractionDigits } from "@/lib/glucose";
-import { MEASUREMENT_TYPE_LABEL_KEYS } from "@/lib/measurements/type-label-keys";
+import {
+  MEASUREMENT_TYPE_LABEL_KEYS,
+  metricName,
+  type MetricName,
+} from "@/lib/measurements/type-label-keys";
 import type { TrendDirectionSentiment } from "@/lib/insights/trend-sentiment";
 
 import type { DashboardTileContext } from "./tile-context";
@@ -99,7 +103,7 @@ function metricCard(
   id: string,
   props: {
     type: string;
-    label: string;
+    label: string | MetricName;
     unit: string;
     icon: React.ComponentType<{ className?: string }>;
     summary?: Summary | null;
@@ -358,35 +362,35 @@ export const STRIP_TILES: readonly StripTile[] = [
       }),
   ),
   metricTile("oxygenSaturation", "OXYGEN_SATURATION", (ctx) => ({
-    label: ctx.t("measurements.typeOxygenSaturation"),
+    label: metricName("OXYGEN_SATURATION", ctx.t),
     unit: "%",
     icon: Droplets,
   })),
   metricTile("respiratoryRate", "RESPIRATORY_RATE", (ctx) => ({
-    label: ctx.t("measurements.typeRespiratoryRate"),
+    label: metricName("RESPIRATORY_RATE", ctx.t),
     unit: ctx.t("insights.units.respiratoryRate"),
     icon: Wind,
   })),
   metricTile("wristTemperature", "WRIST_TEMPERATURE", (ctx) => ({
-    label: ctx.t("measurements.typeWristTemperature"),
+    label: metricName("WRIST_TEMPERATURE", ctx.t),
     unit: ctx.unitDisplay.unitFor("WRIST_TEMPERATURE"),
     icon: Thermometer,
     display: true,
   })),
   metricTile("muscleMass", "MUSCLE_MASS", (ctx) => ({
-    label: ctx.t("measurements.typeMuscleMass"),
+    label: metricName("MUSCLE_MASS", ctx.t),
     unit: ctx.unitDisplay.unitFor("MUSCLE_MASS"),
     icon: Dumbbell,
     display: true,
   })),
   metricTile("totalBodyWater", "TOTAL_BODY_WATER", (ctx) => ({
-    label: ctx.t("measurements.typeTotalBodyWater"),
+    label: metricName("TOTAL_BODY_WATER", ctx.t),
     unit: ctx.unitDisplay.unitFor("TOTAL_BODY_WATER"),
     icon: Droplet,
     display: true,
   })),
   metricTile("boneMass", "BONE_MASS", (ctx) => ({
-    label: ctx.t("measurements.typeBoneMass"),
+    label: metricName("BONE_MASS", ctx.t),
     unit: ctx.unitDisplay.unitFor("BONE_MASS"),
     icon: Bone,
     display: true,

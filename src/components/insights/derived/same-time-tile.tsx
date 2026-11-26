@@ -12,10 +12,8 @@ import {
   type MeasurementSourceValue,
 } from "@/lib/i18n/source-labels";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
-import {
-  MEASUREMENT_TYPE_ICONS,
-  MEASUREMENT_TYPE_LABEL_KEYS,
-} from "@/components/measurements/measurement-list-meta";
+import { MEASUREMENT_TYPE_ICONS } from "@/components/measurements/measurement-list-meta";
+import { metricName } from "@/lib/measurements/type-label-keys";
 import { LearnMoreLink } from "@/components/ui/learn-more-link";
 import {
   SAME_TIME_BASELINE_MIN_HISTORY_DAYS,
@@ -100,8 +98,7 @@ export function SameTimeBaselineTile({
   if (isLoading || !data) return null;
 
   const Icon = MEASUREMENT_TYPE_ICONS[type] ?? Footprints;
-  const labelKey = MEASUREMENT_TYPE_LABEL_KEYS[type];
-  const label = labelKey ? t(labelKey) : type;
+  const name = metricName(type, t);
   const tileId = CUMULATIVE_TILE_LAYOUT_ID[type] ?? type;
 
   if (data.status === "insufficient") {
@@ -118,7 +115,7 @@ export function SameTimeBaselineTile({
         metric={tileId}
         state="learning"
         icon={Icon}
-        title={label}
+        title={name}
         messageSlot="same-time-tile-learning"
         message={t("insights.derived.sameTime.learning", {
           count: data.coverage.historyDays,
@@ -152,7 +149,7 @@ export function SameTimeBaselineTile({
         data-mode="daily_total"
       >
         <SparklineDeltaTile
-          label={label}
+          label={name}
           value={toShown(v.todayValue)}
           unit={unit}
           icon={Icon}
@@ -207,7 +204,7 @@ export function SameTimeBaselineTile({
       data-mode="hourly"
     >
       <SparklineDeltaTile
-        label={label}
+        label={name}
         value={toShown(v.todayValue)}
         unit={unit}
         icon={Icon}

@@ -22,7 +22,11 @@
  * 5. no message uses a spelling the glossary's `spelling` block retires;
  * 6. every `item` form is anchored at least once (or the concept says why it
  *    cannot be), and every term occurs in its locale's bundle;
- * 7. a timeline lane is labelled with its concept's name.
+ * 7. a timeline lane is labelled with its concept's name;
+ * 8. a short form (`short`, for a one-line heading, tile, chip or tab) is
+ *    shorter than its name, names one thing in its locale, reuses no retired
+ *    synonym, is what its `shortKey` carries in the bundle, and reaches a
+ *    surface only through `metricName`.
  *
  * Rule 6 exists because an item form nothing checked drifted unseen: the
  * Korean illness item was 아픈 기간 while every illness message said
@@ -31,6 +35,11 @@
  * uses is the same gap from the other side. Rule 7 exists because the Korean
  * medications lane carried the item 약 where every other lane carries its
  * area's name.
+ *
+ * Rule 8 exists because the short forms are shared with the iOS client: the
+ * app shortens its one-line headings to the same words, so a short form the
+ * web invents on its own, or one that drifts from the glossary, splits the
+ * two clients' vocabulary as surely as a second name would.
  *
  * A forbidden entry with `keys` holds only under that key prefix: "Eintrag"
  * is the right word for a mood entry and the wrong one for an illness
@@ -47,8 +56,16 @@ import {
 } from "@/components/layout/nav-model";
 import { locales } from "@/lib/i18n/config";
 import glossary from "@/lib/i18n/glossary.json";
+import {
+  MEASUREMENT_TYPE_LABEL_KEYS,
+  MEASUREMENT_TYPE_SHORT_LABEL_KEYS,
+} from "@/lib/measurements/type-label-keys";
 
-import { readSource, readSourceText } from "./helpers/source-files";
+import {
+  readSource,
+  readSourceText,
+  scanSourceMatches,
+} from "./helpers/source-files";
 
 type Forbidden =
   | string
@@ -61,7 +78,12 @@ type Forbidden =
 
 interface Concept {
   id: string;
-  terms: Record<string, { name: string | null; item?: string | null }>;
+  terms: Record<
+    string,
+    { name: string | null; item?: string | null; short?: string }
+  >;
+  /** The message key that carries the short form (the name where none). */
+  shortKey?: string;
   anchors: Array<{
     key: string;
     form: "name" | "item";
@@ -447,5 +469,127 @@ describe("a timeline lane is named like its area", () => {
       (lane) => !lanes.includes(lane) || anchored.has(`timeline.lanes.${lane}`),
     );
     expect(stale).toEqual([]);
+  });
+});
+
+/**
+ * Short forms. A concept with a `shortKey` has a short form in at least one
+ * locale; every locale's bundle carries the short form under that key, or the
+ * full name where the locale has none, so a surface that reads the key never
+ * needs a fallback of its own.
+ */
+const SHORT_PREFIX = "measurements.shortType";
+const SHORTENED = CONCEPTS.filter((c) => c.shortKey !== undefined);
+
+describe("short forms", () => {
+  it("is shorter than the name, and only on a concept with a short key", () => {
+    expect(SHORTENED.length).toBeGreaterThan(30);
+    const offenders: string[] = [];
+    for (const concept of CONCEPTS) {
+      const shorts = locales.filter((l) => concept.terms[l]?.short);
+      if (concept.shortKey && shorts.length === 0) {
+        offenders.push(`${concept.id}: a short key but no short form`);
+      }
+      for (const locale of shorts) {
+        const { name, short } = concept.terms[locale];
+        if (!concept.shortKey) {
+          offenders.push(`${concept.id}.${locale}: a short form, no short key`);
+        }
+        if (!name || short!.length >= name.length) {
+          offenders.push(
+            `${concept.id}.${locale}: "${short}" is not shorter than "${name}"`,
+          );
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it.each(locales)("%s: a short form names one thing", (locale) => {
+    const offenders: string[] = [];
+    const fold = (s: string) => s.toLocaleLowerCase(locale);
+    const retired = [
+      ...CONCEPTS.flatMap((c) => c.forbidden[locale] ?? []),
+      ...(SPELLING[locale]?.forbidden ?? []),
+    ];
+    for (const concept of CONCEPTS) {
+      const short = concept.terms[locale]?.short;
+      if (!short) continue;
+      for (const other of CONCEPTS) {
+        if (other === concept) continue;
+        const { name, item, short: otherShort } = other.terms[locale] ?? {};
+        for (const form of [name, item, otherShort]) {
+          if (form && fold(form) === fold(short)) {
+            offenders.push(
+              `${concept.id}: "${short}" is also ${other.id}'s "${form}"`,
+            );
+          }
+        }
+      }
+      for (const entry of retired) {
+        if (forbiddenPattern(entry).test(short)) {
+          offenders.push(
+            `${concept.id}: "${short}" reuses the retired "${forbiddenText(entry)}"`,
+          );
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it.each(locales)("%s: the short key carries the short form", (locale) => {
+    const offenders: string[] = [];
+    for (const concept of SHORTENED) {
+      const term = concept.terms[locale];
+      const want = term.short ?? term.name;
+      const text = value(locale, concept.shortKey!);
+      if (text !== want) {
+        offenders.push(`${concept.shortKey} = "${text}", glossary "${want}"`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("knows every short key the bundle and the helper carry", () => {
+    const glossaryKeys = SHORTENED.map((c) => c.shortKey!).sort();
+    const bundleKeys = [...bundles.get("en")!.keys()]
+      .filter((k) => k.startsWith(SHORT_PREFIX))
+      .sort();
+    expect(bundleKeys).toEqual(glossaryKeys);
+    const helperKeys = Object.values(MEASUREMENT_TYPE_SHORT_LABEL_KEYS).sort();
+    expect(helperKeys).toEqual(glossaryKeys);
+    // The helper pairs each type's short key with the concept anchored on
+    // that type's full name, so a short form cannot land on another metric.
+    const misplaced: string[] = [];
+    for (const [type, shortKey] of Object.entries(
+      MEASUREMENT_TYPE_SHORT_LABEL_KEYS,
+    )) {
+      const fullKey =
+        MEASUREMENT_TYPE_LABEL_KEYS[
+          type as keyof typeof MEASUREMENT_TYPE_LABEL_KEYS
+        ];
+      const concept = SHORTENED.find((c) => c.shortKey === shortKey);
+      if (!concept?.anchors.some((a) => a.key === fullKey)) {
+        misplaced.push(`${type}: ${shortKey} is not the short of ${fullKey}`);
+      }
+    }
+    expect(misplaced).toEqual([]);
+  });
+
+  it("reaches a surface only through metricName", () => {
+    const matches = scanSourceMatches(
+      join(ROOT, "src"),
+      /["'`]measurements\.shortType/g,
+      {
+        fileFloor: 500,
+        matchFloor: SHORTENED.length,
+        include: (rel) =>
+          !rel.includes("__tests__/") && !rel.startsWith("generated/"),
+      },
+    );
+    const outside = matches
+      .map((m) => `${m.file}:${m.line}`)
+      .filter((at) => !at.startsWith("lib/measurements/type-label-keys.ts:"));
+    expect(outside).toEqual([]);
   });
 });
