@@ -76,8 +76,10 @@ then add HealthLog pointed at it.
 
 1. In **Apps** (Community Applications), search for a **PostgreSQL** container
    (for example jj9987's `postgresql`). Install version 18; an existing 16
-   works too. Moving a 16 to 18 later is a dump and restore, see
-   [Moving to a newer Postgres major](../ops/postgres-major-upgrade.md#by-hand).
+   works too, and so does 19. Do not go past the PostgreSQL client major in
+   the HealthLog image (19 today): the app cannot dump a newer server, and
+   then refuses to migrate. Moving a 16 to 18 later is a dump and restore, see
+   [Moving to a newer Postgres major](../ops/postgres-major-upgrade.md#the-highest-server-major-this-image-supports).
 2. Set:
    - `POSTGRES_USER` = `healthlog`
    - `POSTGRES_PASSWORD` = your generated password

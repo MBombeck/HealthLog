@@ -9497,6 +9497,7 @@
           "first_pending": "El primer volcado de la base de datos aún no se ha ejecutado.",
           "stale": "El volcado de la base de datos más reciente tiene {hours, plural, one {# hora} other {# horas}}.",
           "last_failed": "El último volcado de la base de datos falló. El anterior sigue siendo reciente.",
+          "client_too_old": "El cliente de PostgreSQL de esta imagen es la versión {client}, pero el servidor de base de datos usa la {server}, así que no se puede hacer ningún volcado. Usa una imagen de HealthLog cuyo cliente sea {server} o posterior, o mantén el servidor en {client} o anterior.",
           "fresh": "El último volcado de la base de datos es reciente.",
           "nowhere_to_write": "No se puede escribir en el directorio de volcados {directory} y no hay ningún bucket externo configurado, así que no se puede guardar ningún volcado.",
           "not_persistent": "El directorio de volcados {directory} no está en almacenamiento persistente y no hay un bucket externo configurado, así que cada volcado se perdería en la próxima actualización. Monta el volumen de copias.",
