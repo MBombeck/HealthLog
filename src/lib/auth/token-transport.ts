@@ -4,7 +4,7 @@
  *
  * Two questions, kept apart on purpose:
  *
- *   `carriesBearer` — the request presents `Authorization: Bearer`. Then the
+ *   `carriesBearer` — the request presents `Authorization: Bearer hlk_…`. Then the
  *   Bearer decides who is calling, everywhere. A session cookie on the same
  *   request is not a second answer: `getSession()` does not read it, so the
  *   cookie-only guards (`requireAdmin`, `requireCookieAuth`, `requireFreshMfa`)

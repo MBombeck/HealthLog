@@ -236,7 +236,7 @@ export function DocumentDetailSheet({
                   suggest.isError ? aiErrorText(suggest.error) : null
                 }
                 onSummarise={runSummary}
-                summaryPending={summary.isPending}
+                summaryPending={summary.isPending || storedSummary.isPending}
                 suggestion={suggestion}
                 suggestionKindLabel={suggestionKindLabel}
                 suggestionDateLabel={suggestionDateLabel}

@@ -70,6 +70,8 @@ export interface ScoreAnatomyViewProps {
   score: number | null;
   /** Band override; derived from the score when omitted. */
   band?: ScoreBand;
+  /** Stress / strain: the ring bands and words the score as a load. */
+  load?: boolean;
   /**
    * v1.15.12 — the metric's ring hue. When set, the detail card
    * carries the same gentle per-metric tint the dashboard ring tile wears
@@ -110,6 +112,7 @@ export function ScoreAnatomyView({
   title,
   score,
   band,
+  load = false,
   hue,
   caption,
   contributors,
@@ -163,6 +166,7 @@ export function ScoreAnatomyView({
             <ScoreRing
               score={effectiveScore}
               band={band}
+              load={load}
               hue={insufficient ? undefined : hue}
               label={t("insights.derived.anatomy.outOf")}
               size="lg"

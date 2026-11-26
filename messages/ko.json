@@ -13433,7 +13433,7 @@
       "close": "숨기기"
     },
     "ai": {
-      "readDone": "AI가 문서를 읽었어요.",
+      "readDone": "AI가 문서를 읽었어요. 이제 검색에서 내용으로도 찾을 수 있어요.",
       "readStagedOne": "AI가 문서를 읽었어요. 검사 결과 1개를 검토할 수 있어요.",
       "readStagedFew": "AI가 문서를 읽었어요. 검사 결과 {count}개를 검토할 수 있어요.",
       "readStagedOther": "AI가 문서를 읽었어요. 검사 결과 {count}개를 검토할 수 있어요.",

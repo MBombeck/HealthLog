@@ -13433,7 +13433,7 @@
       "close": "Hide"
     },
     "ai": {
-      "readDone": "The AI read your document.",
+      "readDone": "The AI read your document. Search now finds it by what it says.",
       "readStagedOne": "The AI read your document. 1 lab result is ready to review.",
       "readStagedFew": "The AI read your document. {count} lab results are ready to review.",
       "readStagedOther": "The AI read your document. {count} lab results are ready to review.",

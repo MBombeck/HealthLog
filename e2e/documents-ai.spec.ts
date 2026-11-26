@@ -207,18 +207,25 @@ test.describe("document vault — AI assist + content search", () => {
     expect(patchCount).toBe(1);
   });
 
-  // ── (b) Session-only summary: transient, note present, closing discards ──
+  // ── (b) "Summarise" stores; the extracted text stays session-only ──
 
-  test("summary panel is transient and discards on close", async ({ page }) => {
+  test("Summarise stores the summary; extracted text is transient and discards on close", async ({
+    page,
+  }) => {
     await mockAiEnabled(page, { mode: "vision" });
     const summaryText = "A chest imaging report issued by a radiology clinic.";
-    let summaryCalls = 0;
+    const transcript = "RADIOLOGY REPORT chest imaging";
+    const asked: URL[] = [];
     await page.route(
       `**/api/documents/inbound/${AI_PROBE_DOC_ID}/summary**`,
       (route) => {
-        summaryCalls += 1;
+        const url = new URL(route.request().url());
+        asked.push(url);
         return fulfilJson(route, {
-          data: { summary: summaryText },
+          data:
+            url.searchParams.get("mode") === "text"
+              ? { text: transcript }
+              : { summary: summaryText, persistence: "stored" },
           error: null,
         });
       },
@@ -228,13 +235,20 @@ test.describe("document vault — AI assist + content search", () => {
     const sheet = page.getByRole("dialog");
     await expect(sheet).toBeVisible();
 
+    // The action row's summary is the document's own: it asks to store it,
+    // and no session-only copy opens beside it.
     await sheet.getByRole("button", { name: "Summarize" }).click();
+    await expect.poll(() => asked.length).toBe(1);
+    expect(asked[0].searchParams.get("mode")).toBe("summary");
+    expect(asked[0].searchParams.get("persist")).toBe("true");
     const panel = sheet.locator('[data-slot="document-summary-panel"]');
-    await expect(panel).toBeVisible();
-    await expect(panel.getByText(summaryText)).toBeVisible();
-    expect(summaryCalls).toBe(1);
+    await expect(panel).not.toBeVisible();
 
-    // Closing discards — the panel is gone and nothing lingers.
+    // The extracted text is shown here only, and closing discards it.
+    await sheet.getByRole("button", { name: "Show extracted text" }).click();
+    await expect(panel).toBeVisible();
+    await expect(panel.getByText(transcript)).toBeVisible();
+    expect(asked[1].searchParams.get("persist")).toBeNull();
     await panel.getByRole("button", { name: "Hide" }).click();
     await expect(panel).not.toBeVisible();
   });

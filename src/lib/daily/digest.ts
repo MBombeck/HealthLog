@@ -55,7 +55,7 @@ import {
   COACH_CHECKIN_LETGO_INTENT,
   COACH_CHECKIN_ADJUST_INTENT,
 } from "@/lib/daily/coach-checkin-intents";
-import { DOSE_WINDOW_DEFAULTS } from "@/lib/medications/scheduling/dose-window-defaults";
+import { DAILY_TAKEABLE_AHEAD_MS } from "@/lib/medications/scheduling/dose-window-defaults";
 import type { Locale } from "@/lib/i18n/config";
 import type { SteadyRun } from "@/lib/daily/score-steady";
 import {
@@ -523,10 +523,7 @@ function integrationLabel(token: string): string {
  * hide a dose the user could already take. A dose further out than this is a
  * scheduled event, not today's pending business, and stays off the rail.
  */
-export const DOSE_DUE_LOOKAHEAD_MS =
-  (DOSE_WINDOW_DEFAULTS.dailyOnTimeMinutes +
-    DOSE_WINDOW_DEFAULTS.earlyGraceMinutes) *
-  60_000;
+export const DOSE_DUE_LOOKAHEAD_MS = DAILY_TAKEABLE_AHEAD_MS;
 
 /**
  * Compose one card for every medication candidate the canonical scheduling

@@ -3,35 +3,39 @@
  * whether a take repeats a dose already recorded.
  *
  * Band attribution binds a take to the slot whose window holds its time. A
- * take outside every window (a pill box opened an hour and a half early, a
- * dose taken five hours late) used to land ad hoc: the slot stayed open, the
- * reminder kept firing and the phone kept asking for a dose already taken,
- * which is how a double dose happens. Two rules close that, for the writes
- * that record a NEW take without naming a slot (the ingest hook and the
- * per-medication route):
+ * take outside every window (a pill box opened after the morning dose's
+ * window closed, a dose taken five hours late) used to land ad hoc: the slot
+ * stayed open, the reminder kept firing and the phone kept asking for a dose
+ * already taken, which is how a double dose happens. For the writes that
+ * record a NEW take without naming a slot (the ingest hook and the
+ * per-medication route) the take is settled like this:
  *
- *   1. Nearest slot. The take answers the slot nearest to it on the same
- *      local day, within {@link NEAREST_SLOT_REACH_MS} either side, when that
- *      slot is still open. The binding is USER_PIN, so every reader binds it
- *      by anchor rather than by clock.
- *   2. Repeat. A take within {@link REPEAT_WINDOW_MS} of a take the nearest
- *      slot already holds is the same dose reported twice (a sensor and a
+ *   1. Overdue first. The take answers the most recent dose of its local day
+ *      at or before it that is still open: a dose taken late is that dose.
+ *   2. Then the next dose. With no earlier dose open, it answers the next
+ *      open dose ahead of it within {@link TAKE_AHEAD_REACH_MS} (six hours):
+ *      the pill box opened at 18:30 for the 21:00 dose after the morning dose
+ *      was taken. An earlier open dose always wins: a take at 15:00 used to
+ *      settle the 21:00 dose because it sat a few seconds nearer to it than
+ *      to the overdue 09:00 dose, and the evening reminder and Live Activity
+ *      never came although the person had not taken that pill.
+ *   3. Repeat. A take within {@link REPEAT_WINDOW_MS} of a take one of those
+ *      doses already holds is the same dose reported twice (a sensor and a
  *      tap, a lid closed and opened again). Nothing is written; the writer
  *      answers with the recorded row and `alreadyTaken: true`. A band slot is
- *      checked by the shared slot write under the slot lock; the nearest-slot
- *      case here. The same window applies to a band slot: bands split the
- *      day between two dose times, so a take far from a band's recorded take
- *      is treated as rule 3.
- *   3. A further dose. A take further from the recorded one is a dose of its
- *      own (the pill box opened at 10:20 for the 13:00 dose after the 08:00
- *      dose was taken at 08:05). It answers the nearest OPEN slot within
- *      reach, so that slot's reminder never asks for the dose again, the way
- *      a double dose happens; with no open slot in reach it is recorded ad
- *      hoc. It is never dropped: a pill box has no screen to warn on.
+ *      checked by the shared slot write under the slot lock; the other doses
+ *      here. The same window applies to a band slot: bands split the day
+ *      between two dose times, so a take far from a band's recorded take is
+ *      a further dose and follows rules 1 and 2.
+ *
+ * A take no rule answers is recorded ad hoc, as an extra dose. It is never
+ * dropped: a pill box has no screen to warn on. A dose bound by rule 1 or 2
+ * is recorded USER_PIN, so every reader binds it by anchor rather than by
+ * clock.
  *
  * Slots are the medication's live rows on that day whose anchor is a real
  * slot of its schedule; today's are projected first so a slot nobody has
- * opened yet still counts. An as-needed medication has no slots, so both
+ * opened yet still counts. An as-needed medication has no slots, so the
  * rules are inert for it.
  */
 import type { MedicationIntakeEvent } from "@/generated/prisma/client";
@@ -47,12 +51,11 @@ import {
 } from "@/lib/medications/scheduling/holds-take";
 
 /**
- * How far from its slot a take still answers it: six hours either side. The
- * same constant the web's take controls measure by
- * (`NEAR_SLOT_CEILING_MINUTES`), so a control says "extra dose" exactly when
- * this rule leaves the take unbound.
+ * How far ahead of a dose a take that names no slot may still settle it, when
+ * no earlier dose of the day is open: six hours, the same constant the web's
+ * take controls measure by (`NEAR_SLOT_CEILING_MINUTES`).
  */
-export const NEAREST_SLOT_REACH_MS = NEAR_SLOT_CEILING_MINUTES * 60 * 1000;
+export const TAKE_AHEAD_REACH_MS = NEAR_SLOT_CEILING_MINUTES * 60 * 1000;
 /** How close to a recorded take a second one is the same dose: two hours. */
 export const REPEAT_WINDOW_MS = 2 * 60 * 60 * 1000;
 
@@ -62,8 +65,12 @@ export interface NearestSlot {
   answered: MedicationIntakeEvent | null;
 }
 
-/** The real slots within reach of `takenAt` on its local day, nearest first. */
-export async function findSlotsNearTake(input: {
+/**
+ * The real slots a take may answer: those of its local day at or before it,
+ * most recent first, then those at most {@link TAKE_AHEAD_REACH_MS} after it,
+ * nearest first.
+ */
+export async function findSlotsForTake(input: {
   userId: string;
   medicationId: string;
   userTz: string;
@@ -91,24 +98,15 @@ export async function findSlotsNearTake(input: {
       todayEnd: new Date(today.end.getTime() + 1),
     });
   }
+  const t = takenAt.getTime();
   const rows = await prisma.medicationIntakeEvent.findMany({
     where: {
       userId,
       medicationId,
       deletedAt: null,
       scheduledFor: {
-        gte: new Date(
-          Math.max(
-            day.start.getTime(),
-            takenAt.getTime() - NEAREST_SLOT_REACH_MS,
-          ),
-        ),
-        lte: new Date(
-          Math.min(
-            day.end.getTime(),
-            takenAt.getTime() + NEAREST_SLOT_REACH_MS,
-          ),
-        ),
+        gte: day.start,
+        lte: new Date(Math.min(day.end.getTime(), t + TAKE_AHEAD_REACH_MS)),
       },
     },
     orderBy: [{ scheduledFor: "asc" }, { createdAt: "asc" }, { id: "asc" }],
@@ -116,12 +114,14 @@ export async function findSlotsNearTake(input: {
   const byInstant = new Map<number, MedicationIntakeEvent[]>();
   for (const row of rows) {
     const key = row.scheduledFor.getTime();
-    if (Math.abs(key - takenAt.getTime()) > NEAREST_SLOT_REACH_MS) continue;
+    if (key > t + TAKE_AHEAD_REACH_MS) continue;
     byInstant.set(key, [...(byInstant.get(key) ?? []), row]);
   }
-  const instants = [...byInstant.keys()].sort(
-    (a, b) => Math.abs(a - takenAt.getTime()) - Math.abs(b - takenAt.getTime()),
-  );
+  const keys = [...byInstant.keys()];
+  const instants = [
+    ...keys.filter((k) => k <= t).sort((a, b) => b - a),
+    ...keys.filter((k) => k > t).sort((a, b) => a - b),
+  ];
   const slots: NearestSlot[] = [];
   for (const instant of instants) {
     const real = await resolveForcedSlotForWrite({
@@ -146,9 +146,10 @@ export type TakeResolution =
 
 /**
  * The binding of a new take that names no slot: the band's slot when it has
- * one, else the nearest slot when it is open; a repeat of the take the
- * nearest slot holds answers `alreadyTaken`, a further dose the nearest open
- * slot, else ad hoc.
+ * one and the take is not a further dose; else a repeat of a take a slot
+ * already holds answers `alreadyTaken`, and otherwise the most recent open
+ * slot at or before the take, an open slot already takeable ahead of it, or
+ * ad hoc.
  */
 export async function resolveNewTake(input: {
   userId: string;
@@ -163,7 +164,7 @@ export async function resolveNewTake(input: {
     // answers `alreadyTaken` in the shared slot write itself, under the slot
     // lock. One whose take lies further back is a further dose (bands split
     // the day between two dose times, so 10:20 still falls in the 08:00
-    // band): it goes to the nearest open slot like a take outside every band.
+    // band): it goes to an open slot like a take outside every band.
     // Only a take the person recorded counts (`holdsTake`): an automatic
     // one is replaced by the slot write, never repeated.
     const held = await prisma.medicationIntakeEvent.findFirst({
@@ -185,29 +186,25 @@ export async function resolveNewTake(input: {
     if (!held || !holdsTake(held) || isRepeatOf(held.takenAt!, input.takenAt)) {
       return { kind: "slot", slot: bandSlot, attributionSource: "AUTO" };
     }
-    return furtherDose(await findSlotsNearTake(input));
+    return firstOpen(await findSlotsForTake(input));
   }
-  const slots = await findSlotsNearTake(input);
-  const nearest = slots[0];
-  if (nearest === undefined) return { kind: "adHoc" };
-  if (nearest.answered === null) {
-    return { kind: "slot", slot: nearest.slot, attributionSource: "USER_PIN" };
-  }
-  // A real skip answered the slot: the take stands on its own.
-  if (!holdsTake(nearest.answered)) return { kind: "adHoc" };
-  const recorded = nearest.answered.takenAt as Date;
-  if (isRepeatOf(recorded, input.takenAt)) {
-    return { kind: "alreadyTaken", row: nearest.answered };
-  }
-  return furtherDose(slots);
+  const slots = await findSlotsForTake(input);
+  const repeat = slots.find(
+    (s) =>
+      s.answered !== null &&
+      holdsTake(s.answered) &&
+      isRepeatOf(s.answered.takenAt as Date, input.takenAt),
+  );
+  if (repeat?.answered) return { kind: "alreadyTaken", row: repeat.answered };
+  return firstOpen(slots);
 }
 
 function isRepeatOf(recorded: Date, takenAt: Date): boolean {
   return Math.abs(recorded.getTime() - takenAt.getTime()) <= REPEAT_WINDOW_MS;
 }
 
-/** A dose of its own: the nearest open slot in reach, else ad hoc. */
-function furtherDose(slots: NearestSlot[]): TakeResolution {
+/** The first open slot in the order {@link findSlotsForTake} gives, else ad hoc. */
+function firstOpen(slots: NearestSlot[]): TakeResolution {
   const open = slots.find((s) => s.answered === null);
   return open
     ? { kind: "slot", slot: open.slot, attributionSource: "USER_PIN" }

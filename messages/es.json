@@ -13433,7 +13433,7 @@
       "close": "Ocultar"
     },
     "ai": {
-      "readDone": "La IA leyó tu documento.",
+      "readDone": "La IA leyó tu documento. Ahora la búsqueda también lo encuentra por su contenido.",
       "readStagedOne": "La IA leyó tu documento. 1 resultado de laboratorio está listo para revisar.",
       "readStagedFew": "La IA leyó tu documento. {count} resultados de laboratorio están listos para revisar.",
       "readStagedOther": "La IA leyó tu documento. {count} resultados de laboratorio están listos para revisar.",

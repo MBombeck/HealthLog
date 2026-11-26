@@ -13433,7 +13433,7 @@
       "close": "Nascondi"
     },
     "ai": {
-      "readDone": "L’IA ha letto il tuo documento.",
+      "readDone": "L’IA ha letto il tuo documento. Ora la ricerca lo trova anche in base al contenuto.",
       "readStagedOne": "L’IA ha letto il tuo documento. 1 risultato di laboratorio attende la tua revisione.",
       "readStagedFew": "L’IA ha letto il tuo documento. {count} risultati di laboratorio attendono la tua revisione.",
       "readStagedOther": "L’IA ha letto il tuo documento. {count} risultati di laboratorio attendono la tua revisione.",

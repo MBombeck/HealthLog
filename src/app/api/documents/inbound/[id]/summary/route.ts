@@ -8,10 +8,12 @@
  * G7).
  *
  * `mode=text` stays transient (P2-D4) — a transcription is a read-through of the
- * user's own file and there is nothing to keep. `mode=summary` PERSISTS onto the
- * document row since v1.30.31: the user asked for it explicitly, it is the same
- * artefact the background job stores, and keeping it means a second open shows
- * the paragraph instead of buying it again. Beyond that the old rule holds —
+ * user's own file and there is nothing to keep. `mode=summary` with
+ * `persist=true` stores the paragraph on the document row (since v1.30.31;
+ * `replace=true` overwrites a stored one): it is the same artefact the
+ * background job stores, and keeping it means a second open shows the
+ * paragraph instead of buying it again. The web sheet asks for it on every
+ * summary; without `persist` the summary is returned and not kept. Beyond that the old rule holds —
  * nothing reaches coach memory, snapshots, the structured stores, or the search
  * index; a summary the safety screen blocked is never stored as text.
  *

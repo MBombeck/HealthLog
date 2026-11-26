@@ -32,7 +32,10 @@ afterAll(() => {
   vi.unstubAllEnvs();
 });
 
-describe("demo refresh", () => {
+// One walk by design: the refresh seeds the demo, and the refusal case needs
+// those rows to show it left them untouched. The block keeps its order under
+// a shuffled run.
+describe("demo refresh", { shuffle: false }, () => {
   it("rewrites the demo up to today, every series current", async () => {
     const prisma = getPrismaClient();
     expect(await refresh()).toEqual({

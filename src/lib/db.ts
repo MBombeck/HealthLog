@@ -167,11 +167,29 @@ export function buildSessionOptions(): string | undefined {
   return `${timeouts}-c work_mem=${getWorkMem()} -c jit=off ${TIME_ZONE_OPTION}`;
 }
 
+/**
+ * How long an idle pooled connection is kept before it is closed.
+ *
+ * `pg.Pool` closes an idle connection after 10 s unless told otherwise. A
+ * client opening its app fires a few dozen requests at once, each with several
+ * reads in parallel, and on the next open, usually more than 10 s later, the
+ * pool is empty again: every read of the burst opened a new connection, which
+ * means a server process forked, a SCRAM handshake, and a first plan against
+ * an empty catalog cache. On a four-core host sixty such connections at once
+ * cost 300 to 400 ms per read before the read itself ran, which is why a
+ * series with no points took over a second. Five minutes keeps the
+ * connections a burst opened for the next one; the pool still shrinks to
+ * nothing on a quiet instance, and an idle server process holds a few
+ * megabytes.
+ */
+export const POOL_IDLE_TIMEOUT_MS = 5 * 60_000;
+
 export function prismaPoolConfig(): PoolConfig {
   return {
     connectionString: process.env.DATABASE_URL!,
     max: getPrismaPoolMax(),
     connectionTimeoutMillis: getPoolConnectionTimeoutMs(),
+    idleTimeoutMillis: POOL_IDLE_TIMEOUT_MS,
     options: buildSessionOptions(),
   };
 }
