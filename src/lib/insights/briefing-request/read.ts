@@ -13,14 +13,11 @@
 import type { NextRequest } from "next/server";
 
 import { prisma } from "@/lib/db";
-import {
-  generatedOnLocalToday,
-  insightsPayloadForToday,
-} from "@/lib/daily/briefing-today-read";
+import { insightsPayloadForToday } from "@/lib/daily/briefing-today-read";
 import { isLegacyInsightPayload } from "@/lib/ai/legacy-payload";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { readBriefingFailure } from "@/lib/insights/briefing-failure-marker";
-import { readBriefingGeneratedAt } from "@/lib/insights/briefing-generated-at";
+import { cachedBriefingIsCurrent } from "@/lib/insights/briefing-payload";
 import {
   INSIGHTS_CACHE_SELECT,
   openInsightsCachedText,
@@ -30,14 +27,6 @@ import { hasUsableStatusProvider } from "@/lib/insights/status-provider";
 import { enqueueForceWarm } from "@/lib/jobs/insight-pregenerate-shared";
 import { annotate } from "@/lib/logging/context";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
-
-/**
- * Briefing freshness window for the read. A cached briefing read this
- * recently is fresh and triggers no warm; older / missing enqueues an
- * out-of-band regeneration. Mirrors the 24 h cache-hit window the POST path
- * honours so the two stay consistent.
- */
-const BRIEFING_FRESH_MS = 24 * 60 * 60 * 1000;
 
 /**
  * The honesty signals beside the payload: whether a provider exists, and
@@ -126,22 +115,24 @@ export async function readAdvisorBriefing(args: {
 
   const cachedAt = dbUser?.insightsCachedAt ?? null;
   const timezone = dbUser?.timezone ?? DEFAULT_TIMEZONE;
-  // Fresh means written today on the reader's calendar, by the moment the
-  // text was generated: `insightsCachedAt` also moves when an unchanged
-  // warm only re-stamps yesterday's text.
-  const generatedToday = generatedOnLocalToday(
-    readBriefingGeneratedAt(cachedText),
-    timezone,
-    new Date(),
-  );
-  const isFresh =
-    !languageMismatch &&
-    cachedAt !== null &&
-    generatedToday &&
-    Date.now() - cachedAt.getTime() < BRIEFING_FRESH_MS;
-
   const signals = await readGenerationSignals(userId, cachedAt);
   const { hasProvider } = signals;
+
+  // Fresh by the rule the generating POST short-circuits on: today's text,
+  // in the reader's language, with a briefing the card can render. A cached
+  // block the shared reader rejects (or text that does not parse) is not
+  // fresh, so a warm is asked for instead of the card holding "No briefing
+  // yet" until tomorrow. A briefing the grounding gate withheld from today's
+  // write is today's answer, shown as "withheld", not a gap to warm.
+  const isFresh = cachedBriefingIsCurrent({
+    cachedText,
+    cachedAt,
+    cachedLocale: dbUser?.insightsCachedLocale,
+    locale: readerLocale,
+    timezone,
+    now: new Date(),
+    briefingWithheld: signals.briefingOmittedReason === "ungrounded",
+  });
 
   // Never block on the provider. Warm out of band only when the cached
   // briefing is stale / missing AND a provider is configured (a

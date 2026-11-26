@@ -100,7 +100,13 @@ to one task.
   `ai.chain.served` (info) or `ai.chain.failed` (warn, with the failure
   kind) carrying `chain` (`main`, `default:<id>` or `pinned:<id>`, the
   chain's id, never its name), `capability` and `provider`, so the app's
-  own log answers which chain and provider served a call.
+  own log answers which chain and provider served a call. Its
+  `duration_ms` is the call's own. The `failure` field is the kind
+  (`timeout`, `refused`, `unreachable`, …); `code` is the operating
+  system's error code behind it, and stays empty when there is none, as
+  for HealthLog's own response timeout. A background job that ends in a
+  failure writes `ai.job.failed` beside it, with the job's own code (for
+  example `provider_timeout`) and how long the job ran.
 - **Guardrails apply per chain.** Entries resolve under the same
   credential policy (a delegate gets nothing; a managed profile gets the
   source its guardian chose: the operator's key, nothing, or one chain the

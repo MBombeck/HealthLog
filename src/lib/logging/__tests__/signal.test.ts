@@ -65,6 +65,23 @@ describe("emitSignal", () => {
     expect(line.meta.error_message).not.toContain("sk-abcdefghijklmnop");
   });
 
+  // #1404 — a signal line is written the moment the work ended, so its own
+  // builder lived for no time at all and every line read duration_ms=0, a
+  // ten-minute job included. The work's own duration rides along instead.
+  it("carries the duration of the work it reports, not its own", () => {
+    emitSignal({
+      action: "ai.job.failed",
+      level: "warn",
+      durationMs: 600_400.6,
+    });
+    expect((emitted[0] as { duration_ms: number }).duration_ms).toBe(600_401);
+  });
+
+  it("leaves duration_ms out when the work's duration is unknown", () => {
+    emitSignal({ action: "x.y.failed", level: "warn" });
+    expect(emitted[0]).not.toHaveProperty("duration_ms");
+  });
+
   it("never throws, even when emitting fails", () => {
     expect(() =>
       emitSignal({
