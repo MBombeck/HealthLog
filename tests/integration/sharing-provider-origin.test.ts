@@ -90,7 +90,7 @@ async function createUser(
 }
 
 async function mintToken(userId: string): Promise<string> {
-  const raw = `${PROVIDER_ORIGIN_KEY}-${tokenNumber++}`.padEnd(28, "0");
+  const raw = `hlk_${PROVIDER_ORIGIN_KEY}-${tokenNumber++}`.padEnd(28, "0");
   await getPrismaClient().apiToken.create({
     data: {
       userId,
