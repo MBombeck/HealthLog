@@ -26,27 +26,49 @@ import { getEvent } from "@/lib/logging/context";
 import {
   MFA_POLICY_USER_SELECT,
   resolveMfaEnrollment,
-  resolveMfaEnrollmentRequired,
   sessionMfaDueAt,
   sessionMfaRecordStale,
+  type MfaEnrollment,
   type MfaPolicyUser,
 } from "@/lib/auth/mfa-enrollment";
 
 /** Request header the proxy stamps with the page path. */
 export const PAGE_PATH_HEADER = "x-healthlog-path";
 
-/** API routes a confined session may call: reading the account, signing out, enrolling. */
-const API_EXACT = new Set([
-  "/api/auth/me",
-  "/api/auth/logout",
-  "/api/auth/reproof",
-  "/api/auth/oidc/reproof",
-  "/api/auth/passkeys",
-  "/api/auth/passkey/register-options",
-  "/api/auth/passkey/register-verify",
-  "/api/auth/me/mfa",
-]);
-const API_PREFIXES = ["/api/auth/me/mfa/"];
+/**
+ * One route a confined caller may still reach. `match: "prefix"` admits every
+ * path under `path`; `methods` null admits every method.
+ */
+export interface MfaOpenPath {
+  path: string;
+  match: "exact" | "prefix";
+  methods: readonly string[] | null;
+}
+
+function exact(path: string): MfaOpenPath {
+  return { path, match: "exact", methods: null };
+}
+
+/**
+ * The API routes a confined caller may reach: reading the account, signing
+ * out (including removing this device's push binding), enrolling, and the
+ * public probes. Published on `/api/auth/me` as `mfaEnrollment.openPaths`, so
+ * a client reads the list instead of keeping a copy of it.
+ */
+export const MFA_ENROLLMENT_OPEN_PATHS: readonly MfaOpenPath[] = [
+  exact("/api/auth/me"),
+  exact("/api/auth/logout"),
+  exact("/api/auth/reproof"),
+  exact("/api/auth/oidc/reproof"),
+  exact("/api/auth/passkeys"),
+  exact("/api/auth/passkey/register-options"),
+  exact("/api/auth/passkey/register-verify"),
+  exact("/api/auth/me/mfa"),
+  { path: "/api/auth/me/mfa/", match: "prefix", methods: null },
+  { path: "/api/devices/", match: "prefix", methods: ["DELETE"] },
+  exact("/api/health"),
+  exact("/api/version"),
+];
 
 /** Pages that render the enrolment cards. */
 const PAGE_PREFIXES = ["/enroll-mfa", "/settings/security"];
@@ -55,8 +77,15 @@ function startsWithSegment(path: string, prefix: string): boolean {
   return path === prefix || path.startsWith(`${prefix}/`);
 }
 
-export function isMfaEnrollmentApiPath(path: string): boolean {
-  return API_EXACT.has(path) || API_PREFIXES.some((p) => path.startsWith(p));
+export function isMfaEnrollmentApiPath(path: string, method?: string): boolean {
+  const verb = (method ?? "").toUpperCase();
+  return MFA_ENROLLMENT_OPEN_PATHS.some(
+    (open) =>
+      (open.match === "exact"
+        ? path === open.path
+        : path.startsWith(open.path) && path.length > open.path.length) &&
+      (open.methods === null || open.methods.includes(verb)),
+  );
 }
 
 export function isMfaEnrollmentPagePath(path: string): boolean {
@@ -74,6 +103,40 @@ export async function mfaDueAtForSignIn(userId: string): Promise<Date | null> {
   });
   if (!user) return null;
   return sessionMfaDueAt(await resolveMfaEnrollment(userId, user));
+}
+
+/**
+ * The second-factor state of this caller: the one answer the gates below
+ * enforce and `/api/auth/me` reports. A narrow token (`isScopedCredential`)
+ * is not a sign-in and is never confined, so it reads `none`; a demo reads
+ * `none` through `resolveMfaEnrollment`.
+ */
+export async function callerMfaEnrollment(
+  user: MfaPolicyUser & { id: string },
+  credential: "sign-in" | "narrow-token",
+): Promise<MfaEnrollment> {
+  if (credential === "narrow-token") return { state: "none", dueAt: null };
+  return resolveMfaEnrollment(user.id, user);
+}
+
+/**
+ * `mfaEnrollment` on `/api/auth/me`: the caller's state from
+ * `callerMfaEnrollment`, so `required` means exactly that routes outside
+ * `openPaths` are refused for this caller, and the list itself.
+ */
+export async function mfaEnrollmentPayload(
+  user: MfaPolicyUser & { id: string },
+  credential: "sign-in" | "narrow-token",
+): Promise<MfaEnrollment & { openPaths: readonly MfaOpenPath[] }> {
+  return {
+    ...(await callerMfaEnrollment(user, credential)),
+    openPaths: MFA_ENROLLMENT_OPEN_PATHS,
+  };
+}
+
+function requestPathAndMethod(): { path?: string; method?: string } {
+  const event = getEvent();
+  return { path: event?.getHttpPath(), method: event?.getHttpMethod?.() };
 }
 
 interface ConfinableSession {
@@ -98,7 +161,7 @@ function enrollmentRequiredError(): HttpError {
 export async function enforceMfaEnrollment(
   session: ConfinableSession,
 ): Promise<void> {
-  const enrollment = await resolveMfaEnrollment(session.user.id, session.user);
+  const enrollment = await callerMfaEnrollment(session.user, "sign-in");
   if (sessionMfaRecordStale(session.mfaEnrollmentDueAt, enrollment)) {
     const dueAt = sessionMfaDueAt(enrollment);
     // The record only: a failed write must not decide the request.
@@ -112,9 +175,9 @@ export async function enforceMfaEnrollment(
   }
   if (enrollment.state !== "required") return;
 
-  const apiPath = getEvent()?.getHttpPath();
+  const { path: apiPath, method } = requestPathAndMethod();
   if (apiPath !== undefined) {
-    if (isMfaEnrollmentApiPath(apiPath)) return;
+    if (isMfaEnrollmentApiPath(apiPath, method)) return;
     throw enrollmentRequiredError();
   }
 
@@ -139,8 +202,9 @@ export async function enforceMfaEnrollment(
 export async function refuseConfinedBearer(
   user: MfaPolicyUser & { id: string },
 ): Promise<void> {
-  if (!(await resolveMfaEnrollmentRequired(user.id, user))) return;
-  const apiPath = getEvent()?.getHttpPath();
-  if (apiPath !== undefined && isMfaEnrollmentApiPath(apiPath)) return;
+  const enrollment = await callerMfaEnrollment(user, "sign-in");
+  if (enrollment.state !== "required") return;
+  const { path, method } = requestPathAndMethod();
+  if (path !== undefined && isMfaEnrollmentApiPath(path, method)) return;
   throw enrollmentRequiredError();
 }

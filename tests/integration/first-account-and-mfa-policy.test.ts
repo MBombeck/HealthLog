@@ -48,6 +48,9 @@ const { GET: readMe } = await import("@/app/api/auth/me/route");
 const { GET: listMeasurements } = await import("@/app/api/measurements/route");
 const { POST: refresh } = await import("@/app/api/auth/refresh/route");
 const { issueAccessAndRefresh } = await import("@/lib/auth/refresh-token");
+const { DELETE: deleteDevice } = await import("@/app/api/devices/[id]/route");
+const { GET: readVersion } = await import("@/app/api/version/route");
+const { GET: readHealth } = await import("@/app/api/health/route");
 const { resolveMfaEnrollment } = await import("@/lib/auth/mfa-enrollment");
 const { mfaDueAtForSignIn } = await import("@/lib/auth/mfa-confinement");
 const { refuseNativeSignInWithoutFactor } =
@@ -348,6 +351,131 @@ describe("confinement decided at request time", () => {
     const body = (await res.json()) as { meta: { errorCode: string } };
     expect(body.meta.errorCode).toBe("auth.mfa.enrollment_required");
     const row = await getPrismaClient().refreshToken.findFirstOrThrow({
+      where: { userId: admin.id },
+    });
+    expect(row.usedAt).toBeNull();
+    expect(row.revokedAt).toBeNull();
+  });
+
+  async function nativeBundle(userId: string) {
+    return issueAccessAndRefresh({
+      userId,
+      policy: {
+        policy: "native",
+        accessTokenDays: 1,
+        refreshTokenDays: 60,
+        tokenLabel: "native",
+      },
+      source: "login.password",
+      deviceId: "device-1",
+    });
+  }
+
+  function refreshRequest(body: Record<string, unknown>) {
+    return new Request("http://localhost/api/auth/refresh", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-device-id": "device-1",
+        "x-forwarded-for": "203.0.113.31",
+      },
+      body: JSON.stringify(body),
+    }) as Parameters<typeof refresh>[0];
+  }
+
+  it("still signs a past-due account out: refresh with revoke ends the family", async () => {
+    await usePolicySince(20);
+    const admin = await makeUser({ role: "ADMIN", createdAt: OLD() });
+    const bundle = await nativeBundle(admin.id);
+    const res = await refresh(
+      refreshRequest({ refreshToken: bundle.refreshToken, revoke: true }),
+    );
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { data: { revoked: boolean } }).data).toEqual(
+      { revoked: true },
+    );
+    const row = await getPrismaClient().refreshToken.findFirstOrThrow({
+      where: { userId: admin.id },
+    });
+    expect(row.revokedAt).not.toBeNull();
+  });
+
+  it("lets a confined sign-in token remove its device and read the probes", async () => {
+    await usePolicySince(20);
+    const admin = await makeUser({ role: "ADMIN", createdAt: OLD() });
+    const signIn = await makeToken(admin);
+    const removed = await callRoute(deleteDevice, {
+      method: "DELETE",
+      route: "/api/devices/{id}",
+      params: { id: "no-such-device" },
+      auth: signIn,
+    });
+    expect(removed.meta?.errorCode).not.toBe("auth.mfa.enrollment_required");
+    expect(removed.status).not.toBe(403);
+
+    const session = await preUpdateSession(admin);
+    const version = await callRoute(readVersion, {
+      method: "GET",
+      route: "/api/version",
+      auth: session,
+    });
+    expect(version.status).toBe(200);
+    const health = await callRoute(readHealth, {
+      method: "GET",
+      route: "/api/health",
+      auth: session,
+      contract: { skip: "status depends on the test container's services" },
+    });
+    expect(health.status).not.toBe(403);
+    expect(health.meta?.errorCode).not.toBe("auth.mfa.enrollment_required");
+  });
+
+  it("reports required on /me exactly when routes are refused, with the open paths", async () => {
+    await usePolicySince(20);
+    const admin = await makeUser({ role: "ADMIN", createdAt: OLD() });
+    const me = await callRoute<{
+      mfaEnrollment: { state: string; openPaths: { path: string }[] };
+    }>(readMe, {
+      method: "GET",
+      route: "/api/auth/me",
+      auth: await preUpdateSession(admin),
+    });
+    expect(me.status).toBe(200);
+    expect(me.data.mfaEnrollment.state).toBe("required");
+    expect(me.data.mfaEnrollment.openPaths.map((p) => p.path)).toContain(
+      "/api/auth/me",
+    );
+
+    const graced = await makeUser({
+      role: "ADMIN",
+      createdAt: new Date(Date.now() - DAY_MS),
+    });
+    const graceMe = await callRoute<{ mfaEnrollment: { state: string } }>(
+      readMe,
+      { method: "GET", route: "/api/auth/me", auth: await makeSession(graced) },
+    );
+    expect(graceMe.data.mfaEnrollment.state).toBe("grace");
+  });
+
+  it("answers repeated refreshes of a refused token without looking it up, with Retry-After", async () => {
+    await usePolicySince(20);
+    const admin = await makeUser({ role: "ADMIN", createdAt: OLD() });
+    const bundle = await nativeBundle(admin.id);
+    const prisma = getPrismaClient();
+    for (let i = 0; i < 4; i++) {
+      const res = await refresh(
+        refreshRequest({ refreshToken: bundle.refreshToken }),
+      );
+      expect(res.status).toBe(403);
+      expect(Number(res.headers.get("retry-after"))).toBeGreaterThan(0);
+    }
+    // Three refusals were looked up and audited; the fourth was not.
+    expect(
+      await prisma.auditLog.count({
+        where: { action: "auth.token.refresh.failed" },
+      }),
+    ).toBe(3);
+    const row = await prisma.refreshToken.findFirstOrThrow({
       where: { userId: admin.id },
     });
     expect(row.usedAt).toBeNull();

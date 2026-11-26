@@ -538,9 +538,23 @@ const accountPayload = z
       .object({
         state: z.enum(["none", "grace", "required"]),
         dueAt: isoDateTime().nullable(),
+        openPaths: z
+          .array(
+            z.object({
+              path: z.string(),
+              match: z.enum(["exact", "prefix"]),
+              methods: z
+                .array(z.string())
+                .nullable()
+                .describe("Null: every method."),
+            }),
+          )
+          .describe(
+            "The API routes a caller in state `required` may still reach (account read, sign-out, removing a device's push binding, enrolment, the public probes). `prefix` admits every path under `path`. Read it from here rather than keeping a copy: the list may change between releases. `POST /api/auth/refresh` with `revoke: true` also always works.",
+          ),
       })
       .describe(
-        "Whether an instance or per-account policy requires this account to enrol a second factor (TOTP, a security key or a passkey), and by when. `none`: no policy covers the account or it has a factor; `grace`: enrol by `dueAt`, the account works as before until then; `required`: a browser session reaches only the enrolment routes and a native sign-in is refused with `auth.mfa.enrollment_required` until the account enrols.",
+        "Whether a second-factor policy requires this caller to enrol a factor (TOTP, a security key or a passkey), and by when; decided by the same function that enforces it. `none`: no policy covers the account, it has a factor, it is a public demo, or the caller is a narrow-scope token; `grace`: enrol by `dueAt`, everything works until then; `required`: every route outside `openPaths` answers 403 `auth.mfa.enrollment_required` for this caller (browser session and sign-in token alike), a refresh is refused the same way, and a native sign-in is refused until the account enrols.",
       ),
     glucoseUnit: z
       .enum(["mg/dL", "mmol/L"])

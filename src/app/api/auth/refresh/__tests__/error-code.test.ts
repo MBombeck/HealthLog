@@ -17,7 +17,15 @@ vi.mock("@/lib/rate-limit", () => ({
     resetAt: 0,
     ip: "203.0.113.7",
   }),
+  peekRateLimit: vi.fn().mockResolvedValue(null),
+  checkRateLimit: vi.fn(async () => ({
+    allowed: true,
+    limit: 3,
+    remaining: 2,
+    resetAt: Date.now() + 300_000,
+  })),
 }));
+vi.mock("@/lib/auth/hmac", () => ({ hashToken: (t: string) => `h(${t})` }));
 
 vi.mock("@/lib/auth/audit", () => ({
   auditLog: vi.fn().mockResolvedValue(undefined),
@@ -107,6 +115,7 @@ describe("POST /api/auth/refresh — stable errorCode (v1.7.0)", () => {
     expect(res.status).toBe(403);
     const json = (await res.json()) as Envelope;
     expect(json.meta?.errorCode).toBe("auth.mfa.enrollment_required");
+    expect(Number(res.headers.get("retry-after"))).toBeGreaterThan(0);
   });
 
   it("returns auth.refresh.invalid for a not-found token", async () => {

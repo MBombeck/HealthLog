@@ -7,7 +7,12 @@ import { apiHandler } from "@/lib/api-handler";
 import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { annotate } from "@/lib/logging/context";
-import { checkAuthSurfaceRateLimit } from "@/lib/rate-limit";
+import { hashToken } from "@/lib/auth/hmac";
+import {
+  checkAuthSurfaceRateLimit,
+  checkRateLimit,
+  peekRateLimit,
+} from "@/lib/rate-limit";
 import {
   resolveTokenPolicy,
   NATIVE_REFRESH_TOKEN_DAYS,
@@ -16,6 +21,26 @@ import {
   rotateRefreshToken,
   revokeRefreshToken,
 } from "@/lib/auth/refresh-token";
+
+/**
+ * A refresh refused for a missing second factor leaves the token live, and a
+ * client that answers every refusal with another refresh would ask for ever.
+ * After this many refusals of one token in the window, the same answer comes
+ * without looking the token up again, and `Retry-After` says when to ask.
+ */
+const MFA_REFUSAL_LIMIT = 3;
+const MFA_REFUSAL_WINDOW_MS = 5 * 60 * 1000;
+
+function mfaEnrollmentRefusal(resetAt: number): Response {
+  const response = apiError(
+    "This account needs two-factor sign-in. Set it up in the web app under Settings > Security, then sign in here again.",
+    403,
+    { errorCode: "auth.mfa.enrollment_required" },
+  );
+  const seconds = Math.max(1, Math.ceil((resetAt - Date.now()) / 1000));
+  response.headers.set("Retry-After", String(seconds));
+  return response;
+}
 
 export const POST = apiHandler(async (request: NextRequest) => {
   // v1.4.43 — tighter shared bucket on trust-chain misconfig.
@@ -64,6 +89,18 @@ export const POST = apiHandler(async (request: NextRequest) => {
   if (policy.refreshTokenDays === null) {
     policy.refreshTokenDays = NATIVE_REFRESH_TOKEN_DAYS;
     policy.accessTokenDays = 1;
+  }
+
+  // The token's earlier refusals for a missing factor, keyed on its hash: a
+  // token that keeps being refused is answered without another lookup.
+  const refusalKey = `auth:refresh-mfa:${hashToken(body.refreshToken)}`;
+  const refusals = await peekRateLimit(refusalKey);
+  if (refusals && refusals.count >= MFA_REFUSAL_LIMIT) {
+    annotate({
+      action: { name: "auth.token.refresh.failed" },
+      meta: { refresh_failure: "mfa_enrollment_required_repeat" },
+    });
+    return mfaEnrollmentRefusal(refusals.resetAt);
   }
 
   const result = await rotateRefreshToken({
@@ -120,11 +157,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
     //     token is not consumed: the person adds a factor in a browser and the
     //     same token refreshes again.
     if (result.reason === "mfa_enrollment_required") {
-      return apiError(
-        "This account needs two-factor sign-in. Set it up in the web app under Settings > Security, then sign in here again.",
-        403,
-        { errorCode: "auth.mfa.enrollment_required" },
+      const charged = await checkRateLimit(
+        refusalKey,
+        MFA_REFUSAL_LIMIT,
+        MFA_REFUSAL_WINDOW_MS,
       );
+      return mfaEnrollmentRefusal(charged.resetAt);
     }
     if (result.reason === "revoked") {
       return apiError(

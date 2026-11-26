@@ -46,6 +46,8 @@ import {
   isMfaEnrollmentApiPath,
   isMfaEnrollmentPagePath,
   refuseConfinedBearer,
+  callerMfaEnrollment,
+  MFA_ENROLLMENT_OPEN_PATHS,
 } from "../mfa-confinement";
 
 const PAST = new Date(Date.now() - 60_000);
@@ -82,6 +84,21 @@ describe("the enrolment allowlist", () => {
     expect(isMfaEnrollmentPagePath("/settings/security")).toBe(true);
     expect(isMfaEnrollmentPagePath("/settings/securityx")).toBe(false);
     expect(isMfaEnrollmentPagePath("/")).toBe(false);
+    // Signing out removes the device's push binding: DELETE only.
+    expect(isMfaEnrollmentApiPath("/api/devices/d1", "DELETE")).toBe(true);
+    expect(isMfaEnrollmentApiPath("/api/devices/d1", "GET")).toBe(false);
+    expect(isMfaEnrollmentApiPath("/api/devices/", "DELETE")).toBe(false);
+    expect(isMfaEnrollmentApiPath("/api/health")).toBe(true);
+    expect(isMfaEnrollmentApiPath("/api/version")).toBe(true);
+  });
+
+  it("publishes every rule it applies", () => {
+    for (const open of MFA_ENROLLMENT_OPEN_PATHS) {
+      const path = open.match === "exact" ? open.path : `${open.path}x`;
+      expect(isMfaEnrollmentApiPath(path, open.methods?.[0] ?? "GET")).toBe(
+        true,
+      );
+    }
   });
 });
 
@@ -196,5 +213,19 @@ describe("refuseConfinedBearer", () => {
     });
     state.apiPath = "/api/measurements";
     await expect(refuseConfinedBearer(USER)).resolves.toBeUndefined();
+  });
+});
+
+describe("callerMfaEnrollment", () => {
+  it("reads none for a narrow token without asking the policy", async () => {
+    expect(await callerMfaEnrollment(USER, "narrow-token")).toEqual({
+      state: "none",
+      dueAt: null,
+    });
+    expect(resolveMfaEnrollment).not.toHaveBeenCalled();
+  });
+
+  it("answers what the gates enforce for a sign-in", async () => {
+    expect((await callerMfaEnrollment(USER, "sign-in")).state).toBe("required");
   });
 });

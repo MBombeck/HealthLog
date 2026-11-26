@@ -41,10 +41,14 @@ ended.
   `auth.mfa.enrollment_required` and no token is issued. The person adds a
   factor in a browser (Settings > Security) and signs in again. A sign-in
   token issued earlier, before the update included, is held the same way as
-  a browser session: it reaches only the account payload, sign-out and the
-  enrolment routes, every other route answers the same `403`, and a refresh
-  is refused with it without using up the refresh token, which works again
-  once a factor exists.
+  a browser session: it reaches only the account payload, sign-out (removing
+  the device included), the enrolment routes and the public probes, and every
+  other route answers the same `403`. The account payload lists those routes
+  (`mfaEnrollment.openPaths`). A refresh is refused with it, carrying
+  `Retry-After`, without using up the refresh token, which works again once a
+  factor exists; a token refused three times within five minutes gets the
+  same answer without being looked up again until that window ends. Signing
+  out through the refresh route (`revoke: true`) always works.
 - **Personal API tokens** (Settings > API tokens) are not sign-ins and are not
   affected; revoke them if an account must lose access now.
 
