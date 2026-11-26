@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+// The day reads pick each day's ladder-winning source; the user's ladder
+// blob is read once per call. No account here has one, so the default ladders apply.
+vi.mock("@/lib/rollups/measurement-read", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/rollups/measurement-read")>()),
+  loadUserSourcePriority: async () => null,
+}));
+
 // Day-mean reads fold per-day aggregates in SQL; the fake folds the mocked
 // `measurement.findMany` rows with the same rules.
 vi.mock("@/lib/measurements/day-aggregates", async () => ({

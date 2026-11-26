@@ -121,6 +121,7 @@ export function PushRelayCheckLine({
 /** What keeps a wanted Live Activity from starting, per `liveActivityStart`. */
 const LA_START_LABEL = {
   switch_off: "adminLiveActivityStart.switchOff",
+  not_bound: "adminLiveActivityStart.notBound",
   no_consent: "adminLiveActivityStart.noConsent",
   no_start_token: "adminLiveActivityStart.noStartToken",
 } as const;
@@ -128,7 +129,8 @@ const LA_START_LABEL = {
 /**
  * One line when a medication has Live Activity on but the server cannot
  * start it on one of the admin's own iPhones over the relay: the operator's
- * switch is off, the device gave no Live Activity consent, or it holds no
+ * switch is off, the relay does not reach the device, the device gave no
+ * Live Activity consent, or it holds no
  * push-to-start token the relay takes. The state is the diagnostic's
  * (`liveActivityStart`), resolved on the server; nothing is shown when it is
  * `ready` or does not arise.

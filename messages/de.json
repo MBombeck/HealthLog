@@ -7114,6 +7114,7 @@
         "deleteConfirmBodyUsed": "Aufgaben mit dieser Kette ({count}) gehen beim Speichern zurück auf „Standard“. Ist sie die Standardkette, übernimmt wieder die Fallback-Kette. Deine Anbieter und Schlüssel bleiben, wie sie sind.",
         "bindingHint": "Mit nur einem Anbieter ist die Kette eine feste Bindung: Kann er nicht antworten, bricht die Aufgabe ab, statt einen anderen Anbieter zu versuchen.",
         "bindingShort": "Fest an diesen Anbieter gebunden, kein Ausweichen.",
+        "taskNoProvider": "In dieser Kette ist kein Anbieter eingerichtet, deshalb läuft diese Aufgabe nicht: Ihre Aktion wird erst wieder angeboten, wenn du einen einrichtest oder eine andere Kette wählst.",
         "egressLocal": "Bleibt auf diesem Rechner",
         "egressExternal": "Verlässt diesen Rechner",
         "notSetUp": "Noch nicht eingerichtet",
@@ -8953,7 +8954,7 @@
         "filterLabel": "Benutzer filtern",
         "forceLogout": "Abmeldung erzwingen",
         "forceLogoutConfirmTitle": "{name} abmelden?",
-        "forceLogoutConfirmBody": "Alle aktiven Sitzungen dieses Nutzers werden widerrufen. Auf allen Geräten ist eine erneute Anmeldung erforderlich.",
+        "forceLogoutConfirmBody": "Alle aktiven Sitzungen dieses Nutzers werden widerrufen. Auf allen Geräten ist eine erneute Anmeldung erforderlich. API-Tokens, verbundene Assistenten und geteilte Links werden ebenfalls ungültig.",
         "forceLogoutSuccess": "{name} aus {count, plural, one {# Sitzung} other {# Sitzungen}} abgemeldet",
         "forceLogoutFailed": "Abmeldung fehlgeschlagen",
         "cannotLogoutSelf": "Eigene Sitzungen können nicht beendet werden",
@@ -16535,7 +16536,81 @@
   },
   "adminLiveActivityStart": {
     "switchOff": "Ein Medikament hat eine Live-Aktivität, aber PUSH_RELAY_LIVE_ACTIVITY ist aus, also startet keine.",
+    "notBound": "Ein Medikament hat eine Live-Aktivität, aber das Relay erreicht dieses iPhone nicht: Der Server ist dort nicht registriert, oder das iPhone ist nicht daran gebunden.",
     "noConsent": "Ein Medikament hat eine Live-Aktivität, aber dein iPhone hat sie über das Relay nicht erlaubt.",
     "noStartToken": "Ein Medikament hat eine Live-Aktivität, aber dein iPhone hat noch kein Start-Token gesendet."
+  },
+  "serverText": {
+    "alerts": {
+      "bmiBelowNormal": {
+        "title": "BMI unter dem Normalbereich",
+        "message": "Dein BMI von {bmi} liegt unter dem Normalbereich (18,5–24,9)."
+      },
+      "bmiOverweight": {
+        "title": "BMI im Bereich Übergewicht",
+        "message": "Dein BMI von {bmi} liegt im Bereich Übergewicht. Regelmäßige Bewegung und eine ausgewogene Ernährung können helfen."
+      },
+      "bmiObesity": {
+        "title": "BMI im Bereich Adipositas",
+        "message": "Dein BMI von {bmi} liegt im Bereich Adipositas."
+      },
+      "bmiNormal": {
+        "title": "BMI im Normalbereich",
+        "message": "Dein BMI von {bmi} liegt im gesunden Bereich."
+      },
+      "bpSignificantlyElevated": {
+        "title": "Blutdruck deutlich erhöht",
+        "message": "Dein durchschnittlicher Blutdruck ({sys}/{dia}) wird als „{category}“ eingestuft."
+      },
+      "bpSlightlyElevated": {
+        "title": "Blutdruck leicht erhöht",
+        "message": "Dein durchschnittlicher Blutdruck ({sys}/{dia}) liegt im Bereich „{category}“."
+      },
+      "bpTargetGood": {
+        "title": "Blutdruck meist im Zielbereich",
+        "message": "{percent} % deiner Messungen liegen im Zielbereich."
+      },
+      "bpTargetLow": {
+        "title": "Blutdruck oft außerhalb des Zielbereichs",
+        "message": "Nur {percent} % deiner Messungen liegen im Zielbereich."
+      },
+      "weightIncreasing": {
+        "title": "Gewicht steigt",
+        "message": "Dein Gewicht steigt in den letzten 30 Tagen um etwa {kg} kg pro Woche."
+      },
+      "weightDecreasing": {
+        "title": "Gewicht sinkt",
+        "message": "Dein Gewicht sinkt in den letzten 30 Tagen um etwa {kg} kg pro Woche."
+      },
+      "pulseOutliers": {
+        "title": "Auffällige Pulswerte",
+        "message": "{count, plural, one {# ungewöhnlicher Pulswert} other {# ungewöhnliche Pulswerte}} in den letzten 30 Tagen."
+      },
+      "complianceLow": {
+        "title": "Geringe Therapietreue: {name}",
+        "message": "Deine Therapietreue für {name} liegt in den letzten 7 Tagen bei nur {percent} %. Eine regelmäßige Einnahme ist wichtig."
+      },
+      "complianceExcellent": {
+        "title": "Sehr gute Therapietreue: {name}",
+        "message": "{percent} % Therapietreue in den letzten 7 Tagen. Weiter so!"
+      }
+    },
+    "targetLabels": {
+      "weight": "Gewicht",
+      "bloodPressure": "Blutdruck",
+      "bloodPressureOnTarget": "Blutdruck im Zielbereich",
+      "restingPulse": "Ruhepuls",
+      "bmi": "BMI",
+      "bodyFat": "Körperfett",
+      "stepsPerDay": "Schritte/Tag",
+      "sleepDuration": "Schlafdauer",
+      "medicationCompliance": "Therapietreue",
+      "mood": "Stimmung",
+      "moodStability": "Stimmungsstabilität"
+    },
+    "metricLabels": {
+      "systolicBloodPressure": "Systolischer Blutdruck",
+      "diastolicBloodPressure": "Diastolischer Blutdruck"
+    }
   }
 }

@@ -26,7 +26,7 @@ import {
 } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
 import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
-import { withIdempotency } from "@/lib/idempotency";
+import { markNotReplayable, withIdempotency } from "@/lib/idempotency";
 import { withIngestAdmission } from "@/lib/ingest/admission";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { requireCycleEnabled } from "@/lib/cycle/gate";
@@ -276,11 +276,11 @@ async function postBulk(request: NextRequest): Promise<Response> {
     entries: results,
   });
   // `upsert_failed` is a write that did not happen, not a verdict on the
-  // entry, and the client sends it again. `no-store` keeps the idempotency
-  // layer from caching this answer, so a retry under the same key writes
-  // instead of replaying the failure.
+  // entry, and the client sends it again. Marked so the idempotency layer
+  // does not cache this answer, and a retry under the same key writes instead
+  // of replaying the failure.
   if (results.some((r) => r.reason === "upsert_failed")) {
-    response.headers.set("Cache-Control", "private, no-store");
+    markNotReplayable(response);
   }
   return response;
 }

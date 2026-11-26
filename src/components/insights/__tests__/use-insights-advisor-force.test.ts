@@ -127,3 +127,22 @@ describe("fetchAdvisor — the regenerate waits as long as the response timeout 
     expect(settled).toEqual({ payload: null, outcome: "timeout" });
   });
 });
+
+describe("fetchAdvisor — a refusal's body is read to its end", () => {
+  it.each([422, 429, 503, 403])(
+    "reads the %i body before returning the outcome",
+    async (status) => {
+      const text = vi.fn(async () => '{"data":null,"error":"refused"}');
+      apiFetchRaw.mockResolvedValue({
+        ok: false,
+        status,
+        text,
+      } as unknown as Response);
+
+      const result = await fetchAdvisor();
+
+      expect(result.payload).toBeNull();
+      expect(text).toHaveBeenCalledTimes(1);
+    },
+  );
+});

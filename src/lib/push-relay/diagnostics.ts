@@ -35,14 +35,18 @@ import {
   type IntakeSyncState,
   type RelayHealth,
 } from "@/lib/push-relay/capability";
-import { liveActivityRelayEnabled, relayConfig } from "@/lib/push-relay/config";
-import { laStartTokenUsable } from "@/lib/push-relay/live-activity-start-token";
+import { relayConfig } from "@/lib/push-relay/config";
+import {
+  liveActivityStartState as relayStartState,
+  type LiveActivityStartState as RelayStartState,
+} from "@/lib/push-relay/live-activity-eligibility";
 import { LA_START_EVENT } from "@/lib/push-relay/live-activity-settle";
 import { relayStateAt } from "@/lib/push-relay/relay-state";
 import { loadRegistration } from "@/lib/push-relay/registration";
 import {
   ROUTABLE_DEVICE_SELECT,
   type DeviceRoute,
+  type PushContext,
 } from "@/lib/push-relay/route-device";
 import {
   silentBudgetSummary,
@@ -120,41 +124,33 @@ export interface DiagnosticDevice {
 /**
  * Whether a relay-started Live Activity can reach a device. `null` when the
  * question does not arise: no medication of the account has Live Activity on,
- * or the device is no iPhone bound to the relay (a server with its own APNs
- * key starts none). Otherwise the first thing in the way, in the order an
- * operator and a person can fix it: the operator's switch
- * `PUSH_RELAY_LIVE_ACTIVITY` (`switch_off`), the device's Live Activity
- * consent (`no_consent`), a push-to-start token the relay still takes
- * (`no_start_token`); `ready` when none is.
+ * or the device is no iPhone. Otherwise the pass's own answer
+ * ({@link relayStartState}, `live-activity-eligibility.ts`), so the
+ * diagnostic and the start never apply two rules: the first thing in the way,
+ * in the order an operator and a person can fix it, the operator's switch
+ * `PUSH_RELAY_LIVE_ACTIVITY` (`switch_off`), a relay that does not reach the
+ * device (`not_bound`), the device's Live Activity consent (`no_consent`), a
+ * push-to-start token the relay still takes (`no_start_token`); `ready` when
+ * none is.
  */
-export type LiveActivityStartState =
-  "ready" | "switch_off" | "no_consent" | "no_start_token" | null;
+export type LiveActivityStartState = RelayStartState | null;
 
 export function liveActivityStartState(
-  d: {
-    platform: string;
-    relayState: string;
-    relayConflictAt: Date | null;
-    liveActivityConsentAt: Date | null;
-    laStartToken: string | null;
-    laStartSignature: string | null;
-    laStartStatement: unknown;
+  d: Parameters<typeof relayStartState>[0] & { platform: string },
+  ctx: {
+    wanted: boolean;
+    push: Pick<PushContext, "registration" | "keys"> | null;
+    now: Date;
   },
-  ctx: { wanted: boolean; switchOn: boolean; now: Date },
 ): LiveActivityStartState {
-  if (!ctx.wanted || d.platform !== "ios") return null;
-  if (relayStateAt(d) !== "bound") return null;
-  if (!ctx.switchOn) return "switch_off";
-  if (d.liveActivityConsentAt === null) return "no_consent";
-  if (!laStartTokenUsable(d, ctx.now)) return "no_start_token";
-  return "ready";
+  if (!ctx.wanted || d.platform !== "ios" || !ctx.push) return null;
+  return relayStartState(d, ctx.push, ctx.now);
 }
 
 export const DIAGNOSTIC_DEVICE_SELECT = {
-  id: true,
+  ...ROUTABLE_DEVICE_SELECT,
   platform: true,
-  apnsToken: true,
-  apnsEnvironment: true,
+  relayBindingKey: true,
   lastSeen: true,
   relayState: true,
   relayConflictAt: true,
@@ -183,6 +179,9 @@ export function diagnosticDevice(
     relayConflictAt: Date | null;
     relayBoundAt: Date | null;
     envelopeReportedAt: Date | null;
+    pushKeyPublic: string | null;
+    relayConsentAt: Date | null;
+    relayBindingKey: string | null;
     liveActivityConsentAt: Date | null;
     laStartToken: string | null;
     laStartSignature: string | null;
@@ -190,7 +189,12 @@ export function diagnosticDevice(
     /** The device's last Live Activity start, when there is one. */
     relayDeliveries: ReadonlyArray<{ acceptedAt: Date | null }>;
   },
-  ctx: { liveActivityWanted: boolean; now: Date },
+  ctx: {
+    liveActivityWanted: boolean;
+    /** The relay context; null when no medication wants a Live Activity. */
+    push: Pick<PushContext, "registration" | "keys"> | null;
+    now: Date;
+  },
 ): DiagnosticDevice {
   const { prefix, suffix } = maskApnsToken(d.apnsToken);
   return {
@@ -208,7 +212,7 @@ export function diagnosticDevice(
     envelopesReportedAt: d.envelopeReportedAt?.toISOString() ?? null,
     liveActivityStart: liveActivityStartState(d, {
       wanted: ctx.liveActivityWanted,
-      switchOn: liveActivityRelayEnabled(),
+      push: ctx.push,
       now: ctx.now,
     }),
   };

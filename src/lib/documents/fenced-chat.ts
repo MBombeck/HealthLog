@@ -73,7 +73,7 @@ import { resolveDocumentTextProvider } from "@/lib/documents/provider-order";
 
 const FENCED_SSE_HEADERS: Record<string, string> = {
   "Content-Type": "text/event-stream; charset=utf-8",
-  "Cache-Control": "no-cache, no-transform",
+  "Cache-Control": "private, no-store, no-transform",
   Connection: "keep-alive",
   "X-Accel-Buffering": "no",
 };

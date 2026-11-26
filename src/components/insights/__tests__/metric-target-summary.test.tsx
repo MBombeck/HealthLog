@@ -118,7 +118,7 @@ const GLUCOSE_DATA: TargetsFixture = {
   targets: [
     {
       type: "BLOOD_GLUCOSE_FASTING",
-      label: "targets.glucoseFasting",
+      label: "Glucose (fasting)",
       current: 95,
       average30: 92,
       unit: "mg/dL",
@@ -134,7 +134,7 @@ const GLUCOSE_DATA: TargetsFixture = {
     },
     {
       type: "BLOOD_GLUCOSE_POSTPRANDIAL",
-      label: "targets.glucosePostprandial",
+      label: "Glucose (post-meal)",
       current: 140,
       average30: 138,
       unit: "mg/dL",
@@ -291,8 +291,8 @@ describe("<MetricTargetSummary>", () => {
       expect(html).toContain("140 mg/dL");
       // ADA / DDG source surfaces for each panel.
       expect(html).toContain("Source: ADA 2024 / DDG");
-      // The i18n label keys resolve to EN context headings (rendered
-      // upper-cased by the heading style but kept as text content).
+      // The route words the context headings; the panel prints them as
+      // they come (upper-cased by the heading style, kept as text content).
       expect(html).toContain("Glucose (fasting)");
       expect(html).toContain("Glucose (post-meal)");
     });
