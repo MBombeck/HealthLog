@@ -21,6 +21,8 @@ import { metricKeyForType } from "@/lib/measurements/cumulative-day-sum";
 import { userDayKey } from "@/lib/tz/resolver";
 import { wallClockInTz, zonedWallClockToUtc } from "@/lib/tz/wall-clock";
 import { resolveCanonicalRecovery } from "@/lib/insights/derived/recovery-resolve";
+import { DEFAULT_SOURCE_PRIORITY } from "@/lib/validations/source-priority";
+import { vendorScoreScale } from "@/lib/scores/registry";
 import {
   buildComplianceMedicationContext,
   expectsDoses,
@@ -63,6 +65,13 @@ export function adherenceRatePercent(
 /** One wellness-summary row (latest + range over the report window). */
 interface WellnessScoreSummary {
   type: string;
+  /**
+   * RECOVERY_SCORE only: the one source every value in the row comes from.
+   * The computed proxy and a device's score are never mixed in one row.
+   */
+  source?: string;
+  /** RECOVERY_SCORE only: the scale the values are on (Polar 6, else 100). */
+  scaleMax?: number;
   latest: number;
   avg: number;
   min: number;
@@ -157,17 +166,22 @@ export function minMaxOf(values: readonly number[]): {
 }
 
 /**
- * Summarise RECOVERY_SCORE over the window from the CANONICAL row per day:
- * a WHOOP-native row wins over the COMPUTED proxy for the same day, so the
- * doctor PDF never blends the proxy and the native value into one min/avg/max.
- * Returns null when no recovery row exists. Exported for unit tests.
+ * Summarise RECOVERY_SCORE over the window, one row per source. Each night
+ * first resolves to its canonical row (a device's score wins over the
+ * computed proxy for the same night, so no night counts twice); the nights
+ * are then grouped by the source of that row. A window with WHOOP nights and
+ * proxy nights gives two rows, "WHOOP Recovery" and HealthLog's readiness,
+ * and no row ever averages a device's number with the proxy. Values are on
+ * the source's own scale (Polar's Nightly Recharge back on 1 to 6). Rows are
+ * ordered by the recovery ladder, devices first. Empty when no recovery row
+ * exists. Exported for unit tests.
  */
-export function summariseCanonicalRecovery(
+export function summariseRecoveryBySource(
   measurements: readonly RecoveryMeasurementRow[],
   timezone?: string | null,
-): WellnessScoreSummary | null {
+): WellnessScoreSummary[] {
   const recovery = measurements.filter((m) => m.type === "RECOVERY_SCORE");
-  if (recovery.length === 0) return null;
+  if (recovery.length === 0) return [];
   const canonical = resolveCanonicalRecovery(
     recovery.map((m) => ({
       value: m.value,
@@ -176,29 +190,61 @@ export function summariseCanonicalRecovery(
     })),
     timezone,
   );
-  if (canonical.length === 0) return null;
-  // `resolveCanonicalRecovery` returns rows newest-first; the report wants the
-  // latest value + the window range over the canonical set.
-  const values = canonical.map((r) => r.value);
-  const latestRow = canonical[0];
-  return {
-    type: "RECOVERY_SCORE",
-    latest: Math.round(latestRow.value),
-    avg: Math.round(values.reduce((a, b) => a + b, 0) / values.length),
-    min: Math.round(minMaxOf(values).min),
-    max: Math.round(minMaxOf(values).max),
-    count: values.length,
-    latestAt: latestRow.measuredAt.toISOString(),
+  // Newest-first from the resolver, so the first row of a source is its latest.
+  const bySource = new Map<string, typeof canonical>();
+  for (const row of canonical) {
+    const rows = bySource.get(row.source);
+    if (rows) rows.push(row);
+    else bySource.set(row.source, [row]);
+  }
+  const ladder: readonly string[] = DEFAULT_SOURCE_PRIORITY.recovery;
+  const rank = (source: string) => {
+    const i = ladder.indexOf(source);
+    return i === -1 ? ladder.length : i;
   };
+  return [...bySource.entries()]
+    .sort(([a], [b]) => rank(a) - rank(b) || a.localeCompare(b))
+    .map(([source, rows]) => {
+      const scale = vendorScoreScale("RECOVERY_SCORE", source);
+      const shown = (v: number) =>
+        scale.scaleMax === 100
+          ? Math.round(v)
+          : Math.round(scale.toDisplay(v) * 10) / 10;
+      const values = rows.map((r) => r.value);
+      const { min, max } = minMaxOf(values);
+      return {
+        type: "RECOVERY_SCORE",
+        source,
+        scaleMax: scale.scaleMax,
+        latest: shown(rows[0].value),
+        avg: shown(values.reduce((x, y) => x + y, 0) / values.length),
+        min: shown(min),
+        max: shown(max),
+        count: values.length,
+        latestAt: rows[0].measuredAt.toISOString(),
+      };
+    });
+}
+
+/**
+ * A report's measurement map without RECOVERY_SCORE. Recovery is reported
+ * one row per source in the wellness summary (`summariseRecoveryBySource`);
+ * as a measurement row, and as its chart, it would average a device's
+ * nights with the computed proxy's under one name. Every renderer (PDF,
+ * clinician view, FHIR) reads the maps this filters.
+ */
+export function withoutRecovery<T>(map: Record<string, T>): Record<string, T> {
+  const { RECOVERY_SCORE: _recovery, ...rest } = map;
+  return rest;
 }
 
 /**
  * The wellness summary of a report: one row per wellness score leaf the
  * report admits and holds readings for, from the same stats the measurement
  * table prints, so the two cannot disagree. RECOVERY_SCORE carries both the
- * native row and the computed proxy for one day; it resolves to the canonical
- * row so the PDF reads the SAME value the tile shows. Null when no row is
- * left.
+ * native row and the computed proxy for one day; each night resolves to its
+ * canonical row and the nights are reported one row per source
+ * (`summariseRecoveryBySource`). Null when no row is left.
  */
 export function summariseWellnessScores(input: {
   admits: (type: (typeof WELLNESS_SCORE_REPORT_TYPES)[number]) => boolean;
@@ -211,8 +257,7 @@ export function summariseWellnessScores(input: {
   const summaries = WELLNESS_SCORE_REPORT_TYPES.flatMap((type) => {
     if (!admits(type)) return [];
     if (type === "RECOVERY_SCORE") {
-      const summary = summariseCanonicalRecovery(measurements, timezone);
-      return summary ? [summary] : [];
+      return summariseRecoveryBySource(measurements, timezone);
     }
     const s = stats[type];
     const rows = byType[type];

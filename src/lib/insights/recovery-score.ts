@@ -30,7 +30,15 @@
  * markers — Plews et al. 2013, Sports Medicine 43(9):773–781; Buchheit 2014,
  * Frontiers in Physiology 5:73 (same lineage as the READINESS derived
  * engine). The score is descriptive — a daily wellness proxy, NOT a clinical
- * or training-recovery assessment, and it is excluded from the doctor PDF.
+ * or training-recovery assessment.
+ *
+ * Same formula as the live READINESS, not the same number: the job runs at
+ * 04:45, usually before the night's sleep has synced, so the stored row often
+ * rests on the previous night. It is HealthLog's own readiness, never a
+ * device's recovery (`isProxyRecovery` in `derived/recovery-resolve.ts`).
+ * The doctor report, the clinician view and the FHIR export list it as its
+ * own row, "Readiness (HealthLog)", apart from any device's recovery for the
+ * same window, and never average the two.
  *
  * Server-only — never call this on a page visit. It runs from the nightly
  * pg-boss job in `src/lib/jobs/recovery-score.ts`.

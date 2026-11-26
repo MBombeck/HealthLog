@@ -7,11 +7,15 @@ vi.mock("@/lib/insights/derived", async (importOriginal) => {
 });
 
 vi.mock("@/lib/db", () => ({
-  prisma: { measurement: { findFirst: vi.fn() } },
+  prisma: {
+    measurement: { findMany: vi.fn() },
+    user: { findUnique: vi.fn(async () => ({ timezone: "UTC" })) },
+  },
 }));
 
 import { computeDerivedMetric } from "@/lib/insights/derived";
 import { prisma } from "@/lib/db";
+import { scoreBand } from "@/lib/analytics/score/shared";
 import {
   buildDerivedSnapshotBlock,
   deriveTension,
@@ -20,12 +24,24 @@ import {
 } from "../derived-snapshot";
 
 const compute = computeDerivedMetric as unknown as ReturnType<typeof vi.fn>;
-const whoopFindFirst = prisma.measurement.findFirst as unknown as ReturnType<
+const recoveryFindMany = prisma.measurement.findMany as unknown as ReturnType<
   typeof vi.fn
 >;
-/** Make the WHOOP-native recovery probe report present / absent. */
+/**
+ * The source of the recovery row the latest night resolves to: a device's
+ * own score, or the COMPUTED proxy (HealthLog's readiness blend).
+ */
+function setCurrentRecoverySource(source: string) {
+  recoveryFindMany.mockResolvedValue([
+    {
+      value: 64,
+      measuredAt: new Date(NOW.getTime() - 2 * 60 * 60 * 1000),
+      source,
+    },
+  ]);
+}
 function setWhoopNativePresent(present: boolean) {
-  whoopFindFirst.mockResolvedValue(present ? { id: "whoop-1" } : null);
+  setCurrentRecoverySource(present ? "WHOOP" : "COMPUTED");
 }
 const PROFILE = { ageYears: 40, sex: "MALE" as const, heightCm: 180 };
 const NOW = new Date("2026-06-02T08:00:00Z");
@@ -63,7 +79,7 @@ const insufficient = {
 
 beforeEach(() => {
   compute.mockReset();
-  whoopFindFirst.mockReset();
+  recoveryFindMany.mockReset();
   // Default: no WHOOP-native recovery row in the window. Tests that exercise
   // the native-present path flip this explicitly.
   setWhoopNativePresent(false);
@@ -82,7 +98,7 @@ describe("buildDerivedSnapshotBlock", () => {
     setWhoopNativePresent(true);
     compute.mockImplementation(async (args?: { metric?: string }) => {
       if (args?.metric === "READINESS")
-        return ok({ score: 64, band: "yellow" });
+        return ok({ score: 64, band: "yellow", fresh: true });
       if (args?.metric === "RECOVERY_SCORE")
         return ok({ score: 72, band: "green" });
       return insufficient;
@@ -112,9 +128,9 @@ describe("buildDerivedSnapshotBlock", () => {
     setWhoopNativePresent(false);
     compute.mockImplementation(async (args?: { metric?: string }) => {
       if (args?.metric === "READINESS")
-        return ok({ score: 64, band: "yellow" });
+        return ok({ score: 64, band: "yellow", fresh: true });
       if (args?.metric === "RECOVERY_SCORE")
-        return ok({ score: 64, band: "yellow" });
+        return ok({ score: 64, band: "yellow", fresh: true });
       return insufficient;
     });
     const block = await buildDerivedSnapshotBlock("u1", PROFILE, NOW);
@@ -130,9 +146,9 @@ describe("buildDerivedSnapshotBlock", () => {
     setWhoopNativePresent(true);
     compute.mockImplementation(async (args?: { metric?: string }) => {
       if (args?.metric === "READINESS")
-        return ok({ score: 64, band: "yellow" });
+        return ok({ score: 64, band: "yellow", fresh: true });
       if (args?.metric === "RECOVERY_SCORE")
-        return ok({ score: 64, band: "yellow" });
+        return ok({ score: 64, band: "yellow", fresh: true });
       return insufficient;
     });
     const block = await buildDerivedSnapshotBlock("u1", PROFILE, NOW);
@@ -144,7 +160,7 @@ describe("buildDerivedSnapshotBlock", () => {
     setWhoopNativePresent(true);
     compute.mockImplementation(async (args?: { metric?: string }) => {
       if (args?.metric === "READINESS")
-        return ok({ score: 64, band: "yellow" });
+        return ok({ score: 64, band: "yellow", fresh: true });
       if (args?.metric === "RECOVERY_SCORE")
         return ok({ score: 80, band: "green" });
       return insufficient;
@@ -180,6 +196,7 @@ describe("buildDerivedSnapshotBlock", () => {
         return ok({
           score: 58,
           band: "yellow",
+          fresh: true,
           components: [
             { key: "sleep", value: 90, weight: 0.3 },
             { key: "hrv", value: 30, weight: 0.3 },
@@ -208,6 +225,7 @@ describe("buildDerivedSnapshotBlock", () => {
         return ok({
           score: 82,
           band: "green",
+          fresh: true,
           components: [
             { key: "sleep", value: 90, weight: 0.3 },
             { key: "hrv", value: 85, weight: 0.3 },
@@ -222,7 +240,109 @@ describe("buildDerivedSnapshotBlock", () => {
   });
 });
 
+describe("the one proxy rule in the Coach snapshot", () => {
+  function readinessAndRecovery(recoveryScore: number) {
+    compute.mockImplementation(async (args?: { metric?: string }) => {
+      if (args?.metric === "READINESS")
+        return ok({ score: 64, band: "yellow", fresh: true });
+      if (args?.metric === "RECOVERY_SCORE")
+        return ok({ score: recoveryScore, band: "yellow" });
+      return insufficient;
+    });
+  }
+
+  it("keeps an Oura or Polar recovery beside readiness, named after the device", async () => {
+    for (const [source, name] of [
+      ["OURA", "Oura Readiness"],
+      ["POLAR", "Polar Nightly Recharge"],
+      ["WHOOP", "WHOOP Recovery"],
+    ]) {
+      setCurrentRecoverySource(source);
+      readinessAndRecovery(64);
+      const block = await buildDerivedSnapshotBlock("u1", PROFILE, NOW);
+      expect(block!.RECOVERY_SCORE?.value).toBe(64);
+      expect(block!.RECOVERY_SCORE?.label).toBe(`${name} (device score)`);
+    }
+  });
+
+  it("drops the proxy beside readiness even when an older night was WHOOP's", async () => {
+    // The latest night resolves to the proxy; a WHOOP row from days ago does
+    // not make today's recovery a device score.
+    recoveryFindMany.mockResolvedValue([
+      {
+        value: 64,
+        measuredAt: new Date(NOW.getTime() - 20 * 60 * 60 * 1000),
+        source: "COMPUTED",
+      },
+      {
+        value: 80,
+        measuredAt: new Date(NOW.getTime() - 5 * 24 * 60 * 60 * 1000),
+        source: "WHOOP",
+      },
+    ]);
+    readinessAndRecovery(64);
+    const block = await buildDerivedSnapshotBlock("u1", PROFILE, NOW);
+    expect(block!.READINESS).toBeDefined();
+    expect(block!.RECOVERY_SCORE).toBeUndefined();
+  });
+
+  it("keeps the proxy when there is no readiness line to repeat it", async () => {
+    setCurrentRecoverySource("COMPUTED");
+    compute.mockImplementation(async (args?: { metric?: string }) =>
+      args?.metric === "RECOVERY_SCORE"
+        ? ok({ score: 64, band: "yellow" })
+        : insufficient,
+    );
+    const block = await buildDerivedSnapshotBlock("u1", PROFILE, NOW);
+    expect(block!.RECOVERY_SCORE?.value).toBe(64);
+    expect(block!.RECOVERY_SCORE?.label).toBeUndefined();
+  });
+
+  it("names stress and strain as HealthLog's estimates", async () => {
+    compute.mockImplementation(async (args?: { metric?: string }) =>
+      args?.metric === "STRESS_SCORE" || args?.metric === "STRAIN_SCORE"
+        ? ok({ score: 80, band: "red" })
+        : insufficient,
+    );
+    const block = await buildDerivedSnapshotBlock("u1", PROFILE, NOW);
+    expect(block!.STRESS_SCORE?.label).toBe("stress (HealthLog estimate)");
+    expect(block!.STRAIN_SCORE?.label).toBe("strain (HealthLog estimate)");
+  });
+
+  it("gives a readiness that is not fresh no band, its day, and no tension", async () => {
+    compute.mockImplementation(async (args?: { metric?: string }) =>
+      args?.metric === "READINESS"
+        ? ok({
+            score: 58,
+            band: "yellow",
+            fresh: false,
+            asOfDay: "2026-06-01",
+            components: [
+              { key: "sleep", value: 90, weight: 0.5 },
+              { key: "hrv", value: 20, weight: 0.5 },
+            ],
+          })
+        : insufficient,
+    );
+    const block = await buildDerivedSnapshotBlock("u1", PROFILE, NOW);
+    expect(block!.READINESS).toEqual({
+      value: 58,
+      confidence: 88,
+      historyDays: 14,
+      asOfDay: "2026-06-01",
+    });
+    expect(block!.TENSION).toBeUndefined();
+  });
+});
+
 describe("deriveTension (pure)", () => {
+  it("reads favourable and unfavourable with the one band rule", () => {
+    expect(scoreBand(TENSION_HIGH_SCORE)).toBe("green");
+    expect(scoreBand(TENSION_HIGH_SCORE - 1)).not.toBe("green");
+    expect(scoreBand(TENSION_LOW_SCORE)).toBe("red");
+    expect(scoreBand(TENSION_LOW_SCORE + 1)).not.toBe("red");
+  });
+
   it("fires only when at least one contributor sits on each side", () => {
     const fired = deriveTension(
       [

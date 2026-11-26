@@ -38,10 +38,14 @@
  * touched — the shift is a pure read-time alignment, so no ingest change and no
  * backfill are needed and two genuinely different nights stay separate.
  */
-import type { MeasurementSource } from "@/generated/prisma/client";
+import type {
+  MeasurementSource,
+  PrismaClient,
+} from "@/generated/prisma/client";
 import { resolveUserTimezone } from "@/lib/measurements/consolidation-base";
 import { DEFAULT_SOURCE_PRIORITY } from "@/lib/validations/source-priority";
 import { userDayKey } from "@/lib/tz/format";
+import { isProxyRecovery } from "@/lib/scores/registry";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -96,7 +100,9 @@ export function wakeDayKeyOf(
   source: MeasurementSource,
   tz: string,
 ): string {
-  const anchor = source === "COMPUTED" ? new Date(d.getTime() + MS_PER_DAY) : d;
+  const anchor = isProxyRecovery({ source })
+    ? new Date(d.getTime() + MS_PER_DAY)
+    : d;
   return userDayKey(anchor, tz);
 }
 
@@ -139,6 +145,63 @@ export function resolveCanonicalRecovery(
   return [...byDay.values()].sort(
     (a, b) => b.measuredAt.getTime() - a.measuredAt.getTime(),
   );
+}
+
+/**
+ * 1.50 — the one proxy rule, `isProxyRecovery`: a `COMPUTED` recovery row is
+ * HealthLog's own readiness blend, every other source a device's own score.
+ * It lives in the score register (`@/lib/scores/registry`, importable from
+ * client code) and is re-exported here beside the resolver it qualifies.
+ * Every reader that decides between proxy and device asks it: the Coach
+ * snapshot, the daily briefing, the dashboard score rings and the doctor
+ * report.
+ */
+export { isProxyRecovery };
+
+/**
+ * The trailing window a "which recovery is current" read covers: the
+ * wellness reader's own default, so the answer is about the same row the
+ * `RECOVERY_SCORE` value was read from.
+ */
+export const RECOVERY_CURRENT_WINDOW_DAYS = 14;
+
+/**
+ * The canonical recovery row the `RECOVERY_SCORE` value currently rests on:
+ * the same bounded read and the same per-night resolution as the wellness
+ * reader, newest night first. Null when no recovery row sits in the window.
+ * The caller passes its client; this module keeps no `@/lib/db` import so the
+ * pure resolvers above stay importable anywhere. The zone is read from the
+ * user row when the caller does not pass one, as the wellness reader does.
+ */
+export async function readCurrentCanonicalRecovery(
+  db: Pick<PrismaClient, "measurement" | "user">,
+  userId: string,
+  now: Date,
+  timezone?: string | null,
+): Promise<RecoveryRow | null> {
+  const cutoff = new Date(
+    now.getTime() - RECOVERY_CURRENT_WINDOW_DAYS * MS_PER_DAY,
+  );
+  const rows = await db.measurement.findMany({
+    where: {
+      userId,
+      type: "RECOVERY_SCORE",
+      deletedAt: null,
+      measuredAt: { gte: cutoff, lte: now },
+    },
+    select: { value: true, measuredAt: true, source: true },
+    orderBy: { measuredAt: "desc" },
+  });
+  if (rows.length === 0) return null;
+  let tz = timezone ?? null;
+  if (tz === null) {
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { timezone: true },
+    });
+    tz = user?.timezone ?? null;
+  }
+  return resolveCanonicalRecovery(rows, tz)[0] ?? null;
 }
 
 /**
@@ -228,6 +291,6 @@ export function describeRecoveryDivergence(
     alternativeSource: best.alternative.source,
     alternativeValue: Math.round(best.alternative.value),
     divergence,
-    chosenIsDirect: best.chosen.source !== "COMPUTED",
+    chosenIsDirect: !isProxyRecovery(best.chosen),
   };
 }

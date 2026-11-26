@@ -12,6 +12,7 @@ import {
 } from "./render-context";
 import { GLP1_SIDE_EFFECT_TAG_LABEL_KEYS } from "../medications/glp1-side-effect-tags";
 import { buildMedicationEffectSection } from "./activity-effect-sections";
+import { recoverySourceLabel } from "@/lib/scores/registry";
 
 const MOOD_LABEL_KEYS: Record<number, string> = {
   1: "doctorReport.moodAwful",
@@ -27,6 +28,42 @@ const WELLNESS_SCORE_LABEL_KEYS: Record<string, string> = {
   STRESS_SCORE: "doctorReport.wellnessStress",
   STRAIN_SCORE: "doctorReport.wellnessStrain",
 };
+
+/**
+ * One row of the wellness table. A recovery row is named by its source:
+ * HealthLog's readiness for the computed proxy, the device's own term
+ * ("WHOOP Recovery") otherwise; Polar's values sit on its 1 to 6 scale, so
+ * the scale is named and one decimal shows.
+ */
+function wellnessRow(
+  s: {
+    type: string;
+    source?: string;
+    scaleMax?: number;
+    latest: number;
+    avg: number;
+    min: number;
+    max: number;
+    count: number;
+  },
+  t: (key: string) => string,
+  num: (value: number, decimals?: number) => string,
+): string[] {
+  const label =
+    s.type === "RECOVERY_SCORE" && s.source
+      ? recoverySourceLabel(s.source, t) +
+        (s.scaleMax && s.scaleMax !== 100 ? ` (1-${s.scaleMax})` : "")
+      : t(WELLNESS_SCORE_LABEL_KEYS[s.type] ?? "doctorReport.wellnessTitle");
+  const shown = (v: number) => num(v, Number.isInteger(v) ? 0 : 1);
+  return [
+    label,
+    shown(s.latest),
+    shown(s.avg),
+    shown(s.min),
+    shown(s.max),
+    String(s.count),
+  ];
+}
 
 /**
  * Rough autoTable height estimate (mm) used by the page-break guards so a
@@ -388,14 +425,7 @@ export function buildMedicationMoodWellnessSection(
   // assessment" disclaimer so a physician never mistakes a band for a
   // finding. Skipped entirely when the aggregator emitted no scores.
   if (data.wellnessScores && data.wellnessScores.length > 0) {
-    const scoreRows = data.wellnessScores.map((s) => [
-      t(WELLNESS_SCORE_LABEL_KEYS[s.type] ?? "doctorReport.wellnessTitle"),
-      String(s.latest),
-      String(s.avg),
-      String(s.min),
-      String(s.max),
-      String(s.count),
-    ]);
+    const scoreRows = data.wellnessScores.map((s) => wellnessRow(s, t, num));
 
     // Keep the heading + disclaimer with the first table row.
     y = ensureSpace(y, 6 + 6 + 6 + estimateTableHeight(1));

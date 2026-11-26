@@ -51,6 +51,7 @@ import {
   minMaxOf,
   sanitisePracticeName,
   summariseWellnessScores,
+  withoutRecovery,
 } from "@/lib/doctor-report-helpers";
 import {
   excludedMeasurementTypes,
@@ -503,8 +504,8 @@ export async function collectDoctorReportData(
   const practiceName = sanitisePracticeName(options.practiceName);
 
   // The output half of the query gate, reading the same gate object.
-  const filteredByType = filterMeasurementKeys(byType, gate);
-  const filteredStats = filterMeasurementKeys(stats, gate);
+  const filteredByType = withoutRecovery(filterMeasurementKeys(byType, gate));
+  const filteredStats = withoutRecovery(filterMeasurementKeys(stats, gate));
 
   const glp1 = gate.admits("GLP1_THERAPY")
     ? buildGlp1Block({

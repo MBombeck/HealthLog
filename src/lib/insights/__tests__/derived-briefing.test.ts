@@ -6,6 +6,22 @@ vi.mock("@/lib/insights/derived", async (importOriginal) => {
   return { ...actual, computeDerivedMetric: vi.fn() };
 });
 
+let recoverySource = "WHOOP";
+vi.mock("@/lib/db", () => ({
+  prisma: {
+    measurement: {
+      findMany: vi.fn(async () => [
+        {
+          value: 30,
+          measuredAt: new Date("2026-06-02T05:00:00Z"),
+          source: recoverySource,
+        },
+      ]),
+    },
+    user: { findUnique: vi.fn(async () => ({ timezone: "UTC" })) },
+  },
+}));
+
 import { computeDerivedMetric } from "@/lib/insights/derived";
 import {
   detectDerivedBriefingSignals,
@@ -16,10 +32,10 @@ const compute = computeDerivedMetric as unknown as ReturnType<typeof vi.fn>;
 const PROFILE = { ageYears: 40, sex: "MALE" as const, heightCm: 180 };
 const NOW = new Date("2026-06-02T08:00:00Z");
 
-function ok(score: number, band: string, confidence: number) {
+function ok(score: number, band: string, confidence: number, fresh = true) {
   return {
     status: "ok" as const,
-    value: { score, band },
+    value: { score, band, fresh },
     coverage: {
       requiredInputs: 1,
       presentInputs: 1,
@@ -52,7 +68,10 @@ const insufficient = {
   reason: "x",
 };
 
-beforeEach(() => compute.mockReset());
+beforeEach(() => {
+  compute.mockReset();
+  recoverySource = "WHOOP";
+});
 
 describe("detectDerivedBriefingSignals", () => {
   it("returns null when nothing is notable", async () => {
@@ -89,6 +108,31 @@ describe("detectDerivedBriefingSignals", () => {
     });
     const ctx = await detectDerivedBriefingSignals("u1", PROFILE, NOW);
     expect(ctx!.signals.map((s) => s.sourceMetric)).toEqual(["recovery"]);
+    expect(ctx!.signals[0].label).toBe("WHOOP Recovery (device score)");
+  });
+
+  it("never offers the computed proxy, which is HealthLog's readiness", async () => {
+    recoverySource = "COMPUTED";
+    compute.mockImplementation(async (args?: { metric?: string }) =>
+      args?.metric === "RECOVERY_SCORE" ? ok(30, "red", 88) : insufficient,
+    );
+    expect(await detectDerivedBriefingSignals("u1", PROFILE, NOW)).toBeNull();
+  });
+
+  it("offers an Oura recovery under Oura's own name", async () => {
+    recoverySource = "OURA";
+    compute.mockImplementation(async (args?: { metric?: string }) =>
+      args?.metric === "RECOVERY_SCORE" ? ok(30, "red", 88) : insufficient,
+    );
+    const ctx = await detectDerivedBriefingSignals("u1", PROFILE, NOW);
+    expect(ctx!.signals[0].label).toBe("Oura Readiness (device score)");
+  });
+
+  it("says nothing about a readiness that is not fresh", async () => {
+    compute.mockImplementation(async (args?: { metric?: string }) =>
+      args?.metric === "READINESS" ? ok(48, "yellow", 70, false) : insufficient,
+    );
+    expect(await detectDerivedBriefingSignals("u1", PROFILE, NOW)).toBeNull();
   });
 });
 

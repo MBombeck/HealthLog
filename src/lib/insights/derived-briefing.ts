@@ -12,6 +12,12 @@
  * `null` (the common case) when nothing notable crosses the gate, so the
  * generate route pays zero token cost for users with no derived signal.
  *
+ * 1.50: a readiness that is not `fresh` rests on an earlier day and is no
+ * statement about today, so it is not offered. Recovery follows the one
+ * proxy rule (`isProxyRecovery`): the computed proxy is HealthLog's own
+ * readiness blend and is never offered as a second signal; a device's
+ * recovery is offered under the device's own name.
+ *
  * Server-only.
  */
 import {
@@ -20,12 +26,18 @@ import {
   type BaselineProfile,
 } from "@/lib/insights/derived";
 import type { Locale } from "@/lib/i18n/config";
+import { prisma } from "@/lib/db";
+import {
+  isProxyRecovery,
+  readCurrentCanonicalRecovery,
+} from "@/lib/insights/derived/recovery-resolve";
+import { recoverySourceLabelEn } from "@/lib/scores/registry";
 
 /** One derived signal worth a sentence in the briefing. */
 export interface DerivedBriefingSignal {
   /** Sentinel id the model echoes into `sourceMetric` (e.g. "readiness"). */
   sourceMetric: string;
-  /** Human label ("readiness", "recovery"). */
+  /** Human label ("readiness", "WHOOP Recovery (device score)"). */
   label: string;
   /** Latest 0–100 score. */
   score: number;
@@ -83,12 +95,29 @@ export async function detectDerivedBriefingSignals(
       continue;
     }
     if (!isDerivedOk(derived)) continue;
-    const v = derived.value as { score?: number; band?: string };
+    const v = derived.value as {
+      score?: number;
+      band?: string;
+      fresh?: boolean;
+    };
     if (typeof v.score !== "number" || typeof v.band !== "string") continue;
+    // An old blend says nothing about today.
+    if (cand.metric === "READINESS" && v.fresh !== true) continue;
     if (!isNotable(v.band, derived.confidence.score)) continue;
+    let label = cand.label;
+    if (cand.metric === "RECOVERY_SCORE") {
+      const current = await readCurrentCanonicalRecovery(
+        prisma,
+        userId,
+        now,
+      ).catch(() => null);
+      // The proxy is HealthLog's readiness blend, not a second signal.
+      if (current === null || isProxyRecovery(current)) continue;
+      label = `${recoverySourceLabelEn(current.source)} (device score)`;
+    }
     signals.push({
       sourceMetric: cand.sourceMetric,
-      label: cand.label,
+      label,
       score: v.score,
       band: v.band,
       confidence: derived.confidence.score,

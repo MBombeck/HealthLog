@@ -36,6 +36,19 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+/**
+ * Serve the rows to every measurement read except the recovery source
+ * lookup, which asks for RECOVERY_SCORE rows by type and finds none here.
+ */
+function serveRows(rows: unknown[]) {
+  (
+    prisma as unknown as { measurement: { findMany: ReturnType<typeof vi.fn> } }
+  ).measurement.findMany.mockImplementation(
+    async (args?: { where?: { type?: unknown } }) =>
+      args?.where?.type === "RECOVERY_SCORE" ? [] : rows,
+  );
+}
+
 vi.mock("@/lib/insights/features", () => ({
   extractFeatures: vi.fn(),
 }));
@@ -131,7 +144,7 @@ describe("buildCoachSnapshot — Apple Health additive metrics (v1.4.23)", () =>
       daysAgo(2, 64, "HEART_RATE_VARIABILITY"),
       daysAgo(5, 71, "HEART_RATE_VARIABILITY"),
     ];
-    prismaMock.measurement.findMany.mockResolvedValue(rows);
+    serveRows(rows);
 
     const out = await buildCoachSnapshot("user-1", {
       sources: ["hrv"],
@@ -151,7 +164,7 @@ describe("buildCoachSnapshot — Apple Health additive metrics (v1.4.23)", () =>
   // charts the RMSSD rows. Pin the RMSSD-only path resolving.
   it("emits the hrv block from HRV_RMSSD rows alone (ring/strap-only account)", async () => {
     const rows = [daysAgo(2, 38, "HRV_RMSSD"), daysAgo(5, 41, "HRV_RMSSD")];
-    prismaMock.measurement.findMany.mockResolvedValue(rows);
+    serveRows(rows);
 
     const out = await buildCoachSnapshot("user-1", {
       sources: ["hrv"],
@@ -170,7 +183,7 @@ describe("buildCoachSnapshot — Apple Health additive metrics (v1.4.23)", () =>
       daysAgo(3, 510, "SLEEP_DURATION"),
       daysAgo(7, 480, "SLEEP_DURATION"),
     ];
-    prismaMock.measurement.findMany.mockResolvedValue(rows);
+    serveRows(rows);
 
     const out = await buildCoachSnapshot("user-1", {
       sources: ["sleep"],
@@ -188,7 +201,7 @@ describe("buildCoachSnapshot — Apple Health additive metrics (v1.4.23)", () =>
       daysAgo(2, 64, "HEART_RATE_VARIABILITY"),
       daysAgo(3, 510, "SLEEP_DURATION"),
     ];
-    prismaMock.measurement.findMany.mockResolvedValue(rows);
+    serveRows(rows);
 
     const out = await buildCoachSnapshot("user-1", {
       sources: ["hrv", "sleep"],

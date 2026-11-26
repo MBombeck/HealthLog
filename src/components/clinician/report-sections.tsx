@@ -35,6 +35,7 @@ import {
 } from "@/lib/report-selection/catalogue";
 import type { ReportSelection } from "@/lib/report-selection/selection";
 import { EmptyState } from "@/components/ui/empty-state";
+import { recoverySourceLabel } from "@/lib/scores/registry";
 
 export type Translate = (
   key: string,
@@ -621,10 +622,16 @@ export function WellnessSection({
       <div>
         {wellness.map((s) => (
           <StatRow
-            key={s.type}
-            label={t(
-              `clinicianView.wellness.${WELLNESS_KEY[s.type] ?? "score"}`,
-            )}
+            key={`${s.type}:${s.source ?? ""}`}
+            // A recovery row is named by its source, one source per row:
+            // HealthLog's readiness for the computed proxy, the device's own
+            // term ("WHOOP Recovery") otherwise.
+            label={
+              s.type === "RECOVERY_SCORE" && s.source
+                ? recoverySourceLabel(s.source, t) +
+                  (s.scaleMax && s.scaleMax !== 100 ? ` (1-${s.scaleMax})` : "")
+                : t(`clinicianView.wellness.${WELLNESS_KEY[s.type] ?? "score"}`)
+            }
             value={t("clinicianView.statSummary", {
               latest: fmtNum(s.latest),
               avg: fmtNum(s.avg),
