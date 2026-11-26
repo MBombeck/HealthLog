@@ -61,13 +61,20 @@ import { sendSecurityAlert } from "@/lib/auth/security-alert";
 import { endDeviceLiveActivities } from "@/lib/notifications/live-activity-end";
 import { endSupersededRelayActivities } from "@/lib/push-relay/live-activity";
 import { replaceLiveActivityTokens } from "@/lib/push-relay/live-activity-report";
-import { START_ID_PATTERN } from "@/lib/push-relay/live-activity-started";
 import {
-  activityStatementSchema,
+  APNS_TOKEN_MAX_HEX,
   applyPushFields,
   devicePushFields,
   preparePushFields,
+  type IgnoredDeviceField,
 } from "@/lib/push-relay/device-registration";
+import {
+  LIVE_ACTIVITY_TOKENS_MAX,
+  dropInvalidLiveActivityFields,
+  ignoredFieldsAnswer,
+  liveActivityHexToken,
+  liveActivityTokenEntry,
+} from "@/lib/devices/live-activity-fields";
 
 const deviceSchema = z
   .object({
@@ -82,13 +89,14 @@ const deviceSchema = z
     model: z.string().min(1).max(64).optional(),
     // APNs-specific pair — the iOS client populates these once it has
     // an APNs token from the OS callback. Hex string per Apple's spec
-    // (64 chars on most devices; cap at 256 for forward compat). Stored in
+    // (64 chars on most devices; Apple documents no fixed length, so the cap
+    // is `APNS_TOKEN_MAX_HEX`). Stored in
     // lower case, so one token in other letters is the same token for the
     // ownership guard below (and for the relay, which compares lower case).
     apnsToken: z
       .string()
       .min(8)
-      .max(256)
+      .max(APNS_TOKEN_MAX_HEX)
       .regex(/^[A-Fa-f0-9]+$/, "apnsToken must be hex")
       .transform((v) => v.toLowerCase())
       .optional(),
@@ -116,56 +124,14 @@ const deviceSchema = z
     // medication-intake mutation; it sends `null` to clear the token when no
     // Activity is running. Hex, like the APNs token. Only touched when the
     // field is present so an ordinary re-register keeps the prior value.
-    liveActivityPushToken: z
-      .string()
-      .min(8)
-      .max(256)
-      .regex(/^[A-Fa-f0-9]+$/, "liveActivityPushToken must be hex")
-      .nullable()
-      .optional(),
+    liveActivityPushToken: liveActivityHexToken.nullable().optional(),
     // The device's running medication Live Activities as a set, each with
     // its push token and the dose it shows. Present replaces the stored set
     // (an empty array clears it) and the legacy single token is ignored;
     // omitted keeps the set.
     liveActivityTokens: z
-      .array(
-        z
-          .object({
-            token: z
-              .string()
-              .min(8)
-              .max(256)
-              .regex(/^[A-Fa-f0-9]+$/),
-            // A relay-started Activity knows no dose; the server fills in
-            // the dose it started, by the start id the relay wrote into its
-            // attributes (`s`) when the app sends it, else by its records.
-            medicationId: z.string().min(1).max(64).optional(),
-            relayStart: z.boolean().optional(),
-            startId: z.string().regex(START_ID_PATTERN).optional(),
-            slotInstant: isoDateTime()
-              .transform((v) => new Date(v))
-              .optional(),
-            // The device's signed `hl-activity-v1` statement for this
-            // Activity. Kept here and handed to the push relay only inside the
-            // end push, so the relay never learns when an Activity starts.
-            statement: activityStatementSchema.optional(),
-            signature: z
-              .string()
-              .regex(/^[A-Za-z0-9_-]{86}$/)
-              .optional(),
-          })
-          .refine(
-            (a) =>
-              a.medicationId !== undefined ||
-              a.relayStart === true ||
-              a.startId !== undefined,
-            {
-              message:
-                "medicationId is required unless relayStart is true or startId is given",
-            },
-          ),
-      )
-      .max(8)
+      .array(liveActivityTokenEntry)
+      .max(LIVE_ACTIVITY_TOKENS_MAX)
       .optional(),
     // The push relay fields: the device's push key, the person's relay
     // consent and the signed relay binding (`push-relay/device-registration`).
@@ -387,17 +353,21 @@ async function endSupersededAfterRegistration(deviceId: string) {
   }
 }
 
-export const POST = apiHandler(async (request: NextRequest) => {
-  const { user } = await requireAuth();
-
-  const limited = await registrationRateLimited(user.id);
-  if (limited) return limited;
-
+/**
+ * Read and check the registration body. Live Activity fields the server
+ * cannot take are left out into `ignored` (`live-activity-fields.ts`).
+ */
+function parseRegistration(
+  request: NextRequest,
+  userId: string,
+  ignored: IgnoredDeviceField[],
+) {
   // v1.4.43 — iOS device-registration multi-issue 422 + audit
   // breadcrumb. APNs-token + bundleId + environment + model + locale
   // can all fail simultaneously on a misconfigured client build.
-  const parsed = await parseJsonBody(request, deviceSchema, {
+  return parseJsonBody(request, deviceSchema, {
     maxBytes: 64 * 1024,
+    input: (body) => dropInvalidLiveActivityFields(body, ignored),
     action: "devices.register.validation-failed",
     countIssues: true,
     onInvalid: (error) => {
@@ -410,13 +380,23 @@ export const POST = apiHandler(async (request: NextRequest) => {
         stripValuesFromMessage: true,
       });
       auditLog("devices.register.validation-failed", {
-        userId: user.id,
+        userId,
         details: { issues: auditIssues },
       }).catch(() => {
         /* swallow — 422 response is the contract */
       });
     },
   });
+}
+
+export const POST = apiHandler(async (request: NextRequest) => {
+  const { user } = await requireAuth();
+
+  const limited = await registrationRateLimited(user.id);
+  if (limited) return limited;
+
+  const ignored: IgnoredDeviceField[] = [];
+  const parsed = await parseRegistration(request, user.id, ignored);
   if (!parsed.ok) return parsed.error;
 
   const {
@@ -585,5 +565,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
     await endSupersededAfterRegistration(id);
   }
 
-  return apiSuccess({ id, push: pushBlock }, 201);
+  return apiSuccess(
+    {
+      id,
+      push: pushBlock,
+      ...ignoredFieldsAnswer([...ignored, ...push.ignored]),
+    },
+    201,
+  );
 });

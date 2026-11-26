@@ -7190,12 +7190,16 @@ paths:
         v1.49.0 a device still signed in to the other account is not taken over: while that account holds a live refresh
         token for this `X-Device-Id` (or one naming no device), or the access token of a rotation's short sunset, the
         answer is 409 `devices.register.signed_in_elsewhere` and nothing changes. Signing out there, or that sign-in
-        running out, frees the device; the app can then register again. A refused push field (push key, relay binding,
-        consent) returns 422 with `meta.errorCode` `devices.push.<reason>` and changes nothing; more than 10 new relay
-        bindings for one account in 24 hours return 429 `devices.push.relay_daily_limit`. When the device's APNs token
-        changes, the old token's relay binding is removed and the device has to bind the new token (`relayState:
-        rebind_needed` unless the request carries the new `relayBinding`). The answer's `push` block is the device's
-        push state after the call."
+        running out, frees the device; the app can then register again. APNs tokens are hex of up to 512 characters:
+        Apple documents no fixed length. A Live Activity field (`liveActivityPushToken`, an entry of
+        `liveActivityTokens`, `liveActivityStart`) the server cannot take does not fail the registration: it is left
+        out, the device registers with everything else, and the answer's `ignored` names it with
+        `devices.register.invalid_field` for its shape, or with the `devices.push.<reason>` its push-to-start statement
+        was refused for. A refused push field (push key, relay binding, consent) returns 422 with `meta.errorCode`
+        `devices.push.<reason>` and changes nothing; more than 10 new relay bindings for one account in 24 hours return
+        429 `devices.push.relay_daily_limit`. When the device's APNs token changes, the old token's relay binding is
+        removed and the device has to bind the new token (`relayState: rebind_needed` unless the request carries the new
+        `relayBinding`). The answer's `push` block is the device's push state after the call."
       requestBody:
         required: true
         content:
@@ -34352,7 +34356,7 @@ components:
           description: Hex-encoded APNs device token. Must be paired with `apnsEnvironment`.
           type: string
           minLength: 8
-          maxLength: 256
+          maxLength: 512
           pattern: ^[A-Fa-f0-9]+$
         apnsEnvironment:
           description: Gateway the iOS client received `apnsToken` from. Server never auto-detects.
@@ -34397,14 +34401,15 @@ components:
           anyOf:
             - type: string
               minLength: 8
-              maxLength: 256
+              maxLength: 512
               pattern: ^[A-Fa-f0-9]+$
             - type: "null"
         liveActivityTokens:
           description: "The device's running medication Live Activities, as a full replacement list: present replaces the stored
-            list (an empty array clears it), omitted leaves it unchanged. Each entry is ended with one `end` push once
-            its dose is answered, and removed after the push. When this field is present the legacy
-            `liveActivityPushToken` is ignored."
+            list (an empty array clears it), omitted leaves it unchanged. An entry in a shape the server does not take
+            is left out of the list and named in the answer's `ignored` (`liveActivityTokens[<index>]`); a list longer
+            than 8 is left out whole. Each entry is ended with one `end` push once its dose is answered, and removed
+            after the push. When this field is present the legacy `liveActivityPushToken` is ignored."
           maxItems: 8
           type: array
           items:
@@ -34413,7 +34418,7 @@ components:
               token:
                 type: string
                 minLength: 8
-                maxLength: 256
+                maxLength: 512
                 pattern: ^[A-Fa-f0-9]+$
                 description: The Activity's ActivityKit push token (hex).
               medicationId:
@@ -34608,7 +34613,7 @@ components:
                 token:
                   type: string
                   minLength: 64
-                  maxLength: 200
+                  maxLength: 512
                   pattern: ^[0-9A-Fa-f]+$
                 statement:
                   type: object
@@ -49736,6 +49741,7 @@ components:
               - insights.chart-context
               - daily.morning
               - measurements.series-kinds
+              - devices.ignored-fields
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices; since
@@ -49846,7 +49852,12 @@ components:
             three lines and sourceValues (device scores under the vendor's name and scale, no band). The to-do card is
             DailyDigest.worthALook as before. `measurements.series-kinds`: GET /api/measurements/series takes
             kinds=a,b,c (at most 8, each once, the same days) in place of kind and answers { series: [...] }, one
-            single-kind answer per kind in the order asked; kind alone keeps the single answer."
+            single-kind answer per kind in the order asked; kind alone keeps the single answer.
+            `devices.ignored-fields`: The POST /api/devices answer carries ignored: [{ field, code }] when it left an
+            optional Live Activity field out instead of failing the registration: field is liveActivityPushToken,
+            liveActivityStart, liveActivityTokens or liveActivityTokens[<index>]; code is devices.register.invalid_field
+            for the shape, else the devices.push.<reason> a push-to-start statement was refused for. Absent when nothing
+            was left out."
       required:
         - version
         - buildSha
@@ -63881,6 +63892,25 @@ components:
               type: string
             push:
               $ref: "#/components/schemas/DevicePushState"
+            ignored:
+              description: v1.50.0, gated by `devices.ignored-fields` in `GET /api/version` `features`. The optional Live Activity
+                fields left out of this registration instead of failing it; absent when none was. A left-out
+                `liveActivityPushToken` or `liveActivityStart` keeps its stored value.
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                    description: The request field, `liveActivityTokens[<index>]` for one list entry.
+                  code:
+                    type: string
+                    description: "`devices.register.invalid_field` for a value in a shape the server does not take, else the
+                      `devices.push.<reason>` the push-to-start statement was refused for."
+                required:
+                  - field
+                  - code
+                additionalProperties: false
           required:
             - id
             - push
