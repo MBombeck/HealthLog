@@ -9,6 +9,19 @@ vi.mock("@/lib/auth/setup-token", async (importOriginal) => ({
   isProven: vi.fn(async () => setupProof.proven),
 }));
 
+// The request-scoped cookie store, for the helpers that write through it
+// (the setup proof is spent there once the first account exists).
+const cookieStore = vi.hoisted(() => ({
+  get: vi.fn((): undefined => undefined),
+  set: vi.fn(),
+  delete: vi.fn(),
+}));
+vi.mock("next/headers", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/headers")>()),
+  cookies: vi.fn(async () => cookieStore),
+  headers: vi.fn(async () => new Headers()),
+}));
+
 vi.mock("@/lib/api-handler", () => ({
   apiHandler: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
 }));
@@ -101,6 +114,7 @@ import { checkAuthSurfaceRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/db";
 import { findUserIdByEmail } from "@/lib/auth/identity-lookup";
 import { auditLog } from "@/lib/auth/audit";
+import { SETUP_PROOF_COOKIE } from "@/lib/auth/setup-token";
 import {
   createSession,
   validateSessionFromCookieValue,
@@ -517,6 +531,56 @@ describe("GET /api/auth/oidc/callback", () => {
     expect(
       vi.mocked(prisma.$queryRaw).mock.invocationCallOrder[0],
     ).toBeLessThan(vi.mocked(prisma.user.create).mock.invocationCallOrder[0]);
+  });
+
+  it("spends the setup proof and audits the claim when SSO creates the first account", async () => {
+    mockIdentity({
+      sub: "sub-first",
+      email: "first-admin@example.com",
+      emailVerified: true,
+    });
+    mockUserLookups({ byIdentity: null, byEmail: null });
+    vi.mocked(prisma.user.count).mockResolvedValue(0);
+    vi.mocked(prisma.appSettings.findUnique).mockResolvedValue(null);
+    vi.mocked(prisma.user.create).mockResolvedValue(
+      userRow({
+        id: "user-first",
+        role: "ADMIN",
+        onboardingCompletedAt: null,
+      }) as never,
+    );
+
+    const res = await GET(validRequest());
+
+    expect(res.headers.get("location")).not.toContain("error=");
+    expect(auditLog).toHaveBeenCalledWith(
+      "auth.setup.claimed",
+      expect.objectContaining({ userId: "user-first" }),
+    );
+    expect(cookieStore.delete).toHaveBeenCalledWith(SETUP_PROOF_COOKIE);
+  });
+
+  it("audits no claim for an account that is not the first", async () => {
+    mockIdentity({
+      sub: "sub-second",
+      email: "second@example.com",
+      emailVerified: true,
+    });
+    mockUserLookups({ byIdentity: null, byEmail: null });
+    vi.mocked(prisma.user.count).mockResolvedValue(3);
+    vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({
+      registrationEnabled: true,
+    } as never);
+    vi.mocked(prisma.user.create).mockResolvedValue(
+      userRow({ id: "user-second", role: "USER" }) as never,
+    );
+
+    await GET(validRequest());
+
+    expect(auditLog).not.toHaveBeenCalledWith(
+      "auth.setup.claimed",
+      expect.anything(),
+    );
   });
 
   it("refuses the first account to a browser that did not prove the setup token", async () => {

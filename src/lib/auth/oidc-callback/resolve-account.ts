@@ -166,6 +166,10 @@ async function provision(
       userId: user.id,
       ipAddress: subject.ip,
     });
+    // The first account, as the password registration does it: the setup
+    // proof is spent and the claim audited.
+    if (user.role === "ADMIN")
+      await firstAccount.afterClaim(user.id, subject.ip);
     return user;
   }
 }
