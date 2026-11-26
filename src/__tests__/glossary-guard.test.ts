@@ -26,7 +26,9 @@
  * 8. a short form (`short`, for a one-line heading, tile, chip or tab) is
  *    shorter than its name, names one thing in its locale, reuses no retired
  *    synonym, is what its `shortKey` carries in the bundle, and reaches a
- *    surface only through `metricName`.
+ *    surface only through `metricName`;
+ * 9. every metric name the web shows (`measurements.type*`) is a concept's
+ *    name, anchored exactly.
  *
  * Rule 6 exists because an item form nothing checked drifted unseen: the
  * Korean illness item was 아픈 기간 while every illness message said
@@ -40,6 +42,11 @@
  * app shortens its one-line headings to the same words, so a short form the
  * web invents on its own, or one that drifts from the glossary, splits the
  * two clients' vocabulary as surely as a second name would.
+ *
+ * Rule 9 exists for the same reason one level up: the iOS client pins every
+ * glossary name, and a metric outside the glossary had no shared name to pin,
+ * so the app and the web named it apart (VO₂ max on one, Cardio fitness on
+ * the other; one HRV for two different statistics).
  *
  * A forbidden entry with `keys` holds only under that key prefix: "Eintrag"
  * is the right word for a mood entry and the wrong one for an illness
@@ -473,6 +480,29 @@ describe("a timeline lane is named like its area", () => {
 });
 
 /**
+ * Every metric name, the full forms under `measurements.type<Type>` (and the
+ * per-source score labels beside them), is a glossary concept's name.
+ */
+const METRIC_NAME_KEY = /^measurements\.type[A-Z]/;
+
+describe("every metric is a concept", () => {
+  it("anchors every measurements.type* key by name", () => {
+    const metricKeys = [...bundles.get("en")!.keys()].filter((k) =>
+      METRIC_NAME_KEY.test(k),
+    );
+    expect(metricKeys.length).toBeGreaterThan(100);
+    const anchored = new Set(
+      CONCEPTS.flatMap((c) =>
+        c.anchors
+          .filter((a) => a.form === "name" && a.match === "exact")
+          .map((a) => a.key),
+      ),
+    );
+    expect(metricKeys.filter((k) => !anchored.has(k))).toEqual([]);
+  });
+});
+
+/**
  * Short forms. A concept with a `shortKey` has a short form in at least one
  * locale; every locale's bundle carries the short form under that key, or the
  * full name where the locale has none, so a surface that reads the key never
@@ -527,7 +557,11 @@ describe("short forms", () => {
         }
       }
       for (const entry of retired) {
-        if (forbiddenPattern(entry).test(short)) {
+        // A short form lives at its short key, so a scoped entry holds there.
+        if (
+          inScope(entry, concept.shortKey ?? "") &&
+          forbiddenPattern(entry).test(short)
+        ) {
           offenders.push(
             `${concept.id}: "${short}" reuses the retired "${forbiddenText(entry)}"`,
           );

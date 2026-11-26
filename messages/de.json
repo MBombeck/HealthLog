@@ -813,7 +813,7 @@
     "bodyFat": "Körperfett",
     "sleep": "Schlaf",
     "steps": "Schritte",
-    "vo2Max": "VO₂ max",
+    "vo2Max": "VO₂max",
     "vo2MaxUnit": "mL/(kg·min)",
     "bpInTarget": "BD im Zielbereich",
     "weightShort": "Gewicht",
@@ -824,7 +824,7 @@
     "moodShort": "Stimmung",
     "sleepShort": "Schlaf",
     "stepsShort": "Schritte",
-    "vo2MaxShort": "VO₂ max",
+    "vo2MaxShort": "VO₂max",
     "bpInTargetWindow90": "BD-Ziel (90 T)",
     "bpInTargetWindowDynamic": "BD-Ziel ({days} T)",
     "bpInTargetCollecting": "sammelt noch Daten",
@@ -976,7 +976,7 @@
     "typeTotalBodyWater": "Gesamtkörperwasser",
     "typeBoneMass": "Knochenmasse",
     "typeOxygenSaturation": "Sauerstoffsättigung",
-    "typeHeartRateVariability": "Herzfrequenzvariabilität",
+    "typeHeartRateVariability": "Herzfrequenzvariabilität (SDNN)",
     "typeRestingHeartRate": "Ruhepuls",
     "typeActiveEnergyBurned": "Aktive Energie",
     "typeBasalEnergyBurned": "Ruheenergie",
@@ -1074,7 +1074,7 @@
     "typeSixMinuteWalkDistance": "6-Minuten-Gehstrecke",
     "typeStairAscentSpeed": "Treppensteig-Tempo",
     "typeStairDescentSpeed": "Treppab-Tempo",
-    "typeBreathingDisturbances": "Atemaussetzer im Schlaf",
+    "typeBreathingDisturbances": "Atemstörungen im Schlaf",
     "typeIrregularRhythmNotification": "Hinweis auf unregelmäßigen Rhythmus",
     "typeHighHeartRateEvent": "Hinweis auf hohe Herzfrequenz",
     "typeLowHeartRateEvent": "Hinweis auf niedrige Herzfrequenz",
@@ -1090,9 +1090,9 @@
     "typeWalkingSteadinessEvent": "Hinweis zur Gehstabilität",
     "typeBreathingDisturbanceEvent": "Atemstörung",
     "typeRecoveryScore": "Erholungsscore",
-    "typeStressScore": "Stress-Score",
-    "typeStrainScore": "Belastungs-Score",
-    "typeHrvRmssd": "HRV (RMSSD)",
+    "typeStressScore": "Stressscore",
+    "typeStrainScore": "Belastungsscore",
+    "typeHrvRmssd": "Herzfrequenzvariabilität (RMSSD)",
     "typeDayStrain": "Tagesbelastung",
     "typeWorkoutStrain": "Trainingsbelastung",
     "typeSleepPerformance": "Schlafleistung",
@@ -1102,7 +1102,7 @@
     "typeEnergyExpenditureKj": "Energieverbrauch",
     "typeAverageHeartRate": "Durchschnittlicher Puls",
     "typeMaxHeartRate": "Maximaler Puls",
-    "typeSleepDisturbanceCount": "Schlafstörungen",
+    "typeSleepDisturbanceCount": "Schlafunterbrechungen",
     "typeAnsCharge": "ANS-Ladung",
     "typeCardioLoad": "Kardio-Belastung",
     "typeSleepScore": "Schlafscore",
@@ -1136,7 +1136,7 @@
     "unitRatio": "Verhältnis",
     "unitRating": "Stufe",
     "typeWho5Score": "WHO-5-Wert",
-    "typeSciScore": "SCI-Wert",
+    "typeSciScore": "Sleep Condition Indicator (SCI)",
     "typeExerciseMinutes": "Trainingsminuten",
     "typeStandMinutes": "Stehminuten",
     "typeStandHours": "Stehstunden",
@@ -1211,7 +1211,12 @@
     "shortTypeIndoorHumidity": "Luftfeuchte innen",
     "shortTypeAcuteTrainingLoad": "Akute Belastung",
     "shortTypeWaistCircumference": "Taillenumfang",
-    "shortTypeWaistToHeight": "Taille/Größe"
+    "shortTypeWaistToHeight": "Taille/Größe",
+    "shortTypeAfibBurden": "VHF-Last",
+    "shortTypeSciScore": "SCI-Wert",
+    "shortTypeHrvRmssd": "HRV (RMSSD)",
+    "shortTypeBodyMassIndex": "BMI",
+    "shortTypeHeartRateVariability": "HRV (SDNN)"
   },
   "metricCatalog": {
     "title": "Was HealthLog erfassen kann",
@@ -3306,9 +3311,9 @@
       "viewDetail": "{metric} im Detail"
     },
     "vo2Max": {
-      "cardioLinkTitle": "Cardio-Fitness (VO₂ max)",
+      "cardioLinkTitle": "VO₂max",
       "cardioLinkBody": "VO₂ max ist das zentrale Maß für die aerobe Fitness. Das vollständige Diagramm und die Einschätzung findest du auf der eigenen Seite.",
-      "cardioLinkCta": "Cardio-Fitness öffnen"
+      "cardioLinkCta": "VO₂max öffnen"
     },
     "trendAnnotation": {
       "emptyBp": "Mehr Daten nötig, um diesen Trend zu kommentieren.",
@@ -3617,7 +3622,7 @@
         "medications": "Wie sieht meine Therapietreue aus, und passt sie dazu, wie ich mich gefühlt habe?",
         "steps": "Wie aktiv war ich zuletzt gemessen an meinen Schritten, und wie ist das im Vergleich zu einem gesunden Richtwert?",
         "activeEnergy": "Was sagt mein Aktivenergie-Verlauf über mein Aktivitätsniveau zuletzt?",
-        "cardioFitness": "Was bedeutet mein Cardio-Fitness-Verlauf (VO₂max), und wie bewege ich ihn in die richtige Richtung?",
+        "cardioFitness": "Was bedeutet mein VO₂max-Verlauf, und wie bewege ich ihn in die richtige Richtung?",
         "bloodGlucose": "Geh mit mir meine letzten Glukosewerte durch. Liegen sie in einem gesunden Bereich?",
         "oxygenSaturation": "Was sagt mir mein Sauerstoffsättigungs-Verlauf (SpO₂)?",
         "respiratoryRate": "Was sagt mein Atemfrequenz-Verlauf über meine Gesundheit?",
@@ -3946,7 +3951,7 @@
         "sleepScoreBody": "Dein Schlafscore fasst eine ganze Nacht in einer Zahl zusammen, aus Dauer, Effizienz, Regelmäßigkeit und der Verteilung von Leicht-, Tief- und REM-Schlaf. Achte eher auf das Muster über Wochen als auf einen perfekten Wert in einer einzelnen Nacht.",
         "recoveryBody": "Die Erholung zeigt, wie gut sich dein Körper regeneriert hat, gestützt auf nächtliche Signale wie Herzfrequenzvariabilität und Ruhepuls. Es ist ein geräteabgeleiteter Näherungswert an deinem eigenen Ausgangswert, keine klinische Messung, und zwischen Geräten nicht vergleichbar. Ein hoher Wert ist grünes Licht, mehr zu geben; ein niedrigerer deutet an, dass dein System noch aufbaut.",
         "strainBody": "Die Belastung erfasst, wie viel kardiovaskuläre und körperliche Last du deinem Körper zugemutet hast, von Trainings bis zu einem aktiven Tag auf den Beinen. Es ist ein geräteabgeleiteter Index, gemessen an deinem eigenen üblichen Aufwand, keine klinische Messung, und der Kennwert ist zwischen Geräten nicht vergleichbar.",
-        "stressBody": "Stress ist hier eine Geräte-Heuristik aus Mustern der Herzfrequenzvariabilität. Sie ist keine Cortisol-Messung und nicht, wie du dich bewusst fühlst, und auch kein klinischer Stress-Score. Lies ihn an deinem eigenen Ausgangswert; zwischen Geräten ist er nicht vergleichbar. Ein niedrigerer Wert deutet auf einen ruhigen, gut regulierten Zustand hin; ein höherer ist eine Einladung, Erholung einzuplanen.",
+        "stressBody": "Stress ist hier eine Geräte-Heuristik aus Mustern der Herzfrequenzvariabilität. Sie ist keine Cortisol-Messung und nicht, wie du dich bewusst fühlst, und auch kein klinischer Stressscore. Lies ihn an deinem eigenen Ausgangswert; zwischen Geräten ist er nicht vergleichbar. Ein niedrigerer Wert deutet auf einen ruhigen, gut regulierten Zustand hin; ein höherer ist eine Einladung, Erholung einzuplanen.",
         "recoveryPageBody": "Was dein Wearable meldet, unter seinen eigenen Namen.",
         "pulsePressureBody": "Der Pulsdruck ist die Differenz zwischen deinem systolischen und diastolischen Wert (systolisch minus diastolisch). Als allgemeine Orientierung sind etwa 40 mmHg in Ruhe typisch; eine große Differenz über rund 60 mmHg im mittleren Alter kann auf versteifte Arterien hinweisen, eine kleine Differenz unter etwa 25 mmHg kann mit niedrigem Schlagvolumen einhergehen (StatPearls/NIH 2023). Ein Gesprächsanlass, keine Diagnose.",
         "meanArterialPressureBody": "Der mittlere arterielle Druck ist der durchschnittliche Druck, den deine Organe über einen Herzschlag sehen, grob der diastolische Wert plus ein Drittel der Differenz zum systolischen. Als allgemeine Orientierung liegt ein Ruhewert bei etwa 70–100 mmHg (StatPearls/NIH 2023). Die oft genannte Grenze von ~60 mmHg ist ein Konzept der Akutmedizin, kein Alarm für die Selbstmessung.",
@@ -5014,15 +5019,15 @@
       }
     },
     "cardioFitness": {
-      "title": "Fitness",
+      "title": "VO₂max",
       "description": "Deine VO₂max im Zeitverlauf, das wichtigste Maß für die Ausdauerfitness.",
       "chartTitle": "VO₂max (mL/(kg·min))",
       "emptyState": {
-        "title": "Noch keine Fitnessdaten",
+        "title": "Noch keine VO₂max-Daten",
         "description": "VO₂max-Werte erscheinen hier, sobald Apple Health sie aus deinen Trainings synchronisiert."
       }
     },
-    "navCardioFitness": "Fitness",
+    "navCardioFitness": "VO₂max",
     "cardioRecovery": {
       "title": "Erholungspuls",
       "description": "Wie stark dein Puls eine Minute nach maximaler Belastung abfällt.",
@@ -5085,11 +5090,11 @@
     },
     "navStairDescentSpeed": "Treppe runter",
     "breathingDisturbances": {
-      "title": "Atemaussetzer",
+      "title": "Atemstörungen",
       "description": "Wie oft deine Atmung im Schlaf gestört war.",
-      "chartTitle": "Atemaussetzer im Schlaf",
+      "chartTitle": "Atemstörungen im Schlaf",
       "emptyState": {
-        "title": "Noch keine Daten zu Atemaussetzern",
+        "title": "Noch keine Daten zu Atemstörungen",
         "description": "Werte erscheinen hier, sobald Apple Health sie von einer unterstützten Apple Watch synchronisiert."
       }
     },
@@ -10717,8 +10722,8 @@
       "title": "Wellness-Werte",
       "disclaimer": "Beschreibende Werte (0–100), berechnet aus erfassten Signalen. Dies ist keine klinische Beurteilung und keine Diagnose.",
       "recovery": "Erholungsscore",
-      "stress": "Stresswert",
-      "strain": "Belastungswert",
+      "stress": "Stressscore",
+      "strain": "Belastungsscore",
       "score": "Wellness-Wert"
     },
     "footer": "Geteilt aus HealthLog, einem selbst gehosteten Gesundheits-Tracker.",
@@ -14193,7 +14198,6 @@
     "leafEmergency": "Notfalldaten (Blutgruppe, Kontakte, Verfügungen)",
     "leafMedicationEffect": "Veränderung rund um den Start jedes Medikaments (braucht die Medikamentenliste)",
     "leafWorkouts": "Trainings (Übersicht je Sportart)",
-    "leafHrvSdnn": "HRV (SDNN)",
     "leafSeizures": "Anfallskalender"
   },
   "recordSharing": {

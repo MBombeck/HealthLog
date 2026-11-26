@@ -976,7 +976,7 @@
     "typeTotalBodyWater": "Agua corporal total",
     "typeBoneMass": "Masa ósea",
     "typeOxygenSaturation": "Saturación de oxígeno",
-    "typeHeartRateVariability": "Variabilidad de la frecuencia cardiaca",
+    "typeHeartRateVariability": "Variabilidad de la frecuencia cardiaca (SDNN)",
     "typeRestingHeartRate": "Frecuencia cardíaca en reposo",
     "typeActiveEnergyBurned": "Energía activa",
     "typeBasalEnergyBurned": "Energía en reposo",
@@ -1091,8 +1091,8 @@
     "typeBreathingDisturbanceEvent": "Alteración respiratoria",
     "typeRecoveryScore": "Puntuación de recuperación",
     "typeStressScore": "Puntuación de estrés",
-    "typeStrainScore": "Puntuación de esfuerzo",
-    "typeHrvRmssd": "VFC (RMSSD)",
+    "typeStrainScore": "Puntuación de esfuerzo diario",
+    "typeHrvRmssd": "Variabilidad de la frecuencia cardiaca (RMSSD)",
     "typeDayStrain": "Esfuerzo del día",
     "typeWorkoutStrain": "Esfuerzo del entrenamiento",
     "typeSleepPerformance": "Rendimiento del sueño",
@@ -1136,7 +1136,7 @@
     "unitRatio": "ratio",
     "unitRating": "nivel",
     "typeWho5Score": "Puntuación WHO-5",
-    "typeSciScore": "Puntuación SCI",
+    "typeSciScore": "Sleep Condition Indicator (SCI)",
     "typeExerciseMinutes": "Minutos de ejercicio",
     "typeStandMinutes": "Minutos de pie",
     "typeStandHours": "Horas de pie",
@@ -1211,7 +1211,12 @@
     "shortTypeIndoorHumidity": "Humedad interior",
     "shortTypeAcuteTrainingLoad": "Carga aguda",
     "shortTypeWaistCircumference": "Cintura",
-    "shortTypeWaistToHeight": "Cintura/altura"
+    "shortTypeWaistToHeight": "Cintura/altura",
+    "shortTypeAfibBurden": "Carga de FA",
+    "shortTypeSciScore": "Puntuación SCI",
+    "shortTypeHrvRmssd": "VFC (RMSSD)",
+    "shortTypeBodyMassIndex": "IMC",
+    "shortTypeHeartRateVariability": "VFC (SDNN)"
   },
   "metricCatalog": {
     "title": "Lo que HealthLog puede registrar",
@@ -3306,9 +3311,9 @@
       "viewDetail": "Ver detalles de {metric}"
     },
     "vo2Max": {
-      "cardioLinkTitle": "Forma cardiovascular (VO₂ máx)",
+      "cardioLinkTitle": "VO₂ máx",
       "cardioLinkBody": "El VO₂ máx es la medida principal de la forma aeróbica. El gráfico completo y la evaluación están en su propia página.",
-      "cardioLinkCta": "Abrir forma cardiovascular"
+      "cardioLinkCta": "Abrir VO₂ máx"
     },
     "trendAnnotation": {
       "emptyBp": "Necesitamos más datos para comentar esta tendencia.",
@@ -3617,7 +3622,7 @@
         "medications": "¿Cómo va mi adherencia a la medicación y coincide con cómo me he sentido?",
         "steps": "¿Qué tan activo he estado últimamente según mis pasos y cómo se compara con un nivel de referencia saludable?",
         "activeEnergy": "¿Qué dice mi tendencia de energía activa sobre mi nivel de actividad últimamente?",
-        "cardioFitness": "¿Qué significa la tendencia de mi capacidad cardiorrespiratoria (VO₂ máx.) y cómo la llevo en la dirección correcta?",
+        "cardioFitness": "¿Qué significa la tendencia de mi VO₂ máx y cómo la llevo en la dirección correcta?",
         "bloodGlucose": "Repasa conmigo mis últimas lecturas de glucosa. ¿Están en un rango saludable?",
         "oxygenSaturation": "¿Qué me dice mi tendencia de oxígeno en sangre (SpO₂)?",
         "respiratoryRate": "¿Qué dice mi tendencia de frecuencia respiratoria sobre mi salud?",
@@ -5014,15 +5019,15 @@
       }
     },
     "cardioFitness": {
-      "title": "Condición física",
+      "title": "VO₂ máx",
       "description": "Tu VO₂ máx a lo largo del tiempo, la medida principal de la forma aeróbica.",
       "chartTitle": "VO₂ máx (mL/(kg·min))",
       "emptyState": {
-        "title": "Aún no hay datos de condición física",
+        "title": "Aún no hay datos de VO₂ máx",
         "description": "Los valores de VO₂ máx aparecen aquí cuando Apple Health los sincroniza desde tus entrenamientos."
       }
     },
-    "navCardioFitness": "Condición física",
+    "navCardioFitness": "VO₂ máx",
     "cardioRecovery": {
       "title": "Recuperación cardiaca",
       "description": "Cuánto baja tu frecuencia cardiaca un minuto después del esfuerzo máximo.",
@@ -10718,7 +10723,7 @@
       "disclaimer": "Puntuaciones descriptivas (0–100) calculadas a partir de las señales registradas. No son una evaluación clínica ni un diagnóstico.",
       "recovery": "Puntuación de recuperación",
       "stress": "Puntuación de estrés",
-      "strain": "Puntuación de esfuerzo",
+      "strain": "Puntuación de esfuerzo diario",
       "score": "Puntuación de bienestar"
     },
     "footer": "Compartido desde HealthLog, un registro de salud autoalojado.",
@@ -14193,7 +14198,6 @@
     "leafEmergency": "Información de emergencia (grupo sanguíneo, contactos, voluntades)",
     "leafMedicationEffect": "Cambio en torno al inicio de cada medicamento (requiere la lista de medicamentos)",
     "leafWorkouts": "Entrenamientos (resumen por deporte)",
-    "leafHrvSdnn": "VFC (SDNN)",
     "leafSeizures": "Diario de crisis"
   },
   "recordSharing": {

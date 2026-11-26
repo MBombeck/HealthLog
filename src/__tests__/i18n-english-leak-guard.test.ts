@@ -113,9 +113,14 @@ const LEGIT_IDENTICAL = new Set<string>([
   "insights.coach.metric.vo2_max",
   "insights.derived.composite.READINESS.component.hrv",
   "labs.catalog.hs-crp",
-  "measurements.typeHrvRmssd",
-  // The report's SDNN row, named the way the RMSSD row above is.
-  "reportSelection.leafHrvSdnn",
+  "measurements.shortTypeHrvRmssd",
+  "measurements.shortTypeHeartRateVariability",
+  // The VO₂ max page and its link card carry the metric's own name.
+  "insights.cardioFitness.title",
+  "insights.navCardioFitness",
+  "insights.vo2Max.cardioLinkTitle",
+  // The instrument's published name is not translated (Espie 2014).
+  "measurements.typeSciScore",
   "illness.vital.HRV_RMSSD",
   "settings.sections.sources.metrics.hrvRmssd",
   "measurements.typeVo2Max",

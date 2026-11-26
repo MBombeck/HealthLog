@@ -562,7 +562,7 @@ describe("POST /api/export/health-record — the selection reaches every format"
         }),
       ),
     );
-    expect(withBoth).toContain("Body Fat");
+    expect(withBoth).toContain("Body fat");
 
     const without = await pdfText(
       await POST(
@@ -573,7 +573,7 @@ describe("POST /api/export/health-record — the selection reaches every format"
         }),
       ),
     );
-    expect(without).not.toContain("Body Fat");
+    expect(without).not.toContain("Body fat");
   });
 
   it("holds the mental-health screening totals back unless they are asked for by name", async () => {

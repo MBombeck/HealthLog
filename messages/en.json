@@ -961,11 +961,11 @@
     "date": "Date",
     "source": "Source",
     "typeWeight": "Weight",
-    "typeBloodPressure": "Blood Pressure",
+    "typeBloodPressure": "Blood pressure",
     "typeBpSys": "Sys",
     "typeBpDia": "Dia",
     "typePulse": "Pulse",
-    "typeBodyFat": "Body Fat",
+    "typeBodyFat": "Body fat",
     "typeSleep": "Sleep",
     "typeSteps": "Steps",
     "typeBloodGlucose": "Blood glucose",
@@ -976,7 +976,7 @@
     "typeTotalBodyWater": "Total body water",
     "typeBoneMass": "Bone mass",
     "typeOxygenSaturation": "Oxygen saturation",
-    "typeHeartRateVariability": "Heart-rate variability",
+    "typeHeartRateVariability": "Heart rate variability (SDNN)",
     "typeRestingHeartRate": "Resting heart rate",
     "typeActiveEnergyBurned": "Active energy",
     "typeBasalEnergyBurned": "Resting energy",
@@ -1005,10 +1005,10 @@
     "typeAudioExposureEnv": "Audio Exposure (Environment)",
     "typeAudioExposureHeadphone": "Audio Exposure (Headphones)",
     "typeTimeInDaylight": "Time in Daylight",
-    "typeWalkingSteadiness": "Walking Steadiness",
+    "typeWalkingSteadiness": "Walking steadiness",
     "typeAudioExposureEvent": "Loud-Listening Event",
     "typeRespiratoryRate": "Respiratory rate",
-    "typeBodyMassIndex": "Body-mass index",
+    "typeBodyMassIndex": "Body mass index",
     "typeLeanBodyMass": "Lean body mass",
     "typeWalkingHeartRateAverage": "Walking heart rate (avg)",
     "typeWalkingAsymmetry": "Walking asymmetry",
@@ -1092,7 +1092,7 @@
     "typeRecoveryScore": "Recovery score",
     "typeStressScore": "Stress score",
     "typeStrainScore": "Strain score",
-    "typeHrvRmssd": "HRV (RMSSD)",
+    "typeHrvRmssd": "Heart rate variability (RMSSD)",
     "typeDayStrain": "Day strain",
     "typeWorkoutStrain": "Workout strain",
     "typeSleepPerformance": "Sleep performance",
@@ -1136,9 +1136,9 @@
     "unitRatio": "ratio",
     "unitRating": "rating",
     "typeWho5Score": "WHO-5 score",
-    "typeSciScore": "SCI score",
+    "typeSciScore": "Sleep Condition Indicator (SCI)",
     "typeExerciseMinutes": "Exercise minutes",
-    "typeStandMinutes": "Standing minutes",
+    "typeStandMinutes": "Stand minutes",
     "typeStandHours": "Stand hours",
     "typeMindfulMinutes": "Mindful minutes",
     "typeStateOfMindValence": "State of mind",
@@ -1211,7 +1211,12 @@
     "shortTypeIndoorHumidity": "Indoor humidity",
     "shortTypeAcuteTrainingLoad": "Acute training load",
     "shortTypeWaistCircumference": "Waist",
-    "shortTypeWaistToHeight": "Waist/height"
+    "shortTypeWaistToHeight": "Waist/height",
+    "shortTypeAfibBurden": "AFib burden",
+    "shortTypeSciScore": "SCI score",
+    "shortTypeHrvRmssd": "HRV (RMSSD)",
+    "shortTypeBodyMassIndex": "BMI",
+    "shortTypeHeartRateVariability": "HRV (SDNN)"
   },
   "metricCatalog": {
     "title": "What HealthLog can track",
@@ -3306,9 +3311,9 @@
       "viewDetail": "View {metric} details"
     },
     "vo2Max": {
-      "cardioLinkTitle": "Cardio fitness (VO₂ max)",
+      "cardioLinkTitle": "VO₂ max",
       "cardioLinkBody": "VO₂ max is the headline measure of aerobic fitness. The full chart and assessment live on its own page.",
-      "cardioLinkCta": "Open cardio fitness"
+      "cardioLinkCta": "Open VO₂ max"
     },
     "trendAnnotation": {
       "emptyBp": "Awaiting more data to annotate this trend.",
@@ -3617,7 +3622,7 @@
         "medications": "How is my medication adherence looking, and is it lined up with how I've been feeling?",
         "steps": "How active have I been lately based on my steps, and how does it compare to a healthy baseline?",
         "activeEnergy": "What does my active-energy trend say about my activity level lately?",
-        "cardioFitness": "What does my cardio fitness (VO₂ max) trend mean, and how do I move it in the right direction?",
+        "cardioFitness": "What does my VO₂ max trend mean, and how do I move it in the right direction?",
         "bloodGlucose": "Walk me through my recent glucose readings. Are they in a healthy range?",
         "oxygenSaturation": "What does my blood-oxygen (SpO₂) trend tell me?",
         "respiratoryRate": "What does my respiratory-rate trend say about my health?",
@@ -5014,15 +5019,15 @@
       }
     },
     "cardioFitness": {
-      "title": "Cardio Fitness",
+      "title": "VO₂ max",
       "description": "Your VO₂ max over time, the headline measure of aerobic fitness.",
       "chartTitle": "VO₂ max (mL/(kg·min))",
       "emptyState": {
-        "title": "No cardio-fitness data yet",
+        "title": "No VO₂ max data yet",
         "description": "VO₂ max readings appear here once Apple Health syncs from your workouts."
       }
     },
-    "navCardioFitness": "Cardio fitness",
+    "navCardioFitness": "VO₂ max",
     "cardioRecovery": {
       "title": "Cardio Recovery",
       "description": "How far your heart rate drops one minute after peak exercise.",
@@ -14193,7 +14198,6 @@
     "leafEmergency": "Emergency information (blood type, contacts, directives)",
     "leafMedicationEffect": "Change around each medication start (needs the medication list)",
     "leafWorkouts": "Workouts (summary per sport)",
-    "leafHrvSdnn": "HRV (SDNN)",
     "leafSeizures": "Seizure diary"
   },
   "recordSharing": {

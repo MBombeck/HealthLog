@@ -813,7 +813,7 @@
     "bodyFat": "Gordura corporal",
     "sleep": "Sono",
     "steps": "Passos",
-    "vo2Max": "VO2 máx",
+    "vo2Max": "VO₂ máx",
     "vo2MaxUnit": "mL/(kg·min)",
     "bpInTarget": "PA no alvo",
     "weightShort": "Peso",
@@ -824,7 +824,7 @@
     "moodShort": "Humor",
     "sleepShort": "Sono",
     "stepsShort": "Passos",
-    "vo2MaxShort": "VO2 máx",
+    "vo2MaxShort": "VO₂ máx",
     "bpInTargetWindow90": "PA no alvo (90d)",
     "bpInTargetWindowDynamic": "PA no alvo ({days}d)",
     "bpInTargetCollecting": "coletando dados",
@@ -976,7 +976,7 @@
     "typeTotalBodyWater": "Água corporal total",
     "typeBoneMass": "Massa óssea",
     "typeOxygenSaturation": "Saturação de oxigênio",
-    "typeHeartRateVariability": "Variabilidade da frequência cardíaca",
+    "typeHeartRateVariability": "Variabilidade da frequência cardíaca (SDNN)",
     "typeRestingHeartRate": "Frequência cardíaca em repouso",
     "typeActiveEnergyBurned": "Energia ativa",
     "typeBasalEnergyBurned": "Energia em repouso",
@@ -993,7 +993,7 @@
     "typeRunningStrideLength": "Comprimento da passada de corrida",
     "typeFlightsClimbed": "Andares subidos",
     "typeWalkingRunningDistance": "Distância caminhada + corrida",
-    "typeVo2Max": "VO2 máx",
+    "typeVo2Max": "VO₂ máx",
     "typeBodyTemperature": "Temperatura corporal",
     "typeFatFreeMass": "Massa livre de gordura",
     "typeFatMass": "Massa de gordura",
@@ -1092,7 +1092,7 @@
     "typeRecoveryScore": "Pontuação de recuperação",
     "typeStressScore": "Pontuação de estresse",
     "typeStrainScore": "Pontuação de esforço",
-    "typeHrvRmssd": "VFC (RMSSD)",
+    "typeHrvRmssd": "Variabilidade da frequência cardíaca (RMSSD)",
     "typeDayStrain": "Esforço do dia",
     "typeWorkoutStrain": "Esforço do treino",
     "typeSleepPerformance": "Desempenho do sono",
@@ -1102,7 +1102,7 @@
     "typeEnergyExpenditureKj": "Gasto energético",
     "typeAverageHeartRate": "Frequência cardíaca média",
     "typeMaxHeartRate": "Frequência cardíaca máxima",
-    "typeSleepDisturbanceCount": "Distúrbios do sono",
+    "typeSleepDisturbanceCount": "Interrupções do sono",
     "typeAnsCharge": "Carga do SNA",
     "typeCardioLoad": "Carga cardiovascular",
     "typeSleepScore": "Pontuação de sono",
@@ -1136,7 +1136,7 @@
     "unitRatio": "razão",
     "unitRating": "avaliação",
     "typeWho5Score": "Pontuação WHO-5",
-    "typeSciScore": "Pontuação SCI",
+    "typeSciScore": "Sleep Condition Indicator (SCI)",
     "typeExerciseMinutes": "Minutos de exercício",
     "typeStandMinutes": "Minutos em pé",
     "typeStandHours": "Horas em pé",
@@ -1211,7 +1211,12 @@
     "shortTypeIndoorHumidity": "Umidade interna",
     "shortTypeAcuteTrainingLoad": "Carga de treino aguda",
     "shortTypeWaistCircumference": "Circunferência da cintura",
-    "shortTypeWaistToHeight": "Relação cintura-altura"
+    "shortTypeWaistToHeight": "Relação cintura-altura",
+    "shortTypeAfibBurden": "Carga de FA",
+    "shortTypeSciScore": "Pontuação SCI",
+    "shortTypeHrvRmssd": "VFC (RMSSD)",
+    "shortTypeBodyMassIndex": "IMC",
+    "shortTypeHeartRateVariability": "VFC (SDNN)"
   },
   "metricCatalog": {
     "title": "O que o HealthLog pode acompanhar",
@@ -2879,7 +2884,7 @@
     "activeEnergy": "Energia ativa",
     "flights": "Andares subidos",
     "distance": "Distância caminhada + corrida",
-    "vo2Max": "VO2 máx",
+    "vo2Max": "VO₂ máx",
     "bodyTemperature": "Temperatura corporal",
     "noData": "Nenhum dado na faixa de tempo selecionada",
     "bucketWeekly": "Média semanal",
@@ -3306,9 +3311,9 @@
       "viewDetail": "Ver detalhes de {metric}"
     },
     "vo2Max": {
-      "cardioLinkTitle": "Aptidão cardiorrespiratória (VO₂ máx)",
+      "cardioLinkTitle": "VO₂ máx",
       "cardioLinkBody": "O VO₂ máx é a principal medida de aptidão aeróbica. O gráfico completo e a avaliação ficam em uma página própria.",
-      "cardioLinkCta": "Abrir aptidão cardiorrespiratória"
+      "cardioLinkCta": "Abrir VO₂ máx"
     },
     "trendAnnotation": {
       "emptyBp": "Aguardando mais dados para anotar esta tendência.",
@@ -3617,7 +3622,7 @@
         "medications": "Como está minha adesão à medicação, e ela se alinha com como tenho me sentido?",
         "steps": "Quão ativo tenho estado ultimamente com base nos meus passos, e como isso se compara a uma base saudável?",
         "activeEnergy": "O que a tendência da minha energia ativa diz sobre meu nível de atividade ultimamente?",
-        "cardioFitness": "O que a tendência da minha aptidão cardiorrespiratória (VO₂ máx) significa, e como movê-la na direção certa?",
+        "cardioFitness": "O que a tendência do meu VO₂ máx significa, e como movê-lo na direção certa?",
         "bloodGlucose": "Explique minhas leituras recentes de glicose. Estão em uma faixa saudável?",
         "oxygenSaturation": "O que a tendência da minha oxigenação do sangue (SpO₂) me diz?",
         "respiratoryRate": "O que a tendência da minha frequência respiratória diz sobre minha saúde?",
@@ -5014,15 +5019,15 @@
       }
     },
     "cardioFitness": {
-      "title": "Aptidão Cardiorrespiratória",
+      "title": "VO₂ máx",
       "description": "Seu VO₂ máx ao longo do tempo, a principal medida de aptidão aeróbica.",
       "chartTitle": "VO₂ máx (mL/(kg·min))",
       "emptyState": {
-        "title": "Ainda não há dados de aptidão cardiorrespiratória",
+        "title": "Ainda não há dados de VO₂ máx",
         "description": "As leituras de VO₂ máx aparecem aqui assim que o Apple Health sincroniza a partir dos seus treinos."
       }
     },
-    "navCardioFitness": "Aptidão cardiorrespiratória",
+    "navCardioFitness": "VO₂ máx",
     "cardioRecovery": {
       "title": "Recuperação Cardíaca",
       "description": "Quanto sua frequência cardíaca cai um minuto após o pico do exercício.",
@@ -14193,7 +14198,6 @@
     "leafEmergency": "Informações de emergência (tipo sanguíneo, contatos, diretivas)",
     "leafMedicationEffect": "Mudança em torno do início de cada medicamento (requer a lista de medicamentos)",
     "leafWorkouts": "Treinos (resumo por esporte)",
-    "leafHrvSdnn": "VFC (SDNN)",
     "leafSeizures": "Diário de crises"
   },
   "recordSharing": {

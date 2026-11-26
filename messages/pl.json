@@ -976,7 +976,7 @@
     "typeTotalBodyWater": "Całkowita woda w organizmie",
     "typeBoneMass": "Masa kostna",
     "typeOxygenSaturation": "Saturacja tlenem",
-    "typeHeartRateVariability": "Zmienność rytmu serca",
+    "typeHeartRateVariability": "Zmienność rytmu serca (SDNN)",
     "typeRestingHeartRate": "Tętno spoczynkowe",
     "typeActiveEnergyBurned": "Aktywna energia",
     "typeBasalEnergyBurned": "Energia spoczynkowa",
@@ -1092,7 +1092,7 @@
     "typeRecoveryScore": "Wynik regeneracji",
     "typeStressScore": "Wynik stresu",
     "typeStrainScore": "Wynik obciążenia",
-    "typeHrvRmssd": "HRV (RMSSD)",
+    "typeHrvRmssd": "Zmienność rytmu serca (RMSSD)",
     "typeDayStrain": "Obciążenie dzienne",
     "typeWorkoutStrain": "Obciążenie treningowe",
     "typeSleepPerformance": "Wydajność snu",
@@ -1136,7 +1136,7 @@
     "unitRatio": "stosunek",
     "unitRating": "poziom",
     "typeWho5Score": "Wynik WHO-5",
-    "typeSciScore": "Wynik SCI",
+    "typeSciScore": "Sleep Condition Indicator (SCI)",
     "typeExerciseMinutes": "Minuty ćwiczeń",
     "typeStandMinutes": "Minuty stania",
     "typeStandHours": "Godziny stania",
@@ -1211,7 +1211,12 @@
     "shortTypeIndoorHumidity": "Wilgotność w pomieszczeniu",
     "shortTypeAcuteTrainingLoad": "Ostre obciążenie treningowe",
     "shortTypeWaistCircumference": "Obwód talii",
-    "shortTypeWaistToHeight": "Stosunek talii do wzrostu"
+    "shortTypeWaistToHeight": "Stosunek talii do wzrostu",
+    "shortTypeAfibBurden": "Obciążenie AF",
+    "shortTypeSciScore": "Wynik SCI",
+    "shortTypeHrvRmssd": "HRV (RMSSD)",
+    "shortTypeBodyMassIndex": "BMI",
+    "shortTypeHeartRateVariability": "HRV (SDNN)"
   },
   "metricCatalog": {
     "title": "Co HealthLog potrafi śledzić",
@@ -3306,9 +3311,9 @@
       "viewDetail": "Zobacz szczegóły: {metric}"
     },
     "vo2Max": {
-      "cardioLinkTitle": "Wydolność krążeniowa (VO₂ max)",
+      "cardioLinkTitle": "VO₂ max",
       "cardioLinkBody": "VO₂ max to główna miara wydolności tlenowej. Pełny wykres i ocenę znajdziesz na osobnej stronie.",
-      "cardioLinkCta": "Otwórz wydolność krążeniową"
+      "cardioLinkCta": "Otwórz VO₂ max"
     },
     "trendAnnotation": {
       "emptyBp": "Potrzeba więcej danych, aby skomentować ten trend.",
@@ -3617,7 +3622,7 @@
         "medications": "Jak wygląda moje przestrzeganie zaleceń lekowych i czy pokrywa się z tym, jak się czułem?",
         "steps": "Jak aktywny byłem ostatnio na podstawie moich kroków i jak wypada to na tle zdrowego punktu odniesienia?",
         "activeEnergy": "Co mój trend aktywnej energii mówi o moim poziomie aktywności w ostatnim czasie?",
-        "cardioFitness": "Co oznacza trend mojej wydolności krążeniowo-oddechowej (VO₂ max) i jak skierować go we właściwą stronę?",
+        "cardioFitness": "Co oznacza trend mojego VO₂ max i jak skierować go we właściwą stronę?",
         "bloodGlucose": "Przejdź ze mną przez moje ostatnie odczyty glukozy. Czy mieszczą się w zdrowym zakresie?",
         "oxygenSaturation": "Co mówi mi mój trend saturacji krwi tlenem (SpO₂)?",
         "respiratoryRate": "Co mój trend częstości oddechów mówi o moim zdrowiu?",
@@ -5014,15 +5019,15 @@
       }
     },
     "cardioFitness": {
-      "title": "Wydolność",
+      "title": "VO₂ max",
       "description": "Twoje VO₂ max w czasie, główna miara wydolności tlenowej.",
       "chartTitle": "VO₂ max (mL/(kg·min))",
       "emptyState": {
-        "title": "Brak danych o wydolności",
+        "title": "Brak danych o VO₂ max",
         "description": "Wartości VO₂ max pojawią się tutaj, gdy Apple Health zsynchronizuje je z Twoich treningów."
       }
     },
-    "navCardioFitness": "Wydolność",
+    "navCardioFitness": "VO₂ max",
     "cardioRecovery": {
       "title": "Regeneracja serca",
       "description": "O ile spada tętno minutę po szczytowym wysiłku.",
@@ -14193,7 +14198,6 @@
     "leafEmergency": "Informacje na wypadek nagły (grupa krwi, kontakty, oświadczenia)",
     "leafMedicationEffect": "Zmiana wokół rozpoczęcia każdego leku (wymaga listy leków)",
     "leafWorkouts": "Treningi (podsumowanie według dyscypliny)",
-    "leafHrvSdnn": "HRV (SDNN)",
     "leafSeizures": "Dzienniczek napadów"
   },
   "recordSharing": {

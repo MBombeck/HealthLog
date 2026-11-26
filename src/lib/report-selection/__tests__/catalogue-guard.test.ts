@@ -223,8 +223,8 @@ describe("heart-rate variability in the report", () => {
     const rmssd = reportMeasurementLabelKey("HRV_RMSSD");
     expect(sdnn).not.toBe(rmssd);
     expect(leafLabelKey("HEART_RATE_VARIABILITY")).toBe(sdnn);
-    expect(labelOf(sdnn)).toBe("HRV (SDNN)");
-    expect(labelOf(rmssd)).toBe("HRV (RMSSD)");
+    expect(labelOf(sdnn)).toBe("Heart rate variability (SDNN)");
+    expect(labelOf(rmssd)).toBe("Heart rate variability (RMSSD)");
   });
 
   it("files SDNN and RMSSD as separate, ungated cardio leaves", () => {

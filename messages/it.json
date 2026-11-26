@@ -976,7 +976,7 @@
     "typeTotalBodyWater": "Acqua corporea totale",
     "typeBoneMass": "Massa ossea",
     "typeOxygenSaturation": "Saturazione di ossigeno",
-    "typeHeartRateVariability": "Variabilità della frequenza cardiaca",
+    "typeHeartRateVariability": "Variabilità della frequenza cardiaca (SDNN)",
     "typeRestingHeartRate": "Frequenza cardiaca a riposo",
     "typeActiveEnergyBurned": "Energia attiva",
     "typeBasalEnergyBurned": "Energia a riposo",
@@ -1092,7 +1092,7 @@
     "typeRecoveryScore": "Punteggio di recupero",
     "typeStressScore": "Punteggio di stress",
     "typeStrainScore": "Punteggio di sforzo",
-    "typeHrvRmssd": "HRV (RMSSD)",
+    "typeHrvRmssd": "Variabilità della frequenza cardiaca (RMSSD)",
     "typeDayStrain": "Sforzo giornaliero",
     "typeWorkoutStrain": "Sforzo dell'allenamento",
     "typeSleepPerformance": "Prestazione del sonno",
@@ -1102,7 +1102,7 @@
     "typeEnergyExpenditureKj": "Dispendio energetico",
     "typeAverageHeartRate": "Frequenza cardiaca media",
     "typeMaxHeartRate": "Frequenza cardiaca massima",
-    "typeSleepDisturbanceCount": "Disturbi del sonno",
+    "typeSleepDisturbanceCount": "Interruzioni del sonno",
     "typeAnsCharge": "Carica SNA",
     "typeCardioLoad": "Carico cardio",
     "typeSleepScore": "Punteggio del sonno",
@@ -1136,7 +1136,7 @@
     "unitRatio": "rapporto",
     "unitRating": "livello",
     "typeWho5Score": "Punteggio WHO-5",
-    "typeSciScore": "Punteggio SCI",
+    "typeSciScore": "Sleep Condition Indicator (SCI)",
     "typeExerciseMinutes": "Minuti di esercizio",
     "typeStandMinutes": "Minuti in piedi",
     "typeStandHours": "Ore in piedi",
@@ -1211,7 +1211,12 @@
     "shortTypeIndoorHumidity": "Umidità interna",
     "shortTypeAcuteTrainingLoad": "Carico di allenamento acuto",
     "shortTypeWaistCircumference": "Circonferenza vita",
-    "shortTypeWaistToHeight": "Rapporto vita-altezza"
+    "shortTypeWaistToHeight": "Rapporto vita-altezza",
+    "shortTypeAfibBurden": "Carico di FA",
+    "shortTypeSciScore": "Punteggio SCI",
+    "shortTypeHrvRmssd": "HRV (RMSSD)",
+    "shortTypeBodyMassIndex": "IMC",
+    "shortTypeHeartRateVariability": "HRV (SDNN)"
   },
   "metricCatalog": {
     "title": "Cosa può monitorare HealthLog",
@@ -3306,9 +3311,9 @@
       "viewDetail": "Vedi i dettagli di {metric}"
     },
     "vo2Max": {
-      "cardioLinkTitle": "Forma cardio (VO₂ max)",
+      "cardioLinkTitle": "VO₂ max",
       "cardioLinkBody": "Il VO₂ max è la misura principale della forma aerobica. Il grafico completo e la valutazione sono nella loro pagina dedicata.",
-      "cardioLinkCta": "Apri forma cardio"
+      "cardioLinkCta": "Apri VO₂ max"
     },
     "trendAnnotation": {
       "emptyBp": "Servono più dati per commentare questo trend.",
@@ -3617,7 +3622,7 @@
         "medications": "Com'è la mia aderenza alla terapia e corrisponde a come mi sono sentito?",
         "steps": "Quanto sono stato attivo ultimamente in base ai miei passi e come si confronta con un valore di riferimento sano?",
         "activeEnergy": "Cosa dice il mio andamento dell'energia attiva sul mio livello di attività ultimamente?",
-        "cardioFitness": "Cosa significa l'andamento della mia forma cardiorespiratoria (VO₂ max) e come la indirizzo nella direzione giusta?",
+        "cardioFitness": "Cosa significa l'andamento del mio VO₂ max e come lo indirizzo nella direzione giusta?",
         "bloodGlucose": "Esamina con me le mie ultime letture di glicemia: sono in un intervallo sano?",
         "oxygenSaturation": "Cosa mi dice l'andamento della mia saturazione di ossigeno (SpO₂)?",
         "respiratoryRate": "Cosa dice il mio andamento della frequenza respiratoria sulla mia salute?",
@@ -5014,15 +5019,15 @@
       }
     },
     "cardioFitness": {
-      "title": "Forma fisica",
+      "title": "VO₂ max",
       "description": "Il tuo VO₂ max nel tempo: la misura principale della forma aerobica.",
       "chartTitle": "VO₂ max (mL/(kg·min))",
       "emptyState": {
-        "title": "Nessun dato sulla forma fisica",
+        "title": "Nessun dato sul VO₂ max",
         "description": "I valori di VO₂ max compaiono qui quando Apple Health li sincronizza dai tuoi allenamenti."
       }
     },
-    "navCardioFitness": "Forma fisica",
+    "navCardioFitness": "VO₂ max",
     "cardioRecovery": {
       "title": "Recupero cardiaco",
       "description": "Di quanto cala la frequenza cardiaca un minuto dopo lo sforzo massimo.",
@@ -14193,7 +14198,6 @@
     "leafEmergency": "Informazioni di emergenza (gruppo sanguigno, contatti, disposizioni)",
     "leafMedicationEffect": "Variazione intorno all'inizio di ogni farmaco (richiede l'elenco dei farmaci)",
     "leafWorkouts": "Allenamenti (riepilogo per sport)",
-    "leafHrvSdnn": "HRV (SDNN)",
     "leafSeizures": "Diario delle crisi"
   },
   "recordSharing": {
