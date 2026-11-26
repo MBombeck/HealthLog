@@ -26,6 +26,9 @@ vi.mock("@/lib/db", () => ({
 }));
 
 vi.mock("@/lib/logging/context", () => ({ annotate: annotateMock }));
+vi.mock("@/lib/rollups/measurement-read", () => ({
+  loadUserSourcePriority: async () => null,
+}));
 vi.mock("@/lib/measurements/dense-bucket-read", async () => {
   const { makeFakeDenseBucketRead } =
     await import("@/lib/measurements/__tests__/fake-dense-bucket-read");

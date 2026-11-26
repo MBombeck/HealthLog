@@ -144,6 +144,9 @@ async function readSameHoursDays(
     timeZone: tz,
     valueRange: plausibleMetricRange(type),
     upToLocalTime: localClockOf(cutAt, tz),
+    sourcePriority: isSourceRankedType(type)
+      ? await loadUserSourcePriority(userId)
+      : undefined,
   });
 }
 

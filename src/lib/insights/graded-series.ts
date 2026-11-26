@@ -386,6 +386,8 @@ async function readGradedDayAggregates(
     // Future-dated readings were skipped by the in-memory fold.
     until: now,
     timeZone,
+    // One source per day, as the monthly and yearly slices from the tier.
+    sourcePriority: await loadUserSourcePriority(userId),
     // `readDayAggregates` puts a row at segment k when it is older than k
     // starts (`measured_at < start`). The in-memory fold treats an age of
     // exactly the window as the older bucket, so shift each start by 1 ms.

@@ -29,6 +29,9 @@ import {
   type StatusTextResult,
 } from "@/lib/insights/status-pipeline";
 import { heightSquaredM2 } from "@/lib/analytics/classifications";
+import { pickCanonicalSourceRows } from "@/lib/analytics/source-priority";
+import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
+import { userDayKey } from "@/lib/tz/resolver";
 
 /**
  * Public entry — unchanged signature. Prepares the card (cache-read,
@@ -120,23 +123,7 @@ async function buildBmiSnapshot(
   // v1.4.28 — cap the snapshot input (weight runs at most once
   // per day for typical users; 365 covers a full year while the
   // downstream payload budget trims further).
-  const measurements = await prisma.measurement
-    .findMany({
-      where: {
-        userId,
-        type: "WEIGHT",
-        // Soft-deleted rows must never reach the prompt snapshot.
-        deletedAt: null,
-      },
-      orderBy: { measuredAt: "desc" },
-      take: 365,
-      select: {
-        value: true,
-        measuredAt: true,
-        timeZone: true,
-      },
-    })
-    .then((rows) => rows.reverse());
+  const measurements = await readWeightRows(userId, userTz);
 
   const now = new Date();
   // v1.2.5 — bucket day windows on the user's own calendar so a
@@ -262,3 +249,30 @@ const BMI_STATUS_CARD: StatusCardPlugin<StatusTextResult, undefined> = {
   emptyMessage: "Bmi-status summary was empty after normalization",
   build: buildBmiSnapshot,
 };
+
+/**
+ * The newest 365 weight readings, oldest first; soft-deleted rows never
+ * reach the prompt snapshot. A day weighed by two sources keeps the one the
+ * person's ladder puts first, as the weight chart does.
+ */
+async function readWeightRows(userId: string, userTz: string) {
+  const rows = await prisma.measurement.findMany({
+    where: { userId, type: "WEIGHT", deletedAt: null },
+    orderBy: [{ measuredAt: "desc" }, { id: "desc" }],
+    take: 365,
+    select: {
+      value: true,
+      measuredAt: true,
+      timeZone: true,
+      source: true,
+      deviceType: true,
+      type: true,
+    },
+  });
+  return pickCanonicalSourceRows(
+    rows.reverse(),
+    "weight",
+    await loadUserSourcePriority(userId),
+    (d) => userDayKey(d, userTz),
+  ).canonicalRows;
+}
