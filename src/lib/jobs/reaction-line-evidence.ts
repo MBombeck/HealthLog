@@ -22,6 +22,8 @@ export function buildEvidence(
       band: string;
       delta: number | null;
       composition?: readonly string[];
+      bandSetter?: string | null;
+      bandSetterBand?: "yellow" | "red" | null;
     } | null;
     topSignal: { headline: string; delta: string | null } | null;
     briefingLead: string | null;
@@ -37,8 +39,14 @@ export function buildEvidence(
       digest.score.delta === null
         ? "no baseline comparison available"
         : `${digest.score.delta > 0 ? "+" : ""}${Math.round(digest.score.delta)} vs their baseline`;
+    // The band follows the number, so a pillar in a worse band rides beside
+    // it; "79 (green)" alone over a red blood pressure would read as all good.
+    const setter =
+      digest.score.bandSetter && digest.score.bandSetterBand
+        ? `; the ${digest.score.bandSetter} area is ${digest.score.bandSetterBand}`
+        : "";
     parts.push(
-      `- Health score: ${Math.round(digest.score.value)} (${digest.score.band}), ${delta}.`,
+      `- Health score: ${Math.round(digest.score.value)} (${digest.score.band}${setter}), ${delta}.`,
     );
   }
   if (digest.topSignal) {

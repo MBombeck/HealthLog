@@ -165,6 +165,29 @@ describe("<WellnessScores> (the Insights head)", () => {
     expect(tile).not.toMatch(/tabular-nums[^>]*>81</);
   });
 
+  it("gives a sleep score of an older night no number, no band and no word", () => {
+    const html = render(
+      <WellnessScores
+        read={readFrom({
+          SLEEP_SCORE: ok({
+            score: 84,
+            band: "green",
+            night: "2026-11-21",
+            fresh: false,
+          }),
+        })}
+        isLoading={false}
+        {...none}
+      />,
+    );
+    const tile = html.slice(html.indexOf('data-metric="SLEEP_SCORE"'));
+    expect(tile).toContain('data-provisional="true"');
+    expect(tile).toContain('data-band="none"');
+    expect(tile).not.toContain('data-slot="wellness-score-band-word"');
+    expect(tile).toMatch(/Last 84 on 11\/21/);
+    expect(tile).not.toMatch(/tabular-nums[^>]*>84</);
+  });
+
   it("keeps the Health score's safety line at rest", () => {
     const html = render(
       <WellnessScores

@@ -260,6 +260,56 @@ describe("buildScoreRingsBlock() — 1.50 freshness and the proxy rule", () => {
     ]);
   });
 
+  it("a sleep score of an older night keeps its score and night but has no band", async () => {
+    computeDerivedMetric.mockResolvedValue({
+      status: "ok",
+      value: { score: 84, band: "green", night: "2026-06-26", fresh: false },
+    });
+    expect(
+      await buildScoreRingsBlock(
+        fakePrisma,
+        "user-1",
+        ["SLEEP_SCORE"],
+        moduleMap(),
+        NOW,
+        null,
+      ),
+    ).toEqual([
+      {
+        id: "SLEEP_SCORE",
+        score: 84,
+        band: null,
+        fresh: false,
+        asOfDay: "2026-06-26",
+      },
+    ]);
+  });
+
+  it("last night's sleep score is today's ring, banded", async () => {
+    computeDerivedMetric.mockResolvedValue({
+      status: "ok",
+      value: { score: 84, band: "green", night: "2026-07-01", fresh: true },
+    });
+    expect(
+      await buildScoreRingsBlock(
+        fakePrisma,
+        "user-1",
+        ["SLEEP_SCORE"],
+        moduleMap(),
+        NOW,
+        null,
+      ),
+    ).toEqual([
+      {
+        id: "SLEEP_SCORE",
+        score: 84,
+        band: "green",
+        fresh: true,
+        asOfDay: "2026-07-01",
+      },
+    ]);
+  });
+
   it("drops the proxy recovery ring beside a READINESS ring", async () => {
     setRecoverySource("COMPUTED");
     engine({ score: 70, band: "green", fresh: true, asOfDay: "2026-07-01" });

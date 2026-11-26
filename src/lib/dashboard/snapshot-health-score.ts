@@ -3,14 +3,17 @@
  * rows and the Rest Mode annotation that frames the number.
  */
 import type {
+  HealthScoreReport,
   RestModeAnnotation,
   ScorePillarId,
   ScorePillarResult,
 } from "@/lib/analytics/score/types";
 import { clampScore } from "@/lib/analytics/score/shared";
 import {
+  healthScoreSetter,
   SCORE_PILLAR_LABEL_KEYS,
   scorePillarReasonKey,
+  type HealthScoreSetter,
 } from "@/lib/score-config/labels";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import type { Locale } from "@/lib/i18n/config";
@@ -53,6 +56,18 @@ export function snapshotScorePillars(
       reasonCode: ok ? null : (reasonCode ?? "unavailable"),
     };
   });
+}
+
+/**
+ * The pillar in a worse band than the score, worded in `locale`, or null.
+ * Pure. Carried beside the score so a surface that shows the number shows
+ * this too, and a sentence about the day reads the worse of the two bands.
+ */
+export function snapshotScoreSetter(
+  report: Pick<HealthScoreReport, "composite" | "pillars">,
+  locale: Locale,
+): HealthScoreSetter | null {
+  return healthScoreSetter(report, getServerTranslator(locale).t);
 }
 
 /**

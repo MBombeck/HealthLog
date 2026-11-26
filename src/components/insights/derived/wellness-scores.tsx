@@ -306,6 +306,16 @@ function useHealthScoreCourse(enabled: boolean): number[] | null {
   return points ? points.map((p) => p.value) : null;
 }
 
+/**
+ * The two day scores. One that is not about today (`fresh` false; an older
+ * cached payload without the field keeps its ring) shows no number, no band
+ * and no word, only "Last 81 on Nov 24".
+ */
+const DAY_SCORES = [
+  { id: "READINESS", kind: "readiness", icon: Gauge },
+  { id: "SLEEP_SCORE", kind: "sleep", icon: Moon },
+] as const;
+
 export function WellnessScores({
   read,
   isLoading,
@@ -363,58 +373,39 @@ export function WellnessScores({
     );
   }
 
-  const readiness = read<ReadinessValue>({ metric: "READINESS" });
-  const sleep = read<SleepScoreValue>({ metric: "SLEEP_SCORE" });
   const bandWord = (kind: "readiness" | "sleep" | "health", band: ScoreBand) =>
     t(scoreBandWordKey(kind, band));
 
   const tiles: ReactNode[] = [];
 
-  if (readiness?.status === "ok" && readiness.value) {
-    const v = readiness.value;
-    const title = t("insights.derived.composite.READINESS.title");
-    // `fresh` is absent on a payload cached before the field existed; only
-    // an explicit `false` withholds the number.
+  for (const tile of DAY_SCORES) {
+    const r = read<ReadinessValue | SleepScoreValue>({ metric: tile.id });
+    if (r?.status !== "ok" || !r.value) continue;
+    const v = r.value;
+    const title = t(`insights.derived.composite.${tile.id}.title`);
     const stale = v.fresh === false;
     const lastLine = stale
       ? t("insights.scores.staleLast", {
           score: Math.round(v.score),
-          date: fmt.dateShortSmartCalendar(v.asOfDay),
+          date: fmt.dateShortSmartCalendar(
+            "asOfDay" in v ? v.asOfDay : v.night,
+          ),
         })
       : null;
     tiles.push(
       <RingTile
-        key="READINESS"
+        key={tile.id}
         score={stale ? null : v.score}
         band={stale ? undefined : v.band}
         label={title}
-        bandWord={stale ? null : bandWord("readiness", v.band)}
+        bandWord={stale ? null : bandWord(tile.kind, v.band)}
         note={lastLine}
         ariaLabel={stale ? `${title}. ${lastLine}` : undefined}
-        href="/insights/scores/readiness"
-        metricSlot="READINESS"
-        hue="readiness"
-        icon={Gauge}
-        history={historyOf(readiness)}
-        index={tiles.length}
-        animate={play}
-        baseline={null}
-      />,
-    );
-  }
-  if (sleep?.status === "ok" && sleep.value) {
-    tiles.push(
-      <RingTile
-        key="SLEEP_SCORE"
-        score={sleep.value.score}
-        band={sleep.value.band}
-        label={t("insights.derived.composite.SLEEP_SCORE.title")}
-        bandWord={bandWord("sleep", sleep.value.band)}
-        href="/insights/scores/sleep"
-        metricSlot="SLEEP_SCORE"
-        hue="sleep"
-        icon={Moon}
-        history={historyOf(sleep)}
+        href={`/insights/scores/${tile.kind}`}
+        metricSlot={tile.id}
+        hue={tile.kind}
+        icon={tile.icon}
+        history={historyOf(r)}
         index={tiles.length}
         animate={play}
         baseline={null}

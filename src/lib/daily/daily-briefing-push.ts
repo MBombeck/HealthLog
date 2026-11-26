@@ -26,6 +26,7 @@
  * pushed through it. It fires ONLY inside a local morning window, which is the
  * quiet-hours guarantee for this nudge.
  */
+import { worseScoreBand } from "@/lib/score-config/labels";
 import { SESSION_USER_SELECT, type SessionUser } from "@/lib/auth/session-user";
 import type { PrismaClient } from "@/generated/prisma/client";
 
@@ -142,13 +143,18 @@ export function buildDailyBriefingPush(
         })
       : t("daily.push.title");
   // With the score in the title, the floor line "your score is ready" only
-  // repeats it; the band says something instead.
+  // repeats it; the band says something instead. The worse of the score's
+  // band and its weakest pillar's: a green 79 over a red blood pressure is
+  // not "steady".
+  const dayBand = digest.score
+    ? worseScoreBand(digest.score.band, digest.score.bandSetterBand)
+    : null;
   const line =
     options.showFigures &&
-    digest.score &&
-    isScoreBand(digest.score.band) &&
+    dayBand !== null &&
+    isScoreBand(dayBand) &&
     digest.line === t("daily.line.scoreReady")
-      ? t(`daily.push.band.${digest.score.band}`)
+      ? t(`daily.push.band.${dayBand}`)
       : digest.line;
   const body = digest.sleepPending
     ? t("daily.push.bodyProvisional", { line })

@@ -326,6 +326,30 @@ describe("<MorningBlock>", () => {
     expect(html).not.toContain('data-slot="today-hero-rail"');
   });
 
+  it("names the pillar a green score leaves unsaid, under the ring", () => {
+    const base = digest();
+    const html = render(
+      <MorningBlock
+        digest={digest({
+          score: {
+            ...base.score!,
+            value: 79,
+            band: "green",
+            bandSetter: "BLOOD_PRESSURE",
+            bandSetterBand: "red",
+            bandSetterLine: "Blood pressure: outside the reference range",
+          },
+        })}
+        morning={morning()}
+      />,
+    );
+    expect(html).toContain('data-slot="morning-score-setter"');
+    expect(text(html)).toContain("Blood pressure: outside the reference range");
+    expect(
+      render(<MorningBlock digest={digest()} morning={morning()} />),
+    ).not.toContain('data-slot="morning-score-setter"');
+  });
+
   it("puts To do today first when the hero setting asks for reminders", () => {
     const html = render(
       <MorningBlock

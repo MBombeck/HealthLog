@@ -102,6 +102,7 @@ import type {
 import {
   restModeAnnotation,
   snapshotScorePillars,
+  snapshotScoreSetter,
   type DashboardSnapshotScorePillar,
 } from "@/lib/dashboard/snapshot-health-score";
 import type { DerivedConfidence } from "@/lib/insights/derived/types";
@@ -373,6 +374,9 @@ export interface DashboardSnapshotHealthScore {
   deltaReason?: ScoreDeltaReason | null;
   scoreVersion?: number;
   bandSetter?: ScorePillarId | null;
+  /** The `bandSetter` pillar's band, and its line in the response language. */
+  bandSetterBand?: "yellow" | "red" | null;
+  bandSetterLine?: string | null;
   /**
    * v1.18.1 — Rest Mode annotation. When an illness/condition episode is
    * active the dashboard frames the score ("you were unwell during this
@@ -784,6 +788,7 @@ async function buildExtras(
     scoreResult.composite.status === "ok"
       ? await restModeAnnotation(user.id, now)
       : null;
+  const setter = snapshotScoreSetter(scoreResult, locale);
   const healthScore: DashboardSnapshotHealthScore | null =
     scoreResult.composite.status === "ok"
       ? {
@@ -797,6 +802,8 @@ async function buildExtras(
           deltaReason: scoreResult.deltaReason,
           scoreVersion: scoreResult.scoreVersion,
           bandSetter: scoreResult.composite.value.bandSetter,
+          bandSetterBand: setter?.band ?? null,
+          bandSetterLine: setter?.line ?? null,
           restMode,
           pillars: snapshotScorePillars(scoreResult.pillars, locale),
         }

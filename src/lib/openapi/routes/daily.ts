@@ -151,6 +151,27 @@ export const dailyDigestResponse = z
           .describe(
             'True when the run reaches back past everything the read covered (120 days): `steadyWeeks` is then a lower bound, said as "at least", and the run\'s start is unknown. Absent on older cached digests.',
           ),
+        bandSetter: z
+          .string()
+          .nullable()
+          .optional()
+          .describe(
+            "The counted pillar whose band is worse than the score's own (`bandSetter` of the health score), null when none is. Since 1.50 `band` follows the number, so a green score can sit over a red pillar.",
+          ),
+        bandSetterBand: z
+          .enum(["yellow", "red"])
+          .nullable()
+          .optional()
+          .describe(
+            "That pillar's own band. A sentence about the day uses the worse of this and `band`.",
+          ),
+        bandSetterLine: z
+          .string()
+          .nullable()
+          .optional()
+          .describe(
+            "The line naming that pillar, worded in the response language. Shown under the score wherever the score is shown; null when there is no setter.",
+          ),
       })
       .nullable()
       .describe(

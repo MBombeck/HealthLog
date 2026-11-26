@@ -122,7 +122,11 @@ const BUDGET = {
   // run side by side and each asks for the source order; whether the second
   // joins the first one's read in flight is timing (123 locally, 124 on the
   // CI runner), so the budget holds the higher count.
-  dailyMorning: 124,
+  // 124 → 126 (1.50.0): the floor window is read on every request, not
+  // only after a confirmed floor (the cuff readings, and glucose as its two
+  // extremes), so a single reading past a floor keeps the sentence from
+  // calling the day in range.
+  dailyMorning: 126,
   // The target cards; their seven-day means come from the slice when a
   // fresh one is cached, here (evicted) from the slice's window aggregate.
   // 22 → 23, health status 59 → 60 (1.49.0): both grade weight and BMI, and

@@ -155,6 +155,13 @@ export interface DailyDigestScore {
    * `steadyWeeks` is a lower bound ("at least"), not the run's start.
    */
   steadyAtLeast?: boolean;
+  /**
+   * The pillar in a worse band than the score, its band and its worded line
+   * (the snapshot's). Shown wherever the score is; optional for old caches.
+   */
+  bandSetter?: ScorePillarId | null;
+  bandSetterBand?: "yellow" | "red" | null;
+  bandSetterLine?: string | null;
 }
 
 /** A broken integration, deterministically derived from `IntegrationStatus`. */

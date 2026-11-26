@@ -36,16 +36,11 @@ import {
   type DateFormatPreference,
   type TimeFormatPreference,
 } from "@/lib/format-locale";
-import { userDayKey } from "@/lib/tz/format";
+import { hourInTz, userDayKey } from "@/lib/tz/format";
 import { readingDayKey } from "@/lib/tz/reading-zone";
 import { getUserTodayBounds } from "@/lib/tz/local-day";
 import { dayDiff } from "@/lib/cycle/day-math";
 import { convertGlucose, type GlucoseUnit } from "@/lib/glucose";
-import {
-  BP_DIA_CRITICAL,
-  BP_SYS_CRITICAL,
-  BP_SYS_HYPOTENSIVE_FLOOR,
-} from "@/lib/clinical-floors";
 import { computeCoincidentDeviation } from "@/lib/insights/derived/coincident-deviation";
 import {
   computeDerivedMetric,
@@ -64,6 +59,10 @@ import { vitalDisplayDecimals } from "@/lib/measurements/vital-precision";
 import { CONNECTION_LABELS } from "@/lib/integrations/connection-health";
 import { loadQuietSources } from "@/lib/sync-stall/quiet-load";
 import { isSleepExpected } from "@/lib/daily/digest";
+import {
+  floorFromReadings,
+  type MorningFloor,
+} from "@/lib/daily/morning-floor";
 import type {
   TodayRestMode,
   TodaySleep,
@@ -74,7 +73,6 @@ import {
   type Band,
   type DailyMorning,
   type DeviceSourceValue,
-  type MorningFloor,
   type MorningInput,
   type MorningReadiness,
   type MorningSleepScore,
@@ -320,84 +318,88 @@ async function readFloorReasons(userId: string, now: Date): Promise<string[]> {
 }
 
 /**
- * The reading behind the newest confirmed floor, in the reader's units: the
- * extreme one of the window in the floor's direction. Null when the reading
- * is gone (deleted since): the sentence names a value or does not speak.
+ * The floor facts of the last 24 hours, in the reader's units: the reading
+ * behind the newest confirmed floor, and, when none is confirmed, a reading
+ * past a floor that the engine has not confirmed yet (`floorReading`). Both
+ * are the extreme reading in the floor's direction (`floorFromReadings`).
  */
 async function readFloor(
   userId: string,
   now: Date,
   glucoseUnit: GlucoseUnit,
-): Promise<MorningFloor | null> {
-  const [reason] = await readFloorReasons(userId, now);
-  if (!reason) return null;
-  const since = new Date(now.getTime() - FLOOR_WINDOW_MS);
-  try {
-    if (reason === "bp_hypertensive" || reason === "bp_hypotensive") {
-      const rows = await prisma.measurement.findMany({
+): Promise<{ floor: MorningFloor | null; floorReading: MorningFloor | null }> {
+  const none = { floor: null, floorReading: null };
+  const inWindow = {
+    userId,
+    deletedAt: null,
+    measuredAt: { gte: new Date(now.getTime() - FLOOR_WINDOW_MS), lte: now },
+  };
+  const [[reason], rows, glucoseRange] = await Promise.all([
+    readFloorReasons(userId, now),
+    prisma.measurement
+      .findMany({
         where: {
-          userId,
+          ...inWindow,
           type: { in: ["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"] },
-          measuredAt: { gte: since, lte: now },
         },
         select: { type: true, value: true, measuredAt: true },
         orderBy: { measuredAt: "desc" },
         take: 200,
-      });
-      const byInstant = new Map<number, { sys?: number; dia?: number }>();
-      for (const row of rows) {
-        const key = row.measuredAt.getTime();
-        const pair = byInstant.get(key) ?? {};
-        if (row.type === "BLOOD_PRESSURE_SYS") pair.sys = row.value;
-        else pair.dia = row.value;
-        byInstant.set(key, pair);
-      }
-      const readings = [...byInstant.values()].filter(
-        (p): p is { sys: number; dia: number } =>
-          p.sys !== undefined && p.dia !== undefined,
-      );
-      const breaching =
-        reason === "bp_hypertensive"
-          ? readings
-              .filter(
-                (p) => p.sys >= BP_SYS_CRITICAL || p.dia >= BP_DIA_CRITICAL,
-              )
-              .sort((a, b) => b.sys - a.sys || b.dia - a.dia)
-          : readings
-              .filter((p) => p.sys < BP_SYS_HYPOTENSIVE_FLOOR)
-              .sort((a, b) => a.sys - b.sys);
-      const worst = breaching[0];
-      if (!worst) return null;
-      return {
-        reason,
-        valueLabel: `${Math.round(worst.sys)}/${Math.round(worst.dia)} mmHg`,
-      };
-    }
-    if (
-      reason === "glucose_hypo" ||
-      reason === "glucose_hypo_severe" ||
-      reason === "glucose_hyper"
-    ) {
-      const low = reason !== "glucose_hyper";
-      const row = await prisma.measurement.findFirst({
-        where: {
-          userId,
-          type: "BLOOD_GLUCOSE",
-          measuredAt: { gte: since, lte: now },
-        },
-        orderBy: { value: low ? "asc" : "desc" },
-        select: { value: true },
-      });
-      if (!row) return null;
-      return {
-        reason,
-        valueLabel: `${convertGlucose(row.value, glucoseUnit)} ${glucoseUnit}`,
-      };
-    }
-  } catch {
-    return null;
+      })
+      .catch(() => null),
+    // A sensor writes glucose densely; only the window's two extremes can
+    // cross a floor, so read those rather than the rows.
+    prisma.measurement
+      .aggregate({
+        where: { ...inWindow, type: "BLOOD_GLUCOSE" },
+        _min: { value: true },
+        _max: { value: true },
+      })
+      .catch(() => null),
+  ]);
+  if (!rows || !glucoseRange) return none;
+  const byInstant = new Map<number, { sys?: number; dia?: number }>();
+  for (const row of rows) {
+    const key = row.measuredAt.getTime();
+    const pair = byInstant.get(key) ?? {};
+    if (row.type === "BLOOD_PRESSURE_SYS") pair.sys = row.value;
+    else pair.dia = row.value;
+    byInstant.set(key, pair);
   }
-  return null;
+  const glucose = [glucoseRange._min.value, glucoseRange._max.value].filter(
+    (v): v is number => v !== null,
+  );
+  const readings = {
+    bp: [...byInstant.values()].filter(
+      (p): p is { sys: number; dia: number } =>
+        p.sys !== undefined && p.dia !== undefined,
+    ),
+    glucose,
+  };
+  const label = (mgdl: number) =>
+    `${convertGlucose(mgdl, glucoseUnit)} ${glucoseUnit}`;
+  if (isFloorReason(reason)) {
+    return {
+      floor: floorFromReadings(readings, reason, label),
+      floorReading: null,
+    };
+  }
+  return {
+    floor: null,
+    floorReading: floorFromReadings(readings, null, label),
+  };
+}
+
+function isFloorReason(
+  reason: string | undefined,
+): reason is MorningFloor["reason"] {
+  return (
+    reason === "bp_hypertensive" ||
+    reason === "bp_hypotensive" ||
+    reason === "glucose_hypo" ||
+    reason === "glucose_hypo_severe" ||
+    reason === "glucose_hyper"
+  );
 }
 
 /** Render one vital's value and range in the reader's units and locale. */
@@ -550,7 +552,7 @@ export async function loadDailyMorning(
     modules,
     restModeContext,
     extras,
-    floor,
+    { floor, floorReading },
     quiet,
     visit,
   ] = await Promise.all([
@@ -636,7 +638,9 @@ export async function loadDailyMorning(
     modules,
     now,
     todayKey,
+    localHour: hourInTz(now, tz),
     floor,
+    floorReading,
     restMode,
     vitals: extras.vitals.map((v) => renderMorningVital(v, units, locale, t)),
     illnessExplained: extras.illnessExplained,

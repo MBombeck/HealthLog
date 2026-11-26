@@ -260,6 +260,11 @@ export const sleepScoreValue = z
     night: z
       .string()
       .describe("Wake day (YYYY-MM-DD, user's zone) of the night scored."),
+    fresh: z
+      .boolean()
+      .describe(
+        "True when `night` is the night that ended this morning (its wake day is the user's local today). Otherwise the score is the last scorable night's, shown with its date and without a band, never as today's.",
+      ),
     asleepMinutes: z
       .number()
       .int()
@@ -1585,6 +1590,20 @@ export const dashboardSnapshotResponse = z
           .describe(
             "The worst counted pillar when its band is worse than the score's own band, null otherwise. Since 1.50 it names that pillar beside the score; it no longer lowers `band`, which follows the number like every HealthLog score (green from 70, yellow from 50).",
           ),
+        bandSetterBand: z
+          .enum(["yellow", "red"])
+          .nullable()
+          .optional()
+          .describe(
+            "The `bandSetter` pillar's own band; null without a setter. A sentence about the day uses the worse of this and `band`.",
+          ),
+        bandSetterLine: z
+          .string()
+          .nullable()
+          .optional()
+          .describe(
+            "The line naming the `bandSetter` pillar, worded in the response language; null without a setter. Shown under the score wherever the score is shown.",
+          ),
         restMode: z
           .object({
             active: z.boolean(),
@@ -1653,25 +1672,25 @@ export const dashboardSnapshotResponse = z
             .number()
             .int()
             .describe(
-              "The rounded 0..100 score. On a READINESS ring that is not `fresh` it is the last blend, from `asOfDay`, for a 'last {score} on {asOfDay}' line, never shown as today's.",
+              "The rounded 0..100 score. On a READINESS or SLEEP_SCORE ring that is not `fresh` it is the last value, from `asOfDay`, for a 'last {score} on {asOfDay}' line, never shown as today's.",
             ),
           band: z
             .enum(["green", "yellow", "red"])
             .nullable()
             .describe(
-              "The server's band; render it as given. Null only on a READINESS ring that is not `fresh` (1.50): a band is a statement about today. A RECOVERY_SCORE ring from a device keeps the colour it has always had until the ring is rebuilt on the vendor's thresholds (1.51).",
+              "The server's band; render it as given. Null only on a READINESS or SLEEP_SCORE ring that is not `fresh` (1.50): a band is a statement about today. A RECOVERY_SCORE ring from a device keeps the colour it has always had until the ring is rebuilt on the vendor's thresholds (1.51).",
             ),
           fresh: z
             .boolean()
             .optional()
             .describe(
-              "1.50, READINESS only: true when the blend describes today (`ReadinessValue.fresh`). False: show an empty ring face, no band, no sentence, at most 'last {score} on {asOfDay}'.",
+              "1.50, READINESS and SLEEP_SCORE only: true when the value describes today (`ReadinessValue.fresh`, `SleepScoreValue.fresh`: the night that ended this morning). False: show an empty ring face, no band, no sentence, at most 'last {score} on {asOfDay}'.",
             ),
           asOfDay: z
             .string()
             .optional()
             .describe(
-              "1.50, READINESS only: the local day (YYYY-MM-DD) the blend rests on (`ReadinessValue.asOfDay`).",
+              "1.50, READINESS and SLEEP_SCORE only: the local day (YYYY-MM-DD) the value rests on (`ReadinessValue.asOfDay`, or the wake day `SleepScoreValue.night`).",
             ),
           source: z
             .string()
