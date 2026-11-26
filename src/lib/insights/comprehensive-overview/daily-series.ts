@@ -5,6 +5,7 @@
  */
 import type { PairedPoint } from "@/lib/analytics/correlations";
 import { userDayKey } from "@/lib/tz/format";
+import { roundStable2 } from "@/lib/stats/central";
 
 export interface DailyValue {
   day: string;
@@ -40,7 +41,7 @@ export function deriveDailyLocalMeans(
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([day, stats]) => ({
       day,
-      value: Math.round((stats.sum / stats.count) * 100) / 100,
+      value: roundStable2(stats.sum / stats.count)!,
     }));
 }
 
