@@ -10,7 +10,7 @@ import type {
   ScorePillarResult,
 } from "@/lib/analytics/score/types";
 import { SCORE_VERSION } from "@/lib/analytics/score/types";
-import { HeroStrip } from "../hero-strip";
+import { HealthScoreCard, HealthScoreCardSkeleton } from "../health-score-card";
 import { primeLocales } from "@/__tests__/helpers/prime-locales";
 
 /**
@@ -215,6 +215,36 @@ function reportWithBasis(rows: number): HealthScoreReport {
   return report;
 }
 
+/**
+ * The panel in the two-column band it was measured in on the Insights
+ * overview: the column geometry (`md:basis-*` beside a flexible neighbour)
+ * still bounds its rows, and the reserve still swaps for the panel on the
+ * Health score's page.
+ */
+function Column({
+  healthScore = null,
+  scorePending = false,
+}: {
+  healthScore?: HealthScoreReport | null;
+  scorePending?: boolean;
+}) {
+  return (
+    <div
+      data-slot="insights-hero-strip"
+      className="relative isolate overflow-hidden rounded-xl px-4 py-4 md:px-6 md:py-6"
+    >
+      <div className="flex min-w-0 flex-col gap-4 md:flex-row md:items-stretch md:gap-6">
+        <div className="flex min-w-0 flex-1 flex-col gap-3" />
+        {healthScore ? (
+          <HealthScoreCard report={healthScore} />
+        ) : scorePending ? (
+          <HealthScoreCardSkeleton />
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function band(node: React.ReactNode, locale: Locale = "en"): string {
   return renderToStaticMarkup(
     <I18nProvider initialLocale={locale}>{node}</I18nProvider>,
@@ -298,15 +328,7 @@ describe("hero band geometry", () => {
       { key: "rows3basis", report: reportWithBasis(3) },
     ];
     for (const shape of shapes) {
-      const view = await layout(
-        band(
-          <HeroStrip
-            briefing={null}
-            now={new Date("2026-05-10T07:00:00Z")}
-            healthScore={shape.report}
-          />,
-        ),
-      );
+      const view = await layout(band(<Column healthScore={shape.report} />));
       heights[shape.key] = await view
         .locator(PANEL)
         .evaluate((el) => Math.round(el.getBoundingClientRect().height));
@@ -316,15 +338,7 @@ describe("hero band geometry", () => {
       expect(width, "the panel is not on the md column width").toBe(COLUMN_PX);
     }
 
-    const view = await layout(
-      band(
-        <HeroStrip
-          briefing={null}
-          now={new Date("2026-05-10T07:00:00Z")}
-          scorePending
-        />,
-      ),
-    );
+    const view = await layout(band(<Column scorePending />));
     // Measured twice: as it renders, and with the declared minimum removed.
     // If the two agree, the constant is decoration and the reserve is really
     // whatever its blocks happen to add up to — which is how a reserve drifts
@@ -375,9 +389,7 @@ describe("hero band geometry", () => {
     for (const locale of locales) {
       const view = await layout(
         band(
-          <HeroStrip
-            briefing={null}
-            now={new Date("2026-05-10T07:00:00Z")}
+          <Column
             healthScore={reportWith(
               ALL_PILLARS.map((id, i) => scored(id, 80 - i * 4)),
             )}
@@ -496,9 +508,7 @@ describe("hero band geometry", () => {
       // width-worst case rather than an arbitrary pick.
       const view = await layout(
         band(
-          <HeroStrip
-            briefing={null}
-            now={new Date("2026-05-10T07:00:00Z")}
+          <Column
             healthScore={reportWith(
               ALL_PILLARS.map((id, i) => scored(id, 80 - i * 4)),
             )}

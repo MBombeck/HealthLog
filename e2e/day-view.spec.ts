@@ -148,7 +148,7 @@ test.describe("the day view", () => {
     await expect(tiles).toHaveCount(2);
     await expect(
       scores.locator('[data-slot="day-score"][data-score="healthScore"]'),
-    ).toHaveAttribute("href", "/insights/health-score");
+    ).toHaveAttribute("href", "/insights/scores/health");
     await expect(
       scores.locator('[data-slot="day-score"][data-score="strain"]'),
     ).toHaveAttribute("href", "/insights/scores/strain");

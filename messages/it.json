@@ -1162,7 +1162,14 @@
     "valueOutOfRangeNoUnit": "Inserisci un valore tra {min} e {max}.",
     "lastValue": "Ultimo: {value}, {when}",
     "lastValueDeviates": "Molto diverso dalla tua ultima misurazione. È corretto?",
-    "saveAndNext": "Salva e avanti"
+    "saveAndNext": "Salva e avanti",
+    "typeRecoveryScoreWhoop": "WHOOP Recovery",
+    "typeRecoveryScoreOura": "Oura Readiness",
+    "typeRecoveryScorePolar": "Polar Nightly Recharge",
+    "typeRecoveryScoreComputed": "Prontezza (HealthLog)",
+    "typeSleepScoreOura": "Punteggio del sonno Oura",
+    "typeSleepScoreGarmin": "Punteggio del sonno Garmin",
+    "typeSleepScoreWithings": "Punteggio del sonno Withings"
   },
   "metricCatalog": {
     "title": "Cosa può monitorare HealthLog",
@@ -3107,7 +3114,6 @@
     "bmiEmptyDescription": "Per il BMI serve la tua altezza. Salvala in Impostazioni > Account.",
     "bmiEmptyAction": "Apri impostazioni account",
     "loadError": "Impossibile caricare le analisi",
-    "heroPersonalBaseline": "Basato sugli ultimi 90 giorni",
     "heroRegenerating": "Generazione in corso",
     "regenerateAnalysis": "Rigenera la valutazione",
     "regenerateSuccess": "Valutazione rigenerata",
@@ -3115,10 +3121,6 @@
     "narrativeWeek": "Questa settimana",
     "narrativeMonth": "Questo mese",
     "narrativeUpdating": "Aggiornamento…",
-    "heroFallbackSubtitle": "Uno sguardo quotidiano ai tuoi trend, direttamente dai numeri che registri.",
-    "heroGreetingMorning": "Buongiorno",
-    "heroGreetingAfternoon": "Buon pomeriggio",
-    "heroGreetingEvening": "Buonasera",
     "heroActionAskCoach": "Chiedi al coach",
     "healthScore": {
       "label": "Punteggio di salute",
@@ -3900,7 +3902,7 @@
         "recoveryBody": "Il recupero riflette quanto bene il tuo corpo si è ripreso, basandosi su segnali notturni come la variabilità della frequenza cardiaca e la frequenza a riposo. Un punteggio alto è il via libera per spingere; uno più basso suggerisce che il tuo organismo si sta ancora ricostruendo.",
         "strainBody": "Lo sforzo misura quanto carico cardiovascolare e fisico hai imposto al tuo corpo, dagli allenamenti a una giornata attiva in piedi. Quando c'è abbastanza storico, viene valutato rispetto al tuo sforzo abituale, non rispetto a uno standard esterno.",
         "stressBody": "Lo stress qui è una stima del carico fisiologico sul tuo sistema nervoso, letto soprattutto dagli schemi di variabilità della frequenza cardiaca e non da come ti senti consapevolmente. Un punteggio più basso indica uno stato calmo e ben regolato; uno più alto è un invito a inserire del recupero.",
-        "recoveryPageBody": "Il recupero riunisce i segnali notturni registrati dal tuo wearable (ricarica, sforzo, carico e i totali di frequenza cardiaca ed energia della giornata) per mostrare quanto bene il tuo corpo si è ripreso. Guarda l'andamento su più giorni piuttosto che un singolo numero; un valore più basso è un invito a rallentare, non un allarme.",
+        "recoveryPageBody": "Ciò che il tuo dispositivo indossabile registra, con i suoi nomi.",
         "pulsePressureBody": "La pressione differenziale è la differenza tra il valore sistolico e quello diastolico (sistolica meno diastolica). Come orientamento generale, circa 40 mmHg è tipico a riposo; un divario ampio sopra i 60 mmHg circa nella mezza età può riflettere arterie più rigide, mentre un divario stretto sotto i 25 mmHg circa può accompagnare una bassa gittata sistolica (StatPearls/NIH 2023). È uno spunto di discussione, non una diagnosi.",
         "meanArterialPressureBody": "La pressione arteriosa media è la pressione media che i tuoi organi vedono in un battito, all'incirca la diastolica più un terzo del divario con la sistolica. Come orientamento generale, un valore a riposo si aggira sui 70–100 mmHg (StatPearls/NIH 2023). La soglia di ~60 mmHg spesso citata è un concetto di terapia intensiva, non un allarme per l'automisurazione.",
         "cycleEducationBody": "Il tuo ciclo attraversa quattro fasi guidate dagli ormoni, e la sua durata e regolarità sono una finestra accessibile sulla salute generale. Come orientamento generale, nei adulti i cicli durano tipicamente 21–35 giorni (i riferimenti clinici citano 24–38), con un sanguinamento di circa cinque giorni (ACOG 2015). La fase luteale è l'ancora stabile, quindi l'ovulazione si stima meglio contando a ritroso dalla prossima mestruazione attesa, mai con un «giorno 14» fisso. Una finestra fertile prevista è una stima che richiede più cicli registrati e resta approssimativa, e la temperatura basale conferma l'ovulazione a posteriori anziché prevederla. Non è un metodo contraccettivo.",
@@ -4100,7 +4102,7 @@
       }
     },
     "navWorkouts": "Allenamenti",
-    "navRecovery": "Recupero",
+    "navRecovery": "Punteggi del dispositivo",
     "workouts": {
       "title": "Allenamenti",
       "description": "Corse, uscite in bici, camminate e sessioni di forza recenti, deduplicati tra Apple Watch e Withings.",
@@ -5118,7 +5120,6 @@
     "recovery": {
       "title": "Recupero",
       "description": "Quanto bene il tuo corpo si è ripreso: i segnali di recupero, sforzo e carico che il tuo wearable registra durante la notte.",
-      "scoreCrossLink": "Vedi il punteggio di recupero composito",
       "emptyTitle": "Ancora nessun dato di recupero",
       "empty": "Questa pagina si riempie con i valori di recupero, sforzo e carico di WHOOP o Polar e con il livello di resilienza di Oura.",
       "emptyOuraPermission": "Il livello di resilienza di Oura richiede l'autorizzazione ai dati sullo stress, quindi ricollega Oura una volta in Integrazioni e consentila.",
@@ -5322,7 +5323,6 @@
       "coachPrefill": "Non ho ancora aggiunto farmaci: cosa dovrei sapere prima di iniziare a monitorare qui l’aderenza?"
     },
     "scoreHistory": {
-      "healthTitle": "Andamento del punteggio di salute",
       "healthDescription": "Il tuo punteggio di salute giorno per giorno, come veniva mostrato ogni giorno.",
       "emptyDescription": "In questo periodo non è ancora stato registrato alcun punteggio.",
       "usualRange": "In ombra: il tuo intervallo abituale, da {lo} a {hi}.",
@@ -5361,6 +5361,29 @@
         "midday": "a mezzogiorno",
         "evening": "alla sera"
       }
+    },
+    "scores": {
+      "historyWindow": "Andamento di {days} giorni",
+      "staleLast": "Ultimo: {score} il {date}",
+      "valuesFrom": "Valori del {date}",
+      "loadError": "Al momento non è stato possibile caricare i tuoi punteggi.",
+      "loadingLabel": "Caricamento dei tuoi punteggi",
+      "regionLabel": "I tuoi punteggi",
+      "bandNote": "Dalla 1.50, da 50 a 69 si legge {fair} e sotto 50 {low}.",
+      "loadBand": {
+        "green": "basso",
+        "yellow": "moderato",
+        "red": "alto"
+      }
+    },
+    "deviceScores": {
+      "title": "Punteggi del dispositivo",
+      "description": "Ciò che il tuo dispositivo indossabile registra, con i suoi nomi.",
+      "valueOfScale": "{value} su {max}",
+      "estimatesTitle": "Stime di HealthLog",
+      "estimatesSubtitle": "Calcolate dai tuoi dati cardiaci, non fornite da un dispositivo.",
+      "stress": "Stress (stima)",
+      "strain": "Sforzo (stima)"
     }
   },
   "thresholds": {
@@ -10789,10 +10812,6 @@
       "currentDay": "Giorno {day} del tuo ciclo",
       "noActiveCycle": "Nessun ciclo attivo ancora",
       "viewDetails": "Vedi le analisi del ciclo"
-    },
-    "wellnessRing": {
-      "label": "Ciclo",
-      "loadError": "Impossibile caricare il tuo ciclo."
     },
     "disclaimer": "Queste previsioni sono stime descrittive basate sui tuoi dati registrati, non un metodo contraccettivo né un parere medico. Non indicano mai che sia sicuro avere rapporti non protetti. Per la contraccezione o qualsiasi decisione medica, consulta un professionista sanitario.",
     "title": "Ciclo",

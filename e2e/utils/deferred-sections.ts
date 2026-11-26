@@ -11,9 +11,11 @@ import { expect, type Page } from "@playwright/test";
  * the observers only exist once the page has hydrated.
  */
 export async function revealDeferredSections(page: Page): Promise<void> {
-  // The sentinels render with the overview itself; until the hero is there,
+  // The sentinels render with the overview itself; until its title is there,
   // "no sentinel" only means the page has not rendered yet.
-  await expect(page.locator('[data-slot="insights-hero-strip"]')).toBeAttached({
+  await expect(
+    page.locator('[data-slot="insights-overview-title"]'),
+  ).toBeAttached({
     timeout: 20_000,
   });
   const sentinels = page.locator("[data-deferred-section]");

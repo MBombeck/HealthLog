@@ -79,6 +79,9 @@ const LEGIT_IDENTICAL = new Set<string>([
   // ("WHOOP Recovery", "Polar Nightly Recharge"): the morning card names the
   // value the way the device's own app does.
   "daily.morningCard.source.recovery.WHOOP",
+  "measurements.typeRecoveryScoreWhoop",
+  "measurements.typeRecoveryScoreOura",
+  "measurements.typeRecoveryScorePolar",
   "daily.morningCard.source.recovery.OURA",
   "daily.morningCard.source.recovery.POLAR",
   "daily.morningCard.source.sleepPerformance",

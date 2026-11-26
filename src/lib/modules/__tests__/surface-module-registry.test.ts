@@ -320,7 +320,6 @@ describe("every surface that shows a module's data is owned by it", () => {
     ["overview:breathing", "sleep"],
     ["overview:labs-changes", "labs"],
     ["overview:cycle-summary", "cycle"],
-    ["overview:cycle-ring", "cycle"],
     ["capture:mood", "mood"],
     ["capture:medication", "medications"],
     ["capture:workout", "workouts"],

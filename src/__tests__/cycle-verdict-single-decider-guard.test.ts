@@ -96,7 +96,6 @@ describe("the cycle verdict is decided in one place", () => {
 describe("the surfaces that show the verdict actually read it", () => {
   const CONSUMERS = [
     "src/components/cycle/cycle-view.tsx",
-    "src/components/cycle/cycle-ring-tile.tsx",
     "src/components/cycle/cycle-insight-summary-card.tsx",
   ];
 

@@ -6,6 +6,7 @@ import { ArrowRight, Droplets } from "lucide-react";
 import { useTranslations } from "@/lib/i18n/context";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { CyclePhaseHeadline } from "./cycle-phase-crosstab";
+import { CycleRing } from "./cycle-ring";
 import { PHASE_HUE } from "./phase-tokens";
 import {
   useCycleCalendar,
@@ -112,28 +113,42 @@ export function CycleInsightSummaryCard() {
           style={{ "--tile-hue": hue } as React.CSSProperties}
           className="wellness-tile wellness-tile-rise rounded-xl p-4 md:p-6"
         >
-          {/* Zone 1 — the current phase / cycle-day read. */}
-          <div className="min-w-0">
-            <h3
-              className="text-foreground flex items-center gap-2 text-base font-semibold"
-              aria-label={ariaLabel}
-            >
-              <span
-                aria-hidden="true"
-                className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
-                style={{ backgroundColor: hue }}
-              />
-              <span>{phaseName}</span>
-            </h3>
+          {/* Zone 1 — the current phase / cycle-day read, with the cycle
+              dial beside it (it left the score rings at the head of the page
+              in 1.50: the cycle is not a score). */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <h3
+                className="text-foreground flex items-center gap-2 text-base font-semibold"
+                aria-label={ariaLabel}
+              >
+                <span
+                  aria-hidden="true"
+                  className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: hue }}
+                />
+                <span>{phaseName}</span>
+              </h3>
 
-            <p
-              className="text-muted-foreground mt-1 text-sm"
-              aria-hidden="true"
-            >
-              {dayOfCycle != null
-                ? t("cycle.insightsSummary.currentDay", { day: dayOfCycle })
-                : t("cycle.insightsSummary.noActiveCycle")}
-            </p>
+              <p
+                className="text-muted-foreground mt-1 text-sm"
+                aria-hidden="true"
+              >
+                {dayOfCycle != null
+                  ? t("cycle.insightsSummary.currentDay", { day: dayOfCycle })
+                  : t("cycle.insightsSummary.noActiveCycle")}
+              </p>
+            </div>
+            {phase && dayOfCycle != null ? (
+              <CycleRing
+                dayOfCycle={dayOfCycle}
+                cycleLength={verdict?.cycleLength ?? null}
+                phase={phase}
+                spans={verdict?.spans}
+                size={88}
+                className="shrink-0"
+              />
+            ) : null}
           </div>
 
           {/* Zone 2 — the one headline phase finding (shared component owns the
