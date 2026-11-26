@@ -375,6 +375,11 @@ export async function fetchAdvisor(
     clearTimeout(timeoutHandle);
   }
   if (!res.ok) {
+    // Read the refusal body to its end even though only the status is used.
+    // API responses are `no-store`, so the browser no longer drains an
+    // unread body into its cache: left unread, the request stays open for
+    // the life of the page and holds its connection.
+    await res.text().catch(() => "");
     // 422 (no provider configured), 429 (rate-limited), and 503
     // (provider chain unavailable) are expected surfaces — return null
     // so the consuming UI shows the empty / error state without the
