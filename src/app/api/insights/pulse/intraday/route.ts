@@ -22,7 +22,6 @@ import { z } from "zod";
 
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { apiSuccess, returnAllZodIssues } from "@/lib/api-response";
-import { NO_STORE_BUT_BFCACHE } from "@/lib/http/cache-headers";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { userDayKey } from "@/lib/tz/format";
 import { annotate } from "@/lib/logging/context";
@@ -63,7 +62,5 @@ export const GET = apiHandler(async (req: Request) => {
     },
   });
 
-  const response = apiSuccess(result);
-  response.headers.set("Cache-Control", NO_STORE_BUT_BFCACHE);
-  return response;
+  return apiSuccess(result);
 });

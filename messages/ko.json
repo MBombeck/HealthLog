@@ -8929,7 +8929,7 @@
         "filterLabel": "사용자 필터",
         "forceLogout": "강제 로그아웃",
         "forceLogoutConfirmTitle": "{name} 강제 로그아웃할까요?",
-        "forceLogoutConfirmBody": "이 사용자의 활성 세션이 모두 해제돼요. 모든 기기에서 다시 로그인해야 해요.",
+        "forceLogoutConfirmBody": "이 사용자의 활성 세션이 모두 해제돼요. 모든 기기에서 다시 로그인해야 해요. API 토큰, 연결된 어시스턴트, 공유 링크도 더 이상 작동하지 않아요.",
         "forceLogoutSuccess": "{name}: 세션 {count, plural, other {#개에서}} 로그아웃했어요",
         "forceLogoutFailed": "강제 로그아웃하지 못했어요",
         "cannotLogoutSelf": "자기 자신은 강제 로그아웃할 수 없어요",

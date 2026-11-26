@@ -58,6 +58,8 @@ import {
   isCachableStatus,
   canonicalJson,
   requestFingerprint,
+  markNotReplayable,
+  NOT_REPLAYABLE_HEADER,
 } from "../idempotency";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
@@ -189,7 +191,34 @@ describe("withIdempotency", () => {
     expect(handler).toHaveBeenCalledTimes(1); // not called again
   });
 
-  it("does not cache a successful response marked no-store", async () => {
+  it("does not cache an answer marked not replayable, and takes the mark off", async () => {
+    const handler = vi.fn(async () =>
+      markNotReplayable(
+        NextResponse.json({ data: { failed: 1 }, error: null }),
+      ),
+    );
+    const wrapped = withIdempotency<[NextRequest]>(handler, async () => "u-1");
+
+    const response = await wrapped(
+      makeRequest("POST", { "idempotency-key": "abc-12345678" }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get(NOT_REPLAYABLE_HEADER)).toBeNull();
+    expect(prisma.idempotencyKey.updateMany).not.toHaveBeenCalled();
+    expect(prisma.idempotencyKey.deleteMany).toHaveBeenCalled();
+  });
+
+  it("takes the mark off an answer that never reaches the cache", async () => {
+    const wrapped = withIdempotency<[NextRequest]>(
+      async () => markNotReplayable(NextResponse.json({ data: 1 })),
+      async () => "u-1",
+    );
+    const response = await wrapped(makeRequest("POST"));
+    expect(response.headers.get(NOT_REPLAYABLE_HEADER)).toBeNull();
+  });
+
+  it("does not cache a successful response the handler marked no-store", async () => {
     const handler = vi.fn(async () =>
       NextResponse.json(
         { data: { failed: 1 }, error: null },

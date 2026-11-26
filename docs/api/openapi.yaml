@@ -15109,8 +15109,7 @@ paths:
 
         Both shapes are served through a stale-while-revalidate cache. A cached body can be up to a minute old, and the
         default slice's cache key includes the reader's locale because the correlation `interpretation` sentences are
-        narrated per reader. `Cache-Control: private, max-age=0, must-revalidate` on both — bfcache-friendly rather than
-        the framework's stock `no-store`.
+        narrated per reader. `Cache-Control: private, no-store` on both, like every API answer.
 
 
         This GET is not free of side effects, and a caller polling it should know: it records a Health Score row for the
@@ -15582,8 +15581,7 @@ paths:
             this parameter is strict where most of the surface's date filters are forgiving.
       responses:
         "200":
-          description: The day's series. `Cache-Control` is the bfcache-friendly `private, max-age=0, must-revalidate` rather than
-            `no-store`.
+          description: "The day's series. `Cache-Control: private, no-store`, like every API answer."
           content:
             application/json:
               schema:
@@ -20026,8 +20024,8 @@ paths:
         from an export is a `duplicate` here, and sending a batch again is safe. First write wins: an amended result
         under a held identity is a duplicate. Owner-only: a cookie session or a full-scope login token. The body is
         capped at 1 MiB (413 past it): a client splits a large sync by size as well as by count. Rate limit 60 batches a
-        minute; Idempotency-Key supported. A response carrying `write_failed` is `Cache-Control: no-store` and is not
-        replayed for its key. Audits as `labs.fhir.batch` with counts only."
+        minute; Idempotency-Key supported. A response carrying `write_failed` is not replayed for its key. Audits as
+        `labs.fhir.batch` with counts only."
       parameters:
         - *a6
       requestBody:
@@ -24634,10 +24632,9 @@ paths:
         Idempotency-Key supported; rate limit 60/min. Per-entry skips (`unit_mismatch` | `value_out_of_range` |
         `day_invalid`) are terminal — log and drop, do not retry the entry. `upsert_failed` is not one of them: it is a
         server-side write failure for the entry's whole write group, nothing was stored, and the entry should be sent
-        again on a later sync; a response carrying it is `Cache-Control: no-store` and is not replayed for its
-        `Idempotency-Key`. Behind the opt-in `nutrients` module (403 `module.disabled` when off). Query HealthKit with
-        exactly the listed unit per code (`ug` = microgram; do not convert to IU). `alcohol` has no HealthKit type and
-        is posted by bridges only, in g:
+        again on a later sync; a response carrying it is not replayed for its `Idempotency-Key`. Behind the opt-in
+        `nutrients` module (403 `module.disabled` when off). Query HealthKit with exactly the listed unit per code (`ug`
+        = microgram; do not convert to IU). `alcohol` has no HealthKit type and is posted by bridges only, in g:
 
 
         | code | HealthKit identifier | unit |
@@ -47092,8 +47089,8 @@ components:
                       again. `constraint` means the write met a database constraint (a key another write claimed at the
                       same moment, or a reference that no longer exists). `upsert_failed` is a write failure on the
                       server's side: nothing was stored, the entry should be sent again, and the response carrying it is
-                      `Cache-Control: no-store`, so a retry under the same `Idempotency-Key` writes again rather than
-                      replaying the failure."
+                      not replayed, so a retry under the same `Idempotency-Key` writes again rather than replaying the
+                      failure."
                     type: string
                 required:
                   - index
@@ -61052,7 +61049,7 @@ components:
             - failed
           description: "`inserted`/`duplicate` — the row landed (advance the cursor). `updated` — a `stats:` aggregate overwrote
             an existing row. `skipped` — validation no-op; see `reason`. `failed` — retryable database failure that must
-            not advance the entry cursor; the response is marked `Cache-Control: no-store`."
+            not advance the entry cursor; the response is not replayed for its `Idempotency-Key`."
         reason:
           description: "Why a row was `skipped` or a `duplicate`. On a `skipped`: `deleted_in_healthlog` (since v1.49.0), an
             immutable sample whose `(type, source, externalId)` names a row the person deleted in HealthLog (web, app or
@@ -108428,7 +108425,7 @@ components:
             - failed
           description: "`inserted` and `duplicate` landed (advance the cursor); `updated` is never sent here but is part of the
             shared batch shape. `skipped` is permanent for the entry as sent, see `reason`. `failed` is transient: keep
-            the entry and send it again; the response then carries `Cache-Control: no-store`."
+            the entry and send it again; the response is then not replayed for its `Idempotency-Key`."
         reason:
           description: "Why an entry was `skipped`: `unsupported_source` (source other than `APPLE_HEALTH`),
             `unstable_external_id`, `unknown_code`, `value_out_of_range` (intensity not an integer 0-10),

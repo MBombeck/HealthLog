@@ -6,8 +6,6 @@ import { SESSION_USER_SELECT, type SessionUser } from "@/lib/auth/session-user";
 import { getEvent } from "@/lib/logging/context";
 import { isInputRefusal, isP2025 } from "@/lib/prisma-errors";
 import { SessionStoreUnavailableError } from "@/lib/api-errors";
-import { credentialRevocations } from "@/lib/auth/credential-revocations";
-import { enqueueWalletVoidPush } from "@/lib/emergency-card/wallet-pass/queues";
 import { afterRefreshRevocation } from "@/lib/devices/signed-out-push";
 import { locales, type Locale } from "@/lib/i18n/config";
 import { LOCALE_COOKIE, setLocaleCookie } from "@/lib/i18n/locale-cookie";
@@ -530,27 +528,9 @@ export async function destroySession(): Promise<void> {
   cookieStore.delete(ONBOARDING_COOKIE);
 }
 
-/**
- * Revoke every authenticated surface a user owns: web sessions, API
- * tokens (long-lived Bearer credentials issued via `/settings/api-tokens`),
- * and native-client refresh tokens. Called from every credential-rotation
- * path (`/api/auth/password`, `/api/admin/users/[id]/reset-password`,
- * `DELETE /api/settings/account`) so a remediated user wipes a stolen
- * credential across every transport, not just the browser cookie.
- *
- * `ApiToken` flips `revoked=true` (the token-hash lookup at
- * `src/lib/auth/api-token.ts` filters on this column). `RefreshToken`
- * sets `revokedAt` (the rotation lookup at
- * `src/lib/auth/refresh-token.ts` short-circuits on a non-null value).
- * Both run as `updateMany` rather than `deleteMany` so the audit trail
- * survives — the rows linger as evidence of the rotation event.
- */
-export async function destroyAllSessions(userId: string): Promise<void> {
-  await prisma.$transaction(credentialRevocations(prisma, userId));
-  // Every native sign-in ended: the account's devices take no more pushes.
-  await afterRefreshRevocation(userId);
-  await enqueueWalletVoidPush(); // a withdrawn Wallet pass tells its devices
-}
+// The one function behind every "end this user's sessions" action lives in
+// its own module; re-exported so every caller keeps importing it from here.
+export { destroyAllSessions } from "@/lib/auth/end-all-sessions";
 
 /**
  * How the caller of a "revoke everything else" action authenticated.

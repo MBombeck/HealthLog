@@ -8954,7 +8954,7 @@
         "filterLabel": "Filtra utenti",
         "forceLogout": "Forza la disconnessione",
         "forceLogoutConfirmTitle": "Forzare la disconnessione di {name}?",
-        "forceLogoutConfirmBody": "Tutte le sessioni attive di questo utente verranno revocate. Dovrà accedere di nuovo su ogni dispositivo.",
+        "forceLogoutConfirmBody": "Tutte le sessioni attive di questo utente verranno revocate. Dovrà accedere di nuovo su ogni dispositivo. Anche i suoi token API, gli assistenti collegati e i link condivisi smetteranno di funzionare.",
         "forceLogoutSuccess": "{name} disconnesso da {count, plural, one {# sessione} other {# sessioni}}",
         "forceLogoutFailed": "Impossibile forzare la disconnessione",
         "cannotLogoutSelf": "Non puoi forzare la tua disconnessione",

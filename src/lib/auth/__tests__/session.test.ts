@@ -56,7 +56,7 @@ vi.mock("@/lib/db", () => ({
     // The second-factor due date read at sign-in: no account row here.
     user: { findUnique: vi.fn(async () => null) },
     apiToken: { updateMany: vi.fn() },
-    refreshToken: { updateMany: vi.fn() },
+    refreshToken: { updateMany: vi.fn(), count: vi.fn() },
     trustedDevice: { deleteMany: vi.fn() },
     mcpOAuthConnection: { updateMany: vi.fn() },
     clinicianShareLink: { updateMany: vi.fn() },
@@ -696,8 +696,21 @@ describe("destroyAllSessions", () => {
     vi.mocked(prisma.refreshToken.updateMany).mockResolvedValue({
       count: 3,
     } as never);
+    // Two of the three refresh rows were live sign-ins; one was consumed.
+    vi.mocked(prisma.refreshToken.count).mockResolvedValue(2);
 
-    await destroyAllSessions("user-rotated");
+    expect(await destroyAllSessions("user-rotated")).toEqual({
+      webSessions: 2,
+      deviceSignIns: 2,
+    });
+    expect(prisma.refreshToken.count).toHaveBeenCalledWith({
+      where: {
+        userId: "user-rotated",
+        revokedAt: null,
+        usedAt: null,
+        expiresAt: { gt: expect.any(Date) },
+      },
+    });
 
     expect(prisma.session.deleteMany).toHaveBeenCalledWith({
       where: { userId: "user-rotated" },

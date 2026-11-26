@@ -8954,7 +8954,7 @@
         "filterLabel": "Gebruikers filteren",
         "forceLogout": "Geforceerd uitloggen",
         "forceLogoutConfirmTitle": "{name} geforceerd uitloggen?",
-        "forceLogoutConfirmBody": "Alle actieve sessies van deze gebruiker worden ingetrokken. Deze gebruiker moet daarna op elk apparaat opnieuw inloggen.",
+        "forceLogoutConfirmBody": "Alle actieve sessies van deze gebruiker worden ingetrokken. Deze gebruiker moet daarna op elk apparaat opnieuw inloggen. Ook API-tokens, gekoppelde assistenten en gedeelde links werken daarna niet meer.",
         "forceLogoutSuccess": "{name} uitgelogd uit {count, plural, one {# sessie} other {# sessies}}",
         "forceLogoutFailed": "Geforceerd uitloggen mislukt",
         "cannotLogoutSelf": "Je kunt jezelf niet geforceerd uitloggen",

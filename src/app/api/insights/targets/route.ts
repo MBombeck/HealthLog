@@ -9,7 +9,6 @@ import { apiSuccess } from "@/lib/api-response";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
-import { NO_STORE_BUT_BFCACHE } from "@/lib/http/cache-headers";
 import { buildTargetsResponse } from "@/lib/targets/build-response";
 import { localiseTargetLabels } from "@/lib/targets/localise-labels";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
@@ -38,7 +37,5 @@ export const GET = apiHandler(async () => {
   const locale = await resolveServerLocale({
     userLocale: actor.locale ?? null,
   });
-  const response = apiSuccess(localiseTargetLabels(body, locale));
-  response.headers.set("Cache-Control", NO_STORE_BUT_BFCACHE);
-  return response;
+  return apiSuccess(localiseTargetLabels(body, locale));
 });

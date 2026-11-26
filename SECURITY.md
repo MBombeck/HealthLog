@@ -55,7 +55,8 @@ HealthLog is designed with security as a core principle:
 - **AES-256-GCM encryption** for all stored secrets (OAuth tokens, API keys, VAPID keys)
 - **Argon2id** password hashing with zxcvbn strength validation
 - **HMAC-SHA256** hashed API tokens
-- **Server-side sessions** in PostgreSQL (`__Host-` cookie, HttpOnly, Secure, SameSite=Lax, an idle timeout and an absolute lifetime)
+- **Server-side sessions** in PostgreSQL (`__Host-` cookie, HttpOnly, Secure, SameSite=Lax, an idle timeout and an absolute lifetime). Lax rather than Strict: the OAuth return of an integration (Withings and the others) is a top-level navigation from another site that needs the session to know whose connection it completes, and an OIDC sign-in reaches the app through a redirect chain that starts at the identity provider; under Strict both would land signed out. Cross-site writes are refused separately by a `Sec-Fetch-Site` / `Origin` check. Ending a user's sessions (password change, admin reset, admin force logout, account deletion) ends the native app's sign-ins and API tokens with them
+- **No caching of API answers**: every API response is `Cache-Control: private, no-store` unless the route documents a narrower exception (public static payloads, ETag-revalidated reads)
 - **Rate limiting** on authentication and external-facing endpoints
 - **Security headers**: CSP with nonces, HSTS, X-Frame-Options DENY, Permissions-Policy
 - **Proxy-level route protection** via `proxy.ts` (session cookie validation on all non-public paths)

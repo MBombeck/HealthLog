@@ -8,7 +8,7 @@
  * first use; the per-entry rules live in `src/lib/symptoms/apple-health-ingest.ts`.
  *
  * Answers 200 with the `POST /api/measurements/batch` envelope once the body
- * parses; `Cache-Control: no-store` when an entry `failed`. More than 500
+ * parses; not replayed under its `Idempotency-Key` when an entry `failed`. More than 500
  * entries is 422 `symptoms.batch.too_large`, a malformed body 422
  * `symptoms.batch.invalid`. Idempotent under `Idempotency-Key`.
  *
@@ -28,7 +28,7 @@ import {
   returnAllZodIssues,
 } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
-import { withIdempotency } from "@/lib/idempotency";
+import { markNotReplayable, withIdempotency } from "@/lib/idempotency";
 import { withIngestAdmission } from "@/lib/ingest/admission";
 import { requireIllnessEnabled } from "@/lib/illness/gate";
 import { annotate } from "@/lib/logging/context";
@@ -90,8 +90,6 @@ async function postBatch(request: NextRequest): Promise<Response> {
   });
 
   const response = apiSuccess(result);
-  if (result.failed > 0) {
-    response.headers.set("Cache-Control", "private, no-store");
-  }
+  if (result.failed > 0) markNotReplayable(response);
   return response;
 }
