@@ -144,10 +144,16 @@ jobs:
             docker cp "$cid:/app/THIRD_PARTY_LICENSES.txt" "$dir/app.txt"
             docker cp "$cid:/opt/prisma-cli/THIRD_PARTY_LICENSES.txt" "$dir/prisma-cli.txt"
             docker rm "$cid" > /dev/null
+            # The daemon keeps one image per digest reference, so the next
+            # platform's pull could not replace this one ("cannot overwrite
+            # digest"), and the steps below would find the wrong platform.
+            docker image rm "$DIGEST_REF" > /dev/null
             echo "== $platform"
             node scripts/third-party-notices.mjs --sbom "$dir/sbom.json" \
               --inventory "$dir/app.txt" --inventory "$dir/prisma-cli.txt"
           done
+          # The steps below run the runner's own platform.
+          docker pull --quiet "$DIGEST_REF"
 
       - name: Run migrations
         run: |

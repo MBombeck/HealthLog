@@ -34,6 +34,7 @@ import {
   type MoodDayRow,
 } from "@/lib/rollups/mood-day-fold";
 import { dateOnlyKey } from "@/lib/tz/date-only";
+import { roundStable2 } from "@/lib/stats/central";
 
 import type { DailyValue } from "./daily-series";
 
@@ -67,7 +68,8 @@ export async function readOverviewMoodSeries(
   return {
     dailyMoodEntries: days.map((r) => ({
       day: dateOnlyKey(r.bucketStart),
-      value: Math.round(r.mean * 100) / 100,
+      // The tier and the fold sum a day in different orders.
+      value: roundStable2(r.mean)!,
     })),
     moodDataPoints: days.map((r) => ({
       date: r.bucketStart,

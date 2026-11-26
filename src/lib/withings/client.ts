@@ -184,8 +184,12 @@ export async function fetchMeasurements(
         for (const m of group.measures) {
           const mapping = MEASURE_TYPE_MAP[m.type];
           if (!mapping) continue;
-          // Withings stores value * 10^unit (unit is usually negative)
-          const value = m.value * Math.pow(10, m.unit);
+          // Withings stores value * 10^unit (unit is usually negative). A
+          // negative unit divides by an exact power of ten: Math.pow(10, -4)
+          // and (10, -5) are a last bit off on Node 22, which moves a value
+          // on a half to the other side of importValue's rounding.
+          const value =
+            m.unit < 0 ? m.value / 10 ** -m.unit : m.value * 10 ** m.unit;
           items.push({
             type: mapping.type,
             value: importValue(value),
