@@ -23,18 +23,6 @@ import {
 } from "@/lib/daily/briefing-today";
 import type { MeasurementType } from "@/generated/prisma/client";
 
-/** Whether a generation moment falls on today's calendar day in `timezone`. */
-export function generatedOnLocalToday(
-  generatedAt: string | null,
-  timezone: string,
-  now: Date,
-): boolean {
-  return (
-    generatedAt !== null &&
-    userDayKey(new Date(generatedAt), timezone) === userDayKey(now, timezone)
-  );
-}
-
 /**
  * The newest reading of every type a briefing signal can rest on. A failed
  * read answers "no reading" for every type, which drops reading-backed

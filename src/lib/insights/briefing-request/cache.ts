@@ -13,12 +13,8 @@
  * client degrades to the old behaviour instead of a 429.
  */
 import { isLegacyInsightPayload } from "@/lib/ai/legacy-payload";
-import {
-  generatedOnLocalToday,
-  insightsPayloadForToday,
-} from "@/lib/daily/briefing-today-read";
-import { readBriefingGeneratedAt } from "@/lib/insights/briefing-generated-at";
-import { cachedPayloadCarriesBriefing } from "@/lib/insights/briefing-payload";
+import { insightsPayloadForToday } from "@/lib/daily/briefing-today-read";
+import { cachedBriefingIsCurrent } from "@/lib/insights/briefing-payload";
 import { hasUsableStatusProvider } from "@/lib/insights/status-provider";
 import { annotate } from "@/lib/logging/context";
 
@@ -59,16 +55,18 @@ export async function briefingFromCache(
       // regeneration: that would burn rate-limit tokens on a cache hit
       // silently. User-initiated only.
       const legacyPayload = isLegacyInsightPayload(cached);
-      // A briefing generated on an earlier day is not today's read: like a
-      // briefingless cache, it does not short-circuit a provider-backed
-      // account, and degrades to the cached payload on a 429.
-      const carriesBriefing =
-        cachedPayloadCarriesBriefing(cachedText) &&
-        generatedOnLocalToday(
-          readBriefingGeneratedAt(cachedText),
-          ctx.timezone,
-          new Date(),
-        );
+      // Only a current briefing short-circuits a provider-backed account,
+      // by the same rule the read decides its warm on (`cachedBriefingIsCurrent`):
+      // one generated on an earlier day, or one the card cannot render, is
+      // not today's read and degrades to the cached payload on a 429.
+      const carriesBriefing = cachedBriefingIsCurrent({
+        cachedText,
+        cachedAt: dbUser.insightsCachedAt,
+        cachedLocale: dbUser.insightsCachedLocale,
+        locale,
+        timezone: ctx.timezone,
+        now: new Date(),
+      });
       if (carriesBriefing || !(await hasUsableStatusProvider(userId))) {
         annotate({
           action: { name: "insights.generate" },
