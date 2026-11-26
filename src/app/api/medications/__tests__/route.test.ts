@@ -30,6 +30,8 @@ vi.mock("@/lib/db", () => ({
     medicationSchedule: {
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
+    // The low-stock preferences behind `lowStockTriggerDays`.
+    user: { findUnique: vi.fn().mockResolvedValue(null) },
     $transaction: vi.fn(),
   },
 }));

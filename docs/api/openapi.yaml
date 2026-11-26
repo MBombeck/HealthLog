@@ -34812,6 +34812,7 @@ components:
             - GASTROPARESIS_LIKE
             - DYSGEUSIA
             - GALLBLADDER_DISCOMFORT
+            - HEADACHE
         severity:
           type: integer
           minimum: 1
@@ -49781,6 +49782,9 @@ components:
               - daily.morning
               - measurements.series-kinds
               - devices.ignored-fields
+              - insights.briefing-glucose
+              - medication.side-effect-headache
+              - medication.low-stock-trigger
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices; since
@@ -49896,7 +49900,14 @@ components:
             optional Live Activity field out instead of failing the registration: field is liveActivityPushToken,
             liveActivityStart, liveActivityTokens or liveActivityTokens[<index>]; code is devices.register.invalid_field
             for the shape, else the devices.push.<reason> a push-to-start statement was refused for. Absent when nothing
-            was left out."
+            was left out. `insights.briefing-glucose`: The daily briefing's signalsOfDay and keyFindings rows may carry
+            sourceMetric glucose (blood glucose), its figures and delta in the reader's glucose unit; before it the
+            server dropped every such row. `medication.side-effect-headache`: Medication side effects take entry
+            HEADACHE (category COGNITIVE) on POST /api/medications/{id}/side-effects, and the list and the backup carry
+            it. `medication.low-stock-trigger`: GET /api/medications and GET /api/medications/{id} (and the create and
+            edit answers) carry lowStockTriggerDays: max(lowStockRunwayDays, reorderLeadDays + one dose-interval) with
+            the medication's own lead over the account default, null when the alert is off or nothing is consumed on a
+            cadence; a row is low on stock when runwayDays <= lowStockTriggerDays."
       required:
         - version
         - buildSha
@@ -51269,6 +51280,7 @@ components:
                         - GASTROPARESIS_LIKE
                         - DYSGEUSIA
                         - GALLBLADDER_DISCOMFORT
+                        - HEADACHE
                     severity:
                       type: integer
                       minimum: 1
@@ -66977,6 +66989,18 @@ components:
           description: v1.37.19 — projected whole days the usable stock covers under the slot-aware burn rate (the same math the
             low-stock notification engine runs, so the wire and the push can never disagree). NULL = inventory tracking
             off or no consuming cadence derivable; 0 = tracking on, supply ran out. Read-only — computed, not stored.
+        lowStockTriggerDays:
+          description: "v1.50.0 — the runway in whole days at or below which the medication is low on stock:
+            `max(lowStockRunwayDays, reorderLeadDays + one dose-interval)`, with the medication's own `reorderLeadDays`
+            over the account default, exactly as the low-stock notification decides. A client shows the notice when
+            `runwayDays <= lowStockTriggerDays` and does not re-derive it. NULL when the account switched the low-stock
+            alert off or the schedules consume nothing on a cadence (as needed, intake not tracked). Absent on older
+            servers (feature key `medication.low-stock-trigger`). Read-only — computed, not stored."
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
         hasIngredients:
           description: v1.43 — whether a composition per unit is stored (`GET /api/medications/{id}` carries it as `ingredients`).
             Absent on older servers.
@@ -67490,6 +67514,14 @@ components:
             - type: "null"
           description: v1.37.19 — projected whole days the usable stock covers under the slot-aware burn rate; NULL = tracking off
             or no consuming cadence.
+        lowStockTriggerDays:
+          description: v1.50.0 — the runway in whole days at or below which the medication is low on stock, mirroring the list
+            entry's field. Absent on older servers (feature key `medication.low-stock-trigger`).
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
         ingredients:
           description: v1.43 — the composition per unit, empty when none is stored. Absent on older servers.
           type: array

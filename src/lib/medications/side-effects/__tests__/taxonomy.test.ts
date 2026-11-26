@@ -4,7 +4,7 @@
  * The taxonomy is a contract the API validator, the picker UI, and
  * the Coach snapshot all depend on. These tests pin the shape:
  *   - every entry maps to exactly one category
- *   - exactly 21 entries across 5 categories
+ *   - exactly 22 entries across 5 categories
  *   - every category has at least one entry
  *   - severity labels are deterministic and ordered
  */
@@ -49,6 +49,7 @@ const ALL_ENTRIES: MedicationSideEffectEntry[] = [
   "GASTROPARESIS_LIKE",
   "DYSGEUSIA",
   "GALLBLADDER_DISCOMFORT",
+  "HEADACHE",
 ];
 
 const ALL_CATEGORIES: MedicationSideEffectCategory[] = [
@@ -60,9 +61,20 @@ const ALL_CATEGORIES: MedicationSideEffectCategory[] = [
 ];
 
 describe("SIDE_EFFECT_CATEGORIES — entry → category mapping", () => {
-  it("declares exactly 21 entries", () => {
-    expect(Object.keys(SIDE_EFFECT_CATEGORIES)).toHaveLength(21);
-    expect(SIDE_EFFECT_ENTRY_COUNT).toBe(21);
+  it("declares exactly 22 entries", () => {
+    expect(Object.keys(SIDE_EFFECT_CATEGORIES)).toHaveLength(22);
+    expect(SIDE_EFFECT_ENTRY_COUNT).toBe(22);
+  });
+
+  it("files a headache under its own code, next to dizziness", () => {
+    expect(SIDE_EFFECT_CATEGORIES.HEADACHE).toBe("COGNITIVE");
+    expect(entriesByCategory("COGNITIVE")).toEqual([
+      "BRAIN_FOG",
+      "DIZZINESS",
+      "HEADACHE",
+      "LOW_MOOD",
+      "LOW_ENERGY",
+    ]);
   });
 
   it("maps every entry to a known category", () => {
@@ -94,11 +106,11 @@ describe("SIDE_EFFECT_ENTRIES_BY_CATEGORY — category → entries reverse index
     }
   });
 
-  it("matches the EMA-derived counts (GI 5, METABOLIC 4, INJECTION_SITE 4, COGNITIVE 4, GLP1_SPECIFIC 4)", () => {
+  it("matches the EMA-derived counts (GI 5, METABOLIC 4, INJECTION_SITE 4, COGNITIVE 5, GLP1_SPECIFIC 4)", () => {
     expect(SIDE_EFFECT_ENTRIES_BY_CATEGORY.GI).toHaveLength(5);
     expect(SIDE_EFFECT_ENTRIES_BY_CATEGORY.METABOLIC).toHaveLength(4);
     expect(SIDE_EFFECT_ENTRIES_BY_CATEGORY.INJECTION_SITE).toHaveLength(4);
-    expect(SIDE_EFFECT_ENTRIES_BY_CATEGORY.COGNITIVE).toHaveLength(4);
+    expect(SIDE_EFFECT_ENTRIES_BY_CATEGORY.COGNITIVE).toHaveLength(5);
     expect(SIDE_EFFECT_ENTRIES_BY_CATEGORY.GLP1_SPECIFIC).toHaveLength(4);
   });
 
@@ -118,7 +130,7 @@ describe("SIDE_EFFECT_ENTRIES_BY_CATEGORY — category → entries reverse index
         seen.add(entry);
       }
     }
-    expect(seen.size).toBe(21);
+    expect(seen.size).toBe(22);
   });
 
   it("entriesByCategory helper is a thin wrapper", () => {

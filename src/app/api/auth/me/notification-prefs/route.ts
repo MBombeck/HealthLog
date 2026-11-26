@@ -31,6 +31,7 @@ import {
   returnAllZodIssues,
 } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
+import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma, toJson } from "@/lib/db";
 import { withUserRowLock } from "@/lib/user-row-lock";
@@ -155,6 +156,11 @@ export const PATCH = apiHandler(async (req: Request) => {
     },
   );
   if ("conflict" in guarded) return guarded.conflict;
+  // The medication answers carry the resolved low-stock trigger, built from
+  // the floor and the reorder lead stored here.
+  if (parsed.data.medication) {
+    invalidateUserMedications(user.id, { evict: true });
+  }
 
   // Capture which categories the PATCH actually touched so the audit
   // trail records the user's intent, not just the full resolved row.

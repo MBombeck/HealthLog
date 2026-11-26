@@ -443,7 +443,7 @@ const OUTPUT_SCHEMA_TEMPLATE = `{
         "detail": "one-sentence detail",
         "delta": "optional delta string or null",
         "sourceWindow": "7d | 30d | 90d | 1y",
-        "sourceMetric": "bp | weight | pulse | mood | compliance | hrv | sleep | resting_hr | steps | active_energy | flights | distance | vo2_max | body_temp"
+        "sourceMetric": "bp | weight | pulse | mood | compliance | hrv | sleep | resting_hr | steps | active_energy | flights | distance | vo2_max | body_temp | glucose"
       }
     ]
   },

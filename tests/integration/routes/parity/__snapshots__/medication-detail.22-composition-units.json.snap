@@ -75,6 +75,7 @@
       "stockUnitsRemaining": 3,
       "stockDosesRemaining": 1,
       "runwayDays": 10,
+      "lowStockTriggerDays": 17,
       "ingredients": [
         {
           "nutrient": "vitamin_d",

@@ -4190,9 +4190,10 @@ enum MedicationSideEffectCategory {
   @@map("medication_side_effect_category")
 }
 
-/// 21 EMA-EPAR-§4.8-derived entries grouped by surface category.
-/// Order in this enum matches the picker UI order; rename / reorder
-/// is a breaking change for serialised rows. New entries append.
+/// 22 entries grouped by surface category: 21 derived from EMA EPAR §4.8,
+/// plus HEADACHE (v1.50, under COGNITIVE). The picker order lives in the
+/// taxonomy module; rename / reorder here is a breaking change for
+/// serialised rows. New entries append.
 enum MedicationSideEffectEntry {
   // GI (5)
   NAUSEA
@@ -4220,6 +4221,8 @@ enum MedicationSideEffectEntry {
   GASTROPARESIS_LIKE
   DYSGEUSIA
   GALLBLADDER_DISCOMFORT
+  // Appended in v1.50 (category COGNITIVE)
+  HEADACHE
 
   @@map("medication_side_effect_entry")
 }

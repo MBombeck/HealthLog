@@ -465,6 +465,21 @@ const METRIC_TERMS: Partial<
   ),
   body_temp: terms(stem("temperatur", "temp[ée]rature"), hangul("체온")),
   vo2_max: terms(stem("vo2", "vo₂")),
+  glucose: terms(
+    stem(
+      "gluc",
+      "glic",
+      "glyc[ée]mi",
+      "glukoz",
+      "cuk(ie)?r",
+      "blood\\s*sugar",
+      "blutzucker",
+      "bloedsuiker",
+      "глюкоз",
+      "сахар",
+    ),
+    hangul("혈당"),
+  ),
 };
 
 /** Whether the lead already talks about the metric a signal is drawn from. */

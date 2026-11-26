@@ -294,6 +294,26 @@ describe("POST /api/medications/{id}/side-effects", () => {
     expect(row.occurredAt.getTime()).toBeLessThanOrEqual(after);
   });
 
+  it("stores a headache under its own code, filed as cognitive", async () => {
+    const owner = await makeUser();
+    const med = await makeMedication(owner);
+
+    const res = await callRoute<SideEffect>(POST, {
+      method: "POST",
+      route: ROUTE,
+      params: { id: med.id },
+      body: { entry: "HEADACHE", severity: 2 },
+      auth: await makeSession(owner),
+    });
+
+    expect(res.status).toBe(201);
+    const row = await prisma.medicationSideEffect.findUniqueOrThrow({
+      where: { id: res.data.id },
+    });
+    expect(row.entry).toBe("HEADACHE");
+    expect(row.category).toBe("COGNITIVE");
+  });
+
   it("refuses a severity outside 1..5 with 422 and stores nothing", async () => {
     const owner = await makeUser();
     const med = await makeMedication(owner);

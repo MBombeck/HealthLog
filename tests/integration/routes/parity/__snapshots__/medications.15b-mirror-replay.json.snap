@@ -75,6 +75,7 @@
       "stockUnitsRemaining": null,
       "stockDosesRemaining": null,
       "runwayDays": null,
+      "lowStockTriggerDays": 11,
       "ingredients": [],
       "leafletSearch": null,
       "related": []

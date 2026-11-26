@@ -77,8 +77,8 @@
               "summaries": false
             }
           },
-          "promptChars": 34773,
-          "promptSha256": "4d949f14db9dfd9fb7e814879ecdb501fbec98e80f4c8bee0debb36c4244963c"
+          "promptChars": 34929,
+          "promptSha256": "7a2cde1648b9cc036f93be94808027929dfaf8277e6396c44d2213fa64f7276b"
         }
       ]
     },
@@ -96,8 +96,8 @@
             "responseFormat": "json",
             "timeoutMs": 180000
           },
-          "promptChars": 35302,
-          "promptSha256": "6ac6221151ddc1ae2051b0c3653ef91040b6c75e5e3e5eca0895599ca189b66d"
+          "promptChars": 35458,
+          "promptSha256": "9d452dcb1df1591343c7f33e059a2f78587d20062d0d3c59cec6ff0a83397616"
         }
       ]
     },
