@@ -127,31 +127,25 @@
       {
         "action": "auth.oidc.login",
         "user": {
+          "username": "First"
+        }
+      },
+      {
+        "action": "auth.oidc.login",
+        "user": {
+          "username": "First"
+        }
+      },
+      {
+        "action": "auth.oidc.login",
+        "user": {
           "username": "userinfo"
         }
       },
       {
         "action": "auth.oidc.login",
         "user": {
-          "username": "First"
-        }
-      },
-      {
-        "action": "auth.oidc.login",
-        "user": {
           "username": "second"
-        }
-      },
-      {
-        "action": "auth.oidc.login",
-        "user": {
-          "username": "First"
-        }
-      },
-      {
-        "action": "auth.oidc.provisioned",
-        "user": {
-          "username": "First"
         }
       },
       {
@@ -164,6 +158,18 @@
         "action": "auth.oidc.provisioned",
         "user": {
           "username": "second"
+        }
+      },
+      {
+        "action": "auth.oidc.provisioned",
+        "user": {
+          "username": "First"
+        }
+      },
+      {
+        "action": "auth.setup.claimed",
+        "user": {
+          "username": "First"
         }
       }
     ],
