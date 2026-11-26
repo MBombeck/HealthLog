@@ -27,6 +27,7 @@ import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { getOrCreateCycleProfile } from "@/lib/cycle/profile";
+import { withUserRowLock } from "@/lib/user-row-lock";
 import { isCycleEnabled } from "@/lib/cycle/enabled";
 import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
 import { toCycleProfileDTO } from "@/lib/cycle/dto";
@@ -101,57 +102,70 @@ export const PATCH = apiHandler(async (req: Request) => {
     });
   }
 
-  // Ensure the row exists, then deep-merge: only the supplied fields are
-  // touched; siblings are left untouched (field-by-field, no mass
-  // assignment). `enabled` maps onto the `cycleTrackingEnabled` column.
-  const stored = await getOrCreateCycleProfile(user.id);
   const p = parsed.data;
   const today = ownerToday(user.timezone);
 
-  // The pregnancy state merges over the stored columns and is checked
-  // as a whole: a patch that only moves the due date must still agree with
-  // the first day already stored.
-  const pregnancy = p.pregnancy
-    ? mergePregnancyPatch(pregnancyFieldsOf(stored), p.pregnancy)
-    : null;
-  if (pregnancy) {
-    const problem = pregnancyPatchProblem(pregnancy, today);
-    if (problem) {
-      return apiError("Invalid pregnancy dates", 422, { errorCode: problem });
-    }
-  }
+  // Ensure the row exists, then deep-merge: only the supplied fields are
+  // touched; siblings are left untouched (field-by-field, no mass
+  // assignment). `enabled` maps onto the `cycleTrackingEnabled` column.
+  // The pregnancy state is one sealed document, read, merged and written
+  // back whole, so the read and the write run under the account's row lock:
+  // two overlapping saves (the start date from one tab, the due date from
+  // another) would otherwise both read the same document and the later one
+  // would drop the earlier one's date.
+  const written = await withUserRowLock(user.id, async (tx) => {
+    const stored = await getOrCreateCycleProfile(user.id, tx);
 
-  const updated = await prisma.cycleProfile.update({
-    where: { userId: user.id },
-    data: {
-      ...(p.enabled !== undefined && { cycleTrackingEnabled: p.enabled }),
-      ...(p.goal !== undefined && { goal: p.goal }),
-      ...(p.secondarySymptom !== undefined && {
-        secondarySymptom: p.secondarySymptom,
-      }),
-      ...(p.rawChartMode !== undefined && { rawChartMode: p.rawChartMode }),
-      ...(p.predictionEnabled !== undefined && {
-        predictionEnabled: p.predictionEnabled,
-      }),
-      ...(p.discreetNotifications !== undefined && {
-        discreetNotifications: p.discreetNotifications,
-      }),
-      ...(p.sensitiveCategoryEncryption !== undefined && {
-        sensitiveCategoryEncryption: p.sensitiveCategoryEncryption,
-      }),
-      ...(p.typicalCycleLength !== undefined && {
-        typicalCycleLength: p.typicalCycleLength,
-      }),
-      ...(p.typicalPeriodLength !== undefined && {
-        typicalPeriodLength: p.typicalPeriodLength,
-      }),
-      ...(p.lutealPhaseLength !== undefined && {
-        lutealPhaseLength: p.lutealPhaseLength,
-      }),
-      ...(pregnancy &&
-        pregnancyWriteData({ ...pregnancy, ownerDecided: true })),
-    },
+    // The pregnancy state merges over the stored columns and is checked
+    // as a whole: a patch that only moves the due date must still agree with
+    // the first day already stored.
+    const pregnancy = p.pregnancy
+      ? mergePregnancyPatch(pregnancyFieldsOf(stored), p.pregnancy)
+      : null;
+    if (pregnancy) {
+      const problem = pregnancyPatchProblem(pregnancy, today);
+      if (problem) return { problem };
+    }
+
+    const updated = await tx.cycleProfile.update({
+      where: { userId: user.id },
+      data: {
+        ...(p.enabled !== undefined && { cycleTrackingEnabled: p.enabled }),
+        ...(p.goal !== undefined && { goal: p.goal }),
+        ...(p.secondarySymptom !== undefined && {
+          secondarySymptom: p.secondarySymptom,
+        }),
+        ...(p.rawChartMode !== undefined && { rawChartMode: p.rawChartMode }),
+        ...(p.predictionEnabled !== undefined && {
+          predictionEnabled: p.predictionEnabled,
+        }),
+        ...(p.discreetNotifications !== undefined && {
+          discreetNotifications: p.discreetNotifications,
+        }),
+        ...(p.sensitiveCategoryEncryption !== undefined && {
+          sensitiveCategoryEncryption: p.sensitiveCategoryEncryption,
+        }),
+        ...(p.typicalCycleLength !== undefined && {
+          typicalCycleLength: p.typicalCycleLength,
+        }),
+        ...(p.typicalPeriodLength !== undefined && {
+          typicalPeriodLength: p.typicalPeriodLength,
+        }),
+        ...(p.lutealPhaseLength !== undefined && {
+          lutealPhaseLength: p.lutealPhaseLength,
+        }),
+        ...(pregnancy &&
+          pregnancyWriteData({ ...pregnancy, ownerDecided: true })),
+      },
+    });
+    return { updated, pregnancy };
   });
+  if ("problem" in written) {
+    return apiError("Invalid pregnancy dates", 422, {
+      errorCode: written.problem,
+    });
+  }
+  const { updated, pregnancy } = written;
 
   // A state that pauses the forecast takes the cached forecast with it at
   // once, so the reminder cron has nothing left to push from; the refresh job

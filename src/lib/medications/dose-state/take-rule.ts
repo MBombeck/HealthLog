@@ -32,12 +32,12 @@ import { DOSE_WINDOW_DEFAULTS } from "@/lib/medications/scheduling/dose-window-d
 /** The on-time half-window, in minutes (the dose-window default). */
 export const ON_TIME_MINUTES = DOSE_WINDOW_DEFAULTS.dailyOnTimeMinutes;
 /**
- * Past this gap a take answers no slot: six hours, the reach of the server's
- * nearest-slot rule (`NEAREST_SLOT_REACH_MS` in
- * `src/lib/medications/scheduling/nearest-open-slot.ts` is this constant).
- * A take that names no slot inside it is bound to the nearest open one by
- * the server; so a control that says "extra dose" inside it would be wrong,
- * and one that sends `extraDose` keeps the person's choice.
+ * Past this gap a take a control records answers no slot: six hours. Inside
+ * it the control names the slot (a band take or a pin), which is the
+ * person's choice; outside it the control says "extra dose" and sends
+ * `extraDose`. A take that names no slot at all is settled by the server
+ * (`nearest-open-slot.ts`): the most recent open dose before it first, else
+ * the next open dose within these six hours.
  */
 export const NEAR_SLOT_CEILING_MINUTES = 360;
 

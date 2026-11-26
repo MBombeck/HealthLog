@@ -368,3 +368,197 @@ describe("concurrent preference field writes from one account", () => {
     );
   });
 });
+
+describe("concurrent AI provider settings writes from one account", () => {
+  it("keeps both Coach budgets written in parallel", async () => {
+    const { userId } = await seedUser();
+    const { PATCH } = await import("@/app/api/user/ai-provider/route");
+    for (const [local, compat] of [
+      [10_000, 20_000],
+      [30_000, 40_000],
+      [50_000, 60_000],
+      [70_000, 80_000],
+    ] as const) {
+      const responses = await Promise.all([
+        (PATCH as Handler)(
+          request("PATCH", "/api/user/ai-provider", {
+            localCoachBudget: { snapshotChars: local },
+          }),
+        ),
+        (PATCH as Handler)(
+          request("PATCH", "/api/user/ai-provider", {
+            compatCoachBudget: { snapshotChars: compat },
+          }),
+        ),
+      ]);
+      expect(responses.map((r) => r.status)).toEqual([200, 200]);
+      const row = await getPrismaClient().user.findUniqueOrThrow({
+        where: { id: userId },
+        select: { aiCoachBudgets: true },
+      });
+      expect(row.aiCoachBudgets, `${local}/${compat}`).toMatchObject({
+        local: { snapshotChars: local },
+        "openai-compatible": { snapshotChars: compat },
+      });
+    }
+  });
+
+  it("keeps both reasoning settings written in parallel", async () => {
+    const { userId } = await seedUser();
+    const { PATCH } = await import("@/app/api/user/ai-provider/route");
+    const { reasoningEffortFor } = await import("@/lib/ai/reasoning-effort");
+    for (const [local, compat] of [
+      ["low", "high"],
+      ["high", "low"],
+      ["medium", "none"],
+      ["none", "medium"],
+    ] as const) {
+      const responses = await Promise.all([
+        (PATCH as Handler)(
+          request("PATCH", "/api/user/ai-provider", {
+            localReasoningEffort: local,
+          }),
+        ),
+        (PATCH as Handler)(
+          request("PATCH", "/api/user/ai-provider", {
+            compatReasoningEffort: compat,
+          }),
+        ),
+      ]);
+      expect(responses.map((r) => r.status)).toEqual([200, 200]);
+      const row = await getPrismaClient().user.findUniqueOrThrow({
+        where: { id: userId },
+        select: { aiProviderChain: true },
+      });
+      expect(reasoningEffortFor(row.aiProviderChain, "local"), local).toBe(
+        local,
+      );
+      expect(
+        reasoningEffortFor(row.aiProviderChain, "openai-compatible"),
+        compat,
+      ).toBe(compat);
+    }
+  });
+
+  it("keeps a reasoning setting written while the chain is reordered", async () => {
+    const { userId } = await seedUser();
+    const { PATCH } = await import("@/app/api/user/ai-provider/route");
+    const { PUT } = await import("@/app/api/insights/provider-chain/route");
+    const { reasoningEffortFor } = await import("@/lib/ai/reasoning-effort");
+    const orders = [
+      ["local", "openai"],
+      ["openai", "local"],
+    ] as const;
+    for (const [round, effort] of (
+      ["low", "high", "medium", "none"] as const
+    ).entries()) {
+      const order = orders[round % 2];
+      const responses = await Promise.all([
+        (PUT as Handler)(
+          request("PUT", "/api/insights/provider-chain", {
+            chain: order.map((providerType) => ({
+              providerType,
+              enabled: true,
+            })),
+          }),
+        ),
+        (PATCH as Handler)(
+          request("PATCH", "/api/user/ai-provider", {
+            localReasoningEffort: effort,
+          }),
+        ),
+      ]);
+      expect(responses.map((r) => r.status)).toEqual([200, 200]);
+      const row = await getPrismaClient().user.findUniqueOrThrow({
+        where: { id: userId },
+        select: { aiProviderChain: true },
+      });
+      expect(reasoningEffortFor(row.aiProviderChain, "local"), effort).toBe(
+        effort,
+      );
+    }
+  });
+});
+
+describe("other concurrent read-merge-writes on one account", () => {
+  it("keeps both pregnancy dates written in parallel", async () => {
+    const { userId } = await seedUser();
+    const { PATCH } = await import("@/app/api/auth/me/cycle-prefs/route");
+    const { pregnancyFieldsOf } = await import("@/lib/cycle/pregnancy-store");
+    for (const [startDate, dueDate] of [
+      ["2026-04-01", "2027-01-06"],
+      ["2026-05-01", "2027-02-05"],
+      ["2026-06-01", "2027-03-08"],
+      ["2026-07-01", "2027-04-07"],
+    ] as const) {
+      const responses = await Promise.all([
+        (PATCH as Handler)(
+          request("PATCH", "/api/auth/me/cycle-prefs", {
+            pregnancy: { state: "PREGNANT", startDate },
+          }),
+        ),
+        (PATCH as Handler)(
+          request("PATCH", "/api/auth/me/cycle-prefs", {
+            pregnancy: { state: "PREGNANT", dueDate },
+          }),
+        ),
+      ]);
+      expect(responses.map((r) => r.status)).toEqual([200, 200]);
+      const row = await getPrismaClient().cycleProfile.findUniqueOrThrow({
+        where: { userId },
+        select: { pregnancyEncrypted: true, postpartumWeeks: true },
+      });
+      expect(pregnancyFieldsOf(row), `${startDate}/${dueDate}`).toMatchObject({
+        pregnancyStartDate: startDate,
+        pregnancyDueDate: dueDate,
+      });
+    }
+  });
+
+  it("keeps every provider app a guardian lends a profile in parallel", async () => {
+    const { userId: guardianId } = await seedUser();
+    const prisma = getPrismaClient();
+    await prisma.user.update({
+      where: { id: guardianId },
+      data: {
+        withingsClientIdEncrypted: "withings-id",
+        withingsClientSecretEncrypted: "withings-secret",
+        ouraClientIdEncrypted: "oura-id",
+        ouraClientSecretEncrypted: "oura-secret",
+        whoopClientIdEncrypted: "whoop-id",
+        whoopClientSecretEncrypted: "whoop-secret",
+        stravaClientIdEncrypted: "strava-id",
+        stravaClientSecretEncrypted: "strava-secret",
+      },
+    });
+    const { createManagedProfile } =
+      await import("@/lib/managed-profiles/create");
+    const { profile } = await createManagedProfile({
+      creatorId: guardianId,
+      displayName: "Managed record",
+      dateOfBirth: null,
+      locale: "en",
+      timezone: "UTC",
+      gender: null,
+    });
+    const { shareGuardianClientApp } =
+      await import("@/lib/integrations/oauth-kit/connect-target");
+    const providers = ["withings", "oura", "whoop", "strava"] as const;
+    await Promise.all(
+      providers.map((provider) =>
+        shareGuardianClientApp(
+          provider,
+          { recordUserId: profile.id, actorUserId: guardianId },
+          async () => false,
+        ),
+      ),
+    );
+    const row = await prisma.user.findUniqueOrThrow({
+      where: { id: profile.id },
+      select: { clientAppSharedBy: true },
+    });
+    expect(row.clientAppSharedBy).toEqual(
+      Object.fromEntries(providers.map((p) => [p, guardianId])),
+    );
+  });
+});

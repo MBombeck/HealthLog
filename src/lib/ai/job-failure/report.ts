@@ -101,6 +101,7 @@ async function persist(
   scope: AiJobScope,
   code: AiJobFailureCode,
   providerType: string | null,
+  durationMs: number,
 ): Promise<void> {
   const now = new Date();
   const subjectId = scope.documentId ?? "";
@@ -144,6 +145,8 @@ async function persist(
       provider: providerType,
       document: Boolean(scope.documentId),
     },
+    // How long the job ran before it ended this way (#1404).
+    durationMs,
   });
 }
 
@@ -183,7 +186,11 @@ async function refusalCode(
   return pinned || scope.requested ? codeForRefusal(reason) : null;
 }
 
-async function apply(scope: AiJobScope, settled: Settled): Promise<void> {
+async function apply(
+  scope: AiJobScope,
+  settled: Settled,
+  durationMs: number,
+): Promise<void> {
   switch (settled.state) {
     case "none":
       return;
@@ -192,16 +199,16 @@ async function apply(scope: AiJobScope, settled: Settled): Promise<void> {
       return;
     case "failing": {
       const code = codeForProviderCalls(settled.calls);
-      if (code) await persist(scope, code, settled.providerType);
+      if (code) await persist(scope, code, settled.providerType, durationMs);
       return;
     }
     case "refused": {
       const code = await refusalCode(scope, settled.reason);
-      if (code) await persist(scope, code, null);
+      if (code) await persist(scope, code, null, durationMs);
       return;
     }
     case "code":
-      await persist(scope, settled.code, settled.providerType);
+      await persist(scope, settled.code, settled.providerType, durationMs);
   }
 }
 
@@ -262,6 +269,7 @@ export function settleWitness(
 async function settle(
   scope: AiJobScope,
   witness: AiJobWitness,
+  durationMs: number,
   thrown?: { error: unknown },
 ): Promise<void> {
   try {
@@ -285,6 +293,7 @@ async function settle(
       await apply(
         job === scope.job ? scope : { userId: scope.userId, job },
         settled,
+        durationMs,
       );
     }
   } catch (err) {
@@ -301,13 +310,16 @@ export async function trackAiJob<T>(
   fn: () => Promise<T>,
 ): Promise<T> {
   const witness: AiJobWitness = { events: [] };
+  const startedAt = performance.now();
   let result: T;
   try {
     result = await withAiJobWitness(witness, fn);
   } catch (err) {
-    await settle(scope, witness, { error: err });
+    await settle(scope, witness, performance.now() - startedAt, {
+      error: err,
+    });
     throw err;
   }
-  await settle(scope, witness);
+  await settle(scope, witness, performance.now() - startedAt);
   return result;
 }

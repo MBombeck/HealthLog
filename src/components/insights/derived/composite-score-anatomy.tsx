@@ -334,6 +334,7 @@ export function CompositeScoreAnatomy({
         title={title}
         score={score}
         band={staleLabel ? undefined : serverBand(data)}
+        load={metric === "STRESS_SCORE" || metric === "STRAIN_SCORE"}
         hue={METRIC_HUE[metric]}
         caption={caption}
         contributors={contributors}

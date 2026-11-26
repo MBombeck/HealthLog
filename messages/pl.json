@@ -13433,7 +13433,7 @@
       "close": "Ukryj"
     },
     "ai": {
-      "readDone": "AI odczytało Twój dokument.",
+      "readDone": "AI odczytało Twój dokument. Wyszukiwanie znajdzie go teraz także po treści.",
       "readStagedOne": "AI odczytało Twój dokument. 1 wynik badania czeka na Twoją weryfikację.",
       "readStagedFew": "AI odczytało Twój dokument. {count} wyniki badań czekają na Twoją weryfikację.",
       "readStagedOther": "AI odczytało Twój dokument. {count} wyników badań czeka na Twoją weryfikację.",

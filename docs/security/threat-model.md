@@ -90,7 +90,7 @@ What a HealthLog instance protects, who can reach it and how, what stands in the
 
 ### Uploaded files
 
-- Every import has a byte cap before parsing and a structured refusal: Apple Health archives (zip reader with entry and ratio limits, `sax` in strict mode with no entity expansion), FHIR bundles, CSV, FIT (decoded in a worker thread with a heap ceiling and a timeout, `src/lib/fit/parse.ts`), Gadgetbridge SQLite (opened read-only off the main thread), documents. Multipart bodies stream to disk under a cap (`src/lib/multipart/stream-to-disk.ts`).
+- Every import has a byte cap before parsing and a structured refusal: Apple Health archives (zip reader with entry and ratio limits, `sax` in strict mode with no entity expansion), FHIR bundles, CSV, FIT (decoded in a child process with a heap ceiling it takes on its own command line, whatever the server's `NODE_OPTIONS`, and a timeout, `src/lib/fit/parse.ts`), Gadgetbridge SQLite (opened read-only off the main thread), documents. Multipart bodies stream to disk under a cap (`src/lib/multipart/stream-to-disk.ts`).
 - Whole-text CSV is bounded in rows and columns, uploaded JSON in nesting depth (`src/lib/import/csv-measurements.ts`, `src/lib/import/json-depth.ts`), and a damaged SQLite page is refused as the uploader's file (`src/lib/import/sqlite-off-thread.ts`).
 - Property tests feed generated and mutated input to each parser and require a result or a structured refusal, within a time bound where input can be large (`*.fuzz.test.ts` beside each parser).
 

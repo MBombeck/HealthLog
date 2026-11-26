@@ -41,7 +41,7 @@ const priorityItemSchema = z
       .string()
       .optional()
       .describe(
-        "Stable dismiss identity, namespaced `<kind>:...`. Present only on the observational kinds (milestone / ecg_new_recording / tension_window) — absent on the actionable kinds, which are never dismissible.",
+        "Stable identity of the row, namespaced `<kind>:...`. Since v1.49.1 every row carries one (a dose row `dose_window:<medicationId>:<dueAt>`, so two dose rows that read alike stay apart); key rows on it, never on kind and title. Only the observational kinds (milestone / ecg_new_recording / tension_window / same_time_baseline) can be dismissed with it; offer dismiss by kind, not by the key's presence. Optional in the schema because rows from a release before v1.49.1 lack it on the actionable kinds.",
       ),
     title: z.string().describe("Localised headline (resolved server-side)."),
     body: z

@@ -44,3 +44,13 @@ export const DOSE_WINDOW_DEFAULTS = {
    */
   weeklyOverdueDays: 4,
 } as const;
+
+/**
+ * How far ahead of its anchor a daily dose becomes takeable: the on-time
+ * half-window plus the early grace, two hours. The Today card surfaces a dose
+ * from this moment (`DOSE_DUE_LOOKAHEAD_MS`).
+ */
+export const DAILY_TAKEABLE_AHEAD_MS =
+  (DOSE_WINDOW_DEFAULTS.dailyOnTimeMinutes +
+    DOSE_WINDOW_DEFAULTS.earlyGraceMinutes) *
+  60_000;

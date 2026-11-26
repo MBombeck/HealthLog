@@ -47,6 +47,7 @@ import {
   setActivePulseDayMeanMethod,
   type PulseDayMeanMethod,
 } from "@/lib/measurements/day-statistic";
+import { roundStable2 as round2 } from "@/lib/stats/central";
 
 import { countStatements } from "./query-counter";
 import { getPrismaClient, truncateAllTables } from "./setup";
@@ -132,9 +133,6 @@ function read(userId: string, now: Date) {
     buildSourceRankCase(priorityJson, '"type"', '"source"'),
   );
 }
-
-const round2 = (v: number | null) =>
-  v === null ? null : Math.round(v * 100) / 100;
 
 function expectSameWindow(
   actual: CanonicalWindowRow[],
@@ -351,6 +349,15 @@ const INSTANTS: Array<[string, Date]> = [
   [
     "on an hour boundary",
     new Date(Math.floor(NOW.getTime() / HOUR) * HOUR - 2 * HOUR),
+  ],
+  // The pulse fixture depends only on the UTC day it is seeded on, so this
+  // instant is the same on every run: the default ladder's 7-day pulse mean is
+  // exactly 74.425, which the two statements return either side of the half
+  // (74.42499999999964 and 74.42500000000861). Served with a plain
+  // `Math.round`, that was 74.42 against 74.43 on a run made at 10:19 UTC.
+  [
+    "with a 7-day mean on a half cent",
+    new Date(Math.floor(NOW.getTime() / DAY) * DAY + 37_183_381),
   ],
 ];
 

@@ -7197,12 +7197,16 @@ paths:
         v1.49.0 a device still signed in to the other account is not taken over: while that account holds a live refresh
         token for this `X-Device-Id` (or one naming no device), or the access token of a rotation's short sunset, the
         answer is 409 `devices.register.signed_in_elsewhere` and nothing changes. Signing out there, or that sign-in
-        running out, frees the device; the app can then register again. A refused push field (push key, relay binding,
-        consent) returns 422 with `meta.errorCode` `devices.push.<reason>` and changes nothing; more than 10 new relay
-        bindings for one account in 24 hours return 429 `devices.push.relay_daily_limit`. When the device's APNs token
-        changes, the old token's relay binding is removed and the device has to bind the new token (`relayState:
-        rebind_needed` unless the request carries the new `relayBinding`). The answer's `push` block is the device's
-        push state after the call."
+        running out, frees the device; the app can then register again. APNs tokens are hex of up to 512 characters:
+        Apple documents no fixed length. A Live Activity field (`liveActivityPushToken`, an entry of
+        `liveActivityTokens`, `liveActivityStart`) the server cannot take does not fail the registration: it is left
+        out, the device registers with everything else, and the answer's `ignored` names it with
+        `devices.register.invalid_field` for its shape, or with the `devices.push.<reason>` its push-to-start statement
+        was refused for. A refused push field (push key, relay binding, consent) returns 422 with `meta.errorCode`
+        `devices.push.<reason>` and changes nothing; more than 10 new relay bindings for one account in 24 hours return
+        429 `devices.push.relay_daily_limit`. When the device's APNs token changes, the old token's relay binding is
+        removed and the device has to bind the new token (`relayState: rebind_needed` unless the request carries the new
+        `relayBinding`). The answer's `push` block is the device's push state after the call."
       requestBody:
         required: true
         content:
@@ -34359,7 +34363,7 @@ components:
           description: Hex-encoded APNs device token. Must be paired with `apnsEnvironment`.
           type: string
           minLength: 8
-          maxLength: 256
+          maxLength: 512
           pattern: ^[A-Fa-f0-9]+$
         apnsEnvironment:
           description: Gateway the iOS client received `apnsToken` from. Server never auto-detects.
@@ -34404,14 +34408,15 @@ components:
           anyOf:
             - type: string
               minLength: 8
-              maxLength: 256
+              maxLength: 512
               pattern: ^[A-Fa-f0-9]+$
             - type: "null"
         liveActivityTokens:
           description: "The device's running medication Live Activities, as a full replacement list: present replaces the stored
-            list (an empty array clears it), omitted leaves it unchanged. Each entry is ended with one `end` push once
-            its dose is answered, and removed after the push. When this field is present the legacy
-            `liveActivityPushToken` is ignored."
+            list (an empty array clears it), omitted leaves it unchanged. An entry in a shape the server does not take
+            is left out of the list and named in the answer's `ignored` (`liveActivityTokens[<index>]`); a list longer
+            than 8 is left out whole. Each entry is ended with one `end` push once its dose is answered, and removed
+            after the push. When this field is present the legacy `liveActivityPushToken` is ignored."
           maxItems: 8
           type: array
           items:
@@ -34420,7 +34425,7 @@ components:
               token:
                 type: string
                 minLength: 8
-                maxLength: 256
+                maxLength: 512
                 pattern: ^[A-Fa-f0-9]+$
                 description: The Activity's ActivityKit push token (hex).
               medicationId:
@@ -34615,7 +34620,7 @@ components:
                 token:
                   type: string
                   minLength: 64
-                  maxLength: 200
+                  maxLength: 512
                   pattern: ^[0-9A-Fa-f]+$
                 statement:
                   type: object
@@ -63888,6 +63893,24 @@ components:
               type: string
             push:
               $ref: "#/components/schemas/DevicePushState"
+            ignored:
+              description: v1.49.1. The optional Live Activity fields left out of this registration instead of failing it; absent when
+                none was. A left-out `liveActivityPushToken` or `liveActivityStart` keeps its stored value.
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                    description: The request field, `liveActivityTokens[<index>]` for one list entry.
+                  code:
+                    type: string
+                    description: "`devices.register.invalid_field` for a value in a shape the server does not take, else the
+                      `devices.push.<reason>` the push-to-start statement was refused for."
+                required:
+                  - field
+                  - code
+                additionalProperties: false
           required:
             - id
             - push
@@ -101459,8 +101482,11 @@ components:
             working button under its generic label. Tell the two apart by `status` (`warning` for a reconnect, `info`
             for a quiet source) or by `labelKey`, never by the intent."
         itemKey:
-          description: Stable dismiss identity, namespaced `<kind>:...`. Present only on the observational kinds (milestone /
-            ecg_new_recording / tension_window) — absent on the actionable kinds, which are never dismissible.
+          description: Stable identity of the row, namespaced `<kind>:...`. Since v1.49.1 every row carries one (a dose row
+            `dose_window:<medicationId>:<dueAt>`, so two dose rows that read alike stay apart); key rows on it, never on
+            kind and title. Only the observational kinds (milestone / ecg_new_recording / tension_window /
+            same_time_baseline) can be dismissed with it; offer dismiss by kind, not by the key's presence. Optional in
+            the schema because rows from a release before v1.49.1 lack it on the actionable kinds.
           type: string
         title:
           type: string

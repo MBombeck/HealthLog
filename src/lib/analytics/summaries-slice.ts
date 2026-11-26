@@ -91,6 +91,9 @@ import {
   loadUserSourcePriority,
   type AccumulatorBucketRow,
 } from "@/lib/rollups/measurement-read";
+// The warm read and the live fallback sum the same readings in different
+// orders, so a served figure must not turn on the last bits.
+import { roundStable2 as round2 } from "@/lib/stats/central";
 import { startOfUtcDay } from "@/lib/tz/start-of-utc-day";
 import {
   buildSourceRankCase,
@@ -192,11 +195,6 @@ interface NarrowAggregateRow {
  * carries the slope / r² columns the warm `NarrowAggregateRow` dropped.
  */
 interface WindowedAggregateRow extends NarrowAggregateRow, LiveTrendColumns {}
-
-function round2(value: number | null): number | null {
-  if (value === null || !Number.isFinite(value)) return null;
-  return Math.round(value * 100) / 100;
-}
 
 function emptySummary(): DataSummary {
   return {

@@ -192,7 +192,9 @@ async function moveTake(
         isExplicitTaken: true,
         isExplicitSkip: false,
         idempotencyKey: null,
-        createSource: "WEB",
+        // The row the dose lands on says which transport wrote it, like
+        // every other writer: the app's Bearer call `API`, the browser `WEB`.
+        createSource: input.takenVia === "APP" ? "API" : "WEB",
         attributionSource,
         takenVia: input.takenVia,
         // A slot move is a re-binding, not a new dose: the original row's

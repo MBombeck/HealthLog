@@ -51,6 +51,7 @@ import { requireAuth, HttpError, apiHandler } from "../api-handler";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { hashToken } from "@/lib/auth/hmac";
+import { resetTokenLastUsedThrottle } from "@/lib/auth/token-last-used";
 import { auditLog } from "@/lib/auth/audit";
 
 const FAKE_HASH = "deadbeefcafef00d";
@@ -86,6 +87,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(hashToken).mockReturnValue(FAKE_HASH);
   vi.mocked(prisma.apiToken.update).mockResolvedValue({} as never);
+  resetTokenLastUsedThrottle();
   vi.mocked(auditLog).mockResolvedValue(undefined as never);
 });
 

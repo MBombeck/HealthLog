@@ -31,6 +31,16 @@ const db = vi.hoisted(() => {
   };
 });
 
+// The read-merge-write runs under the settings row's lock; here the
+// transaction client is the mocked one.
+vi.mock("@/lib/app-settings-row-lock", async () => {
+  const { prisma } = await import("@/lib/db");
+  return {
+    withAppSettingsRowLock: (fn: (tx: unknown) => unknown) => fn(prisma),
+    lockAppSettingsRow: async () => {},
+  };
+});
+
 vi.mock("@/lib/db", () => ({
   prisma: { appSettings: db.appSettings, $queryRaw: db.$queryRaw },
 }));

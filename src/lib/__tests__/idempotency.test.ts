@@ -401,6 +401,18 @@ describe("defaultUserIdResolver (audit C-4)", () => {
     expect(await defaultUserIdResolver()).toBe("u-cookie");
   });
 
+  it("scopes to the cookie session beside a Bearer that is not one of the app's tokens", async () => {
+    vi.mocked(getSession).mockResolvedValue({
+      session: { id: "s-1" },
+      user: { id: "u-cookie", role: "USER" },
+    } as Awaited<ReturnType<typeof getSession>>);
+    // A reverse proxy's own credential, forwarded in the same header.
+    mockHeader("Bearer eyJhbGciOiJSUzI1NiJ9.e30.c2ln");
+    vi.mocked(prisma.apiToken.findUnique).mockClear();
+    expect(await defaultUserIdResolver()).toBe("u-cookie");
+    expect(prisma.apiToken.findUnique).not.toHaveBeenCalled();
+  });
+
   it("falls back to Bearer-token resolution when no cookie session", async () => {
     vi.mocked(getSession).mockResolvedValue(null);
     mockHeader("Bearer hlk_abcdef");

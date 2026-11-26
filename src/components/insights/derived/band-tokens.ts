@@ -80,7 +80,12 @@ export function scoreBandWordKey(
   kind: HealthLogScoreKind,
   band: ScoreBand,
 ): string {
-  return SCORE_BAND_DIRECTION[kind] === "lower-better"
+  return bandWordKey(band, SCORE_BAND_DIRECTION[kind] === "lower-better");
+}
+
+/** `scoreBandWordKey` by direction alone, for a ring told only `load`. */
+export function bandWordKey(band: ScoreBand, load = false): string {
+  return load
     ? `insights.scores.loadBand.${band}`
     : `insights.derived.scoreRing.band.${band}`;
 }

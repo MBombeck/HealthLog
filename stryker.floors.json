@@ -11,7 +11,7 @@
     },
     "rollups": {
       "paths": ["src/lib/rollups/"],
-      "floor": 40
+      "floor": 85
     },
     "source-ranking": {
       "paths": [
@@ -62,7 +62,7 @@
         "src/lib/export/backup-schema-kit.ts",
         "src/lib/cycle/backup-schema.ts"
       ],
-      "floor": 54
+      "floor": 88
     },
     "medication-scheduling": {
       "paths": ["src/lib/medications/scheduling/"],
