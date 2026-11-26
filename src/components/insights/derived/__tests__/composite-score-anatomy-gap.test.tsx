@@ -21,6 +21,7 @@ vi.mock("../score-history", () => ({
   ScoreTrendChartDynamic: () => null,
 }));
 vi.mock("@/lib/i18n/context", () => ({
+  useFormatters: () => ({ dateShortSmartCalendar: (d: string) => d }),
   useTranslations: () => ({
     t: (key: string, vars?: Record<string, string | number>) =>
       vars ? `${key}:${JSON.stringify(vars)}` : key,

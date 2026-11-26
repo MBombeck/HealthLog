@@ -14,6 +14,7 @@ import { renderToStaticMarkup } from "react-dom/server";
  */
 
 vi.mock("@/lib/i18n/context", () => ({
+  useFormatters: () => ({ dateShortSmartCalendar: (d: string) => d }),
   useTranslations: () => ({ t: (key: string) => key }),
 }));
 

@@ -7,7 +7,6 @@ import Link from "next/link";
 import { SlidersHorizontal, TrendingUp } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
-import { accountName } from "@/lib/account-name";
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet } from "@/lib/api/api-fetch";
 // Bare number — its own React- and label-map-free module, so importing it here
@@ -22,20 +21,17 @@ import {
   orderedVisibleSectionIds,
   type InsightsSectionId,
 } from "@/lib/insights-layout";
-import { useMounted } from "@/hooks/use-mounted";
 import { useScrollResetOnRoute } from "@/hooks/use-scroll-reset-on-route";
 import { useTranslations } from "@/lib/i18n/context";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { HeroStrip } from "@/components/insights/hero-strip";
 import { AiConsentRequest } from "@/components/ai/ai-consent-request";
 import { AiSetupHint } from "@/components/insights/ai-setup-hint";
 import { DeferUntilNear } from "@/components/insights/defer-until-near";
 import { OverviewSectionBoundary } from "@/components/insights/overview-section-boundary";
 import { isSurfaceVisible } from "@/lib/modules/surface";
-import { useCycleRingDial } from "@/components/cycle/use-cycle";
 import { useInsightsAdvisorQuery } from "@/components/insights/use-insights-advisor";
 import { useAnalyticsQuery } from "@/lib/queries/use-analytics-query";
 import { useDashboardSnapshot } from "@/lib/queries/use-dashboard-snapshot";
@@ -47,9 +43,7 @@ import type { InsightsAnalyticsData as AnalyticsData } from "@/types/analytics";
 
 /**
  * v1.4.33 — defer the below-the-fold mother-page blocks behind
- * `next/dynamic`. `<HeroStrip>` (the only above-the-fold piece) stays an
- * eager import so the initial paint shows the greeting and health-score
- * badge without a flash; the briefing, correlation row and trends row
+ * `next/dynamic`. The briefing, correlation row and trends row
  * each carry their own icon-set + chart wiring (a chart card alone weighs
  * in at the lucide tree-shake limit) and used to land on every Insights
  * cold mount.
@@ -100,13 +94,13 @@ const TrendsRow = dynamic(
     loading: () => <BlockSkeleton minHeight="min-h-80" />,
   },
 );
-// v1.12.6 — the wellness-score strip, lifted OUT of the vitals dashboard so
-// it renders as its own full-width section directly above the daily briefing.
-// Both this strip and the vitals grid read the ONE shared derived batch the
-// page owns (passed in via `batch`), so the lift adds no second request.
+// The three score rings at the head of the page (Readiness, Sleep score,
+// Health score). They and the vitals grid read the ONE shared derived batch
+// the page owns, so the head adds no second request. Loaded without SSR: the
+// tiles read session storage for their one-time reveal.
 const WellnessScores = dynamic(
   () =>
-    import("@/components/insights/derived").then((mod) => ({
+    import("@/components/insights/derived/wellness-scores").then((mod) => ({
       default: mod.WellnessScores,
     })),
   {
@@ -226,19 +220,6 @@ const CycleInsightSummaryCard = dynamic(
   { ssr: false },
 );
 
-// v1.15.3 — the compact cycle RING, dropped into the wellness-score strip as a
-// gated sibling tile (NOT the summary teaser — that stays further down). Mounted
-// only for a cycle-tracking account, so its calendar read never fires otherwise.
-// Deferred behind `next/dynamic`; it renders nothing while resolving / on error /
-// when there is no active cycle, so it carries no loading placeholder.
-const CycleRingTile = dynamic(
-  () =>
-    import("@/components/cycle/cycle-ring-tile").then((mod) => ({
-      default: mod.CycleRingTile,
-    })),
-  { ssr: false },
-);
-
 /**
  * How many overview sections, in the account's own order, mount with the
  * page. The rest mount as they come near the visible area
@@ -286,7 +267,6 @@ interface ComprehensiveData {
 
 export default function InsightsPageClient() {
   const { isAuthenticated, user } = useAuth();
-  const mounted = useMounted();
   const { t } = useTranslations();
   const queryClient = useQueryClient();
 
@@ -346,18 +326,10 @@ export default function InsightsPageClient() {
   const analyticsQuery = useAnalyticsQuery();
   const analytics = analyticsQuery.data as AnalyticsData | undefined;
 
-  // v1.21.2 — the dashboard snapshot is the single server source
-  // for the ambient narrative the hero surfaces: the Tension Verdict and
-  // return-to-baseline ride its `healthScore`. The hero score number itself
-  // stays on the analytics payload (unchanged). Reads the same shared
+  // The dashboard snapshot feeds the vitals grid. Reads the same shared
   // `queryKeys.dashboardSnapshot()` cell the dashboard warms, so the insights
   // visit pays at most one extra round-trip and usually a warm cache hit.
-  // (The A4 recall/forward-look block left the briefing card — the card now
-  // opens straight on the day's signals.)
   const snapshotQuery = useDashboardSnapshot(isAuthenticated);
-  const snapshotHealthScore = snapshotQuery.data?.healthScore ?? null;
-  const heroTension = snapshotHealthScore?.tension ?? null;
-  const heroReturnToBand = snapshotHealthScore?.returnToBand ?? null;
 
   // v1.12.6 — the page owns the ONE overview derived batch. The wellness
   // strip (above the briefing) and the vitals grid (below it) both read this
@@ -374,20 +346,6 @@ export default function InsightsPageClient() {
   // nav-pill order) moved out of an in-page "Anpassen" edit mode into
   // Settings → Insights, reached via the top-right cog on the tab strip.
   const { layout } = useInsightsLayoutQuery(isAuthenticated);
-
-  // The cycle ring takes a cell in the scores strip (and Strain's place) only
-  // when it would draw a dial today. With the cycle module on but no active
-  // cycle the ring renders nothing, and a cell reserved for it sat empty in
-  // the row. Same calendar read the ring makes, so no extra request.
-  const cycleRingVisible = isSurfaceVisible(
-    "overview:cycle-ring",
-    user?.modules,
-  );
-  // Until that read answers the strip keeps its skeleton, so it never paints
-  // Strain first and swaps it for the ring when the calendar lands.
-  const cycleRing = useCycleRingDial(isAuthenticated && cycleRingVisible);
-  // A failed read keeps the cell too: the tile then says so, with a retry.
-  const cycleRingCell = cycleRing.dial || cycleRing.failed;
 
   // A failed comprehensive read no longer replaces the page. The payload only
   // decides the "no data yet" empty state below; every section on the page
@@ -416,21 +374,14 @@ export default function InsightsPageClient() {
     );
   }
 
-  // Gated on `mounted`: the auth query can resolve before this
-  // boundary hydrates, and a greeting that personalises during the
-  // hydration render disagrees with the name-less SSR text — React
-  // #418. See `useMounted`.
-  const shownName = user ? accountName(user).trim() : "";
-  const heroGreetingName =
-    mounted && shownName.length > 0 ? shownName.split(/\s+/)[0] : null;
   // The advisor read only fires while the briefing is available, so with it
-  // unavailable these stay null: the hero keeps its fallback subtitle and the
-  // trends row its built-in captions.
+  // unavailable these stay null: the briefing card stays hidden and the
+  // trends row keeps its built-in captions.
   const briefingPayload = briefing.available
     ? (advisor.payload?.dailyBriefing ?? null)
     : null;
   const modules = user?.modules;
-  const heroStripUpdatedAt = advisor.payload?.cachedAt ?? null;
+  const briefingUpdatedAt = advisor.payload?.cachedAt ?? null;
 
   // v1.4.36 — no `<Suspense>` wrappers below. The mother page is
   // `"use client"`, the below-the-fold blocks load via `next/dynamic`
@@ -445,56 +396,21 @@ export default function InsightsPageClient() {
   // server children would require a Server-Component refactor; that's
   // a v1.5.x track.
 
-  // v1.12.6 — overview section order, top → bottom:
-  //   1. "Guten Morgen" Hero + Coach questions (HeroStrip).
-  //   2. Wellnesswerte — the wellness-score strip (lifted OUT of
-  //      <VitalsDashboard> so it sits ABOVE the briefing as its own
-  //      full-width section).
-  //   3. "Heute auf einen Blick" briefing (DailyBriefing).
-  //   4. Vitalwerte — the vitals grid (+ mobility) inside <VitalsDashboard>,
-  //      which no longer renders the wellness strip.
-  //   5. Trends (TrendsRow).
-  //   6. "Dein Zeitraum im Rückblick" retrospective (PeriodNarrativeCard).
-  //   7. "Signale des Tages" — today's signal (CoincidentDeviationCard) plus
-  //      the rhythm-events alert timeline, kept out of the AI gate so a
-  //      health alert is never hidden.
-  // The wellness strip and the vitals grid share the ONE `dashboardDerived`
-  // batch the page owns — one request, two sections. The per-metric
-  // correlation cards moved onto the metric pages, so the overview renders no
-  // correlation row. The duplicate footer "prepare assessments" control was
-  // removed in v1.12.4 — the tab-strip regenerate button is the single
-  // affordance. The generic disclaimer lives once in the layout-shell footer.
+  // Overview order, top to bottom: the three score rings (fixed, outside the
+  // customisable sections), the AI setup hint and consent question, then
+  // the sections in the account's own order. The rings and the vitals grid
+  // share the ONE `dashboardDerived` batch the page owns. The generic
+  // disclaimer lives once in the layout-shell footer.
 
-  // v1.15.11 — decouple the section render order from the JSX. Each section
-  // id maps to its existing node here; the customizable region below renders
-  // `orderedVisibleSectionIds(layout)` against this registry. Every existing
-  // feature/data gate is preserved INSIDE each entry: a section the layout
-  // marks visible but whose gate is off (briefing flag, cycle-enabled) still
-  // resolves to `null`, exactly as today. With the default layout the order +
-  // gates reproduce the pre-v1.15.11 page byte-for-byte. HeroStrip stays
-  // anchored above this region, OUTSIDE the customizable set.
+  // Each section id maps to its node here; the customisable region below
+  // renders `orderedVisibleSectionIds(layout)` against this registry. A
+  // section the layout marks visible but whose gate is off (briefing flag,
+  // cycle-enabled) resolves to `null`. The score rings are not a section:
+  // `wellness-scores` stays a known id so saved layouts keep their order,
+  // and renders nothing, because the rings now sit above the sections where
+  // hiding a section cannot take them away.
   const SECTION_REGISTRY: Record<InsightsSectionId, ReactNode> = {
-    "wellness-scores": (
-      <WellnessScores
-        read={dashboardDerived.read}
-        isLoading={dashboardDerived.isLoading || cycleRing.pending}
-        isError={dashboardDerived.isError}
-        error={dashboardDerived.error}
-        refetch={dashboardDerived.refetch}
-        // v1.15.3 — the cycle ring rides the scores strip as a gated sibling
-        // tile, only for a cycle-tracking account, so its calendar read never
-        // fires otherwise (the same `/api/auth/me` gate the sidebar nav uses).
-        // v1.18.0 — gate on the resolved `modules.cycle` flag (per-user toggle
-        // AND the operator server-wide kill-switch) so an operator-off
-        // instance never renders the ring nor fires its calendar read.
-        // v1.39 — and only once the ring has a dial to draw (see above).
-        extraTile={cycleRingCell ? <CycleRingTile /> : undefined}
-        // v1.15.5 — when the cycle ring is shown it TAKES the Strain slot:
-        // hide Strain so the strip stays compact instead of growing a sixth
-        // tile. Strain stays visible for non-cycle accounts.
-        hideStrain={cycleRingCell}
-      />
-    ),
+    "wellness-scores": null,
     // Hidden, never an error card, while the briefing is unavailable for any
     // reason (the operator's switch, the AI analysis opt-out, no provider,
     // missing consent). A missing provider is said once, calmly, by the
@@ -502,7 +418,7 @@ export default function InsightsPageClient() {
     "daily-briefing": briefing.available ? (
       <DailyBriefing
         briefing={briefingPayload}
-        updatedAt={heroStripUpdatedAt}
+        updatedAt={briefingUpdatedAt}
         loading={advisor.isLoading}
         onRegenerate={advisor.regenerate}
         regenerating={advisor.isRegenerating}
@@ -585,29 +501,23 @@ export default function InsightsPageClient() {
     // card, so the rhythm is even regardless of which sections are present.
     <div className="space-y-6">
       <PullToRefreshIndicator {...pull} />
-      <HeroStrip
-        briefing={briefingPayload}
-        updatedAt={heroStripUpdatedAt}
-        userName={heroGreetingName}
-        // The Health Score lives in the band's right column and NOWHERE else
-        // on this page. It is deliberately not a registry section: an id a
-        // saved layout has never seen merges in as default-INVISIBLE
-        // (`orderedVisibleSectionIds`), so registering it would silently
-        // delete the score for every account that has ever customised this
-        // page. It is also outside the daily-briefing branch, so an instance
-        // with the briefing switched off keeps the whole breakdown.
+      {/* The page's name for assistive tech; the rings carry their own. */}
+      <h1 data-slot="insights-overview-title" className="sr-only">
+        {t("nav.insights")}
+      </h1>
+      <WellnessScores
+        read={dashboardDerived.read}
+        isLoading={dashboardDerived.isLoading}
+        isError={dashboardDerived.isError}
+        error={dashboardDerived.error}
+        refetch={dashboardDerived.refetch}
+        // The Health score rides the analytics payload. It is deliberately
+        // not a registry section: an id a saved layout has never seen merges
+        // in as default-INVISIBLE (`orderedVisibleSectionIds`), so it would
+        // silently vanish for every account that ever customised this page.
         healthScore={analytics?.healthScore ?? null}
-        // `isPending` settles false on success AND error, so a no-score
-        // account drops the reserve exactly once.
-        scorePending={analyticsQuery.isPending && !analytics}
-        // v1.21.2 — server-resolved Tension Verdict + return-to-
-        // baseline off the dashboard snapshot. The panel localises the keys;
-        // null leaves it quiet.
-        tension={heroTension}
-        returnToBand={heroReturnToBand}
-        // A pillar whose read FAILED is a named line inside the panel, and the
-        // retry there refetches the payload that carries every pillar.
-        onScoreRetry={() => void analyticsQuery.refetch()}
+        // Settles false on success AND error: the reserve drops once.
+        healthPending={analyticsQuery.isPending && !analytics}
       />
 
       {/* The one place the overview mentions AI setup: only while no

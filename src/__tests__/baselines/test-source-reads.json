@@ -1,7 +1,7 @@
 {
   "$comment": "tests that read a source file by path, per test file under src/. Maintained by src/__tests__/test-realism-ratchet.test.ts.",
-  "count": 329,
-  "total": 329,
+  "count": 328,
+  "total": 328,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 1,
     "__tests__/admin-data-wipe-completeness.test.ts": 1,
@@ -181,7 +181,6 @@
     "components/charts/__tests__/health-chart-overlay-defaults.test.tsx": 1,
     "components/charts/__tests__/mood-chart-polish.test.tsx": 1,
     "components/charts/__tests__/touch-action-guard.test.ts": 1,
-    "components/cycle/__tests__/use-cycle-ring-has-dial.test.tsx": 1,
     "components/dashboard/__tests__/medication-intake-quick-add.test.tsx": 1,
     "components/day/__tests__/day-door-coverage-guard.test.ts": 1,
     "components/day/__tests__/day-not-here-guard.test.ts": 1,

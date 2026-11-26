@@ -3026,7 +3026,12 @@
         "de": [],
         "en": [],
         "fr": [],
-        "es": [],
+        "es": [
+          {
+            "text": "preparación",
+            "wholeWord": true
+          }
+        ],
         "it": [],
         "pl": [],
         "ko": [],
@@ -7234,6 +7239,24 @@
       "key": "cycle.feed.forecastStyleHint.BAND",
       "text": "afspraak",
       "reason": "A calendar entry in the person's own calendar app, not a doctor's visit."
+    },
+    {
+      "locale": "es",
+      "key": "onboarding.flow.visit.body",
+      "text": "preparación",
+      "reason": "Preparing for a visit, not the readiness score."
+    },
+    {
+      "locale": "es",
+      "key": "admin.recoveryReadiness.title",
+      "text": "preparación",
+      "reason": "Whether a backup can be restored (de \"Wiederherstellbarkeit\"), not the readiness score."
+    },
+    {
+      "locale": "es",
+      "key": "admin.recoveryReadiness.loadError",
+      "text": "preparación",
+      "reason": "Whether a backup can be restored (de \"Wiederherstellbarkeit\"), not the readiness score."
     }
   ],
   "spelling": {

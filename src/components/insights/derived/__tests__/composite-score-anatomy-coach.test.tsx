@@ -27,6 +27,7 @@ vi.mock("@/components/insights/insight-status-card", () => ({
 }));
 
 vi.mock("@/lib/i18n/context", () => ({
+  useFormatters: () => ({ dateShortSmartCalendar: (d: string) => d }),
   useTranslations: () => ({
     t: (key: string, vars?: Record<string, string>) =>
       vars ? `${key}:${Object.values(vars).join(",")}` : key,
@@ -118,7 +119,7 @@ describe("derived-score sheets — every sheet has an outbound coach edge", () =
       "insights.coach.assessmentPrompt",
     );
     expect(String(props.coachQuestion)).toContain(
-      "insights.derived.scores.strain",
+      "insights.deviceScores.strain",
     );
   });
 

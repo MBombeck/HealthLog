@@ -1155,7 +1155,7 @@
     "sourceHealthConnect": "Health Connect",
     "typeBodyBattery": "Body Battery",
     "typeStressLevel": "Nivel de estrés",
-    "typeTrainingReadiness": "Preparación para entrenar",
+    "typeTrainingReadiness": "Disposición para entrenar",
     "typeAcuteTrainingLoad": "Carga de entrenamiento aguda",
     "sourceGarmin": "Garmin",
     "valueOutOfRange": "Introduce un valor entre {min} y {max} {unit}.",
@@ -1163,6 +1163,13 @@
     "lastValue": "Último: {value}, {when}",
     "lastValueDeviates": "Muy distinto de tu última medición. ¿Es correcto?",
     "saveAndNext": "Guardar y siguiente",
+    "typeRecoveryScoreWhoop": "WHOOP Recovery",
+    "typeRecoveryScoreOura": "Oura Readiness",
+    "typeRecoveryScorePolar": "Polar Nightly Recharge",
+    "typeRecoveryScoreComputed": "Disposición (HealthLog)",
+    "typeSleepScoreOura": "Puntuación de sueño Oura",
+    "typeSleepScoreGarmin": "Puntuación de sueño Garmin",
+    "typeSleepScoreWithings": "Puntuación de sueño Withings",
     "shortTypeTotalBodyWater": "Agua corporal total",
     "shortTypeWalkingRunningDistance": "Distancia a pie y corriendo",
     "shortTypeSkinTemperature": "Temp. de la piel",
@@ -3149,7 +3156,6 @@
     "bmiEmptyDescription": "El IMC necesita tu altura. Guárdala en Ajustes > Cuenta.",
     "bmiEmptyAction": "Abrir ajustes de cuenta",
     "loadError": "No se han podido cargar los análisis",
-    "heroPersonalBaseline": "Basado en tus últimos 90 días",
     "heroRegenerating": "Generando",
     "regenerateAnalysis": "Volver a generar la valoración",
     "regenerateSuccess": "Valoración regenerada",
@@ -3157,10 +3163,6 @@
     "narrativeWeek": "Esta semana",
     "narrativeMonth": "Este mes",
     "narrativeUpdating": "Actualizando…",
-    "heroFallbackSubtitle": "Una mirada diaria a tus tendencias, directamente de los datos que registras.",
-    "heroGreetingMorning": "Buenos días",
-    "heroGreetingAfternoon": "Buenas tardes",
-    "heroGreetingEvening": "Buenas noches",
     "heroActionAskCoach": "Preguntar al coach",
     "healthScore": {
       "label": "Puntuación de salud",
@@ -3241,7 +3243,7 @@
         "insufficientHistory": "No hay suficientes datos recientes aptos",
         "unavailable": "Este pilar no reúne los requisitos actualmente"
       },
-      "tension": "Las señales de preparación difieren. Favorables: {positive}. Con tensión: {negative}.",
+      "tension": "Las señales de disposición difieren. Favorables: {positive}. Con tensión: {negative}.",
       "returnToBand": "{metric} lleva {days, plural, one {# día} other {# días}} de nuevo dentro de tu intervalo habitual.",
       "weightGoal": {
         "title": "Objetivo personal de peso",
@@ -3942,7 +3944,7 @@
         "recoveryBody": "La recuperación refleja lo bien que tu cuerpo se ha repuesto, a partir de señales nocturnas como la variabilidad de la frecuencia cardíaca y la frecuencia en reposo. Una puntuación alta es luz verde para exigirte; una más baja sugiere que tu organismo aún se está reconstruyendo.",
         "strainBody": "El esfuerzo capta cuánta carga cardiovascular y física le has impuesto a tu cuerpo, desde los entrenamientos hasta un día activo de pie. Cuando ya hay suficiente historial, se valora frente a tu propio esfuerzo habitual, no frente a un estándar ajeno.",
         "stressBody": "El estrés aquí es una estimación de la carga fisiológica sobre tu sistema nervioso, leída sobre todo a partir de patrones de variabilidad de la frecuencia cardíaca y no de cómo te sientes conscientemente. Una puntuación más baja apunta a un estado calmado y bien regulado; una más alta es una invitación a incorporar recuperación.",
-        "recoveryPageBody": "La recuperación reúne las señales nocturnas que registra tu wearable (recarga, esfuerzo, carga y los totales de frecuencia cardiaca y energía del día) para mostrar cómo se ha recuperado tu cuerpo. Fíjate en el patrón a lo largo de los días más que en un solo número; un valor más bajo es una invitación a bajar el ritmo, no una alarma.",
+        "recoveryPageBody": "Lo que informa tu wearable, con sus propios nombres.",
         "pulsePressureBody": "La presión de pulso es la diferencia entre tu valor sistólico y diastólico (sistólico menos diastólico). Como orientación general, unos 40 mmHg es lo típico en reposo; una diferencia amplia por encima de unos 60 mmHg en la mediana edad puede reflejar arterias más rígidas, mientras que una diferencia estrecha por debajo de unos 25 mmHg puede acompañar a un bajo volumen sistólico (StatPearls/NIH 2023). Es un motivo de conversación, no un diagnóstico.",
         "meanArterialPressureBody": "La presión arterial media es la presión promedio que ven tus órganos a lo largo de un latido, aproximadamente la diastólica más un tercio de la diferencia con la sistólica. Como orientación general, un valor en reposo ronda los 70–100 mmHg (StatPearls/NIH 2023). El umbral de ~60 mmHg que se suele citar es un concepto de cuidados agudos, no una alarma para el autocontrol.",
         "cycleEducationBody": "Tu ciclo atraviesa cuatro fases impulsadas por hormonas, y su duración y regularidad son una ventana accesible a la salud general. Como orientación general, los ciclos en personas adultas suelen durar 21–35 días (las referencias clínicas citan 24–38), con un sangrado de unos cinco días (ACOG 2015). La fase lútea es el ancla estable, así que la ovulación se estima mejor contando hacia atrás desde tu próxima regla prevista, nunca con un «día 14» fijo. Una ventana fértil predicha es una estimación que necesita varios ciclos registrados y sigue siendo aproximada, y la temperatura basal confirma la ovulación a posteriori en lugar de predecirla. No es un método anticonceptivo.",
@@ -4142,7 +4144,7 @@
       }
     },
     "navWorkouts": "Entrenamientos",
-    "navRecovery": "Recuperación",
+    "navRecovery": "Puntuaciones del dispositivo",
     "workouts": {
       "title": "Entrenamientos",
       "description": "Carreras, salidas en bici, paseos y sesiones de fuerza recientes, deduplicados entre Apple Watch y Withings.",
@@ -5160,7 +5162,6 @@
     "recovery": {
       "title": "Recuperación",
       "description": "Cómo se ha recuperado tu cuerpo: las señales de recuperación, esfuerzo y carga que tu wearable registra durante la noche.",
-      "scoreCrossLink": "Ver la puntuación de recuperación combinada",
       "emptyTitle": "Aún no hay datos de recuperación",
       "empty": "Esta página se llena con los valores de recuperación, esfuerzo y carga de WHOOP o Polar y con el nivel de resiliencia de Oura.",
       "emptyOuraPermission": "El nivel de resiliencia de Oura necesita el permiso de datos de estrés, así que vuelve a conectar Oura una vez en Integraciones y permítelo.",
@@ -5364,7 +5365,6 @@
       "coachPrefill": "Todavía no he añadido medicamentos: ¿qué debería saber antes de empezar a seguir aquí la adherencia?"
     },
     "scoreHistory": {
-      "healthTitle": "Evolución de la puntuación de salud",
       "healthDescription": "Tu puntuación de salud día a día, tal como se mostró cada día.",
       "emptyDescription": "Todavía no hay ninguna puntuación registrada en este periodo.",
       "usualRange": "Sombreado: tu rango habitual, de {lo} a {hi}.",
@@ -5403,6 +5403,29 @@
         "midday": "al mediodía",
         "evening": "por la noche"
       }
+    },
+    "scores": {
+      "historyWindow": "Historial de {days} días",
+      "staleLast": "Último: {score} el {date}",
+      "valuesFrom": "Valores del {date}",
+      "loadError": "No se pudieron cargar tus puntuaciones en este momento.",
+      "loadingLabel": "Cargando tus puntuaciones",
+      "regionLabel": "Tus puntuaciones",
+      "bandNote": "Desde la 1.50, de 50 a 69 se lee {fair} y por debajo de 50 {low}.",
+      "loadBand": {
+        "green": "bajo",
+        "yellow": "moderado",
+        "red": "alto"
+      }
+    },
+    "deviceScores": {
+      "title": "Puntuaciones del dispositivo",
+      "description": "Lo que informa tu wearable, con sus propios nombres.",
+      "valueOfScale": "{value} de {max}",
+      "estimatesTitle": "Estimaciones de HealthLog",
+      "estimatesSubtitle": "Calculadas a partir de tus datos cardíacos, no informadas por un dispositivo.",
+      "stress": "Estrés (estimación)",
+      "strain": "Esfuerzo (estimación)"
     }
   },
   "thresholds": {
@@ -6169,7 +6192,7 @@
           "hrvRmssd": "VFC (RMSSD)",
           "bodyBattery": "Body Battery",
           "stressLevel": "Nivel de estrés",
-          "trainingReadiness": "Preparación para entrenar",
+          "trainingReadiness": "Disposición para entrenar",
           "acuteTrainingLoad": "Carga de entrenamiento aguda"
         },
         "sourceLabels": {
@@ -10831,10 +10854,6 @@
       "currentDay": "Día {day} de tu ciclo",
       "noActiveCycle": "Aún no hay un ciclo activo",
       "viewDetails": "Ver análisis del ciclo"
-    },
-    "wellnessRing": {
-      "label": "Ciclo",
-      "loadError": "No se pudo cargar tu ciclo."
     },
     "disclaimer": "Estas predicciones son estimaciones descriptivas a partir de tus datos registrados, no un método anticonceptivo ni un consejo médico. Nunca indican que sea seguro tener relaciones sin protección. Para anticoncepción o cualquier decisión médica, consulta a un profesional sanitario.",
     "title": "Ciclo",

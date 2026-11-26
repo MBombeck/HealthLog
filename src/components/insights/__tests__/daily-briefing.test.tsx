@@ -76,15 +76,13 @@ describe("<DailyBriefing>", () => {
     expect(html).toContain("Tagesbriefing");
   });
 
-  it("v1.4.27 B1 — does NOT render the leading narrative paragraph", () => {
-    // The hero strip subtitle on /insights renders the same
-    // `briefing.paragraph` directly above this card, so the card now
-    // opens straight on the key-findings list. The paragraph slot is
-    // gone from the populated branch; the empty-state branch still
-    // owns its CTA copy.
+  it("opens on the narrative paragraph, its only home on the overview", () => {
+    // From 1.50 the overview leads with its score rings; the greeting band
+    // that printed this paragraph above the card is gone, so the card shows
+    // it, once.
     const html = render(<DailyBriefing briefing={baseBriefing} />);
-    expect(html).not.toContain('data-slot="daily-briefing-paragraph"');
-    expect(html).not.toContain(
+    expect(html.match(/data-slot="daily-briefing-paragraph"/g)).toHaveLength(1);
+    expect(html).toContain(
       "Blood pressure is in target band on 9 of 10 readings",
     );
   });
@@ -208,16 +206,12 @@ describe("<DailyBriefing>", () => {
   });
 
   it("hides the keyFindings section when the array is empty", () => {
-    // v1.4.27 — the leading paragraph dropped; the card now renders
-    // only the header + (when present) the findings list. With both
-    // gone the populated branch produces no body content, which the
-    // hero strip already covers.
+    // The findings list renders only when there are findings.
     const html = render(
       <DailyBriefing briefing={{ ...baseBriefing, keyFindings: [] }} />,
     );
     expect(html).not.toContain('data-slot="daily-briefing-findings-title"');
     expect(html).not.toContain('data-slot="daily-briefing-findings"');
-    expect(html).not.toContain('data-slot="daily-briefing-paragraph"');
   });
 
   it("renders the empty state when briefing is null and not loading", () => {

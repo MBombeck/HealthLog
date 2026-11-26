@@ -1163,6 +1163,13 @@
     "lastValue": "Ostatnio {value}, {when}",
     "lastValueDeviates": "Wyraźnie inaczej niż ostatni pomiar. Czy to się zgadza?",
     "saveAndNext": "Zapisz i dalej",
+    "typeRecoveryScoreWhoop": "WHOOP Recovery",
+    "typeRecoveryScoreOura": "Oura Readiness",
+    "typeRecoveryScorePolar": "Polar Nightly Recharge",
+    "typeRecoveryScoreComputed": "Gotowość (HealthLog)",
+    "typeSleepScoreOura": "Wynik snu Oura",
+    "typeSleepScoreGarmin": "Wynik snu Garmin",
+    "typeSleepScoreWithings": "Wynik snu Withings",
     "shortTypeTotalBodyWater": "Całkowita woda w organizmie",
     "shortTypeWalkingRunningDistance": "Dystans marszu i biegu",
     "shortTypeSkinTemperature": "Temperatura skóry",
@@ -3149,7 +3156,6 @@
     "bmiEmptyDescription": "BMI wymaga twojego wzrostu. Zapisz go w Ustawieniach > Konto.",
     "bmiEmptyAction": "Otwórz ustawienia konta",
     "loadError": "Nie udało się załadować analiz",
-    "heroPersonalBaseline": "Na podstawie ostatnich 90 dni",
     "heroRegenerating": "Generowanie",
     "regenerateAnalysis": "Uruchom ocenę ponownie",
     "regenerateSuccess": "Ocena wygenerowana ponownie",
@@ -3157,10 +3163,6 @@
     "narrativeWeek": "Ten tydzień",
     "narrativeMonth": "Ten miesiąc",
     "narrativeUpdating": "Aktualizowanie…",
-    "heroFallbackSubtitle": "Codzienne spojrzenie na twoje trendy, prosto z liczb, które rejestrujesz.",
-    "heroGreetingMorning": "Dzień dobry",
-    "heroGreetingAfternoon": "Dzień dobry",
-    "heroGreetingEvening": "Dobry wieczór",
     "heroActionAskCoach": "Zapytaj coacha",
     "healthScore": {
       "label": "Wynik zdrowia",
@@ -3942,7 +3944,7 @@
         "recoveryBody": "Regeneracja odzwierciedla, jak dobrze Twoje ciało się odbudowało. Opiera się na nocnych sygnałach, takich jak zmienność rytmu serca i tętno spoczynkowe. Wysoki wynik to zielone światło, by przyspieszyć; niższy sugeruje, że organizm wciąż się regeneruje.",
         "strainBody": "Obciążenie ujmuje, ile wysiłku sercowo-naczyniowego i fizycznego nałożyłeś na swoje ciało, od treningów po aktywny dzień na nogach. Gdy zbierze się wystarczająco danych, jest oceniane względem Twojego własnego typowego wysiłku, a nie cudzej miary.",
         "stressBody": "Stres jest tu szacunkiem fizjologicznego obciążenia Twojego układu nerwowego, odczytywanym głównie ze wzorców zmienności rytmu serca, a nie z tego, jak się świadomie czujesz. Niższy wynik wskazuje na spokojny, dobrze regulowany stan; wyższy to zachęta, by wpleść regenerację.",
-        "recoveryPageBody": "Regeneracja łączy nocne sygnały rejestrowane przez Twoje urządzenie (recharge, obciążenie, load oraz dzienne sumy tętna i energii), aby pokazać, jak dobrze Twój organizm się zregenerował. Patrz na wzorzec w ciągu kilku dni, a nie na pojedynczą liczbę; niższy wynik to zaproszenie do zwolnienia tempa, a nie alarm.",
+        "recoveryPageBody": "To, co zgłasza Twoje urządzenie, pod jego własnymi nazwami.",
         "pulsePressureBody": "Ciśnienie tętna to różnica między wartością skurczową a rozkurczową (skurczowe minus rozkurczowe). Jako ogólna wskazówka, około 40 mmHg jest typowe w spoczynku; szeroka różnica powyżej około 60 mmHg w średnim wieku może odzwierciedlać usztywnienie tętnic, a wąska różnica poniżej około 25 mmHg może towarzyszyć niskiej objętości wyrzutowej (StatPearls/NIH 2023). To powód do rozmowy, nie diagnoza.",
         "meanArterialPressureBody": "Średnie ciśnienie tętnicze to przeciętne ciśnienie, jakie widzą Twoje narządy w trakcie uderzenia serca, w przybliżeniu rozkurczowe plus jedna trzecia różnicy do skurczowego. Jako ogólna wskazówka, wartość spoczynkowa mieści się w okolicy 70–100 mmHg (StatPearls/NIH 2023). Często przywoływany próg ~60 mmHg to pojęcie z medycyny ostrej, nie alarm do samodzielnego pomiaru.",
         "cycleEducationBody": "Twój cykl przebiega przez cztery fazy sterowane hormonami, a jego długość i regularność to dostępne okno na ogólny stan zdrowia. Jako ogólna wskazówka, u osób dorosłych cykle trwają zwykle 21–35 dni (źródła kliniczne podają 24–38), z krwawieniem około pięciu dni (ACOG 2015). Faza lutealna jest stałą kotwicą, dlatego owulację najlepiej szacować, licząc wstecz od następnej spodziewanej miesiączki, nigdy według stałego „14. dnia”. Przewidziane okno płodne to oszacowanie, które wymaga kilku zarejestrowanych cykli i pozostaje przybliżone, a podstawowa temperatura ciała potwierdza owulację po fakcie, a nie ją przewiduje. To nie jest metoda antykoncepcji.",
@@ -4142,7 +4144,7 @@
       }
     },
     "navWorkouts": "Treningi",
-    "navRecovery": "Regeneracja",
+    "navRecovery": "Wyniki urządzeń",
     "workouts": {
       "title": "Treningi",
       "description": "Ostatnie biegi, jazdy, marsze i treningi siłowe, zdeduplikowane między Apple Watch a Withings.",
@@ -5160,7 +5162,6 @@
     "recovery": {
       "title": "Regeneracja",
       "description": "Jak dobrze Twój organizm się zregenerował: sygnały regeneracji, obciążenia i load, które Twoje urządzenie rejestruje w nocy.",
-      "scoreCrossLink": "Zobacz łączny wynik regeneracji",
       "emptyTitle": "Brak danych o regeneracji",
       "empty": "Ta strona wypełnia się wartościami regeneracji, obciążenia i obciążenia treningowego z WHOOP lub Polar oraz poziomem odporności z Oura.",
       "emptyOuraPermission": "Poziom odporności Oura wymaga uprawnienia do danych o stresie, więc połącz Oura ponownie raz w Integracjach i zezwól na nie.",
@@ -5364,7 +5365,6 @@
       "coachPrefill": "Nie dodałem jeszcze żadnych leków. Co powinienem wiedzieć, zanim zacznę tu śledzić przestrzeganie zaleceń?"
     },
     "scoreHistory": {
-      "healthTitle": "Przebieg wyniku zdrowia",
       "healthDescription": "Twój wynik zdrowia dzień po dniu, taki jak był pokazywany każdego dnia.",
       "emptyDescription": "W tym okresie nie zapisano jeszcze żadnego wyniku.",
       "usualRange": "Zacieniowane: twój zwykły zakres, od {lo} do {hi}.",
@@ -5403,6 +5403,29 @@
         "midday": "w południe",
         "evening": "wieczorem"
       }
+    },
+    "scores": {
+      "historyWindow": "Historia z {days} dni",
+      "staleLast": "Ostatnio {score} dnia {date}",
+      "valuesFrom": "Wartości z {date}",
+      "loadError": "Nie udało się teraz wczytać Twoich wyników.",
+      "loadingLabel": "Wczytywanie Twoich wyników",
+      "regionLabel": "Twoje wyniki",
+      "bandNote": "Od wersji 1.50 wynik od 50 do 69 to {fair}, a poniżej 50 to {low}.",
+      "loadBand": {
+        "green": "niski",
+        "yellow": "umiarkowany",
+        "red": "wysoki"
+      }
+    },
+    "deviceScores": {
+      "title": "Wyniki urządzeń",
+      "description": "To, co zgłasza Twoje urządzenie, pod jego własnymi nazwami.",
+      "valueOfScale": "{value} z {max}",
+      "estimatesTitle": "Szacunki HealthLog",
+      "estimatesSubtitle": "Obliczone z danych o pracy serca, nie zgłoszone przez urządzenie.",
+      "stress": "Stres (szacunek)",
+      "strain": "Obciążenie (szacunek)"
     }
   },
   "thresholds": {
@@ -10831,10 +10854,6 @@
       "currentDay": "Dzień {day} Twojego cyklu",
       "noActiveCycle": "Brak aktywnego cyklu",
       "viewDetails": "Zobacz analizy cyklu"
-    },
-    "wellnessRing": {
-      "label": "Cykl",
-      "loadError": "Nie udało się załadować twojego cyklu."
     },
     "disclaimer": "Te prognozy to opisowe szacunki na podstawie zapisanych danych, a nie metoda antykoncepcji ani porada medyczna. Nigdy nie oznaczają, że współżycie bez zabezpieczenia jest bezpieczne. W sprawach antykoncepcji lub decyzji medycznych skonsultuj się z pracownikiem ochrony zdrowia.",
     "title": "Cykl",
