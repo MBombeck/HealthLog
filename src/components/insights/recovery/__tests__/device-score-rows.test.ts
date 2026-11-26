@@ -30,12 +30,11 @@ describe("deviceRecoveryOf", () => {
           ["COMPUTED", 70, 0],
           ["COMPUTED", 65, 1],
         ]),
-        NOW,
       ),
     ).toBeNull();
   });
 
-  it("names the device, takes its latest row and keeps the proxy out of the course", () => {
+  it("names the device and takes its latest row, never the proxy's", () => {
     const recovery = deviceRecoveryOf(
       rows([
         ["COMPUTED", 90, 0],
@@ -45,13 +44,10 @@ describe("deviceRecoveryOf", () => {
         ["WHOOP", 71, 2],
         ["WHOOP", 40, 20],
       ]),
-      NOW,
     );
     expect(recovery?.source).toBe("WHOOP");
     expect(recovery?.labelKey).toBe("measurements.typeRecoveryScoreWhoop");
     expect(recovery?.latest.value).toBe(63);
-    // Oldest first, the last two weeks only, one source.
-    expect(recovery?.course).toEqual([71, 58, 63]);
   });
 
   it("follows the newest device when two have written", () => {
@@ -60,10 +56,9 @@ describe("deviceRecoveryOf", () => {
         ["OURA", 80, 0],
         ["WHOOP", 63, 3],
       ]),
-      NOW,
     );
     expect(recovery?.source).toBe("OURA");
-    expect(recovery?.course).toEqual([80]);
+    expect(recovery?.latest.value).toBe(80);
   });
 });
 

@@ -36,6 +36,7 @@ export function ScoreHistoryChart({
   type,
   hue,
   chartKey,
+  sourceEq,
 }: {
   /** The stored measurement type the score is written as — or, for a strain
    *  score served from the device, the device's own `DAY_STRAIN`. */
@@ -43,6 +44,8 @@ export function ScoreHistoryChart({
   hue: RingHue;
   /** The slot the range tab is remembered under. */
   chartKey: ChartOverlayKey;
+  /** One source's rows only: a device's recovery without the proxy. */
+  sourceEq?: string;
 }) {
   const { t } = useTranslations();
   const { user } = useAuth();
@@ -58,6 +61,7 @@ export function ScoreHistoryChart({
         chartKey={chartKey}
         overlayControls={false}
         dayLinks
+        sourceEq={sourceEq}
       />
     </div>
   );

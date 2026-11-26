@@ -16,12 +16,10 @@ import { queryKeys } from "@/lib/query-keys";
  * "Oura sleep score". A vendor's number carries no HealthLog band.
  */
 
-/** The last month of rows is enough for a two-week course of one source. */
+/** The last month of rows is enough to find the newest device source. */
 const ROW_WINDOW_DAYS = 30;
 /** Two sources a day (device and proxy) over the window, with room. */
 const ROW_LIMIT = 90;
-/** The course the recovery block draws. */
-export const DEVICE_COURSE_DAYS = 14;
 
 const DAY_MS = 86_400_000;
 
@@ -97,30 +95,20 @@ export interface DeviceRecovery {
   source: string;
   labelKey: string;
   latest: ScoreRow;
-  /** The source's values over the last two weeks, oldest first. */
-  course: number[];
 }
 
 /**
- * The device recovery to show: the newest device source's latest row and its
- * two-week course. Never a proxy row, never two sources in one course.
+ * The device recovery to show: the newest device source and its latest row,
+ * never a proxy row. Its course is the chart's, read for that source alone.
  */
 export function deviceRecoveryOf(
   rows: readonly ScoreRow[],
-  now: Date = new Date(),
 ): DeviceRecovery | null {
   const source = deviceSourceOf(rows, DEVICE_RECOVERY_LABEL_KEYS);
   if (!source) return null;
-  const since = now.getTime() - DEVICE_COURSE_DAYS * DAY_MS;
-  const own = rows.filter((r) => r.source === source);
-  const course = own
-    .filter((r) => new Date(r.measuredAt).getTime() >= since)
-    .map((r) => r.value)
-    .reverse();
   return {
     source,
     labelKey: DEVICE_RECOVERY_LABEL_KEYS[source],
-    latest: own[0],
-    course,
+    latest: rows.find((r) => r.source === source) as ScoreRow,
   };
 }

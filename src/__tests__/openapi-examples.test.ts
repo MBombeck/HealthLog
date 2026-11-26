@@ -100,20 +100,25 @@ describe("published response examples", () => {
         ...input.raw,
       });
       const { data } = example;
-      expect(data.value.score).toBe(score);
-      expect(data.value.components).toEqual(components);
-      expect(data.value.band).toBe(bandForScoreKind("readiness", score));
-      expect({
-        asOfDay: data.value.asOfDay,
-        fresh: data.value.fresh,
-      }).toEqual(
-        readinessFreshness({
-          vitalDays: [...input.vitalDays],
-          sleepNight: input.sleepNight,
-          todayKey: READINESS_EXAMPLE_INPUT.todayKey,
-        }),
-      );
+      const freshness = readinessFreshness({
+        vitalDays: [...input.vitalDays],
+        sleepNight: input.sleepNight,
+        todayKey: READINESS_EXAMPLE_INPUT.todayKey,
+      });
+      expect(data.value.fresh).toBe(freshness.fresh);
       expect(data.value.fresh).toBe(fresh);
+      // A stale readiness names the stored value of its day, never the live
+      // blend, and carries no breakdown.
+      const shown =
+        "stored" in input ? input.stored : { score, day: freshness.asOfDay };
+      expect(data.value.score).toBe(shown.score);
+      expect(data.value.asOfDay).toBe(shown.day);
+      expect(data.value.band).toBe(bandForScoreKind("readiness", shown.score));
+      expect(data.value.components).toEqual(
+        fresh
+          ? components
+          : components.map((c) => ({ key: c.key, value: null, weight: 0 })),
+      );
       const missing = components
         .filter((c) => c.value === null)
         .map((c) => c.key);

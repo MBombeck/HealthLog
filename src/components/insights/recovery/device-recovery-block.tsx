@@ -1,33 +1,23 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { HeartPulse } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { TileHeader } from "@/components/insights/tile-header";
-import { RING_GRADIENT } from "@/components/insights/derived/ring-hues";
+import { ScoreHistoryChart } from "@/components/insights/derived/score-history";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import {
-  DEVICE_COURSE_DAYS,
   POLAR_RECHARGE_SCALE_MAX,
   polarRechargeStatus,
   type DeviceRecovery,
 } from "./device-score-rows";
 
-// The course loads through the shared chart-runtime boundary, like the score
-// tiles' history line, so this block carries no recharts in its own chunk.
-const DeltaSparkline = dynamic(
-  () =>
-    import("@/components/charts/chart-runtime").then((mod) => ({
-      default: mod.DeltaSparkline,
-    })),
-  { ssr: false, loading: () => null },
-);
-
 /**
  * The device's own recovery on "Device scores": WHOOP Recovery, Oura
  * Readiness or Polar Nightly Recharge, under the device's name, with the
- * latest value on the device's own scale and its two-week course.
+ * latest value on the device's own scale and its whole course in the chart
+ * every metric page carries (7 / 30 / 90 / All, days as doors), read for
+ * that source alone so the proxy never fills a day the device missed.
  *
  * Neutral on purpose: a vendor's number gets no HealthLog band and no
  * colour verdict. The device colours its own number in its own app; the
@@ -40,7 +30,7 @@ export function DeviceRecoveryBlock({
 }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
-  const { source, labelKey, latest, course } = recovery;
+  const { source, labelKey, latest } = recovery;
 
   const shown =
     source === "POLAR"
@@ -71,22 +61,13 @@ export function DeviceRecoveryBlock({
             {fmt.dateShortSmart(latest.measuredAt)}
           </span>
         </div>
-        {course.length >= 2 ? (
-          <div data-slot="device-recovery-course" className="space-y-1">
-            <div className="h-16 w-full" aria-hidden="true">
-              <DeltaSparkline
-                data={course.map((v, i) => ({ i, v }))}
-                strokeVar={RING_GRADIENT.recovery[1]}
-              />
-            </div>
-            <p className="text-muted-foreground text-xs">
-              {t("insights.scores.historyWindow", {
-                days: DEVICE_COURSE_DAYS,
-              })}
-            </p>
-          </div>
-        ) : null}
       </Card>
+      <ScoreHistoryChart
+        type="RECOVERY_SCORE"
+        hue="recovery"
+        chartKey="scoreRecovery"
+        sourceEq={source}
+      />
     </section>
   );
 }

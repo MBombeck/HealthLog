@@ -19,7 +19,7 @@ vi.mock("@/lib/measurements/dense-bucket-read", async () => {
 });
 vi.mock("@/lib/db", () => ({
   prisma: {
-    measurement: { findMany: vi.fn() },
+    measurement: { findMany: vi.fn(), findFirst: vi.fn() },
     moodEntry: { findMany: vi.fn() },
     // The folded Sleep Score now reads the user's source priority for the
     // canonical writer-dedup ladder; default to no override.
@@ -118,9 +118,9 @@ describe("computeReadiness gating", () => {
     const days = (type: string, base: number) =>
       Array.from({ length: 10 }, (_, i) => ({
         value: base,
-        // 10 distinct days within May (15..24) — all valid calendar days.
+        // 10 distinct days ending today (May 24..June 2).
         measuredAt: new Date(
-          `2026-05-${String(15 + i).padStart(2, "0")}T07:00:00Z`,
+          new Date("2026-06-02T07:00:00Z").getTime() - i * 86_400_000,
         ),
         type,
       }));
@@ -151,7 +151,7 @@ describe("computeReadiness gating", () => {
       Array.from({ length: 10 }, (_, i) => ({
         value: base,
         measuredAt: new Date(
-          `2026-05-${String(15 + i).padStart(2, "0")}T07:00:00Z`,
+          new Date("2026-06-02T07:00:00Z").getTime() - i * 86_400_000,
         ),
         type,
       }));
@@ -185,9 +185,9 @@ describe("computeReadiness gating", () => {
     const days = (type: string, base: number, count: number) =>
       Array.from({ length: count }, (_, i) => ({
         value: base,
-        // i+1 days before NOW so each row lands on a distinct prior UTC day
-        // inside the 30-day window (valid calendar dates across the month).
-        measuredAt: new Date(NOW.getTime() - (i + 1) * DAY_MS),
+        // i days before NOW so each row lands on a distinct UTC day inside
+        // the 30-day window, the newest today so the blend is fresh.
+        measuredAt: new Date(NOW.getTime() - i * DAY_MS),
         type,
       }));
     measurementFindMany.mockImplementation(
