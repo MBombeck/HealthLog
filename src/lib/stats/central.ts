@@ -58,3 +58,21 @@ export function roundStable2(value: number | null): number | null {
   if (value === null || !Number.isFinite(value)) return null;
   return roundStableTo(value, 2);
 }
+
+/**
+ * Σ values with Neumaier's compensation: the rounding error of every addition
+ * is carried and added back at the end, so the result is (all but always) the
+ * correctly rounded sum whatever order the values arrive in. For a figure
+ * served unrounded or to several decimals where the reading order is not
+ * fixed, such as rows that share a timestamp.
+ */
+export function compensatedSum(values: Iterable<number>): number {
+  let sum = 0;
+  let carry = 0;
+  for (const v of values) {
+    const t = sum + v;
+    carry += Math.abs(sum) >= Math.abs(v) ? sum - t + v : v - t + sum;
+    sum = t;
+  }
+  return sum + carry;
+}

@@ -64,6 +64,7 @@ import {
 } from "@/lib/ai/coach/about-me";
 import { metricsFromPresentSections } from "@/lib/ai/medical-references";
 import { summarize, type DataPoint } from "@/lib/analytics/trends";
+import { roundStable2 } from "@/lib/stats/central";
 import {
   reconstructSleepNights,
   type SleepStageRow,
@@ -266,9 +267,8 @@ export async function buildComparisonSnapshotForUser(
   // window into JS and average there (tens of thousands of rows per dense type
   // on the page-blocking generate path AND the nightly pregenerate cron),
   // compute each mean as a DB-side AVG over the exact window the JS reducer
-  // covered. The 2-dp rounding and the half-open window bounds are matched to
-  // summarize()/meanOfWindow() byte-for-byte, so the emitted metrics are
-  // numerically identical to the previous raw-scan implementation.
+  // covered, on summarize()'s half-open bounds and its roundStable2 (Postgres
+  // sums in its own order), so the metrics match the raw-scan implementation.
   //
   // SLEEP_DURATION stays on the raw path: it is stored ONE ROW PER STAGE per
   // night, so a bare SQL AVG would blend per-stage rows and double-count a
@@ -290,7 +290,7 @@ export async function buildComparisonSnapshotForUser(
 
   // Rounded (2 dp) DB-side mean of `value` over one measured-at window, or null
   // when the window holds no live rows — matching summarize()'s avg30 /
-  // meanOfWindow exactly (both round with Math.round(x * 100) / 100 and return
+  // meanOfWindow exactly (both round with roundStable2 and return
   // null on an empty slice).
   const avgOverWindow = async (
     type: MeasurementType,
@@ -304,7 +304,7 @@ export async function buildComparisonSnapshotForUser(
             _avg: { value: true },
           })
         )._avg.value;
-    return avg === null ? null : Math.round(avg * 100) / 100;
+    return roundStable2(avg);
   };
 
   // Sleep still needs the raw 400-day window for the per-night reconstruction;

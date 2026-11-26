@@ -352,3 +352,69 @@ describe("computeGlucoseClinicalMetrics — window + adequacy", () => {
     });
   });
 });
+
+describe("computeGlucoseClinicalMetrics — platform-stable variability indices", () => {
+  const now = new Date("2026-06-14T12:00:00Z");
+  // A mixed hypo / hyper fortnight, two readings a day. Spread across both
+  // Kovatchev branches so LBGI and HBGI each sum many fractional risks.
+  const VALUES = [
+    48.6, 212.4, 63.9, 187.2, 101.3, 254.8, 71.1, 143.7, 55.5, 302.6, 88.8,
+    176.4, 67.2, 229.9, 94.1, 161.6, 52.3, 278.5, 110.7, 198.0, 59.4, 241.3,
+    83.6, 132.9, 46.8, 266.2, 99.9, 184.5,
+  ];
+  const readings: GlucoseReading[] = VALUES.map((mgdl, i) => ({
+    mgdl,
+    measuredAt: new Date(now.getTime() - (VALUES.length - i) * (DAY / 2)),
+  }));
+
+  function indices(m: ReturnType<typeof computeGlucoseClinicalMetrics>) {
+    return { variability: m.variability, advanced: m.advanced };
+  }
+
+  it("serves the same figures whatever last bits the maths library returns", () => {
+    // Math.pow with a fractional exponent returns different last bits on
+    // Node 22 than on Node 24 and later (Math.exp and Math.log do not), and a
+    // Postgres or libm on another platform may differ again. Nudging every
+    // transcendental result by a few ulps stands in for that platform.
+    const baseline = indices(computeGlucoseClinicalMetrics(readings, { now }));
+    const nudge = 1 + 4 * Number.EPSILON;
+    const pow = Math.pow;
+    const exp = Math.exp;
+    const log = Math.log;
+    try {
+      Math.pow = (x: number, y: number) => pow(x, y) * nudge;
+      Math.exp = (x: number) => exp(x) * nudge;
+      Math.log = (x: number) => log(x) * nudge;
+      const nudged = indices(computeGlucoseClinicalMetrics(readings, { now }));
+      expect(nudged).toEqual(baseline);
+    } finally {
+      Math.pow = pow;
+      Math.exp = exp;
+      Math.log = log;
+    }
+  });
+
+  it("serves the same figures when tied readings arrive in another order", () => {
+    // Readings that share a timestamp keep the order the database returned,
+    // which is not fixed, so the sums must not depend on it.
+    const tied = VALUES.map((mgdl) => ({
+      mgdl,
+      measuredAt: new Date(now.getTime() - DAY),
+    }));
+    const forward = indices(computeGlucoseClinicalMetrics(tied, { now }));
+    const backward = indices(
+      computeGlucoseClinicalMetrics([...tied].reverse(), { now }),
+    );
+    expect(backward).toEqual(forward);
+  });
+
+  it("pins the served figures to four decimals on every platform", () => {
+    // Node 22 and Node 26 served different last digits for these before the
+    // transform left Math.pow; both now serve exactly these.
+    const m = computeGlucoseClinicalMetrics(readings, { now });
+    expect(indices(m)).toEqual({
+      variability: { sd: 80.164, cv: 55.9302, unstable: true },
+      advanced: { jIndex: 49.9489, lbgi: 4.8558, hbgi: 7.4761 },
+    });
+  });
+});

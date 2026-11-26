@@ -284,7 +284,9 @@ export function representativeBpFromSeries(input: {
     // per-day-mean pair (rollup path) carries the same weight as the N
     // per-event pairs it stands for (live path).
     const count = p.count ?? 1;
-    const weight = Math.pow(0.5, ageDays / HALF_LIFE_DAYS) * count;
+    // 0.5^(age / half-life) through Math.exp: Math.pow with a fractional
+    // exponent returns different last bits across Node versions.
+    const weight = Math.exp((-Math.LN2 * ageDays) / HALF_LIFE_DAYS) * count;
     weightSum += weight;
     sysWeighted += weight * p.sys;
     diaWeighted += weight * p.dia;

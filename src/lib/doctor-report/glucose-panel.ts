@@ -14,6 +14,8 @@ import {
   CV_INSTABILITY_THRESHOLD,
   estimatedA1c,
   gmi,
+  servedIndex,
+  servedVariability,
   type GlucoseClinicalMetrics,
 } from "@/lib/analytics/glucose-metrics";
 import type { DenseMeasurementBucket } from "./dense-buckets";
@@ -132,14 +134,21 @@ export function glucoseClinicalFromBuckets(
     },
     gmi: gmi(meanMgdl),
     estimatedA1c: estimatedA1c(meanMgdl),
+    // Served through the same rounding as the per-reading engine: these risk
+    // sums come out of Postgres in bucket order, so their last bits are not
+    // the ones the engine would produce from the readings.
     variability:
       sd === null || cv === null
         ? null
-        : { sd, cv, unstable: cv >= CV_INSTABILITY_THRESHOLD },
+        : servedVariability({
+            sd,
+            cv,
+            unstable: cv >= CV_INSTABILITY_THRESHOLD,
+          }),
     advanced: {
-      jIndex: sd === null ? null : 0.001 * (meanMgdl + sd) ** 2,
-      lbgi: lowRisk / count,
-      hbgi: highRisk / count,
+      jIndex: servedIndex(sd === null ? null : 0.001 * (meanMgdl + sd) ** 2),
+      lbgi: servedIndex(lowRisk / count),
+      hbgi: servedIndex(highRisk / count),
     },
     isSpotEstimate: count / Math.max(actualSpanDays, 1) < 24,
   };
