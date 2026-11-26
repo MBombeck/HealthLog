@@ -88,7 +88,6 @@ export async function registerDevice(
   return callRoute<{
     id: string;
     push: Record<string, unknown>;
-    ignored?: Array<{ field: string; code: string }>;
   }>(POST, {
     method: "POST",
     route: "/api/devices",

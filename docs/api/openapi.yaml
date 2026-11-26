@@ -6766,13 +6766,13 @@ paths:
         running out, frees the device; the app can then register again. APNs tokens are hex of up to 512 characters:
         Apple documents no fixed length. A Live Activity field (`liveActivityPushToken`, an entry of
         `liveActivityTokens`, `liveActivityStart`) the server cannot take does not fail the registration: it is left
-        out, the device registers with everything else, and the answer's `ignored` names it with
-        `devices.register.invalid_field` for its shape, or with the `devices.push.<reason>` its push-to-start statement
-        was refused for. A refused push field (push key, relay binding, consent) returns 422 with `meta.errorCode`
-        `devices.push.<reason>` and changes nothing; more than 10 new relay bindings for one account in 24 hours return
-        429 `devices.push.relay_daily_limit`. When the device's APNs token changes, the old token's relay binding is
-        removed and the device has to bind the new token (`relayState: rebind_needed` unless the request carries the new
-        `relayBinding`). The answer's `push` block is the device's push state after the call."
+        out, keeping its stored value (a left-out list entry is dropped from the list), and the device registers with
+        everything else. This covers a push-to-start statement that does not hold, too. A refused push field (push key,
+        relay binding, consent) returns 422 with `meta.errorCode` `devices.push.<reason>` and changes nothing; more than
+        10 new relay bindings for one account in 24 hours return 429 `devices.push.relay_daily_limit`. When the device's
+        APNs token changes, the old token's relay binding is removed and the device has to bind the new token
+        (`relayState: rebind_needed` unless the request carries the new `relayBinding`). The answer's `push` block is
+        the device's push state after the call."
       requestBody:
         required: true
         content:
@@ -33380,9 +33380,9 @@ components:
         liveActivityTokens:
           description: "The device's running medication Live Activities, as a full replacement list: present replaces the stored
             list (an empty array clears it), omitted leaves it unchanged. An entry in a shape the server does not take
-            is left out of the list and named in the answer's `ignored` (`liveActivityTokens[<index>]`); a list longer
-            than 8 is left out whole. Each entry is ended with one `end` push once its dose is answered, and removed
-            after the push. When this field is present the legacy `liveActivityPushToken` is ignored."
+            is left out of the list; a list longer than 8 is left out whole. Each entry is ended with one `end` push
+            once its dose is answered, and removed after the push. When this field is present the legacy
+            `liveActivityPushToken` is ignored."
           maxItems: 8
           type: array
           items:
@@ -61997,24 +61997,6 @@ components:
               type: string
             push:
               $ref: "#/components/schemas/DevicePushState"
-            ignored:
-              description: v1.49.1. The optional Live Activity fields left out of this registration instead of failing it; absent when
-                none was. A left-out `liveActivityPushToken` or `liveActivityStart` keeps its stored value.
-              type: array
-              items:
-                type: object
-                properties:
-                  field:
-                    type: string
-                    description: The request field, `liveActivityTokens[<index>]` for one list entry.
-                  code:
-                    type: string
-                    description: "`devices.register.invalid_field` for a value in a shape the server does not take, else the
-                      `devices.push.<reason>` the push-to-start statement was refused for."
-                required:
-                  - field
-                  - code
-                additionalProperties: false
           required:
             - id
             - push
