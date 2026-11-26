@@ -29,6 +29,10 @@ vi.mock("@/lib/auth/issue-token", () => ({
     expiresAt: new Date(Date.now() + 86_400_000),
   })),
 }));
+// The second-factor policy is not this file's subject: no policy applies.
+vi.mock("@/lib/auth/mfa-enrollment", () => ({
+  accountMfaEnrollmentRequired: vi.fn(async () => false),
+}));
 vi.mock("@/lib/db", () => ({
   prisma: {
     $executeRaw: vi.fn(async () => 0),

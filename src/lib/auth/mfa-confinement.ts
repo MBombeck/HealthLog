@@ -1,15 +1,16 @@
 /**
- * The web half of the second-factor policy: a session whose account is past
- * its enrolment date reaches only the enrolment surface.
+ * The confinement half of the second-factor policy: an account past its
+ * enrolment date reaches only the enrolment surface.
  *
  * The hint cookie (`hl_mfa_enroll`) sends pages to `/enroll-mfa` without a
  * database read, but a browser that drops the cookie, or a script holding the
- * session cookie, never sees that redirect. This is the server half:
- * `getSession` reads `Session.mfaEnrollmentDueAt` from the row it already
- * loaded, and once that instant has passed it asks the policy again
- * (`resolveMfaEnrollment`). Still required: the request is refused unless it
- * is one the enrolment needs. No longer required (the account enrolled, the
- * operator lifted the policy): the stamp is cleared and the session is whole.
+ * session cookie, never sees that redirect. This is the server half, and it
+ * asks the policy on every request (`resolveMfaEnrollment`: no query for an
+ * account with TOTP, the request's one settings read for an account no policy
+ * covers). It never trusts a due date stored on the session: a session that
+ * began before the policy existed carries none, and a policy switched on, or
+ * a grace period shortened, after sign-in would not show in one. Still
+ * required: the request is refused unless it is one the enrolment needs.
  *
  * Which request it is comes from the wide event's path for an API route
  * (`apiHandler` sets it from the request URL) and, for a page render, from the
@@ -23,26 +24,51 @@ import { prisma } from "@/lib/db";
 import { HttpError } from "@/lib/api-errors";
 import { getEvent } from "@/lib/logging/context";
 import {
+  MFA_POLICY_USER_SELECT,
   resolveMfaEnrollment,
   sessionMfaDueAt,
+  sessionMfaRecordStale,
+  type MfaEnrollment,
   type MfaPolicyUser,
 } from "@/lib/auth/mfa-enrollment";
 
 /** Request header the proxy stamps with the page path. */
 export const PAGE_PATH_HEADER = "x-healthlog-path";
 
-/** API routes a confined session may call: reading the account, signing out, enrolling. */
-const API_EXACT = new Set([
-  "/api/auth/me",
-  "/api/auth/logout",
-  "/api/auth/reproof",
-  "/api/auth/oidc/reproof",
-  "/api/auth/passkeys",
-  "/api/auth/passkey/register-options",
-  "/api/auth/passkey/register-verify",
-  "/api/auth/me/mfa",
-]);
-const API_PREFIXES = ["/api/auth/me/mfa/"];
+/**
+ * One route a confined caller may still reach. `match: "prefix"` admits every
+ * path under `path`; `methods` null admits every method.
+ */
+export interface MfaOpenPath {
+  path: string;
+  match: "exact" | "prefix";
+  methods: readonly string[] | null;
+}
+
+function exact(path: string): MfaOpenPath {
+  return { path, match: "exact", methods: null };
+}
+
+/**
+ * The API routes a confined caller may reach: reading the account, signing
+ * out (including removing this device's push binding), enrolling, and the
+ * public probes. Published on `/api/auth/me` as `mfaEnrollment.openPaths`, so
+ * a client reads the list instead of keeping a copy of it.
+ */
+export const MFA_ENROLLMENT_OPEN_PATHS: readonly MfaOpenPath[] = [
+  exact("/api/auth/me"),
+  exact("/api/auth/logout"),
+  exact("/api/auth/reproof"),
+  exact("/api/auth/oidc/reproof"),
+  exact("/api/auth/passkeys"),
+  exact("/api/auth/passkey/register-options"),
+  exact("/api/auth/passkey/register-verify"),
+  exact("/api/auth/me/mfa"),
+  { path: "/api/auth/me/mfa/", match: "prefix", methods: null },
+  { path: "/api/devices/", match: "prefix", methods: ["DELETE"] },
+  exact("/api/health"),
+  exact("/api/version"),
+];
 
 /** Pages that render the enrolment cards. */
 const PAGE_PREFIXES = ["/enroll-mfa", "/settings/security"];
@@ -51,8 +77,15 @@ function startsWithSegment(path: string, prefix: string): boolean {
   return path === prefix || path.startsWith(`${prefix}/`);
 }
 
-export function isMfaEnrollmentApiPath(path: string): boolean {
-  return API_EXACT.has(path) || API_PREFIXES.some((p) => path.startsWith(p));
+export function isMfaEnrollmentApiPath(path: string, method?: string): boolean {
+  const verb = (method ?? "").toUpperCase();
+  return MFA_ENROLLMENT_OPEN_PATHS.some(
+    (open) =>
+      (open.match === "exact"
+        ? path === open.path
+        : path.startsWith(open.path) && path.length > open.path.length) &&
+      (open.methods === null || open.methods.includes(verb)),
+  );
 }
 
 export function isMfaEnrollmentPagePath(path: string): boolean {
@@ -66,10 +99,44 @@ export function isMfaEnrollmentPagePath(path: string): boolean {
 export async function mfaDueAtForSignIn(userId: string): Promise<Date | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { role: true, totpConfirmedAt: true, mfaEnforced: true },
+    select: MFA_POLICY_USER_SELECT,
   });
   if (!user) return null;
   return sessionMfaDueAt(await resolveMfaEnrollment(userId, user));
+}
+
+/**
+ * The second-factor state of this caller: the one answer the gates below
+ * enforce and `/api/auth/me` reports. A narrow token (`isScopedCredential`)
+ * is not a sign-in and is never confined, so it reads `none`; a demo reads
+ * `none` through `resolveMfaEnrollment`.
+ */
+export async function callerMfaEnrollment(
+  user: MfaPolicyUser & { id: string },
+  credential: "sign-in" | "narrow-token",
+): Promise<MfaEnrollment> {
+  if (credential === "narrow-token") return { state: "none", dueAt: null };
+  return resolveMfaEnrollment(user.id, user);
+}
+
+/**
+ * `mfaEnrollment` on `/api/auth/me`: the caller's state from
+ * `callerMfaEnrollment`, so `required` means exactly that routes outside
+ * `openPaths` are refused for this caller, and the list itself.
+ */
+export async function mfaEnrollmentPayload(
+  user: MfaPolicyUser & { id: string },
+  credential: "sign-in" | "narrow-token",
+): Promise<MfaEnrollment & { openPaths: readonly MfaOpenPath[] }> {
+  return {
+    ...(await callerMfaEnrollment(user, credential)),
+    openPaths: MFA_ENROLLMENT_OPEN_PATHS,
+  };
+}
+
+function requestPathAndMethod(): { path?: string; method?: string } {
+  const event = getEvent();
+  return { path: event?.getHttpPath(), method: event?.getHttpMethod?.() };
 }
 
 interface ConfinableSession {
@@ -78,36 +145,40 @@ interface ConfinableSession {
   user: MfaPolicyUser & { id: string };
 }
 
+function enrollmentRequiredError(): HttpError {
+  return new HttpError(
+    403,
+    "Set up two-factor sign-in to continue",
+    "auth.mfa.enrollment_required",
+  );
+}
+
 /**
- * Refuse the request when the session's account is past its enrolment date
- * and the request is not one the enrolment needs. A no-op for every session
- * without a due date in the past, which is every session but these.
+ * Refuse a browser request when the session's account has to enrol a factor
+ * now and the request is not one the enrolment needs. The session's recorded
+ * due date is brought in line with the answer (a record, not an input).
  */
 export async function enforceMfaEnrollment(
   session: ConfinableSession,
 ): Promise<void> {
-  const due = session.mfaEnrollmentDueAt;
-  if (!due || due.getTime() > Date.now()) return;
-
-  const enrollment = await resolveMfaEnrollment(session.user.id, session.user);
-  if (enrollment.state !== "required") {
+  const enrollment = await callerMfaEnrollment(session.user, "sign-in");
+  if (sessionMfaRecordStale(session.mfaEnrollmentDueAt, enrollment)) {
     const dueAt = sessionMfaDueAt(enrollment);
-    await prisma.session.update({
-      where: { id: session.id },
-      data: { mfaEnrollmentDueAt: dueAt },
-    });
+    // The record only: a failed write must not decide the request.
+    await prisma.session
+      .update({
+        where: { id: session.id },
+        data: { mfaEnrollmentDueAt: dueAt },
+      })
+      .catch(() => {});
     session.mfaEnrollmentDueAt = dueAt;
-    return;
   }
+  if (enrollment.state !== "required") return;
 
-  const apiPath = getEvent()?.getHttpPath();
+  const { path: apiPath, method } = requestPathAndMethod();
   if (apiPath !== undefined) {
-    if (isMfaEnrollmentApiPath(apiPath)) return;
-    throw new HttpError(
-      403,
-      "Set up two-factor sign-in to continue",
-      "auth.mfa.enrollment_required",
-    );
+    if (isMfaEnrollmentApiPath(apiPath, method)) return;
+    throw enrollmentRequiredError();
   }
 
   let pagePath: string | null = null;
@@ -118,4 +189,22 @@ export async function enforceMfaEnrollment(
   }
   if (pagePath !== null && isMfaEnrollmentPagePath(pagePath)) return;
   redirect("/enroll-mfa");
+}
+
+/**
+ * The same confinement for a sign-in token (`["*"]`, minted by login, the
+ * native hand-offs and refresh). Such a token may have been issued before the
+ * policy applied, so it is judged by what holds now: past the due date it
+ * reaches the enrolment API only (the account payload says why, sign-out
+ * works) and every other route answers 403 `auth.mfa.enrollment_required`.
+ * A narrow token is not a sign-in and is left to its scope.
+ */
+export async function refuseConfinedBearer(
+  user: MfaPolicyUser & { id: string },
+): Promise<void> {
+  const enrollment = await callerMfaEnrollment(user, "sign-in");
+  if (enrollment.state !== "required") return;
+  const { path, method } = requestPathAndMethod();
+  if (path !== undefined && isMfaEnrollmentApiPath(path, method)) return;
+  throw enrollmentRequiredError();
 }

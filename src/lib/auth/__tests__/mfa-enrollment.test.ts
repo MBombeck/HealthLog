@@ -45,7 +45,12 @@ function usePolicy(overrides: Record<string, unknown> = {}): void {
   );
 }
 
-const USER = { totpConfirmedAt: null, mfaEnforced: false, role: "USER" };
+const USER = {
+  totpConfirmedAt: null,
+  mfaEnforced: false,
+  role: "USER",
+  createdAt: new Date("2026-01-01T00:00:00Z"),
+};
 const ADMIN = { ...USER, role: "ADMIN" };
 
 beforeEach(() => {
@@ -91,6 +96,36 @@ describe("resolveMfaEnrollment", () => {
     );
     usePolicy({ mfaPolicySince: new Date(Date.now() - 15 * DAY_MS) });
     expect(await resolveMfaEnrollmentRequired("u1", ADMIN)).toBe(true);
+  });
+
+  it("counts an account created under a running policy from its creation", async () => {
+    // The policy started 30 days ago; an admin account made 3 days ago still
+    // has 11 days, one made 15 days ago has none left.
+    usePolicy({ mfaPolicySince: new Date(NOW.getTime() - 30 * DAY_MS) });
+    const fresh = await resolveMfaEnrollment(
+      "u1",
+      { ...ADMIN, createdAt: new Date(NOW.getTime() - 3 * DAY_MS) },
+      NOW,
+    );
+    expect(fresh).toEqual({
+      state: "grace",
+      dueAt: new Date(NOW.getTime() + 11 * DAY_MS),
+    });
+    const older = await resolveMfaEnrollment(
+      "u1",
+      { ...ADMIN, createdAt: new Date(NOW.getTime() - 15 * DAY_MS) },
+      NOW,
+    );
+    expect(older.state).toBe("required");
+  });
+
+  it("counts an account older than the policy from the policy's start", async () => {
+    usePolicy({ mfaPolicySince: new Date(NOW.getTime() - 15 * DAY_MS) });
+    const result = await resolveMfaEnrollment("u1", ADMIN, NOW);
+    expect(result).toEqual({
+      state: "required",
+      dueAt: new Date(NOW.getTime() - DAY_MS),
+    });
   });
 
   it("requires at once with a grace period of zero days", async () => {

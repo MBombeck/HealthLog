@@ -3943,6 +3943,13 @@ paths:
         with the same token: the other request rotated it, nothing is revoked, and its pair is live. Not terminal: read
         the credentials the winning request stored and continue. Do not present this refresh token again, since that is
         a replay and revokes the device family. Before v1.49.0 this case answered 401 `auth.refresh.reuse`.
+
+
+        A 403 with `meta.errorCode` = `auth.mfa.enrollment_required` (v1.50) means a second-factor policy covers the
+        account, it has no factor, and its grace period is over. No pair is issued and the refresh token is not
+        consumed: once the person adds a factor in a browser (Settings > Security), the same token refreshes again. A
+        sign-in token of such an account answers the same 403 on every route except the enrolment ones (`/api/auth/me`,
+        `/api/auth/logout`, the `/api/auth/me/mfa` and passkey registration routes).
       requestBody:
         required: true
         content:
@@ -102907,14 +102914,45 @@ components:
                   format: date-time
                   pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
                 - type: "null"
+            openPaths:
+              type: array
+              items:
+                type: object
+                properties:
+                  path:
+                    type: string
+                  match:
+                    type: string
+                    enum:
+                      - exact
+                      - prefix
+                  methods:
+                    anyOf:
+                      - type: array
+                        items:
+                          type: string
+                      - type: "null"
+                    description: "Null: every method."
+                required:
+                  - path
+                  - match
+                  - methods
+                additionalProperties: false
+              description: "The API routes a caller in state `required` may still reach (account read, sign-out, removing a device's
+                push binding, enrolment, the public probes). `prefix` admits every path under `path`. Read it from here
+                rather than keeping a copy: the list may change between releases. `POST /api/auth/refresh` with `revoke:
+                true` also always works."
           required:
             - state
             - dueAt
+            - openPaths
           additionalProperties: false
-          description: "Whether an instance or per-account policy requires this account to enrol a second factor (TOTP, a security
-            key or a passkey), and by when. `none`: no policy covers the account or it has a factor; `grace`: enrol by
-            `dueAt`, the account works as before until then; `required`: a browser session reaches only the enrolment
-            routes and a native sign-in is refused with `auth.mfa.enrollment_required` until the account enrols."
+          description: "Whether a second-factor policy requires this caller to enrol a factor (TOTP, a security key or a passkey),
+            and by when; decided by the same function that enforces it. `none`: no policy covers the account, it has a
+            factor, it is a public demo, or the caller is a narrow-scope token; `grace`: enrol by `dueAt`, everything
+            works until then; `required`: every route outside `openPaths` answers 403 `auth.mfa.enrollment_required` for
+            this caller (browser session and sign-in token alike), a refresh is refused the same way, and a native
+            sign-in is refused until the account enrols."
         glucoseUnit:
           anyOf:
             - type: string

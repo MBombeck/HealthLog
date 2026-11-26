@@ -550,7 +550,8 @@ describe("GET /api/devices/me/push-diagnostics", () => {
       read(session, DEVICE_ID_HEADER),
     );
     expect(measured.result.status).toBe(200);
-    // The session and its user, the rate-limit upsert, the device, its owed
+    // The session and its user, the second-factor policy (the operator row,
+    // read on every request of an account without TOTP), the rate-limit upsert, the device, its owed
     // row and its account's reminder switch, the relay registration, one
     // outbox read per kind, the two intake-sync reads (`intakeSyncOf`; a
     // third only behind a dropped dose confirmation) and the budget window:
@@ -562,4 +563,4 @@ describe("GET /api/devices/me/push-diagnostics", () => {
 });
 
 /** Statements one read sends on this fixture; see the test above. */
-const BUDGET = 14;
+const BUDGET = 15;

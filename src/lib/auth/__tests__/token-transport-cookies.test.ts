@@ -31,6 +31,11 @@ const db = vi.hoisted(() => ({
   }>,
 }));
 
+// The second-factor policy is not this file's subject: no policy applies.
+vi.mock("@/lib/auth/mfa-confinement", () => ({
+  enforceMfaEnrollment: vi.fn(async () => {}),
+  mfaDueAtForSignIn: vi.fn(async () => null),
+}));
 vi.mock("@/lib/db", () => ({
   prisma: {
     session: {

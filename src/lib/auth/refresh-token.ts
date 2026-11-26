@@ -14,6 +14,7 @@ import { prisma } from "@/lib/db";
 import { hashToken } from "@/lib/auth/hmac";
 import { sendSecurityAlert } from "@/lib/auth/security-alert";
 import { issueApiToken } from "@/lib/auth/issue-token";
+import { accountMfaEnrollmentRequired } from "@/lib/auth/mfa-enrollment";
 import type { TokenPolicyDecision } from "@/lib/auth/native-client";
 import { afterRefreshRevocation } from "@/lib/devices/signed-out-push";
 import {
@@ -139,11 +140,52 @@ export type RotationFailureReason =
   | "already_used"
   | "superseded"
   | "revoked"
-  | "device_mismatch";
+  | "device_mismatch"
+  | "mfa_enrollment_required";
 
 export type RotationResult =
   | { ok: true; bundle: IssuedRefreshBundle }
   | { ok: false; reason: RotationFailureReason };
+
+/**
+ * Why a live, unused token may still not rotate: it is presented from another
+ * device, or its account owes a second factor. Null when it may rotate.
+ */
+async function refuseLiveRotation(
+  row: { userId: string; deviceId: string | null },
+  presentedId: string | null,
+): Promise<"device_mismatch" | "mfa_enrollment_required" | null> {
+  // A live token belongs to the device it was issued to. The M-4 escalation
+  // in `rotateRefreshToken` already treats a mismatched deviceId on a REPLAY as a spoofing
+  // signal; the same mismatch on a still-live token is refused outright
+  // rather than silently rotated. Without this the reuse-detection scope is
+  // only as honest as the caller: a thief could rotate a stolen token under
+  // their own fabricated device id, and the resulting family — keyed on the
+  // attacker's id, because the rotation's `issueAccessAndRefresh` inherits
+  // `row.deviceId ?? input.deviceId` — would sit outside the victim device's
+  // containment blast radius.
+  //
+  // A stored null means the row predates per-device issuance, or the client
+  // sent no `X-Device-Id` when it signed in: nothing to compare, so it
+  // rotates. A stored id must be matched exactly, and an absent header does
+  // not match it. It used to: leaving the header out skipped the check, so a
+  // thief holding a stolen token rotated it simply by not naming a device. A
+  // client that sent its id at sign-in sends it on every refresh, so this
+  // locks out nobody who signed in honestly.
+  const storedId = row.deviceId ?? null;
+  if (storedId !== null && presentedId !== storedId) {
+    return "device_mismatch";
+  }
+
+  // An account past its second-factor due date gets no new pair, whenever its
+  // family began: a token transport has no enrolment surface. The token stays
+  // live and unconsumed, so the same device refreshes again once a factor
+  // exists.
+  if (await accountMfaEnrollmentRequired(row.userId)) {
+    return "mfa_enrollment_required";
+  }
+  return null;
+}
 
 /**
  * Atomically rotate a refresh token: validate, mark consumed, issue a new
@@ -224,28 +266,8 @@ export async function rotateRefreshToken(input: {
     return { ok: false, reason: "already_used" };
   }
 
-  // A live token belongs to the device it was issued to. The M-4 escalation
-  // above already treats a mismatched deviceId on a REPLAY as a spoofing
-  // signal; the same mismatch on a still-live token is refused outright
-  // rather than silently rotated. Without this the reuse-detection scope is
-  // only as honest as the caller: a thief could rotate a stolen token under
-  // their own fabricated device id, and the resulting family — keyed on the
-  // attacker's id, because `issueAccessAndRefresh` below inherits
-  // `row.deviceId ?? input.deviceId` — would sit outside the victim device's
-  // containment blast radius.
-  //
-  // A stored null means the row predates per-device issuance, or the client
-  // sent no `X-Device-Id` when it signed in: nothing to compare, so it
-  // rotates. A stored id must be matched exactly, and an absent header does
-  // not match it. It used to: leaving the header out skipped the check, so a
-  // thief holding a stolen token rotated it simply by not naming a device. A
-  // client that sent its id at sign-in sends it on every refresh, so this
-  // locks out nobody who signed in honestly.
-  const presentedId = input.deviceId ?? null;
-  const storedId = row.deviceId ?? null;
-  if (storedId !== null && presentedId !== storedId) {
-    return { ok: false, reason: "device_mismatch" };
-  }
+  const refusal = await refuseLiveRotation(row, input.deviceId ?? null);
+  if (refusal) return { ok: false, reason: refusal };
 
   // Issue the new pair first, THEN mark old consumed in a transaction.
   // (Race: if two concurrent refreshes hit the same row, both will try to

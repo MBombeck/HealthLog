@@ -9,18 +9,25 @@
  *   - `User.mfaEnforced`: one account, set by an admin.
  *
  * An instance policy gives the accounts it newly covers a grace period
- * (`AppSettings.mfaGraceDays`, counted from `mfaPolicySince`, which moves to
- * now whenever a policy is switched on, and which the v1.50 migration set to
- * the update for existing installs). During it the account is asked to enrol
- * and works as before. After it — and at once under a per-user enforcement —
- * the account is confined until it enrols:
+ * (`AppSettings.mfaGraceDays`), counted from the later of `mfaPolicySince`
+ * (which moves to now whenever a policy is switched on, and which the v1.50
+ * migration set to the update for existing installs) and the account's own
+ * creation, so an account created under a running policy gets the full
+ * period too. During it the account is asked to enrol and works as before.
+ * After it — and at once under a per-user enforcement — the account is
+ * confined until it enrols:
  *
  *   - in the browser, the session reaches only the enrolment surface
- *     (`Session.mfaEnrollmentDueAt`, read by `getSession`; the hint cookie
- *     below sends pages to `/enroll-mfa` without a database read);
- *   - a native or SSO-native sign-in is refused with
- *     `auth.mfa.enrollment_required` (`finishLogin`), because a Bearer
- *     transport has no enrolment surface to confine to.
+ *     (`enforceMfaEnrollment`, run by `getSession` on every request; the hint
+ *     cookie below sends pages to `/enroll-mfa` without a database read);
+ *   - a sign-in token (`["*"]`) reaches only the enrolment API
+ *     (`refuseConfinedBearer`), a refresh is refused, and a native or
+ *     SSO-native sign-in is refused with `auth.mfa.enrollment_required`
+ *     (`finishLogin`).
+ *
+ * The decision is made from the account and the policy at request time,
+ * never from a value stored when a session began: a session that predates the
+ * policy, or a policy changed after sign-in, is judged by what holds now.
  *
  * The operator/CLI escape hatch (`scripts/disable-mfa.ts`, switching the
  * policies off) stays the recovery of last resort. A public demo shares one
@@ -44,7 +51,17 @@ export interface MfaPolicyUser {
   totpConfirmedAt: Date | null;
   mfaEnforced: boolean;
   role: string;
+  /** The account's creation: its grace period never starts before it. */
+  createdAt: Date;
 }
+
+/** The `User` columns `resolveMfaEnrollment` reads. */
+export const MFA_POLICY_USER_SELECT = {
+  role: true,
+  totpConfirmedAt: true,
+  mfaEnforced: true,
+  createdAt: true,
+} as const;
 
 /**
  * `none`: no policy covers the account, or it has a factor. `grace`: a policy
@@ -134,9 +151,14 @@ export async function resolveMfaEnrollment(
   // once, as it always has.
   if (user.mfaEnforced) return { state: "required", dueAt: now };
 
-  const dueAt = new Date(
-    policy.mfaPolicySince.getTime() + policy.mfaGraceDays * DAY_MS,
+  // The grace period starts when the policy started covering this account:
+  // the policy's start for an account that existed then, the account's
+  // creation for one created later.
+  const graceFrom = Math.max(
+    policy.mfaPolicySince.getTime(),
+    user.createdAt.getTime(),
   );
+  const dueAt = new Date(graceFrom + policy.mfaGraceDays * DAY_MS);
   return { state: dueAt > now ? "grace" : "required", dueAt };
 }
 
@@ -149,13 +171,46 @@ export async function resolveMfaEnrollmentRequired(
 }
 
 /**
- * The instant a session of this account stops reaching anything but the
- * enrolment surface: the due date under a policy, null when none applies.
- * Stamped on the session at sign-in and on the account read every app boot
- * makes, so `getSession` decides without a query per request.
+ * The same answer for an account known only by id (a refresh token's owner):
+ * false for an account that no longer exists, which its credential's own
+ * checks refuse.
+ */
+export async function accountMfaEnrollmentRequired(
+  userId: string,
+): Promise<boolean> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: MFA_POLICY_USER_SELECT,
+  });
+  if (!user) return false;
+  return resolveMfaEnrollmentRequired(userId, user);
+}
+
+/**
+ * The due date as recorded on a session row (`Session.mfaEnrollmentDueAt`):
+ * null when no policy applies. A record of the last resolution, for operators
+ * and the account payload; no gate reads it.
  */
 export function sessionMfaDueAt(enrollment: MfaEnrollment): Date | null {
   return enrollment.state === "none" ? null : enrollment.dueAt;
+}
+
+/**
+ * Whether a session's recorded due date no longer matches the resolution. A
+ * per-account enforcement resolves to "due now" on every call, so a recorded
+ * date already in the past stands for it instead of being rewritten per
+ * request.
+ */
+export function sessionMfaRecordStale(
+  recorded: Date | null,
+  enrollment: MfaEnrollment,
+  now: Date = new Date(),
+): boolean {
+  const dueAt = sessionMfaDueAt(enrollment);
+  if (enrollment.state === "required" && recorded && recorded <= now) {
+    return false;
+  }
+  return dueAt?.getTime() !== recorded?.getTime();
 }
 
 /** Set or clear the forced-enrollment UX-hint cookie. */
@@ -192,14 +247,14 @@ export async function syncMfaEnrollCookie(
 ): Promise<MfaEnrollment> {
   const enrollment = await resolveMfaEnrollment(userId, user);
   await setMfaEnrollCookie(enrollment.state === "required");
-  if (session) {
-    const dueAt = sessionMfaDueAt(enrollment);
-    if (dueAt?.getTime() !== session.mfaEnrollmentDueAt?.getTime()) {
-      await prisma.session.update({
-        where: { id: session.id },
-        data: { mfaEnrollmentDueAt: dueAt },
-      });
-    }
+  if (
+    session &&
+    sessionMfaRecordStale(session.mfaEnrollmentDueAt, enrollment)
+  ) {
+    await prisma.session.update({
+      where: { id: session.id },
+      data: { mfaEnrollmentDueAt: sessionMfaDueAt(enrollment) },
+    });
   }
   return enrollment;
 }

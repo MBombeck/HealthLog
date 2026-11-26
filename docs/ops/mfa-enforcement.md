@@ -14,10 +14,14 @@ its own, since a passkey sign-in already proves possession).
 
 An account a policy newly covers gets the **grace period** (Admin > General
 settings, 14 days by default, 0 to 90) to add a factor. It counts from the
-moment the policy took effect: switching a policy on starts it again, and on
-an install updated to 1.50 it starts with the update. During it the account
-works as before and the app shows a notice with the date. A per-account
-enforcement set by an admin applies at once.
+later of two moments: when the policy took effect (switching a policy on
+starts it again, and on an install updated to 1.50 it starts with the
+update) and when the account was created, so an account registered under a
+running policy gets the full period too. During it the account works as
+before and the app shows a notice with the date. A per-account enforcement
+set by an admin applies at once, and so does the admin policy for an
+existing account promoted to admin after its own grace period would have
+ended.
 
 ## After the grace period
 
@@ -25,15 +29,26 @@ enforcement set by an admin applies at once.
   what enrolment needs: the account payload, the second-factor and passkey
   enrolment routes, re-proof, and sign-out. Pages redirect to `/enroll-mfa`;
   every other API route answers `403` with `meta.errorCode`
-  `auth.mfa.enrollment_required`. This is enforced on the server, from the
-  session row (`sessions.mfa_enrollment_due_at`), not by the browser hint
-  cookie. The moment a factor exists the session is whole again.
+  `auth.mfa.enrollment_required`. This is enforced on the server on every
+  request, from the account and the policy as they stand, not from anything
+  stored when the session began and not by the browser hint cookie: a
+  session from before the update is held like a new one.
+  (`sessions.mfa_enrollment_due_at` records the last answer for an operator's
+  query; nothing decides from it.) The moment a factor exists the session is
+  whole again.
 - **iPhone app and other native clients.** A sign-in (password, the native
   web hand-off, or the single sign-on token exchange) is refused with `403`
   `auth.mfa.enrollment_required` and no token is issued. The person adds a
-  factor in a browser (Settings > Security) and signs in again. Tokens issued
-  before the grace period ended keep working until their refresh family ends
-  (at most `REFRESH_TOKEN_MAX_LIFETIME_DAYS`, 180 by default).
+  factor in a browser (Settings > Security) and signs in again. A sign-in
+  token issued earlier, before the update included, is held the same way as
+  a browser session: it reaches only the account payload, sign-out (removing
+  the device included), the enrolment routes and the public probes, and every
+  other route answers the same `403`. The account payload lists those routes
+  (`mfaEnrollment.openPaths`). A refresh is refused with it, carrying
+  `Retry-After`, without using up the refresh token, which works again once a
+  factor exists; a token refused three times within five minutes gets the
+  same answer without being looked up again until that window ends. Signing
+  out through the refresh route (`revoke: true`) always works.
 - **Personal API tokens** (Settings > API tokens) are not sign-ins and are not
   affected; revoke them if an account must lose access now.
 

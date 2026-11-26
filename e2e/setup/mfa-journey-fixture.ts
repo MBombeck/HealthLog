@@ -277,3 +277,22 @@ export async function expireStepUp(account: MfaJourneyAccount): Promise<void> {
     await pool.end();
   }
 }
+
+/**
+ * Put the account under a per-account second-factor enforcement after it has
+ * signed in, as an admin would: its existing sessions carry no due date, so
+ * only a request-time decision confines them.
+ */
+export async function enforceMfaAfterSignIn(
+  account: MfaJourneyAccount,
+): Promise<void> {
+  const pool = connect();
+  try {
+    await pool.query(
+      "UPDATE users SET mfa_enforced = true WHERE username = $1",
+      [account.username],
+    );
+  } finally {
+    await pool.end();
+  }
+}
