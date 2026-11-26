@@ -1196,3 +1196,71 @@ describe("a toggle that cannot do anything is not offered", () => {
     expect(prisma.measurement.findFirst).not.toHaveBeenCalled();
   });
 });
+
+describe("dashboard widgets — a pin survives a client that does not know it", () => {
+  const stored = (): DashboardLayout =>
+    serializeDashboardLayout({
+      version: 1,
+      widgets: [
+        { id: "weight", visible: true, tileVisible: true, order: 0 },
+        {
+          id: "sleep",
+          visible: false,
+          tileVisible: true,
+          order: 1,
+          pinned: true,
+        },
+      ],
+    });
+  type FoundUser = Awaited<ReturnType<typeof prisma.user.findUnique>>;
+  type UpdatedUser = Awaited<ReturnType<typeof prisma.user.update>>;
+  const mockStoredLayout = () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      dashboardWidgetsJson: stored(),
+    } as unknown as FoundUser);
+    vi.mocked(prisma.user.update).mockResolvedValue({} as UpdatedUser);
+  };
+  const putWidgets = (sleep: Record<string, unknown>) =>
+    callPut(
+      makeReq({
+        version: 1,
+        // A layout save from an app build that predates the pin: the same
+        // widgets, reordered, without the field.
+        widgets: [
+          {
+            id: "sleep",
+            visible: false,
+            tileVisible: true,
+            order: 0,
+            ...sleep,
+          },
+          { id: "weight", visible: true, tileVisible: true, order: 1 },
+        ],
+      }),
+    );
+  const persistedSleep = () => {
+    const updateArg = vi.mocked(prisma.user.update).mock
+      .calls[0]?.[0] as unknown as {
+      data: { dashboardWidgetsJson: DashboardLayout };
+    };
+    return updateArg.data.dashboardWidgetsJson.widgets.find(
+      (w) => w.id === "sleep",
+    );
+  };
+
+  it("keeps the stored pin when a widget arrives without `pinned`", async () => {
+    mockStoredLayout();
+
+    const res = await putWidgets({});
+    expect(res.status).toBe(200);
+    expect(persistedSleep()?.pinned).toBe(true);
+  });
+
+  it("unpins when the client says so", async () => {
+    mockStoredLayout();
+
+    const res = await putWidgets({ pinned: false });
+    expect(res.status).toBe(200);
+    expect(persistedSleep()?.pinned).toBeUndefined();
+  });
+});

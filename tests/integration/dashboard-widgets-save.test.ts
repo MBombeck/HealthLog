@@ -269,6 +269,43 @@ describe("PUT /api/dashboard/widgets — Save persists full layouts", () => {
     expect(getBody.data.chartOverlayPrefs?.bp?.rangePoints).toBe(90);
   });
 
+  it("keeps a stored pin when a client that predates the field saves its layout", async () => {
+    const { userId } = await seedUser();
+    const { PUT, GET } = await import("@/app/api/dashboard/widgets/route");
+
+    await getPrismaClient().user.update({
+      where: { id: userId },
+      data: {
+        dashboardWidgetsJson: {
+          ...DEFAULT_DASHBOARD_LAYOUT,
+          widgets: DEFAULT_DASHBOARD_LAYOUT.widgets.map((w) =>
+            w.id === "sleep" ? { ...w, pinned: true } : w,
+          ),
+        } as never,
+      },
+    });
+
+    // The default widgets, none of them carrying `pinned`.
+    const putRes = await (PUT as (req: Request) => Promise<Response>)(
+      new Request("http://localhost/api/dashboard/widgets", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(buildClientPayload({})),
+      }),
+    );
+    expect(putRes.status).toBe(200);
+
+    const getRes = await (GET as (req: Request) => Promise<Response>)(
+      new Request("http://localhost/api/dashboard/widgets"),
+    );
+    const getBody = (await getRes.json()) as {
+      data: { widgets: Array<{ id: string; pinned?: boolean }> };
+    };
+    expect(
+      getBody.data.widgets.filter((w) => w.pinned).map((w) => w.id),
+    ).toEqual(["sleep"]);
+  });
+
   it("preserves the night timeline's stored lines when the full-layout payload omits them (#1419)", async () => {
     const { userId } = await seedUser();
     const { PUT, GET } = await import("@/app/api/dashboard/widgets/route");

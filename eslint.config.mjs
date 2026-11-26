@@ -193,7 +193,7 @@ const eslintConfig = defineConfig([
             // Not a row: a cell of a matrix, or a list row that also holds
             // reorder, weight or remove controls.
             "src/app/notifications/page.tsx": 1,
-            "src/components/settings/dashboard-layout/widget-lists.tsx": 4,
+            "src/components/settings/dashboard-layout/widget-lists.tsx": 5,
             "src/components/settings/ai/fallback-chain-card.tsx": 1,
             "src/components/settings/score-pillar-row.tsx": 1,
             "src/components/settings/thresholds-editor-section.tsx": 1,

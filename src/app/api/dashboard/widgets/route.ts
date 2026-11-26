@@ -82,6 +82,9 @@ const layoutSchema = z.object({
         // updated; the resolver mirrors `visible` when omitted.
         tileVisible: z.boolean().optional(),
         order: z.number().int().min(0).max(99),
+        // The tile always makes the dashboard's one row. Optional and
+        // additive; only `true` is stored.
+        pinned: z.boolean().optional(),
       }),
     )
     .min(1)
@@ -179,6 +182,10 @@ const layoutSchema = z.object({
   // preserve-when-absent contract as `hero`; the default (shown) is omitted
   // from storage.
   todayCardVisible: z.boolean().optional(),
+  // Whether "All values" under the tile row is open. Same additive,
+  // preserve-when-absent contract; the default (closed) is omitted from
+  // storage.
+  tilesExpanded: z.boolean().optional(),
   // v1.32.16 (issue #581) — the optimistic-concurrency base token used to
   // live here. v1.32.21 (R5a) moved it to the shared `takeBaseToken` helper,
   // which strips it BEFORE this parse: the token is transport, not a layout

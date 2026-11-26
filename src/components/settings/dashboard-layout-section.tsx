@@ -88,6 +88,12 @@ export function DashboardLayoutSection({ id }: { id: string }) {
             <span className="w-12 text-center">
               {t("dashboard.layoutTileColumn")}
             </span>
+            <span
+              className="w-12 text-center"
+              title={t("dashboard.layoutPinColumn")}
+            >
+              {t("dashboard.layoutPinShort")}
+            </span>
             <span className="w-12 text-center">
               {t("dashboard.layoutChartColumn")}
             </span>

@@ -259,6 +259,9 @@ export function useDashboardTileContext({
     isTileVisible,
     widgetOrder,
     directionOf,
+    // The one-row order (pinned, then the tiles with something to say, then
+    // the rest), resolved on the server; saving the layout refetches it.
+    tileOrder: snapshot?.tiles.order,
     weightTrend,
     ...bandsForDisplay(bands, unitDisplay, t),
     displayGlucoseUnit,

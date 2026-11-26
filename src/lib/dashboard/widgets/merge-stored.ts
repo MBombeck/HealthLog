@@ -1,7 +1,7 @@
 /**
  * The layout a dashboard-layout save stores: what the client sent, with
  * every omitted client-owned field carried forward from the stored layout
- * instead of clamped to a default.
+ * instead of clamped to a default, a widget's pin included.
  *
  * The disposition map is exhaustive over `DashboardLayout`, so adding a
  * field requires an explicit merge decision. One stored-layout read covers
@@ -41,8 +41,14 @@ export async function layoutToStore(
         PRESERVED_CHART_FIELDS.some((field) => prefs[field] === undefined)
       );
     });
+  // A widget that arrives without `pinned` comes from a client that does not
+  // know the field (every app build before it); its stored pin stays.
+  const needsPinPreserve =
+    toSerialize.widgets?.some((w) => w.pinned === undefined) ?? false;
   const needsPreserveRead =
-    layoutNeedsPreserveRead(toSerialize) || needsChartFieldPreserve;
+    layoutNeedsPreserveRead(toSerialize) ||
+    needsChartFieldPreserve ||
+    needsPinPreserve;
   if (needsPreserveRead) {
     const existing = await prisma.user.findUnique({
       where: { id: userId },
@@ -52,6 +58,20 @@ export async function layoutToStore(
       existing?.dashboardWidgetsJson,
     );
     toSerialize = mergePreservedLayoutFields(toSerialize, existingLayout);
+
+    if (needsPinPreserve && toSerialize.widgets) {
+      const pinned = new Set(
+        existingLayout.widgets.filter((w) => w.pinned).map((w) => w.id),
+      );
+      toSerialize = {
+        ...toSerialize,
+        widgets: toSerialize.widgets.map((w) =>
+          w.pinned === undefined && pinned.has(w.id)
+            ? { ...w, pinned: true }
+            : w,
+        ),
+      };
+    }
 
     if (needsChartFieldPreserve && toSerialize.chartOverlayPrefs) {
       let mergedChartOverlayPrefs = toSerialize.chartOverlayPrefs;

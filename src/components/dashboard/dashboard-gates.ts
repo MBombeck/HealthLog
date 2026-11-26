@@ -11,10 +11,8 @@ import {
   GLUCOSE_CONTEXT_BUCKETS,
   type GlucoseContextBucket,
 } from "@/lib/glucose";
-import type {
-  DashboardLayout,
-  DashboardWidgetId,
-} from "@/lib/dashboard-layout";
+import type { DashboardLayout } from "@/lib/dashboard-layout";
+import { TILE_CAPABLE_WIDGET_IDS } from "@/lib/dashboard/tile-widgets";
 
 /**
  * v1.7.0 — first-paint gate for the dashboard tile strip.
@@ -43,63 +41,24 @@ export function resolveDashboardFirstPaintGate(input: {
   return { showTileStripSkeleton, showEmptyState };
 }
 
-/**
- * v1.16.8 — widget ids that actually paint a tile in the strip on the
- * web dashboard, mirrored from the per-id render blocks below.
- * `medications` / `recentWorkouts` / `achievements` carry NO strip tile
- * (chart-row cards only), and the iOS-pin-only ids have no web render
- * path at all — counting any of them over-reserved the loading
- * silhouette and made the strip reshuffle when the data landed.
- */
-export const TILE_CAPABLE_WIDGET_IDS = [
-  "weight",
-  "bp",
-  "pulse",
-  "bodyFat",
-  "mood",
-  "sleep",
-  "steps",
-  "glucose",
-  "bpInTarget",
-  "vo2Max",
-  // v1.28.52 — vitals + body-composition strip tiles: each paints one
-  // strip card and self-gates on having a sample of its MeasurementType.
-  "hrv",
-  "oxygenSaturation",
-  "respiratoryRate",
-  "wristTemperature",
-  "muscleMass",
-  "totalBodyWater",
-  "boneMass",
-  // v1.29 — fluid intake strip tile: paints one strip card and self-gates
-  // on having a NUTRIENT_WATER sample.
-  "waterIntake",
-  // Energy intake: one strip card, self-gates on NUTRIENT_ENERGY.
-  "energyIntake",
-] as const satisfies readonly DashboardWidgetId[];
-
-export type TileCapableWidgetId = (typeof TILE_CAPABLE_WIDGET_IDS)[number];
-
 const TILE_CAPABLE_WIDGET_ID_SET: ReadonlySet<string> = new Set(
   TILE_CAPABLE_WIDGET_IDS,
 );
 
 /**
  * v1.16.8 — silhouette count for the tile-strip skeleton: one card per
- * tile-capable, tile-visible widget. `bp` paints TWO tiles (sys + dia,
- * see the render block below) so it counts double; `glucose` can fan
+ * tile-capable, tile-visible widget (blood pressure is one tile, systolic
+ * over diastolic, since 1.50); `glucose` can fan
  * out to one tile per logged context, but the contexts are unknown
  * until the snapshot lands, so it reserves one card (the sane floor).
  * Pure + exported for direct unit coverage.
  */
 export function resolveConfiguredTileCount(layout: DashboardLayout): number {
-  let count = 0;
-  for (const widget of layout.widgets) {
-    if (!TILE_CAPABLE_WIDGET_ID_SET.has(widget.id)) continue;
-    if (!(widget.tileVisible ?? widget.visible)) continue;
-    count += widget.id === "bp" ? 2 : 1;
-  }
-  return count;
+  return layout.widgets.filter(
+    (widget) =>
+      TILE_CAPABLE_WIDGET_ID_SET.has(widget.id) &&
+      (widget.tileVisible ?? widget.visible),
+  ).length;
 }
 
 /**

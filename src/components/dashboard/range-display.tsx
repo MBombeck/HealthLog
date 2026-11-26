@@ -46,19 +46,25 @@ export function toHoursSummary(s: DataSummary): DataSummary {
   };
 }
 
+/** 0 inside the green band, 1 in the orange wings, 2 beyond; -1 unjudged. */
+export function getRangeTone(
+  value: number | null | undefined,
+  config: RangeDisplayConfig,
+): -1 | 0 | 1 | 2 {
+  const range = config.range;
+  if (value == null || !range) return -1;
+  if (value >= range.greenMin && value <= range.greenMax) return 0;
+  if (value >= range.orangeMin && value <= range.orangeMax) return 1;
+  return 2;
+}
+
 export function getRangeColorClass(
   value: number | null | undefined,
   config: RangeDisplayConfig,
 ): string | undefined {
-  const range = config.range;
-  if (value == null || !range) return undefined;
-  const inGreen = value >= range.greenMin && value <= range.greenMax;
-  const inOrange =
-    !inGreen && value >= range.orangeMin && value <= range.orangeMax;
-
-  if (inGreen) return "text-success";
-  if (inOrange) return "text-warning";
-  return "text-destructive";
+  return [undefined, "text-success", "text-warning", "text-destructive"][
+    getRangeTone(value, config) + 1
+  ];
 }
 
 export function getRangeHint(

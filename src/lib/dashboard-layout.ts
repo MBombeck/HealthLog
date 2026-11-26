@@ -212,6 +212,12 @@ export interface DashboardWidgetConfig {
    */
   tileVisible?: boolean;
   order: number;
+  /**
+   * The tile always makes the dashboard's one row, ahead of the tiles with
+   * something to say (`orderStripWidgets`). Optional and additive: only
+   * `true` is stored.
+   */
+  pinned?: boolean;
 }
 
 /**
@@ -433,6 +439,11 @@ export interface DashboardLayout {
    * retired opt-in hero and old blobs may still carry it.
    */
   todayCardVisible?: boolean;
+  /**
+   * Whether "All values" under the tile row is open. Closed (one row) is the
+   * default and is omitted from storage like `todayCardVisible`.
+   */
+  tilesExpanded?: boolean;
 }
 
 /**
@@ -468,6 +479,7 @@ export const LAYOUT_FIELD_MERGE_DISPOSITION = {
   enabledHeroItemKinds: "preserve",
   hero: "preserve",
   todayCardVisible: "preserve",
+  tilesExpanded: "preserve",
 } as const satisfies Record<keyof DashboardLayout, "replace" | "preserve">;
 
 /**
@@ -543,6 +555,7 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayout = {
   enabledHeroItemKinds: [...PRIORITY_ITEM_KINDS],
   hero: DEFAULT_HERO_PRIMARY_CONTENT,
   todayCardVisible: true,
+  tilesExpanded: false,
   widgets: [
     { id: "weight", visible: true, tileVisible: true, order: 0 },
     { id: "bp", visible: true, tileVisible: true, order: 1 },
@@ -677,9 +690,10 @@ export function resolveDashboardLayout(raw: unknown): DashboardLayout {
   // never had the field (the v1.4.15 schema upgrade). Users who saved
   // a layout before this release see no behavioural change until they
   // explicitly toggle the new strip switch.
-  const normalized = filtered.map((w) => ({
+  const normalized = filtered.map(({ pinned, ...w }) => ({
     ...w,
     tileVisible: typeof w.tileVisible === "boolean" ? w.tileVisible : w.visible,
+    ...(pinned === true ? { pinned: true } : {}),
   }));
 
   // Resolve the selected score rings once — the hero-ring-order reconciler
@@ -722,6 +736,7 @@ export function resolveDashboardLayout(raw: unknown): DashboardLayout {
     hero: coerceHeroPrimaryContent(candidate.hero),
     // Only an explicit `false` hides the top card; anything else shows it.
     todayCardVisible: candidate.todayCardVisible !== false,
+    tilesExpanded: candidate.tilesExpanded === true,
   };
 }
 
@@ -740,8 +755,9 @@ export function serializeDashboardLayout(
     widgets: layout.widgets
       .slice()
       .sort((a, b) => a.order - b.order)
-      .map((w, i) => ({
+      .map(({ pinned, ...w }, i) => ({
         ...w,
+        ...(pinned === true ? { pinned: true } : {}),
         // Persist tileVisible explicitly so a follow-up read of the
         // saved layout doesn't have to re-mirror from `visible` and
         // discard the user's actual choice.
@@ -777,5 +793,6 @@ export function serializeDashboardLayout(
     ...(hero === DEFAULT_HERO_PRIMARY_CONTENT ? {} : { hero }),
     // Shown is the default and is omitted the same way.
     ...(layout.todayCardVisible === false ? { todayCardVisible: false } : {}),
+    ...(layout.tilesExpanded === true ? { tilesExpanded: true } : {}),
   };
 }

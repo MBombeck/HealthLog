@@ -220,6 +220,20 @@ function layoutEdits(
     });
   }
 
+  /**
+   * Pin a tile: it always makes the dashboard's one row, ahead of the tiles
+   * with something to say (`orderStripWidgets`).
+   */
+  function togglePin(widgetId: DashboardWidgetCatalogueId, pinned: boolean) {
+    if (!layout) return;
+    setDraft({
+      ...layout,
+      widgets: layout.widgets.map((w) =>
+        w.id === widgetId ? { ...w, pinned } : w,
+      ),
+    });
+  }
+
   function toggleHeroItem(kind: PriorityItemKind, enabled: boolean) {
     if (!layout) return;
     setDraft({
@@ -299,6 +313,7 @@ function layoutEdits(
   return {
     toggle,
     toggleTile,
+    togglePin,
     toggleHeroItem,
     setTodayCardVisible,
     setHeroContent,

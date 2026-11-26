@@ -1,4 +1,5 @@
 import { dashboardSource } from "@/__tests__/helpers/dashboard-source";
+import { ONE_ROW_GRID } from "@/components/dashboard/tiles/one-row";
 import { describe, it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync } from "node:fs";
@@ -101,8 +102,10 @@ describe("RootLoading — single skeleton source (wiring pins)", () => {
     );
   });
 
-  it("shares the grid-track literal with the page so the footprint matches at swap time", () => {
-    expect(loadingSrc).toContain(GRID_TRACK);
-    expect(pageSrc).toContain(GRID_TRACK);
+  it("shares the grid with the page so the footprint matches at swap time", () => {
+    // Both read the one definition (`ONE_ROW_GRID`), which carries the track.
+    expect(ONE_ROW_GRID).toContain(GRID_TRACK);
+    expect(loadingSrc).toContain("className={ONE_ROW_GRID}");
+    expect(pageSrc).toContain("className={ONE_ROW_GRID}");
   });
 });
