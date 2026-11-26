@@ -32,12 +32,7 @@ import { READING_ZONE_SLACK_MS } from "@/lib/tz/reading-zone";
 import { MS_PER_DAY } from "@/lib/time-constants";
 import { dayWeightedRowsSql } from "@/lib/measurements/day-mean";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
-import { RANKED_TYPES } from "@/lib/analytics/source-rank-sql";
-import { metricKeyForType } from "@/lib/measurements/cumulative-day-sum";
-import {
-  getSourceLadder,
-  parseSourcePriority,
-} from "@/lib/validations/source-priority";
+import { sourceRankOfTypeSql } from "@/lib/analytics/source-rank-sql";
 
 export interface DayAggregateRow {
   /** Calendar day in the requested zone, `YYYY-MM-DD`. */
@@ -123,29 +118,15 @@ function canonicalSourceKeep(
   alias: string,
   day: Prisma.Sql,
 ): Prisma.Sql {
-  const metricKey = metricKeyForType(opts.type);
-  if (
-    opts.sourcePriority === undefined ||
-    metricKey === null ||
-    !RANKED_TYPES.includes(opts.type)
-  ) {
-    return Prisma.sql`TRUE`;
-  }
-  const ladder = getSourceLadder(
-    parseSourcePriority(opts.sourcePriority),
-    metricKey,
+  if (opts.sourcePriority === undefined) return Prisma.sql`TRUE`;
+  const rankSql = sourceRankOfTypeSql(
+    opts.type,
+    opts.sourcePriority,
+    `${alias}."source"`,
   );
-  if (ladder.length === 0) return Prisma.sql`TRUE`;
+  if (rankSql === null) return Prisma.sql`TRUE`;
   const a = Prisma.raw(alias);
-  const whens = ladder
-    .map((source, i) => {
-      if (!/^[A-Z0-9_]+$/.test(source)) {
-        throw new Error(`unsafe source literal for SQL splice: ${source}`);
-      }
-      return `WHEN '${source}' THEN ${i}`;
-    })
-    .join(" ");
-  const rank = Prisma.raw(`CASE ${alias}."source"::text ${whens} ELSE 90 END`);
+  const rank = Prisma.raw(rankSql);
   return Prisma.sql`(${a}."source" = FIRST_VALUE(${a}."source") OVER (
     PARTITION BY ${day}
     ORDER BY (${rank}), ${a}."source"::text

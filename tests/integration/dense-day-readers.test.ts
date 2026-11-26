@@ -43,6 +43,7 @@ import {
   restingPulseProxyBlockKey,
 } from "@/lib/analytics/resting-pulse-read";
 import { caches } from "@/lib/cache/server-cache";
+import { sourceLadderOfType } from "@/lib/analytics/source-rank-sql";
 import { readCumulativeDayProfiles } from "@/lib/measurements/intraday-cumulative-profile";
 import { buildWorkoutHrSeries, foldHrBuckets } from "@/lib/workouts/hr-series";
 import { shiftDateKey, userDayKey } from "@/lib/tz/format";
@@ -593,15 +594,20 @@ describe("the other dense-day readers", () => {
 });
 
 /**
- * The 30-day fold as it ran before the closed block: one statement over the
- * whole window. The reference the cached read must equal.
+ * The 30-day fold as one plain statement over the whole window, each local
+ * day kept to its first source on the default pulse ladder. The reference
+ * the cached read must equal.
  */
 async function referenceProxy(userId: string, since: Date) {
-  const rows = await prisma.$queryRaw<Array<{ first_at: Date; p: number }>>(
+  const ladder = sourceLadderOfType("PULSE", null);
+  const rows = await prisma.$queryRaw<
+    Array<{ day: string; source: string; first_at: Date; p: number; n: number }>
+  >(
     Prisma.sql`
     WITH src AS (
       SELECT
         to_char((m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${TZ}, 'YYYY-MM-DD') AS day,
+        m."source"::text AS source,
         m."measured_at" AS measured_at,
         m."value" AS value
       FROM measurements m
@@ -611,34 +617,70 @@ async function referenceProxy(userId: string, since: Date) {
         AND m."measured_at" >= ${since}
     )
     SELECT
+      day,
+      source,
+      COUNT(*)::int AS n,
       MIN(measured_at) AS first_at,
       (percentile_cont(0.2::double precision) WITHIN GROUP (ORDER BY value))::double precision AS p
     FROM src
-    GROUP BY day
-    HAVING COUNT(*) >= 3
-    ORDER BY first_at ASC
+    GROUP BY day, source
   `,
   );
-  return rows.map((r) => ({
-    measuredAt: r.first_at,
-    value: Math.round(Number(r.p)),
-  }));
+  const rank = (s: string) => {
+    const i = ladder.indexOf(s as (typeof ladder)[number]);
+    return i === -1 ? 90 : i;
+  };
+  const best = new Map<string, (typeof rows)[number]>();
+  for (const r of rows) {
+    const held = best.get(r.day);
+    if (
+      !held ||
+      rank(r.source) < rank(held.source) ||
+      (rank(r.source) === rank(held.source) && r.source < held.source)
+    ) {
+      best.set(r.day, r);
+    }
+  }
+  return [...best.values()]
+    .filter((r) => Number(r.n) >= 3)
+    .sort((a, b) => a.first_at.getTime() - b.first_at.getTime())
+    .map((r) => ({
+      measuredAt: r.first_at,
+      value: Math.round(Number(r.p)),
+    }));
 }
 
-/** The proxy fold's statements, by the start the counter keeps of them. */
+/**
+ * The proxy fold's statements, by the start the counter keeps of them (its
+ * first 160 characters).
+ */
 const PROXY_STATEMENT =
-  /^WITH src AS \( SELECT to_char\(\(m\."measured_at" AT TIME ZONE 'UTC'\) AT TIME ZONE \$\d+, 'YYYY-MM-DD'\) AS day, m\."measured_at" AS measured_at, m\."value" AS value/;
+  /^WITH src AS \( SELECT to_char\(\(m\."measured_at" AT TIME ZONE 'UTC'\) AT TIME ZONE \$\d+, 'YYYY-MM-DD'\) AS day, m\."source" AS source/;
 
-/** Three pulse readings at `at`, a minute apart, and the write tail's eviction. */
-async function writePulse(at: Date, value: number, tag: string) {
+/** How many proxy folds a counted read sent. */
+const proxyFolds = (m: { statements: string[] }) =>
+  m.statements.filter((t) => PROXY_STATEMENT.test(t)).length;
+
+/**
+ * Three pulse readings at `at`, a minute apart, and the write tail's
+ * eviction. From the seeded stream's own source unless `source` says
+ * otherwise, so the day's pick keeps them.
+ */
+async function writePulse(
+  at: Date,
+  value: number,
+  tag: string,
+  source: "GOOGLE_HEALTH" | "MANUAL" = "GOOGLE_HEALTH",
+) {
   const rows = [0, 1, 2].map((i) => ({
     id: `${tag}-${i}`,
     userId: DENSE,
     type: "PULSE" as const,
     value,
     unit: "bpm",
-    // Manual readings at odd milliseconds: no seeded row shares the key.
-    source: "MANUAL" as const,
+    // Odd milliseconds: the seeded stream's instants fall on sevenths of a
+    // millisecond, so no seeded row shares the key.
+    source,
     measuredAt: new Date(at.getTime() + i * 60_000 + 777),
   }));
   await prisma.measurement.createMany({ data: rows });
@@ -657,6 +699,7 @@ describe("the 30-day resting-pulse proxy, folded once and shared", () => {
         TZ,
         localDayWindow(userDayKey(since, TZ), TZ).dayEnd,
         localDayWindow(userDayKey(NOW, TZ), TZ).dayStart,
+        null,
       ),
     ) !== null;
 
@@ -668,8 +711,8 @@ describe("the 30-day resting-pulse proxy, folded once and shared", () => {
     const coldMs = performance.now() - started;
     expect(cold.result).toEqual(await referenceProxy(DENSE, since));
     expect(cold.result.length).toBeGreaterThanOrEqual(26);
-    // A miss is the old single statement, and it keeps the closed days.
-    expect(cold.count).toBe(1);
+    // A miss is one fold over the whole window, and it keeps the closed days.
+    expect(proxyFolds(cold)).toBe(1);
     expect(blockCached()).toBe(true);
 
     const warmStarted = performance.now();
@@ -677,7 +720,7 @@ describe("the 30-day resting-pulse proxy, folded once and shared", () => {
     const warmMs = performance.now() - warmStarted;
     expect(warm.result).toEqual(cold.result);
     // Only the partial first day and today are folded again.
-    expect(warm.count).toBe(1);
+    expect(proxyFolds(warm)).toBe(1);
     report(
       `resting proxy, 30 days: cold ${coldMs.toFixed(0)} ms, warm ${warmMs.toFixed(0)} ms`,
     );
@@ -686,9 +729,21 @@ describe("the 30-day resting-pulse proxy, folded once and shared", () => {
     await writePulse(new Date(NOW.getTime() - 10 * 60_000), 41, "today");
     expect(blockCached()).toBe(true);
     const synced = await countStatements(read);
-    expect(synced.count).toBe(1);
+    expect(proxyFolds(synced)).toBe(1);
     expect(synced.result).toEqual(await referenceProxy(DENSE, since));
     expect(synced.result.at(-1)!.value).toBe(41);
+
+    // A hand-typed reading on the same day ranks below the stream's source
+    // on the pulse ladder: the day stays the stream's, not a pooled mixture.
+    await writePulse(
+      new Date(NOW.getTime() - 8 * 60_000),
+      20,
+      "typed",
+      "MANUAL",
+    );
+    const typed = await countStatements(read);
+    expect(typed.result).toEqual(synced.result);
+    expect(typed.result).toEqual(await referenceProxy(DENSE, since));
 
     // A backfill that reaches into the closed days drops the block.
     const { dayStart } = localDayWindow(shiftDateKey(DAY, -5), TZ);
@@ -737,8 +792,7 @@ describe("the 30-day resting-pulse proxy, folded once and shared", () => {
     const after = await sync(true, "launch");
     const afterMs = after.ms;
     const unshared = await sync(false, "launch-unshared");
-    const folds = (m: { statements: string[] }) =>
-      m.statements.filter((t) => PROXY_STATEMENT.test(t)).length;
+    const folds = proxyFolds;
     report(
       `daily digest: cold ${coldMs.toFixed(0)} ms / ${cold.count} statements / ${folds(cold)} proxy folds, ` +
         `after a sync ${afterMs.toFixed(0)} ms / ${after.count} statements / ${folds(after)} proxy folds, ` +
