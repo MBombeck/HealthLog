@@ -144,6 +144,11 @@ export interface HealthChartProps {
    * blood-pressure hours in `bp-time-of-day.ts`). Unset draws the whole day.
    */
   partOfDay?: BpPartOfDay;
+  /**
+   * Draw one source's readings only (a device's own score), never the
+   * canonical pick that fills its missing days from another source.
+   */
+  sourceEq?: string;
 }
 
 export interface ChartDataPoint {

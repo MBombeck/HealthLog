@@ -35,7 +35,7 @@ const priorityItemSchema = z
     kind: z
       .enum([...PRIORITY_ITEM_KINDS])
       .describe(
-        "Closed rail-item kind. `sync_issue` covers a connection that needs a reconnect or a resume (action intent `sync.reconnect`) and, since 1.50, a source that has gone quiet by the SYNC_STALLED rule (one line in `title`, no `body`, action intent `sync.open` with labelKey `daily.action.openSource` and href `/settings/integrations#<source>`).",
+        "Closed rail-item kind. `sync_issue` covers a connection that needs a reconnect or a resume (action intent `sync.reconnect`) and, since 1.50, a source that has gone quiet by the SYNC_STALLED rule (one line in `title`, no `body`, action intent `sync.reconnect` with labelKey `daily.action.openSource` and href `/settings/integrations#<source>`). Both lines share the intent on purpose: it is the token every shipped app routes to the integrations screen, so an older build that does not know the label key still gets a working button under its generic label. Tell the two apart by `status` (`warning` for a reconnect, `info` for a quiet source) or by `labelKey`, never by the intent.",
       ),
     itemKey: z
       .string()
