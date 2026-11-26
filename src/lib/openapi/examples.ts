@@ -339,3 +339,47 @@ export const readinessStaleExample = {
   },
   error: null,
 };
+
+/**
+ * `healthScore.pillars` on `GET /api/dashboard/snapshot`, worded in English:
+ * blood pressure and activity counted, sleep is not tracked, and the
+ * wellbeing pillar is held back for safety signposting. Built from
+ * {@link SCORE_PILLARS_EXAMPLE_INPUT} by `snapshotScorePillars`.
+ */
+export const SCORE_PILLARS_EXAMPLE_INPUT = [
+  { id: "BLOOD_PRESSURE", score: 82 },
+  { id: "ACTIVITY", score: 64.4 },
+  { id: "SLEEP", reason: "not_tracked" },
+  { id: "WELLBEING", reason: "crisis_signposting" },
+] as const;
+
+export const dashboardScorePillarsExample = [
+  {
+    id: "BLOOD_PRESSURE",
+    label: "Blood pressure",
+    value: 82,
+    reason: null,
+    reasonCode: null,
+  },
+  {
+    id: "ACTIVITY",
+    label: "Activity",
+    value: 64,
+    reason: null,
+    reasonCode: null,
+  },
+  {
+    id: "SLEEP",
+    label: "Sleep",
+    value: null,
+    reason: "Not tracked",
+    reasonCode: "not_tracked",
+  },
+  {
+    id: "WELLBEING",
+    label: "Wellbeing",
+    value: null,
+    reason: "Safety guidance is shown instead of a score",
+    reasonCode: "crisis_signposting",
+  },
+];

@@ -3427,6 +3427,57 @@
           "since": "anchor-3d+12:00:00",
           "episodeCount": 1
         },
+        "pillars": [
+          {
+            "id": "BLOOD_PRESSURE",
+            "label": "Blood pressure",
+            "value": 73,
+            "reason": null,
+            "reasonCode": null
+          },
+          {
+            "id": "GLYCAEMIA",
+            "label": "Glycemia",
+            "value": 100,
+            "reason": null,
+            "reasonCode": null
+          },
+          {
+            "id": "ACTIVITY",
+            "label": "Activity",
+            "value": 78,
+            "reason": null,
+            "reasonCode": null
+          },
+          {
+            "id": "SLEEP",
+            "label": "Sleep",
+            "value": 92,
+            "reason": null,
+            "reasonCode": null
+          },
+          {
+            "id": "ADIPOSITY",
+            "label": "Adiposity",
+            "value": null,
+            "reason": "Not tracked",
+            "reasonCode": "not_tracked"
+          },
+          {
+            "id": "WELLBEING",
+            "label": "Wellbeing",
+            "value": null,
+            "reason": "Not tracked",
+            "reasonCode": "not_tracked"
+          },
+          {
+            "id": "LIPIDS",
+            "label": "Lipids",
+            "value": null,
+            "reason": "Not tracked",
+            "reasonCode": "not_tracked"
+          }
+        ],
         "tension": {
           "band": "green",
           "positive": [
