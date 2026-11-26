@@ -132,7 +132,6 @@ interface MetricTargetSummaryProps {
 }
 
 export function MetricTargetSummary({ slug }: MetricTargetSummaryProps) {
-  const { t } = useTranslations();
   const { isAuthenticated } = useAuth();
 
   const isGlucose = slug === "blood-glucose";
@@ -150,8 +149,8 @@ export function MetricTargetSummary({ slug }: MetricTargetSummaryProps) {
   if ((!targetType && !isGlucose) || !data) return null;
 
   // Glucose: one panel per logged context, converting the canonical
-  // mg/dL values to the user's display unit. The route's per-context
-  // labels are i18n keys, so resolve them.
+  // mg/dL values to the user's display unit. The route words each label
+  // in the reader's language.
   if (isGlucose) {
     // The payload stays canonical mg/dL here; each panel converts through
     // the shared target adapter, which owns the glucose unit as it owns
@@ -159,11 +158,9 @@ export function MetricTargetSummary({ slug }: MetricTargetSummaryProps) {
     const glucoseUnit = resolveGlucoseUnit(data.profile?.glucoseUnit ?? null);
     const panels = GLUCOSE_TARGET_TYPES.map((type) =>
       data.targets.find((entry) => entry.type === type),
-    )
-      .filter(
-        (entry): entry is TargetItem => entry != null && entry.range != null,
-      )
-      .map((entry) => ({ ...entry, label: t(entry.label) }));
+    ).filter(
+      (entry): entry is TargetItem => entry != null && entry.range != null,
+    );
 
     if (panels.length === 0) return null;
 

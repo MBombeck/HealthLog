@@ -34,7 +34,7 @@ export interface SseController<T = Uint8Array> {
  * Build a `ReadableStream<Uint8Array>` whose `start` callback runs the
  * supplied `emit` function inside a try/finally that always closes the
  * controller. Use the returned stream with the standard SSE response
- * headers (`Content-Type: text/event-stream`, `Cache-Control: no-cache`).
+ * headers (`Content-Type: text/event-stream`, `Cache-Control: private, no-store, no-transform`).
  *
  * v1.18.10 — the stream now wires a `cancel` handler: when the consumer
  * cancels (client disconnect), the shared `AbortController` fires, so the

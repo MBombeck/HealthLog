@@ -32,6 +32,12 @@ import { READING_ZONE_SLACK_MS } from "@/lib/tz/reading-zone";
 import { MS_PER_DAY } from "@/lib/time-constants";
 import { dayWeightedRowsSql } from "@/lib/measurements/day-mean";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
+import { RANKED_TYPES } from "@/lib/analytics/source-rank-sql";
+import { metricKeyForType } from "@/lib/measurements/cumulative-day-sum";
+import {
+  getSourceLadder,
+  parseSourcePriority,
+} from "@/lib/validations/source-priority";
 
 export interface DayAggregateRow {
   /** Calendar day in the requested zone, `YYYY-MM-DD`. */
@@ -86,6 +92,15 @@ export interface ReadDayAggregatesOptions {
    * `.at(-1)` is that day, whole, without folding the rest of the window.
    */
   latestDayOnly?: boolean;
+  /**
+   * The user's source-priority blob (`User.sourcePriorityJson`, `null` for
+   * the default ladders). Given, a type with a source ladder keeps each day
+   * to the readings of its ladder-winning source, the pick every chart and
+   * metric page makes; omitted, every source's readings fold together. Two
+   * devices reporting the same day's resting heart rate are two estimates
+   * of one value, and their mean is neither.
+   */
+  sourcePriority?: unknown;
   /** Client to read through; defaults to the shared one. */
   db?: Pick<PrismaClient, "$queryRaw">;
 }
@@ -94,6 +109,48 @@ const LATEST_DAY_TAIL_MS = MS_PER_DAY + 2 * READING_ZONE_SLACK_MS;
 
 /** `HH:MM` or `HH:MM:SS`, 24-hour. */
 const LOCAL_CLOCK = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/;
+
+/**
+ * The keep-this-row predicate of the canonical source pick, over the rows of
+ * `alias`: true for the readings of the day's first source in ladder order
+ * (rank, then source name, the order `canonicalMeasurementsCte` uses), the
+ * day cut by `day`. `TRUE` when no pick was asked for or the type has no
+ * ladder. The rank CASE names this one type's ladder, closed-enum literals
+ * asserted against a fixed pattern before they are spliced.
+ */
+function canonicalSourceKeep(
+  opts: ReadDayAggregatesOptions,
+  alias: string,
+  day: Prisma.Sql,
+): Prisma.Sql {
+  const metricKey = metricKeyForType(opts.type);
+  if (
+    opts.sourcePriority === undefined ||
+    metricKey === null ||
+    !RANKED_TYPES.includes(opts.type)
+  ) {
+    return Prisma.sql`TRUE`;
+  }
+  const ladder = getSourceLadder(
+    parseSourcePriority(opts.sourcePriority),
+    metricKey,
+  );
+  if (ladder.length === 0) return Prisma.sql`TRUE`;
+  const a = Prisma.raw(alias);
+  const whens = ladder
+    .map((source, i) => {
+      if (!/^[A-Z0-9_]+$/.test(source)) {
+        throw new Error(`unsafe source literal for SQL splice: ${source}`);
+      }
+      return `WHEN '${source}' THEN ${i}`;
+    })
+    .join(" ");
+  const rank = Prisma.raw(`CASE ${alias}."source"::text ${whens} ELSE 90 END`);
+  return Prisma.sql`(${a}."source" = FIRST_VALUE(${a}."source") OVER (
+    PARTITION BY ${day}
+    ORDER BY (${rank}), ${a}."source"::text
+  ))`;
+}
 
 export async function readDayAggregates(
   opts: ReadDayAggregatesOptions,
@@ -159,7 +216,12 @@ export async function readDayAggregates(
         to_char(${readingWallSql("m", timeZone)}, 'YYYY-MM-DD') AS day,
         ${segment} AS segment,
         m."value" AS value,
-        m."measured_at" AS measured_at
+        m."measured_at" AS measured_at,
+        ${canonicalSourceKeep(
+          opts,
+          "m",
+          Prisma.sql`to_char(${readingWallSql("m", timeZone)}, 'YYYY-MM-DD')`,
+        )} AS keep
       FROM measurements m
       WHERE m."user_id" = ${opts.userId}
         AND m."type" = ${opts.type}::measurement_type
@@ -177,6 +239,7 @@ export async function readDayAggregates(
       MAX(value)::double precision AS max,
       MAX(measured_at)             AS last_at
     FROM src
+    WHERE keep
     GROUP BY day, segment
     ORDER BY day ASC, segment DESC
   `;
@@ -216,8 +279,13 @@ async function readHourlyMeanDayAggregates(
       last_at: Date;
     }>
   >`
-    WITH base AS (
-      SELECT m.*
+    WITH picked AS (
+      SELECT m.*,
+        ${canonicalSourceKeep(
+          opts,
+          "m",
+          Prisma.sql`to_char((m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone}, 'YYYY-MM-DD')`,
+        )} AS keep
       FROM measurements m
       WHERE m."user_id" = ${opts.userId}
         AND m."type" = ${opts.type}::measurement_type
@@ -225,6 +293,9 @@ async function readHourlyMeanDayAggregates(
         AND m."measured_at" >= ${opts.since}
         ${until}
         ${range}
+    ),
+    base AS (
+      SELECT p.* FROM picked p WHERE p.keep
     ),
     src AS (
       SELECT

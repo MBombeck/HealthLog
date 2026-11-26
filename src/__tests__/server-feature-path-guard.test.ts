@@ -40,6 +40,8 @@ const FEATURE_KEY_PATHS: Record<string, ServerFeature> = {
 
 /** Paths added since v1.49.0 that no client gates on, each with its reason. */
 const NO_FEATURE_KEY: Record<string, string> = {
+  "/api/auth/password-strength":
+    "Advisory only: the web forms' strength meter. A client facing an older server shows no meter and loses nothing, because the password is scored again on submit.",
   "/api/auth/register/setup":
     "Browser-only first-run claim: it sets a cookie for the browser that creates an empty instance's first account; a native client signs in to an instance that already has one.",
   "/api/wallet/apple/v1/devices/{deviceId}/registrations/{passTypeId}/{serial}":

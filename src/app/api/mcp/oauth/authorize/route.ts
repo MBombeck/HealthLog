@@ -35,6 +35,7 @@ import { z } from "zod/v4";
 import { annotate } from "@/lib/logging/context";
 import { refuseOAuthOnKeyMismatch } from "@/lib/boot/key-mismatch-refusal";
 import { withBackgroundEvent } from "@/lib/logging/background";
+import { applyApiCachePolicy } from "@/lib/http/api-cache-policy";
 import { auditLog } from "@/lib/auth/audit";
 import { getSession } from "@/lib/auth/session";
 import { assertRecentCookieProof } from "@/lib/api-handler";
@@ -341,25 +342,29 @@ async function surfaceAvailable(): Promise<boolean> {
 /**
  * Every response from this route carries the route's own CSP; the proxy leaves
  * this path alone (see `consent-csp.ts`). A response that already set one, the
- * consent page with its validated redirect origin, keeps it.
+ * consent page with its validated redirect origin, keeps it. It also carries
+ * the API cache posture `apiHandler` gives every other route, which this one
+ * cannot use (its errors are RFC-shaped).
  */
-function ensureAuthorizeCsp(response: Response): Response {
-  return response.headers.has("content-security-policy")
+function finishAuthorizeResponse(response: Response): Response {
+  const out = response.headers.has("content-security-policy")
     ? response
     : withAuthorizeCsp(response);
+  applyApiCachePolicy(out.headers);
+  return out;
 }
 
 export async function GET(request: NextRequest): Promise<Response> {
   // The boot key check refused this process: no grant is issued or stored.
   const refusal = refuseOAuthOnKeyMismatch();
-  if (refusal) return ensureAuthorizeCsp(refusal);
-  return ensureAuthorizeCsp(await authorizeGet(request));
+  if (refusal) return finishAuthorizeResponse(refusal);
+  return finishAuthorizeResponse(await authorizeGet(request));
 }
 
 export async function POST(request: NextRequest): Promise<Response> {
   const refusal = refuseOAuthOnKeyMismatch();
-  if (refusal) return ensureAuthorizeCsp(refusal);
-  return ensureAuthorizeCsp(await authorizePost(request));
+  if (refusal) return finishAuthorizeResponse(refusal);
+  return finishAuthorizeResponse(await authorizePost(request));
 }
 
 async function authorizeGet(request: NextRequest): Promise<Response> {

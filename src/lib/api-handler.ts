@@ -23,6 +23,7 @@ import { ConsentRequiredError } from "./ai/consent-guard";
 import { attachRecordContextEcho } from "./sharing/record-session-fence";
 import { refuseOnKeyMismatch } from "./boot/key-mismatch-refusal";
 import { acceptIncomingRequestId } from "./http/request-id";
+import { applyApiCachePolicy } from "./http/api-cache-policy";
 import { getClientIp, withErrorEnvelopeDefaults } from "./api-response";
 import { refuseCrossSiteWrite } from "./http/cross-site-guard";
 import {
@@ -335,6 +336,7 @@ export function apiHandler<T extends (...args: any[]) => Promise<Response>>(
           evt.getRequestId(),
         )) as NextResponse;
         nr.headers.set("x-request-id", evt.getRequestId());
+        applyApiCachePolicy(nr.headers);
         if (isBypassRoute) applyBypassRouteHeaders(nr.headers);
         // v1.37.0 — echo the record context this response was actually served
         // under, when one was decided. The value comes from the wide event and

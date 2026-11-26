@@ -38,6 +38,7 @@ import { openActivityDoses } from "@/lib/push-relay/live-activity";
 import { endActivitiesOverRelay } from "@/lib/push-relay/medication-pushes";
 import {
   loadPushContext,
+  relayReachable,
   ROUTABLE_DEVICE_SELECT,
   routeOf,
   type PushContext,
@@ -316,8 +317,10 @@ export async function retryLostActivityEnds(
   const endStates = new Map<string, ActivityEndState>();
   const spent: string[] = [];
   for (const device of devices) {
-    // Only the relay keeps a record of an end it did not take.
-    if (routeOf(device, ctx) !== "relay") continue;
+    // Only the relay keeps a record of an end it did not take, and the relay
+    // may carry a device's Activity ends while its other pushes take this
+    // server's own key (`laRelayBlock`).
+    if (!relayReachable(device, ctx)) continue;
     let endState = endStates.get(device.userId);
     if (!endState) {
       endState = memoEndState(device.userId);

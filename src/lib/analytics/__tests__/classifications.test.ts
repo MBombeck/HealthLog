@@ -6,11 +6,14 @@ import {
   classifyBMI,
   classifyBP,
   classifyBodyFat,
-  generateAlerts,
   heightSquaredM2,
   type BmiCategory,
   type BpCategory,
 } from "../classifications";
+import {
+  generateAlerts as generateAlertsIn,
+  type AlertInput,
+} from "../health-alerts";
 import {
   getBmiClassificationKey,
   getBpClassificationKey,
@@ -105,6 +108,9 @@ describe("classifyBP", () => {
     expect(result.category).toBe("Hypertension Grade 1");
   });
 });
+
+/** The English wording, the one these assertions read. */
+const generateAlerts = (input: AlertInput) => generateAlertsIn(input, "en");
 
 describe("generateAlerts", () => {
   it("returns empty for empty input", () => {

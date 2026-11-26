@@ -2,6 +2,7 @@ import { z } from "zod/v4";
 import { isValidKvnr, normaliseKvnr } from "@/lib/validations/kvnr";
 import { webauthnKeyNameSchema } from "@/lib/validations/mfa";
 import { clientTransportSchema } from "@/lib/validations/client-transport";
+import { PASSWORD_STRENGTH_MAX_LENGTH } from "@/lib/zxcvbn-i18n";
 
 /** Minimum password length — must match checkPasswordStrength() in @/lib/auth/password.ts */
 const PASSWORD_MIN_LENGTH = 12;
@@ -44,6 +45,11 @@ export const newAccountPasswordSchema = z
     PASSWORD_MIN_LENGTH,
     `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
   );
+
+/** The strength meter's request (`POST /api/auth/password-strength`). */
+export const passwordStrengthRequestSchema = z.object({
+  password: z.string().min(1).max(PASSWORD_STRENGTH_MAX_LENGTH),
+});
 
 export const registerSchema = z.object({
   email: z.email("Invalid email address"),

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { loadPushContext } from "@/lib/push-relay/route-device";
 import { apiHandler, requireAdmin } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { apiSuccess } from "@/lib/api-response";
@@ -166,8 +167,18 @@ export const GET = apiHandler(async () => {
   );
 
   const now = new Date();
+  // The relay context the Live Activity pass reads, so `liveActivityStart`
+  // answers by the pass's own rule; read only when the question arises.
+  const push =
+    liveActivityMeds > 0 && devices.some((d) => d.platform === "ios")
+      ? await loadPushContext()
+      : null;
   const diagnosticDevices: DiagnosticDevice[] = devices.map((d) =>
-    diagnosticDevice(d, { liveActivityWanted: liveActivityMeds > 0, now }),
+    diagnosticDevice(d, {
+      liveActivityWanted: liveActivityMeds > 0,
+      push,
+      now,
+    }),
   );
 
   const diagnosticChannels: DiagnosticChannel[] = channels.map((c) => ({

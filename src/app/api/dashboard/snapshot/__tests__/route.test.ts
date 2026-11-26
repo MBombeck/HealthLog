@@ -133,8 +133,8 @@ describe("GET /api/dashboard/snapshot", () => {
     // resolved `timezone` and their own live clock instead.
     expect(json.data.user).not.toHaveProperty("greetingHour");
     expect(json.data.user.timezone).toBe("Europe/Berlin");
-    // bfcache-friendly directive present.
-    expect(res.headers.get("Cache-Control")).toContain("private");
+    // The API default: no copy in any cache.
+    expect(res.headers.get("Cache-Control")).toBe("private, no-store");
   });
 
   it("serves the second call from cache (builder runs once)", async () => {

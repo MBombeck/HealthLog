@@ -102,7 +102,12 @@ export interface AdminDiagnosticDevices {
   devices: Array<{
     /** Absent on a response from a build before the field. */
     liveActivityStart?:
-      "ready" | "switch_off" | "no_consent" | "no_start_token" | null;
+      | "ready"
+      | "switch_off"
+      | "not_bound"
+      | "no_consent"
+      | "no_start_token"
+      | null;
   }>;
 }
 

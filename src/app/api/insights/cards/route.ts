@@ -21,11 +21,12 @@ import { probeRollupCoverage } from "@/lib/rollups/measurement-coverage";
 import { readDayMeanSeries } from "@/lib/insights/derived/baseline";
 import { resolveEffectiveBpTargets } from "@/lib/analytics/effective-range";
 import { isBpReadingInTarget } from "@/lib/analytics/bp-in-target";
+import { bmiOf } from "@/lib/analytics/classifications";
 import {
-  bmiOf,
   generateAlerts,
   type HealthAlert,
-} from "@/lib/analytics/classifications";
+} from "@/lib/analytics/health-alerts";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { pairByTimestamp } from "@/lib/analytics/correlations";
 import {
   buildComplianceMedicationContext,
@@ -89,7 +90,7 @@ const PROFILE_SELECT = {
 export const GET = apiHandler(async () => {
   // v1.37.0 — MANAGE-level read: computed over the whole record, with no
   // provider anywhere on the path.
-  const { user } = await requireRecordAuth("manage", "record");
+  const { user, actor } = await requireRecordAuth("manage", "record");
   annotate({ action: { name: "insights.cards" } });
 
   const NINETY_DAY_WINDOW = 90;
@@ -268,22 +269,32 @@ export const GET = apiHandler(async () => {
     }
   }
 
-  const alerts = generateAlerts({
-    bmi,
-    bpAvgSys: summaries.BLOOD_PRESSURE_SYS?.avg30 ?? null,
-    bpAvgDia: summaries.BLOOD_PRESSURE_DIA?.avg30 ?? null,
-    bpPctInTarget,
-    weightSlope30: summaries.WEIGHT?.slope30?.slope ?? null,
-    pulseAvg30: summaries.PULSE?.avg30 ?? null,
-    pulseAnomalyCount: summaries.PULSE?.anomalyCount ?? 0,
-    medications: medicationCompliance,
+  // Worded in the reader's language: the app's `Accept-Language` on a
+  // Bearer request, else the locale cookie or the reader's stored language.
+  const locale = await resolveServerLocale({
+    userLocale: actor.locale ?? null,
   });
+  const alerts = generateAlerts(
+    {
+      bmi,
+      bpAvgSys: summaries.BLOOD_PRESSURE_SYS?.avg30 ?? null,
+      bpAvgDia: summaries.BLOOD_PRESSURE_DIA?.avg30 ?? null,
+      bpPctInTarget,
+      weightSlope30: summaries.WEIGHT?.slope30?.slope ?? null,
+      pulseAvg30: summaries.PULSE?.avg30 ?? null,
+      pulseAnomalyCount: summaries.PULSE?.anomalyCount ?? 0,
+      medications: medicationCompliance,
+    },
+    locale,
+  );
 
-  // The rule engine wrote these, not a model.
-  const provider = "rules";
+  return apiSuccess(toCards(alerts));
+});
+
+/** Each alert as an iOS insight card. The rule engine wrote them, not a model. */
+function toCards(alerts: HealthAlert[]): InsightCard[] {
   const generatedAt = new Date().toISOString();
-
-  const cards: InsightCard[] = alerts.map((alert, idx) => ({
+  return alerts.map((alert, idx) => ({
     id: `alert-${idx + 1}`,
     title: alert.title,
     summary: alert.message,
@@ -291,8 +302,6 @@ export const GET = apiHandler(async () => {
     severity: toSeverity(alert.level),
     recommendations: [],
     generatedAt,
-    provider,
+    provider: "rules",
   }));
-
-  return apiSuccess(cards);
-});
+}
