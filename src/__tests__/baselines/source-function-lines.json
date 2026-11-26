@@ -104,7 +104,7 @@
     "components/insights/coach-panel/use-coach.ts :: useSendCoachMessage": 436,
     "components/insights/coach-panel/use-coach.ts :: useSendCoachMessage > useCallback(arg) #2": 340,
     "components/insights/daily-briefing.tsx :: DailyBriefing": 214,
-    "components/insights/derived/composite-score-anatomy.tsx :: CompositeScoreAnatomy": 253,
+    "components/insights/derived/composite-score-anatomy.tsx :: CompositeScoreAnatomy": 254,
     "components/insights/derived/score-trend-chart.tsx :: ScoreTrendChart": 255,
     "components/insights/derived/vitals-dashboard.tsx :: VitalsDashboard": 242,
     "components/insights/derived/wellness-scores.tsx :: WellnessScores": 201,
