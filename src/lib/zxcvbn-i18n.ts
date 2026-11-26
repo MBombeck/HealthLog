@@ -7,6 +7,13 @@
  */
 import type { Locale } from "@/lib/i18n/config";
 
+/**
+ * The longest password the strength meter scores. Past it every password
+ * scores 4 anyway, and zxcvbn's matching grows faster than linearly with the
+ * length; the meter sends at most this many characters.
+ */
+export const PASSWORD_STRENGTH_MAX_LENGTH = 256;
+
 const warningsDe: Record<string, string> = {
   "Straight rows of keys are easy to guess":
     "Gerade Tastenreihen sind leicht zu erraten",

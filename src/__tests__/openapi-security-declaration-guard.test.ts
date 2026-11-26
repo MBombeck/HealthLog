@@ -69,6 +69,8 @@ const UNAUTHENTICATED: Readonly<Record<string, string>> = {
     "Creates the first credential. Refused outright when registration is closed.",
   "/api/auth/register/setup":
     "Proves the setup token of an instance without an account, before the first credential exists.",
+  "/api/auth/password-strength":
+    "Scores a password for the registration form's strength meter, before the first credential exists.",
   "/api/auth/registration-status":
     "Says whether registration is open, so the sign-in screen can decide what to offer.",
   "/api/auth/passkey/login-options":

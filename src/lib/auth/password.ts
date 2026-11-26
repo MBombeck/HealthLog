@@ -104,6 +104,30 @@ export async function verifyPasswordOrDummy(
   return false;
 }
 
+/**
+ * The meter's reading of a password as the user types it: zxcvbn's score and
+ * its untranslated feedback, which the client maps to the UI language with
+ * `getZxcvbnTranslations`. The estimator runs here rather than in the browser
+ * because its dictionaries are about 375 KB gzip, more than any page of the
+ * app; `POST /api/auth/password-strength` serves it to the meter.
+ */
+export interface PasswordStrengthEstimate {
+  score: number; // 0-4
+  warning: string;
+  suggestions: string[];
+}
+
+export function estimatePasswordStrength(
+  password: string,
+): PasswordStrengthEstimate {
+  const result = zxcvbn(password);
+  return {
+    score: result.score,
+    warning: result.feedback.warning ?? "",
+    suggestions: result.feedback.suggestions ?? [],
+  };
+}
+
 export interface PasswordStrength {
   score: number; // 0-4
   feedback: string[];
