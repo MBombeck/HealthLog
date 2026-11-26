@@ -1899,7 +1899,7 @@
         },
         "step3": {
           "title": "Qual é a dose?",
-          "subline": "Quanto você toma de cada vez, como na embalagem ou na receita: 5 mg ou 2 comprimidos.",
+          "subline": "Como na embalagem ou na receita.",
           "amountLabel": "Quantidade",
           "amountPlaceholder": "ex.: 5",
           "unitLabel": "Unidade",
@@ -1925,9 +1925,9 @@
           },
           "dosesPerUnitLabel": "Tamanho da embalagem",
           "dosesPerUnitPlaceholder": "ex.: 4",
-          "dosesPerUnitHint": "Quantos comprimidos ou unidades vêm em uma embalagem ou caneta nova, por ex. 28 comprimidos ou uma caneta de 4 doses. Preenche a quantidade ao registrar uma embalagem; deixe em branco se as embalagens variam.",
+          "dosesPerUnitHint": "O que vem numa embalagem nova, ex.: 28 comprimidos.",
           "unitsPerDoseLabel": "Comprimidos ou unidades por dose",
-          "unitsPerDoseHint": "ex.: 2 comprimidos de 2 mg para uma dose de 4 mg, ou ½ comprimido para uma dose dividida",
+          "unitsPerDoseHint": "Ex.: 2 comprimidos de 2 mg para 4 mg.",
           "packSizeToggle": "Tamanho da embalagem (opcional)"
         },
         "step4": {
@@ -1935,12 +1935,10 @@
           "subline": "Uma data de início basta; a de fim pode vir depois."
         },
         "step5": {
-          "title": "Com que frequência você o toma?",
-          "subline": "Escolha o que corresponde à sua tomada."
+          "title": "Com que frequência você o toma?"
         },
         "step6": {
           "title": "Como isso fica em detalhes?",
-          "subline": "Defina dias da semana, intervalos ou o dia do mês.",
           "intervalWeeks": {
             "label": "A cada",
             "suffix": "semanas"
@@ -1964,7 +1962,7 @@
             "evening": "Noite",
             "night": "Madrugada"
           },
-          "overrideHint": "Opcional: defina uma dose ou contagem de unidades diferente apenas para este horário. Deixe em branco para usar o padrão do medicamento.",
+          "overrideHint": "Deixe em branco para a dose habitual.",
           "doseOverrideLabel": "Dose para este horário (opcional)",
           "doseOverridePlaceholder": "ex.: meio comprimido",
           "unitsOverrideLabel": "Unidades consumidas neste horário",
@@ -1973,7 +1971,6 @@
         },
         "step8": {
           "title": "Tudo pronto. O HealthLog deve lembrar você?",
-          "subline": "Revise tudo abaixo antes de salvar.",
           "remindersLabel": "Lembretes ligados",
           "remindersDescription": "Os lembretes chegam como você os configurou em Notificações: push web, Telegram ou ntfy. O app para iPhone agenda os próprios lembretes.",
           "noChannelHint": "Os lembretes precisam de um canal de notificação, e nenhum está ativo agora.",
@@ -2008,7 +2005,7 @@
         },
         "everyNWeeks": {
           "label": "A cada poucas semanas",
-          "description": "Ex.: a cada 2 semanas nas quintas (GLP-1, biológicos)."
+          "description": "Ex.: a cada 2 semanas nas quintas."
         },
         "monthly": {
           "label": "Mensal",
@@ -2016,15 +2013,15 @@
         },
         "rolling": {
           "label": "Flexível a partir da última dose",
-          "description": "Deixe a próxima dose aberta. Quando você tocar em 'Tomar', a contagem recomeça daquele momento."
+          "description": "A próxima dose conta a partir de “Tomar”."
         },
         "oneShot": {
           "label": "Dose única",
-          "description": "Uma administração, ex.: uma vacina ou uma injeção no consultório."
+          "description": "Uma dose, ex.: uma vacina."
         },
         "asNeeded": {
           "label": "Conforme necessário",
-          "description": "Sem plano fixo. Registre uma tomada sempre que precisar (ex.: alívio da dor)."
+          "description": "Sem plano fixo; registre uma tomada quando precisar."
         }
       },
       "summary": {
@@ -2056,8 +2053,7 @@
         "list": {
           "add": "Adicionar outro cronograma",
           "edit": "Editar",
-          "remove": "Remover",
-          "removeDisabled": "É necessário pelo menos um cronograma."
+          "remove": "Remover"
         }
       },
       "errors": {
@@ -2522,7 +2518,7 @@
         "saved": "Cronograma salvo",
         "failed": "Não foi possível salvar o cronograma",
         "window": {
-          "intro": "Para cada dose, defina quando uma tomada ainda conta como no horário: um horário preciso (±1h) ou sua própria janela, como 07:00–09:00.",
+          "intro": "No horário significa ±1h, ou uma janela que você define.",
           "explicitToggle": "Janela personalizada",
           "startLabel": "Início da janela",
           "endLabel": "Fim da janela",
@@ -9834,7 +9830,9 @@
         "title": "Configurar este servidor",
         "body": "Cinco passos curtos sobre cadastros, notificações, IA e privacidade; você pode pular ou mudar qualquer um depois.",
         "open": "Começar a configuração",
-        "dismiss": "Agora não"
+        "dismiss": "Agora não",
+        "relayBody": "Lembretes no iPhone e a Wallet aguardam esta resposta, na página inicial da administração.",
+        "relayOpen": "Abrir administração"
       },
       "accounts": {
         "title": "Quem pode usar este servidor",

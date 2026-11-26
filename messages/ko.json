@@ -1899,7 +1899,7 @@
         },
         "step3": {
           "title": "용량이 얼마인가요?",
-          "subline": "한 번에 복용하는 양을 포장이나 처방전에 적힌 대로 입력하세요. 예: 5mg 또는 2정.",
+          "subline": "포장이나 처방전에 적힌 대로요.",
           "amountLabel": "양",
           "amountPlaceholder": "예: 5",
           "unitLabel": "단위",
@@ -1925,9 +1925,9 @@
           },
           "dosesPerUnitLabel": "포장 크기",
           "dosesPerUnitPlaceholder": "예: 4",
-          "dosesPerUnitHint": "새 포장이나 펜 하나에 든 정제 또는 단위 수예요. 예: 정제 28개, 4회분 펜. 포장을 추가할 때 수량이 미리 채워져요. 포장마다 다르면 비워 두세요.",
+          "dosesPerUnitHint": "새 포장 하나의 양, 예: 정제 28개.",
           "unitsPerDoseLabel": "1회 용량당 정제 또는 단위 수",
-          "unitsPerDoseHint": "예: 4mg 용량이면 2mg 2정, 반으로 나눠 먹으면 ½정",
+          "unitsPerDoseHint": "예: 4mg이면 2mg 2정.",
           "packSizeToggle": "포장 크기(선택)"
         },
         "step4": {
@@ -1935,12 +1935,10 @@
           "subline": "시작일만 있어도 되고, 종료일은 나중에 추가할 수 있어요."
         },
         "step5": {
-          "title": "얼마나 자주 복용하나요?",
-          "subline": "복용 방식에 맞는 것을 고르세요."
+          "title": "얼마나 자주 복용하나요?"
         },
         "step6": {
           "title": "자세히 어떻게 되나요?",
-          "subline": "요일, 간격, 매월 날짜를 설정하세요.",
           "intervalWeeks": {
             "label": "매",
             "suffix": "주마다"
@@ -1964,7 +1962,7 @@
             "evening": "저녁",
             "night": "밤"
           },
-          "overrideHint": "선택 사항: 이 시간대에만 다른 용량이나 단위 수를 지정해요. 비워 두면 약의 기본값을 써요.",
+          "overrideHint": "비워 두면 평소 용량을 써요.",
           "doseOverrideLabel": "이 시간대 용량 (선택)",
           "doseOverridePlaceholder": "예: 반 알",
           "unitsOverrideLabel": "이 시간대에 복용하는 단위 수",
@@ -1973,7 +1971,6 @@
         },
         "step8": {
           "title": "다 됐어요. HealthLog가 알림을 보낼까요?",
-          "subline": "저장하기 전에 아래 내용을 확인해 주세요.",
           "remindersLabel": "알림 켜기",
           "remindersDescription": "알림은 알림 설정에서 정한 방식으로 와요: 웹 푸시, Telegram, ntfy. iPhone 앱은 알림을 직접 예약해요.",
           "noChannelHint": "알림을 보내려면 알림 채널이 필요한데, 지금은 켜진 채널이 없어요.",
@@ -2008,7 +2005,7 @@
         },
         "everyNWeeks": {
           "label": "몇 주마다",
-          "description": "예: 2주마다 목요일 (GLP-1, 생물학적 제제)."
+          "description": "예: 2주마다 목요일."
         },
         "monthly": {
           "label": "매월",
@@ -2016,15 +2013,15 @@
         },
         "rolling": {
           "label": "마지막 복용 기준 유동",
-          "description": "다음 복용 시점을 열어 둬요. '복용'을 누르면 그 순간부터 다시 세요."
+          "description": "다음 용량은 '복용'을 누른 때부터 세요."
         },
         "oneShot": {
           "label": "1회 복용",
-          "description": "한 번만 투여해요. 예: 예방접종이나 병원에서 맞는 주사."
+          "description": "한 번만, 예: 예방접종."
         },
         "asNeeded": {
           "label": "필요시",
-          "description": "정해진 일정 없이 필요할 때마다 복용을 기록해요 (예: 진통제)."
+          "description": "정해진 일정 없이 필요할 때 복용을 기록해요."
         }
       },
       "summary": {
@@ -2056,8 +2053,7 @@
         "list": {
           "add": "일정 추가",
           "edit": "편집",
-          "remove": "삭제",
-          "removeDisabled": "일정은 최소 하나가 필요해요."
+          "remove": "삭제"
         }
       },
       "errors": {
@@ -2522,7 +2518,7 @@
         "saved": "일정을 저장했어요",
         "failed": "일정을 저장하지 못했어요",
         "window": {
-          "intro": "복용마다 정시로 인정되는 범위를 정해요. 정확한 시각(±1h)이나 07:00–09:00 같은 직접 지정 범위로요.",
+          "intro": "정시는 ±1h 또는 직접 정한 범위예요.",
           "explicitToggle": "직접 범위 지정",
           "startLabel": "범위 시작",
           "endLabel": "범위 종료",
@@ -9834,7 +9830,9 @@
         "title": "이 서버 설정하기",
         "body": "가입, 알림, AI, 개인정보에 관한 짧은 다섯 단계이며, 어느 단계든 건너뛰거나 나중에 바꿀 수 있습니다.",
         "open": "설정 시작",
-        "dismiss": "나중에"
+        "dismiss": "나중에",
+        "relayBody": "iPhone 알림과 Wallet은 관리자 시작 페이지에서 이 답변을 기다려요.",
+        "relayOpen": "관리자 열기"
       },
       "accounts": {
         "title": "이 서버를 사용할 수 있는 사람",

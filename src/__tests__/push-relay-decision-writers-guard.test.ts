@@ -86,10 +86,18 @@ describe("push relay decision writers", () => {
     expect(question?.text).toMatch(/operatorDecision !== "undecided"/);
     expect(question?.text).toMatch(/canDecide !== true/);
     const hosts = withMatch(/<PushRelayQuestion\s*\/>/).sort();
+    // Not the dashboard: there the server notice names the question once
+    // and links to the admin start page, where it is asked.
     expect(hosts).toEqual([
       "src/app/admin/page.tsx",
-      "src/app/page-client.tsx",
       "src/components/onboarding/server/server-setup-step.tsx",
+    ]);
+    const notices = withMatch(
+      /<ServerSetupNotice surface="(admin|dashboard)"/,
+    ).sort();
+    expect(notices).toEqual([
+      "src/app/admin/page.tsx",
+      "src/app/page-client.tsx",
     ]);
     // On the client, the answer route is called from the question's hook
     // only.

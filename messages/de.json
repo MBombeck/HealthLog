@@ -1899,7 +1899,7 @@
         },
         "step3": {
           "title": "Wie hoch ist die Dosis?",
-          "subline": "Wie viel du jedes Mal nimmst, wie auf der Packung oder dem Rezept: 5 mg oder 2 Tabletten.",
+          "subline": "Wie auf der Packung oder dem Rezept.",
           "amountLabel": "Menge",
           "amountPlaceholder": "z. B. 5",
           "unitLabel": "Einheit",
@@ -1925,9 +1925,9 @@
           },
           "dosesPerUnitLabel": "Packungsgröße",
           "dosesPerUnitPlaceholder": "z. B. 4",
-          "dosesPerUnitHint": "Wie viele Tabletten oder Einheiten eine neue Packung oder ein Pen enthält, z. B. 28 Tabletten oder ein Pen mit 4 Dosen. Wird beim Erfassen einer Packung vorausgefüllt; leer lassen, wenn Packungen variieren.",
+          "dosesPerUnitHint": "Was eine neue Packung enthält, z. B. 28 Tabletten.",
           "unitsPerDoseLabel": "Tabletten oder Einheiten pro Dosis",
-          "unitsPerDoseHint": "z. B. 2 Tabletten à 2 mg für eine 4-mg-Dosis oder ½ Tablette bei geteilter Dosis",
+          "unitsPerDoseHint": "Z. B. 2 Tabletten à 2 mg für 4 mg.",
           "packSizeToggle": "Packungsgröße (optional)"
         },
         "step4": {
@@ -1935,12 +1935,10 @@
           "subline": "Ein Startdatum reicht, ein Ende kannst du später setzen."
         },
         "step5": {
-          "title": "Wie oft nimmst du es?",
-          "subline": "Wähle, was zu deiner Einnahme passt."
+          "title": "Wie oft nimmst du es?"
         },
         "step6": {
           "title": "Wie sieht das im Detail aus?",
-          "subline": "Trage Wochentage, Intervalle oder den Tag im Monat ein.",
           "intervalWeeks": {
             "label": "Alle",
             "suffix": "Wochen"
@@ -1964,7 +1962,7 @@
             "evening": "Abends",
             "night": "Nachts"
           },
-          "overrideHint": "Optional: für diese Uhrzeit eine abweichende Dosis oder Stückzahl festlegen. Leer lassen, um den Standard des Medikaments zu verwenden.",
+          "overrideHint": "Leer lassen für die übliche Dosis.",
           "doseOverrideLabel": "Dosis für diese Uhrzeit (optional)",
           "doseOverridePlaceholder": "z. B. eine halbe Tablette",
           "unitsOverrideLabel": "Verbrauchte Einheiten zu dieser Uhrzeit",
@@ -1973,7 +1971,6 @@
         },
         "step8": {
           "title": "Fertig! Soll HealthLog dich erinnern?",
-          "subline": "Du kannst alles unten nochmal prüfen, bevor du speicherst.",
           "remindersLabel": "Erinnerungen aktiv",
           "remindersDescription": "Erinnerungen kommen so an, wie du sie unter Benachrichtigungen eingerichtet hast: Web-Push, Telegram oder ntfy. Die iPhone-App plant ihre Erinnerungen selbst.",
           "noChannelHint": "Erinnerungen brauchen einen Benachrichtigungskanal, aktuell ist keiner aktiv.",
@@ -2008,7 +2005,7 @@
         },
         "everyNWeeks": {
           "label": "Alle X Wochen",
-          "description": "Z. B. alle 2 Wochen Donnerstags (GLP-1, Biologika)."
+          "description": "Z. B. alle 2 Wochen donnerstags."
         },
         "monthly": {
           "label": "Monatlich",
@@ -2016,15 +2013,15 @@
         },
         "rolling": {
           "label": "Flexibel ab letzter Einnahme",
-          "description": "Der nächste Termin bleibt offen. Wenn du auf „Einnehmen“ tippst, beginnt die Zählung ab diesem Moment neu."
+          "description": "Die nächste Dosis zählt ab „Einnehmen“."
         },
         "oneShot": {
           "label": "Einmalig",
-          "description": "Einzelgabe, zum Beispiel eine Impfung oder eine Spritze beim Arzt."
+          "description": "Eine Dosis, z. B. eine Impfung."
         },
         "asNeeded": {
           "label": "Bei Bedarf",
-          "description": "Kein fester Plan: Du erfasst eine Einnahme, wenn du sie brauchst (z. B. Schmerzmittel)."
+          "description": "Kein fester Plan; Einnahme bei Bedarf erfassen."
         }
       },
       "summary": {
@@ -2056,8 +2053,7 @@
         "list": {
           "add": "Weiteren Zeitplan hinzufügen",
           "edit": "Bearbeiten",
-          "remove": "Entfernen",
-          "removeDisabled": "Mindestens ein Zeitplan ist erforderlich."
+          "remove": "Entfernen"
         }
       },
       "errors": {
@@ -2522,7 +2518,7 @@
         "saved": "Zeitplan gespeichert",
         "failed": "Zeitplan konnte nicht gespeichert werden",
         "window": {
-          "intro": "Lege je Dosis fest, wann eine Einnahme als pünktlich gilt: ein genauer Zeitpunkt (±1 Std.) oder ein eigenes Fenster wie 07:00–09:00.",
+          "intro": "Pünktlich heißt ±1 Std. oder ein eigenes Fenster.",
           "explicitToggle": "Eigenes Fenster",
           "startLabel": "Fensterbeginn",
           "endLabel": "Fensterende",
@@ -9834,7 +9830,9 @@
         "title": "Diesen Server einrichten",
         "body": "Fünf kurze Schritte zu Registrierung, Benachrichtigungen, KI und Datenschutz; jeden kannst du überspringen oder später ändern.",
         "open": "Einrichtung starten",
-        "dismiss": "Nicht jetzt"
+        "dismiss": "Nicht jetzt",
+        "relayBody": "Erinnerungen auf dem iPhone und Wallet warten auf diese Antwort, auf der Admin-Startseite.",
+        "relayOpen": "Admin öffnen"
       },
       "accounts": {
         "title": "Wer diesen Server nutzen kann",

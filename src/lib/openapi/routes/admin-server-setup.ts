@@ -42,7 +42,7 @@ const serverSetupState = z
     noticePending: z
       .boolean()
       .describe(
-        "Whether the start-page notice shows for the calling admin: offered, not finished, not dismissed by this admin.",
+        "Whether the notice shows for the calling admin: offered, not dismissed by this admin, and either the setup is not finished or the push relay is still undecided.",
       ),
     facts: z
       .object({

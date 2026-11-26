@@ -152,7 +152,7 @@
     "components/medications/sections/inventory-dialogs.tsx :: AddInventoryDialog": 226,
     "components/medications/sections/inventory-section.tsx :: InventorySection": 368,
     "components/medications/side-effects-section.tsx :: SideEffectsSection": 518,
-    "components/medications/wizard/medication-wizard-dialog.tsx :: WizardDialogShell": 426,
+    "components/medications/wizard/medication-wizard-dialog.tsx :: WizardDialogShell": 432,
     "components/mood/manage/tag-groups-card.tsx :: TagGroupsCard": 252,
     "components/mood/manage/tag-manager-card.tsx :: TagManagerCard": 261,
     "components/mood/mood-form.tsx :: MoodForm": 498,

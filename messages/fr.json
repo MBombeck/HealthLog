@@ -1899,7 +1899,7 @@
         },
         "step3": {
           "title": "Quelle est la dose ?",
-          "subline": "Ce que vous prenez à chaque fois, comme sur la boîte ou l'ordonnance : 5 mg ou 2 comprimés.",
+          "subline": "Comme sur la boîte ou l’ordonnance.",
           "amountLabel": "Quantité",
           "amountPlaceholder": "par exemple 5",
           "unitLabel": "Unité",
@@ -1925,9 +1925,9 @@
           },
           "dosesPerUnitLabel": "Taille de la boîte",
           "dosesPerUnitPlaceholder": "p. ex. 4",
-          "dosesPerUnitHint": "Nombre de comprimés ou d'unités dans une nouvelle boîte ou un nouveau stylo, p. ex. 28 comprimés ou un stylo de 4 doses. Pré-remplit la quantité à l'ajout d'une boîte ; laisser vide si les boîtes varient.",
+          "dosesPerUnitHint": "Le contenu d’une nouvelle boîte, p. ex. 28 comprimés.",
           "unitsPerDoseLabel": "Comprimés ou unités par dose",
-          "unitsPerDoseHint": "p. ex. 2 comprimés de 2 mg pour une dose de 4 mg, ou ½ comprimé pour une dose fractionnée",
+          "unitsPerDoseHint": "P. ex. 2 comprimés de 2 mg pour 4 mg.",
           "packSizeToggle": "Taille du conditionnement (facultatif)"
         },
         "step4": {
@@ -1935,12 +1935,10 @@
           "subline": "Une date de début suffit ; la date de fin peut venir plus tard."
         },
         "step5": {
-          "title": "À quelle fréquence le prenez-vous ?",
-          "subline": "Choisissez ce qui correspond à votre prise."
+          "title": "À quelle fréquence le prenez-vous ?"
         },
         "step6": {
           "title": "À quoi cela ressemble-t-il en détail ?",
-          "subline": "Indiquez les jours de la semaine, les intervalles ou le jour du mois.",
           "intervalWeeks": {
             "label": "Toutes les",
             "suffix": "semaines"
@@ -1964,7 +1962,7 @@
             "evening": "Soir",
             "night": "Nuit"
           },
-          "overrideHint": "Facultatif : définissez une dose ou un nombre d'unités différent pour cet horaire uniquement. Laissez vide pour utiliser la valeur par défaut du médicament.",
+          "overrideHint": "Laissez vide pour la dose habituelle.",
           "doseOverrideLabel": "Dose pour cet horaire (facultatif)",
           "doseOverridePlaceholder": "ex. un demi-comprimé",
           "unitsOverrideLabel": "Unités consommées à cet horaire",
@@ -1973,7 +1971,6 @@
         },
         "step8": {
           "title": "Terminé ! HealthLog doit-il vous le rappeler ?",
-          "subline": "Vérifiez tout ci-dessous avant d’enregistrer.",
           "remindersLabel": "Rappels activés",
           "remindersDescription": "Les rappels arrivent comme vous les avez configurés dans Notifications : push web, Telegram ou ntfy. L’app iPhone planifie elle-même ses rappels.",
           "noChannelHint": "Les rappels nécessitent un canal de notification, et aucun n'est actif pour le moment.",
@@ -2008,7 +2005,7 @@
         },
         "everyNWeeks": {
           "label": "Toutes les quelques semaines",
-          "description": "Par exemple toutes les 2 semaines le jeudi (GLP-1, biologiques)."
+          "description": "Par exemple toutes les 2 semaines le jeudi."
         },
         "monthly": {
           "label": "Mensuel",
@@ -2016,15 +2013,15 @@
         },
         "rolling": {
           "label": "Flexible depuis la dernière dose",
-          "description": "Laissez la prochaine dose ouverte. Quand vous appuyez sur « Prendre », le décompte repart de ce moment."
+          "description": "La dose suivante compte à partir de « Prendre »."
         },
         "oneShot": {
           "label": "Dose unique",
-          "description": "Une seule administration, par exemple un vaccin ou une injection chez le médecin."
+          "description": "Une dose, par exemple un vaccin."
         },
         "asNeeded": {
           "label": "Au besoin",
-          "description": "Pas de plan fixe : enregistrez une prise quand vous en avez besoin (p. ex. antidouleur)."
+          "description": "Pas de plan fixe ; notez une prise au besoin."
         }
       },
       "summary": {
@@ -2056,8 +2053,7 @@
         "list": {
           "add": "Ajouter un autre horaire",
           "edit": "Modifier",
-          "remove": "Retirer",
-          "removeDisabled": "Au moins un horaire est requis."
+          "remove": "Retirer"
         }
       },
       "errors": {
@@ -2522,7 +2518,7 @@
         "saved": "Horaire enregistré",
         "failed": "Impossible d'enregistrer l'horaire",
         "window": {
-          "intro": "Pour chaque dose, définissez quand une prise reste à l'heure : un horaire précis (±1 h) ou votre propre fenêtre comme 07:00–09:00.",
+          "intro": "À l’heure signifie ±1 h, ou une fenêtre que vous fixez.",
           "explicitToggle": "Fenêtre personnalisée",
           "startLabel": "Début de la fenêtre",
           "endLabel": "Fin de la fenêtre",
@@ -9834,7 +9830,9 @@
         "title": "Configurer ce serveur",
         "body": "Cinq étapes courtes sur les inscriptions, les notifications, l'IA et la confidentialité ; chacune peut être ignorée ou modifiée plus tard.",
         "open": "Commencer la configuration",
-        "dismiss": "Pas maintenant"
+        "dismiss": "Pas maintenant",
+        "relayBody": "Les rappels sur iPhone et Wallet attendent cette réponse, sur la page d’accueil de l’administration.",
+        "relayOpen": "Ouvrir l’administration"
       },
       "accounts": {
         "title": "Qui peut utiliser ce serveur",

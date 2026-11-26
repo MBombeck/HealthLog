@@ -19,10 +19,12 @@ import {
 } from "./use-push-relay";
 
 /**
- * The one question to an admin: "Use the HealthLog push relay?". Shown
- * where an admin lands (the dashboard after signing in, the admin start page,
- * the server setup's notifications step) while the operator's decision is `undecided`, and only for an admin of a server whose
- * relay can be used at all (`push.relay.canDecide` of `/api/auth/me`).
+ * The one question to an admin: "Use the HealthLog push relay?". Shown on
+ * the admin start page and in the server setup's notifications step while the
+ * operator's decision is `undecided`, and only for an admin of a server whose
+ * relay can be used at all (`push.relay.canDecide` of `/api/auth/me`). The
+ * dashboard does not ask it; `ServerSetupNotice` names it there once and links
+ * to the admin start page.
  *
  * It goes away only by an answer, and the answer holds for the whole server:
  * no keeps the relay off and nobody is asked again; yes opens the switch's own

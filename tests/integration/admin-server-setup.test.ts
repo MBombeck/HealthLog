@@ -165,6 +165,16 @@ describe("the server setup for an admin", () => {
       expect(state.completedAt === null, id).toBe(!last);
     }
 
+    // Finished, but the push relay is still undecided on this server: the
+    // notice stays, now to name the relay question.
+    const open = await data<ServerSetupState>(await getState());
+    expect(open.completedAt).not.toBeNull();
+    expect(open.noticePending).toBe(true);
+    await getPrismaClient().appSettings.update({
+      where: { id: "singleton" },
+      data: { pushRelayDecision: "off" },
+    });
+
     const finished = await data<ServerSetupState>(await getState());
     expect(finished.noticePending).toBe(false);
     const stamp = finished.completedAt;

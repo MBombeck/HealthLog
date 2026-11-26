@@ -211,5 +211,77 @@ for (const viewport of [
         await page.request.delete(`/api/medications/${id}`);
       }
     });
+
+    test("Cancel stands where Back stands, and asks before dropping input", async ({
+      page,
+    }) => {
+      test.slow();
+      await stubDashboardAnalytics(page);
+      mockMedicationsApi(page, {
+        id: STUB_MEDICATION_ID,
+        name: "Ramipril",
+        dose: "5 mg",
+        rrule: "FREQ=DAILY",
+        rollingIntervalDays: null,
+        oneShot: false,
+      });
+      await openCreateWizard(page);
+      const root = page.locator('[data-slot="medication-wizard-dialog"]');
+      const cancel = page.locator('[data-slot="wizard-cancel"]');
+      await expect(cancel).toBeEnabled();
+      await expect(page.locator('[data-slot="wizard-back"]')).toHaveCount(0);
+      // No sentence above the buttons: the reason a disabled Next waits is
+      // for a screen reader only.
+      const hint = page.locator('[data-slot="wizard-blocked-hint"]');
+      await expect(hint).toHaveClass(/sr-only/);
+      await expect(page.locator('[data-slot="wizard-next"]')).toHaveAttribute(
+        "aria-describedby",
+        "wizard-blocked-hint",
+      );
+
+      await fillStep1Name(page, { name: "Ramipril" });
+      await expectBand(page);
+      const footer = page.locator('[data-slot="responsive-sheet-footer"]');
+      // Within the footer: a dialog is centred, so the footer itself moves
+      // when the next step is taller.
+      const cancelBox = await box(cancel);
+      const cancelFooter = await box(footer);
+      const cancelClass = await cancel.getAttribute("class");
+      await clickNext(page);
+      await expectStep(page, 2);
+      const back = page.locator('[data-slot="wizard-back"]');
+      await expect(page.locator('[data-slot="wizard-cancel"]')).toHaveCount(0);
+      await expectBand(page);
+      const backBox = await box(back);
+      const backFooter = await box(footer);
+      expect(
+        Math.abs(backBox.x - backFooter.x - (cancelBox.x - cancelFooter.x)),
+      ).toBeLessThanOrEqual(TOLERANCE);
+      expect(
+        Math.abs(backBox.y - backFooter.y - (cancelBox.y - cancelFooter.y)),
+      ).toBeLessThanOrEqual(TOLERANCE);
+      expect(Math.abs(backBox.height - cancelBox.height)).toBeLessThanOrEqual(
+        TOLERANCE,
+      );
+      expect(await back.getAttribute("class")).toBe(cancelClass);
+
+      // Back to step 1 with a name typed: Cancel asks, through the shared
+      // discard dialog; keeping the input leaves the wizard where it was.
+      await back.click();
+      await expectStep(page, 1);
+      await page.locator('[data-slot="wizard-cancel"]').click();
+      const ask = page.getByRole("alertdialog");
+      await expect(ask).toBeVisible();
+      await ask.getByRole("button").first().click();
+      await expect(ask).toBeHidden();
+      await expect(root).toBeVisible();
+      await expect(page.locator("#wizard-name")).toHaveValue("Ramipril");
+
+      // With nothing typed it closes at once.
+      await page.locator("#wizard-name").fill("");
+      await page.locator('[data-slot="wizard-cancel"]').click();
+      await expect(page.getByRole("alertdialog")).toHaveCount(0);
+      await expect(root).toBeHidden();
+    });
   });
 }
