@@ -934,6 +934,10 @@ model User {
   /// is answered once for the server (`AppSettings.pushRelayDecision`); an id
   /// already stored is inert.
   adminNoticesDismissed        String[]  @default([]) @map("admin_notices_dismissed")
+  /// The caller said no to "Wallet needs the push relay" on the emergency
+  /// card (v1.50). Reader: `emergencyCard.wallet.apple.relayHintDismissed`
+  /// on `/api/auth/me`; the card stops prompting, the action stays.
+  walletRelayHintDismissed     Boolean   @default(false) @map("wallet_relay_hint_dismissed")
 
   // Relations
   passkeys                                  Passkey[]

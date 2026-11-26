@@ -16465,6 +16465,13 @@
         "signerRelay": "Het HealthLog-project ondertekent hem. De ondertekendienst ziet bestandshashes en tijdstippen, nooit de inhoud.",
         "signerLocal": "Deze server ondertekent hem met een eigen certificaat.",
         "withdraw": "Intrekken stopt de QR-code meteen. Een telefoon zonder verbinding houdt de oude pas tot hij weer online is; lukt bijwerken niet, verwijder de pas dan in Wallet."
+      },
+      "relay": {
+        "title": "Wallet heeft de pushrelay nodig",
+        "hint": "Heeft de pushrelay op deze server nodig.",
+        "askAdmin": "Vraag de beheerder van de server om meldingen via de pushrelay aan te zetten.",
+        "notNow": "Niet nu",
+        "starting": "De pushrelay start. De pas volgt binnen een minuut."
       }
     }
   },

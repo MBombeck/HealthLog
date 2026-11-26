@@ -16465,6 +16465,13 @@
         "signerRelay": "Podpisuje ją projekt HealthLog. Jego usługa podpisu widzi skróty plików i czasy, nigdy treści.",
         "signerLocal": "Ten serwer podpisuje ją własnym certyfikatem.",
         "withdraw": "Wycofanie od razu zatrzymuje kod QR. Telefon bez sieci zachowa starą przepustkę, dopóki nie wróci online; jeśli przepustki nie da się zaktualizować, usuń ją w Wallet."
+      },
+      "relay": {
+        "title": "Wallet potrzebuje przekaźnika push",
+        "hint": "Wymaga przekaźnika push na tym serwerze.",
+        "askAdmin": "Poproś osobę, która administruje serwerem, o włączenie powiadomień przez przekaźnik push.",
+        "notNow": "Nie teraz",
+        "starting": "Przekaźnik push się uruchamia. Przepustka pojawi się za minutę."
       }
     }
   },

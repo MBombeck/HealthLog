@@ -16465,6 +16465,13 @@
         "signerRelay": "Le projet HealthLog le signe. Son service de signature voit des empreintes de fichiers et des heures, jamais le contenu.",
         "signerLocal": "Ce serveur le signe avec son propre certificat.",
         "withdraw": "Le retrait arrête aussitôt le code QR. Un téléphone hors ligne garde l'ancien pass jusqu'à son retour en ligne ; si un pass ne peut pas être mis à jour, supprimez-le dans Wallet."
+      },
+      "relay": {
+        "title": "Wallet a besoin du relais push",
+        "hint": "Nécessite le relais push sur ce serveur.",
+        "askAdmin": "Demandez à la personne qui administre le serveur d'activer les notifications via le relais push.",
+        "notNow": "Pas maintenant",
+        "starting": "Le relais push démarre. Le pass suit dans une minute."
       }
     }
   },

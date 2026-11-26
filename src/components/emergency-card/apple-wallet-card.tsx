@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useSyncExternalStore, type ReactNode } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Wallet } from "lucide-react";
 
@@ -46,7 +53,20 @@ import { queryKeys } from "@/lib/query-keys";
  * where to open the page (Apple's guidelines ask for exactly that line).
  * The download is a top-level navigation, so Safari shows Apple's own add
  * sheet, in the browser and in the installed app alike.
+ *
+ * A server that signs over the push relay while the relay is off
+ * (`state: relay_off`) keeps the action: a tap explains, and an admin
+ * switches the relay on right there (`wallet-relay-gate.tsx`, loaded only
+ * then). Once it is on, the card goes on to the pass by itself.
  */
+
+const WalletRelayGate = lazy(() =>
+  import("./wallet-relay-gate").then((m) => ({ default: m.WalletRelayGate })),
+);
+
+/** How long the card waits for a relay just switched on to sign. */
+const RELAY_WAIT_MS = 3 * 60_000;
+const RELAY_POLL_MS = 5_000;
 
 const EXPIRY_CHOICES = ["none", "30", "365", "730"] as const;
 type ExpiryChoice = (typeof EXPIRY_CHOICES)[number];
@@ -117,8 +137,27 @@ function WalletBody({ apple }: { apple: EmergencyWalletApple }) {
   const canAdd = useCanAddPasses();
   const [error, setError] = useState<string | null>(null);
   const [fresh, setFresh] = useState(false);
+  const [gateOpen, setGateOpen] = useState(false);
+  // The relay was just switched on here: read the server again until it
+  // signs, then go on to the pass.
+  const [waiting, setWaiting] = useState(false);
 
   const refresh = () => qc.invalidateQueries({ queryKey: queryKeys.authMe() });
+  const gated = apple.state === "relay_off";
+
+  useEffect(() => {
+    if (!waiting || apple.available) return;
+    const started = Date.now();
+    const id = window.setInterval(() => {
+      if (Date.now() - started > RELAY_WAIT_MS) {
+        window.clearInterval(id);
+        setWaiting(false);
+        return;
+      }
+      void qc.invalidateQueries({ queryKey: queryKeys.authMe() });
+    }, RELAY_POLL_MS);
+    return () => window.clearInterval(id);
+  }, [waiting, apple.available, qc]);
   const create = useMutation({
     mutationKey: queryKeys.emergencyCardWallet(),
     mutationFn: (body: {
@@ -144,6 +183,7 @@ function WalletBody({ apple }: { apple: EmergencyWalletApple }) {
     expiresInDays: number | null;
   }) {
     setError(null);
+    setWaiting(false);
     try {
       const made = await create.mutateAsync(body);
       setFresh(false);
@@ -208,8 +248,19 @@ function WalletBody({ apple }: { apple: EmergencyWalletApple }) {
     );
   }
 
+  const gate = gated ? (
+    <Suspense fallback={null}>
+      <WalletRelayGate
+        apple={apple}
+        open={gateOpen}
+        onOpenChange={setGateOpen}
+        onEnabled={() => setWaiting(true)}
+      />
+    </Suspense>
+  ) : null;
+
   // Not available on this server, and no pass to look after.
-  if (!apple.available && !pass) {
+  if (!apple.available && !gated && !waiting && !pass) {
     return (
       <p className="text-sm" data-slot="wallet-unavailable">
         {t(`emergencyCard.appleWallet.unavailable.${apple.reason}`)}
@@ -223,7 +274,7 @@ function WalletBody({ apple }: { apple: EmergencyWalletApple }) {
       <>
         <PassFacts pass={pass} />
         {errorLine}
-        {apple.available ? (
+        {apple.available || gated ? (
           <SettingsCardActions>
             <Button size="sm" onClick={() => setFresh(true)}>
               {t("emergencyCard.appleWallet.makeNew")}
@@ -237,13 +288,33 @@ function WalletBody({ apple }: { apple: EmergencyWalletApple }) {
   return (
     <>
       <p className="text-sm">{t("emergencyCard.appleWallet.lead")}</p>
+      {gated && !apple.relayHintDismissed ? (
+        <p
+          className="text-muted-foreground text-sm"
+          data-slot="wallet-relay-hint"
+        >
+          {t("emergencyCard.appleWallet.relay.hint")}
+        </p>
+      ) : null}
       <LearnMore apple={apple} />
       {proof.dialog}
+      {gate}
       <PassForm
         apple={apple}
-        pending={create.isPending}
+        pending={create.isPending || (waiting && !apple.available)}
         error={errorLine}
-        note={otherDevice}
+        note={
+          waiting && !apple.available ? (
+            <p className="text-sm" data-slot="wallet-relay-starting">
+              {t("emergencyCard.appleWallet.relay.starting")}
+            </p>
+          ) : (
+            otherDevice
+          )
+        }
+        gated={gated}
+        onGate={() => setGateOpen(true)}
+        resume={waiting && apple.available}
         onCreate={(body) => void make(body)}
       />
     </>
@@ -305,12 +376,20 @@ function PassForm({
   pending,
   error,
   note,
+  gated,
+  onGate,
+  resume,
   onCreate,
 }: {
   apple: EmergencyWalletApple;
   pending: boolean;
   error: ReactNode;
   note: ReactNode;
+  /** The relay that would sign is off: the action explains instead. */
+  gated: boolean;
+  onGate: () => void;
+  /** The relay just came on: go on as if the action had been tapped. */
+  resume: boolean;
   onCreate: (body: {
     fields: EmergencyCardField[];
     expiresInDays: number | null;
@@ -329,6 +408,14 @@ function PassForm({
   // The project signs: the person reads, once per pass, what its signing
   // service sees. A server that signs with its own certificate asks nothing.
   const asks = apple.signer === "relay";
+  const add = () => (asks ? setConsent(true) : onCreate(body()));
+  // Adjusted while rendering, not in an effect: the tap the admin made
+  // before switching the relay on carries on once the server signs.
+  const [resumed, setResumed] = useState(false);
+  if (resume && !resumed) {
+    setResumed(true);
+    if (asks) setConsent(true);
+  }
   return (
     <>
       <fieldset className="space-y-2">
@@ -391,8 +478,10 @@ function PassForm({
         <Button
           size="sm"
           data-slot="wallet-create"
-          disabled={pending || fields.size === 0 || !apple.canCreate}
-          onClick={() => (asks ? setConsent(true) : onCreate(body()))}
+          disabled={
+            pending || fields.size === 0 || (!apple.canCreate && !gated)
+          }
+          onClick={gated ? onGate : add}
         >
           {pending ? (
             <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />

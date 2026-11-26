@@ -16465,6 +16465,13 @@
         "signerRelay": "Lo firma el proyecto HealthLog. Su servicio de firma ve hashes de archivos y horas, nunca el contenido.",
         "signerLocal": "Este servidor lo firma con su propio certificado.",
         "withdraw": "Retirarlo detiene el código QR al instante. Un teléfono sin conexión conserva el pase antiguo hasta volver a estar en línea; si un pase no se puede actualizar, bórralo en Wallet."
+      },
+      "relay": {
+        "title": "Wallet necesita el relé push",
+        "hint": "Necesita el relé push en este servidor.",
+        "askAdmin": "Pide a quien administra el servidor que active las notificaciones a través del relé push.",
+        "notNow": "Ahora no",
+        "starting": "El relé push se está iniciando. El pase llega en un minuto."
       }
     }
   },

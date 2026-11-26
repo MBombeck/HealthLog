@@ -1278,6 +1278,11 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
        )`,
       [E2E_WALLET.username],
     );
+    // The relay prompt's dismissal, so the relay journey meets it again.
+    await pool.query(
+      `UPDATE users SET wallet_relay_hint_dismissed = false WHERE username = $1`,
+      [E2E_WALLET.username],
+    );
 
     // The scoped-record journey uses a dedicated delegate so its preseeded
     // grants cannot affect the invitation lifecycle exercised by the sharing

@@ -119,6 +119,7 @@ export const SESSION_USER_SELECT = {
   totpConfirmedAt: true,
   mfaEnforced: true,
   passkeyUpgradeNudgeDismissed: true,
+  walletRelayHintDismissed: true,
   fullName: true,
   insurerName: true,
   insurerIkNumber: true,

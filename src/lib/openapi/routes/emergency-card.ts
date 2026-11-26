@@ -19,6 +19,7 @@ import {
 import {
   WALLET_CREATE_PATH,
   WALLET_DOWNLOAD_PATH,
+  WALLET_STATES,
   WALLET_UNAVAILABLE_REASONS,
 } from "@/lib/emergency-card/wallet-pass/constants";
 import {
@@ -188,6 +189,22 @@ export const emergencyWalletAppleSchema = z
       .enum(["ok", ...WALLET_UNAVAILABLE_REASONS])
       .describe(
         "`signer_off`: neither the project's signing service nor the operator's own Pass Type ID is set up. `relay_not_ready`: the relay is not on, not ok, or does not sign passes now. `no_https_origin`: the instance is not reached over https. `api_disabled`: the operator's external-access switch is off. `not_allowed`: a delegate on an adult's record. Decode unknown values leniently.",
+      ),
+    state: z
+      .enum(WALLET_STATES)
+      .describe(
+        "`reason` resolved for rendering; render from this. `available`: offer the pass. `relay_off`: the pass would be signed over the push relay, which this server has not switched on; act by `relayAction`. Never sent when the server signs with its own `WALLET_APPLE_*` certificate. `relay_not_ready`: the relay is on but does not sign passes yet (it does within a minute of being switched on, or the relay is degraded); show the action disabled and read again. `not_configured`: no signer at all, nothing to offer. `no_https_origin`, `api_disabled`, `not_allowed`: as in `reason`. Decode unknown values as unavailable.",
+      ),
+    relayAction: z
+      .enum(["enable", "ask_admin"])
+      .nullable()
+      .describe(
+        "Set only with `state: relay_off`. `enable`: the caller is an admin and can switch the relay on in place (`POST /api/admin/push-relay/decision` while the relay question is open, else `PUT /api/admin/push-relay`; both cookie-only, so the app opens `createPath`, where the web card offers it). `ask_admin`: tell the caller that the server's admin has to turn on notifications over the push relay; no button that does nothing. The caller, not the record, decides: a guardian on a ward's record reads their own.",
+      ),
+    relayHintDismissed: z
+      .boolean()
+      .describe(
+        "The caller said no to the relay prompt (`POST /api/emergency-card/wallet/apple/relay-hint`). Do not prompt unasked; keep the action, which still explains on a tap.",
       ),
     signer: z.enum(["relay", "local"]).nullable(),
     passTypeIdentifier: z.string().nullable(),
@@ -468,6 +485,29 @@ export const emergencyCardPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           "404": "No live pass (`emergency-card.wallet.none`).",
         }),
         ...COOKIE_ONLY,
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/emergency-card/wallet/apple/relay-hint": {
+    post: {
+      tags: ["Records"],
+      summary: "Dismiss the Wallet relay prompt",
+      description:
+        'v1.50. The caller says no to "Wallet needs the push relay" (`EmergencyWalletApple.state: relay_off`): `relayHintDismissed` becomes true for the caller, on every record they open, and the prompt is not shown unasked again. The action stays. Idempotent. Cookie or a full-access token.',
+      responses: {
+        "200": {
+          description: "Dismissed.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ dismissed: z.literal(true) }),
+                "EmergencyWalletRelayHintDismissed",
+              ),
+            },
+          },
+        },
+        ...recordRefusal(),
         ...stdResponses,
       },
     },

@@ -16465,6 +16465,13 @@
         "signerRelay": "Das HealthLog-Projekt signiert ihn. Sein Signierdienst sieht Datei-Hashes und Zeitpunkte, nie den Inhalt.",
         "signerLocal": "Dieser Server signiert ihn mit seinem eigenen Zertifikat.",
         "withdraw": "Zurückziehen stoppt den QR-Code sofort. Ein Telefon ohne Verbindung behält den alten Pass, bis es wieder online ist; lässt sich ein Pass nicht aktualisieren, lösch ihn im Wallet."
+      },
+      "relay": {
+        "title": "Wallet braucht das Push-Relay",
+        "hint": "Braucht das Push-Relay auf diesem Server.",
+        "askAdmin": "Bitte die Person, die den Server betreibt, Benachrichtigungen über das Push-Relay einzuschalten.",
+        "notNow": "Nicht jetzt",
+        "starting": "Das Push-Relay startet. Der Pass folgt in einer Minute."
       }
     }
   },

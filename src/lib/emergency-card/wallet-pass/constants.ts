@@ -17,3 +17,18 @@ export const WALLET_UNAVAILABLE_REASONS = [
   "api_disabled",
   "not_allowed",
 ] as const;
+
+/**
+ * `EmergencyWalletApple.state`: `reason` resolved for rendering. `relay_off`
+ * is `relay_not_ready` on a server that is not registered at the relay yet,
+ * which an admin can change in place; `not_configured` is `signer_off`.
+ */
+export const WALLET_STATES = [
+  "available",
+  "relay_off",
+  "relay_not_ready",
+  "not_configured",
+  "no_https_origin",
+  "api_disabled",
+  "not_allowed",
+] as const;

@@ -108,6 +108,7 @@ export const RECORD_PAGE_SURFACES = {
         "emergency-card/wallet",
         "emergency-card/wallet/apple",
         "emergency-card/wallet/apple/pass",
+        "emergency-card/wallet/apple/relay-hint",
         "emergency-card/offline",
       ],
     },
