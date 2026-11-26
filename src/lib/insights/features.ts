@@ -50,6 +50,7 @@ import {
 } from "@/lib/insights/feature-blocks";
 import {
   computeHistoricalComparison,
+  canonicalSignalRows,
   computeSignalsOfDay,
   type SignalOfDay,
 } from "@/lib/insights/signals-of-day";
@@ -1108,6 +1109,7 @@ export async function extractFeatures(
       gender: true,
       thresholdsJson: true,
       timezone: true,
+      sourcePriorityJson: true,
     },
   });
 
@@ -1638,17 +1640,15 @@ export async function extractFeatures(
   const medicationFeatures = await readMedicationFeatures(userId, historyFloor);
   if (medicationFeatures) features.medications = medicationFeatures;
 
-  // v1.18.7 — present-focused "Signals of the day". Computed from the
-  // in-memory measurement set (no extra DB round-trip). Lands inside the
-  // compacted features payload, so it feeds both the briefing prompt AND the
-  // content-hash gate — a fresh daily signal forces the briefing to refresh.
-  // Each signal is a statement about today, which is a calendar day in the
-  // reader's own zone, so the zone is resolved for every account here, not
-  // only for the ones with pulse.
+  // v1.18.7 — "Signals of the day", from the in-memory rows; they feed the
+  // briefing prompt and the content-hash gate. Today is the reader's own
+  // calendar day, and each day reads its ladder-winning source, as the
+  // metric page does (`canonicalSignalRows`).
+  const signalTz = await resolveUserTimezone(userId);
   const signalsOfDay = computeSignalsOfDay(
-    byType,
+    canonicalSignalRows(byType, user?.sourcePriorityJson ?? null, signalTz),
     now,
-    await resolveUserTimezone(userId),
+    signalTz,
   );
   if (signalsOfDay.length > 0) {
     features.signalsOfDay = signalsOfDay;

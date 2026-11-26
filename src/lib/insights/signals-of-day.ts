@@ -19,7 +19,13 @@ import {
   SAME_HOURS_TYPES,
 } from "@/lib/insights/derived/coincident-deviation";
 import { dayKeyAgeInDays } from "@/lib/insights/measurement-freshness";
-import type { MeasurementType } from "@/generated/prisma/client";
+import type {
+  MeasurementSource,
+  MeasurementType,
+} from "@/generated/prisma/client";
+import { pickCanonicalSourceRows } from "@/lib/analytics/source-priority";
+import { isSourceRankedType } from "@/lib/analytics/source-rank-sql";
+import { metricKeyForType } from "@/lib/measurements/cumulative-day-sum";
 import { dayValue } from "@/lib/measurements/day-mean";
 import { isPlausibleMetricValue } from "@/lib/measurements/value-domain";
 import {
@@ -369,6 +375,38 @@ function buildSameHoursSignal(
     emergingTrend,
     recentAnomaly,
     basis: "sameHours",
+  };
+}
+
+/**
+ * `byType` narrowed, for a type with a source ladder, to each day's
+ * ladder-winning source: the reading the metric page shows. Two devices
+ * reporting the same date (a ring through the night, a watch in the day)
+ * otherwise both counted, and whichever row sorted last became today's
+ * resting heart rate. Days are cut in the reader's zone.
+ */
+export function canonicalSignalRows<
+  T extends {
+    value: number;
+    measuredAt: Date;
+    source: MeasurementSource;
+    deviceType?: string | null;
+    type?: MeasurementType | null;
+  },
+>(
+  byType: (type: string) => T[],
+  sourcePriority: unknown,
+  tz: string,
+): (type: string) => T[] {
+  return (type) => {
+    const rows = byType(type);
+    const metricKey = metricKeyForType(type as MeasurementType);
+    if (!metricKey || !isSourceRankedType(type as MeasurementType)) {
+      return rows;
+    }
+    return pickCanonicalSourceRows(rows, metricKey, sourcePriority, (d) =>
+      userDayKey(d, tz),
+    ).canonicalRows;
   };
 }
 
