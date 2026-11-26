@@ -1129,7 +1129,7 @@
     "typePhq9Score": "Puntuación PHQ-9",
     "typeGad7Score": "Puntuación GAD-7",
     "typeGripStrength": "Fuerza de agarre",
-    "typePainNrs": "Dolor (0–10)",
+    "typePainNrs": "Dolor (0-10)",
     "typeWaistCircumference": "Perímetro de cintura",
     "typeWaistToHeight": "Índice cintura-altura",
     "unitScore": "pts",
@@ -5268,9 +5268,9 @@
       "coachPrefill": "Aún no he registrado la fuerza de agarre: ¿qué dice sobre mi salud muscular y cómo la mido y la mejoro?"
     },
     "pain": {
-      "title": "Dolor (0–10)",
+      "title": "Dolor (0-10)",
       "description": "Intensidad del dolor referida por el paciente en la escala numérica 0–10, donde 0 es sin dolor y 10 el peor imaginable. Un cambio sostenido de 2 puntos es la señal a vigilar.",
-      "chartTitle": "Dolor (0–10)",
+      "chartTitle": "Dolor (0-10)",
       "emptyState": {
         "title": "Aún no hay puntuaciones de dolor",
         "description": "Registra cómo sientes el dolor ahora mismo en la escala 0–10 y la tendencia aparecerá aquí.",

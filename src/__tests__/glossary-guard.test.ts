@@ -317,6 +317,50 @@ describe("glossary", () => {
   });
 });
 
+/**
+ * House style keeps the en and em dash, the middle dot and the arrow out of
+ * visible copy; a range is written with a hyphen ("Pain (0-10)"). A term
+ * reaches every surface that names the concept, so it is held here, with
+ * the message values its anchors point at.
+ */
+const BANNED_MARKS = /[\u2013\u2014\u00b7\u2192]/u;
+
+describe("punctuation", () => {
+  it("can fail: the matcher sees each mark", () => {
+    for (const mark of ["\u2013", "\u2014", "\u00b7", "\u2192"]) {
+      expect(BANNED_MARKS.test(`Pain (0${mark}10)`)).toBe(true);
+    }
+    expect(BANNED_MARKS.test("Pain (0-10)")).toBe(false);
+  });
+
+  it.each(locales)(
+    "%s: no term or anchored value carries a dash, dot or arrow",
+    (locale) => {
+      const offenders: string[] = [];
+      let checked = 0;
+      for (const concept of CONCEPTS) {
+        const term = concept.terms[locale];
+        if (!term) continue;
+        for (const form of [term.name, term.item, term.short]) {
+          if (!form) continue;
+          checked += 1;
+          if (BANNED_MARKS.test(form))
+            offenders.push(`${concept.id}: "${form}"`);
+        }
+        for (const anchor of concept.anchors) {
+          const text = bundles.get(locale)?.get(anchor.key);
+          if (text === undefined) continue;
+          checked += 1;
+          if (BANNED_MARKS.test(text))
+            offenders.push(`${anchor.key}: "${text}"`);
+        }
+      }
+      expect(checked).toBeGreaterThan(100);
+      expect(offenders).toEqual([]);
+    },
+  );
+});
+
 describe("spelling", () => {
   it("states why for every locale it settles", () => {
     for (const [locale, rule] of Object.entries(SPELLING)) {

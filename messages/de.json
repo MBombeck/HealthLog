@@ -1129,7 +1129,7 @@
     "typePhq9Score": "PHQ-9-Wert",
     "typeGad7Score": "GAD-7-Wert",
     "typeGripStrength": "Griffstärke",
-    "typePainNrs": "Schmerz (0–10)",
+    "typePainNrs": "Schmerz (0-10)",
     "typeWaistCircumference": "Taillenumfang",
     "typeWaistToHeight": "Taille-Größe-Verhältnis",
     "unitScore": "Pkt.",
@@ -5268,9 +5268,9 @@
       "coachPrefill": "Ich habe noch keine Griffkraft erfasst. Was sagt sie über meine Muskelgesundheit aus, und wie messe und verbessere ich sie?"
     },
     "pain": {
-      "title": "Schmerz (0–10)",
+      "title": "Schmerz (0-10)",
       "description": "Selbstberichtete Schmerzintensität auf der numerischen Skala 0–10, wobei 0 keinen Schmerz und 10 den stärksten vorstellbaren Schmerz bedeutet. Eine anhaltende Änderung um 2 Punkte ist das beobachtenswerte Signal.",
-      "chartTitle": "Schmerz (0–10)",
+      "chartTitle": "Schmerz (0-10)",
       "emptyState": {
         "title": "Noch keine Schmerzwerte",
         "description": "Erfasse auf der Skala 0–10, wie sich dein Schmerz gerade anfühlt, und der Verlauf erscheint hier.",

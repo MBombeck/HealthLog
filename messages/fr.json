@@ -1129,7 +1129,7 @@
     "typePhq9Score": "Score PHQ-9",
     "typeGad7Score": "Score GAD-7",
     "typeGripStrength": "Force de préhension",
-    "typePainNrs": "Douleur (0–10)",
+    "typePainNrs": "Douleur (0-10)",
     "typeWaistCircumference": "Tour de taille",
     "typeWaistToHeight": "Rapport taille-taille",
     "unitScore": "pts",
@@ -5268,9 +5268,9 @@
       "coachPrefill": "Je n'ai pas encore enregistré de force de préhension. Que dit-elle sur ma santé musculaire, et comment la mesurer et l'améliorer ?"
     },
     "pain": {
-      "title": "Douleur (0–10)",
+      "title": "Douleur (0-10)",
       "description": "Intensité de la douleur rapportée par le patient sur l'échelle numérique 0–10, où 0 signifie aucune douleur et 10 la pire imaginable. Une variation soutenue de 2 points est le signal à surveiller.",
-      "chartTitle": "Douleur (0–10)",
+      "chartTitle": "Douleur (0-10)",
       "emptyState": {
         "title": "Pas encore de scores de douleur",
         "description": "Enregistrez votre douleur actuelle sur l'échelle 0–10 et la tendance apparaîtra ici.",

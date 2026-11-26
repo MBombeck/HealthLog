@@ -1129,7 +1129,7 @@
     "typePhq9Score": "PHQ-9 점수",
     "typeGad7Score": "GAD-7 점수",
     "typeGripStrength": "악력",
-    "typePainNrs": "통증 (0–10)",
+    "typePainNrs": "통증 (0-10)",
     "typeWaistCircumference": "허리둘레",
     "typeWaistToHeight": "허리-키 비율",
     "unitScore": "점",
@@ -5268,9 +5268,9 @@
       "coachPrefill": "아직 악력을 기록한 적이 없어요. 악력은 내 근육 건강에 대해 무엇을 알려주고, 어떻게 재고 어떻게 키우나요?"
     },
     "pain": {
-      "title": "통증 (0–10)",
+      "title": "통증 (0-10)",
       "description": "환자가 직접 매기는 0–10 숫자 평가 척도의 통증 강도예요. 0은 통증 없음, 10은 상상할 수 있는 최악이에요. 2점 이상 지속되는 변화가 지켜볼 신호예요.",
-      "chartTitle": "통증 (0–10)",
+      "chartTitle": "통증 (0-10)",
       "emptyState": {
         "title": "아직 통증 점수가 없어요",
         "description": "지금 느끼는 통증을 0–10 척도로 기록하면 추이가 여기에 표시돼요.",

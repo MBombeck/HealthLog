@@ -10481,37 +10481,37 @@
     },
     {
       "id": "metric.painNrs",
-      "description": "The Pain (0–10) metric (PAIN_NRS).",
+      "description": "The Pain (0-10) metric (PAIN_NRS).",
       "terms": {
         "de": {
-          "name": "Schmerz (0–10)"
+          "name": "Schmerz (0-10)"
         },
         "en": {
-          "name": "Pain (0–10)"
+          "name": "Pain (0-10)"
         },
         "fr": {
-          "name": "Douleur (0–10)"
+          "name": "Douleur (0-10)"
         },
         "es": {
-          "name": "Dolor (0–10)"
+          "name": "Dolor (0-10)"
         },
         "it": {
-          "name": "Dolore (0–10)"
+          "name": "Dolore (0-10)"
         },
         "pl": {
-          "name": "Ból (0–10)"
+          "name": "Ból (0-10)"
         },
         "ko": {
-          "name": "통증 (0–10)"
+          "name": "통증 (0-10)"
         },
         "nl": {
-          "name": "Pijn (0–10)"
+          "name": "Pijn (0-10)"
         },
         "pt-BR": {
-          "name": "Dor (0–10)"
+          "name": "Dor (0-10)"
         },
         "ru": {
-          "name": "Боль (0–10)"
+          "name": "Боль (0-10)"
         }
       },
       "anchors": [

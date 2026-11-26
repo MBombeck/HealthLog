@@ -1129,7 +1129,7 @@
     "typePhq9Score": "Pontuação PHQ-9",
     "typeGad7Score": "Pontuação GAD-7",
     "typeGripStrength": "Força de preensão",
-    "typePainNrs": "Dor (0–10)",
+    "typePainNrs": "Dor (0-10)",
     "typeWaistCircumference": "Circunferência da cintura",
     "typeWaistToHeight": "Relação cintura-altura",
     "unitScore": "pts",
@@ -5268,9 +5268,9 @@
       "coachPrefill": "Ainda não registrei nenhuma força de preensão. O que ela me diz sobre a saúde dos meus músculos, e como eu meço e melhoro?"
     },
     "pain": {
-      "title": "Dor (0–10)",
+      "title": "Dor (0-10)",
       "description": "Intensidade de dor relatada pelo paciente na escala numérica de 0–10, onde 0 é sem dor e 10 é a pior imaginável. Uma mudança sustentada de 2 pontos é o sinal a observar.",
-      "chartTitle": "Dor (0–10)",
+      "chartTitle": "Dor (0-10)",
       "emptyState": {
         "title": "Ainda não há pontuações de dor",
         "description": "Registre como sua dor se sente agora na escala de 0–10 e a tendência aparecerá aqui.",
