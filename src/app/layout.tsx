@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { unstable_rethrow } from "next/navigation";
 import { headers } from "next/headers";
 import Script from "next/script";
 // Inter's faces, self-hosted; see the module. Before globals.css, where the
@@ -201,7 +202,10 @@ async function serverAccount(): Promise<AccountSeed | null> {
       authMethod: "cookie",
     });
     return toAccountSeed(JSON.parse(JSON.stringify(payload)));
-  } catch {
+  } catch (error) {
+    // A redirect or not-found from the session resolve (the second-factor
+    // confinement sends a page to `/enroll-mfa`) is the answer, not a failure.
+    unstable_rethrow(error);
     return null;
   }
 }

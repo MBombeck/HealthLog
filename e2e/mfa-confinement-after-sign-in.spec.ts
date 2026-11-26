@@ -8,6 +8,7 @@ import {
   seedMfaAccount,
   type MfaJourneyAccount,
 } from "./setup/mfa-journey-fixture";
+import { SSR_PREFETCH_BASE_URL } from "./setup/ssr-prefetch-server";
 
 /**
  * A session that began before a second-factor policy covered its account is
@@ -23,11 +24,11 @@ import {
  * `mfa-journey-fixture.ts` gives.
  */
 
-function account(projectName: string): MfaJourneyAccount {
+function account(projectName: string, variant = "old"): MfaJourneyAccount {
   const slug = projectName.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
   return {
-    username: `e2e-mfa-old-${slug}`,
-    email: `e2e-mfa-old-${slug}@healthlog.test`,
+    username: `e2e-mfa-${variant}-${slug}`,
+    email: `e2e-mfa-${variant}-${slug}@healthlog.test`,
     // 16 chars, same shape as the other fixture passwords.
     password: "e2e-Mfa-old-0042",
   };
@@ -87,5 +88,42 @@ test.describe("second factor due after sign-in", () => {
       await expect(page).toHaveURL(/\/enroll-mfa$/);
       await expect(page.getByTestId("totp-card")).toBeVisible();
     });
+  });
+});
+
+/**
+ * The same session on the server as it ships (the dashboard prefetch on) and
+ * without the hint cookie: the redirect comes from the server render of the
+ * page itself. The root layout and the dashboard both wrap the session
+ * resolve in a catch, which used to take the redirect for a failure and
+ * render the dashboard, every read of it answering 403.
+ */
+test.describe("second factor due, server render", () => {
+  test.use({ baseURL: SSR_PREFETCH_BASE_URL });
+
+  test.afterEach(async () => {
+    await dropMfaAccount(account(test.info().project.name, "ssr"));
+  });
+
+  test("the page itself redirects to the enrolment", async ({
+    page,
+    context,
+  }) => {
+    test.setTimeout(90_000);
+    const who = account(test.info().project.name, "ssr");
+    await seedMfaAccount(who);
+    expect((await signIn(page, who)).status()).toBe(200);
+    await page.waitForURL((url) => !url.pathname.startsWith("/auth/"));
+
+    await enforceMfaAfterSignIn(who);
+
+    for (const path of ["/", "/medications"]) {
+      // The enrolment page's account read sets the hint again; without it
+      // the proxy does not redirect and the render has to.
+      await context.clearCookies({ name: "hl_mfa_enroll" });
+      await page.goto(path);
+      await expect(page).toHaveURL(/\/enroll-mfa$/);
+    }
+    await expect(page.getByTestId("totp-card")).toBeVisible();
   });
 });

@@ -10395,7 +10395,9 @@
       "refreshReuseTitle": "A device was signed out",
       "refreshReuseBody": "A sign-in token was used twice, so its device was signed out. Sign in again there. If this keeps happening, change your password.",
       "deviceReassignedTitle": "A device moved to another account",
-      "deviceReassignedBody": "A device that got this account's notifications is now signed in to another account and no longer gets them. If that wasn't you, check your devices and sign-ins."
+      "deviceReassignedBody": "A device that got this account's notifications is now signed in to another account and no longer gets them. If that wasn't you, check your devices and sign-ins.",
+      "mfaDueTitle": "Second sign-in factor needed",
+      "mfaDueBody": "Add an authenticator app, a security key or a passkey by {date}, in the web app under Settings > Security."
     },
     "sharedRecordIntake": {
       "title": "{name} marked a dose",

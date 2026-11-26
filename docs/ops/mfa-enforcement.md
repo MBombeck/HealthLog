@@ -18,7 +18,8 @@ later of two moments: when the policy took effect (switching a policy on
 starts it again, and on an install updated to 1.50 it starts with the
 update) and when the account was created, so an account registered under a
 running policy gets the full period too. During it the account works as
-before and the app shows a notice with the date. A per-account enforcement
+before, the web app shows a notice with the date, and every device of the
+account gets one security notification with it when the period starts. A per-account enforcement
 set by an admin applies at once, and so does the admin policy for an
 existing account promoted to admin after its own grace period would have
 ended.
@@ -39,16 +40,15 @@ ended.
 - **iPhone app and other native clients.** A sign-in (password, the native
   web hand-off, or the single sign-on token exchange) is refused with `403`
   `auth.mfa.enrollment_required` and no token is issued. The person adds a
-  factor in a browser (Settings > Security) and signs in again. A sign-in
-  token issued earlier, before the update included, is held the same way as
-  a browser session: it reaches only the account payload, sign-out (removing
-  the device included), the enrolment routes and the public probes, and every
-  other route answers the same `403`. The account payload lists those routes
-  (`mfaEnrollment.openPaths`). A refresh is refused with it, carrying
-  `Retry-After`, without using up the refresh token, which works again once a
-  factor exists; a token refused three times within five minutes gets the
-  same answer without being looked up again until that window ends. Signing
-  out through the refresh route (`revoke: true`) always works.
+  factor in a browser (Settings > Security) and signs in again. In 1.50 a
+  sign-in token issued earlier keeps working, refresh included: the iPhone
+  builds already in use are not built for a refusal there, and one of them
+  signs its person out on a refused refresh. The account payload carries the
+  state and the date (`mfaEnrollment`). From 1.51 such a token is held like a
+  browser session: it reaches only the account payload, sign-out (removing
+  the device included), the enrolment routes and the public probes
+  (`mfaEnrollment.openPaths`), and its refresh is refused until a factor
+  exists.
 - **Personal API tokens** (Settings > API tokens) are not sign-ins and are not
   affected; revoke them if an account must lose access now.
 

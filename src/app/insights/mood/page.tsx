@@ -4,6 +4,7 @@ import {
   QueryClient,
 } from "@tanstack/react-query";
 
+import { unstable_rethrow } from "next/navigation";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { resolveJobLocale } from "@/lib/i18n/job-locale";
 import { getUnswitchedSession } from "@/lib/auth/acting-carrier";
@@ -120,7 +121,10 @@ export default async function InsightsMoodPage() {
         if (aggregates || series) dehydratedState = dehydrate(queryClient);
       }
     }
-  } catch {
+  } catch (error) {
+    // A redirect or not-found from the session resolve (the second-factor
+    // confinement sends a page to `/enroll-mfa`) is the answer, not a failure.
+    unstable_rethrow(error);
     // Prefetch is an accelerator, never a gate — the client path stands.
   }
 

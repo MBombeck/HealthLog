@@ -4,6 +4,7 @@ import { NextRequest } from "next/server";
 vi.mock("@/lib/auth/mfa-enrollment", () => ({
   setMfaEnrollCookie: vi.fn().mockResolvedValue(undefined),
   syncMfaEnrollCookie: vi.fn().mockResolvedValue(undefined),
+  forgetMfaFactors: vi.fn(),
 }));
 
 vi.mock("@/lib/api-handler", () => ({

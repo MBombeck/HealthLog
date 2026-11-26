@@ -550,11 +550,11 @@ const accountPayload = z
             }),
           )
           .describe(
-            "The API routes a caller in state `required` may still reach (account read, sign-out, removing a device's push binding, enrolment, the public probes). `prefix` admits every path under `path`. Read it from here rather than keeping a copy: the list may change between releases. `POST /api/auth/refresh` with `revoke: true` also always works.",
+            "The API routes a browser session in state `required` may still reach (from v1.51 a sign-in token too) (account read, sign-out, removing a device's push binding, enrolment, the public probes). `prefix` admits every path under `path`. Read it from here rather than keeping a copy: the list may change between releases. `POST /api/auth/refresh` with `revoke: true` also always works.",
           ),
       })
       .describe(
-        "Whether a second-factor policy requires this caller to enrol a factor (TOTP, a security key or a passkey), and by when; decided by the same function that enforces it. `none`: no policy covers the account, it has a factor, it is a public demo, or the caller is a narrow-scope token; `grace`: enrol by `dueAt`, everything works until then; `required`: every route outside `openPaths` answers 403 `auth.mfa.enrollment_required` for this caller (browser session and sign-in token alike), a refresh is refused the same way, and a native sign-in is refused until the account enrols.",
+        "Whether a second-factor policy requires this caller to enrol a factor (TOTP, a security key or a passkey), and by when; decided by the same function that enforces it. `none`: no policy covers the account, it has a factor, it is a public demo, or the caller is a narrow-scope token; `grace`: enrol by `dueAt`, everything works until then; `required`: `dueAt` has passed; a new native sign-in is refused with 403 `auth.mfa.enrollment_required` until the account enrols, and for a browser session every route outside `openPaths` answers the same 403. A sign-in token keeps working in v1.50, refresh included; from v1.51 it is held to `openPaths` like a browser session. The account's devices get one SECURITY_ALERT (`securityKind` `mfa_due`) when the grace period starts.",
       ),
     glucoseUnit: z
       .enum(["mg/dL", "mmol/L"])

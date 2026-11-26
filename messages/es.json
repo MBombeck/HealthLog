@@ -10395,7 +10395,9 @@
       "refreshReuseTitle": "Se cerró la sesión de un dispositivo",
       "refreshReuseBody": "Un token de inicio de sesión se usó dos veces, así que se cerró la sesión de su dispositivo. Vuelve a iniciar sesión allí. Si se repite, cambia tu contraseña.",
       "deviceReassignedTitle": "Un dispositivo pasó a otra cuenta",
-      "deviceReassignedBody": "Un dispositivo que recibía las notificaciones de esta cuenta ahora tiene la sesión iniciada en otra cuenta y ya no las recibe. Si no fuiste tú, revisa tus dispositivos e inicios de sesión."
+      "deviceReassignedBody": "Un dispositivo que recibía las notificaciones de esta cuenta ahora tiene la sesión iniciada en otra cuenta y ya no las recibe. Si no fuiste tú, revisa tus dispositivos e inicios de sesión.",
+      "mfaDueTitle": "Se necesita un segundo factor de inicio de sesión",
+      "mfaDueBody": "Añade una app de autenticación, una llave de seguridad o una passkey antes del {date}, en la app web en Ajustes > Seguridad."
     },
     "sharedRecordIntake": {
       "title": "{name} ha marcado una dosis",

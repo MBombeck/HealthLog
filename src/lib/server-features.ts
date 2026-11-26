@@ -90,7 +90,7 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
   "push.healthkit-catch-up":
     "A device with a push key whose app registered in the last three days gets a sealed silent HEALTHKIT_CATCH_UP (d.requestedAt) when the account's Apple Health upload is six hours behind; at most three a day, four hours apart.",
   "push.security-alert-relay":
-    "SECURITY_ALERT (new sign-in, passkey added or removed, token revoked, refresh-token reuse, a device taken over by another account) reaches sealed and relay-bound devices with ui.level time-sensitive and d.securityKind.",
+    "SECURITY_ALERT (new sign-in, passkey added or removed, token revoked, refresh-token reuse, a device taken over by another account, a second factor due by a date) reaches sealed and relay-bound devices with ui.level time-sensitive and d.securityKind.",
   "push.live-activity-relay":
     "POST /api/devices takes liveActivityConsent (hl-la-consent-v1), liveActivityWithdraw (hl-la-withdraw-v1), liveActivityStart (push-to-start token with hl-la-start-v1) and liveActivityTokens[].relayStart; the server starts medication Live Activities over the relay and updates only those registered with relayStart, with the closed content state, while push.relay.liveActivity lists start and update (operator switch PUSH_RELAY_LIVE_ACTIVITY, off by default).",
   "push.live-activity-started":
