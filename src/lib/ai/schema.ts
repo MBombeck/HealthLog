@@ -1,5 +1,5 @@
 import { z } from "zod/v4";
-import { MEDICAL_REFERENCE_IDS } from "./medical-references";
+import { MEDICAL_REFERENCE_IDS } from "./medical-reference-ids";
 
 /**
  * Strict response schema for v1.4.15 AI hardening (Phase C1).
@@ -68,8 +68,8 @@ export const metricSourceSchema = z.object({
 });
 
 /**
- * Set of valid `referenceId` values, derived from
- * `MEDICAL_REFERENCES` so the two cannot drift. Validated lazily
+ * Set of valid `referenceId` values (`./medical-reference-ids.ts`; the
+ * bundle types its ids against that list and a test holds the two equal). Validated lazily
  * inside `superRefine` instead of `z.enum(...)` because the bundle is
  * a `string[]` constant — `z.enum` requires a tuple type.
  */
