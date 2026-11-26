@@ -48,7 +48,7 @@ describe("side-effect taxonomy drift guard", () => {
     // Every check below is an equality, and two empty sets are equal. A
     // mocked or mis-resolved enum would pass all of them on nothing.
     expect(Object.values(MedicationSideEffectCategory).length).toBe(5);
-    expect(Object.values(MedicationSideEffectEntry).length).toBe(21);
+    expect(Object.values(MedicationSideEffectEntry).length).toBe(22);
   });
 
   describe("category keysets", () => {

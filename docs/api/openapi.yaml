@@ -3211,7 +3211,8 @@ paths:
             factor, and its grace period is over. No token is issued; the person adds a factor in a browser (Settings >
             Security) and signs in again. The native web hand-off and SSO token exchanges refuse the same way. A browser
             sign-in still gets its session, which then reaches only the enrolment routes until a factor exists: every
-            other route answers the same 403.
+            other route answers the same 403. A native sign-in token issued before the due date is not refused in v1.50
+            (from v1.51 it is held to the enrolment routes too).
           content:
             application/json:
               schema:
@@ -3945,11 +3946,9 @@ paths:
         a replay and revokes the device family. Before v1.49.0 this case answered 401 `auth.refresh.reuse`.
 
 
-        A 403 with `meta.errorCode` = `auth.mfa.enrollment_required` (v1.50) means a second-factor policy covers the
-        account, it has no factor, and its grace period is over. No pair is issued and the refresh token is not
-        consumed: once the person adds a factor in a browser (Settings > Security), the same token refreshes again. A
-        sign-in token of such an account answers the same 403 on every route except the enrolment ones (`/api/auth/me`,
-        `/api/auth/logout`, the `/api/auth/me/mfa` and passkey registration routes).
+        A second-factor policy does not refuse a refresh in v1.50: a sign-in made before the account's due date keeps
+        refreshing, and `/api/auth/me` `mfaEnrollment` carries the state and the date. From v1.51 a refresh of an
+        account past its due date answers 403 `auth.mfa.enrollment_required` without consuming the token.
       requestBody:
         required: true
         content:
@@ -4798,6 +4797,32 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+        "429": *a5
+  /api/auth/password-strength:
+    post:
+      security: []
+      tags:
+        - Auth
+      summary: Score a password for the strength meter
+      description: Anonymous. Runs the same estimator the registration and password routes run on submit and answers its score
+        and untranslated feedback; stores nothing and compares against no account. The account-specific check (the
+        password against the username and e-mail) happens only on submit. Rate-limited to 60 requests a minute per
+        address.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordStrengthRequest"
+      responses:
+        "200":
+          description: The estimate.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PasswordStrengthEnvelope"
+        "401": *a1
+        "422": *a4
         "429": *a5
   /api/auth/register/setup:
     post:
@@ -7200,13 +7225,13 @@ paths:
         running out, frees the device; the app can then register again. APNs tokens are hex of up to 512 characters:
         Apple documents no fixed length. A Live Activity field (`liveActivityPushToken`, an entry of
         `liveActivityTokens`, `liveActivityStart`) the server cannot take does not fail the registration: it is left
-        out, the device registers with everything else, and the answer's `ignored` names it with
-        `devices.register.invalid_field` for its shape, or with the `devices.push.<reason>` its push-to-start statement
-        was refused for. A refused push field (push key, relay binding, consent) returns 422 with `meta.errorCode`
-        `devices.push.<reason>` and changes nothing; more than 10 new relay bindings for one account in 24 hours return
-        429 `devices.push.relay_daily_limit`. When the device's APNs token changes, the old token's relay binding is
-        removed and the device has to bind the new token (`relayState: rebind_needed` unless the request carries the new
-        `relayBinding`). The answer's `push` block is the device's push state after the call."
+        out, keeping its stored value (a left-out list entry is dropped from the list), and the device registers with
+        everything else. This covers a push-to-start statement that does not hold, too. A refused push field (push key,
+        relay binding, consent) returns 422 with `meta.errorCode` `devices.push.<reason>` and changes nothing; more than
+        10 new relay bindings for one account in 24 hours return 429 `devices.push.relay_daily_limit`. When the device's
+        APNs token changes, the old token's relay binding is removed and the device has to bind the new token
+        (`relayState: rebind_needed` unless the request carries the new `relayBinding`). The answer's `push` block is
+        the device's push state after the call."
       requestBody:
         required: true
         content:
@@ -15110,8 +15135,7 @@ paths:
 
         Both shapes are served through a stale-while-revalidate cache. A cached body can be up to a minute old, and the
         default slice's cache key includes the reader's locale because the correlation `interpretation` sentences are
-        narrated per reader. `Cache-Control: private, max-age=0, must-revalidate` on both — bfcache-friendly rather than
-        the framework's stock `no-store`.
+        narrated per reader. `Cache-Control: private, no-store` on both, like every API answer.
 
 
         This GET is not free of side effects, and a caller polling it should know: it records a Health Score row for the
@@ -15583,8 +15607,7 @@ paths:
             this parameter is strict where most of the surface's date filters are forgiving.
       responses:
         "200":
-          description: The day's series. `Cache-Control` is the bfcache-friendly `private, max-age=0, must-revalidate` rather than
-            `no-store`.
+          description: "The day's series. `Cache-Control: private, no-store`, like every API answer."
           content:
             application/json:
               schema:
@@ -20027,8 +20050,8 @@ paths:
         from an export is a `duplicate` here, and sending a batch again is safe. First write wins: an amended result
         under a held identity is a duplicate. Owner-only: a cookie session or a full-scope login token. The body is
         capped at 1 MiB (413 past it): a client splits a large sync by size as well as by count. Rate limit 60 batches a
-        minute; Idempotency-Key supported. A response carrying `write_failed` is `Cache-Control: no-store` and is not
-        replayed for its key. Audits as `labs.fhir.batch` with counts only."
+        minute; Idempotency-Key supported. A response carrying `write_failed` is not replayed for its key. Audits as
+        `labs.fhir.batch` with counts only."
       parameters:
         - *a6
       requestBody:
@@ -24635,10 +24658,9 @@ paths:
         Idempotency-Key supported; rate limit 60/min. Per-entry skips (`unit_mismatch` | `value_out_of_range` |
         `day_invalid`) are terminal — log and drop, do not retry the entry. `upsert_failed` is not one of them: it is a
         server-side write failure for the entry's whole write group, nothing was stored, and the entry should be sent
-        again on a later sync; a response carrying it is `Cache-Control: no-store` and is not replayed for its
-        `Idempotency-Key`. Behind the opt-in `nutrients` module (403 `module.disabled` when off). Query HealthKit with
-        exactly the listed unit per code (`ug` = microgram; do not convert to IU). `alcohol` has no HealthKit type and
-        is posted by bridges only, in g:
+        again on a later sync; a response carrying it is not replayed for its `Idempotency-Key`. Behind the opt-in
+        `nutrients` module (403 `module.disabled` when off). Query HealthKit with exactly the listed unit per code (`ug`
+        = microgram; do not convert to IU). `alcohol` has no HealthKit type and is posted by bridges only, in g:
 
 
         | code | HealthKit identifier | unit |
@@ -33432,6 +33454,16 @@ components:
         - mirrorToAppleHealth
       additionalProperties: false
       description: "The one setting a measurement token has. Strict: any other key is refused 422."
+    PasswordStrengthRequest:
+      type: object
+      properties:
+        password:
+          type: string
+          minLength: 1
+          maxLength: 256
+      required:
+        - password
+      description: The password as typed, at most 256 characters (every longer one scores 4).
     SetupTokenRequest:
       type: object
       properties:
@@ -34414,9 +34446,9 @@ components:
         liveActivityTokens:
           description: "The device's running medication Live Activities, as a full replacement list: present replaces the stored
             list (an empty array clears it), omitted leaves it unchanged. An entry in a shape the server does not take
-            is left out of the list and named in the answer's `ignored` (`liveActivityTokens[<index>]`); a list longer
-            than 8 is left out whole. Each entry is ended with one `end` push once its dose is answered, and removed
-            after the push. When this field is present the legacy `liveActivityPushToken` is ignored."
+            is left out of the list; a list longer than 8 is left out whole. Each entry is ended with one `end` push
+            once its dose is answered, and removed after the push. When this field is present the legacy
+            `liveActivityPushToken` is ignored."
           maxItems: 8
           type: array
           items:
@@ -34780,6 +34812,7 @@ components:
             - GASTROPARESIS_LIKE
             - DYSGEUSIA
             - GALLBLADDER_DISCOMFORT
+            - HEADACHE
         severity:
           type: integer
           minimum: 1
@@ -47101,8 +47134,8 @@ components:
                       again. `constraint` means the write met a database constraint (a key another write claimed at the
                       same moment, or a reference that no longer exists). `upsert_failed` is a write failure on the
                       server's side: nothing was stored, the entry should be sent again, and the response carrying it is
-                      `Cache-Control: no-store`, so a retry under the same `Idempotency-Key` writes again rather than
-                      replaying the failure."
+                      not replayed, so a retry under the same `Idempotency-Key` writes again rather than replaying the
+                      failure."
                     type: string
                 required:
                   - index
@@ -49757,6 +49790,9 @@ components:
               - daily.morning
               - measurements.series-kinds
               - devices.ignored-fields
+              - insights.briefing-glucose
+              - medication.side-effect-headache
+              - medication.low-stock-trigger
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices; since
@@ -49795,23 +49831,23 @@ components:
             `push.healthkit-catch-up`: A device with a push key whose app registered in the last three days gets a
             sealed silent HEALTHKIT_CATCH_UP (d.requestedAt) when the account's Apple Health upload is six hours behind;
             at most three a day, four hours apart. `push.security-alert-relay`: SECURITY_ALERT (new sign-in, passkey
-            added or removed, token revoked, refresh-token reuse, a device taken over by another account) reaches sealed
-            and relay-bound devices with ui.level time-sensitive and d.securityKind. `push.live-activity-relay`: POST
-            /api/devices takes liveActivityConsent (hl-la-consent-v1), liveActivityWithdraw (hl-la-withdraw-v1),
-            liveActivityStart (push-to-start token with hl-la-start-v1) and liveActivityTokens[].relayStart; the server
-            starts medication Live Activities over the relay and updates only those registered with relayStart, with the
-            closed content state, while push.relay.liveActivity lists start and update (operator switch
-            PUSH_RELAY_LIVE_ACTIVITY, off by default). `push.live-activity-started`: push.device.liveActivityStarted on
-            /api/auth/me and in the POST /api/devices answer names the dose ({ medicationId, slotInstant }) of the Live
-            Activity the server started on the calling device; null once that slot is answered, its medication paused or
-            ended, or nothing was started. `day.dose-offset`: GET /api/day/{date} symptom events and every GET
-            /api/symptoms/events occurrence carry doseOffset (intakeId, title, minutes) from one rule: the nearest dose
-            taken at or before it on the same local day of the record's zone, else the nearest after it (negative
-            minutes); absent without a timed dose that day or when medications are not readable.
-            `push.device-diagnostics`: GET /api/devices/me/push-diagnostics returns the X-Device-Id device's push state:
-            transport, relay and binding state, the silent budget (windowMinutes, limit, wakeLimit, usedInWindow,
-            wakesUsedInWindow, owedSyncs, nextFreeAt), the last delivery per kind, the last receipt and the masked APNs
-            token; 404 for a device that is not the caller's. `medication.resolved-slots`: GET
+            added or removed, token revoked, refresh-token reuse, a device taken over by another account, a second
+            factor due by a date) reaches sealed and relay-bound devices with ui.level time-sensitive and
+            d.securityKind. `push.live-activity-relay`: POST /api/devices takes liveActivityConsent (hl-la-consent-v1),
+            liveActivityWithdraw (hl-la-withdraw-v1), liveActivityStart (push-to-start token with hl-la-start-v1) and
+            liveActivityTokens[].relayStart; the server starts medication Live Activities over the relay and updates
+            only those registered with relayStart, with the closed content state, while push.relay.liveActivity lists
+            start and update (operator switch PUSH_RELAY_LIVE_ACTIVITY, off by default). `push.live-activity-started`:
+            push.device.liveActivityStarted on /api/auth/me and in the POST /api/devices answer names the dose ({
+            medicationId, slotInstant }) of the Live Activity the server started on the calling device; null once that
+            slot is answered, its medication paused or ended, or nothing was started. `day.dose-offset`: GET
+            /api/day/{date} symptom events and every GET /api/symptoms/events occurrence carry doseOffset (intakeId,
+            title, minutes) from one rule: the nearest dose taken at or before it on the same local day of the record's
+            zone, else the nearest after it (negative minutes); absent without a timed dose that day or when medications
+            are not readable. `push.device-diagnostics`: GET /api/devices/me/push-diagnostics returns the X-Device-Id
+            device's push state: transport, relay and binding state, the silent budget (windowMinutes, limit, wakeLimit,
+            usedInWindow, wakesUsedInWindow, owedSyncs, nextFreeAt), the last delivery per kind, the last receipt and
+            the masked APNs token; 404 for a device that is not the caller's. `medication.resolved-slots`: GET
             /api/medications/resolved-slots?from=&to= returns every medication's resolved slots with their state for a
             window of at most 14 days (default two days back to eight ahead), from the same resolver as dose-history and
             the today list. `medication.intake-reopened`: MEDICATION_INTAKE_RECORDED carries outcome \"reopened\" with
@@ -49872,7 +49908,14 @@ components:
             optional Live Activity field out instead of failing the registration: field is liveActivityPushToken,
             liveActivityStart, liveActivityTokens or liveActivityTokens[<index>]; code is devices.register.invalid_field
             for the shape, else the devices.push.<reason> a push-to-start statement was refused for. Absent when nothing
-            was left out."
+            was left out. `insights.briefing-glucose`: The daily briefing's signalsOfDay and keyFindings rows may carry
+            sourceMetric glucose (blood glucose), its figures and delta in the reader's glucose unit; before it the
+            server dropped every such row. `medication.side-effect-headache`: Medication side effects take entry
+            HEADACHE (category COGNITIVE) on POST /api/medications/{id}/side-effects, and the list and the backup carry
+            it. `medication.low-stock-trigger`: GET /api/medications and GET /api/medications/{id} (and the create and
+            edit answers) carry lowStockTriggerDays: max(lowStockRunwayDays, reorderLeadDays + one dose-interval) with
+            the medication's own lead over the account default, null when the alert is off or nothing is consumed on a
+            cadence; a row is low on stock when runwayDays <= lowStockTriggerDays."
       required:
         - version
         - buildSha
@@ -51245,6 +51288,7 @@ components:
                         - GASTROPARESIS_LIKE
                         - DYSGEUSIA
                         - GALLBLADDER_DISCOMFORT
+                        - HEADACHE
                     severity:
                       type: integer
                       minimum: 1
@@ -58711,6 +58755,44 @@ components:
         - id
         - mirrorToAppleHealth
       additionalProperties: false
+    PasswordStrengthEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/PasswordStrengthResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    PasswordStrengthResponse:
+      type: object
+      properties:
+        score:
+          type: integer
+          minimum: 0
+          maximum: 4
+          description: zxcvbn's score, 0 (guessable) to 4 (very hard to guess).
+        warning:
+          type: string
+          description: zxcvbn's English warning, empty when there is none. Clients translate it.
+        suggestions:
+          type: array
+          items:
+            type: string
+          description: zxcvbn's English suggestions. Clients translate them.
+      required:
+        - score
+        - warning
+        - suggestions
+      additionalProperties: false
     SetupProvenEnvelope:
       type: object
       properties:
@@ -61061,7 +61143,7 @@ components:
             - failed
           description: "`inserted`/`duplicate` — the row landed (advance the cursor). `updated` — a `stats:` aggregate overwrote
             an existing row. `skipped` — validation no-op; see `reason`. `failed` — retryable database failure that must
-            not advance the entry cursor; the response is marked `Cache-Control: no-store`."
+            not advance the entry cursor; the response is not replayed for its `Idempotency-Key`."
         reason:
           description: "Why a row was `skipped` or a `duplicate`. On a `skipped`: `deleted_in_healthlog` (since v1.49.0), an
             immutable sample whose `(type, source, externalId)` names a row the person deleted in HealthLog (web, app or
@@ -66915,6 +66997,18 @@ components:
           description: v1.37.19 — projected whole days the usable stock covers under the slot-aware burn rate (the same math the
             low-stock notification engine runs, so the wire and the push can never disagree). NULL = inventory tracking
             off or no consuming cadence derivable; 0 = tracking on, supply ran out. Read-only — computed, not stored.
+        lowStockTriggerDays:
+          description: "v1.50.0 — the runway in whole days at or below which the medication is low on stock:
+            `max(lowStockRunwayDays, reorderLeadDays + one dose-interval)`, with the medication's own `reorderLeadDays`
+            over the account default, exactly as the low-stock notification decides. A client shows the notice when
+            `runwayDays <= lowStockTriggerDays` and does not re-derive it. NULL when the account switched the low-stock
+            alert off or the schedules consume nothing on a cadence (as needed, intake not tracked). Absent on older
+            servers (feature key `medication.low-stock-trigger`). Read-only — computed, not stored."
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
         hasIngredients:
           description: v1.43 — whether a composition per unit is stored (`GET /api/medications/{id}` carries it as `ingredients`).
             Absent on older servers.
@@ -67428,6 +67522,14 @@ components:
             - type: "null"
           description: v1.37.19 — projected whole days the usable stock covers under the slot-aware burn rate; NULL = tracking off
             or no consuming cadence.
+        lowStockTriggerDays:
+          description: v1.50.0 — the runway in whole days at or below which the medication is low on stock, mirroring the list
+            entry's field. Absent on older servers (feature key `medication.low-stock-trigger`).
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
         ingredients:
           description: v1.43 — the composition per unit, empty when none is stored. Absent on older servers.
           type: array
@@ -78763,14 +78865,17 @@ components:
               enum:
                 - ready
                 - switch_off
+                - not_bound
                 - no_consent
                 - no_start_token
             - type: "null"
           description: "v1.50.0 — whether the server can start a medication Live Activity on this device over the relay. Null when
-            the question does not arise: no medication of the account has Live Activity on, or the device is no iPhone
-            bound to the relay. Otherwise the first thing in the way: `switch_off` (the operator's
-            `PUSH_RELAY_LIVE_ACTIVITY` is off), `no_consent` (the device has not given its Live Activity consent),
-            `no_start_token` (no push-to-start token the relay still takes); `ready` when none is."
+            the question does not arise: no medication of the account has Live Activity on, or the device is no iPhone.
+            Otherwise the first thing in the way, by the same rule the start follows: `switch_off` (the operator's
+            `PUSH_RELAY_LIVE_ACTIVITY` is off), `not_bound` (the relay does not reach the device: this server is not
+            registered with it, or the device is not bound with its relay consent and binding key), `no_consent` (the
+            device has not given its Live Activity consent), `no_start_token` (no push-to-start token the relay still
+            takes); `ready` when none is."
       required:
         - id
         - platform
@@ -79444,6 +79549,20 @@ components:
                     - green
                     - yellow
                     - red
+                  description: "The health score's colour as shipped apps draw it: the worse of the number's own band (green from 70,
+                    yellow from 50) and the worst counted pillar's band. An 81 over a red pillar is red here. Unchanged
+                    since 1.49; the stored daily score and the \"steady for\" read compare this band. New clients draw
+                    `numberBand` instead."
+                numberBand:
+                  description: "1.50 — the band of the number alone (green from 70, yellow from 50), the rule every other HealthLog score
+                    follows. Draw the ring and its word with this, and show `bandSetterLine` beside it when a pillar
+                    sits in a worse band. It differs from `band` exactly when `bandSetter` is non-null. Optional: a
+                    payload cached before 1.50 lacks it; fall back to `band`."
+                  type: string
+                  enum:
+                    - green
+                    - yellow
+                    - red
                 delta:
                   type:
                     - number
@@ -79492,9 +79611,8 @@ components:
                   exclusiveMinimum: 0
                   maximum: 9007199254740991
                 bandSetter:
-                  description: The worst counted pillar when its band is worse than the score's own band, null otherwise. Since 1.50 it
-                    names that pillar beside the score; it no longer lowers `band`, which follows the number like every
-                    HealthLog score (green from 70, yellow from 50).
+                  description: The worst counted pillar when its band is worse than the number's own band (`numberBand`), null otherwise.
+                    It is the pillar that makes `band` worse than `numberBand`.
                   anyOf:
                     - type: string
                       enum:
@@ -81369,6 +81487,20 @@ components:
                     - green
                     - yellow
                     - red
+                  description: "The health score's colour as shipped apps draw it: the worse of the number's own band (green from 70,
+                    yellow from 50) and the worst counted pillar's band. An 81 over a red pillar is red here. Unchanged
+                    since 1.49; the stored daily score and the \"steady for\" read compare this band. New clients draw
+                    `numberBand` instead."
+                numberBand:
+                  description: "1.50 — the band of the number alone (green from 70, yellow from 50), the rule every other HealthLog score
+                    follows. Draw the ring and its word with this, and show `bandSetterLine` beside it when a pillar
+                    sits in a worse band. It differs from `band` exactly when `bandSetter` is non-null. Optional: a
+                    payload cached before 1.50 lacks it; fall back to `band`."
+                  type: string
+                  enum:
+                    - green
+                    - yellow
+                    - red
                 bandSetter:
                   anyOf:
                     - type: string
@@ -81381,9 +81513,8 @@ components:
                         - WELLBEING
                         - LIPIDS
                     - type: "null"
-                  description: The worst counted pillar when its band is worse than the score's own band, null otherwise. Since 1.50 it
-                    names that pillar beside the score; it no longer lowers `band`, which follows the number like every
-                    HealthLog score (green from 70, yellow from 50).
+                  description: The worst counted pillar when its band is worse than the number's own band (`numberBand`), null otherwise.
+                    It is the pillar that makes `band` worse than `numberBand`.
                 composition:
                   type: array
                   items:
@@ -101165,6 +101296,16 @@ components:
                   type: number
                 band:
                   type: string
+                  description: "The health score's colour as shipped apps draw it: the worse of the number's own band (green from 70,
+                    yellow from 50) and the worst counted pillar's band. An 81 over a red pillar is red here. Unchanged
+                    since 1.49; the stored daily score and the \"steady for\" read compare this band. New clients draw
+                    `numberBand` instead."
+                numberBand:
+                  description: "1.50 — the band of the number alone (green from 70, yellow from 50), the rule every other HealthLog score
+                    follows. Draw the ring and its word with this, and show `bandSetterLine` beside it when a pillar
+                    sits in a worse band. It differs from `band` exactly when `bandSetter` is non-null. Optional: a
+                    payload cached before 1.50 lacks it; fall back to `band`."
+                  type: string
                 delta:
                   type:
                     - number
@@ -101209,13 +101350,13 @@ components:
                     bound, said as \"at least\", and the run's start is unknown. Absent on older cached digests."
                   type: boolean
                 bandSetter:
-                  description: The counted pillar whose band is worse than the score's own (`bandSetter` of the health score), null when
-                    none is. Since 1.50 `band` follows the number, so a green score can sit over a red pillar.
+                  description: The counted pillar whose band is worse than the number's own (`numberBand`), null when none is. Exactly
+                    then `band` is worse than `numberBand`.
                   type:
                     - string
                     - "null"
                 bandSetterBand:
-                  description: That pillar's own band. A sentence about the day uses the worse of this and `band`.
+                  description: That pillar's own band. A sentence about the day uses the worse of this and `numberBand`, which is `band`.
                   anyOf:
                     - type: string
                       enum:
@@ -103020,10 +103161,10 @@ components:
                   - match
                   - methods
                 additionalProperties: false
-              description: "The API routes a caller in state `required` may still reach (account read, sign-out, removing a device's
-                push binding, enrolment, the public probes). `prefix` admits every path under `path`. Read it from here
-                rather than keeping a copy: the list may change between releases. `POST /api/auth/refresh` with `revoke:
-                true` also always works."
+              description: "The API routes a browser session in state `required` may still reach (from v1.51 a sign-in token too)
+                (account read, sign-out, removing a device's push binding, enrolment, the public probes). `prefix`
+                admits every path under `path`. Read it from here rather than keeping a copy: the list may change
+                between releases. `POST /api/auth/refresh` with `revoke: true` also always works."
           required:
             - state
             - dueAt
@@ -103032,9 +103173,11 @@ components:
           description: "Whether a second-factor policy requires this caller to enrol a factor (TOTP, a security key or a passkey),
             and by when; decided by the same function that enforces it. `none`: no policy covers the account, it has a
             factor, it is a public demo, or the caller is a narrow-scope token; `grace`: enrol by `dueAt`, everything
-            works until then; `required`: every route outside `openPaths` answers 403 `auth.mfa.enrollment_required` for
-            this caller (browser session and sign-in token alike), a refresh is refused the same way, and a native
-            sign-in is refused until the account enrols."
+            works until then; `required`: `dueAt` has passed; a new native sign-in is refused with 403
+            `auth.mfa.enrollment_required` until the account enrols, and for a browser session every route outside
+            `openPaths` answers the same 403. A sign-in token keeps working in v1.50, refresh included; from v1.51 it is
+            held to `openPaths` like a browser session. The account's devices get one SECURITY_ALERT (`securityKind`
+            `mfa_due`) when the grace period starts."
         glucoseUnit:
           anyOf:
             - type: string
@@ -108437,7 +108580,7 @@ components:
             - failed
           description: "`inserted` and `duplicate` landed (advance the cursor); `updated` is never sent here but is part of the
             shared batch shape. `skipped` is permanent for the entry as sent, see `reason`. `failed` is transient: keep
-            the entry and send it again; the response then carries `Cache-Control: no-store`."
+            the entry and send it again; the response is then not replayed for its `Idempotency-Key`."
         reason:
           description: "Why an entry was `skipped`: `unsupported_source` (source other than `APPLE_HEALTH`),
             `unstable_external_id`, `unknown_code`, `value_out_of_range` (intensity not an integer 0-10),
@@ -113356,7 +113499,8 @@ components:
         asOfDay:
           type: string
           description: 1.50 — the local day (YYYY-MM-DD, the account's zone) `score` belongs to. Today when `fresh` is true;
-            otherwise the wake day of the last stored readiness.
+            otherwise the wake day of the last readiness stored for a day before today, never today. A readiness that is
+            not fresh stays on the wire all day, also once too few inputs remain to blend.
         fresh:
           type: boolean
           description: 1.50 — true when every input the account still delivers (resting pulse, HRV, respiratory rate, the scored

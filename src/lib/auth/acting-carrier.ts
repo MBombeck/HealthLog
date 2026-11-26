@@ -28,6 +28,7 @@
  *     that believes it is selecting an account and is not produces a support
  *     case about data that looks wrong.
  */
+import { unstable_rethrow } from "next/navigation";
 import { headers } from "next/headers";
 
 import { getSession } from "@/lib/auth/session";
@@ -222,7 +223,10 @@ export async function readClaimedRecordContext(): Promise<ClaimedRecordContext> 
   let session: Awaited<ReturnType<typeof getSession>> = null;
   try {
     session = await getSession();
-  } catch {
+  } catch (error) {
+    // A redirect from the session resolve (the second-factor confinement
+    // sends a page to `/enroll-mfa`) is the answer, not a failure.
+    unstable_rethrow(error);
     // A session that cannot be resolved is not a switched one. The request
     // still has to be authenticated by whatever wraps this call, and an
     // unauthenticated request claims nothing.

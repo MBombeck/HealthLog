@@ -378,7 +378,7 @@ export const readinessValue = z
     asOfDay: z
       .string()
       .describe(
-        "1.50 — the local day (YYYY-MM-DD, the account's zone) `score` belongs to. Today when `fresh` is true; otherwise the wake day of the last stored readiness.",
+        "1.50 — the local day (YYYY-MM-DD, the account's zone) `score` belongs to. Today when `fresh` is true; otherwise the wake day of the last readiness stored for a day before today, never today. A readiness that is not fresh stays on the wire all day, also once too few inputs remain to blend.",
       ),
     fresh: z
       .boolean()
@@ -495,6 +495,17 @@ export const derivedProvenance = z
  * no way to grow one; a required field would have made every one of them
  * invalid against the published contract on the day it was published.
  */
+/**
+ * The health score's two bands, described once for every carrier (the
+ * report's composite, the snapshot's hero block, the digest's score).
+ */
+export const HEALTH_SCORE_BAND_DESCRIPTION =
+  "The health score's colour as shipped apps draw it: the worse of the number's own band (green from 70, yellow from 50) and the worst counted pillar's band. An 81 over a red pillar is red here. Unchanged since 1.49; the stored daily score and the \"steady for\" read compare this band. New clients draw `numberBand` instead.";
+export const HEALTH_SCORE_NUMBER_BAND_DESCRIPTION =
+  "1.50 — the band of the number alone (green from 70, yellow from 50), the rule every other HealthLog score follows. Draw the ring and its word with this, and show `bandSetterLine` beside it when a pillar sits in a worse band. It differs from `band` exactly when `bandSetter` is non-null. Optional: a payload cached before 1.50 lacks it; fall back to `band`.";
+export const HEALTH_SCORE_BAND_SETTER_DESCRIPTION =
+  "The worst counted pillar when its band is worse than the number's own band (`numberBand`), null otherwise. It is the pillar that makes `band` worse than `numberBand`.";
+
 export const healthScoreBasis = z
   .object({
     domains: z
@@ -1550,7 +1561,13 @@ export const dashboardSnapshotResponse = z
     healthScore: z
       .object({
         score: z.number().int().min(0).max(100),
-        band: z.enum(["green", "yellow", "red"]),
+        band: z
+          .enum(["green", "yellow", "red"])
+          .describe(HEALTH_SCORE_BAND_DESCRIPTION),
+        numberBand: z
+          .enum(["green", "yellow", "red"])
+          .optional()
+          .describe(HEALTH_SCORE_NUMBER_BAND_DESCRIPTION),
         delta: z.number().nullable(),
         confidence: derivedConfidence.optional(),
         composition: z
@@ -1602,9 +1619,7 @@ export const dashboardSnapshotResponse = z
           ])
           .nullable()
           .optional()
-          .describe(
-            "The worst counted pillar when its band is worse than the score's own band, null otherwise. Since 1.50 it names that pillar beside the score; it no longer lowers `band`, which follows the number like every HealthLog score (green from 70, yellow from 50).",
-          ),
+          .describe(HEALTH_SCORE_BAND_SETTER_DESCRIPTION),
         bandSetterBand: z
           .enum(["yellow", "red"])
           .nullable()
@@ -2488,13 +2503,17 @@ const healthScoreComposite = z
       status: z.literal("ok"),
       value: z.object({
         score: z.number(),
-        band: z.enum(["green", "yellow", "red"]),
+        band: z
+          .enum(["green", "yellow", "red"])
+          .describe(HEALTH_SCORE_BAND_DESCRIPTION),
+        numberBand: z
+          .enum(["green", "yellow", "red"])
+          .optional()
+          .describe(HEALTH_SCORE_NUMBER_BAND_DESCRIPTION),
         bandSetter: z
           .string()
           .nullable()
-          .describe(
-            "The worst counted pillar when its band is worse than the score's own band, null otherwise. Since 1.50 it names that pillar beside the score; it no longer lowers `band`, which follows the number like every HealthLog score (green from 70, yellow from 50).",
-          ),
+          .describe(HEALTH_SCORE_BAND_SETTER_DESCRIPTION),
         composition: z
           .array(z.string())
           .describe(

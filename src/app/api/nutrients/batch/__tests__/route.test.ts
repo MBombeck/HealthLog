@@ -39,12 +39,22 @@ vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: vi.fn(),
   rateLimitHeaders: () => ({}),
 }));
-vi.mock("@/lib/idempotency", () => ({
-  withIdempotency:
-    <Args extends unknown[]>(fn: (...args: Args) => Promise<Response>) =>
-    (...args: Args) =>
-      fn(...args),
-}));
+// The real marker, a pass-through wrapper: the "not replayable" mark stays
+// on the answer, where the wrapper would read it and take it off.
+vi.mock("@/lib/idempotency", async () => {
+  const actual =
+    await vi.importActual<typeof import("@/lib/idempotency")>(
+      "@/lib/idempotency",
+    );
+  return {
+    NOT_REPLAYABLE_HEADER: actual.NOT_REPLAYABLE_HEADER,
+    markNotReplayable: actual.markNotReplayable,
+    withIdempotency:
+      <Args extends unknown[]>(fn: (...args: Args) => Promise<Response>) =>
+      (...args: Args) =>
+        fn(...args),
+  };
+});
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
 vi.mock("@/lib/cache/invalidate", () => ({
   invalidateUserHealthContext: vi.fn(),
@@ -59,6 +69,7 @@ vi.mock("next/headers", () => ({
 }));
 
 import { POST } from "../route";
+import { NOT_REPLAYABLE_HEADER } from "@/lib/idempotency";
 import { prisma } from "@/lib/db";
 import { apiError } from "@/lib/api-response";
 import { getSession } from "@/lib/auth/session";
@@ -448,7 +459,7 @@ describe("POST /api/nutrients/batch — write semantics", () => {
     spy.mockRestore();
   });
 
-  it("marks a response carrying upsert_failed no-store, so a retry with the same Idempotency-Key writes again", async () => {
+  it("marks a response carrying upsert_failed not replayable, so a retry with the same Idempotency-Key writes again", async () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.mocked(prisma.nutrientIntakeDay.createMany).mockRejectedValue(
       new Error("connection reset"),
@@ -461,7 +472,7 @@ describe("POST /api/nutrients/batch — write semantics", () => {
       }),
     );
     expect(failed.status).toBe(200);
-    expect(failed.headers.get("Cache-Control")).toBe("private, no-store");
+    expect(failed.headers.get(NOT_REPLAYABLE_HEADER)).toBe("1");
     spy.mockRestore();
 
     vi.mocked(prisma.nutrientIntakeDay.createMany).mockResolvedValue({
@@ -474,7 +485,7 @@ describe("POST /api/nutrients/batch — write semantics", () => {
         ],
       }),
     );
-    expect(clean.headers.get("Cache-Control")).not.toBe("private, no-store");
+    expect(clean.headers.get(NOT_REPLAYABLE_HEADER)).toBeNull();
   });
 
   it("documents upsert_failed as a transient write failure to retry, and the validation skips as terminal", () => {

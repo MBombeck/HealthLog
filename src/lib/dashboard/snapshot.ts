@@ -50,7 +50,7 @@ import {
   GLUCOSE_PANEL_WINDOW_DAYS,
   type GlucoseClinicalMetrics,
 } from "@/lib/analytics/glucose-metrics";
-import { groupByGlucoseContext, resolveGlucoseUnit } from "@/lib/glucose";
+import { groupByGlucoseContext } from "@/lib/glucose";
 import {
   computeBpInTargetFastPath,
   type BpInTargetEnvelope,
@@ -87,7 +87,10 @@ import {
   buildMedsTodayBlock,
   type MedsTodayBlock,
 } from "@/lib/dashboard/meds-today";
-import { computeAndRecordUserHealthScore } from "@/lib/analytics/score/record";
+import {
+  computeSnapshotScoreReport,
+  heldBackScore,
+} from "@/lib/dashboard/snapshot-held-back-score";
 import {
   buildDashboardBands as buildTargetBands,
   type DashboardTargetBands,
@@ -100,9 +103,7 @@ import type {
   ScorePillarId,
 } from "@/lib/analytics/score/types";
 import {
-  restModeAnnotation,
-  snapshotScorePillars,
-  snapshotScoreSetter,
+  snapshotHealthScore,
   type DashboardSnapshotScorePillar,
 } from "@/lib/dashboard/snapshot-health-score";
 import type { DerivedConfidence } from "@/lib/insights/derived/types";
@@ -344,7 +345,10 @@ export interface DashboardLayoutCatalogueEntry {
  */
 export interface DashboardSnapshotHealthScore {
   score: number;
+  /** The worse of the number's band and the worst pillar's (shipped apps). */
   band: ScoreBand;
+  /** 1.50: the number's own band; the web draws this. Old caches lack it. */
+  numberBand?: ScoreBand;
   delta: number | null;
   confidence?: DerivedConfidence;
   composition?: ScorePillarId[];
@@ -761,58 +765,20 @@ async function buildExtras(
   // ring and the insights card grade the pillar off identical inputs (same
   // 90-day window via W1d, same all-time fallback, same graded score, same
   // prior-week delta values). Closes the dashboard-vs-insights divergence.
-  const scoreSourcePriority = user.sourcePriorityJson ?? null;
   const scoreResult = await time("healthScore", () =>
-    computeAndRecordUserHealthScore({
-      prisma,
-      userId: user.id,
-      now,
-      profile: {
-        dateOfBirth: user.dateOfBirth,
-        heightCm: user.heightCm,
-        timezone: userTz,
-        sourcePriorityJson: scoreSourcePriority,
-        thresholdsJson: user.thresholdsJson,
-        glucoseUnit: resolveGlucoseUnit(user.glucoseUnit),
-      },
-      modules: {
-        glucose: modules.glucose !== false,
-        labs: modules.labs !== false,
-        sleep: modules.sleep !== false,
-        mentalHealth: modules.mentalHealth !== false,
-      },
-      healthScoreConfigJson: user.healthScoreConfigJson,
-      bpTargets: clinicalBpTargets,
-      bpEnvelope,
-      bpEnvelopePriorWeek,
-      bpEnvelopePriorTwoWeeks,
+    computeSnapshotScoreReport(prisma, user, userTz, now, modules, {
+      targets: clinicalBpTargets,
+      envelope: bpEnvelope,
+      priorWeek: bpEnvelopePriorWeek,
+      priorTwoWeeks: bpEnvelopePriorTwoWeeks,
     }),
   );
-  // Rest Mode frames (never penalises) the number; only when a score rendered.
-  const restMode =
-    scoreResult.composite.status === "ok"
-      ? await restModeAnnotation(user.id, now)
-      : null;
-  const setter = snapshotScoreSetter(scoreResult, locale);
-  const healthScore: DashboardSnapshotHealthScore | null =
-    scoreResult.composite.status === "ok"
-      ? {
-          score: scoreResult.composite.value.score,
-          band: scoreResult.composite.value.band,
-          delta: scoreResult.delta,
-          confidence: scoreResult.composite.confidence,
-          composition: scoreResult.composite.value.composition,
-          configured: scoreResult.composite.value.configured,
-          scoreBasis: scoreResult.composite.value.scoreBasis,
-          deltaReason: scoreResult.deltaReason,
-          scoreVersion: scoreResult.scoreVersion,
-          bandSetter: scoreResult.composite.value.bandSetter,
-          bandSetterBand: setter?.band ?? null,
-          bandSetterLine: setter?.line ?? null,
-          restMode,
-          pillars: snapshotScorePillars(scoreResult.pillars, locale),
-        }
-      : null;
+  const healthScore = await snapshotHealthScore(
+    scoreResult,
+    user.id,
+    now,
+    locale,
+  );
 
   const glucoseSince = new Date(
     Date.now() - GLUCOSE_PANEL_WINDOW_DAYS * 24 * 60 * 60 * 1000,
@@ -1460,18 +1426,18 @@ export async function buildDashboardSnapshot(
     },
     extras: extrasResult?.extras ?? null,
     medsToday,
-    // v1.21.2 — fold the score-card narrative onto the health score so
-    // the hero reads tension + return-to-baseline off the resolved score DTO.
+    // The warm score carries its narrative; a held-back phase serves the day's.
     healthScore: extrasResult?.healthScore
       ? {
           ...extrasResult.healthScore,
           tension: scoreNarrative?.tension ?? null,
           returnToBand: scoreNarrative?.returnToBand ?? null,
         }
-      : null,
-    // v1.27.7 — the resolved hero score rings (selection order, data-
-    // gated). Always set by the live builder; optional on the type so
-    // older cached snapshots stay valid.
+      : warm
+        ? null
+        : await heldBackScore(prisma, user, coverage, now, modules, locale),
+    // The resolved hero score rings (selection order, data-gated); optional
+    // on the type so older cached snapshots stay valid.
     scoreRings,
     briefing: briefing.briefing,
     // v1.21.2 — the briefing recall + forward-look. Null when there is no

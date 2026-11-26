@@ -364,7 +364,7 @@ function MorningScore({ digest }: { digest: DailyDigest }) {
   const ring = (size: "responsive" | "sm") => (
     <ScoreRing
       score={score?.value ?? null}
-      band={score ? (score.band as ScoreBand) : undefined}
+      band={score ? ((score.numberBand ?? score.band) as ScoreBand) : undefined}
       size={size}
       flat
     />

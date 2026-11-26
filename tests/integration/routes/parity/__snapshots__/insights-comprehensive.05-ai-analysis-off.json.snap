@@ -115,25 +115,25 @@
           "avg30LastYear": null
         },
         "SLEEP_DURATION": {
-          "count": 81,
-          "latest": 12,
-          "min": 12,
-          "max": 240,
-          "mean": 98.64,
-          "median": null,
-          "avg7": 96.17,
-          "avg30": 98.64,
+          "count": 20,
+          "latest": 355,
+          "min": 355,
+          "max": 430,
+          "mean": 387.5,
+          "median": 390,
+          "avg7": 386.43,
+          "avg30": 387.5,
           "slope7": {
-            "slope": -2.121,
+            "slope": -0.1,
             "direction": "down",
             "confidence": 0
           },
           "slope30": {
-            "slope": -0.379,
+            "slope": -0.06,
             "direction": "down",
             "confidence": 0
           },
-          "anomalyCount": 0,
+          "anomalyCount": 1,
           "avg30LastMonth": null,
           "avg30LastYear": null
         },

@@ -23,12 +23,22 @@ vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: vi.fn(),
   rateLimitHeaders: () => ({}),
 }));
-vi.mock("@/lib/idempotency", () => ({
-  withIdempotency:
-    <Args extends unknown[]>(fn: (...args: Args) => Promise<Response>) =>
-    (...args: Args) =>
-      fn(...args),
-}));
+// The real marker, a pass-through wrapper: the "not replayable" mark stays
+// on the answer, where the wrapper would read it and take it off.
+vi.mock("@/lib/idempotency", async () => {
+  const actual =
+    await vi.importActual<typeof import("@/lib/idempotency")>(
+      "@/lib/idempotency",
+    );
+  return {
+    NOT_REPLAYABLE_HEADER: actual.NOT_REPLAYABLE_HEADER,
+    markNotReplayable: actual.markNotReplayable,
+    withIdempotency:
+      <Args extends unknown[]>(fn: (...args: Args) => Promise<Response>) =>
+      (...args: Args) =>
+        fn(...args),
+  };
+});
 vi.mock("@/lib/cycle/gate", () => ({
   requireCycleEnabled: vi.fn(),
 }));
@@ -46,6 +56,7 @@ vi.mock("next/headers", () => ({
 }));
 
 import { POST } from "../route";
+import { NOT_REPLAYABLE_HEADER } from "@/lib/idempotency";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -249,7 +260,7 @@ describe("POST /api/cycle/day-logs/bulk — refusal codes", () => {
 });
 
 describe("POST /api/cycle/day-logs/bulk — a failed write is not cached", () => {
-  it("marks a response carrying upsert_failed no-store and leaves a clean one alone", async () => {
+  it("marks a response carrying upsert_failed not replayable and leaves a clean one alone", async () => {
     vi.mocked(upsertCycleDayLog).mockRejectedValueOnce(new Error("reset"));
     const failed = await POST(
       postReq({
@@ -264,7 +275,7 @@ describe("POST /api/cycle/day-logs/bulk — a failed write is not cached", () =>
       status: "skipped",
       reason: "upsert_failed",
     });
-    expect(failed.headers.get("Cache-Control")).toBe("private, no-store");
+    expect(failed.headers.get(NOT_REPLAYABLE_HEADER)).toBe("1");
 
     vi.mocked(upsertCycleDayLog).mockResolvedValueOnce({
       id: "d1",
@@ -276,6 +287,6 @@ describe("POST /api/cycle/day-logs/bulk — a failed write is not cached", () =>
         entries: [{ date: "2026-01-02", loggedAt: "2026-01-02T08:00:00.000Z" }],
       }),
     );
-    expect(clean.headers.get("Cache-Control")).not.toBe("private, no-store");
+    expect(clean.headers.get(NOT_REPLAYABLE_HEADER)).toBeNull();
   });
 });

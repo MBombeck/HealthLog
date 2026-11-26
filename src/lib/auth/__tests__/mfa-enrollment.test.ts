@@ -20,8 +20,9 @@ vi.mock("next/headers", () => ({
 }));
 
 import {
+  forgetMfaFactors,
+  forgetMfaPolicy,
   resolveMfaEnrollment,
-  resolveMfaEnrollmentRequired,
   syncMfaEnrollCookie,
 } from "../mfa-enrollment";
 import { prisma } from "@/lib/db";
@@ -40,6 +41,7 @@ function policy(overrides: Record<string, unknown> = {}) {
 }
 
 function usePolicy(overrides: Record<string, unknown> = {}): void {
+  forgetMfaPolicy();
   vi.mocked(prisma.appSettings.findUnique).mockResolvedValue(
     policy(overrides) as never,
   );
@@ -58,6 +60,7 @@ beforeEach(() => {
   usePolicy();
   vi.mocked(prisma.webauthnMfaCredential.count).mockResolvedValue(0 as never);
   vi.mocked(prisma.passkey.count).mockResolvedValue(0 as never);
+  forgetMfaFactors("u1");
 });
 
 afterEach(() => {
@@ -94,8 +97,21 @@ describe("resolveMfaEnrollment", () => {
     expect((await resolveMfaEnrollment("u1", ADMIN, NOW)).state).toBe(
       "required",
     );
-    usePolicy({ mfaPolicySince: new Date(Date.now() - 15 * DAY_MS) });
-    expect(await resolveMfaEnrollmentRequired("u1", ADMIN)).toBe(true);
+  });
+
+  it("holds the policy and the factor presence until a write drops them", async () => {
+    await resolveMfaEnrollment("u1", ADMIN, NOW);
+    await resolveMfaEnrollment("u1", ADMIN, NOW);
+    expect(prisma.appSettings.findUnique).toHaveBeenCalledTimes(1);
+    expect(prisma.passkey.count).toHaveBeenCalledTimes(1);
+
+    // A key or passkey written in this process, or a policy change, is read
+    // afresh at once.
+    forgetMfaFactors("u1");
+    forgetMfaPolicy();
+    await resolveMfaEnrollment("u1", ADMIN, NOW);
+    expect(prisma.passkey.count).toHaveBeenCalledTimes(2);
+    expect(prisma.appSettings.findUnique).toHaveBeenCalledTimes(2);
   });
 
   it("counts an account created under a running policy from its creation", async () => {

@@ -126,6 +126,41 @@ describe("<DailyBriefing>", () => {
     expect(html).toContain('href="/insights/recovery"');
   });
 
+  it("renders a glucose signal and finding as linked rows with their delta", () => {
+    const html = render(
+      <DailyBriefing
+        briefing={{
+          ...baseBriefing,
+          signalsOfDay: [
+            {
+              sourceMetric: "glucose",
+              tone: "watch",
+              headline: "Glucose is up by this time of day",
+              nudge: "Note what you had for breakfast.",
+              delta: "+0.8 mmol/L",
+            },
+          ],
+          keyFindings: [
+            {
+              ...baseBriefing.keyFindings[2],
+              sourceMetric: "glucose",
+              headline: "Glucose steady over the month",
+            },
+          ],
+        }}
+      />,
+    );
+    expect(html).toMatch(
+      /data-slot="daily-briefing-signal"[^>]*data-metric="glucose"/,
+    );
+    expect(html).toMatch(
+      /data-slot="daily-briefing-finding"[^>]*data-metric="glucose"/,
+    );
+    expect(html).toContain('href="/insights/blood-glucose"');
+    expect(html).toContain("Glucose is up by this time of day");
+    expect(html).toContain("+0.8 mmol/L");
+  });
+
   it("renders the delta string when supplied", () => {
     const html = render(<DailyBriefing briefing={baseBriefing} />);
     expect(html).toMatch(/data-slot="daily-briefing-delta"/);

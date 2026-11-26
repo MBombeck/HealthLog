@@ -1,6 +1,6 @@
 {
   "status": 200,
-  "cacheControl": "private, max-age=0, must-revalidate",
+  "cacheControl": "private, no-store",
   "body": {
     "data": {
       "summaries": {
@@ -1841,6 +1841,7 @@
           "value": {
             "score": 76,
             "band": "green",
+            "numberBand": "green",
             "bandSetter": null,
             "composition": [
               "BLOOD_PRESSURE",

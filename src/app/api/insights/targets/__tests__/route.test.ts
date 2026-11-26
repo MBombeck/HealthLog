@@ -774,7 +774,7 @@ describe("GET /api/insights/targets — mood-rollup tier swap", () => {
           },
           {
             type: "BLOOD_GLUCOSE_FASTING",
-            label: "targets.glucoseFasting",
+            label: "Glucose (fasting)",
             current: 90,
             average30: 90,
             trend: null,

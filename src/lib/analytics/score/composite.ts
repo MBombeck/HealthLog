@@ -119,11 +119,14 @@ export function computeComposite(
   });
   // `breadth.ok` above guarantees an eligible pillar.
   const score = Math.round(mean(values.map((value) => value.score))!);
-  // The band follows the number, under the same rule as every other
-  // HealthLog score (1.50). A pillar in a worse band than the score is not
-  // folded into the band — an 81 that reads "low" says two things at once —
-  // it is named beside it as `bandSetter`, and its own row keeps its colour.
-  const band = bandForScoreKind("health", score);
+  // Two bands. `numberBand` follows the number, under the same rule as
+  // every other HealthLog score (1.50); the web and newer apps draw it and
+  // name a worse pillar beside it (`bandSetter`). `band` keeps its 1.49
+  // meaning, the worse of the number's band and the worst counted pillar's,
+  // because every shipped app colours the ring from it and explains it with
+  // "X set the colour of this score". The stored day and "steady since"
+  // compare `band`.
+  const numberBand = bandForScoreKind("health", score);
   const bandSetterIndex = values.reduce(
     (worstIndex, value, index) =>
       BAND_RANK[scoreBand(value.score)] <
@@ -134,6 +137,8 @@ export function computeComposite(
   );
   const bandSetterValue = values[bandSetterIndex];
   const worstBand = scoreBand(bandSetterValue.score);
+  const band =
+    BAND_RANK[worstBand] < BAND_RANK[numberBand] ? worstBand : numberBand;
   const deltaValues = values.filter((value) => value.deltaEligible);
   const noiseFloor =
     deltaValues.length === 0
@@ -148,8 +153,9 @@ export function computeComposite(
     value: {
       score,
       band,
+      numberBand,
       bandSetter:
-        BAND_RANK[worstBand] < BAND_RANK[band]
+        BAND_RANK[worstBand] < BAND_RANK[numberBand]
           ? composition[bandSetterIndex]
           : null,
       composition,

@@ -34,18 +34,17 @@ vi.mock("@/lib/auth/mfa-enrollment", async (importActual) => {
     sessionMfaDueAt: actual.sessionMfaDueAt,
     sessionMfaRecordStale: actual.sessionMfaRecordStale,
     resolveMfaEnrollment,
-    resolveMfaEnrollmentRequired: async (...args: unknown[]) =>
-      (await resolveMfaEnrollment(...args)).state === "required",
   };
 });
+vi.mock("@/lib/auth/mfa-grace-notice", () => ({ noticeMfaGrace: vi.fn() }));
 
 import { prisma } from "@/lib/db";
 import { resolveMfaEnrollment } from "@/lib/auth/mfa-enrollment";
+import { noticeMfaGrace } from "@/lib/auth/mfa-grace-notice";
 import {
   enforceMfaEnrollment,
   isMfaEnrollmentApiPath,
   isMfaEnrollmentPagePath,
-  refuseConfinedBearer,
   callerMfaEnrollment,
   MFA_ENROLLMENT_OPEN_PATHS,
 } from "../mfa-confinement";
@@ -189,33 +188,6 @@ describe("enforceMfaEnrollment", () => {
   });
 });
 
-describe("refuseConfinedBearer", () => {
-  it("confines a sign-in token past the due date to the enrolment API", async () => {
-    state.apiPath = "/api/measurements";
-    await expect(refuseConfinedBearer(USER)).rejects.toMatchObject({
-      statusCode: 403,
-      errorCode: "auth.mfa.enrollment_required",
-    });
-    state.apiPath = "/api/auth/me";
-    await expect(refuseConfinedBearer(USER)).resolves.toBeUndefined();
-  });
-
-  it("fails closed when the path is unknown", async () => {
-    await expect(refuseConfinedBearer(USER)).rejects.toMatchObject({
-      statusCode: 403,
-    });
-  });
-
-  it("lets a token through during the grace period", async () => {
-    vi.mocked(resolveMfaEnrollment).mockResolvedValue({
-      state: "grace",
-      dueAt: new Date(Date.now() + 60_000),
-    });
-    state.apiPath = "/api/measurements";
-    await expect(refuseConfinedBearer(USER)).resolves.toBeUndefined();
-  });
-});
-
 describe("callerMfaEnrollment", () => {
   it("reads none for a narrow token without asking the policy", async () => {
     expect(await callerMfaEnrollment(USER, "narrow-token")).toEqual({
@@ -223,6 +195,17 @@ describe("callerMfaEnrollment", () => {
       dueAt: null,
     });
     expect(resolveMfaEnrollment).not.toHaveBeenCalled();
+    expect(noticeMfaGrace).not.toHaveBeenCalled();
+  });
+
+  it("hands a sign-in's state to the grace notice", async () => {
+    const grace = {
+      state: "grace" as const,
+      dueAt: new Date(Date.now() + 60_000),
+    };
+    vi.mocked(resolveMfaEnrollment).mockResolvedValue(grace);
+    expect(await callerMfaEnrollment(USER, "sign-in")).toEqual(grace);
+    expect(noticeMfaGrace).toHaveBeenCalledWith("u1", grace);
   });
 
   it("answers what the gates enforce for a sign-in", async () => {

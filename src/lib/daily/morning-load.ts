@@ -25,6 +25,11 @@ import { annotate } from "@/lib/logging/context";
 import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { DASHBOARD_REFETCH_INTERVAL_MS } from "@/lib/queries/refetch-interval";
 import { readDashboardSnapshotCached } from "@/lib/dashboard/snapshot-read";
+import {
+  lastNightFromSnapshot,
+  morningCacheKey,
+  morningExtrasCacheKey,
+} from "@/lib/daily/last-night";
 import { resolveModuleMap } from "@/lib/modules/gate";
 import { resolveRestMode } from "@/lib/illness/rest-mode";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
@@ -58,16 +63,11 @@ import {
 import { vitalDisplayDecimals } from "@/lib/measurements/vital-precision";
 import { CONNECTION_LABELS } from "@/lib/integrations/connection-health";
 import { loadQuietSources } from "@/lib/sync-stall/quiet-load";
-import { isSleepExpected } from "@/lib/daily/digest";
 import {
   floorFromReadings,
   type MorningFloor,
 } from "@/lib/daily/morning-floor";
-import type {
-  TodayRestMode,
-  TodaySleep,
-  TodayVital,
-} from "@/lib/daily/today-overview";
+import type { TodayRestMode, TodayVital } from "@/lib/daily/today-overview";
 import {
   buildDailyMorning,
   type Band,
@@ -128,10 +128,6 @@ interface MorningExtras {
   readiness: MorningReadiness | null;
   sleepScore: MorningSleepScore | null;
   deviceScores: DeviceScoreRow[];
-}
-
-export function morningCacheKey(userId: string, dateKey: string): string {
-  return `${userId}|daily-morning|${dateKey}`;
 }
 
 async function readVitals(
@@ -216,7 +212,12 @@ async function readSleepScore(
     });
     if (derived.status !== "ok" || !derived.value) return null;
     const value = derived.value as SleepScoreValue;
-    return { score: value.score, band: value.band, night: value.night };
+    return {
+      score: value.score,
+      band: value.band,
+      night: value.night,
+      asleepMinutes: value.asleepMinutes,
+    };
   } catch {
     return null;
   }
@@ -271,7 +272,7 @@ function loadMorningExtrasCached(
 ): Promise<MorningExtras> {
   return cachedSwr(
     caches.analytics as ServerCache<MorningExtras>,
-    `${morningCacheKey(user.id, todayKey)}|${modules.sleep ? "s" : "-"}${modules.recovery ? "r" : "-"}`,
+    morningExtrasCacheKey(user.id, todayKey, modules),
     async () => {
       const profile = await loadBaselineProfile(prisma, user.id);
       const [vitals, readiness, sleepScore, deviceScores] = await Promise.all([
@@ -594,29 +595,20 @@ export async function loadDailyMorning(
     (user.dateFormat ?? "AUTO") as DateFormatPreference,
   );
 
-  // Sleep: the same reads the digest makes from the same snapshot, so the
-  // morning and the hero agree on whether last night is in.
-  const sleepSlot = snapshot.tiles.lastSeenByType["SLEEP_DURATION"];
-  const sleepLastSeenDaysAgo = sleepSlot ? sleepSlot.daysAgo : null;
+  // Sleep: whether sleep is tracked at all comes from the snapshot; whether
+  // last night is in comes from one rule, the sleep score's night
+  // (`resolveLastNight`), which the sentence, the line, the ring and the
+  // pending state all read. The digest reads it through the same helper.
   const sleepOn = modules.sleep !== false;
-  const sleepExpected = sleepOn && isSleepExpected(sleepLastSeenDaysAgo);
-  const morningRefreshedToday = user.morningDigestRefreshedOn === todayKey;
-  const sleepPending =
-    sleepExpected && !morningRefreshedToday && sleepLastSeenDaysAgo !== 0;
-  const sleepSummary = snapshot.tiles.summaries?.SLEEP_DURATION;
-  const sleep: TodaySleep | null =
-    sleepLastSeenDaysAgo === 0 &&
-    sleepSummary?.latest !== null &&
-    sleepSummary?.latest !== undefined &&
-    sleepSummary.latest > 0
-      ? {
-          minutes: sleepSummary.latest,
-          usualMinutes:
-            sleepSummary.avg30 !== null && sleepSummary.avg30 > 0
-              ? sleepSummary.avg30
-              : null,
-        }
-      : null;
+  const sleepScore = extras.sleepScore;
+  const { lastNight, sleepExpected } = lastNightFromSnapshot({
+    snapshot,
+    tz,
+    todayKey,
+    sleepOn,
+    morningRefreshedToday: user.morningDigestRefreshedOn === todayKey,
+    sleepScore,
+  });
 
   const restMode: TodayRestMode | null =
     restModeContext?.active && restModeContext.since
@@ -645,16 +637,12 @@ export async function loadDailyMorning(
     vitals: extras.vitals.map((v) => renderMorningVital(v, units, locale, t)),
     illnessExplained: extras.illnessExplained,
     sleepExpected,
-    sleepPending,
-    sleep,
-    latestNightLabel: sleepSlot
-      ? new Intl.DateTimeFormat(resolveIntlLocale(locale), {
-          day: "numeric",
-          month: "short",
-          timeZone: tz,
-        }).format(new Date(sleepSlot.lastSeenAt))
+    sleepPending: lastNight.sleepPending,
+    sleep: lastNight.sleep,
+    latestNightLabel: lastNight.latestNightDay
+      ? shortDate(lastNight.latestNightDay, locale)
       : null,
-    sleepScore: extras.sleepScore,
+    sleepScore,
     sleepSourceValues: sleepOn
       ? todaysDeviceValues(
           extras.deviceScores,

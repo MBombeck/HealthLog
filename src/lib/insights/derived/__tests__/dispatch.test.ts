@@ -10,7 +10,10 @@ vi.mock("@/lib/measurements/day-aggregates", async () => ({
 
 vi.mock("@/lib/db", () => ({
   prisma: {
-    measurement: { findMany: vi.fn().mockResolvedValue([]) },
+    measurement: {
+      findMany: vi.fn().mockResolvedValue([]),
+      findFirst: vi.fn().mockResolvedValue(null),
+    },
     moodEntry: { findMany: vi.fn().mockResolvedValue([]) },
     // The Sleep Score reads the user's source priority for the canonical
     // writer-dedup ladder; default to no override.

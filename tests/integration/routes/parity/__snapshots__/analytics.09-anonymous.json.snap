@@ -1,6 +1,6 @@
 {
   "status": 401,
-  "cacheControl": null,
+  "cacheControl": "private, no-store",
   "body": {
     "data": null,
     "error": "Not authenticated",

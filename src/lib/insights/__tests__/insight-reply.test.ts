@@ -43,6 +43,44 @@ describe("parseInsightReply", () => {
     expect(parsed.insights).toMatchObject({ summary: "Steady week." });
   });
 
+  it("keeps a glucose signal and finding through to the stored reply", () => {
+    const glucose = {
+      dailyBriefing: {
+        paragraph: "Glucose ran higher this morning.",
+        signalsOfDay: [
+          {
+            sourceMetric: "glucose",
+            tone: "watch",
+            headline: "Glucose is up by this time of day",
+            nudge: "Note what you had for breakfast.",
+            delta: "+14 mg/dL",
+          },
+        ],
+        keyFindings: [
+          {
+            tone: "info",
+            headline: "Glucose steady over the month",
+            detail: "Within your usual range.",
+            sourceWindow: "30d",
+            sourceMetric: "glucose",
+          },
+        ],
+      },
+    };
+    const parsed = parseInsightReply(JSON.stringify({ ...VALID, ...glucose }), {
+      briefingRequired: true,
+    });
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.repairs).toEqual(["findings-delta-filled"]);
+    expect(parsed.insights).toMatchObject({
+      dailyBriefing: {
+        signalsOfDay: [{ sourceMetric: "glucose", delta: "+14 mg/dL" }],
+        keyFindings: [{ sourceMetric: "glucose", delta: null }],
+      },
+    });
+  });
+
   it("keeps a reply that does not validate as it was parsed", () => {
     const loose = { summary: "No classification.", ...BLOCKS };
     const parsed = parseInsightReply(JSON.stringify(loose), OPTIONAL);

@@ -1952,7 +1952,6 @@
     "src/lib/google-health/__tests__/sync-upsert-resurrect.test.ts": 0,
     "src/lib/google-health/__tests__/sync-workout-insert-identity.test.ts": 0,
     "src/lib/google-health/__tests__/walk-resume-and-retry.test.ts": 0,
-    "src/lib/http/__tests__/cache-headers.test.ts": 0,
     "src/lib/http/__tests__/deprecation.test.ts": 0,
     "src/lib/http/__tests__/list-query.test.ts": 0,
     "src/lib/http/__tests__/prefer.test.ts": 0,

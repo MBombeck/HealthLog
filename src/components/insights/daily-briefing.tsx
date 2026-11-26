@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   Activity,
+  Droplet,
   FileText,
   Flame,
   Footprints,
@@ -129,6 +130,7 @@ const METRIC_ICON: Record<
   // ── v1.10.0 derived-wellness additive ──
   readiness: Sparkles,
   recovery: HeartPulse,
+  glucose: Droplet,
 };
 
 const TONE_BAR_CLASSNAME: Record<DailyBriefingKeyFinding["tone"], string> = {

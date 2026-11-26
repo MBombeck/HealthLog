@@ -46,6 +46,7 @@ import { resolveIntakeActionability } from "@/lib/medications/intake-actionable"
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
 import { withMedicationNote } from "@/lib/medications/medication-note";
+import { withLowStockTriggers } from "@/lib/medications/low-stock-trigger";
 
 export type MedicationsListResult = Array<Record<string, unknown>>;
 
@@ -373,7 +374,11 @@ export async function readMedicationsListCached(user: {
   return cachedSwr(
     caches.medications as ServerCache<MedicationsListResult>,
     user.id,
-    () => buildMedicationsList(user.id, userTz),
+    async () =>
+      withLowStockTriggers(
+        user.id,
+        await buildMedicationsList(user.id, userTz),
+      ),
     annotate,
   );
 }

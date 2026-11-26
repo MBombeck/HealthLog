@@ -1743,6 +1743,7 @@
         "injectionInduration": "Induration au site d'injection",
         "brainFog": "Brouillard mental",
         "dizziness": "Vertiges",
+        "headache": "Mal de tête",
         "lowMood": "Humeur basse",
         "lowEnergy": "Faible énergie",
         "earlySatiety": "Satiété précoce",
@@ -7115,6 +7116,7 @@
         "deleteConfirmBodyUsed": "Les tâches qui utilisent cette chaîne ({count}) repassent sur Par défaut à l'enregistrement. Si c'est la chaîne par défaut, la chaîne de secours reprend la main. Vos fournisseurs et clés restent inchangés.",
         "bindingHint": "Avec un seul fournisseur, la chaîne est une liaison stricte : s'il ne peut pas répondre, la tâche s'arrête au lieu d'essayer un autre fournisseur.",
         "bindingShort": "Liée à ce fournisseur, sans repli.",
+        "taskNoProvider": "Aucun fournisseur de cette chaîne n'est configuré, cette tâche ne s'exécute donc pas : son action n'est pas proposée tant que vous n'en configurez pas un ou ne choisissez pas une autre chaîne.",
         "egressLocal": "Reste sur cette machine",
         "egressExternal": "Quitte cette machine",
         "notSetUp": "Pas encore configuré",
@@ -8954,7 +8956,7 @@
         "filterLabel": "Filtrer les utilisateurs",
         "forceLogout": "Forcer la déconnexion",
         "forceLogoutConfirmTitle": "Forcer la déconnexion de {name} ?",
-        "forceLogoutConfirmBody": "Toutes les sessions actives de cet utilisateur seront révoquées. Il devra se reconnecter sur chaque appareil.",
+        "forceLogoutConfirmBody": "Toutes les sessions actives de cet utilisateur seront révoquées. Il devra se reconnecter sur chaque appareil. Ses jetons d'API, assistants connectés et liens de partage cesseront aussi de fonctionner.",
         "forceLogoutSuccess": "{name} déconnecté de {count, plural, one {# session} other {# sessions}}",
         "forceLogoutFailed": "Échec de la déconnexion forcée",
         "cannotLogoutSelf": "Impossible de forcer votre propre déconnexion",
@@ -10396,7 +10398,9 @@
       "refreshReuseTitle": "Un appareil a été déconnecté",
       "refreshReuseBody": "Un jeton de connexion a été utilisé deux fois, son appareil a donc été déconnecté. Reconnectez-vous sur cet appareil. Si cela se reproduit, changez votre mot de passe.",
       "deviceReassignedTitle": "Un appareil est passé à un autre compte",
-      "deviceReassignedBody": "Un appareil qui recevait les notifications de ce compte est maintenant connecté à un autre compte et ne les reçoit plus. Si ce n'est pas vous, vérifiez vos appareils et vos connexions."
+      "deviceReassignedBody": "Un appareil qui recevait les notifications de ce compte est maintenant connecté à un autre compte et ne les reçoit plus. Si ce n'est pas vous, vérifiez vos appareils et vos connexions.",
+      "mfaDueTitle": "Second facteur de connexion requis",
+      "mfaDueBody": "Ajoutez une application d’authentification, une clé de sécurité ou une clé d’accès avant le {date}, dans l’application web sous Réglages > Sécurité."
     },
     "sharedRecordIntake": {
       "title": "{name} a marqué une dose",
@@ -16534,7 +16538,81 @@
   },
   "adminLiveActivityStart": {
     "switchOff": "Un médicament a une Activité en direct, mais PUSH_RELAY_LIVE_ACTIVITY est désactivé : aucune ne démarre.",
+    "notBound": "Un médicament a une Live Activity, mais le relais n'atteint pas cet iPhone : le serveur n'y est pas enregistré, ou l'iPhone n'y est pas lié.",
     "noConsent": "Un médicament a une Activité en direct, mais votre iPhone ne l'a pas autorisée via le relais.",
     "noStartToken": "Un médicament a une Activité en direct, mais votre iPhone n'a pas encore envoyé de jeton de démarrage."
+  },
+  "serverText": {
+    "alerts": {
+      "bmiBelowNormal": {
+        "title": "IMC en dessous de la normale",
+        "message": "Votre IMC de {bmi} est en dessous de la plage normale (18,5–24,9)."
+      },
+      "bmiOverweight": {
+        "title": "IMC en zone de surpoids",
+        "message": "Votre IMC de {bmi} se situe dans la zone de surpoids. Une activité physique régulière et une alimentation équilibrée peuvent aider."
+      },
+      "bmiObesity": {
+        "title": "IMC en zone d’obésité",
+        "message": "Votre IMC de {bmi} se situe dans la zone d’obésité."
+      },
+      "bmiNormal": {
+        "title": "IMC dans la plage normale",
+        "message": "Votre IMC de {bmi} se situe dans la plage saine."
+      },
+      "bpSignificantlyElevated": {
+        "title": "Tension artérielle nettement élevée",
+        "message": "Votre tension artérielle moyenne ({sys}/{dia}) est classée « {category} »."
+      },
+      "bpSlightlyElevated": {
+        "title": "Tension artérielle légèrement élevée",
+        "message": "Votre tension artérielle moyenne ({sys}/{dia}) se situe dans la plage « {category} »."
+      },
+      "bpTargetGood": {
+        "title": "Bonne atteinte de l’objectif tensionnel",
+        "message": "{percent} % de vos mesures sont dans la plage cible."
+      },
+      "bpTargetLow": {
+        "title": "Tension souvent hors de la plage cible",
+        "message": "Seulement {percent} % de vos mesures sont dans la plage cible."
+      },
+      "weightIncreasing": {
+        "title": "Poids en hausse",
+        "message": "Votre poids augmente d’environ {kg} kg par semaine sur les 30 derniers jours."
+      },
+      "weightDecreasing": {
+        "title": "Poids en baisse",
+        "message": "Votre poids baisse d’environ {kg} kg par semaine sur les 30 derniers jours."
+      },
+      "pulseOutliers": {
+        "title": "Valeurs de pouls atypiques",
+        "message": "{count, plural, one {# valeur de pouls inhabituelle} other {# valeurs de pouls inhabituelles}} sur les 30 derniers jours."
+      },
+      "complianceLow": {
+        "title": "Observance faible : {name}",
+        "message": "Votre observance sur 7 jours pour {name} n’est que de {percent} %. Une prise régulière est importante."
+      },
+      "complianceExcellent": {
+        "title": "Excellente observance : {name}",
+        "message": "{percent} % d’observance sur les 7 derniers jours. Continuez ainsi !"
+      }
+    },
+    "targetLabels": {
+      "weight": "Poids",
+      "bloodPressure": "Tension artérielle",
+      "bloodPressureOnTarget": "Tension dans la cible",
+      "restingPulse": "Pouls au repos",
+      "bmi": "IMC",
+      "bodyFat": "Masse grasse",
+      "stepsPerDay": "Pas/jour",
+      "sleepDuration": "Durée du sommeil",
+      "medicationCompliance": "Observance du traitement",
+      "mood": "Humeur",
+      "moodStability": "Stabilité de l’humeur"
+    },
+    "metricLabels": {
+      "systolicBloodPressure": "Tension artérielle systolique",
+      "diastolicBloodPressure": "Tension artérielle diastolique"
+    }
   }
 }

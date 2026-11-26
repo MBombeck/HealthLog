@@ -80,9 +80,9 @@ import {
   type TodayLead,
   type TodaySignalLine,
   type TodayRestMode,
-  type TodaySleep,
   type TodayVital,
 } from "@/lib/daily/today-overview";
+import type { LastNight } from "@/lib/daily/morning";
 
 /** At most three rail items — a glance, never a wall (§2.5, never padded). */
 export const MAX_WORTH_A_LOOK = 3;
@@ -128,7 +128,10 @@ function moduleEnabled(map: DigestModuleMap, key: ModuleKey): boolean {
 
 export interface DailyDigestScore {
   value: number;
+  /** The worse of the number's band and the worst pillar's (shipped apps). */
   band: string;
+  /** 1.50: the number's own band; the web draws this. Old caches lack it. */
+  numberBand?: string;
   delta: number | null;
   /** Additive score identity; omitted by older cached digests. */
   deltaReason?: ScoreDeltaReason | null;
@@ -363,18 +366,14 @@ export interface DailyDigestInput {
   firstName?: string | null;
   /** `medsToday.nextDueAt` as a local time in the reader's format. */
   nextDoseTimeLabel?: string | null;
-  /** Days since the freshest sleep reading; null when never recorded. */
-  sleepLastSeenDaysAgo: number | null;
   /**
-   * S4 freshness (§E) — whether the event-driven morning refresh has already
-   * run for the user's CURRENT local date. Derived in the IO seam by comparing
-   * `User.morningDigestRefreshedOn` against today's local date (profile tz):
-   * `true` once last night's sleep arrived AND the sleep-dependent generation
-   * was re-run with it. This is the authoritative `final` signal — it flips
-   * immediately on the refresh, before the snapshot cache (which feeds
-   * `sleepLastSeenDaysAgo`) has expired.
+   * Last night as the morning reads it (`resolveLastNight`, through
+   * `lastNightFromSnapshot`): whether it is in, with its duration, and whether
+   * the day still waits for it. The freshness phase, `sleepPending` and the
+   * overview's sleep line all read this, so the digest and the morning cannot
+   * disagree about last night.
    */
-  morningRefreshedToday: boolean;
+  lastNight: Pick<LastNight, "sleep" | "sleepPending">;
   syncIssues: DailyDigestSyncIssue[];
   /** Sources that have gone quiet (`quiet-source-items.ts`); missing means none. */
   quietSources?: readonly DailyDigestQuietSource[];
@@ -436,8 +435,6 @@ export interface DailyDigestInput {
   locale?: Locale;
   /** Rest Mode, when an illness episode is active (illness module). */
   restMode?: TodayRestMode | null;
-  /** Last night's sleep, when it is in the record (sleep module). */
-  sleepLastNight?: TodaySleep | null;
   /** Each banded vital's standing against its personal range. */
   vitals?: readonly TodayVital[];
   /** Today's place in the cycle (cycle module). */
@@ -1134,26 +1131,16 @@ export function buildDailyDigest(
   input: DailyDigestInput,
   t: Translate,
 ): DailyDigest {
-  // §E freshness lifecycle. The day is `final` once ANY of:
-  //   - sleep is disabled (nothing to wait for);
-  //   - no sleep is expected in the first place (see `sleepExpected` below);
-  //   - the event-driven morning refresh has run for today (authoritative,
-  //     fast — flips the instant the sleep-arrival job stamps the marker);
-  //   - last night's sleep is already visibly in the record (`daysAgo === 0`) —
-  //     the eventual-consistency backstop for when the refresh job never ran
-  //     (no boss worker / keyless self-hoster) but the snapshot has caught up.
-  // Otherwise it stays `provisional`, and `sleepPending` drives the honest
-  // "last night's sleep not yet in" note.
+  // §E freshness lifecycle. The day waits (`provisional`) only while last
+  // night's sleep is pending, by the morning's own rule (`resolveLastNight`):
+  // sleep is on and expected, the sleep-arrival refresh has not stamped
+  // today, and the night of the sleep score is not today's. Everything else
+  // is `final`. A rolling 24-hour window used to decide "in" here, so the
+  // digest called yesterday's night last night until 23 h 59 min after
+  // waking while the morning beside it waited for tonight's.
   const sleepEnabled = moduleEnabled(input.modules, "sleep");
-  const sleepExpected = isSleepExpected(input.sleepLastSeenDaysAgo);
-  const lastNightSleepIn = input.sleepLastSeenDaysAgo === 0;
-  const isFinal =
-    !sleepEnabled ||
-    !sleepExpected ||
-    input.morningRefreshedToday ||
-    lastNightSleepIn;
-  const sleepPending = sleepEnabled && sleepExpected && !isFinal;
-  const phase: DailyDigest["phase"] = isFinal ? "final" : "provisional";
+  const sleepPending = sleepEnabled && input.lastNight.sleepPending;
+  const phase: DailyDigest["phase"] = sleepPending ? "provisional" : "final";
 
   // The briefing is model text: its lead and top signal are served only while
   // the `briefing` capability is available. The IO seam already hides it; this
@@ -1330,7 +1317,7 @@ export function buildDailyDigest(
       ),
       rail,
       restMode: input.restMode ?? null,
-      sleep: input.sleepLastNight ?? null,
+      sleep: input.lastNight.sleep,
       vitals: input.vitals ?? [],
       cycle: input.cycle ?? null,
       now: input.now,

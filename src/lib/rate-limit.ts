@@ -61,23 +61,6 @@ export async function checkRateLimit(
 }
 
 /**
- * Read a bucket without charging it: its count and reset in the live window,
- * or null when it is empty or its window has passed.
- */
-export async function peekRateLimit(
-  key: string,
-): Promise<{ count: number; resetAt: number } | null> {
-  const rows = await prisma.$queryRaw<{ count: number; reset_at: Date }[]>`
-    SELECT count, reset_at FROM rate_limits
-     WHERE key = ${key} AND reset_at >= (NOW() AT TIME ZONE 'UTC')
-  `;
-  const row = rows[0];
-  return row
-    ? { count: Number(row.count), resetAt: row.reset_at.getTime() }
-    : null;
-}
-
-/**
  * Give one slot back to a bucket whose charge turned out to be premature.
  *
  * A caller that charges the bucket up front (to keep the 429 cheap) but then

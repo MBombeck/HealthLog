@@ -18,7 +18,10 @@ describe("reaction-line evidence: the health score", () => {
       ...base,
       score: {
         value: 79,
-        band: "green",
+        // The wire band folds the red pillar in; the evidence names the
+        // number's own band and the pillar beside it.
+        band: "red",
+        numberBand: "green",
         delta: null,
         composition: ["BLOOD_PRESSURE", "ACTIVITY", "SLEEP"],
         bandSetter: "BLOOD_PRESSURE",

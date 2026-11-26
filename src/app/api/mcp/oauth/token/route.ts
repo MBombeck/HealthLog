@@ -34,6 +34,7 @@ import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { refuseOAuthOnKeyMismatch } from "@/lib/boot/key-mismatch-refusal";
 import { withBackgroundEvent } from "@/lib/logging/background";
+import { applyApiCachePolicy } from "@/lib/http/api-cache-policy";
 import { auditLog } from "@/lib/auth/audit";
 import { issueApiToken } from "@/lib/auth/issue-token";
 import { isApiGloballyEnabled } from "@/lib/app-settings";
@@ -219,7 +220,7 @@ async function finalizeTokenPair(
 }
 
 export async function POST(request: NextRequest): Promise<Response> {
-  return withBackgroundEvent("mcp.oauth.token", async () => {
+  const response = await withBackgroundEvent("mcp.oauth.token", async () => {
     // The boot key check refused this process: mint nothing, write nothing.
     const refusal = refuseOAuthOnKeyMismatch();
     if (refusal) return refusal;
@@ -467,4 +468,6 @@ export async function POST(request: NextRequest): Promise<Response> {
       "Only authorization_code and refresh_token are supported",
     );
   });
+  applyApiCachePolicy(response.headers);
+  return response;
 }

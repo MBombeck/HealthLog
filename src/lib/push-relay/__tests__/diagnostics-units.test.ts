@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   attemptOutcome,
@@ -172,52 +172,75 @@ describe("diagnostic shapes", () => {
         laStartToken: null,
         laStartSignature: null,
         laStartStatement: null,
+        pushKeyPublic: null,
+        relayConsentAt: null,
+        relayBindingKey: null,
         relayDeliveries: [],
       },
-      { liveActivityWanted: true, now: at },
+      { liveActivityWanted: true, push: null, now: at },
     );
     expect(device.hasApnsToken).toBe(false);
-    // Not bound to the relay: no relay start to judge.
+    // No relay context read: no relay start to judge.
     expect(device.liveActivityStart).toBeNull();
     expect(device.apnsTokenPrefix).toBeNull();
   });
 });
 
 describe("liveActivityStartState", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
   const now = new Date("2026-11-25T10:00:00Z");
   const iat = Math.floor(now.getTime() / 1000) - 3600;
   const ready = {
+    id: "d1",
     platform: "ios",
+    apnsToken: "ab".repeat(32),
+    apnsEnvironment: "production",
+    pushKeyPublic: "k".repeat(43),
     relayState: "bound",
-    relayConflictAt: null,
+    relayConsentAt: new Date("2026-11-01T10:00:00Z"),
+    relayBindingKey: Buffer.alloc(32, 1).toString("base64url"),
     liveActivityConsentAt: new Date("2026-11-20T10:00:00Z"),
-    laStartToken: "start-token",
+    laStartToken: "5a".repeat(32),
     laStartSignature: "sig",
     laStartStatement: { iat },
   };
-  const on = { wanted: true, switchOn: true, now };
+  const push = {
+    registration: { instanceId: "inst-1" },
+    keys: {},
+  } as unknown as Parameters<typeof liveActivityStartState>[1]["push"];
+  const on = { wanted: true, push, now };
 
   it("is ready when nothing is in the way", () => {
+    vi.stubEnv("PUSH_RELAY_LIVE_ACTIVITY", "on");
     expect(liveActivityStartState(ready, on)).toBe("ready");
   });
 
-  it("does not arise without a medication that wants one, off the relay, or off iOS", () => {
+  it("does not arise without a medication that wants one, or off iOS", () => {
+    vi.stubEnv("PUSH_RELAY_LIVE_ACTIVITY", "on");
     expect(liveActivityStartState(ready, { ...on, wanted: false })).toBeNull();
-    expect(
-      liveActivityStartState({ ...ready, relayState: "none" }, on),
-    ).toBeNull();
+    expect(liveActivityStartState(ready, { ...on, push: null })).toBeNull();
     expect(
       liveActivityStartState({ ...ready, platform: "android" }, on),
     ).toBeNull();
   });
 
-  it("names the operator switch first, then the consent, then the token", () => {
+  it("names the switch, then the relay's reach, then the consent, then the token", () => {
+    vi.stubEnv("PUSH_RELAY_LIVE_ACTIVITY", "");
     expect(
       liveActivityStartState(
-        { ...ready, liveActivityConsentAt: null, laStartToken: null },
-        { ...on, switchOn: false },
+        { ...ready, relayState: "none", liveActivityConsentAt: null },
+        on,
       ),
     ).toBe("switch_off");
+    vi.stubEnv("PUSH_RELAY_LIVE_ACTIVITY", "on");
+    expect(
+      liveActivityStartState(
+        { ...ready, relayState: "none", liveActivityConsentAt: null },
+        on,
+      ),
+    ).toBe("not_bound");
     expect(
       liveActivityStartState(
         { ...ready, liveActivityConsentAt: null, laStartToken: null },
@@ -230,6 +253,7 @@ describe("liveActivityStartState", () => {
   });
 
   it("counts a start statement the relay no longer takes as no token", () => {
+    vi.stubEnv("PUSH_RELAY_LIVE_ACTIVITY", "on");
     expect(
       liveActivityStartState(
         { ...ready, laStartStatement: { iat: iat - 31 * 24 * 3600 } },

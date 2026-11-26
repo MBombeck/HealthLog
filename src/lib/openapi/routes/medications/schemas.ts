@@ -508,6 +508,14 @@ export const medicationListEntry = medicationResource
       .describe(
         "v1.37.19 — projected whole days the usable stock covers under the slot-aware burn rate (the same math the low-stock notification engine runs, so the wire and the push can never disagree). NULL = inventory tracking off or no consuming cadence derivable; 0 = tracking on, supply ran out. Read-only — computed, not stored.",
       ),
+    lowStockTriggerDays: z
+      .number()
+      .int()
+      .nullable()
+      .optional()
+      .describe(
+        "v1.50.0 — the runway in whole days at or below which the medication is low on stock: `max(lowStockRunwayDays, reorderLeadDays + one dose-interval)`, with the medication's own `reorderLeadDays` over the account default, exactly as the low-stock notification decides. A client shows the notice when `runwayDays <= lowStockTriggerDays` and does not re-derive it. NULL when the account switched the low-stock alert off or the schedules consume nothing on a cadence (as needed, intake not tracked). Absent on older servers (feature key `medication.low-stock-trigger`). Read-only — computed, not stored.",
+      ),
     hasIngredients: z
       .boolean()
       .optional()
@@ -567,6 +575,14 @@ export const medicationDetailEntry = medicationResource
       .nullable()
       .describe(
         "v1.37.19 — projected whole days the usable stock covers under the slot-aware burn rate; NULL = tracking off or no consuming cadence.",
+      ),
+    lowStockTriggerDays: z
+      .number()
+      .int()
+      .nullable()
+      .optional()
+      .describe(
+        "v1.50.0 — the runway in whole days at or below which the medication is low on stock, mirroring the list entry's field. Absent on older servers (feature key `medication.low-stock-trigger`).",
       ),
     ingredients: z
       .array(medicationIngredient)

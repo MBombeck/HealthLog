@@ -1743,6 +1743,7 @@
         "injectionInduration": "Induración en la zona de inyección",
         "brainFog": "Niebla mental",
         "dizziness": "Mareo",
+        "headache": "Dolor de cabeza",
         "lowMood": "Estado de ánimo bajo",
         "lowEnergy": "Falta de energía",
         "earlySatiety": "Saciedad precoz",
@@ -7115,6 +7116,7 @@
         "deleteConfirmBodyUsed": "Las tareas que usan esta cadena ({count}) vuelven a Predeterminada al guardar. Si es la cadena predeterminada, vuelve a mandar la cadena de respaldo. Tus proveedores y claves no cambian.",
         "bindingHint": "Con un solo proveedor, la cadena es un vínculo fijo: si no puede responder, la tarea se detiene en lugar de probar otro proveedor.",
         "bindingShort": "Vinculada a este proveedor, sin respaldo.",
+        "taskNoProvider": "Ningún proveedor de esta cadena está configurado, así que esta tarea no se ejecuta: su acción no se ofrece hasta que configures uno o elijas otra cadena.",
         "egressLocal": "Se queda en este equipo",
         "egressExternal": "Sale de este equipo",
         "notSetUp": "Aún no configurado",
@@ -8954,7 +8956,7 @@
         "filterLabel": "Filtrar usuarios",
         "forceLogout": "Forzar cierre de sesión",
         "forceLogoutConfirmTitle": "¿Forzar el cierre de sesión de {name}?",
-        "forceLogoutConfirmBody": "Se revocarán todas las sesiones activas de este usuario. Tendrá que volver a iniciar sesión en todos los dispositivos.",
+        "forceLogoutConfirmBody": "Se revocarán todas las sesiones activas de este usuario. Tendrá que volver a iniciar sesión en todos los dispositivos. Sus tokens de API, asistentes conectados y enlaces para compartir también dejarán de funcionar.",
         "forceLogoutSuccess": "Se cerró la sesión de {name} en {count, plural, one {# sesión} other {# sesiones}}",
         "forceLogoutFailed": "No se pudo forzar el cierre de sesión",
         "cannotLogoutSelf": "No puedes forzar tu propio cierre de sesión",
@@ -10396,7 +10398,9 @@
       "refreshReuseTitle": "Se cerró la sesión de un dispositivo",
       "refreshReuseBody": "Un token de inicio de sesión se usó dos veces, así que se cerró la sesión de su dispositivo. Vuelve a iniciar sesión allí. Si se repite, cambia tu contraseña.",
       "deviceReassignedTitle": "Un dispositivo pasó a otra cuenta",
-      "deviceReassignedBody": "Un dispositivo que recibía las notificaciones de esta cuenta ahora tiene la sesión iniciada en otra cuenta y ya no las recibe. Si no fuiste tú, revisa tus dispositivos e inicios de sesión."
+      "deviceReassignedBody": "Un dispositivo que recibía las notificaciones de esta cuenta ahora tiene la sesión iniciada en otra cuenta y ya no las recibe. Si no fuiste tú, revisa tus dispositivos e inicios de sesión.",
+      "mfaDueTitle": "Se necesita un segundo factor de inicio de sesión",
+      "mfaDueBody": "Añade una app de autenticación, una llave de seguridad o una passkey antes del {date}, en la app web en Ajustes > Seguridad."
     },
     "sharedRecordIntake": {
       "title": "{name} ha marcado una dosis",
@@ -16534,7 +16538,81 @@
   },
   "adminLiveActivityStart": {
     "switchOff": "Un medicamento tiene una Actividad en directo, pero PUSH_RELAY_LIVE_ACTIVITY está desactivado, así que no se inicia ninguna.",
+    "notBound": "Un medicamento tiene una Live Activity, pero el relay no llega a este iPhone: el servidor no está registrado en él o el iPhone no está vinculado.",
     "noConsent": "Un medicamento tiene una Actividad en directo, pero tu iPhone no la ha permitido a través del relay.",
     "noStartToken": "Un medicamento tiene una Actividad en directo, pero tu iPhone aún no ha enviado un token de inicio."
+  },
+  "serverText": {
+    "alerts": {
+      "bmiBelowNormal": {
+        "title": "IMC por debajo del rango normal",
+        "message": "Tu IMC de {bmi} está por debajo del rango normal (18,5–24,9)."
+      },
+      "bmiOverweight": {
+        "title": "IMC en rango de sobrepeso",
+        "message": "Tu IMC de {bmi} está en el rango de sobrepeso. El ejercicio regular y una dieta equilibrada pueden ayudar."
+      },
+      "bmiObesity": {
+        "title": "IMC en rango de obesidad",
+        "message": "Tu IMC de {bmi} está en el rango de obesidad."
+      },
+      "bmiNormal": {
+        "title": "IMC en rango normal",
+        "message": "Tu IMC de {bmi} está en el rango saludable."
+      },
+      "bpSignificantlyElevated": {
+        "title": "Presión arterial muy elevada",
+        "message": "Tu presión arterial media ({sys}/{dia}) se clasifica como «{category}»."
+      },
+      "bpSlightlyElevated": {
+        "title": "Presión arterial ligeramente elevada",
+        "message": "Tu presión arterial media ({sys}/{dia}) está en el rango «{category}»."
+      },
+      "bpTargetGood": {
+        "title": "Buen cumplimiento del objetivo de presión arterial",
+        "message": "El {percent} % de tus mediciones está dentro del rango objetivo."
+      },
+      "bpTargetLow": {
+        "title": "Presión arterial a menudo fuera del rango objetivo",
+        "message": "Solo el {percent} % de tus mediciones está dentro del rango objetivo."
+      },
+      "weightIncreasing": {
+        "title": "El peso aumenta",
+        "message": "Tu peso aumenta unos {kg} kg por semana en los últimos 30 días."
+      },
+      "weightDecreasing": {
+        "title": "El peso disminuye",
+        "message": "Tu peso disminuye unos {kg} kg por semana en los últimos 30 días."
+      },
+      "pulseOutliers": {
+        "title": "Valores de pulso atípicos",
+        "message": "{count, plural, one {# valor de pulso inusual} other {# valores de pulso inusuales}} en los últimos 30 días."
+      },
+      "complianceLow": {
+        "title": "Cumplimiento bajo: {name}",
+        "message": "Tu cumplimiento de 7 días con {name} es solo del {percent} %. Tomarlo con regularidad es importante."
+      },
+      "complianceExcellent": {
+        "title": "Cumplimiento excelente: {name}",
+        "message": "{percent} % de cumplimiento en los últimos 7 días. ¡Sigue así!"
+      }
+    },
+    "targetLabels": {
+      "weight": "Peso",
+      "bloodPressure": "Presión arterial",
+      "bloodPressureOnTarget": "Presión arterial en objetivo",
+      "restingPulse": "Pulso en reposo",
+      "bmi": "IMC",
+      "bodyFat": "Grasa corporal",
+      "stepsPerDay": "Pasos/día",
+      "sleepDuration": "Duración del sueño",
+      "medicationCompliance": "Cumplimiento de la medicación",
+      "mood": "Estado de ánimo",
+      "moodStability": "Estabilidad del estado de ánimo"
+    },
+    "metricLabels": {
+      "systolicBloodPressure": "Presión arterial sistólica",
+      "diastolicBloodPressure": "Presión arterial diastólica"
+    }
   }
 }

@@ -1,5 +1,6 @@
 import { sendSecurityAlert } from "@/lib/auth/security-alert";
 import { prisma } from "@/lib/db";
+import { forgetMfaFactors } from "@/lib/auth/mfa-enrollment";
 import {
   consumeRegistrationChallenge,
   verifyRegistration,
@@ -89,6 +90,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
           ?.transports as string[]) ?? [],
     },
   });
+  forgetMfaFactors(user.id);
 
   await auditLog("auth.passkey.register", {
     userId: user.id,

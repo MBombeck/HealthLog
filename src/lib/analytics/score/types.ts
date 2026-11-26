@@ -199,10 +199,19 @@ export interface ScoreBasis {
 
 export interface CompositeValue {
   score: number;
+  /**
+   * The worse of the number's band and the worst counted pillar's band, the
+   * meaning every shipped app colours the ring by. Stored per day.
+   */
   band: ScoreBand;
   /**
-   * The worst counted pillar, when its band is worse than the score's own
-   * band; null otherwise. It names the pillar, it does not move `band`.
+   * 1.50: the band of the number alone, the rule every HealthLog score
+   * follows. The web draws this and names `bandSetter` beside it.
+   */
+  numberBand: ScoreBand;
+  /**
+   * The worst counted pillar, when its band is worse than `numberBand`;
+   * null otherwise. Exactly then `band` is worse than `numberBand`.
    */
   bandSetter: ScorePillarId | null;
   /** Registry-ordered eligible pillar ids. Part of the number's identity. */

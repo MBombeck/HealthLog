@@ -3,6 +3,8 @@ import { apiError, apiSuccess } from "@/lib/api-response";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { checkAnalyticsReadRateLimit } from "@/lib/rate-limit";
 import { readComprehensiveOverview } from "@/lib/insights/comprehensive-overview/overview";
+import { localiseAlerts } from "@/lib/analytics/health-alerts";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +15,7 @@ export const dynamic = "force-dynamic";
 export const GET = apiHandler(async () => {
   // MANAGE-level read: computed over the whole record, with no provider
   // anywhere on the path.
-  const { user } = await requireRecordAuth("manage", "record");
+  const { user, actor } = await requireRecordAuth("manage", "record");
   // Shared analytics-read budget (generous; caps runaway loops).
   const rl = await checkAnalyticsReadRateLimit(user.id);
   if (!rl.allowed) {
@@ -34,8 +36,13 @@ export const GET = apiHandler(async () => {
     aiCapabilityToServe(user.id, "statusText"),
   ]);
 
+  const locale = await resolveServerLocale({
+    userLocale: actor.locale ?? null,
+  });
+
   return apiSuccess({
     ...body,
+    alerts: localiseAlerts(body.alerts, locale),
     revalidating,
     ai: { briefing, statusText },
   });

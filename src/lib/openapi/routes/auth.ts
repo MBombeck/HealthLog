@@ -16,6 +16,7 @@ import type { ZodOpenApiObject } from "zod-openapi";
 import {
   changePasswordSchema,
   passkeyRenameSchema,
+  passwordStrengthRequestSchema,
   registerSchema,
   setupTokenSchema,
 } from "@/lib/validations/auth";
@@ -484,6 +485,31 @@ const setupTokenRequest = setupTokenSchema.meta({
   description:
     "The instance's setup token: `SETUP_TOKEN` from the server's environment, or the `hlu_` token every server process prints to its log at start while the instance has no account.",
 });
+
+const passwordStrengthRequest = passwordStrengthRequestSchema.meta({
+  id: "PasswordStrengthRequest",
+  description:
+    "The password as typed, at most 256 characters (every longer one scores 4).",
+});
+
+const passwordStrengthResponse = z
+  .object({
+    score: z
+      .number()
+      .int()
+      .min(0)
+      .max(4)
+      .describe("zxcvbn's score, 0 (guessable) to 4 (very hard to guess)."),
+    warning: z
+      .string()
+      .describe(
+        "zxcvbn's English warning, empty when there is none. Clients translate it.",
+      ),
+    suggestions: z
+      .array(z.string())
+      .describe("zxcvbn's English suggestions. Clients translate them."),
+  })
+  .meta({ id: "PasswordStrengthResponse" });
 
 const setupProvenResponse = z
   .object({ proven: z.literal(true) })
@@ -1001,7 +1027,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description:
             "Password login is disabled — the operator runs `OIDC_ONLY=true`. `meta.errorCode` = `oidc_only`; sign in through SSO instead. The one exception is a browser the SSO callback sent back with a pending link to confirm an existing account: it may sign in with that one account's password, which links the account. A sign-in to any other account on that browser is refused before its password is checked, so the answer is the same whether the password was right or wrong.\n\n" +
             "Also 403 `auth.account.deletion_pending`, after the password was proved and before a second factor is asked for: the account is pending deletion and locked. `meta.purgeAt` is when it is erased; an admin can undo the deletion until then. Every other sign-in surface (passkey, second-factor completion, the native token exchanges) refuses with the same code. A session, refresh token or API token issued before the deletion is revoked by it, so those answer 401 (`auth.refresh.revoked` on refresh), the same as for a signed-out session.\n\n" +
-            "Also 403 `auth.mfa.enrollment_required` (v1.50), for a native caller only and after the password was proved: a second-factor policy (for admins, for everyone, or set on this account) covers the account, it has no factor, and its grace period is over. No token is issued; the person adds a factor in a browser (Settings > Security) and signs in again. The native web hand-off and SSO token exchanges refuse the same way. A browser sign-in still gets its session, which then reaches only the enrolment routes until a factor exists: every other route answers the same 403.",
+            "Also 403 `auth.mfa.enrollment_required` (v1.50), for a native caller only and after the password was proved: a second-factor policy (for admins, for everyone, or set on this account) covers the account, it has no factor, and its grace period is over. No token is issued; the person adds a factor in a browser (Settings > Security) and signs in again. The native web hand-off and SSO token exchanges refuse the same way. A browser sign-in still gets its session, which then reaches only the enrolment routes until a factor exists: every other route answers the same 403. A native sign-in token issued before the due date is not refused in v1.50 (from v1.51 it is held to the enrolment routes too).",
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
@@ -1609,7 +1635,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         "Reuse of a consumed refresh token revokes every refresh token still active for the originating device (per-device blast radius from v1.4.23). Legacy tokens issued before v1.4.23 with a null deviceId fall back to revoke-all-for-user.\n\n" +
         "On a 401, `meta.errorCode` is a stable machine code so the client can branch terminal re-auth from a transient blip without parsing the prose `error`: `auth.refresh.reuse` (a consumed token was replayed — device family revoked, re-pair required), `auth.refresh.revoked` (family revoked out-of-band — re-pair required), `auth.refresh.invalid` (not found / expired — drop the token and re-authenticate).\n\n" +
         "A 409 with `meta.errorCode` = `auth.refresh.superseded` (v1.49.0) answers the loser of two concurrent refreshes with the same token: the other request rotated it, nothing is revoked, and its pair is live. Not terminal: read the credentials the winning request stored and continue. Do not present this refresh token again, since that is a replay and revokes the device family. Before v1.49.0 this case answered 401 `auth.refresh.reuse`.\n\n" +
-        "A 403 with `meta.errorCode` = `auth.mfa.enrollment_required` (v1.50) means a second-factor policy covers the account, it has no factor, and its grace period is over. No pair is issued and the refresh token is not consumed: once the person adds a factor in a browser (Settings > Security), the same token refreshes again. A sign-in token of such an account answers the same 403 on every route except the enrolment ones (`/api/auth/me`, `/api/auth/logout`, the `/api/auth/me/mfa` and passkey registration routes).",
+        "A second-factor policy does not refuse a refresh in v1.50: a sign-in made before the account's due date keeps refreshing, and `/api/auth/me` `mfaEnrollment` carries the state and the date. From v1.51 a refresh of an account past its due date answers 403 `auth.mfa.enrollment_required` without consuming the token.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: refreshRequest } },
@@ -2328,6 +2354,34 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   },
   // ── Appended: registration, credential rotation, the OIDC entry point and
   // the Codex device-auth flow.
+  "/api/auth/password-strength": {
+    post: {
+      // No credential: the registration form uses it before one exists.
+      security: [],
+      tags: ["Auth"],
+      summary: "Score a password for the strength meter",
+      description:
+        "Anonymous. Runs the same estimator the registration and password routes run on submit and answers its score and untranslated feedback; stores nothing and compares against no account. The account-specific check (the password against the username and e-mail) happens only on submit. Rate-limited to 60 requests a minute per address.",
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: passwordStrengthRequest } },
+      },
+      responses: {
+        "200": {
+          description: "The estimate.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                passwordStrengthResponse,
+                "PasswordStrengthEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+  },
   "/api/auth/register/setup": {
     post: {
       // No credential: this operation is reachable before one exists.

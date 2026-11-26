@@ -10,10 +10,12 @@
  *      and after it refuses a native sign-in and confines the web session to
  *      the enrolment routes; a passkey satisfies it;
  *   c) that confinement is decided at request time from the account and the
- *      policy: a session or sign-in token from before the policy is confined
- *      after the grace period, an account created under a running policy
- *      gets its grace period from its creation, and a refresh past the due
- *      date is refused without consuming the token.
+ *      policy: a session from before the policy is confined after the grace
+ *      period, and an account created under a running policy gets its grace
+ *      period from its creation. A sign-in token of the app from before the
+ *      due date, and its refresh, keep working in 1.50 (the shipped builds
+ *      are not built for a refusal there); `/me` reports the state, and the
+ *      grace period's start is claimed once for its notice.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -51,7 +53,10 @@ const { issueAccessAndRefresh } = await import("@/lib/auth/refresh-token");
 const { DELETE: deleteDevice } = await import("@/app/api/devices/[id]/route");
 const { GET: readVersion } = await import("@/app/api/version/route");
 const { GET: readHealth } = await import("@/app/api/health/route");
-const { resolveMfaEnrollment } = await import("@/lib/auth/mfa-enrollment");
+const { forgetMfaPolicy, resolveMfaEnrollment } =
+  await import("@/lib/auth/mfa-enrollment");
+const { MFA_GRACE_NOTICE_EVENT_TYPE } =
+  await import("@/lib/auth/mfa-grace-notice");
 const { mfaDueAtForSignIn } = await import("@/lib/auth/mfa-confinement");
 const { refuseNativeSignInWithoutFactor } =
   await import("@/lib/auth/mfa-native-refusal");
@@ -79,6 +84,7 @@ beforeEach(async () => {
   await truncateAllTables(getPrismaClient());
   cookieJar.clear();
   headerJar.clear();
+  forgetMfaPolicy();
 });
 
 describe("the first account", () => {
@@ -158,6 +164,7 @@ describe("the second-factor policy for admins", () => {
         mfaPolicySince: new Date(Date.now() - policySinceDaysAgo * DAY_MS),
       },
     });
+    forgetMfaPolicy();
     return prisma.user.create({
       data: {
         username: `admin-${policySinceDaysAgo}`,
@@ -227,6 +234,7 @@ describe("confinement decided at request time", () => {
       create: { mfaPolicySince: since },
       update: { mfaPolicySince: since },
     });
+    forgetMfaPolicy();
   }
 
   const OLD = () => new Date(Date.now() - 400 * DAY_MS);
@@ -266,13 +274,18 @@ describe("confinement decided at request time", () => {
     expect(me.status).toBe(200);
   });
 
-  it("confines a sign-in token minted before the due date, not a narrow one", async () => {
+  it("keeps a sign-in token past the due date working, and tells it on /me", async () => {
+    // 1.50: the shipped iPhone builds are not built for a refusal here; 1.51
+    // confines these tokens (announced in the changelog).
     await usePolicySince(20);
     const admin = await makeUser({ role: "ADMIN", createdAt: OLD() });
     const signIn = await makeToken(admin);
-    const refused = await readMeasurements(signIn);
-    expect(refused.status).toBe(403);
-    expect(refused.meta?.errorCode).toBe("auth.mfa.enrollment_required");
+    expect((await readMeasurements(signIn)).status).toBe(200);
+    const me = await callRoute<{
+      mfaEnrollment: { state: string; dueAt: string | null };
+    }>(readMe, { method: "GET", route: "/api/auth/me", auth: signIn });
+    expect(me.data.mfaEnrollment.state).toBe("required");
+    expect(me.data.mfaEnrollment.dueAt).not.toBeNull();
     const narrow = await makeToken(admin, {
       permissions: ["read:measurements"],
     });
@@ -322,41 +335,6 @@ describe("confinement decided at request time", () => {
     );
   });
 
-  it("refuses a native refresh past the due date and keeps the token", async () => {
-    await usePolicySince(20);
-    const admin = await makeUser({ role: "ADMIN", createdAt: OLD() });
-    const bundle = await issueAccessAndRefresh({
-      userId: admin.id,
-      policy: {
-        policy: "native",
-        accessTokenDays: 1,
-        refreshTokenDays: 60,
-        tokenLabel: "native",
-      },
-      source: "login.password",
-      deviceId: "device-1",
-    });
-    const res = await refresh(
-      new Request("http://localhost/api/auth/refresh", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-device-id": "device-1",
-          "x-forwarded-for": "203.0.113.30",
-        },
-        body: JSON.stringify({ refreshToken: bundle.refreshToken }),
-      }) as Parameters<typeof refresh>[0],
-    );
-    expect(res.status).toBe(403);
-    const body = (await res.json()) as { meta: { errorCode: string } };
-    expect(body.meta.errorCode).toBe("auth.mfa.enrollment_required");
-    const row = await getPrismaClient().refreshToken.findFirstOrThrow({
-      where: { userId: admin.id },
-    });
-    expect(row.usedAt).toBeNull();
-    expect(row.revokedAt).toBeNull();
-  });
-
   async function nativeBundle(userId: string) {
     return issueAccessAndRefresh({
       userId,
@@ -383,6 +361,47 @@ describe("confinement decided at request time", () => {
     }) as Parameters<typeof refresh>[0];
   }
 
+  it("refreshes a native sign-in past the due date", async () => {
+    // A refused refresh signs the store build out; 1.51 refuses it.
+    await usePolicySince(20);
+    const admin = await makeUser({ role: "ADMIN", createdAt: OLD() });
+    const bundle = await nativeBundle(admin.id);
+    const res = await refresh(
+      refreshRequest({ refreshToken: bundle.refreshToken }),
+    );
+    expect(res.status).toBe(200);
+    const row = await getPrismaClient().refreshToken.findFirstOrThrow({
+      where: { userId: admin.id, usedAt: { not: null } },
+    });
+    expect(row.revokedAt).toBeNull();
+  });
+
+  it("claims the grace notice once when the grace period has begun", async () => {
+    await usePolicySince(2);
+    const admin = await makeUser({ role: "ADMIN", createdAt: OLD() });
+    const signIn = await makeToken(admin);
+    for (let i = 0; i < 2; i++) {
+      const me = await callRoute<{ mfaEnrollment: { state: string } }>(readMe, {
+        method: "GET",
+        route: "/api/auth/me",
+        auth: signIn,
+      });
+      expect(me.data.mfaEnrollment.state).toBe("grace");
+    }
+    const prisma = getPrismaClient();
+    let claims = 0;
+    for (let i = 0; i < 50 && claims === 0; i++) {
+      await new Promise((r) => setTimeout(r, 20));
+      claims = await prisma.notificationEvent.count({
+        where: {
+          recordUserId: admin.id,
+          eventType: MFA_GRACE_NOTICE_EVENT_TYPE,
+        },
+      });
+    }
+    expect(claims).toBe(1);
+  });
+
   it("still signs a past-due account out: refresh with revoke ends the family", async () => {
     await usePolicySince(20);
     const admin = await makeUser({ role: "ADMIN", createdAt: OLD() });
@@ -400,7 +419,7 @@ describe("confinement decided at request time", () => {
     expect(row.revokedAt).not.toBeNull();
   });
 
-  it("lets a confined sign-in token remove its device and read the probes", async () => {
+  it("lets a past-due sign-in token remove its device, and a confined session read the probes", async () => {
     await usePolicySince(20);
     const admin = await makeUser({ role: "ADMIN", createdAt: OLD() });
     const signIn = await makeToken(admin);
@@ -430,7 +449,7 @@ describe("confinement decided at request time", () => {
     expect(health.meta?.errorCode).not.toBe("auth.mfa.enrollment_required");
   });
 
-  it("reports required on /me exactly when routes are refused, with the open paths", async () => {
+  it("reports required on /me for a confined session, with the open paths", async () => {
     await usePolicySince(20);
     const admin = await makeUser({ role: "ADMIN", createdAt: OLD() });
     const me = await callRoute<{
@@ -455,30 +474,5 @@ describe("confinement decided at request time", () => {
       { method: "GET", route: "/api/auth/me", auth: await makeSession(graced) },
     );
     expect(graceMe.data.mfaEnrollment.state).toBe("grace");
-  });
-
-  it("answers repeated refreshes of a refused token without looking it up, with Retry-After", async () => {
-    await usePolicySince(20);
-    const admin = await makeUser({ role: "ADMIN", createdAt: OLD() });
-    const bundle = await nativeBundle(admin.id);
-    const prisma = getPrismaClient();
-    for (let i = 0; i < 4; i++) {
-      const res = await refresh(
-        refreshRequest({ refreshToken: bundle.refreshToken }),
-      );
-      expect(res.status).toBe(403);
-      expect(Number(res.headers.get("retry-after"))).toBeGreaterThan(0);
-    }
-    // Three refusals were looked up and audited; the fourth was not.
-    expect(
-      await prisma.auditLog.count({
-        where: { action: "auth.token.refresh.failed" },
-      }),
-    ).toBe(3);
-    const row = await prisma.refreshToken.findFirstOrThrow({
-      where: { userId: admin.id },
-    });
-    expect(row.usedAt).toBeNull();
-    expect(row.revokedAt).toBeNull();
   });
 });

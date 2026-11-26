@@ -4,6 +4,7 @@ import {
   QueryClient,
 } from "@tanstack/react-query";
 
+import { unstable_rethrow } from "next/navigation";
 import { getUnswitchedSession } from "@/lib/auth/acting-carrier";
 import { readCoachNudgeStatus } from "@/lib/ai/coach/nudge-status";
 import { loadAiCapabilityInputs } from "@/lib/ai/capabilities/load";
@@ -102,7 +103,10 @@ export default async function CoachPage() {
       );
       dehydratedState = dehydrate(queryClient);
     }
-  } catch {
+  } catch (error) {
+    // A redirect or not-found from the session resolve (the second-factor
+    // confinement sends a page to `/enroll-mfa`) is the answer, not a failure.
+    unstable_rethrow(error);
     // Prefetch is an accelerator, never a gate — the client path stands.
   }
 

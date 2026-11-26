@@ -219,7 +219,7 @@ export const insightsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       responses: {
         "200": {
           description:
-            "`AnalyticsDefaultSlice`, or `AnalyticsSummariesSlice` when `slice=summaries`. `Cache-Control` is the bfcache-friendly `private, max-age=0, must-revalidate` rather than `no-store`.",
+            "`AnalyticsDefaultSlice`, or `AnalyticsSummariesSlice` when `slice=summaries`. `Cache-Control: private, no-store`, like every API answer.",
           content: {
             "application/json": {
               schema: dataEnvelope(analyticsResponse, "AnalyticsEnvelope"),
@@ -550,7 +550,7 @@ export const insightsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...recordRefusal(),
         "200": {
           description:
-            "The day's series. `Cache-Control` is the bfcache-friendly `private, max-age=0, must-revalidate` rather than `no-store`.",
+            "The day's series. `Cache-Control: private, no-store`, like every API answer.",
           content: {
             "application/json": {
               schema: dataEnvelope(

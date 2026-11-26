@@ -262,9 +262,9 @@ describe("comprehensive briefing gate", () => {
           // No `delta`, an unknown metric, one row over the cap.
           signalsOfDay: [
             {
-              sourceMetric: "glucose",
+              sourceMetric: "ketones",
               tone: "info",
-              headline: "Glucose steady",
+              headline: "Ketones steady",
               nudge: "Keep logging.",
               delta: null,
             },

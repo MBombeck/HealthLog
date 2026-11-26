@@ -1743,6 +1743,7 @@
         "injectionInduration": "Injection site induration",
         "brainFog": "Brain fog",
         "dizziness": "Dizziness",
+        "headache": "Headache",
         "lowMood": "Low mood",
         "lowEnergy": "Low energy",
         "earlySatiety": "Early satiety",
@@ -7115,6 +7116,7 @@
         "deleteConfirmBodyUsed": "Tasks using this chain ({count}) go back to Default when you save. If it is the default chain, the fallback chain takes over again. Your providers and keys stay as they are.",
         "bindingHint": "One provider makes this a binding: if it can't answer, the task stops instead of trying another provider.",
         "bindingShort": "Bound to this provider, no fallback.",
+        "taskNoProvider": "No provider in this chain is set up, so this task does not run: its action is not offered until you set one up or pick another chain.",
         "egressLocal": "Stays on this machine",
         "egressExternal": "Leaves this machine",
         "notSetUp": "Not set up yet",
@@ -8954,7 +8956,7 @@
         "filterLabel": "Filter users",
         "forceLogout": "Force logout",
         "forceLogoutConfirmTitle": "Force logout {name}?",
-        "forceLogoutConfirmBody": "All active sessions for this user will be revoked. They will need to sign in again on every device.",
+        "forceLogoutConfirmBody": "All active sessions for this user will be revoked. They will need to sign in again on every device. Their API tokens, connected assistants and share links stop working too.",
         "forceLogoutSuccess": "Logged {name} out of {count, plural, one {# session} other {# sessions}}",
         "forceLogoutFailed": "Failed to force logout",
         "cannotLogoutSelf": "Cannot force-logout yourself",
@@ -10396,7 +10398,9 @@
       "refreshReuseTitle": "A device was signed out",
       "refreshReuseBody": "A sign-in token was used twice, so its device was signed out. Sign in again there. If this keeps happening, change your password.",
       "deviceReassignedTitle": "A device moved to another account",
-      "deviceReassignedBody": "A device that got this account's notifications is now signed in to another account and no longer gets them. If that wasn't you, check your devices and sign-ins."
+      "deviceReassignedBody": "A device that got this account's notifications is now signed in to another account and no longer gets them. If that wasn't you, check your devices and sign-ins.",
+      "mfaDueTitle": "Second sign-in factor needed",
+      "mfaDueBody": "Add an authenticator app, a security key or a passkey by {date}, in the web app under Settings > Security."
     },
     "sharedRecordIntake": {
       "title": "{name} marked a dose",
@@ -16534,7 +16538,81 @@
   },
   "adminLiveActivityStart": {
     "switchOff": "A medication has a Live Activity, but PUSH_RELAY_LIVE_ACTIVITY is off, so none starts.",
+    "notBound": "A medication has a Live Activity, but the relay does not reach this iPhone: the server is not registered with it, or the iPhone is not bound to it.",
     "noConsent": "A medication has a Live Activity, but your iPhone has not allowed it over the relay.",
     "noStartToken": "A medication has a Live Activity, but your iPhone has sent no start token yet."
+  },
+  "serverText": {
+    "alerts": {
+      "bmiBelowNormal": {
+        "title": "BMI below normal range",
+        "message": "Your BMI of {bmi} is below the normal range (18.5–24.9)."
+      },
+      "bmiOverweight": {
+        "title": "BMI in overweight range",
+        "message": "Your BMI of {bmi} is in the overweight range. Regular exercise and a balanced diet can help."
+      },
+      "bmiObesity": {
+        "title": "BMI in obesity range",
+        "message": "Your BMI of {bmi} is in the obesity range."
+      },
+      "bmiNormal": {
+        "title": "BMI in normal range",
+        "message": "Your BMI of {bmi} is in the healthy range."
+      },
+      "bpSignificantlyElevated": {
+        "title": "Blood pressure significantly elevated",
+        "message": "Your average blood pressure ({sys}/{dia}) is classified as \"{category}\"."
+      },
+      "bpSlightlyElevated": {
+        "title": "Blood pressure slightly elevated",
+        "message": "Your average blood pressure ({sys}/{dia}) is in the \"{category}\" range."
+      },
+      "bpTargetGood": {
+        "title": "Good blood pressure target adherence",
+        "message": "{percent}% of your readings are within the target range."
+      },
+      "bpTargetLow": {
+        "title": "Blood pressure often outside target range",
+        "message": "Only {percent}% of your readings are within the target range."
+      },
+      "weightIncreasing": {
+        "title": "Weight increasing",
+        "message": "Your weight is increasing by approx. {kg} kg per week over the last 30 days."
+      },
+      "weightDecreasing": {
+        "title": "Weight decreasing",
+        "message": "Your weight is decreasing by approx. {kg} kg per week over the last 30 days."
+      },
+      "pulseOutliers": {
+        "title": "Pulse outliers detected",
+        "message": "{count, plural, one {# unusual pulse reading} other {# unusual pulse readings}} in the last 30 days."
+      },
+      "complianceLow": {
+        "title": "Low compliance: {name}",
+        "message": "Your 7-day compliance for {name} is only {percent}%. Regular intake is important."
+      },
+      "complianceExcellent": {
+        "title": "Excellent compliance: {name}",
+        "message": "{percent}% compliance over the last 7 days. Keep it up!"
+      }
+    },
+    "targetLabels": {
+      "weight": "Weight",
+      "bloodPressure": "Blood pressure",
+      "bloodPressureOnTarget": "Blood pressure on target",
+      "restingPulse": "Resting pulse",
+      "bmi": "BMI",
+      "bodyFat": "Body fat",
+      "stepsPerDay": "Steps/day",
+      "sleepDuration": "Sleep duration",
+      "medicationCompliance": "Medication compliance",
+      "mood": "Mood",
+      "moodStability": "Mood stability"
+    },
+    "metricLabels": {
+      "systolicBloodPressure": "Systolic blood pressure",
+      "diastolicBloodPressure": "Diastolic blood pressure"
+    }
   }
 }

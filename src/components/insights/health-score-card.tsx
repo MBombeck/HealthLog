@@ -333,7 +333,8 @@ export function HealthScoreCard({
 
   const compositeScore =
     composite.status === "ok" ? clampScore(composite.value.score) : null;
-  const compositeBand = composite.status === "ok" ? composite.value.band : null;
+  const compositeBand =
+    composite.status === "ok" ? composite.value.numberBand : null;
   // A pillar in a worse band than the score is named in the band line's
   // place: the band sentences speak for every pillar, and one of them would
   // be untrue while that pillar sits below.

@@ -22,6 +22,7 @@ vi.mock("@/lib/db", () => ({
 vi.mock("@/lib/push-relay/route-device", async (importOriginal) => ({
   ...(await importOriginal<object>()),
   routeOf: () => "relay",
+  relayReachable: () => true,
 }));
 
 import { relayUpdateItem } from "@/lib/push-relay/live-activity";

@@ -29,11 +29,6 @@ vi.mock("@/lib/rate-limit", async (importOriginal) => ({
     resetAt: Date.now() + 60_000,
   })),
 }));
-// The second-factor policy is not this file's subject: no policy applies.
-vi.mock("@/lib/auth/mfa-confinement", async (importActual) => ({
-  ...(await importActual<typeof import("@/lib/auth/mfa-confinement")>()),
-  refuseConfinedBearer: vi.fn(async () => {}),
-}));
 vi.mock("@/lib/db", () => ({
   prisma: {
     medication: {

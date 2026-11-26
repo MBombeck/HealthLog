@@ -106,6 +106,7 @@ function composite(score: number, asOf: Date): Derived<CompositeValue> {
     value: {
       score,
       band: "green",
+      numberBand: "green",
       bandSetter: null,
       composition: ["BLOOD_PRESSURE", "ACTIVITY", "SLEEP"],
       configured: false,
@@ -181,6 +182,7 @@ describe("the recipe boundary", () => {
       value: {
         score: 60,
         band: "green",
+        numberBand: "green",
         bandSetter: null,
         composition: ["BLOOD_PRESSURE", "ACTIVITY"],
         configured: false,

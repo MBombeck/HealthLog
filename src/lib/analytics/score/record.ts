@@ -43,6 +43,7 @@ import {
   type ScoreConfigBoundary,
 } from "./config";
 import { computeUserHealthScore, type UserHealthScoreInput } from "./reader";
+import { keepHealthScoreReport } from "./report-cell";
 import type {
   HealthScoreReport,
   ScoreBand,
@@ -308,6 +309,14 @@ export async function computeAndRecordUserHealthScore(
   input: UserHealthScoreInput,
 ): Promise<HealthScoreReport> {
   const report = await computeUserHealthScore(input);
+  // Kept for the day, so a surface that cannot compute on its own read
+  // serves this number rather than none (`report-cell.ts`).
+  keepHealthScoreReport(
+    input.userId,
+    input.profile.timezone,
+    input.now,
+    report,
+  );
   // The recipe is resolved here rather than asked of the caller. Three
   // routes call this function and every one of them already holds the
   // raw blob, so a parameter would have been three chances to pass

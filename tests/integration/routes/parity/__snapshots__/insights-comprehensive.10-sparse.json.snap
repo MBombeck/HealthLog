@@ -812,13 +812,13 @@
       "alerts": [
         {
           "level": "warning",
-          "title": "Blood pressure often outside target range",
-          "message": "Only 0% of your readings are within the target range."
+          "title": "Blutdruck oft außerhalb des Zielbereichs",
+          "message": "Nur 0 % deiner Messungen liegen im Zielbereich."
         },
         {
           "level": "warning",
-          "title": "Low compliance: Amlodipine",
-          "message": "Your 7-day compliance for Amlodipine is only 67%. Regular intake is important."
+          "title": "Geringe Therapietreue: Amlodipine",
+          "message": "Deine Therapietreue für Amlodipine liegt in den letzten 7 Tagen bei nur 67 %. Eine regelmäßige Einnahme ist wichtig."
         }
       ],
       "hasProvider": false,
