@@ -64,6 +64,11 @@ export const RANKED_TYPES: readonly MeasurementType[] = [
   "FLIGHTS_CLIMBED",
 ];
 
+/** Whether `type` carries a source ladder a day read can pick by. */
+export function isSourceRankedType(type: MeasurementType): boolean {
+  return RANKED_TYPES.includes(type) && metricKeyForType(type) !== null;
+}
+
 // Enum members can carry digits (e.g. VO2_MAX, BLOOD_PRESSURE_SYS) — allow
 // 0-9 so the whitelist doesn't reject a legitimate closed-enum value.
 const ENUM_RE = /^[A-Z0-9_]+$/;

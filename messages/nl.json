@@ -7114,6 +7114,7 @@
         "deleteConfirmBodyUsed": "Taken die deze keten gebruiken ({count}) gaan bij het opslaan terug naar Standaard. Is het de standaardketen, dan neemt de terugvalketen het weer over. Je providers en sleutels blijven zoals ze zijn.",
         "bindingHint": "Met één provider is de keten een vaste binding: kan die niet antwoorden, dan stopt de taak in plaats van een andere provider te proberen.",
         "bindingShort": "Vast aan deze provider, geen terugval.",
+        "taskNoProvider": "Geen enkele provider in deze keten is ingesteld, dus deze taak draait niet: de actie wordt pas aangeboden als je er een instelt of een andere keten kiest.",
         "egressLocal": "Blijft op deze machine",
         "egressExternal": "Verlaat deze machine",
         "notSetUp": "Nog niet ingesteld",
@@ -16535,7 +16536,81 @@
   },
   "adminLiveActivityStart": {
     "switchOff": "Een medicijn heeft een Live Activity, maar PUSH_RELAY_LIVE_ACTIVITY staat uit, dus er start er geen.",
+    "notBound": "Een medicijn heeft een Live Activity, maar de relay bereikt deze iPhone niet: de server is er niet geregistreerd, of de iPhone is er niet aan gekoppeld.",
     "noConsent": "Een medicijn heeft een Live Activity, maar je iPhone heeft die niet via de relay toegestaan.",
     "noStartToken": "Een medicijn heeft een Live Activity, maar je iPhone heeft nog geen starttoken gestuurd."
+  },
+  "serverText": {
+    "alerts": {
+      "bmiBelowNormal": {
+        "title": "BMI onder het normale bereik",
+        "message": "Je BMI van {bmi} ligt onder het normale bereik (18,5–24,9)."
+      },
+      "bmiOverweight": {
+        "title": "BMI in het bereik overgewicht",
+        "message": "Je BMI van {bmi} ligt in het bereik overgewicht. Regelmatig bewegen en gevarieerd eten kunnen helpen."
+      },
+      "bmiObesity": {
+        "title": "BMI in het bereik obesitas",
+        "message": "Je BMI van {bmi} ligt in het bereik obesitas."
+      },
+      "bmiNormal": {
+        "title": "BMI in het normale bereik",
+        "message": "Je BMI van {bmi} ligt in het gezonde bereik."
+      },
+      "bpSignificantlyElevated": {
+        "title": "Bloeddruk duidelijk verhoogd",
+        "message": "Je gemiddelde bloeddruk ({sys}/{dia}) valt in de categorie ‘{category}’."
+      },
+      "bpSlightlyElevated": {
+        "title": "Bloeddruk licht verhoogd",
+        "message": "Je gemiddelde bloeddruk ({sys}/{dia}) ligt in het bereik ‘{category}’."
+      },
+      "bpTargetGood": {
+        "title": "Bloeddruk meestal binnen het doel",
+        "message": "{percent}% van je metingen ligt binnen het doelbereik."
+      },
+      "bpTargetLow": {
+        "title": "Bloeddruk vaak buiten het doelbereik",
+        "message": "Slechts {percent}% van je metingen ligt binnen het doelbereik."
+      },
+      "weightIncreasing": {
+        "title": "Gewicht stijgt",
+        "message": "Je gewicht stijgt de afgelopen 30 dagen met ongeveer {kg} kg per week."
+      },
+      "weightDecreasing": {
+        "title": "Gewicht daalt",
+        "message": "Je gewicht daalt de afgelopen 30 dagen met ongeveer {kg} kg per week."
+      },
+      "pulseOutliers": {
+        "title": "Afwijkende polswaarden",
+        "message": "{count, plural, one {# ongebruikelijke polswaarde} other {# ongebruikelijke polswaarden}} in de afgelopen 30 dagen."
+      },
+      "complianceLow": {
+        "title": "Lage therapietrouw: {name}",
+        "message": "Je therapietrouw over 7 dagen voor {name} is maar {percent}%. Regelmatig innemen is belangrijk."
+      },
+      "complianceExcellent": {
+        "title": "Uitstekende therapietrouw: {name}",
+        "message": "{percent}% therapietrouw in de afgelopen 7 dagen. Ga zo door!"
+      }
+    },
+    "targetLabels": {
+      "weight": "Gewicht",
+      "bloodPressure": "Bloeddruk",
+      "bloodPressureOnTarget": "Bloeddruk binnen doel",
+      "restingPulse": "Rustpols",
+      "bmi": "BMI",
+      "bodyFat": "Vetpercentage",
+      "stepsPerDay": "Stappen/dag",
+      "sleepDuration": "Slaapduur",
+      "medicationCompliance": "Therapietrouw",
+      "mood": "Stemming",
+      "moodStability": "Stabiliteit van de stemming"
+    },
+    "metricLabels": {
+      "systolicBloodPressure": "Systolische bloeddruk",
+      "diastolicBloodPressure": "Diastolische bloeddruk"
+    }
   }
 }

@@ -112,7 +112,7 @@ export function buildMedicationTarget({
 
   return {
     type: "MEDICATION_COMPLIANCE",
-    label: "Medication compliance",
+    label: "serverText.targetLabels.medicationCompliance",
     current: complianceRate7,
     average30: complianceRate30,
     trend: null,

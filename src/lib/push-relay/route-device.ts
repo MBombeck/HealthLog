@@ -122,6 +122,27 @@ export function routeFor(
   return "none";
 }
 
+/**
+ * Whether the relay reaches `device`, whichever way its ordinary pushes take:
+ * the relay route {@link routeFor} would pick if this server had no APNs key
+ * of its own. A Live Activity start or update goes only over the relay, so
+ * its eligibility reads this and never {@link routeOf}: on a server with its
+ * own key and a relay registration, a bound device takes its alerts and
+ * syncs over the key and its relay Activities over the relay.
+ */
+export function relayReachable(
+  device: RoutableDevice,
+  ctx: Pick<PushContext, "registration" | "keys">,
+): boolean {
+  return (
+    routeFor(device, {
+      apnsConfigured: false,
+      registration: ctx.registration,
+      canSeal: ctx.keys !== null,
+    }) === "relay"
+  );
+}
+
 export interface SealedTarget {
   device: RoutableDevice;
   message: EnvelopeMessage;

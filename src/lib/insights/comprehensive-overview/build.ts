@@ -21,11 +21,14 @@ import {
   bmiOf,
   classifyBMI,
   classifyBP,
-  generateAlerts,
 } from "@/lib/analytics/classifications";
+import { generateAlertSpecs } from "@/lib/analytics/health-alerts";
 import { annotate } from "@/lib/logging/context";
 import { buildComprehensiveAggregate } from "@/lib/insights/comprehensive-aggregator";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { summarizeNights } from "@/lib/analytics/sleep-night";
+import { readSleepNights } from "@/lib/measurements/list/sleep-nights";
+import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 
 import { overviewCorrelations } from "./correlations";
 import {
@@ -85,6 +88,37 @@ function classifyProfile(
   return { bmi, bmiClassification, bpClassification, bpTargets };
 }
 
+/** No 90-day window holds this many nights; the read is uncapped in practice. */
+const WINDOW_NIGHTS = 1000;
+
+/**
+ * Sleep over the window, one point per night.
+ *
+ * `SLEEP_DURATION` is stored one row per stage (and one per segment) of a
+ * night, so the aggregator's per-type summary averages stage rows: an awake
+ * spell of half a minute is a "reading", `latest` is the last stage, and
+ * `avg30` is a few minutes. The night here is the one every other sleep
+ * surface reads (`reconstructSleepNights`: the night's sessions, one source
+ * per night on the source ladder, time asleep), so the overview's count,
+ * latest, range, mean, median, windowed means and slopes are nights.
+ */
+async function summarizeWindowNights(
+  userId: string,
+  tz: string,
+  since: Date,
+  now: Date,
+): Promise<DataSummary> {
+  const nights = await readSleepNights(
+    userId,
+    tz,
+    await loadUserSourcePriority(userId),
+    { from: since, to: now, maxNights: WINDOW_NIGHTS },
+  );
+  const { summary } = summarizeNights(nights);
+  // The 90-day window holds no night from a year ago.
+  return { ...summary, avg30LastYear: null };
+}
+
 export async function buildComprehensiveResponse(user: OverviewRecord) {
   const userId = user.id;
   const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
@@ -113,6 +147,14 @@ export async function buildComprehensiveResponse(user: OverviewRecord) {
     moodDataPoints.length > 0 ? summarize(moodDataPoints) : null;
 
   const summaries: Record<string, DataSummary> = aggregate.summaries;
+  if (summaries.SLEEP_DURATION) {
+    summaries.SLEEP_DURATION = await summarizeWindowNights(
+      userId,
+      userTz,
+      ninetyDaysAgo,
+      new Date(),
+    );
+  }
   const { bmi, bmiClassification, bpClassification, bpTargets } =
     classifyProfile(
       summaries,
@@ -160,7 +202,9 @@ export async function buildComprehensiveResponse(user: OverviewRecord) {
   const { bpMedicationCorrelation, bpMedicationScatterData } =
     bpMedicationContinuity({ bpMedications, bpMedicationEvents, sysDaily });
 
-  const alerts = generateAlerts({
+  // Which alerts fire, not their wording: the body is cached per record and
+  // the route words them in the reader's language (`localiseAlerts`).
+  const alerts = generateAlertSpecs({
     bmi,
     bpAvgSys: summaries.BLOOD_PRESSURE_SYS?.avg30 ?? null,
     bpAvgDia: summaries.BLOOD_PRESSURE_DIA?.avg30 ?? null,

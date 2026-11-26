@@ -47,7 +47,7 @@ describe("buildDeterministicNarrative", () => {
     expect(text).toContain("the last week");
     expect(text).toContain("your weight");
     expect(text).toContain("1 kg");
-    expect(text).toContain("1.2 %"); // dot decimal mark in English
+    expect(text).toContain("1.2%"); // dot decimal mark in English
   });
 
   it("localises labels, decimal mark, and period in German", () => {
@@ -177,6 +177,68 @@ describe("buildDeterministicNarrative", () => {
     expect(buildDeterministicNarrative(ctx({ period: "month" }), "de")).toMatch(
       /^Ein ruhiger Monat\./,
     );
+  });
+
+  it("rounds each change to its unit and keeps one bracket level (de/en)", () => {
+    const deltas = [
+      {
+        ...WEIGHT_DOWN,
+        type: "ACTIVITY_STEPS" as const,
+        unit: "",
+        current: 17_400,
+        prior: 20_308.68,
+        delta: -2908.68,
+        deltaPercent: -14.3,
+      },
+      {
+        ...WEIGHT_DOWN,
+        type: "BLOOD_PRESSURE_DIA" as const,
+        unit: "mmHg",
+        current: 84.6,
+        prior: 78.19,
+        delta: 6.41,
+        deltaPercent: 8.2,
+      },
+      {
+        ...WEIGHT_DOWN,
+        type: "WEIGHT" as const,
+        unit: "kg",
+        delta: -0.46,
+        deltaPercent: -0.6,
+      },
+    ];
+    const de = buildDeterministicNarrative(ctx({ metricDeltas: deltas }), "de");
+    expect(de).toContain("deine Schritte (−2.909 Schritte, −14,3 %)");
+    expect(de).toContain("dein diastolischer Blutdruck (+6 mmHg, +8,2 %)");
+    expect(de).toContain("dein Gewicht (−0,5 kg, −0,6 %)");
+    const en = buildDeterministicNarrative(ctx({ metricDeltas: deltas }), "en");
+    expect(en).toContain("your step count (−2,909 steps, −14.3%)");
+    expect(en).toContain("your diastolic blood pressure (+6 mmHg, +8.2%)");
+    expect(en).toContain("your weight (−0.5 kg, −0.6%)");
+    for (const text of [de, en]) {
+      // No bracket opens inside another.
+      expect(text).not.toMatch(/\([^)]*\(/);
+      expect(text).not.toMatch(/\d[.,]\d{2}\b/);
+    }
+  });
+
+  it("drops a change that rounds to nothing at its unit's grain", () => {
+    const text = buildDeterministicNarrative(
+      ctx({
+        metricDeltas: [
+          {
+            ...WEIGHT_DOWN,
+            type: "PULSE" as const,
+            unit: "bpm",
+            delta: 0.3,
+            deltaPercent: 0.4,
+          },
+        ],
+      }),
+      "en",
+    );
+    expect(text).not.toContain("your pulse");
+    expect(text).toContain("held largely steady");
   });
 
   it("falls back to a prettified label for an unmapped metric type", () => {

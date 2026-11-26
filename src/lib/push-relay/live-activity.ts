@@ -54,8 +54,11 @@
  * and the server starts no earlier ({@link ACTIVITY_LEAD_MS}). How long it
  * stays is the resolver's: until `missedAfter`.
  *
- * A server with its own APNs key does none of this: its direct path is
- * unchanged.
+ * None of this depends on the way the device's ordinary pushes take. A server
+ * with its own APNs key and a relay registration sends alerts and syncs over
+ * its key and starts and updates Activities over the relay
+ * (`laRelayBlock`); there is no start over its own key, so a dose never
+ * gets two.
  */
 import { randomBytes } from "node:crypto";
 import { Prisma } from "@/generated/prisma/client";
@@ -71,17 +74,19 @@ import {
 } from "@/lib/push-relay/activity-slot";
 import { liveActivityRelayEnabled } from "@/lib/push-relay/config";
 import {
+  laRelayEligible,
+  liveActivityStartState,
+} from "@/lib/push-relay/live-activity-eligibility";
+import {
   laStartTokenUsable,
   statementIat,
 } from "@/lib/push-relay/live-activity-start-token";
 import { endActivitiesOverRelay } from "@/lib/push-relay/medication-pushes";
-import { fromBase64Url } from "@/lib/push-relay/encoding";
 import { newUlid } from "@/lib/push-relay/plaintext";
 import { passPageOffset } from "@/lib/push-relay/pass-window";
 import {
   loadPushContext,
   ROUTABLE_DEVICE_SELECT,
-  routeOf,
   type PushContext,
 } from "@/lib/push-relay/route-device";
 import {
@@ -163,20 +168,6 @@ const DEVICE_SELECT = {
 } as const;
 
 type LaDevice = Prisma.DeviceGetPayload<{ select: typeof DEVICE_SELECT }>;
-
-/** Whether `device` may get a relay start or update now. */
-export function laRelayEligible(
-  device: Pick<LaDevice, "liveActivityConsentAt" | "relayBindingKey"> &
-    Parameters<typeof routeOf>[0],
-  ctx: PushContext,
-): boolean {
-  return (
-    liveActivityRelayEnabled() &&
-    routeOf(device, ctx) === "relay" &&
-    device.liveActivityConsentAt !== null &&
-    fromBase64Url(device.relayBindingKey ?? "", 32) !== null
-  );
-}
 
 /**
  * The open tracked doses an Activity may show at `now`, soonest first, once
@@ -773,8 +764,13 @@ export async function runLiveActivityRelayPass(
     }),
     take: PASS_LIMIT,
   });
+  // Why a device gets no start, by the first reason in the way, so a server
+  // whose Activities never start says why in its log.
+  const blocked: Record<string, number> = {};
   for (const device of devices) {
     facts.devices += 1;
+    const state = liveActivityStartState(device, ctx, now);
+    if (state !== "ready") blocked[state] = (blocked[state] ?? 0) + 1;
     try {
       const done = await runDeviceLiveActivities(device, ctx, now);
       facts.started += done.started;
@@ -785,6 +781,9 @@ export async function runLiveActivityRelayPass(
         `live_activity_relay_failed: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
+  }
+  if (Object.keys(blocked).length > 0) {
+    getEvent()?.addMeta("live_activity_start_blocked", blocked);
   }
   return facts;
 }
