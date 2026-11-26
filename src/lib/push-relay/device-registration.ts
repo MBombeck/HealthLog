@@ -117,13 +117,20 @@ export const liveActivityWithdrawSchema = z
   .object({ iat: unixSeconds, signature: b64url(64) })
   .strict();
 
+/**
+ * The longest APNs token (device, Live Activity update or push-to-start
+ * token) accepted, in hex characters. Apple documents no fixed length: device
+ * tokens are 64 characters today, push-to-start tokens already run to 256.
+ */
+export const APNS_TOKEN_MAX_HEX = 512;
+
 /** The push-to-start token with its `hl-la-start-v1` statement. */
 export const liveActivityStartSchema = z
   .object({
     token: z
       .string()
       .min(64)
-      .max(200)
+      .max(APNS_TOKEN_MAX_HEX)
       .regex(/^[0-9A-Fa-f]+$/),
     statement: z
       .object({
@@ -330,9 +337,22 @@ const PUSH_REFUSAL_CODES = {
  */
 export const RELAY_NEW_BINDINGS_PER_DAY = 10;
 
+/** An optional field the registration left out instead of failing on it. */
+export interface IgnoredDeviceField {
+  /** The request field, `liveActivityTokens[2]` for one list entry. */
+  field: string;
+  /** `devices.register.invalid_field`, or the `devices.push.<reason>` refusal. */
+  code: string;
+}
+
 export interface PreparedPushFields {
   /** The refusal to answer with, or null when the push fields pass. */
   refused: Response | null;
+  /**
+   * A push-to-start token whose statement does not hold is dropped, not
+   * refused: the device registers without it and the answer names it.
+   */
+  ignored: IgnoredDeviceField[];
   /**
    * The relay-bound APNs token this registration replaces (the device's
    * token changed), whose binding has to go.
@@ -380,8 +400,31 @@ export async function preparePushFields(
       ? previous.apnsToken
       : null;
   input.replacedRelayToken = replacedRelayToken;
+  // The push-to-start token is a background refresh, not a choice the person
+  // made: a statement that does not hold (stale, re-signed for an old token,
+  // no relay consent yet) drops that field only, so the device still
+  // registers its APNs token. The consent and withdraw statements keep
+  // refusing the request.
+  const ignored: IgnoredDeviceField[] = [];
+  if (input.liveActivityStart) {
+    const startRefusal = await checkLiveActivityFields(
+      {
+        ...input,
+        liveActivityConsent: undefined,
+        liveActivityWithdraw: undefined,
+      },
+      stored,
+    );
+    if (startRefusal) {
+      ignored.push({
+        field: "liveActivityStart",
+        code: PUSH_REFUSAL_CODES[startRefusal],
+      });
+      input.liveActivityStart = undefined;
+    }
+  }
   const refusal = await checkPushFields(userId, input, stored);
-  if (!refusal) return { refused: null, replacedRelayToken };
+  if (!refusal) return { refused: null, ignored, replacedRelayToken };
   annotate({ meta: { push_refused: refusal } });
   return {
     refused: apiError(
@@ -389,6 +432,7 @@ export async function preparePushFields(
       refusal === "relay_daily_limit" ? 429 : 422,
       { errorCode: PUSH_REFUSAL_CODES[refusal] },
     ),
+    ignored,
     replacedRelayToken,
   };
 }

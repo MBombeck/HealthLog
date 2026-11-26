@@ -13283,7 +13283,7 @@
       "close": "Ausblenden"
     },
     "ai": {
-      "readDone": "Die KI hat dein Dokument gelesen.",
+      "readDone": "Die KI hat dein Dokument gelesen. Die Suche findet es jetzt auch über seinen Inhalt.",
       "readStagedOne": "Die KI hat dein Dokument gelesen. 1 Laborwert wartet auf deine Prüfung.",
       "readStagedFew": "Die KI hat dein Dokument gelesen. {count} Laborwerte warten auf deine Prüfung.",
       "readStagedOther": "Die KI hat dein Dokument gelesen. {count} Laborwerte warten auf deine Prüfung.",

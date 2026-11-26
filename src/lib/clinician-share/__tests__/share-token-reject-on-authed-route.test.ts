@@ -3,9 +3,10 @@
  *
  * A share token can authenticate ONLY the public share surface. Presented on a
  * normal authenticated route it must be REJECTED: `requireAuth` reads only the
- * cookie session and `Authorization: Bearer` (against `ApiToken`); it never
- * reads the `X-HealthLog-Share` header, and an `hls_` token has no `ApiToken`
- * row, so the Bearer path 401s.
+ * cookie session and an `Authorization: Bearer` of the app's own format
+ * (`hlk_`, against `ApiToken`); it never reads the `X-HealthLog-Share`
+ * header, and an `hls_` token is not that format, so it is no credential at
+ * all and the request 401s.
  *
  * This locks the boundary structurally — if a future change made `requireAuth`
  * honour a share token, this test fails.
@@ -49,12 +50,10 @@ describe("share token on a normal authed route", () => {
   it("rejects an hls_ token presented as Authorization: Bearer", async () => {
     headerStore.set("authorization", `Bearer ${SHARE_TOKEN}`);
     await expect(requireAuth()).rejects.toMatchObject({ statusCode: 401 });
-    // It was looked up in ApiToken (and found nothing) — never honoured.
-    expect(prisma.apiToken.findUnique).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { tokenHash: `hash(${SHARE_TOKEN})` },
-      }),
-    );
+    // Not a token of this app: never looked up, never honoured. The request
+    // fell to the cookie path, which found no session.
+    expect(prisma.apiToken.findUnique).not.toHaveBeenCalled();
+    expect(getSession).toHaveBeenCalled();
   });
 
   it("ignores the X-HealthLog-Share header entirely on an authed route", async () => {

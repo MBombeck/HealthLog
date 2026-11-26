@@ -13283,7 +13283,7 @@
       "close": "Ocultar"
     },
     "ai": {
-      "readDone": "A IA leu seu documento.",
+      "readDone": "A IA leu seu documento. Agora a busca também o encontra pelo conteúdo.",
       "readStagedOne": "A IA leu seu documento. {count} valor laboratorial está pronto para revisão.",
       "readStagedFew": "A IA leu seu documento. {count} valores laboratoriais estão prontos para revisão.",
       "readStagedOther": "A IA leu seu documento. {count} valores laboratoriais estão prontos para revisão.",

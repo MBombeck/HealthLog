@@ -13283,7 +13283,7 @@
       "close": "Masquer"
     },
     "ai": {
-      "readDone": "L’IA a lu votre document.",
+      "readDone": "L’IA a lu votre document. La recherche le trouve maintenant aussi par son contenu.",
       "readStagedOne": "L’IA a lu votre document. {count} valeur de laboratoire attend votre vérification.",
       "readStagedFew": "L’IA a lu votre document. {count} valeurs de laboratoire attendent votre vérification.",
       "readStagedOther": "L’IA a lu votre document. {count} valeurs de laboratoire attendent votre vérification.",

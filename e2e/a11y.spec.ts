@@ -686,9 +686,12 @@ async function installA11yMocks(page: Page) {
       });
     }
     if (url.pathname === `/api/documents/inbound/${A11Y_DOCUMENT_ID}/summary`) {
-      return fulfilJson(route, {
-        summary: "A deterministic summary of the A11y blood panel.",
-      });
+      return fulfilJson(
+        route,
+        url.searchParams.get("mode") === "text"
+          ? { text: "A deterministic transcription of the A11y blood panel." }
+          : { summary: "A deterministic summary of the A11y blood panel." },
+      );
     }
     if (url.pathname === `/api/documents/inbound/${A11Y_DOCUMENT_ID}`) {
       return fulfilJson(route, {
@@ -1138,9 +1141,12 @@ test.describe("axe-core authenticated route and state matrix", () => {
         ).toBeVisible({ timeout: 15_000 });
         const sheet = page.locator('[data-slot="responsive-sheet-content"]');
         await expect(sheet).toBeVisible({ timeout: 15_000 });
-        await sheet.getByRole("button", { name: /summari/i }).click();
+        // The session-only panel; a summary is stored on the document.
+        await sheet
+          .getByRole("button", { name: "Show extracted text" })
+          .click();
         const summary = sheet.locator('[data-slot="document-summary-panel"]');
-        await expect(summary).toContainText("deterministic summary", {
+        await expect(summary).toContainText("deterministic transcription", {
           timeout: 15_000,
         });
         blocking.push(
