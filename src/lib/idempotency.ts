@@ -25,6 +25,7 @@
  * every affected client's second write into a visible error with no way for
  * the person to recover the value.
  */
+import { unstable_rethrow } from "next/navigation";
 import { requestOwnBearerToken } from "@/lib/auth/token-transport";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
@@ -539,7 +540,10 @@ export async function defaultUserIdResolver(): Promise<string | null> {
   // The choice `authenticateCaller` makes: only the app's own Bearer decides.
   const ownToken = await requestOwnBearerToken();
   if (ownToken === null) {
-    const session = await getSession().catch(() => null);
+    const session = await getSession().catch((error: unknown) => {
+      unstable_rethrow(error);
+      return null;
+    });
     return session ? session.user.id : null;
   }
 
