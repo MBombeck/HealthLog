@@ -259,14 +259,12 @@ describe("GET /api/analytics", () => {
   // that the GET wrapper's `enrichLastSeenDaysAgo` re-derives `daysAgo`
   // from the cached `lastSeenAt` ISO so a slice straddling midnight
   // still surfaces a wall-clock-truthful caption.
-  it("includes lastSeenByType + bfcache Cache-Control on the default slice", async () => {
+  it("includes lastSeenByType + the no-store Cache-Control on the default slice", async () => {
     const res = await (
       GET as unknown as (...args: never[]) => Promise<Response>
     )();
     expect(res.status).toBe(200);
-    expect(res.headers.get("Cache-Control")).toBe(
-      "private, max-age=0, must-revalidate",
-    );
+    expect(res.headers.get("Cache-Control")).toBe("private, no-store");
 
     const body = (await res.json()) as {
       data: {
@@ -345,11 +343,8 @@ describe("GET /api/analytics", () => {
       req,
     );
     expect(res.status).toBe(200);
-    // v1.4.34 — bfcache-friendly directive rides on the slim
-    // slice too.
-    expect(res.headers.get("Cache-Control")).toBe(
-      "private, max-age=0, must-revalidate",
-    );
+    // The slim slice is no-store too.
+    expect(res.headers.get("Cache-Control")).toBe("private, no-store");
     const body = (await res.json()) as {
       data: {
         summaries: Record<

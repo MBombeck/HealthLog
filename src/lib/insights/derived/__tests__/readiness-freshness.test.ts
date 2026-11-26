@@ -101,13 +101,40 @@ function seed(opts: {
   });
 }
 
-/** The row the nightly job stored for the night that ended on `wakeDay`. */
-function stored(value: number, wakeDay: string) {
-  findFirst.mockResolvedValue({
+type StoredRow = { value: number; source: "COMPUTED"; measuredAt: Date };
+let storedRows: StoredRow[] = [];
+
+/**
+ * A row the nightly job stored for the night that ended on `wakeDay`. The
+ * fake `findFirst` honours the read's `measuredAt` bounds and its newest-first
+ * order, so a bound that leaves a row out is visible here.
+ */
+function stored(value: number, wakeDay: string, hourUtc = 12) {
+  storedRows.push({
     value,
     source: "COMPUTED",
-    measuredAt: new Date(new Date(`${wakeDay}T12:00:00Z`).getTime() - DAY_MS),
+    measuredAt: new Date(
+      new Date(`${wakeDay}T00:00:00Z`).getTime() - DAY_MS + hourUtc * 3_600_000,
+    ),
   });
+  findFirst.mockImplementation(
+    async (args: {
+      where: { measuredAt?: { gte?: Date; lt?: Date; lte?: Date } };
+    }) => {
+      const b = args.where.measuredAt ?? {};
+      return (
+        storedRows
+          .filter(
+            (r) =>
+              (!b.gte || r.measuredAt >= b.gte) &&
+              (!b.lt || r.measuredAt < b.lt) &&
+              (!b.lte || r.measuredAt <= b.lte),
+          )
+          .sort((a, c) => c.measuredAt.getTime() - a.measuredAt.getTime())[0] ??
+        null
+      );
+    },
+  );
 }
 
 async function readiness(
@@ -127,7 +154,9 @@ async function readiness(
 
 beforeEach(() => {
   vi.clearAllMocks();
+  storedRows = [];
   findMany.mockResolvedValue([]);
+  findFirst.mockReset();
   findFirst.mockResolvedValue(null);
   moodFindMany.mockResolvedValue([]);
   resolveTz.mockResolvedValue("UTC");
@@ -178,6 +207,33 @@ describe("readiness freshness", () => {
     }
     const where = findFirst.mock.calls[0][0].where;
     expect(where).toMatchObject({ type: "RECOVERY_SCORE", source: "COMPUTED" });
+  });
+
+  it("never names today: the early nightly row is passed over", async () => {
+    // The nightly job runs before the morning's readings sync and stores a
+    // blend of yesterday's values under today's wake day. "Last 81 on" with
+    // today's date beside an empty ring is the line this must never show.
+    seed({ lastDay: "2026-06-01", lastNight: "2026-06-01" });
+    stored(77, "2026-06-01");
+    stored(81, "2026-06-02", 4);
+    const value = await readiness(NOW, "UTC");
+    expect(value.fresh).toBe(false);
+    expect(value.asOfDay).toBe("2026-06-01");
+    expect(value.score).toBe(77);
+  });
+
+  it("keeps the stored line after noon when too few inputs remain", async () => {
+    // At 13:00 yesterday's pulse, HRV and night have gone quiet and drop
+    // out, leaving no input. The tile keeps "Last 77 on Jun 1" all day
+    // instead of vanishing.
+    seed({ lastDay: "2026-06-01", lastNight: "2026-06-01" });
+    stored(77, "2026-06-01");
+    stored(81, "2026-06-02", 4);
+    const value = await readiness(new Date("2026-06-02T13:00:00Z"), "UTC");
+    expect(value.fresh).toBe(false);
+    expect(value.score).toBe(77);
+    expect(value.asOfDay).toBe("2026-06-01");
+    expect(value.components.every((c) => c.value === null)).toBe(true);
   });
 
   it("says nothing when no stored day exists to name", async () => {
@@ -284,7 +340,8 @@ describe("readiness freshness", () => {
   it("does not let mood alone make an old blend fresh", async () => {
     // Vitals and night from three days ago, mood logged today: the dated
     // inputs have gone quiet, and mood has no day the reader could check, so
-    // it never vouches for today on its own.
+    // it never vouches for today on its own. What is left is the stored
+    // day, named as past.
     seed({ lastDay: "2026-05-30", lastNight: "2026-05-30" });
     stored(74, "2026-05-30");
     moodFindMany.mockResolvedValue(
@@ -293,10 +350,9 @@ describe("readiness freshness", () => {
         moodLoggedAt: new Date(NOW.getTime() - i * DAY_MS),
       })),
     );
-    const result = await computeReadiness("u1", PROFILE, {
-      now: NOW,
-      tz: "UTC",
-    });
-    expect(result.status).toBe("insufficient");
+    const value = await readiness(NOW, "UTC");
+    expect(value.fresh).toBe(false);
+    expect(value.score).toBe(74);
+    expect(value.asOfDay).toBe("2026-05-30");
   });
 });

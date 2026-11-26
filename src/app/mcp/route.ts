@@ -52,6 +52,7 @@ import {
 } from "@/lib/mcp";
 import { refuseOnKeyMismatch } from "@/lib/boot/key-mismatch-refusal";
 import { withBackgroundEvent } from "@/lib/logging/background";
+import { enforceApiNoStore } from "@/lib/http/api-cache-policy";
 import { annotate } from "@/lib/logging/context";
 import { isModuleEnabled } from "@/lib/modules/gate";
 import { isApiGloballyEnabled } from "@/lib/app-settings";
@@ -135,7 +136,7 @@ function readBearer(request: Request): string | null {
 }
 
 async function handleMcp(request: Request): Promise<Response> {
-  return withBackgroundEvent("mcp.request", async () => {
+  const response = await withBackgroundEvent("mcp.request", async () => {
     // 00. KEY CHECK — the boot key check found that the configured encryption
     //     key does not open this database. The write tools would seal new
     //     rows under it, so refuse before anything else, as apiHandler does.
@@ -238,6 +239,9 @@ async function handleMcp(request: Request): Promise<Response> {
       await server.close().catch(() => {});
     }
   });
+  // Tool results are the record itself: no cache keeps them.
+  enforceApiNoStore(response.headers);
+  return response;
 }
 
 export const GET = handleMcp;

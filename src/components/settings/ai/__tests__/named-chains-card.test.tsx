@@ -97,6 +97,29 @@ describe("NamedChainsCard", () => {
     expect(briefing).not.toContain("Local model");
   });
 
+  // #1404 — a task bound to a chain with nothing set up does not run, and
+  // its action disappears from the document sheet and the Coach. The task
+  // row is where the binding was made, so it says so there.
+  it("says a task on a chain with nothing set up does not run", () => {
+    const html = render({
+      ...DATA,
+      chains: [
+        ...DATA.chains,
+        { id: "unset", name: "Not connected", entries: ["codex"] },
+      ],
+      attachments: { documentAi: "unset", coach: "cloud" },
+    });
+    const documents = row(html, "data-capability", "documentAi");
+    expect(documents).toContain('data-slot="named-chain-task-no-provider"');
+    expect(documents).toContain("No provider in this chain is set up");
+    expect(documents).not.toContain("Bound to this provider, no fallback.");
+
+    const coach = row(html, "data-capability", "coach");
+    expect(coach).not.toContain("named-chain-task-no-provider");
+    const briefing = row(html, "data-capability", "briefing");
+    expect(briefing).not.toContain("named-chain-task-no-provider");
+  });
+
   it("says what Default means when there are no chains yet", () => {
     const html = render({ ...DATA, chains: [], attachments: {} });
     expect(html).toContain("No chains yet.");

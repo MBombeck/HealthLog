@@ -7115,6 +7115,7 @@
         "deleteConfirmBodyUsed": "Le attività che usano questa catena ({count}) tornano su Predefinita al salvataggio. Se è la catena predefinita, torna a valere la catena di fallback. I tuoi provider e le tue chiavi restano come sono.",
         "bindingHint": "Con un solo provider la catena è un vincolo: se non può rispondere, l'attività si ferma invece di provare un altro provider.",
         "bindingShort": "Vincolata a questo provider, senza fallback.",
+        "taskNoProvider": "Nessun provider di questa catena è configurato, quindi questa attività non viene eseguita: la sua azione non viene offerta finché non ne configuri uno o scegli un'altra catena.",
         "egressLocal": "Resta su questa macchina",
         "egressExternal": "Esce da questa macchina",
         "notSetUp": "Non ancora configurato",
@@ -8954,7 +8955,7 @@
         "filterLabel": "Filtra utenti",
         "forceLogout": "Forza la disconnessione",
         "forceLogoutConfirmTitle": "Forzare la disconnessione di {name}?",
-        "forceLogoutConfirmBody": "Tutte le sessioni attive di questo utente verranno revocate. Dovrà accedere di nuovo su ogni dispositivo.",
+        "forceLogoutConfirmBody": "Tutte le sessioni attive di questo utente verranno revocate. Dovrà accedere di nuovo su ogni dispositivo. Anche i suoi token API, gli assistenti collegati e i link condivisi smetteranno di funzionare.",
         "forceLogoutSuccess": "{name} disconnesso da {count, plural, one {# sessione} other {# sessioni}}",
         "forceLogoutFailed": "Impossibile forzare la disconnessione",
         "cannotLogoutSelf": "Non puoi forzare la tua disconnessione",
@@ -10396,7 +10397,9 @@
       "refreshReuseTitle": "Un dispositivo è stato disconnesso",
       "refreshReuseBody": "Un token di accesso è stato usato due volte, quindi il suo dispositivo è stato disconnesso. Accedi di nuovo da lì. Se succede ancora, cambia la password.",
       "deviceReassignedTitle": "Un dispositivo è passato a un altro account",
-      "deviceReassignedBody": "Un dispositivo che riceveva le notifiche di questo account ora è collegato a un altro account e non le riceve più. Se non sei stato tu, controlla i tuoi dispositivi e gli accessi."
+      "deviceReassignedBody": "Un dispositivo che riceveva le notifiche di questo account ora è collegato a un altro account e non le riceve più. Se non sei stato tu, controlla i tuoi dispositivi e gli accessi.",
+      "mfaDueTitle": "Serve un secondo fattore di accesso",
+      "mfaDueBody": "Aggiungi un’app di autenticazione, una chiave di sicurezza o una passkey entro il {date}, nell’app web in Impostazioni > Sicurezza."
     },
     "sharedRecordIntake": {
       "title": "{name} ha segnato una dose",
@@ -16534,7 +16537,81 @@
   },
   "adminLiveActivityStart": {
     "switchOff": "Un farmaco ha un'Attività Live, ma PUSH_RELAY_LIVE_ACTIVITY è disattivato, quindi non ne parte nessuna.",
+    "notBound": "Un farmaco ha una Live Activity, ma il relay non raggiunge questo iPhone: il server non è registrato oppure l'iPhone non è collegato.",
     "noConsent": "Un farmaco ha un'Attività Live, ma il tuo iPhone non l'ha consentita tramite il relay.",
     "noStartToken": "Un farmaco ha un'Attività Live, ma il tuo iPhone non ha ancora inviato un token di avvio."
+  },
+  "serverText": {
+    "alerts": {
+      "bmiBelowNormal": {
+        "title": "IMC sotto l’intervallo normale",
+        "message": "Il tuo IMC di {bmi} è sotto l’intervallo normale (18,5–24,9)."
+      },
+      "bmiOverweight": {
+        "title": "IMC nell’intervallo di sovrappeso",
+        "message": "Il tuo IMC di {bmi} è nell’intervallo di sovrappeso. Attività fisica regolare e un’alimentazione equilibrata possono aiutare."
+      },
+      "bmiObesity": {
+        "title": "IMC nell’intervallo di obesità",
+        "message": "Il tuo IMC di {bmi} è nell’intervallo di obesità."
+      },
+      "bmiNormal": {
+        "title": "IMC nell’intervallo normale",
+        "message": "Il tuo IMC di {bmi} è nell’intervallo sano."
+      },
+      "bpSignificantlyElevated": {
+        "title": "Pressione arteriosa nettamente elevata",
+        "message": "La tua pressione arteriosa media ({sys}/{dia}) è classificata come «{category}»."
+      },
+      "bpSlightlyElevated": {
+        "title": "Pressione arteriosa leggermente elevata",
+        "message": "La tua pressione arteriosa media ({sys}/{dia}) è nell’intervallo «{category}»."
+      },
+      "bpTargetGood": {
+        "title": "Buona aderenza all’obiettivo pressorio",
+        "message": "Il {percent}% delle tue misurazioni è nell’intervallo obiettivo."
+      },
+      "bpTargetLow": {
+        "title": "Pressione spesso fuori dall’intervallo obiettivo",
+        "message": "Solo il {percent}% delle tue misurazioni è nell’intervallo obiettivo."
+      },
+      "weightIncreasing": {
+        "title": "Peso in aumento",
+        "message": "Il tuo peso aumenta di circa {kg} kg a settimana negli ultimi 30 giorni."
+      },
+      "weightDecreasing": {
+        "title": "Peso in calo",
+        "message": "Il tuo peso cala di circa {kg} kg a settimana negli ultimi 30 giorni."
+      },
+      "pulseOutliers": {
+        "title": "Valori di polso anomali",
+        "message": "{count, plural, one {# valore di polso insolito} other {# valori di polso insoliti}} negli ultimi 30 giorni."
+      },
+      "complianceLow": {
+        "title": "Aderenza bassa: {name}",
+        "message": "La tua aderenza a 7 giorni per {name} è solo del {percent}%. Un’assunzione regolare è importante."
+      },
+      "complianceExcellent": {
+        "title": "Aderenza eccellente: {name}",
+        "message": "{percent}% di aderenza negli ultimi 7 giorni. Continua così!"
+      }
+    },
+    "targetLabels": {
+      "weight": "Peso",
+      "bloodPressure": "Pressione arteriosa",
+      "bloodPressureOnTarget": "Pressione nell’obiettivo",
+      "restingPulse": "Polso a riposo",
+      "bmi": "IMC",
+      "bodyFat": "Grasso corporeo",
+      "stepsPerDay": "Passi/giorno",
+      "sleepDuration": "Durata del sonno",
+      "medicationCompliance": "Aderenza ai farmaci",
+      "mood": "Umore",
+      "moodStability": "Stabilità dell’umore"
+    },
+    "metricLabels": {
+      "systolicBloodPressure": "Pressione arteriosa sistolica",
+      "diastolicBloodPressure": "Pressione arteriosa diastolica"
+    }
   }
 }

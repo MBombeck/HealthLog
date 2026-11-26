@@ -1,6 +1,8 @@
 /**
- * The confinement half of the second-factor policy: an account past its
- * enrolment date reaches only the enrolment surface.
+ * The confinement half of the second-factor policy: a browser session of an
+ * account past its enrolment date reaches only the enrolment surface. A
+ * sign-in token of the app is not confined in 1.50 (see `caller.ts`); a new
+ * native sign-in is refused at the door (`mfa-native-refusal.ts`).
  *
  * The hint cookie (`hl_mfa_enroll`) sends pages to `/enroll-mfa` without a
  * database read, but a browser that drops the cookie, or a script holding the
@@ -31,6 +33,7 @@ import {
   type MfaEnrollment,
   type MfaPolicyUser,
 } from "@/lib/auth/mfa-enrollment";
+import { noticeMfaGrace } from "@/lib/auth/mfa-grace-notice";
 
 /** Request header the proxy stamps with the page path. */
 export const PAGE_PATH_HEADER = "x-healthlog-path";
@@ -106,23 +109,31 @@ export async function mfaDueAtForSignIn(userId: string): Promise<Date | null> {
 }
 
 /**
- * The second-factor state of this caller: the one answer the gates below
- * enforce and `/api/auth/me` reports. A narrow token (`isScopedCredential`)
- * is not a sign-in and is never confined, so it reads `none`; a demo reads
- * `none` through `resolveMfaEnrollment`.
+ * The second-factor state of this caller: the one answer the browser gate
+ * below enforces and `/api/auth/me` reports. A narrow token
+ * (`isScopedCredential`) is not a sign-in and is never confined, so it reads
+ * `none`; a demo reads `none` through `resolveMfaEnrollment`. An account that
+ * has entered its grace period is sent its one notice from here
+ * (`noticeMfaGrace`), which covers the web and the app alike.
  */
 export async function callerMfaEnrollment(
   user: MfaPolicyUser & { id: string },
   credential: "sign-in" | "narrow-token",
 ): Promise<MfaEnrollment> {
   if (credential === "narrow-token") return { state: "none", dueAt: null };
-  return resolveMfaEnrollment(user.id, user);
+  const enrollment = await resolveMfaEnrollment(user.id, user);
+  noticeMfaGrace(user.id, enrollment);
+  return enrollment;
 }
 
 /**
  * `mfaEnrollment` on `/api/auth/me`: the caller's state from
- * `callerMfaEnrollment`, so `required` means exactly that routes outside
- * `openPaths` are refused for this caller, and the list itself.
+ * `callerMfaEnrollment` and the routes a confined browser session may still
+ * reach. For a browser session `required` means exactly that every route
+ * outside `openPaths` is refused. A sign-in token is not confined in 1.50:
+ * for it `required` means the date has passed, a new sign-in of the account
+ * is refused until a factor exists, and from 1.51 the token is held to
+ * `openPaths` too.
  */
 export async function mfaEnrollmentPayload(
   user: MfaPolicyUser & { id: string },
@@ -189,22 +200,4 @@ export async function enforceMfaEnrollment(
   }
   if (pagePath !== null && isMfaEnrollmentPagePath(pagePath)) return;
   redirect("/enroll-mfa");
-}
-
-/**
- * The same confinement for a sign-in token (`["*"]`, minted by login, the
- * native hand-offs and refresh). Such a token may have been issued before the
- * policy applied, so it is judged by what holds now: past the due date it
- * reaches the enrolment API only (the account payload says why, sign-out
- * works) and every other route answers 403 `auth.mfa.enrollment_required`.
- * A narrow token is not a sign-in and is left to its scope.
- */
-export async function refuseConfinedBearer(
-  user: MfaPolicyUser & { id: string },
-): Promise<void> {
-  const enrollment = await callerMfaEnrollment(user, "sign-in");
-  if (enrollment.state !== "required") return;
-  const { path, method } = requestPathAndMethod();
-  if (path !== undefined && isMfaEnrollmentApiPath(path, method)) return;
-  throw enrollmentRequiredError();
 }

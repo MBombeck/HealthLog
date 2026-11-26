@@ -1,6 +1,6 @@
 /**
- * Since 1.50 the health score's band follows its number, so a green 79 can
- * sit over a red blood pressure. The pillar the band leaves unsaid is named
+ * Since 1.50 the health score is drawn in its number's band (`numberBand`),
+ * so a green 79 can sit over a red blood pressure. The pillar the band leaves unsaid is named
  * beside it (`bandSetter`). This guard holds the class, not one surface:
  * every file that puts the health score's band into words, or draws the
  * health score's ring, also reads the setter. A file that matches one of the
@@ -24,7 +24,7 @@ const WORDS_THE_BAND = [
   // The evidence handed to the arrival line's model.
   /Health score: \$\{/g,
   // The Today ring drawn from the digest's score.
-  /band=\{[^}]*score\.band as ScoreBand/g,
+  /score\.numberBand \?\? [\w.]*score\.band\) as ScoreBand/g,
 ];
 
 /** What reading the setter looks like in a file. */

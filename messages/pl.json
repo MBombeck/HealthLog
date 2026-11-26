@@ -7115,6 +7115,7 @@
         "deleteConfirmBodyUsed": "Zadania korzystające z tego łańcucha ({count}) po zapisaniu wrócą do Domyślnego. Jeśli to łańcuch domyślny, ponownie zacznie obowiązywać łańcuch zapasowy. Twoi dostawcy i klucze pozostaną bez zmian.",
         "bindingHint": "Z jednym dostawcą łańcuch jest stałym powiązaniem: jeśli dostawca nie może odpowiedzieć, zadanie się zatrzymuje zamiast próbować innego.",
         "bindingShort": "Powiązany z tym dostawcą, bez zapasu.",
+        "taskNoProvider": "Żaden dostawca w tym łańcuchu nie jest skonfigurowany, więc to zadanie się nie uruchamia: jego akcja nie jest dostępna, dopóki nie skonfigurujesz dostawcy albo nie wybierzesz innego łańcucha.",
         "egressLocal": "Zostaje na tym komputerze",
         "egressExternal": "Opuszcza ten komputer",
         "notSetUp": "Jeszcze nieskonfigurowany",
@@ -8954,7 +8955,7 @@
         "filterLabel": "Filtruj użytkowników",
         "forceLogout": "Wymuś wylogowanie",
         "forceLogoutConfirmTitle": "Wymusić wylogowanie {name}?",
-        "forceLogoutConfirmBody": "Wszystkie aktywne sesje tego użytkownika zostaną unieważnione. Będzie musiał zalogować się ponownie na każdym urządzeniu.",
+        "forceLogoutConfirmBody": "Wszystkie aktywne sesje tego użytkownika zostaną unieważnione. Będzie musiał zalogować się ponownie na każdym urządzeniu. Tokeny API, połączeni asystenci i udostępnione linki również przestaną działać.",
         "forceLogoutSuccess": "Wylogowano {name} z {count, plural, one {# sesji} few {# sesji} many {# sesji} other {# sesji}}",
         "forceLogoutFailed": "Nie udało się wymusić wylogowania",
         "cannotLogoutSelf": "Nie można wymusić wylogowania samego siebie",
@@ -10396,7 +10397,9 @@
       "refreshReuseTitle": "Wylogowano urządzenie",
       "refreshReuseBody": "Token logowania został użyty dwa razy, więc jego urządzenie zostało wylogowane. Zaloguj się na nim ponownie. Jeśli to się powtarza, zmień hasło.",
       "deviceReassignedTitle": "Urządzenie przeszło na inne konto",
-      "deviceReassignedBody": "Urządzenie, które otrzymywało powiadomienia z tego konta, jest teraz zalogowane na inne konto i już ich nie otrzymuje. Jeśli to nie Ty, sprawdź swoje urządzenia i logowania."
+      "deviceReassignedBody": "Urządzenie, które otrzymywało powiadomienia z tego konta, jest teraz zalogowane na inne konto i już ich nie otrzymuje. Jeśli to nie Ty, sprawdź swoje urządzenia i logowania.",
+      "mfaDueTitle": "Potrzebny drugi składnik logowania",
+      "mfaDueBody": "Dodaj aplikację uwierzytelniającą, klucz bezpieczeństwa lub klucz dostępu do {date} w aplikacji webowej w Ustawienia > Bezpieczeństwo."
     },
     "sharedRecordIntake": {
       "title": "{name} oznaczył(a) dawkę",
@@ -16534,7 +16537,81 @@
   },
   "adminLiveActivityStart": {
     "switchOff": "Lek ma Aktywność na żywo, ale PUSH_RELAY_LIVE_ACTIVITY jest wyłączone, więc żadna się nie uruchamia.",
+    "notBound": "Lek ma Live Activity, ale przekaźnik nie dociera do tego iPhone'a: serwer nie jest w nim zarejestrowany albo iPhone nie jest z nim powiązany.",
     "noConsent": "Lek ma Aktywność na żywo, ale Twój iPhone nie zezwolił na nią przez przekaźnik.",
     "noStartToken": "Lek ma Aktywność na żywo, ale Twój iPhone nie wysłał jeszcze tokenu startowego."
+  },
+  "serverText": {
+    "alerts": {
+      "bmiBelowNormal": {
+        "title": "BMI poniżej normy",
+        "message": "Twoje BMI {bmi} jest poniżej normy (18,5–24,9)."
+      },
+      "bmiOverweight": {
+        "title": "BMI w zakresie nadwagi",
+        "message": "Twoje BMI {bmi} jest w zakresie nadwagi. Regularny ruch i zbilansowana dieta mogą pomóc."
+      },
+      "bmiObesity": {
+        "title": "BMI w zakresie otyłości",
+        "message": "Twoje BMI {bmi} jest w zakresie otyłości."
+      },
+      "bmiNormal": {
+        "title": "BMI w normie",
+        "message": "Twoje BMI {bmi} jest w zdrowym zakresie."
+      },
+      "bpSignificantlyElevated": {
+        "title": "Ciśnienie znacznie podwyższone",
+        "message": "Twoje średnie ciśnienie ({sys}/{dia}) zaklasyfikowano jako „{category}”."
+      },
+      "bpSlightlyElevated": {
+        "title": "Ciśnienie lekko podwyższone",
+        "message": "Twoje średnie ciśnienie ({sys}/{dia}) mieści się w zakresie „{category}”."
+      },
+      "bpTargetGood": {
+        "title": "Ciśnienie zwykle w zakresie docelowym",
+        "message": "{percent}% twoich pomiarów mieści się w zakresie docelowym."
+      },
+      "bpTargetLow": {
+        "title": "Ciśnienie często poza zakresem docelowym",
+        "message": "Tylko {percent}% twoich pomiarów mieści się w zakresie docelowym."
+      },
+      "weightIncreasing": {
+        "title": "Waga rośnie",
+        "message": "W ostatnich 30 dniach twoja waga rośnie o około {kg} kg tygodniowo."
+      },
+      "weightDecreasing": {
+        "title": "Waga spada",
+        "message": "W ostatnich 30 dniach twoja waga spada o około {kg} kg tygodniowo."
+      },
+      "pulseOutliers": {
+        "title": "Nietypowe wartości tętna",
+        "message": "{count, plural, one {# nietypowy pomiar tętna} few {# nietypowe pomiary tętna} many {# nietypowych pomiarów tętna} other {# nietypowego pomiaru tętna}} w ostatnich 30 dniach."
+      },
+      "complianceLow": {
+        "title": "Słabe przestrzeganie zaleceń: {name}",
+        "message": "Twoje przestrzeganie zaleceń dla {name} w ostatnich 7 dniach to tylko {percent}%. Regularne przyjmowanie jest ważne."
+      },
+      "complianceExcellent": {
+        "title": "Doskonałe przestrzeganie zaleceń: {name}",
+        "message": "{percent}% przestrzegania zaleceń w ostatnich 7 dniach. Tak trzymaj!"
+      }
+    },
+    "targetLabels": {
+      "weight": "Waga",
+      "bloodPressure": "Ciśnienie krwi",
+      "bloodPressureOnTarget": "Ciśnienie w zakresie docelowym",
+      "restingPulse": "Tętno spoczynkowe",
+      "bmi": "BMI",
+      "bodyFat": "Tkanka tłuszczowa",
+      "stepsPerDay": "Kroki/dzień",
+      "sleepDuration": "Czas snu",
+      "medicationCompliance": "Przestrzeganie zaleceń",
+      "mood": "Nastrój",
+      "moodStability": "Stabilność nastroju"
+    },
+    "metricLabels": {
+      "systolicBloodPressure": "Ciśnienie skurczowe",
+      "diastolicBloodPressure": "Ciśnienie rozkurczowe"
+    }
   }
 }

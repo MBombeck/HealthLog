@@ -448,7 +448,7 @@
         },
         {
           "type": "BLOOD_GLUCOSE_FASTING",
-          "label": "targets.glucoseFasting",
+          "label": "Glucose (fasting)",
           "current": 92,
           "average30": 94.9,
           "trend": null,
@@ -487,7 +487,7 @@
         },
         {
           "type": "BLOOD_GLUCOSE_POSTPRANDIAL",
-          "label": "targets.glucosePostprandial",
+          "label": "Glucose (post-meal)",
           "current": 128,
           "average30": 137.5,
           "trend": null,
@@ -526,7 +526,7 @@
         },
         {
           "type": "BLOOD_GLUCOSE_UNSPECIFIED",
-          "label": "targets.glucoseUnspecified",
+          "label": "Glucose (untagged)",
           "current": 105,
           "average30": 106.5,
           "trend": null,

@@ -4,8 +4,10 @@
  * The rings at the head of Insights read readiness 87 "good", sleep 77
  * "good" and a health score of 81 "low": the health score's band took the
  * worse of its own band and its worst pillar's, so one red pillar turned
- * the word under an 81 into "low". Since 1.50 the health score bands on its
- * number like every other score and names that pillar beside it.
+ * the word under an 81 into "low". Since 1.50 the health score is shown in
+ * its number's band (`numberBand`) like every other score and names that
+ * pillar beside it; the wire `band` keeps the worse of the two for the
+ * apps that colour by it.
  *
  * Pinned here for every kind in `SCORE_BAND_DIRECTION`: the band the server
  * computes, the word a surface shows for it (from `scoreBandWordKey`, the
@@ -188,8 +190,13 @@ describe("the health score over a red pillar", () => {
     expect(composite.status).toBe("ok");
     if (composite.status !== "ok") return;
     expect(composite.value.score).toBe(81);
-    expect(composite.value.band).toBe("green");
-    expect(en(scoreBandWordKey("health", composite.value.band))).toBe("good");
+    // The number's band is what the web shows; `band` keeps the worse of
+    // it and the red pillar for the apps that colour by it.
+    expect(composite.value.numberBand).toBe("green");
+    expect(composite.value.band).toBe("red");
+    expect(en(scoreBandWordKey("health", composite.value.numberBand))).toBe(
+      "good",
+    );
     expect(composite.value.bandSetter).toBe("ACTIVITY");
     expect(healthScoreSetterLine({ composite, pillars }, en)).toBe(
       "Activity: outside the reference range",

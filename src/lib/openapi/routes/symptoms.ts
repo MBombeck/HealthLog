@@ -176,7 +176,7 @@ const symptomBatchEntryResult = z
     status: z
       .enum(["inserted", "updated", "duplicate", "skipped", "failed"])
       .describe(
-        "`inserted` and `duplicate` landed (advance the cursor); `updated` is never sent here but is part of the shared batch shape. `skipped` is permanent for the entry as sent, see `reason`. `failed` is transient: keep the entry and send it again; the response then carries `Cache-Control: no-store`.",
+        "`inserted` and `duplicate` landed (advance the cursor); `updated` is never sent here but is part of the shared batch shape. `skipped` is permanent for the entry as sent, see `reason`. `failed` is transient: keep the entry and send it again; the response is then not replayed for its `Idempotency-Key`.",
       ),
     reason: z
       .string()

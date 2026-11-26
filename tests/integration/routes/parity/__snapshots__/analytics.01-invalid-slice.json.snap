@@ -1,6 +1,6 @@
 {
   "status": 422,
-  "cacheControl": null,
+  "cacheControl": "private, no-store",
   "body": {
     "data": null,
     "error": "Validation failed",

@@ -14,6 +14,7 @@ import {
   MORNING_LEAD_KEYS,
   SLEEP_PENDING_LEAD_UNTIL_HOUR,
   rankOf,
+  resolveLastNight,
   type MorningInput,
   type MorningLeadKey,
 } from "@/lib/daily/morning";
@@ -365,6 +366,137 @@ describe("morning lead: one rank per state", () => {
 
   it("rank 10: nothing at all", () => {
     expect(expectRank({}, "nothing").text).toBe("No readings yet today.");
+  });
+});
+
+/**
+ * One rule for "last night" in the morning: the sleep score's night, whose
+ * wake day is the reader's today. The sentence, the duration line, the
+ * ring, "not in yet" and the pending state all read this one fact, so the
+ * card can never say "not in yet" beside last night's ring, or give a
+ * duration that belongs to the night before.
+ */
+describe("last night, one rule", () => {
+  const base = {
+    todayKey: TODAY,
+    sleepOn: true,
+    sleepExpected: true,
+    morningRefreshedToday: false,
+    usualMinutes: 450,
+  };
+
+  it("does not call yesterday's night last night 23 h 40 min later", () => {
+    // Woke yesterday at 06:40, opened today at 06:20 before the sync: a
+    // rolling 24-hour window would still call that night "last night".
+    const night = resolveLastNight({
+      ...base,
+      sleepScore: { night: "2026-11-25", asleepMinutes: 310 },
+      latestSleep: { wakeDay: "2026-11-25", minutes: 310 },
+    });
+    expect(night).toEqual({
+      sleep: null,
+      sleepPending: true,
+      latestNightDay: "2026-11-25",
+    });
+    const m = buildDailyMorning(
+      input({
+        sleepExpected: true,
+        sleepPending: night.sleepPending,
+        sleep: night.sleep,
+        latestNightLabel: "Nov 25",
+        sleepScore: { score: 70, band: "green", night: "2026-11-25" },
+      }),
+      t,
+    );
+    expect(m.lead.key).toBe("sleep_pending");
+    expect(m.cards[0].ring).toBeNull();
+    expect(m.cards[0].lines.map((l) => l.text)).toEqual([
+      "Not in yet",
+      "Latest night: Nov 25",
+    ]);
+  });
+
+  it("takes a night that arrived after the snapshot, ring and line together", () => {
+    // The sleep score already reads this morning's night; the snapshot that
+    // used to decide the line still had yesterday's.
+    const night = resolveLastNight({
+      ...base,
+      sleepScore: { night: TODAY, asleepMinutes: 440 },
+      latestSleep: { wakeDay: "2026-11-25", minutes: 310 },
+    });
+    expect(night).toEqual({
+      sleep: { minutes: 440, usualMinutes: 450 },
+      sleepPending: false,
+      latestNightDay: null,
+    });
+    const m = buildDailyMorning(
+      input({
+        sleepExpected: true,
+        sleepPending: night.sleepPending,
+        sleep: night.sleep,
+        sleepScore: { score: 81, band: "green", night: TODAY },
+      }),
+      t,
+    );
+    expect(m.cards[0].ring).toMatchObject({ score: 81, asOfDay: TODAY });
+    expect(m.cards[0].lines.map((l) => l.text)).not.toContain("Not in yet");
+  });
+
+  it("never names today as the latest night when only in-bed time is in", () => {
+    const night = resolveLastNight({
+      ...base,
+      sleepScore: { night: TODAY, asleepMinutes: 0 },
+      latestSleep: { wakeDay: TODAY, minutes: 0 },
+    });
+    expect(night.sleep).toBeNull();
+    expect(night.sleepPending).toBe(true);
+    expect(night.latestNightDay).toBeNull();
+  });
+
+  it("falls back to the calendar wake day when no sleep score exists", () => {
+    expect(
+      resolveLastNight({
+        ...base,
+        sleepScore: null,
+        latestSleep: { wakeDay: TODAY, minutes: 400 },
+      }).sleep,
+    ).toEqual({ minutes: 400, usualMinutes: 450 });
+    expect(
+      resolveLastNight({
+        ...base,
+        sleepScore: null,
+        latestSleep: { wakeDay: "2026-11-25", minutes: 400 },
+      }),
+    ).toMatchObject({ sleep: null, latestNightDay: "2026-11-25" });
+  });
+
+  it("is not pending once the morning refresh ran, or with sleep off", () => {
+    const stale = {
+      sleepScore: { night: "2026-11-25", asleepMinutes: 310 },
+      latestSleep: { wakeDay: "2026-11-25", minutes: 310 },
+    };
+    expect(
+      resolveLastNight({ ...base, ...stale, morningRefreshedToday: true })
+        .sleepPending,
+    ).toBe(false);
+    expect(resolveLastNight({ ...base, ...stale, sleepOn: false })).toEqual({
+      sleep: null,
+      sleepPending: false,
+      latestNightDay: null,
+    });
+  });
+
+  it("draws no ring beside a night that is not in", () => {
+    const m = buildDailyMorning(
+      input({
+        sleepExpected: true,
+        sleepPending: true,
+        sleep: null,
+        sleepScore: { score: 81, band: "green", night: TODAY },
+      }),
+      t,
+    );
+    expect(m.cards[0].ring).toBeNull();
   });
 });
 

@@ -298,3 +298,37 @@ describe.each(locales.map((l) => [l]))("morning copy in %s", (locale) => {
     }
   });
 });
+
+/**
+ * A reading past a floor is one reading that reached it, not the state of a
+ * day: "reached" in English, and the same in every language. "Der Blutdruck
+ * lag in den letzten 24 Stunden bei 262" made a single after-meal reading
+ * the level of the whole day.
+ */
+const REACHED: Record<Locale, RegExp> = {
+  en: /\breached\b/,
+  de: /\bstieg\b.*\bauf\b/,
+  es: /\bllegó a\b/,
+  fr: /\ba atteint\b/,
+  it: /\bha raggiunto\b/,
+  ko: /까지 올랐/,
+  nl: /\bbereikte\b/,
+  pl: /osiągnęł/,
+  "pt-BR": /\bchegou a\b/,
+  ru: /достигал/,
+};
+
+describe.each(locales.map((l) => [l]))("the floor sentence in %s", (locale) => {
+  const { t } = getServerTranslator(locale as Locale);
+  it.each(["bp_hypertensive", "glucose_hyper"] as const)(
+    "%s says the reading reached the value",
+    (reason) => {
+      const text = buildMorningLead(
+        base(locale as Locale, { floor: { reason, valueLabel: "262 mg/dL" } }),
+        t,
+      ).text;
+      expect(text, text).toMatch(REACHED[locale as Locale]);
+      expect(text, text).not.toMatch(/\blag\b.*\bbei\b/);
+    },
+  );
+});

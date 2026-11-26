@@ -31,7 +31,7 @@ export const MFA_STEP_UP_MAX_AGE_SECONDS = 5 * 60;
  *   one in three places: `/api/auth/passkey/login-verify` stamps `mfaVerifiedAt`
  *   on a passkey login (v1.23, M-review M1), `passkey` is in
  *   `FRESH_FACTOR_METHODS` so a passkey-proved elevation reaches the fresh-factor
- *   routes, and `resolveMfaEnrollmentRequired` counts a primary passkey as
+ *   routes, and `resolveMfaEnrollment` counts a primary passkey as
  *   satisfying the enforcement policy outright. A passkey-only account can
  *   therefore clear the gate on both transports, and asking the narrower
  *   question would have thrown `mfa_not_enrolled` at an account that was holding

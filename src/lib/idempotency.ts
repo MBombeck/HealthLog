@@ -25,6 +25,7 @@
  * every affected client's second write into a visible error with no way for
  * the person to recover the value.
  */
+import { unstable_rethrow } from "next/navigation";
 import { requestOwnBearerToken } from "@/lib/auth/token-transport";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
@@ -539,7 +540,10 @@ export async function defaultUserIdResolver(): Promise<string | null> {
   // The choice `authenticateCaller` makes: only the app's own Bearer decides.
   const ownToken = await requestOwnBearerToken();
   if (ownToken === null) {
-    const session = await getSession().catch(() => null);
+    const session = await getSession().catch((error: unknown) => {
+      unstable_rethrow(error);
+      return null;
+    });
     return session ? session.user.id : null;
   }
 
@@ -681,6 +685,19 @@ function runUncached<Args extends [Request | NextRequest, ...unknown[]]>(
   return handler(...args);
 }
 
+/**
+ * Internal header a handler sets (`markNotReplayable`) on an answer that
+ * reports a transient failure, so a retry under the same key writes again.
+ * Not `no-store`: `apiHandler` sends every API answer so. Never leaves the
+ * server: `withIdempotency` removes it on every path.
+ */
+export const NOT_REPLAYABLE_HEADER = "X-HealthLog-Not-Replayable";
+
+export function markNotReplayable<T extends Response>(response: T): T {
+  response.headers.set(NOT_REPLAYABLE_HEADER, "1");
+  return response;
+}
+
 export function withIdempotency<
   Args extends [Request | NextRequest, ...unknown[]],
 >(
@@ -689,7 +706,7 @@ export function withIdempotency<
     ...args: Args
   ) => Promise<string | null> = defaultUserIdResolver,
 ): (...args: Args) => Promise<Response> {
-  return async (...args: Args): Promise<Response> => {
+  const run = async (...args: Args): Promise<Response> => {
     const request = args[0];
     if (!SUPPORTED_METHODS.has(request.method)) {
       return handler(...args);
@@ -837,7 +854,8 @@ export function withIdempotency<
       .get("Cache-Control")
       ?.split(",")
       .some((directive) => directive.trim().toLowerCase() === "no-store");
-    if (isCachableStatus(response.status) && !noStore) {
+    const notReplayable = response.headers.has(NOT_REPLAYABLE_HEADER);
+    if (isCachableStatus(response.status) && !noStore && !notReplayable) {
       // Defence-in-depth: never persist a body that carries a freshly-issued
       // bearer / refresh token or a third-party AI provider key. Auth and
       // settings routes shouldn't be wrapped in withIdempotency to begin
@@ -853,11 +871,16 @@ export function withIdempotency<
         await releaseClaim(ctx);
       }
     } else {
-      // Non-cachable status or an explicit `no-store` response releases the
+      // Non-cachable status or an answer marked not replayable releases the
       // claim so a retry gets a fresh attempt.
       await releaseClaim(ctx);
     }
 
+    return response;
+  };
+  return async (...args: Args): Promise<Response> => {
+    const response = await run(...args);
+    response.headers.delete(NOT_REPLAYABLE_HEADER);
     return response;
   };
 }

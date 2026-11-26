@@ -18,6 +18,7 @@ import { z } from "zod/v4";
 import { annotate } from "@/lib/logging/context";
 import { refuseOAuthOnKeyMismatch } from "@/lib/boot/key-mismatch-refusal";
 import { withBackgroundEvent } from "@/lib/logging/background";
+import { applyApiCachePolicy } from "@/lib/http/api-cache-policy";
 import { checkAuthSurfaceRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { isApiGloballyEnabled } from "@/lib/app-settings";
 import { readBodyCapped } from "@/lib/http/read-capped";
@@ -68,7 +69,7 @@ function oauthError(
 }
 
 export async function POST(request: NextRequest): Promise<Response> {
-  return withBackgroundEvent("mcp.oauth.register", async () => {
+  const response = await withBackgroundEvent("mcp.oauth.register", async () => {
     // The boot key check refused this process: mint nothing, write nothing.
     const refusal = refuseOAuthOnKeyMismatch();
     if (refusal) return refusal;
@@ -145,4 +146,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       { status: 201 },
     );
   });
+  // The API cache posture `apiHandler` gives every other route.
+  applyApiCachePolicy(response.headers);
+  return response;
 }

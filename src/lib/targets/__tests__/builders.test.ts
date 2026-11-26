@@ -49,7 +49,7 @@ describe("target section builders", () => {
       }),
     ).toEqual({
       type: "SLEEP_DURATION",
-      label: "Sleep duration",
+      label: "serverText.targetLabels.sleepDuration",
       current: null,
       average30: null,
       trend: null,

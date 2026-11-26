@@ -27,6 +27,9 @@ import {
   derivedCoverage,
   derivedProvenance,
   glucoseClinicalSchema,
+  HEALTH_SCORE_BAND_DESCRIPTION,
+  HEALTH_SCORE_BAND_SETTER_DESCRIPTION,
+  HEALTH_SCORE_NUMBER_BAND_DESCRIPTION,
   healthScoreBasis,
 } from "./insights/schemas";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
@@ -313,12 +316,16 @@ const pillarValue = z.object({
 
 const compositeValue = z.object({
   score: z.number(),
-  band: z.enum(["green", "yellow", "red"]),
+  band: z
+    .enum(["green", "yellow", "red"])
+    .describe(HEALTH_SCORE_BAND_DESCRIPTION),
+  numberBand: z
+    .enum(["green", "yellow", "red"])
+    .optional()
+    .describe(HEALTH_SCORE_NUMBER_BAND_DESCRIPTION),
   bandSetter: scorePillarIdEnum
     .nullable()
-    .describe(
-      "The worst counted pillar when its band is worse than the score's own band, null otherwise. Since 1.50 it names that pillar beside the score; it no longer lowers `band`, which follows the number like every HealthLog score (green from 70, yellow from 50).",
-    ),
+    .describe(HEALTH_SCORE_BAND_SETTER_DESCRIPTION),
   composition: z
     .array(scorePillarIdEnum)
     .describe(
@@ -541,7 +548,7 @@ export const analyticsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Analytics"],
       summary: "The dashboard analytics aggregate",
       description:
-        "The web dashboard's aggregate read, in two shapes chosen by `?slice=`.\n\n`?slice=summaries` returns the slim tile-strip body from two SQL passes; omitting the parameter returns the thick default body. Any OTHER value is refused with 422 (`meta.errorCode` = `analytics.invalid_query`). It used to fall through to the default instead, which made `?slice=summary` answer 200 after running the heaviest chain on the surface — the typo was invisible and expensive at the same time.\n\nBoth shapes are served through a stale-while-revalidate cache. A cached body can be up to a minute old, and the default slice's cache key includes the reader's locale because the correlation `interpretation` sentences are narrated per reader. `Cache-Control: private, max-age=0, must-revalidate` on both — bfcache-friendly rather than the framework's stock `no-store`.\n\nThis GET is not free of side effects, and a caller polling it should know: it records a Health Score row for the scored instant, syncs accepted correlation hypotheses into the pattern ledger (which is what mints the `patternId` the dismissal endpoint takes), and kicks a background rollup-freshness refresh. The refresh is fire-and-forget by design — awaiting it stalled the event loop for tens of seconds on large accounts — so a value can be up to about a minute behind a measurement that just landed, and the next read has it.\n\nAuth is a cookie session or a wildcard (`*`) Bearer token; a narrow-scope token is refused. NOT delegable: it resolves the caller's own record, so a switched session still reads its own analytics.",
+        "The web dashboard's aggregate read, in two shapes chosen by `?slice=`.\n\n`?slice=summaries` returns the slim tile-strip body from two SQL passes; omitting the parameter returns the thick default body. Any OTHER value is refused with 422 (`meta.errorCode` = `analytics.invalid_query`). It used to fall through to the default instead, which made `?slice=summary` answer 200 after running the heaviest chain on the surface — the typo was invisible and expensive at the same time.\n\nBoth shapes are served through a stale-while-revalidate cache. A cached body can be up to a minute old, and the default slice's cache key includes the reader's locale because the correlation `interpretation` sentences are narrated per reader. `Cache-Control: private, no-store` on both, like every API answer.\n\nThis GET is not free of side effects, and a caller polling it should know: it records a Health Score row for the scored instant, syncs accepted correlation hypotheses into the pattern ledger (which is what mints the `patternId` the dismissal endpoint takes), and kicks a background rollup-freshness refresh. The refresh is fire-and-forget by design — awaiting it stalled the event loop for tens of seconds on large accounts — so a value can be up to about a minute behind a measurement that just landed, and the next read has it.\n\nAuth is a cookie session or a wildcard (`*`) Bearer token; a narrow-scope token is refused. NOT delegable: it resolves the caller's own record, so a switched session still reads its own analytics.",
       parameters: [
         {
           name: "slice",

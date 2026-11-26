@@ -432,9 +432,9 @@ export function WellnessScores({
       <RingTile
         key="HEALTH_SCORE"
         score={ok ? composite.value.score : null}
-        band={ok ? composite.value.band : undefined}
+        band={ok ? composite.value.numberBand : undefined}
         label={t("insights.healthScore.label")}
-        bandWord={ok ? bandWord("health", composite.value.band) : null}
+        bandWord={ok ? bandWord("health", composite.value.numberBand) : null}
         note={crisisLine ?? healthScoreSetterLine(healthScore, t)}
         href="/insights/scores/health"
         metricSlot="HEALTH_SCORE"

@@ -16,7 +16,6 @@ import {
 } from "@/lib/auth/write-meter";
 import { getSession } from "@/lib/auth/session";
 import { refuseCookieIdentityConflict } from "@/lib/auth/cookie-identity-conflict";
-import { refuseConfinedBearer } from "@/lib/auth/mfa-confinement";
 import { requestOwnBearerToken } from "@/lib/auth/token-transport";
 import { AUTH_ERROR_CODES, HttpError } from "@/lib/api-errors";
 
@@ -234,10 +233,13 @@ export async function authenticateBearer(
     }
   }
 
-  // A sign-in token past its account's second-factor due date reaches the
-  // enrolment API only, as a browser session does. Judged now, not when the
-  // token was minted: one issued before the policy applied is confined too.
-  if (permissions.includes("*")) await refuseConfinedBearer(user);
+  // A sign-in token is not held to the second-factor policy here. A new
+  // native sign-in past the due date is refused at the door
+  // (`refuseNativeSignInWithoutFactor`), but a token minted before keeps
+  // working with its refresh: the shipped iPhone builds treat
+  // `auth.mfa.enrollment_required` as a sign-in answer, and one of them signs
+  // its person out on any refused refresh. The account payload tells the app
+  // (`mfaEnrollment`); 1.51 confines these tokens too, announced in 1.50.
 
   // #179 — the app's sign-in token keeps its device's `lastSeen` fresh, at
   // most once an hour and fire-and-forget. Only a wildcard token is a native

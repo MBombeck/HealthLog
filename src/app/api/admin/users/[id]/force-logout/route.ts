@@ -1,16 +1,21 @@
 /**
  * POST /api/admin/users/[id]/force-logout — admin-only kill-switch.
  *
- * Deletes every active session for the target user. The next request
- * from any of their browser/native clients will see the cookie/bearer
- * rejected and bounce to /auth/login. API tokens are NOT touched here
- * (admins manage those from the API-Tokens section); this endpoint is
- * specifically for "I see this user's session active in audit-log,
- * boot them now".
+ * Ends every way into the target account through `destroyAllSessions`, the
+ * same function a password change and an admin password reset run: web
+ * sessions, every native sign-in (refresh token family and its paired access
+ * token), API tokens, trusted devices, step-up elevations, connected
+ * assistants and the URL credentials, then the push credentials of the
+ * devices left without a sign-in. The next request from any of their
+ * browser or native clients is refused and has to sign in again.
+ *
+ * `sessionsRevoked` counts the sign-ins that ended: web sessions plus live
+ * native sign-ins (one per device).
  */
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAdmin } from "@/lib/api-handler";
 import { auditLog } from "@/lib/auth/audit";
+import { destroyAllSessions } from "@/lib/auth/session";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { NextRequest } from "next/server";
@@ -50,20 +55,28 @@ export const POST = apiHandler(
     });
     if (!target) return apiError("User not found", 404);
 
-    // Hard-delete all sessions; the cascading cookie + bearer guards in
-    // `requireAuth()` reject anything missing from this table.
-    const result = await prisma.session.deleteMany({
-      where: { userId: id },
-    });
+    const ended = await destroyAllSessions(id);
+    const sessionsRevoked = ended.webSessions + ended.deviceSignIns;
 
     await auditLog("admin.user.force-logout", {
       userId: admin.id,
       ipAddress: getClientIp(request),
-      details: { targetUserId: id, sessionsRevoked: result.count },
+      details: {
+        targetUserId: id,
+        sessionsRevoked,
+        webSessionsRevoked: ended.webSessions,
+        deviceSignInsRevoked: ended.deviceSignIns,
+      },
     });
 
-    annotate({ meta: { sessions_revoked: result.count } });
+    annotate({
+      meta: {
+        sessions_revoked: sessionsRevoked,
+        web_sessions_revoked: ended.webSessions,
+        device_sign_ins_revoked: ended.deviceSignIns,
+      },
+    });
 
-    return apiSuccess({ sessionsRevoked: result.count });
+    return apiSuccess({ sessionsRevoked });
   },
 );

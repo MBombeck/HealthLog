@@ -7,6 +7,7 @@ import type { MedsTodayBlock } from "@/lib/dashboard/meds-today";
 import {
   buildDailyDigest,
   COACH_CHECKIN_RESURFACE_DAYS,
+  isSleepExpected,
   DOSE_DUE_LOOKAHEAD_MS,
   MAX_WORTH_A_LOOK,
   type DailyDigestCoachPlan,
@@ -19,6 +20,7 @@ import {
   COACH_CHECKIN_REVIEW_DAYS,
 } from "@/lib/daily/coach-checkin-intents";
 import type { Milestone } from "@/lib/daily/milestones";
+import { resolveLastNight } from "@/lib/daily/morning";
 import {
   PRIORITY_ITEM_KINDS,
   type PriorityItem,
@@ -36,6 +38,11 @@ import {
 
 const t = getServerTranslator("en").t;
 const NOW = new Date("2026-07-16T09:00:00.000Z");
+const addDays = (day: string, n: number): string => {
+  const d = new Date(`${day}T00:00:00.000Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+};
 
 function meds(over: Partial<MedsTodayBlock> = {}): MedsTodayBlock {
   return {
@@ -77,8 +84,7 @@ function input(over: Partial<DailyDigestInput> = {}): DailyDigestInput {
     score: { value: 82, band: "good", delta: 3 },
     briefing,
     medsToday: meds(),
-    sleepLastSeenDaysAgo: 0,
-    morningRefreshedToday: false,
+    lastNight: { sleep: null, sleepPending: false },
     syncIssues: [],
     preventiveDue: [],
     coachPlans: [],
@@ -203,15 +209,38 @@ describe("buildDailyDigest — composition", () => {
   });
 });
 
+/**
+ * Last night through the morning's one rule, for a sleep row that woke
+ * `daysAgo` local days before the fixture's today (null: no sleep on record).
+ */
+function lastNightFor(
+  daysAgo: number | null,
+  opts: { refreshed?: boolean; sleepOn?: boolean } = {},
+) {
+  const sleepOn = opts.sleepOn ?? true;
+  return resolveLastNight({
+    todayKey: "2026-07-16",
+    sleepOn,
+    sleepExpected: sleepOn && isSleepExpected(daysAgo),
+    morningRefreshedToday: opts.refreshed ?? false,
+    sleepScore: null,
+    latestSleep:
+      daysAgo === null
+        ? null
+        : { wakeDay: addDays("2026-07-16", -daysAgo), minutes: 420 },
+    usualMinutes: null,
+  });
+}
+
 describe("buildDailyDigest — freshness (provisional/final)", () => {
   it("is final when last night's sleep is in", () => {
-    const d = buildDailyDigest(input({ sleepLastSeenDaysAgo: 0 }), t);
+    const d = buildDailyDigest(input({ lastNight: lastNightFor(0) }), t);
     expect(d.phase).toBe("final");
     expect(d.sleepPending).toBe(false);
   });
 
   it("is provisional when sleep is tracked but last night is not yet in", () => {
-    const d = buildDailyDigest(input({ sleepLastSeenDaysAgo: 2 }), t);
+    const d = buildDailyDigest(input({ lastNight: lastNightFor(2) }), t);
     expect(d.phase).toBe("provisional");
     expect(d.sleepPending).toBe(true);
   });
@@ -220,7 +249,7 @@ describe("buildDailyDigest — freshness (provisional/final)", () => {
     // Someone with no tracker never has a night in the record. Waiting for one
     // means the card would tell them every single morning that last night's
     // sleep "is not in yet", about a delay that never ends.
-    const d = buildDailyDigest(input({ sleepLastSeenDaysAgo: null }), t);
+    const d = buildDailyDigest(input({ lastNight: lastNightFor(null) }), t);
     expect(d.phase).toBe("final");
     expect(d.sleepPending).toBe(false);
   });
@@ -228,39 +257,42 @@ describe("buildDailyDigest — freshness (provisional/final)", () => {
   it("keeps waiting through an ordinary gap, stops once the source has gone quiet", () => {
     // A flat battery or a few nights without the tracker is not a reason to
     // stop expecting tonight's sleep.
-    const shortGap = buildDailyDigest(input({ sleepLastSeenDaysAgo: 7 }), t);
+    const shortGap = buildDailyDigest(input({ lastNight: lastNightFor(7) }), t);
     expect(shortGap.phase).toBe("provisional");
     expect(shortGap.sleepPending).toBe(true);
 
     // A full week with nothing arriving is. Someone who has put the tracker
     // away should not keep reading about last night's missing sleep.
-    const abandoned = buildDailyDigest(input({ sleepLastSeenDaysAgo: 8 }), t);
+    const abandoned = buildDailyDigest(
+      input({ lastNight: lastNightFor(8) }),
+      t,
+    );
     expect(abandoned.phase).toBe("final");
     expect(abandoned.sleepPending).toBe(false);
   });
 
   it("is final (not pending) when the sleep module is off", () => {
     const d = buildDailyDigest(
-      input({ modules: { sleep: false }, sleepLastSeenDaysAgo: null }),
+      input({
+        modules: { sleep: false },
+        lastNight: lastNightFor(2, { sleepOn: false }),
+      }),
       t,
     );
     expect(d.phase).toBe("final");
     expect(d.sleepPending).toBe(false);
   });
 
-  it("the morning-refresh marker finalises the day even while the snapshot's sleep last-seen is still stale (S4 fast path)", () => {
-    // Sleep last-seen still lags at 1 day (snapshot cache not yet expired), but
-    // the sleep-arrival refresh has stamped the marker for today — the digest
-    // must read `final` immediately off the authoritative marker.
+  it("the morning-refresh marker finalises the day even while last night is not in yet (S4 fast path)", () => {
     const provisional = buildDailyDigest(
-      input({ sleepLastSeenDaysAgo: 1, morningRefreshedToday: false }),
+      input({ lastNight: lastNightFor(1) }),
       t,
     );
     expect(provisional.phase).toBe("provisional");
     expect(provisional.sleepPending).toBe(true);
 
     const finalised = buildDailyDigest(
-      input({ sleepLastSeenDaysAgo: 1, morningRefreshedToday: true }),
+      input({ lastNight: lastNightFor(1, { refreshed: true }) }),
       t,
     );
     expect(finalised.phase).toBe("final");
@@ -270,10 +302,7 @@ describe("buildDailyDigest — freshness (provisional/final)", () => {
   it("settles the day even when sleep never arrives (no marker, no reading)", () => {
     // Without this the day parks on `provisional` forever for every record
     // that has no sleep source, which also leaks into the push line.
-    const d = buildDailyDigest(
-      input({ sleepLastSeenDaysAgo: null, morningRefreshedToday: false }),
-      t,
-    );
+    const d = buildDailyDigest(input({ lastNight: lastNightFor(null) }), t);
     expect(d.phase).toBe("final");
     expect(d.sleepPending).toBe(false);
   });

@@ -3401,6 +3401,7 @@
       "healthScore": {
         "score": 86,
         "band": "green",
+        "numberBand": "green",
         "delta": null,
         "confidence": {
           "score": 71,

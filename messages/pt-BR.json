@@ -7115,6 +7115,7 @@
         "deleteConfirmBodyUsed": "As tarefas que usam esta cadeia ({count}) voltam para Padrão quando você salvar. Se ela for a cadeia padrão, a cadeia de fallback volta a valer. Seus provedores e chaves continuam como estão.",
         "bindingHint": "Com um único provedor, a cadeia é um vínculo fixo: se ele não puder responder, a tarefa para em vez de tentar outro provedor.",
         "bindingShort": "Vinculada a este provedor, sem fallback.",
+        "taskNoProvider": "Nenhum provedor desta cadeia está configurado, então esta tarefa não é executada: a ação dela só aparece quando você configurar um ou escolher outra cadeia.",
         "egressLocal": "Fica nesta máquina",
         "egressExternal": "Sai desta máquina",
         "notSetUp": "Ainda não configurado",
@@ -8954,7 +8955,7 @@
         "filterLabel": "Filtrar usuários",
         "forceLogout": "Forçar logout",
         "forceLogoutConfirmTitle": "Forçar logout de {name}?",
-        "forceLogoutConfirmBody": "Todas as sessões ativas deste usuário serão revogadas. Ele precisará fazer login novamente em cada dispositivo.",
+        "forceLogoutConfirmBody": "Todas as sessões ativas deste usuário serão revogadas. Ele precisará fazer login novamente em cada dispositivo. Tokens de API, assistentes conectados e links compartilhados também deixarão de funcionar.",
         "forceLogoutSuccess": "{name} desconectado de {count, plural, one {# sessão} other {# sessões}}",
         "forceLogoutFailed": "Falha ao forçar o logout",
         "cannotLogoutSelf": "Não é possível forçar o próprio logout",
@@ -10396,7 +10397,9 @@
       "refreshReuseTitle": "Um dispositivo foi desconectado",
       "refreshReuseBody": "Um token de login foi usado duas vezes, por isso o dispositivo foi desconectado. Entre de novo nele. Se isso se repetir, altere sua senha.",
       "deviceReassignedTitle": "Um dispositivo passou para outra conta",
-      "deviceReassignedBody": "Um dispositivo que recebia as notificações desta conta agora está conectado a outra conta e não as recebe mais. Se não foi você, confira seus dispositivos e logins."
+      "deviceReassignedBody": "Um dispositivo que recebia as notificações desta conta agora está conectado a outra conta e não as recebe mais. Se não foi você, confira seus dispositivos e logins.",
+      "mfaDueTitle": "Segundo fator de login necessário",
+      "mfaDueBody": "Adicione um app autenticador, uma chave de segurança ou uma passkey até {date}, no app web em Configurações > Segurança."
     },
     "sharedRecordIntake": {
       "title": "{name} marcou uma dose",
@@ -16534,7 +16537,81 @@
   },
   "adminLiveActivityStart": {
     "switchOff": "Um medicamento tem uma Atividade ao Vivo, mas PUSH_RELAY_LIVE_ACTIVITY está desligado, então nenhuma começa.",
+    "notBound": "Um medicamento tem uma Live Activity, mas o relay não alcança este iPhone: o servidor não está registrado nele ou o iPhone não está vinculado.",
     "noConsent": "Um medicamento tem uma Atividade ao Vivo, mas seu iPhone não a permitiu pelo relay.",
     "noStartToken": "Um medicamento tem uma Atividade ao Vivo, mas seu iPhone ainda não enviou um token de início."
+  },
+  "serverText": {
+    "alerts": {
+      "bmiBelowNormal": {
+        "title": "IMC abaixo da faixa normal",
+        "message": "Seu IMC de {bmi} está abaixo da faixa normal (18,5–24,9)."
+      },
+      "bmiOverweight": {
+        "title": "IMC na faixa de sobrepeso",
+        "message": "Seu IMC de {bmi} está na faixa de sobrepeso. Exercícios regulares e uma alimentação equilibrada podem ajudar."
+      },
+      "bmiObesity": {
+        "title": "IMC na faixa de obesidade",
+        "message": "Seu IMC de {bmi} está na faixa de obesidade."
+      },
+      "bmiNormal": {
+        "title": "IMC na faixa normal",
+        "message": "Seu IMC de {bmi} está na faixa saudável."
+      },
+      "bpSignificantlyElevated": {
+        "title": "Pressão arterial bem elevada",
+        "message": "Sua pressão arterial média ({sys}/{dia}) é classificada como “{category}”."
+      },
+      "bpSlightlyElevated": {
+        "title": "Pressão arterial levemente elevada",
+        "message": "Sua pressão arterial média ({sys}/{dia}) está na faixa “{category}”."
+      },
+      "bpTargetGood": {
+        "title": "Boa adesão à meta de pressão",
+        "message": "{percent}% das suas medições estão dentro da faixa-alvo."
+      },
+      "bpTargetLow": {
+        "title": "Pressão frequentemente fora da faixa-alvo",
+        "message": "Apenas {percent}% das suas medições estão dentro da faixa-alvo."
+      },
+      "weightIncreasing": {
+        "title": "Peso em alta",
+        "message": "Seu peso está subindo cerca de {kg} kg por semana nos últimos 30 dias."
+      },
+      "weightDecreasing": {
+        "title": "Peso em queda",
+        "message": "Seu peso está caindo cerca de {kg} kg por semana nos últimos 30 dias."
+      },
+      "pulseOutliers": {
+        "title": "Valores de pulso atípicos",
+        "message": "{count, plural, one {# valor de pulso incomum} other {# valores de pulso incomuns}} nos últimos 30 dias."
+      },
+      "complianceLow": {
+        "title": "Adesão baixa: {name}",
+        "message": "Sua adesão de 7 dias a {name} é de apenas {percent}%. Tomar regularmente é importante."
+      },
+      "complianceExcellent": {
+        "title": "Adesão excelente: {name}",
+        "message": "{percent}% de adesão nos últimos 7 dias. Continue assim!"
+      }
+    },
+    "targetLabels": {
+      "weight": "Peso",
+      "bloodPressure": "Pressão arterial",
+      "bloodPressureOnTarget": "Pressão arterial na meta",
+      "restingPulse": "Pulso em repouso",
+      "bmi": "IMC",
+      "bodyFat": "Gordura corporal",
+      "stepsPerDay": "Passos/dia",
+      "sleepDuration": "Duração do sono",
+      "medicationCompliance": "Adesão à medicação",
+      "mood": "Humor",
+      "moodStability": "Estabilidade do humor"
+    },
+    "metricLabels": {
+      "systolicBloodPressure": "Pressão arterial sistólica",
+      "diastolicBloodPressure": "Pressão arterial diastólica"
+    }
   }
 }

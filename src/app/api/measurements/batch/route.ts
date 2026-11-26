@@ -49,7 +49,7 @@ import {
   safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
-import { withIdempotency } from "@/lib/idempotency";
+import { markNotReplayable, withIdempotency } from "@/lib/idempotency";
 import { withIngestAdmission } from "@/lib/ingest/admission";
 import type { BatchIngestEntry } from "@/lib/measurements/batch-ingest/entries";
 import { ingestMeasurementBatch } from "@/lib/measurements/batch-ingest/ingest";
@@ -291,8 +291,6 @@ async function postBatch(request: NextRequest): Promise<Response> {
   });
 
   const response = apiSuccess(result);
-  if (result.failed > 0) {
-    response.headers.set("Cache-Control", "private, no-store");
-  }
+  if (result.failed > 0) markNotReplayable(response);
   return response;
 }

@@ -51,9 +51,9 @@ export function scorePillarReasonKey(reason: string): string {
 
 /**
  * The line that names the pillar sitting in a worse band than the health
- * score itself (`bandSetter`), or null when none does. Since 1.50 the
- * score's band follows its number like every other score, so an 81 reads
- * good; a red or yellow pillar under it is said here, by name, on every
+ * score's number (`bandSetter`), or null when none does. Since 1.50 the
+ * web draws the score in its number's band (`numberBand`) like every other
+ * score, so an 81 reads good; a red or yellow pillar under it is said here, by name, on every
  * surface that shows the score, rather than folded into its band word.
  */
 export function healthScoreSetterLine(
