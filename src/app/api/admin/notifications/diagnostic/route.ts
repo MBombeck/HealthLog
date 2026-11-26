@@ -11,6 +11,7 @@ import {
   type DiagnosticDevice,
   type DiagnosticPushAttempt,
 } from "@/lib/push-relay/diagnostics";
+import { loadPushContext } from "@/lib/push-relay/route-device";
 
 export const dynamic = "force-dynamic";
 
@@ -125,7 +126,7 @@ export const GET = apiHandler(async () => {
   const { user } = await requireAdmin();
   annotate({ action: { name: "admin.notifications.diagnostic" } });
 
-  const [devices, channels, pushAttempts] = await Promise.all([
+  const [devices, channels, pushAttempts, pushContext] = await Promise.all([
     prisma.device.findMany({
       where: { userId: user.id },
       select: DIAGNOSTIC_DEVICE_SELECT,
@@ -155,9 +156,14 @@ export const GET = apiHandler(async () => {
         createdAt: true,
       },
     }),
+    // What decides whether the relay can start a Live Activity on a device.
+    loadPushContext(),
   ]);
 
-  const diagnosticDevices: DiagnosticDevice[] = devices.map(diagnosticDevice);
+  const now = new Date();
+  const diagnosticDevices: DiagnosticDevice[] = devices.map((d) =>
+    diagnosticDevice(d, pushContext, now),
+  );
 
   const diagnosticChannels: DiagnosticChannel[] = channels.map((c) => ({
     type: c.type,

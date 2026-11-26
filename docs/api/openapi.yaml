@@ -76733,6 +76733,22 @@ components:
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
           description: v1.49.0 — when the device last reported which sealed pushes it opened (`GET /api/sync/state`).
+        liveActivityStart:
+          anyOf:
+            - type: string
+              enum:
+                - ready
+                - switch_off
+                - not_bound
+                - no_consent
+                - no_start_token
+            - type: "null"
+          description: "v1.49.1 — whether the server can start a medication Live Activity on this device over the relay, by the
+            checks the start itself reads. Null for a device that is no iPhone. Otherwise the first thing in the way:
+            `switch_off` (the operator's `PUSH_RELAY_LIVE_ACTIVITY` is off), `not_bound` (this server is not registered
+            at the relay, or the device is not bound to it with its relay consent), `no_consent` (the device has not
+            given its Live Activity consent), `no_start_token` (no push-to-start token the relay still takes); `ready`
+            when none is. Whether the server has an APNs key of its own plays no part."
       required:
         - id
         - platform
@@ -76745,6 +76761,7 @@ components:
         - relayBoundAt
         - liveActivityStartedAt
         - envelopesReportedAt
+        - liveActivityStart
       additionalProperties: false
       description: Per-device APNs registration snapshot. The APNs token is masked to its 8-char hex prefix + 8-char suffix so
         an operator can correlate with iOS-side logs without disclosing the delivery target.

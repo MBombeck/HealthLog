@@ -46,8 +46,11 @@
  * and the server starts no earlier ({@link ACTIVITY_LEAD_MS}). How long it
  * stays is the resolver's: until `missedAfter`.
  *
- * A server with its own APNs key does none of this: its direct path is
- * unchanged.
+ * None of this depends on the way the device's ordinary pushes take. A server
+ * with its own APNs key and a relay registration sends alerts and syncs over
+ * its key and starts and updates Activities over the relay
+ * (`laRelayBlock`); there is no start over its own key, so a dose never
+ * gets two.
  */
 import { randomBytes } from "node:crypto";
 import { Prisma } from "@/generated/prisma/client";
@@ -62,14 +65,17 @@ import {
   STARTABLE_MEDICATION_WHERE,
 } from "@/lib/push-relay/activity-slot";
 import { liveActivityRelayEnabled } from "@/lib/push-relay/config";
+import { laRelayEligible } from "@/lib/push-relay/live-activity-eligibility";
+import {
+  laStartTokenUsable,
+  statementIat,
+} from "@/lib/push-relay/live-activity-start-token";
 import { endActivitiesOverRelay } from "@/lib/push-relay/medication-pushes";
-import { fromBase64Url } from "@/lib/push-relay/encoding";
 import { newUlid } from "@/lib/push-relay/plaintext";
 import { passPageOffset } from "@/lib/push-relay/pass-window";
 import {
   loadPushContext,
   ROUTABLE_DEVICE_SELECT,
-  routeOf,
   type PushContext,
 } from "@/lib/push-relay/route-device";
 import {
@@ -110,8 +116,7 @@ import {
  * state comes from the resolver.
  */
 export const ACTIVITY_LEAD_MS = 2 * 3600_000;
-/** Statement windows the relay applies, less five minutes of margin. */
-const START_STATEMENT_MAX_AGE_S = 30 * 24 * 3600 - 300;
+/** The relay's window for an Activity statement, less five minutes of margin. */
 const ACTIVITY_STATEMENT_MAX_AGE_S = 12 * 3600 - 300;
 /** A start or update is worth nothing late. */
 const PUSH_LIFETIME_S = 15 * 60;
@@ -152,25 +157,6 @@ const DEVICE_SELECT = {
 } as const;
 
 type LaDevice = Prisma.DeviceGetPayload<{ select: typeof DEVICE_SELECT }>;
-
-function statementIat(statement: unknown): number | null {
-  const iat = (statement as { iat?: unknown } | null)?.iat;
-  return typeof iat === "number" ? iat : null;
-}
-
-/** Whether `device` may get a relay start or update now. */
-export function laRelayEligible(
-  device: Pick<LaDevice, "liveActivityConsentAt" | "relayBindingKey"> &
-    Parameters<typeof routeOf>[0],
-  ctx: PushContext,
-): boolean {
-  return (
-    liveActivityRelayEnabled() &&
-    routeOf(device, ctx) === "relay" &&
-    device.liveActivityConsentAt !== null &&
-    fromBase64Url(device.relayBindingKey ?? "", 32) !== null
-  );
-}
 
 /**
  * The open tracked doses an Activity may show at `now`, soonest first, once
@@ -293,12 +279,10 @@ async function startItem(
   now: Date,
 ): Promise<{ item: RelayItemInput; dose: ActivityDose } | null> {
   const nowS = Math.floor(now.getTime() / 1000);
-  const iat = statementIat(device.laStartStatement);
   if (
+    !laStartTokenUsable(device, now) ||
     !device.laStartToken ||
-    !device.laStartSignature ||
-    iat === null ||
-    nowS - iat > START_STATEMENT_MAX_AGE_S
+    !device.laStartSignature
   ) {
     return null;
   }
