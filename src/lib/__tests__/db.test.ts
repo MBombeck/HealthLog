@@ -14,6 +14,8 @@ import {
   getPoolConnectionTimeoutMs,
   getPrismaPoolMax,
   getStatementTimeoutMs,
+  POOL_IDLE_TIMEOUT_MS,
+  prismaPoolConfig,
 } from "../db";
 
 describe("per-process database connection budget", () => {
@@ -243,5 +245,15 @@ describe("process-wide Prisma client", () => {
 
     expect(second).toBe(first);
     expect(globalSlot.prisma).toBe(first);
+  });
+});
+
+// `pg.Pool` closes an idle connection after 10 s by default, so every app
+// open after a pause found an empty pool and opened a fresh server process
+// for each read of its burst.
+describe("pool idle timeout", () => {
+  it("keeps the connections of one burst for the next", () => {
+    expect(POOL_IDLE_TIMEOUT_MS).toBe(300_000);
+    expect(prismaPoolConfig().idleTimeoutMillis).toBe(POOL_IDLE_TIMEOUT_MS);
   });
 });

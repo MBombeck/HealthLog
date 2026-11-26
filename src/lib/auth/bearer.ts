@@ -15,6 +15,7 @@
  * no I/O beyond the two reads the validation needs.
  */
 import { prisma } from "@/lib/db";
+import { stampTokenLastUsed } from "@/lib/auth/token-last-used";
 import { hashToken } from "@/lib/auth/hmac";
 import { SESSION_USER_SELECT, type SessionUser } from "@/lib/auth/session-user";
 
@@ -171,13 +172,9 @@ export async function resolveBearerToken(
     );
   }
 
-  // Fire-and-forget: refresh lastUsedAt without blocking the caller.
-  prisma.apiToken
-    .update({
-      where: { id: apiToken.id },
-      data: { lastUsedAt: new Date() },
-    })
-    .catch(() => {});
+  // Fire-and-forget, at most once a minute per token: refresh lastUsedAt
+  // without blocking the caller or queueing a burst on the row lock.
+  stampTokenLastUsed(apiToken.id);
 
   const expiresAt =
     apiToken.expiresAt ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);

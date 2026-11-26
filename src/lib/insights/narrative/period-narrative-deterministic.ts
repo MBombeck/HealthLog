@@ -17,7 +17,6 @@
  * — with a prettified-enum fallback for any unmapped type, so a newly added
  * measurement type degrades gracefully instead of leaking an enum constant.
  */
-import { formatDecimal } from "@/lib/format-locale";
 import type { PeriodNarrativeContext, MetricDelta } from "./period-narrative";
 
 /** Marker stored in `InsightNarrative.providerType` for a fallback row. */
@@ -77,17 +76,57 @@ function labelFor(type: string, locale: Locale): string {
   return METRIC_LABELS[type]?.[locale] ?? prettifyType(type, locale);
 }
 
-/** Format a signed number with the locale's decimal mark (no thousands sep). */
-function fmtSigned(n: number, locale: Locale): string {
-  const sign = n > 0 ? "+" : n < 0 ? "−" : "±"; // U+2212 minus for typography
-  // At most two decimals, trailing zeros trimmed (1.20 → 1.2), in the
-  // reader's notation in every language, not only German.
-  return `${sign}${formatDecimal(Math.abs(n), locale, 2)}`;
+/**
+ * Fraction digits a change is written with. A step count, a blood pressure, a
+ * heart rate, a heart-rate variability and a breathing rate are whole numbers
+ * on every screen; weight, body fat, sleep hours, glucose and anything else
+ * carry one decimal, in whichever unit the reader chose.
+ */
+const WHOLE_NUMBER_TYPES = new Set<string>([
+  "ACTIVITY_STEPS",
+  "BLOOD_PRESSURE_SYS",
+  "BLOOD_PRESSURE_DIA",
+  "PULSE",
+  "RESTING_HEART_RATE",
+  "HEART_RATE_VARIABILITY",
+  "RESPIRATORY_RATE",
+]);
+
+function fractionDigitsFor(type: string): number {
+  return WHOLE_NUMBER_TYPES.has(type) ? 0 : 1;
 }
 
-/** A delta is "notable" when it has a computable, non-zero change. */
+/**
+ * A signed number in the reader's notation: decimal mark and digit grouping
+ * of the locale, a typographic minus, `digits` fraction digits at most.
+ */
+function fmtSigned(n: number, locale: Locale, digits: number): string {
+  const factor = 10 ** digits;
+  const rounded = Math.round(Math.abs(n) * factor) / factor;
+  const sign = rounded === 0 ? "±" : n > 0 ? "+" : "−"; // U+2212 minus
+  const body = new Intl.NumberFormat(locale === "de" ? "de-DE" : "en-US", {
+    maximumFractionDigits: digits,
+  }).format(rounded);
+  return `${sign}${body}`;
+}
+
+/** A step count has no unit symbol; the narrative names it. */
+const STEP_WORD: Record<Locale, string> = { de: "Schritte", en: "steps" };
+
+/** A percent sign the way the language sets it: "8,2 %" and "8.2%". */
+function fmtPercent(n: number, locale: Locale): string {
+  const figure = fmtSigned(n, locale, 1);
+  return locale === "de" ? `${figure} %` : `${figure}%`;
+}
+
+/**
+ * A delta is "notable" when it has a computable change that survives the
+ * rounding it is written with: "+0 mmHg" is no change to report.
+ */
 function isNotable(d: MetricDelta): boolean {
-  return d.delta !== null && d.delta !== 0;
+  if (d.delta === null) return false;
+  const factor = 10 ** fractionDigitsFor(d.type);
+  return Math.round(Math.abs(d.delta) * factor) !== 0;
 }
 
 /** Rank notable deltas by relative magnitude (percent), falling back to abs. */
@@ -107,11 +146,14 @@ function rankDeltas(deltas: MetricDelta[]): MetricDelta[] {
 
 function deltaPhrase(d: MetricDelta, locale: Locale): string {
   const label = labelFor(d.type, locale);
-  const unit = d.unit ? ` ${d.unit}` : "";
-  const amount = `${fmtSigned(d.delta as number, locale)}${unit}`;
+  const unitWord =
+    d.unit === "" && d.type === "ACTIVITY_STEPS" ? STEP_WORD[locale] : d.unit;
+  const unit = unitWord ? ` ${unitWord}` : "";
+  const amount = `${fmtSigned(d.delta as number, locale, fractionDigitsFor(d.type))}${unit}`;
+  // One bracket: the change and its percent side by side, not nested.
   const pct =
-    d.deltaPercent !== null && d.deltaPercent !== 0
-      ? ` (${fmtSigned(d.deltaPercent, locale)} %)`
+    d.deltaPercent !== null && Math.round(d.deltaPercent * 10) !== 0
+      ? `, ${fmtPercent(d.deltaPercent, locale)}`
       : "";
   return `${label} (${amount}${pct})`;
 }

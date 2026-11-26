@@ -14,6 +14,9 @@
  *   ai.chain.served  info  { chain, capability, provider }
  *   ai.chain.failed  warn  { chain, capability, provider, failure, code }
  *
+ * Each line's `duration_ms` is the call's own, from the request to the
+ * answer or the failure.
+ *
  * `chain` is `main`, `default:<id>`, `pinned:<id>` or `guardian:<id>` (a
  * managed profile served by its guardian's chain, `guardian:default` for the
  * guardian's default chain, #1403): the id of the named
@@ -78,18 +81,18 @@ export function logChainCalls<P extends AIProvider>(
     capability: label.capability,
     provider: providerType,
   };
-  const served = () => {
+  const served = (durationMs: number) => {
     noteAiJobEvent({
       type: "served",
       capability: label.capability,
       providerType,
     });
-    emitOutcome({ action: "ai.chain.served", meta });
+    emitOutcome({ action: "ai.chain.served", meta, durationMs });
     annotate({
       meta: { ai_chain: label.chain, ai_chain_capability: label.capability },
     });
   };
-  const failed = (error: unknown) => {
+  const failed = (error: unknown, durationMs: number) => {
     const { failure, code } = providerFailureKind(error);
     // A cancelled call is the caller walking away, not the provider failing.
     if (failure === "aborted") return;
@@ -107,6 +110,7 @@ export function logChainCalls<P extends AIProvider>(
       action: "ai.chain.failed",
       level: "warn",
       meta: { ...meta, failure, code },
+      durationMs,
     });
   };
 
@@ -119,12 +123,13 @@ export function logChainCalls<P extends AIProvider>(
     writable: true,
     enumerable: enumerable("generateCompletion"),
     value: async (params: CompletionParams) => {
+      const startedAt = performance.now();
       try {
         const result = await complete(params);
-        served();
+        served(performance.now() - startedAt);
         return result;
       } catch (error) {
-        failed(error);
+        failed(error, performance.now() - startedAt);
         throw error;
       }
     },
@@ -140,12 +145,13 @@ export function logChainCalls<P extends AIProvider>(
         params: CompletionParams,
         onDelta: (delta: string) => void,
       ) => {
+        const startedAt = performance.now();
         try {
           const result = await stream(params, onDelta);
-          served();
+          served(performance.now() - startedAt);
           return result;
         } catch (error) {
-          failed(error);
+          failed(error, performance.now() - startedAt);
           throw error;
         }
       },

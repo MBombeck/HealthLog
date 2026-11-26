@@ -193,6 +193,38 @@ describe("a read cut at the output limit", () => {
     expect(generateCompletion).toHaveBeenCalledTimes(1);
   });
 
+  // A local model whose context window filled stops mid-reply and still
+  // reports `stop`: the reply ends inside the open envelope.
+  it("treats a reply that ends inside its JSON as cut, whatever the finish reason", async () => {
+    const whole = envelope([row("Hb", 14), row("MCV", 90)]);
+    const cut = whole.slice(0, whole.indexOf('"MCV"') + 10);
+    const { provider: p, generateCompletion } = provider(reply(cut));
+    const out = await run(p, [photo]);
+    expect(out.data.rows.map((r) => r.analyte)).toEqual(["Hb"]);
+    expect(out.data.truncated).toEqual({ pages: [] });
+    // The same request would stop at the same place: no corrective retry.
+    expect(generateCompletion).toHaveBeenCalledTimes(1);
+  });
+
+  it("fails such a reply as an output limit when no row closed", async () => {
+    const { provider: p, generateCompletion } = provider(
+      reply('{"reportDate": null, "rows": [{"analyte": "H'),
+    );
+    const err = await run(p, [photo]).catch((e: unknown) => e);
+    expect((err as OcrExtractError).reason).toBe("output_limit");
+    expect(generateCompletion).toHaveBeenCalledTimes(1);
+  });
+
+  it("still retries a complete reply that is not the schema", async () => {
+    const { provider: p, generateCompletion } = provider(
+      reply('{"something": "else"}'),
+      reply(envelope([row("Hb", 14)])),
+    );
+    const out = await run(p, [photo]);
+    expect(out.data.rows.map((r) => r.analyte)).toEqual(["Hb"]);
+    expect(generateCompletion).toHaveBeenCalledTimes(2);
+  });
+
   it("reads Codex's incomplete stream as the same cut", async () => {
     const { provider: p } = provider(
       Object.assign(new Error("Codex stream incomplete: max_output_tokens"), {

@@ -65,6 +65,7 @@ describe("logChainCalls", () => {
     expect(emitOutcome).toHaveBeenCalledWith({
       action: "ai.chain.served",
       meta: { chain: "pinned:c1", capability: "documentAi", provider: "local" },
+      durationMs: expect.any(Number),
     });
     expect(emitSignal).not.toHaveBeenCalled();
   });
@@ -91,8 +92,41 @@ describe("logChainCalls", () => {
         failure: "refused",
         code: "ECONNREFUSED",
       },
+      durationMs: expect.any(Number),
     });
     expect(emitOutcome).not.toHaveBeenCalled();
+  });
+
+  // #1404 — the line said duration_ms=0 for a call that ran ten minutes.
+  it("measures the call itself, from start to failure", async () => {
+    vi.useFakeTimers();
+    try {
+      const p = logChainCalls(
+        provider(
+          () =>
+            new Promise((_, reject) =>
+              setTimeout(
+                () =>
+                  reject(
+                    Object.assign(new Error("timeout"), {
+                      name: "TimeoutError",
+                    }),
+                  ),
+                600_000,
+              ),
+            ),
+        ),
+        "local",
+        label,
+      );
+      const call = expect(p.generateCompletion(PARAMS)).rejects.toThrow();
+      await vi.advanceTimersByTimeAsync(600_000);
+      await call;
+      const line = vi.mocked(emitSignal).mock.calls[0]?.[0];
+      expect(line?.durationMs).toBeGreaterThanOrEqual(600_000);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("covers the streaming call too", async () => {
@@ -112,6 +146,7 @@ describe("logChainCalls", () => {
         capability: "coach",
         provider: "openai-compatible",
       },
+      durationMs: expect.any(Number),
     });
   });
 

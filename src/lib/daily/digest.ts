@@ -35,14 +35,20 @@ import type {
 } from "@/lib/analytics/score/types";
 import {
   MAX_PRIORITY_ACTIONS,
+  isDismissibleKind,
   type PriorityItem,
   type PriorityItemKind,
 } from "@/lib/daily/priority-item";
 import {
+  coachCheckinItemKey,
+  doseWindowItemKey,
   ecgItemKey,
   milestoneItemKey,
+  preventiveCareItemKey,
   sameTimeBaselineItemKey,
+  syncIssueItemKey,
   tensionWindowItemKey,
+  upcomingVisitItemKey,
 } from "@/lib/daily/priority-item-key";
 import {
   milestoneCopy,
@@ -55,7 +61,7 @@ import {
   COACH_CHECKIN_LETGO_INTENT,
   COACH_CHECKIN_ADJUST_INTENT,
 } from "@/lib/daily/coach-checkin-intents";
-import { DOSE_WINDOW_DEFAULTS } from "@/lib/medications/scheduling/dose-window-defaults";
+import { DAILY_TAKEABLE_AHEAD_MS } from "@/lib/medications/scheduling/dose-window-defaults";
 import type { Locale } from "@/lib/i18n/config";
 import type { SteadyRun } from "@/lib/daily/score-steady";
 import {
@@ -518,10 +524,7 @@ function integrationLabel(token: string): string {
  * hide a dose the user could already take. A dose further out than this is a
  * scheduled event, not today's pending business, and stays off the rail.
  */
-export const DOSE_DUE_LOOKAHEAD_MS =
-  (DOSE_WINDOW_DEFAULTS.dailyOnTimeMinutes +
-    DOSE_WINDOW_DEFAULTS.earlyGraceMinutes) *
-  60_000;
+export const DOSE_DUE_LOOKAHEAD_MS = DAILY_TAKEABLE_AHEAD_MS;
 
 /**
  * Compose one card for every medication candidate the canonical scheduling
@@ -588,10 +591,12 @@ function buildDoseWindowItems(
       intent: "dose.log",
       href: id ? `/medications?highlight=${id}` : "/medications",
     };
+    const itemKey = doseWindowItemKey(id, candidate.dueAt);
     items.push(
       candidate.overdue
         ? {
             kind: "dose_window",
+            itemKey,
             title: t("daily.item.doseWindow.overdueTitle"),
             body: name
               ? t("daily.item.doseWindow.overdueBodyNamed", { name })
@@ -602,6 +607,7 @@ function buildDoseWindowItems(
           }
         : {
             kind: "dose_window",
+            itemKey,
             title: t("daily.item.doseWindow.title"),
             body: name
               ? t("daily.item.doseWindow.bodyNamed", { name })
@@ -623,6 +629,7 @@ function buildSyncIssueItems(
 ): PriorityItem[] {
   return issues.map((issue) => ({
     kind: "sync_issue" as const,
+    itemKey: syncIssueItemKey(issue.integration),
     title: t("daily.item.syncIssue.title"),
     body: t("daily.item.syncIssue.body", {
       integration: integrationLabel(issue.integration),
@@ -647,7 +654,7 @@ const PREVENTIVE_NAMED_MAX = 3;
  * counted as "+N" so the line needs no plural form in any language.
  */
 function buildPreventiveCareItem(
-  due: DailyDigestPreventiveDue[],
+  { preventiveDue: due, todayLocalDate }: DailyDigestInput,
   t: Translate,
 ): PriorityItem | null {
   if (due.length === 0) return null;
@@ -665,6 +672,7 @@ function buildPreventiveCareItem(
   }
   return {
     kind: "preventive_care",
+    itemKey: preventiveCareItemKey(todayLocalDate),
     title: t("daily.item.preventiveCare.title"),
     body,
     status: "info",
@@ -715,6 +723,7 @@ function buildUpcomingVisitItems(
     const offset = group[0].dayOffset;
     return {
       kind: "upcoming_visit",
+      itemKey: upcomingVisitItemKey(offset, group[0].id),
       title: t("daily.item.upcomingVisit.title"),
       body:
         offset <= 0
@@ -957,6 +966,7 @@ function buildCoachCheckinItem(
 
   return {
     kind: "coach_checkin",
+    itemKey: coachCheckinItemKey(plan.id),
     title: t("daily.item.coachCheckin.title"),
     body,
     status: "info",
@@ -1086,6 +1096,13 @@ function composeLine(
  */
 const SLEEP_EXPECTED_WITHIN_DAYS = 7;
 
+/** An observational item the person dismissed; an actionable one never is. */
+function dismissed(item: PriorityItem, keys: ReadonlySet<string>): boolean {
+  return (
+    isDismissibleKind(item.kind) && !!item.itemKey && keys.has(item.itemKey)
+  );
+}
+
 /**
  * Whether this record should be waiting for last night's sleep at all.
  *
@@ -1207,7 +1224,7 @@ export function buildDailyDigest(
     t,
   );
   if (ecg) worthALook.push(ecg);
-  const preventive = buildPreventiveCareItem(input.preventiveDue, t);
+  const preventive = buildPreventiveCareItem(input, t);
   if (preventive) worthALook.push(preventive);
   // Beside the checkups rather than among them: the two are neighbours on the
   // rail because a person reads "what am I meant to arrange" and "where am I
@@ -1262,9 +1279,7 @@ export function buildDailyDigest(
   const visible =
     input.dismissedItemKeys.size === 0
       ? enabled
-      : enabled.filter(
-          (item) => !item.itemKey || !input.dismissedItemKeys.has(item.itemKey),
-        );
+      : enabled.filter((item) => !dismissed(item, input.dismissedItemKeys));
 
   const rail = capWithPinned(visible, pinned, MAX_WORTH_A_LOOK);
 

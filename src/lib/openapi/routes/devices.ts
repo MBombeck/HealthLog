@@ -19,6 +19,7 @@ import {
   devicePushRequestFields,
   liveActivityStatementFields,
 } from "./push-relay";
+import { APNS_TOKEN_MAX_HEX } from "@/lib/push-relay/device-registration";
 
 const deviceRegisterRequest = z
   .object({
@@ -35,7 +36,7 @@ const deviceRegisterRequest = z
     apnsToken: z
       .string()
       .min(8)
-      .max(256)
+      .max(APNS_TOKEN_MAX_HEX)
       .regex(/^[A-Fa-f0-9]+$/)
       .optional()
       .describe(
@@ -63,7 +64,7 @@ const deviceRegisterRequest = z
     liveActivityPushToken: z
       .string()
       .min(8)
-      .max(256)
+      .max(APNS_TOKEN_MAX_HEX)
       .regex(/^[A-Fa-f0-9]+$/)
       .nullable()
       .optional()
@@ -76,7 +77,7 @@ const deviceRegisterRequest = z
           token: z
             .string()
             .min(8)
-            .max(256)
+            .max(APNS_TOKEN_MAX_HEX)
             .regex(/^[A-Fa-f0-9]+$/)
             .describe("The Activity's ActivityKit push token (hex)."),
           medicationId: z
@@ -102,7 +103,7 @@ const deviceRegisterRequest = z
       .max(8)
       .optional()
       .describe(
-        "The device's running medication Live Activities, as a full replacement list: present replaces the stored list (an empty array clears it), omitted leaves it unchanged. Each entry is ended with one `end` push once its dose is answered, and removed after the push. When this field is present the legacy `liveActivityPushToken` is ignored.",
+        "The device's running medication Live Activities, as a full replacement list: present replaces the stored list (an empty array clears it), omitted leaves it unchanged. An entry in a shape the server does not take is left out of the list; a list longer than 8 is left out whole. Each entry is ended with one `end` push once its dose is answered, and removed after the push. When this field is present the legacy `liveActivityPushToken` is ignored.",
       ),
     ...devicePushRequestFields,
   })
@@ -299,7 +300,7 @@ export const devicePaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Devices"],
       summary: "Register native device + APNs token",
       description:
-        "Idempotent upsert by `token`. APNs token + environment are paired — supplying one without the other returns 422. A `token` (the `X-Device-Id`) or `apnsToken` another account holds is taken over when that account is signed out of the device: its device row goes, with its push key, relay binding (unbound at the relay before this request's binding is forwarded) and Live Activity state, so nothing sealed for it reaches the device. Both accounts get an audit row, and the previous one a security alert on its other devices and channels. Since v1.49.0 a device still signed in to the other account is not taken over: while that account holds a live refresh token for this `X-Device-Id` (or one naming no device), or the access token of a rotation's short sunset, the answer is 409 `devices.register.signed_in_elsewhere` and nothing changes. Signing out there, or that sign-in running out, frees the device; the app can then register again. A refused push field (push key, relay binding, consent) returns 422 with `meta.errorCode` `devices.push.<reason>` and changes nothing; more than 10 new relay bindings for one account in 24 hours return 429 `devices.push.relay_daily_limit`. When the device's APNs token changes, the old token's relay binding is removed and the device has to bind the new token (`relayState: rebind_needed` unless the request carries the new `relayBinding`). The answer's `push` block is the device's push state after the call.",
+        "Idempotent upsert by `token`. APNs token + environment are paired — supplying one without the other returns 422. A `token` (the `X-Device-Id`) or `apnsToken` another account holds is taken over when that account is signed out of the device: its device row goes, with its push key, relay binding (unbound at the relay before this request's binding is forwarded) and Live Activity state, so nothing sealed for it reaches the device. Both accounts get an audit row, and the previous one a security alert on its other devices and channels. Since v1.49.0 a device still signed in to the other account is not taken over: while that account holds a live refresh token for this `X-Device-Id` (or one naming no device), or the access token of a rotation's short sunset, the answer is 409 `devices.register.signed_in_elsewhere` and nothing changes. Signing out there, or that sign-in running out, frees the device; the app can then register again. APNs tokens are hex of up to 512 characters: Apple documents no fixed length. A Live Activity field (`liveActivityPushToken`, an entry of `liveActivityTokens`, `liveActivityStart`) the server cannot take does not fail the registration: it is left out, keeping its stored value (a left-out list entry is dropped from the list), and the device registers with everything else. This covers a push-to-start statement that does not hold, too. A refused push field (push key, relay binding, consent) returns 422 with `meta.errorCode` `devices.push.<reason>` and changes nothing; more than 10 new relay bindings for one account in 24 hours return 429 `devices.push.relay_daily_limit`. When the device's APNs token changes, the old token's relay binding is removed and the device has to bind the new token (`relayState: rebind_needed` unless the request carries the new `relayBinding`). The answer's `push` block is the device's push state after the call.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: deviceRegisterRequest } },
@@ -310,7 +311,10 @@ export const devicePaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: {
             "application/json": {
               schema: dataEnvelope(
-                z.object({ id: z.string(), push: devicePushBlockSchema }),
+                z.object({
+                  id: z.string(),
+                  push: devicePushBlockSchema,
+                }),
                 "DeviceRegisterResponse",
               ),
             },

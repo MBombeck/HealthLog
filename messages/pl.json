@@ -13282,7 +13282,7 @@
       "close": "Ukryj"
     },
     "ai": {
-      "readDone": "AI odczytało Twój dokument.",
+      "readDone": "AI odczytało Twój dokument. Wyszukiwanie znajdzie go teraz także po treści.",
       "readStagedOne": "AI odczytało Twój dokument. 1 wynik laboratoryjny czeka na Twoją weryfikację.",
       "readStagedFew": "AI odczytało Twój dokument. {count} wyniki laboratoryjne czekają na Twoją weryfikację.",
       "readStagedOther": "AI odczytało Twój dokument. {count} wyników laboratoryjnych czeka na Twoją weryfikację.",

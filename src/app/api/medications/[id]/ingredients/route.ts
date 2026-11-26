@@ -17,6 +17,7 @@ import { NextRequest } from "next/server";
 
 import { prisma } from "@/lib/db";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
@@ -166,7 +167,12 @@ async function putIngredients(
   });
 
   return apiSuccess({
-    ingredients: toIngredientDtos(stored, actor.locale ?? user.locale ?? null),
+    ingredients: toIngredientDtos(
+      stored,
+      await resolveServerLocale({
+        userLocale: actor.locale ?? user.locale ?? null,
+      }),
+    ),
     recompute,
   });
 }
