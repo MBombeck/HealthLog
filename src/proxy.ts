@@ -577,22 +577,18 @@ export function proxy(request: NextRequest) {
       return applyBaselineSecurityHeaders(NextResponse.redirect(signIn));
     }
 
-    // The onboarding redirect, here so it lands on the first response with no
-    // dashboard flash. The auth flows (login, passkey, register,
-    // /api/auth/me) keep the `hl_onboarding` cookie in step with the DB, so no
-    // DB round trip; `/onboarding` itself is public above.
-    const onboardingPending =
-      request.cookies.get("hl_onboarding")?.value === "pending";
-    // v1.4.22 — exact match the redirect
-    // short-circuit so a hypothetical `/onboarding-export` route can
-    // never inherit the silent-pass-through.
-    const isOnboardingSurface =
-      pathname === "/onboarding" || pathname.startsWith("/onboarding/");
-    if (onboardingPending && !isOnboardingSurface) {
-      return applyBaselineSecurityHeaders(
-        NextResponse.redirect(new URL("/onboarding", request.url)),
-      );
-    }
+    // The second-factor gate comes before onboarding. Both send a page
+    // somewhere else, and the two used to point at each other: the onboarding
+    // redirect sent `/enroll-mfa` to `/onboarding`, whose session read
+    // (`getSession` -> `enforceMfaEnrollment`) sends a confined session back
+    // to `/enroll-mfa`, so a new account under a due second-factor policy
+    // never got past either. Enrolment is the one that confines the session
+    // on the server, so it wins: the enrolment surface is never sent to
+    // onboarding, and onboarding resumes on the first page after enrolling.
+    const isMfaEnrollSurface =
+      pathname === "/enroll-mfa" ||
+      pathname === "/settings/security" ||
+      pathname.startsWith("/settings/security/");
 
     // v1.23 — admin-enforced MFA forced-enrollment gate. When the operator
     // requires a second factor and the account has none, `/api/auth/me` (and
@@ -601,15 +597,32 @@ export function proxy(request: NextRequest) {
     // app behind the enrollment surface. Only `/enroll-mfa` and
     // `/settings/security` stay reachable so the user can actually enrol;
     // logout + the enrollment APIs are `/api/*` and never page-gated here.
-    // Onboarding takes precedence (the branch above already returned), so a
-    // brand-new account finishes onboarding first.
+    // `/onboarding` is public above and never reaches this block; its own
+    // session read confines it on the server.
     const mfaEnrollRequired =
       request.cookies.get("hl_mfa_enroll")?.value === "required";
-    const isMfaEnrollSurface =
-      pathname === "/enroll-mfa" || pathname.startsWith("/settings/security");
-    if (mfaEnrollRequired && !isMfaEnrollSurface && !isOnboardingSurface) {
+    if (mfaEnrollRequired && !isMfaEnrollSurface) {
       return applyBaselineSecurityHeaders(
         NextResponse.redirect(new URL("/enroll-mfa", request.url)),
+      );
+    }
+
+    // The onboarding redirect, here so it lands on the first response with no
+    // dashboard flash. The auth flows (login, passkey, register,
+    // /api/auth/me) keep the `hl_onboarding` cookie in step with the DB, so no
+    // DB round trip; `/onboarding` itself is public above. The enrolment
+    // surface is exempt whether or not the hint cookie arrived: the server
+    // confines a session past its due date without it.
+    const onboardingPending =
+      request.cookies.get("hl_onboarding")?.value === "pending";
+    // v1.4.22 — exact match the redirect
+    // short-circuit so a hypothetical `/onboarding-export` route can
+    // never inherit the silent-pass-through.
+    const isOnboardingSurface =
+      pathname === "/onboarding" || pathname.startsWith("/onboarding/");
+    if (onboardingPending && !isOnboardingSurface && !isMfaEnrollSurface) {
+      return applyBaselineSecurityHeaders(
+        NextResponse.redirect(new URL("/onboarding", request.url)),
       );
     }
   }
