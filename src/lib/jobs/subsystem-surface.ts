@@ -138,6 +138,7 @@ const subsystemSurface = {
   "wallet-pass-refresh": { audience: "system" },
   "wallet-pass-sweep": { audience: "system" },
   "wallet-pass-void-push": { audience: "system" },
+  "wallet-ready-push": { audience: "system" },
   "healthkit-catch-up": { audience: "system" },
   "push-live-activity": { audience: "system" },
   "arrival-reaction-cleanup": { audience: "system" },

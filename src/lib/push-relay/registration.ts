@@ -45,12 +45,14 @@ import {
   deleteEnvelopeKeys,
   ensureEnvelopeKeys,
 } from "@/lib/push-relay/sender-keys";
+import { enqueueWalletReadyPush } from "@/lib/emergency-card/wallet-pass/queues";
 import { recordRelayDecision } from "@/lib/push-relay/operator-decision";
 import {
   anyItemAccepted,
   RELAY_REPORTED_REASONS,
   relayStatusOf,
   stateForReported,
+  storedRelayStatus,
 } from "@/lib/push-relay/relay-status";
 
 export type RegistrationRow = NonNullable<
@@ -240,6 +242,14 @@ async function applyAnswer(
         ? { tier: result.body.tier }
         : {}),
     });
+    // The relay signs passes from now on: Wallet is available again, so the
+    // passes waiting for it may be announced.
+    if (
+      status?.wallet?.sign === true &&
+      storedRelayStatus(row.relayStatus ?? null)?.wallet?.sign !== true
+    ) {
+      await enqueueWalletReadyPush(undefined, 60);
+    }
   } else {
     await prisma.pushRelayRegistration.update({
       where: { id: row.id },

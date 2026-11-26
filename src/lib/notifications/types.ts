@@ -153,6 +153,11 @@ export const EVENT_TYPES = [
   // (`src/lib/sync-stall/notice.ts`). Sent once per stall, in the person's
   // daytime, and at most once a day. Default ON, see EVENT_DEFAULT_ENABLED.
   "SYNC_STALLED",
+  // "Your emergency card is ready for Wallet": once per pass, at most twice
+  // per person, only while the pass is live, downloadable and in no Wallet
+  // yet, never for a managed profile and never after the person's no
+  // (`src/lib/emergency-card/wallet-pass/ready-push.ts`). Default ON.
+  "EMERGENCY_CARD_WALLET_READY",
 ] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
@@ -262,6 +267,9 @@ export const EVENT_DEFAULT_ENABLED: Record<EventType, boolean> = {
   // decides, daytime only, one a day), and a switch in Settings >
   // Notifications > Alerts turns it off on every channel.
   SYNC_STALLED: true,
+  // One push per pass, asked for by making the pass; the person's no in the
+  // app silences it for good.
+  EMERGENCY_CARD_WALLET_READY: true,
 };
 
 /** Event types only an admin is ever sent, and only an admin is shown. */

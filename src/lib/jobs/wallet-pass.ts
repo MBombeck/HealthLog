@@ -25,7 +25,12 @@ import {
 import {
   enqueueWalletPassRefresh,
   type WalletPassRefreshPayload,
+  type WalletReadyPushPayload,
 } from "@/lib/emergency-card/wallet-pass/queues";
+import {
+  runWalletReadyPushPass,
+  sendWalletReadyPush,
+} from "@/lib/emergency-card/wallet-pass/ready-push";
 import {
   refreshWalletPass,
   voidWalletPassById,
@@ -161,6 +166,8 @@ export async function handleWalletPassSweep(
           ],
         },
       });
+      // The ready push for passes no trigger announced.
+      const ready = await runWalletReadyPushPass(now);
       evt.addMeta("wallet_passes_refreshed", tally.refreshed);
       return jobDone({
         wallet_passes_refreshed: tally.refreshed,
@@ -168,6 +175,7 @@ export async function handleWalletPassSweep(
         wallet_pushes_accepted: tally.accepted,
         wallet_registrations_dropped: tally.dropped,
         wallet_passes_deferred: tally.deferred,
+        wallet_ready_pushes_sent: ready.sent,
         wallet_passes_voided: voided,
         wallet_passes_deleted: deleted.count,
         items_failed: tally.failed,
@@ -225,6 +233,38 @@ export async function handleWalletPassVoidPush(
     } catch (err) {
       evt.addWarning(`wallet void push failed: ${err}`);
       return jobFailed("wallet void push failed", err);
+    }
+  });
+}
+
+/** The ready push: one person, or every live pass not yet announced. */
+export async function handleWalletReadyPush(
+  jobs: Job<WalletReadyPushPayload>[],
+): Promise<JobOutcome> {
+  return withBackgroundEvent("job.wallet_ready_push", async (evt) => {
+    let sent = 0;
+    let failed = 0;
+    try {
+      for (const job of jobs) {
+        const userId = job.data?.userId;
+        if (typeof userId === "string" && userId.length > 0) {
+          try {
+            const out = await sendWalletReadyPush(userId);
+            if (out.result === "sent") sent += 1;
+          } catch {
+            failed += 1;
+          }
+        } else {
+          const tally = await runWalletReadyPushPass();
+          sent += tally.sent;
+          failed += tally.failed;
+        }
+      }
+      evt.addMeta("wallet_ready_pushes_sent", sent);
+      return jobDone({ wallet_ready_pushes_sent: sent, items_failed: failed });
+    } catch (err) {
+      evt.addWarning(`wallet ready push failed: ${err}`);
+      return jobFailed("wallet ready push failed", err);
     }
   });
 }

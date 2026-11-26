@@ -120,6 +120,13 @@ const PINS: ReadonlyArray<{
     covered:
       "A new alert kind, `SYNC_STALLED`: the person's own devices are told once that a daily source went quiet, at most once a day and only in their daytime, sealed like every other alert with the source key as its only data. No new class, lifetime, sender file or occasion: it goes through the dispatcher's alert path the texts already name (`seesWhen`, an alert, when and of which kind), and its timing says no more than that the server sent an alert at that moment.",
   },
+  {
+    version: "2026-11-22",
+    fingerprint:
+      "2d3a8453cbcecf99101e9f6d372e6f8ebd4900e81e59fbdb3f253319db9164cf",
+    covered:
+      "A new alert kind, `EMERGENCY_CARD_WALLET_READY`: the person's own iPhone is told once per Wallet pass (at most twice per person) that the emergency card can be added to Wallet, sealed like every other alert with no data beyond its kind. No new class, lifetime, sender file or occasion: it goes through the dispatcher's alert path the texts already name (`seesWhen`, an alert, when and of which kind), and its timing says no more than that the server sent an alert at that moment.",
+  },
 ];
 
 /**

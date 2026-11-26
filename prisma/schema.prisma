@@ -938,6 +938,10 @@ model User {
   /// card (v1.50). Reader: `emergencyCard.wallet.apple.relayHintDismissed`
   /// on `/api/auth/me`; the card stops prompting, the action stays.
   walletRelayHintDismissed     Boolean   @default(false) @map("wallet_relay_hint_dismissed")
+  /// The person said no to "your emergency card is ready for Wallet" (v1.50),
+  /// reported by the app's dismiss action. Reader: the ready push
+  /// (`wallet-pass/ready-push.ts`), which never sends again once it is set.
+  walletReadyPushDismissed     Boolean   @default(false) @map("wallet_ready_push_dismissed")
 
   // Relations
   passkeys                                  Passkey[]
@@ -9143,6 +9147,9 @@ model WalletPass {
   voidReason         WalletPassVoidReason? @map("void_reason")
   /// The last time a device or the app fetched the pass; shown on the card page.
   lastFetchedAt      DateTime?             @map("last_fetched_at")
+  /// When "ready for Wallet" was pushed for this pass; the send's claim, set
+  /// by a conditional update. Reader: the ready push (`ready-push.ts`).
+  readyPushSentAt    DateTime?             @map("ready_push_sent_at")
 
   user          User                     @relation("WalletPassSubject", fields: [userId], references: [id], onDelete: Cascade)
   createdBy     User                     @relation("WalletPassCreator", fields: [createdById], references: [id], onDelete: Cascade)

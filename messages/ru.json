@@ -10494,7 +10494,9 @@
     "relayTest": {
       "title": "Тестовое уведомление HealthLog",
       "body": "Ваш сервер достиг этого устройства через push-ретранслятор."
-    }
+    },
+    "eventEmergencyCardWalletReady": "Экстренная карта готова для Wallet",
+    "eventEmergencyCardWalletReadyDesc": "Один раз, когда экстренную карту можно добавить в Apple Wallet."
   },
   "i18n": {
     "maintainershipBanner": {
@@ -16472,6 +16474,10 @@
         "askAdmin": "Попросите администратора сервера включить уведомления через push-ретранслятор.",
         "notNow": "Не сейчас",
         "starting": "Push-ретранслятор запускается. Карта появится через минуту."
+      },
+      "readyPush": {
+        "title": "Ваша экстренная карта готова",
+        "body": "Добавьте её в Apple Wallet на этом iPhone."
       }
     }
   },

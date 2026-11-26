@@ -120,6 +120,7 @@ export const SESSION_USER_SELECT = {
   mfaEnforced: true,
   passkeyUpgradeNudgeDismissed: true,
   walletRelayHintDismissed: true,
+  walletReadyPushDismissed: true,
   fullName: true,
   insurerName: true,
   insurerIkNumber: true,

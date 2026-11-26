@@ -54,6 +54,7 @@ import {
   WALLET_WINDOW_MS,
 } from "@/lib/emergency-card/wallet-pass/service";
 import { WALLET_DOWNLOAD_PATH } from "@/lib/emergency-card/wallet-pass/constants";
+import { enqueueWalletReadyPush } from "@/lib/emergency-card/wallet-pass/queues";
 import { createWalletPass } from "@/lib/emergency-card/wallet-pass/store";
 import { resolveOrigin } from "@/lib/http/origin";
 import { coerceLocale } from "@/lib/i18n/config";
@@ -225,6 +226,8 @@ export const POST = apiHandler(
       },
     });
 
+    // "Ready for Wallet" on the iPhone, unless a device has it by then.
+    await enqueueWalletReadyPush(user.id);
     const pass = await latestWalletPass(user.id);
     if (!pass) throw new Error("the new wallet pass is not there");
     return apiSuccess(

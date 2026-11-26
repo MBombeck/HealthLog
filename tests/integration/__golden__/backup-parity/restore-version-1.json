@@ -1157,6 +1157,7 @@
       "passkeyUpgradeNudgeDismissed": false,
       "adminNoticesDismissed": [],
       "walletRelayHintDismissed": false,
+      "walletReadyPushDismissed": false,
       "fullName": null,
       "insurerName": null,
       "insuranceNumberEncrypted": null,

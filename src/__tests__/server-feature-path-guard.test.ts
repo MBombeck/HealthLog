@@ -36,6 +36,8 @@ const FEATURE_KEY_PATHS: Record<string, ServerFeature> = {
   "/api/emergency-card/wallet/apple": "profile.emergency-card-apple-wallet",
   "/api/emergency-card/wallet/apple/relay-hint":
     "profile.emergency-card-apple-wallet-state",
+  "/api/emergency-card/wallet/apple/ready-push/dismiss":
+    "profile.emergency-card-wallet-ready-push",
   "/api/emergency-card/wallet/apple/pass":
     "profile.emergency-card-apple-wallet",
 };

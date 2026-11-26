@@ -10494,7 +10494,9 @@
     "relayTest": {
       "title": "Notificación de prueba de HealthLog",
       "body": "Tu servidor llegó a este dispositivo a través del relé push."
-    }
+    },
+    "eventEmergencyCardWalletReady": "Tarjeta de emergencia lista para Wallet",
+    "eventEmergencyCardWalletReadyDesc": "Tu tarjeta en Apple Wallet, en cuanto se haya creado un pase."
   },
   "i18n": {
     "maintainershipBanner": {
@@ -16472,6 +16474,10 @@
         "askAdmin": "Pide a quien administra el servidor que active las notificaciones a través del relé push.",
         "notNow": "Ahora no",
         "starting": "El relé push se está iniciando. El pase llega en un minuto."
+      },
+      "readyPush": {
+        "title": "Tu tarjeta de emergencia está lista",
+        "body": "Añádela a Apple Wallet en este iPhone."
       }
     }
   },

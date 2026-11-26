@@ -410,6 +410,9 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   "wallet-pass-sweep": short(
     "At most 2000 live passes, each an unsigned rebuild and at most one bounded push batch, then one retention DELETE.",
   ),
+  "wallet-ready-push": short(
+    "One person's checks and one dispatch, or at most 500 unannounced live passes the same way; each send is claimed on its pass row.",
+  ),
   "wallet-pass-void-push": short(
     "At most 2000 withdrawn passes of the last 30 days; only those with devices still to tell are rebuilt, without card data, and pushed in bounded batches.",
   ),

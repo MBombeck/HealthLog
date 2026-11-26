@@ -1,5 +1,5 @@
 {
-  "registeredQueueCount": 139,
+  "registeredQueueCount": 140,
   "registeredQueues": [
     "account-deletion-purge",
     "achievement-unlock-sweep",
@@ -126,6 +126,7 @@
     "wallet-pass-refresh",
     "wallet-pass-sweep",
     "wallet-pass-void-push",
+    "wallet-ready-push",
     "wearable-cycle-repair",
     "whoop-backfill",
     "whoop-cycle-sync",
@@ -2008,6 +2009,21 @@
       "expire_seconds": 900,
       "heartbeat_seconds": null,
       "name": "wallet-pass-void-push",
+      "notify": false,
+      "partition": false,
+      "policy": "short",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "wallet-ready-push",
       "notify": false,
       "partition": false,
       "policy": "short",
@@ -4108,6 +4124,12 @@
     },
     {
       "queue": "wallet-pass-void-push",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "wallet-ready-push",
       "options": {
         "localConcurrency": 1
       }

@@ -10494,7 +10494,9 @@
     "relayTest": {
       "title": "Notifica di prova HealthLog",
       "body": "Il tuo server ha raggiunto questo dispositivo tramite il relay push."
-    }
+    },
+    "eventEmergencyCardWalletReady": "Tessera di emergenza pronta per Wallet",
+    "eventEmergencyCardWalletReadyDesc": "La tua tessera in Apple Wallet, appena ne è stato creato un pass."
   },
   "i18n": {
     "maintainershipBanner": {
@@ -16472,6 +16474,10 @@
         "askAdmin": "Chiedi a chi amministra il server di attivare le notifiche tramite il relay push.",
         "notNow": "Non ora",
         "starting": "Il relay push si sta avviando. Il pass arriva tra un minuto."
+      },
+      "readyPush": {
+        "title": "La tua tessera di emergenza è pronta",
+        "body": "Aggiungila ad Apple Wallet su questo iPhone."
       }
     }
   },
