@@ -25,6 +25,7 @@
  * every affected client's second write into a visible error with no way for
  * the person to recover the value.
  */
+import { ownBearerToken } from "@/lib/auth/token-transport";
 import type { NextRequest } from "next/server";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
@@ -548,12 +549,15 @@ export async function defaultUserIdResolver(): Promise<string | null> {
   } catch {
     authHeader = null;
   }
-  if (!authHeader?.startsWith("Bearer ")) {
+  // The same choice `authenticateCaller` makes: a Bearer of this app's own
+  // format decides, anything else leaves the cookie to.
+  const ownToken = ownBearerToken(authHeader);
+  if (ownToken === null) {
     const session = await getSession().catch(() => null);
     return session ? session.user.id : null;
   }
 
-  const tokenHashValue = hashToken(authHeader.slice(7));
+  const tokenHashValue = hashToken(ownToken);
   const apiToken = await prisma.apiToken
     .findUnique({
       where: { tokenHash: tokenHashValue },
@@ -666,9 +670,10 @@ async function narrowTokenFacet(): Promise<string | null> {
   } catch {
     return null;
   }
-  if (!authHeader?.startsWith("Bearer ")) return null;
+  const ownToken = ownBearerToken(authHeader);
+  if (ownToken === null) return null;
 
-  const presentedHash = hashToken(authHeader.slice(7));
+  const presentedHash = hashToken(ownToken);
   const apiToken = await prisma.apiToken
     .findUnique({
       where: { tokenHash: presentedHash },

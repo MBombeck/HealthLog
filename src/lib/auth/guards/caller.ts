@@ -15,6 +15,7 @@ import {
 } from "@/lib/auth/write-meter";
 import { getSession } from "@/lib/auth/session";
 import { refuseCookieIdentityConflict } from "@/lib/auth/cookie-identity-conflict";
+import { ownBearerToken } from "@/lib/auth/token-transport";
 import { AUTH_ERROR_CODES, HttpError } from "@/lib/api-errors";
 
 import { readActingCarrier, refuseUndeclaredMode } from "./acting";
@@ -101,8 +102,11 @@ export async function authenticateCaller(
   } catch {
     authHeader = null;
   }
-  if (authHeader?.startsWith("Bearer ")) {
-    return await authenticateBearer(authHeader.slice(7), requiredPermission);
+  // A Bearer of this app's own format only; a reverse proxy's credential in
+  // the same header names nobody here and leaves the cookie to decide.
+  const ownToken = ownBearerToken(authHeader);
+  if (ownToken !== null) {
+    return await authenticateBearer(ownToken, requiredPermission);
   }
 
   // 2. Session cookie path. `getSession()` itself answers null whenever a
