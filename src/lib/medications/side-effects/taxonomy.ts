@@ -10,7 +10,7 @@
  *   - GI                — gastrointestinal (very common during titration)
  *   - METABOLIC         — hypo / dehydration / appetite-suppression edges
  *   - INJECTION_SITE    — local-site reactions (EMA "common")
- *   - COGNITIVE         — brain-fog / dizziness / mood / energy (HealthLog
+ *   - COGNITIVE         — brain-fog / dizziness / headache / mood / energy (HealthLog
  *                         keeps these on the medication record because
  *                         the user wants the drug-correlation surface;
  *                         the existing MoodEntry stream is independent).
@@ -55,11 +55,14 @@ export const SIDE_EFFECT_CATEGORIES: Record<
   INJECTION_SWELLING: "INJECTION_SITE",
   INJECTION_BRUISING: "INJECTION_SITE",
   INJECTION_INDURATION: "INJECTION_SITE",
-  // Cognitive (4)
+  // Cognitive (5)
   BRAIN_FOG: "COGNITIVE",
   DIZZINESS: "COGNITIVE",
   LOW_MOOD: "COGNITIVE",
   LOW_ENERGY: "COGNITIVE",
+  // v1.50 — appended to the enum; a client with no code for it filed a
+  // headache as DIZZINESS.
+  HEADACHE: "COGNITIVE",
   // GLP-1 specific (4)
   EARLY_SATIETY: "GLP1_SPECIFIC",
   GASTROPARESIS_LIKE: "GLP1_SPECIFIC",
@@ -71,7 +74,7 @@ export const SIDE_EFFECT_CATEGORIES: Record<
  * Total entry count exposed as a const so callers (validators,
  * snapshot aggregators) can assert against drift without re-counting.
  */
-export const SIDE_EFFECT_ENTRY_COUNT = 21;
+export const SIDE_EFFECT_ENTRY_COUNT = 22;
 
 /**
  * Ordered category list — defines the picker UI's category-tab
@@ -102,7 +105,7 @@ export const SIDE_EFFECT_ENTRIES_BY_CATEGORY: Record<
     "INJECTION_BRUISING",
     "INJECTION_INDURATION",
   ],
-  COGNITIVE: ["BRAIN_FOG", "DIZZINESS", "LOW_MOOD", "LOW_ENERGY"],
+  COGNITIVE: ["BRAIN_FOG", "DIZZINESS", "HEADACHE", "LOW_MOOD", "LOW_ENERGY"],
   GLP1_SPECIFIC: [
     "EARLY_SATIETY",
     "GASTROPARESIS_LIKE",
