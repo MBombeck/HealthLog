@@ -12,13 +12,13 @@
  *
  *   1. Overdue first. The take answers the most recent dose of its local day
  *      at or before it that is still open: a dose taken late is that dose.
- *   2. Never far ahead. Failing that, it answers an open dose ahead of it
- *      only when that dose is already takeable ({@link TAKE_AHEAD_REACH_MS},
- *      the same two hours the Today card surfaces a dose from). A take six
- *      hours before the evening dose settled the evening dose while the
- *      morning dose stayed open: the evening reminder and Live Activity never
- *      came, and the person had not taken that pill. A dose further ahead is
- *      never settled without the person naming it (a pin from the app).
+ *   2. Then the next dose. With no earlier dose open, it answers the next
+ *      open dose ahead of it within {@link TAKE_AHEAD_REACH_MS} (six hours):
+ *      the pill box opened at 18:30 for the 21:00 dose after the morning dose
+ *      was taken. An earlier open dose always wins: a take at 15:00 used to
+ *      settle the 21:00 dose because it sat a few seconds nearer to it than
+ *      to the overdue 09:00 dose, and the evening reminder and Live Activity
+ *      never came although the person had not taken that pill.
  *   3. Repeat. A take within {@link REPEAT_WINDOW_MS} of a take one of those
  *      doses already holds is the same dose reported twice (a sensor and a
  *      tap, a lid closed and opened again). Nothing is written; the writer
@@ -44,17 +44,18 @@ import { getUserTodayBounds } from "@/lib/tz/local-day";
 import { projectTodayIntakesAndRecompute } from "@/lib/medications/scheduling/project-today-intakes";
 import { resolveForcedSlotForWrite } from "@/lib/medications/scheduling/slot-upsert";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
-import { DAILY_TAKEABLE_AHEAD_MS } from "@/lib/medications/scheduling/dose-window-defaults";
+import { NEAR_SLOT_CEILING_MINUTES } from "@/lib/medications/dose-state/take-rule";
 import {
   holdsAnswer,
   holdsTake,
 } from "@/lib/medications/scheduling/holds-take";
 
 /**
- * How far ahead of a dose a take that names no slot may still settle it:
- * two hours, the moment the dose becomes takeable.
+ * How far ahead of a dose a take that names no slot may still settle it, when
+ * no earlier dose of the day is open: six hours, the same constant the web's
+ * take controls measure by (`NEAR_SLOT_CEILING_MINUTES`).
  */
-export const TAKE_AHEAD_REACH_MS = DAILY_TAKEABLE_AHEAD_MS;
+export const TAKE_AHEAD_REACH_MS = NEAR_SLOT_CEILING_MINUTES * 60 * 1000;
 /** How close to a recorded take a second one is the same dose: two hours. */
 export const REPEAT_WINDOW_MS = 2 * 60 * 60 * 1000;
 

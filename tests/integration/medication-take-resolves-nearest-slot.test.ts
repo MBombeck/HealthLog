@@ -1,6 +1,6 @@
 /**
- * A take outside every dose window still answers its dose, never a dose far
- * ahead of it, and a dose reported twice is recorded once.
+ * A take outside every dose window still answers its dose, an overdue dose
+ * before a later one, and a dose reported twice is recorded once.
  *
  * A pill box posts to the ingest hook when it is opened. Opened five hours
  * after the slot, the take matched no band and landed ad hoc: the slot stayed
@@ -8,9 +8,10 @@
  * away. Now the take answers the most recent open dose of the day, the today
  * list says when and through which source it was taken, the paired devices
  * are woken, and a second report within two hours answers
- * `alreadyTaken: true` without writing. A dose more than two hours ahead is
- * never settled this way: a take at 15:00 used to settle the 21:00 dose
- * while the 09:00 dose stayed open, and the evening reminder never came.
+ * `alreadyTaken: true` without writing. With no earlier dose open, the take
+ * answers the next open dose within six hours. An earlier open dose always
+ * wins: a take at 15:00 used to settle the 21:00 dose while the 09:00 dose
+ * stayed open, and the evening reminder never came.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
@@ -204,7 +205,7 @@ describe("a take outside every window answers the most recent open slot", () => 
     expect(wrong.status).toBeLessThan(300);
   });
 
-  it("a further dose after a taken slot is recorded, and never settles a slot hours ahead", async () => {
+  it("a further dose after a taken slot answers the next open slot, not alreadyTaken", async () => {
     const { medId, raw } = await setup();
     const prisma = getPrismaClient();
     // A second dose time at 08:00 Berlin, taken by the box at 08:05.
@@ -231,22 +232,16 @@ describe("a take outside every window answers the most recent open slot", () => 
         idempotencyKey: "box-morning",
       },
     });
-    // 10:20 Berlin: more than two hours after the morning take, and the
-    // 13:00 dose is still two hours and forty minutes ahead. It is recorded
-    // as an extra dose; the 13:00 dose stays open for its reminder.
-    const extraAt = new Date("2026-11-21T09:20:00.000Z");
-    vi.setSystemTime(extraAt);
+    // 10:20 Berlin: more than two hours after the morning take, so not a
+    // repeat of it. It is the midday dose, opened early.
+    vi.setSystemTime(new Date("2026-11-21T09:20:00.000Z"));
     const res = await ingest(raw, "box-midday");
     expect(res.status).toBe(201);
-    const live = await liveRows(medId);
-    const midday = live.find(
+    const midday = (await liveRows(medId)).find(
       (r) => r.scheduledFor.getTime() === SLOT.getTime(),
     );
-    expect(midday?.takenAt ?? null).toBeNull();
-    const extra = live.find(
-      (r) => r.scheduledFor.getTime() === extraAt.getTime(),
-    );
-    expect(extra?.takenAt?.getTime()).toBe(extraAt.getTime());
+    expect(midday?.takenAt?.toISOString()).toBe("2026-11-21T09:20:00.000Z");
+    expect(midday?.attributionSource).toBe("USER_PIN");
 
     // Within two hours of the morning take it is the same dose again.
     vi.setSystemTime(new Date("2026-11-21T08:30:00.000Z"));
@@ -268,7 +263,7 @@ describe("a take outside every window answers the most recent open slot", () => 
   });
 });
 
-describe("a take outside every window never settles a dose still far ahead", () => {
+describe("a take outside every window settles the overdue dose before the next one", () => {
   // Two dose times, 09:00 and 21:00 Berlin. At 15:00 the 09:00 dose is
   // overdue and the 21:00 dose six hours away.
   const MORNING = new Date("2026-11-21T08:00:00.000Z");
@@ -329,8 +324,10 @@ describe("a take outside every window never settles a dose still far ahead", () 
     expect((await slotRow(medId, EVENING))?.takenAt ?? null).toBeNull();
   });
 
-  it("with the morning dose already taken, the take is an extra dose and the evening dose stays open", async () => {
+  it("with the morning dose taken, a pill box opened at 18:30 settles the 21:00 dose", async () => {
     const { user, medId, raw } = await twoDoses();
+    const evenTake = new Date("2026-11-21T17:30:00.000Z");
+    vi.setSystemTime(evenTake);
     await getPrismaClient().medicationIntakeEvent.create({
       data: {
         userId: user.id,
@@ -341,14 +338,13 @@ describe("a take outside every window never settles a dose still far ahead", () 
         takenVia: "APP",
       },
     });
-    const res = await ingest(raw, "box-afternoon");
+    const res = await ingest(raw, "box-evening");
     expect(res.status).toBe(201);
     const evening = await slotRow(medId, EVENING);
-    expect(evening?.takenAt ?? null).toBeNull();
-    const adHoc = (await liveRows(medId)).find(
-      (r) => r.scheduledFor.getTime() === AFTERNOON.getTime(),
-    );
-    expect(adHoc?.takenAt?.getTime()).toBe(AFTERNOON.getTime());
+    expect(evening?.takenAt?.getTime()).toBe(evenTake.getTime());
+    expect(evening?.takenVia).toBe("INTEGRATION");
+    expect(evening?.attributionSource).toBe("USER_PIN");
+    expect(await liveRows(medId)).toHaveLength(2);
   });
 
   it("the per-medication route follows the same rule", async () => {
