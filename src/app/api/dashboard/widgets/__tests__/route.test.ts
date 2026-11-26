@@ -1212,6 +1212,14 @@ describe("dashboard widgets — a pin survives a client that does not know it", 
         },
       ],
     });
+  type FoundUser = Awaited<ReturnType<typeof prisma.user.findUnique>>;
+  type UpdatedUser = Awaited<ReturnType<typeof prisma.user.update>>;
+  const mockStoredLayout = () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      dashboardWidgetsJson: stored(),
+    } as unknown as FoundUser);
+    vi.mocked(prisma.user.update).mockResolvedValue({} as UpdatedUser);
+  };
   const putWidgets = (sleep: Record<string, unknown>) =>
     callPut(
       makeReq({
@@ -1241,10 +1249,7 @@ describe("dashboard widgets — a pin survives a client that does not know it", 
   };
 
   it("keeps the stored pin when a widget arrives without `pinned`", async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValue({
-      dashboardWidgetsJson: stored(),
-    } as never);
-    vi.mocked(prisma.user.update).mockResolvedValue({} as never);
+    mockStoredLayout();
 
     const res = await putWidgets({});
     expect(res.status).toBe(200);
@@ -1252,10 +1257,7 @@ describe("dashboard widgets — a pin survives a client that does not know it", 
   });
 
   it("unpins when the client says so", async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValue({
-      dashboardWidgetsJson: stored(),
-    } as never);
-    vi.mocked(prisma.user.update).mockResolvedValue({} as never);
+    mockStoredLayout();
 
     const res = await putWidgets({ pinned: false });
     expect(res.status).toBe(200);
