@@ -34,6 +34,7 @@
  * touching the DB so the operator can inspect what would change before
  * committing.
  */
+import { operatorLine } from "@/lib/logging/operator-line";
 import { holdAccountAgainstRestore } from "@/lib/export/restore-lock";
 import { Prisma } from "@/generated/prisma/client";
 import type {
@@ -190,7 +191,7 @@ export async function drainPerSampleCumulative(
   prismaClient: PrismaClient,
   options: DrainOptions = {},
 ): Promise<DrainSummary> {
-  const log = options.log ?? ((line) => console.log(line));
+  const log = options.log ?? operatorLine;
 
   const summary: DrainSummary = {
     dryRun: options.dryRun ?? false,

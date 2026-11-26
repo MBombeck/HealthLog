@@ -134,6 +134,12 @@
       {
         "action": "auth.oidc.provisioned",
         "user": {
+          "username": "userinfo"
+        }
+      },
+      {
+        "action": "auth.oidc.provisioned",
+        "user": {
           "username": "second"
         }
       },
@@ -144,9 +150,9 @@
         }
       },
       {
-        "action": "auth.oidc.provisioned",
+        "action": "auth.setup.claimed",
         "user": {
-          "username": "userinfo"
+          "username": "First"
         }
       }
     ],

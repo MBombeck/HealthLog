@@ -9,7 +9,13 @@
  * counts; `HL-Wallet-State` says which version this is.
  *
  * Auth: `requireGuardianAuth()`, cookie or a full-access token; a narrow
- * token is refused by the default arm. When the signer cannot sign right now
+ * token is refused by the default arm. No recent proof is asked, unlike
+ * making the pass: making one mints a new public link, while this serves the
+ * pass that already exists, whose link and pass token the account can
+ * withdraw on the card page at any time (and a password change withdraws for
+ * it). A proof here could not be given either: the web reaches this route as
+ * a top-level navigation that cannot show the re-proof dialog, and the app
+ * calls it with its token, which never carries one. When the signer cannot sign right now
  * the answer is 503 `emergency-card.wallet.signer_unavailable` with
  * `Retry-After`; the installed pass stays as it is.
  */

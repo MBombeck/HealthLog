@@ -249,19 +249,34 @@ export interface PassBuildInput {
 }
 
 /**
- * The pass's files and their content hash. A withdrawn pass reads nothing
- * from the record: its version carries no health data.
+ * When a pass stops carrying the record: the moment it was withdrawn, else
+ * the moment its link expired. An expired link is as dead as a withdrawn one
+ * (the `/e/` page refuses it), so the pass built from it is the withdrawn
+ * version too, rather than a fresh copy of the record behind a link that no
+ * longer opens. Null while the pass is live.
+ */
+export function walletPassEndedAt(
+  input: Pick<PassBuildInput, "voidedAt" | "expiresAt" | "now">,
+): Date | null {
+  if (input.voidedAt) return input.voidedAt;
+  const expires = input.expiresAt;
+  return expires && expires.getTime() <= input.now.getTime() ? expires : null;
+}
+
+/**
+ * The pass's files and their content hash. A withdrawn or expired pass reads
+ * nothing from the record: its version carries no health data.
  */
 export async function buildWalletPassFiles(
   input: PassBuildInput,
   nonce?: string,
 ): Promise<{ files: PassFiles; contentHash: string }> {
   const day = (d: Date) => moodDateKey(d, input.timezone);
-  const voided = input.voidedAt !== null;
+  const endedAt = walletPassEndedAt(input);
   const view = await loadEmergencyCard(
     input.userId,
     day(input.now),
-    voided ? [] : input.fields,
+    endedAt ? [] : input.fields,
   );
   const content = buildPassContent({
     view,
@@ -279,7 +294,7 @@ export async function buildWalletPassFiles(
     asOfDay: day(input.contentChangedAt),
     expiresAt: input.expiresAt,
     expiresOnDay: input.expiresAt ? day(input.expiresAt) : null,
-    voidedOnDay: input.voidedAt ? day(input.voidedAt) : null,
+    voidedOnDay: endedAt ? day(endedAt) : null,
   });
   const files = buildPassFiles(content, nonce);
   return { files, contentHash: passContentHash(files) };

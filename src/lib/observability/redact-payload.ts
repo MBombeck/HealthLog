@@ -168,6 +168,30 @@ export const HEALTH_CLASSIFICATION_KEY_PATTERNS: readonly RegExp[] = [
   /^hasdiabetes$/,
 ];
 
+/**
+ * Keys whose value is a person's health state coded as a number: a rank that
+ * stands for "a floor was crossed" or "ill and resting", a score, a band
+ * index. Unlike the classification keys above, a number here is not a count
+ * or a flag, so every value under one of these keys is replaced, whatever its
+ * type. The morning's lead rank rode a wide event per request until the guard
+ * learned to see it.
+ *
+ * Matched with case and separators folded, like the list above, and anchored
+ * on the health subject so that `zone_one_milli`, `usage_level` or
+ * `tier_sum` stay readable.
+ */
+export const HEALTH_STATE_CODE_KEY_PATTERNS: readonly RegExp[] = [
+  /^(?:daily)?morning(?:lead)?rank$/,
+  /^leadrank$/,
+  /^(?:health|readiness|recovery|sleep|stress|wellness|mood|pain|strain)(?:score|band|rank|zone|grade)$/,
+];
+
+/** Whether `key` names a health state coded as a number. */
+export function isHealthStateCodeKey(key: string): boolean {
+  const folded = foldKey(key);
+  return HEALTH_STATE_CODE_KEY_PATTERNS.some((re) => re.test(folded));
+}
+
 function foldKey(key: string): string {
   return key.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
@@ -204,7 +228,8 @@ export function redactHealthClassifications(
   for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
     out.push([
       key,
-      isHealthClassificationKey(key) && isClassValue(entry)
+      (isHealthClassificationKey(key) && isClassValue(entry)) ||
+      isHealthStateCodeKey(key)
         ? REDACTED
         : redactHealthClassifications(entry, depth + 1),
     ]);

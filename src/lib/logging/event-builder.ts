@@ -6,6 +6,7 @@ import { getDeployContext } from "./config";
 import { redactOptional, redactSecrets } from "./redact";
 import {
   isHealthClassificationKey,
+  isHealthStateCodeKey,
   redactHealthClassifications,
 } from "@/lib/observability/redact-payload";
 
@@ -268,11 +269,14 @@ export class WideEventBuilder {
     // gateway that echoes the offending request put prompt content and
     // non-standard credentials into the logs. Scrub every string, at any depth.
     // A health classification (illness type, allergy category, mood, ...)
-    // never leaves either; see `HEALTH_CLASSIFICATION_KEY_PATTERNS`.
+    // never leaves either; see `HEALTH_CLASSIFICATION_KEY_PATTERNS`. Nor does
+    // a health state coded as a number (a rank, a score, a band), whatever its
+    // type; see `HEALTH_STATE_CODE_KEY_PATTERNS`.
     const unclassified =
-      isHealthClassificationKey(key) &&
-      value !== null &&
-      (typeof value === "string" || typeof value === "object")
+      (isHealthClassificationKey(key) &&
+        value !== null &&
+        (typeof value === "string" || typeof value === "object")) ||
+      isHealthStateCodeKey(key)
         ? "[redacted]"
         : redactHealthClassifications(value);
     this.event.meta[key] = redactDeep(unclassified);

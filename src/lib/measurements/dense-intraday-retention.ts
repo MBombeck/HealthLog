@@ -50,6 +50,7 @@
  * The one-shot history rebuild that converts ALREADY-folded daily rows to
  * the hourly grain lives in `dense-intraday-hourly-rebuild.ts`.
  */
+import { operatorLine } from "@/lib/logging/operator-line";
 import {
   holdAccountAgainstRestore,
   holdAccountFoldLock,
@@ -61,7 +62,6 @@ import type {
   PrismaClient,
 } from "@/generated/prisma/client";
 import { isP2002 as isUniqueConstraintViolation } from "@/lib/prisma-errors";
-
 import {
   dailyStatsExternalId,
   hkIdentifierForType,
@@ -479,7 +479,7 @@ export async function runDenseIntradayRetention(
   prismaClient: PrismaClient,
   options: DenseIntradayRetentionOptions = {},
 ): Promise<DenseIntradayRetentionSummary> {
-  const log = options.log ?? ((line) => console.log(line));
+  const log = options.log ?? operatorLine;
   const retentionDays = options.retentionDays ?? DENSE_INTRADAY_RETENTION_DAYS;
   // The retention window in days is the base's `cutoffHours`: rows newer
   // than it stay raw, like the mean consolidation's grace window.

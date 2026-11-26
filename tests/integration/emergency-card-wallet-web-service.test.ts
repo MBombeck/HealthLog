@@ -398,6 +398,52 @@ describe("keeping the pass current", () => {
     expect(json.barcodes).toBeUndefined();
   });
 
+  it("serves an expired link's pass as the withdrawn version, with no record in it", async () => {
+    await relayWithWallet();
+    const { serial, auth, passId } = await ownerWithPass();
+    const everyText = (bytes: Uint8Array) =>
+      Object.values(unzipSync(bytes))
+        .map((file) => new TextDecoder().decode(file))
+        .join("\n");
+
+    // Control: the live pass carries the record.
+    const live = await fetchPass(serial, auth);
+    expect(live.response.status).toBe(200);
+    expect(passJson(live.bytes).voided).toBe(false);
+    expect(everyText(live.bytes)).toContain("Penicillin");
+
+    // An hour on: Wallet last saw the pass then, and the link has since run
+    // out. (Last-Modified has whole seconds; moving the stamp back keeps the
+    // conditional fetch below from landing in the same second.)
+    const lastSeen = new Date(Date.now() - 3_600_000);
+    const { linkId } = await prisma.walletPass.update({
+      where: { id: passId },
+      data: { contentChangedAt: lastSeen },
+      select: { linkId: true },
+    });
+    const modified = lastSeen.toUTCString();
+    await prisma.emergencyCardLink.update({
+      where: { id: linkId },
+      data: { expiresAt: new Date(Date.now() - 60_000) },
+    });
+
+    // Wallet's conditional fetch is answered with the new version, not 304.
+    const fetched = await fetchPass(serial, auth, {
+      "if-modified-since": modified,
+    });
+    expect(fetched.response.status).toBe(200);
+    const json = passJson(fetched.bytes);
+    expect(json.voided).toBe(true);
+    expect(json.barcodes).toBeUndefined();
+    const text = everyText(fetched.bytes);
+    expect(text).not.toContain("Penicillin");
+    expect(text).not.toContain("Alex Example");
+    // The record behind it is untouched: only the pass stopped reading it.
+    expect(
+      await prisma.allergy.count({ where: { substance: "Penicillin" } }),
+    ).toBe(1);
+  });
+
   it("withdraws the pass on a password change", async () => {
     const fake = await relayWithWallet();
     const { owner, serial, auth, passId } = await ownerWithPass();

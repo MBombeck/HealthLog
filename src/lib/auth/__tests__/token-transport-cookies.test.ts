@@ -96,7 +96,11 @@ import {
 } from "@/lib/auth/session";
 import { setMfaEnrollCookie } from "@/lib/auth/mfa-enrollment";
 import { refuseCookieIdentityConflict } from "@/lib/auth/cookie-identity-conflict";
-import { carriesBearer, usesTokenTransport } from "@/lib/auth/token-transport";
+import {
+  carriesBearer,
+  ownBearerToken,
+  usesTokenTransport,
+} from "@/lib/auth/token-transport";
 import { prisma } from "@/lib/db";
 
 const SECRET_A = `hls_${"a".repeat(64)}`;
@@ -152,6 +156,19 @@ describe("the transport predicates", () => {
       ),
     ).toBe(false);
   });
+
+  it("counts only a Bearer of the app's own format", () => {
+    const h = (init: Record<string, string>) => new Headers(init);
+    // A reverse proxy's own credential, forwarded in the same header.
+    const proxyJwt = "Bearer eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJ4In0.c2ln";
+    expect(carriesBearer(h({ authorization: proxyJwt }))).toBe(false);
+    expect(usesTokenTransport(h({ authorization: proxyJwt }))).toBe(false);
+    expect(carriesBearer(h({ authorization: "Bearer hlr_x" }))).toBe(false);
+    expect(carriesBearer(h({ authorization: "bearer hlk_x" }))).toBe(false);
+    expect(ownBearerToken("Bearer hlk_abc")).toBe("hlk_abc");
+    expect(ownBearerToken(proxyJwt)).toBeNull();
+    expect(ownBearerToken(null)).toBeNull();
+  });
 });
 
 describe("createSession", () => {
@@ -160,6 +177,13 @@ describe("createSession", () => {
     const id = await createSession("user-a", false);
     expect(id).toBe("sess-new");
     expect(prisma.session.create).toHaveBeenCalledTimes(1);
+    expect(cookiesSet()).toContain("healthlog_session");
+  });
+
+  it("issues a session cookie to a browser behind a proxy that forwards its own Bearer", async () => {
+    jar.headers.set("user-agent", "Mozilla/5.0 Safari/605.1.15");
+    jar.headers.set("authorization", "Bearer eyJhbGciOiJSUzI1NiJ9.e30.c2ln");
+    expect(await createSession("user-a", false)).toBe("sess-new");
     expect(cookiesSet()).toContain("healthlog_session");
   });
 
@@ -180,6 +204,14 @@ describe("getSession", () => {
   it("resolves a cookie session when no Bearer is present", async () => {
     seedSession("sess-a", "user-a", SECRET_A);
     jar.cookies.set("healthlog_session", SECRET_A);
+    const resolved = await getSession();
+    expect(resolved?.user.id).toBe("user-a");
+  });
+
+  it("resolves the cookie session beside a reverse proxy's own Bearer", async () => {
+    seedSession("sess-a", "user-a", SECRET_A);
+    jar.cookies.set("healthlog_session", SECRET_A);
+    jar.headers.set("authorization", "Bearer eyJhbGciOiJSUzI1NiJ9.e30.c2ln");
     const resolved = await getSession();
     expect(resolved?.user.id).toBe("user-a");
   });
