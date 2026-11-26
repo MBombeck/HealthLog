@@ -24,6 +24,7 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("@/lib/logging/context", () => ({
   annotate: vi.fn(),
+  getEvent: () => undefined,
 }));
 
 vi.mock("@/lib/rollups/measurement-coverage", () => ({

@@ -42,7 +42,7 @@ import {
 } from "./baseline";
 import { readDayAggregates } from "@/lib/measurements/day-aggregates";
 import { isSourceRankedType } from "@/lib/analytics/source-rank-sql";
-import { loadDaySourcePriority } from "@/lib/measurements/day-source-priority";
+import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 import { VITALS_BASELINE_TYPES } from "./registry";
 import type { Derived, DerivedProvenanceSource } from "./types";
@@ -316,7 +316,7 @@ export async function readLatestDayMean(
     sourcePriority:
       opts.sourcePriority !== undefined || !isSourceRankedType(type)
         ? opts.sourcePriority
-        : await loadDaySourcePriority(userId),
+        : await loadUserSourcePriority(userId),
   });
   const latest = days.at(-1);
   if (!latest) return null;

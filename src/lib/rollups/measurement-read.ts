@@ -27,6 +27,7 @@ import type {
 } from "@/generated/prisma/client";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
+import { memoizePerRequest } from "@/lib/request-cache";
 import { buildSourceRankCase } from "@/lib/analytics/source-rank-sql";
 import {
   windowWeighting,
@@ -48,15 +49,27 @@ import { toTrendSlope, type TrendSlope } from "@/lib/analytics/trends";
 /**
  * v1.11.1 — load a user's source-priority blob for the rollup collapse.
  * `null` makes `collapseRollupRowsBySource` fall back to the default ladders.
- * Callers that read many types in a loop should load it once and thread it
- * through, rather than paying one lookup per read.
+ *
+ * One read per request: a dashboard, digest or health-status request reaches
+ * this from dozens of readers, some of them in parallel. Every caller shares
+ * the one pending read under one key, so the count does not depend on which
+ * parallel reads Prisma happens to batch into one statement. A background
+ * event reads afresh, since one job spans many users and a ladder changed
+ * mid-run should hold for the next read; outside any event there is no
+ * request to share and every call reads.
  */
-export async function loadUserSourcePriority(userId: string): Promise<unknown> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { sourcePriorityJson: true },
-  });
-  return user?.sourcePriorityJson ?? null;
+export function loadUserSourcePriority(userId: string): Promise<unknown> {
+  return memoizePerRequest(
+    `source-priority:${userId}`,
+    async () => {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { sourcePriorityJson: true },
+      });
+      return user?.sourcePriorityJson ?? null;
+    },
+    { freshInBackground: true },
+  );
 }
 
 export interface DailyMeanRow {
