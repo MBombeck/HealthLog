@@ -6990,6 +6990,7 @@
         "deleteConfirmBodyUsed": "Aufgaben mit dieser Kette ({count}) gehen beim Speichern zurück auf „Standard“. Ist sie die Standardkette, übernimmt wieder die Fallback-Kette. Deine Anbieter und Schlüssel bleiben, wie sie sind.",
         "bindingHint": "Mit nur einem Anbieter ist die Kette eine feste Bindung: Kann er nicht antworten, bricht die Aufgabe ab, statt einen anderen Anbieter zu versuchen.",
         "bindingShort": "Fest an diesen Anbieter gebunden, kein Ausweichen.",
+        "taskNoProvider": "In dieser Kette ist kein Anbieter eingerichtet, deshalb läuft diese Aufgabe nicht: Ihre Aktion wird erst wieder angeboten, wenn du einen einrichtest oder eine andere Kette wählst.",
         "egressLocal": "Bleibt auf diesem Rechner",
         "egressExternal": "Verlässt diesen Rechner",
         "notSetUp": "Noch nicht eingerichtet",

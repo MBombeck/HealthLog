@@ -27,6 +27,7 @@ import type { EnvelopeMessage } from "@/lib/push-relay/envelope";
 import {
   attemptResultOf,
   loadPushContext,
+  relayReachable,
   routeOf,
   sealedOutcome,
   sendSealed,
@@ -347,7 +348,7 @@ export async function endActivitiesOverRelay(
   activities: RelayActivityRow[],
   ctx: PushContext,
 ): Promise<string[]> {
-  if (routeOf(device, ctx) !== "relay" || !device.relayBindingKey) return [];
+  if (!relayReachable(device, ctx) || !device.relayBindingKey) return [];
   if (!fromBase64Url(device.relayBindingKey, 32)) return [];
   const nowS = Math.floor(Date.now() / 1000);
   const items = activities.flatMap((activity) => {

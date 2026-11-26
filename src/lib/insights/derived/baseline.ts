@@ -35,6 +35,8 @@ import {
 } from "@/lib/targets/trend-verdict";
 import type { MeasurementType, PrismaClient } from "@/generated/prisma/client";
 import { readDayAggregates } from "@/lib/measurements/day-aggregates";
+import { isSourceRankedType } from "@/lib/analytics/source-rank-sql";
+import { loadDaySourcePriority } from "@/lib/measurements/day-source-priority";
 import { ageInYears } from "@/lib/tz/date-only";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { toProfileSex } from "@/lib/profile/sex";
@@ -308,7 +310,9 @@ export async function readDayMeanSeries(
   // mean with it and the median would carry it into the band. A day whose
   // every reading is implausible produces no point at all. Days are UTC
   // days, matching the DAY rollup path above, unless the caller asked for
-  // the user's own days.
+  // the user's own days. Each day keeps to its ladder-winning source, the
+  // pick the DAY rollup path makes, so the band and today's value
+  // (`readLatestDayMean`) describe the same device.
   const since = new Date(now.getTime() - windowDays * 24 * 60 * 60 * 1000);
   const days = await readDayAggregates({
     userId,
@@ -316,6 +320,9 @@ export async function readDayMeanSeries(
     since,
     timeZone: timeZone ?? "UTC",
     valueRange: plausibleMetricRange(type),
+    sourcePriority: isSourceRankedType(type)
+      ? await loadDaySourcePriority(userId)
+      : undefined,
   });
   // A pulse day is the mean of its local hours' means (`dayMean`, see
   // `day-mean.ts`); every other type's day is the mean of its readings.

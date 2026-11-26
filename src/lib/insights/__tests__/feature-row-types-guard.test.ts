@@ -4,7 +4,8 @@
  * own, so the read has to name them). A block that starts folding another
  * type through `byType("…")` would get no rows and quietly stop being built,
  * so every type a block reads must be on the list, including the signals of
- * the day, which are handed the same `byType`.
+ * the day, which are handed `byType` narrowed to each day's ladder-winning
+ * source (`canonicalSignalRows`).
  */
 import { describe, expect, it } from "vitest";
 
@@ -12,7 +13,7 @@ import { readSource } from "@/__tests__/helpers/source-files";
 
 const src = readSource("src/lib/insights/features.ts", [
   "const FEATURE_ROW_TYPES",
-  "computeSignalsOfDay(\n    byType,",
+  "canonicalSignalRows(byType,",
 ]);
 const signals = readSource("src/lib/insights/signals-of-day.ts", [
   "byType: (type: string)",
