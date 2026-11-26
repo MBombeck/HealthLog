@@ -49,7 +49,6 @@ const SERVER_FILES = [
 /** Every surface that paints a time-of-day salutation. */
 const GREETING_SURFACES = [
   "components/dashboard/dashboard-header.tsx",
-  "components/insights/hero-strip.tsx",
 ] as const;
 
 describe("T1 — the snapshot payload carries no wall-clock hour", () => {

@@ -94,14 +94,14 @@ describe("<InsightsTabStrip> — availability gating (v1.4.27 F19)", () => {
     expect(html).toContain(">Overview<");
   });
 
-  it("always renders the Recovery pill (composite wearable surface, self-gated page)", () => {
+  it("always renders the Device scores pill (composite wearable surface, self-gated page)", () => {
     // v1.18.0 — Recovery left the left-nav for an Insights pill. It is a
     // composite WHOOP / Polar / Oura surface, not a single MeasurementType,
     // so it has no `summaries[METRIC].count` to gate on; the page itself
     // data-gates each block and falls back to a calm empty note, so the
     // pill is always present (like Overview) regardless of availability.
     const noAvailability = render(<InsightsTabStrip />);
-    expect(noAvailability).toContain(">Recovery<");
+    expect(noAvailability).toContain(">Device scores<");
     expect(noAvailability).toContain('href="/insights/recovery"');
 
     const emptyAvailability: InsightInputs = {
@@ -110,7 +110,7 @@ describe("<InsightsTabStrip> — availability gating (v1.4.27 F19)", () => {
       hasMedication: false,
     };
     const html = render(<InsightsTabStrip availability={emptyAvailability} />);
-    expect(html).toContain(">Recovery<");
+    expect(html).toContain(">Device scores<");
   });
 
   it("lights up Mood when hasMood flips to true", () => {
@@ -534,15 +534,15 @@ describe("<InsightsTabStrip> — module enable/disable gate (v1.18.0)", () => {
     expect(html).toContain('data-group="metabolic"');
   });
 
-  it("hides the Recovery pill when the recovery module is disabled, keeps it when enabled", () => {
+  it("hides the Device scores pill when the recovery module is disabled, keeps it when enabled", () => {
     const disabled = render(<InsightsTabStrip modules={{ recovery: false }} />);
-    expect(disabled).not.toContain(">Recovery<");
+    expect(disabled).not.toContain(">Device scores<");
     expect(disabled).not.toContain('href="/insights/recovery"');
     // Overview still anchors the strip.
     expect(disabled).toContain(">Overview<");
 
     const enabled = render(<InsightsTabStrip modules={{ recovery: true }} />);
-    expect(enabled).toContain(">Recovery<");
+    expect(enabled).toContain(">Device scores<");
     expect(enabled).toContain('href="/insights/recovery"');
   });
 
@@ -582,7 +582,7 @@ describe("<InsightsTabStrip> — module enable/disable gate (v1.18.0)", () => {
       expect(html).toContain(">Sleep<");
       expect(html).toContain('data-group="activity"');
       expect(html).toContain('data-group="metabolic"');
-      expect(html).toContain(">Recovery<");
+      expect(html).toContain(">Device scores<");
     }
   });
 });

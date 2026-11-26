@@ -14,6 +14,15 @@ describe("resolveRecoveryEmpty", () => {
     expect(resolveRecoveryEmpty({ DAY_STRAIN: { count: 3 } }, none)).toBeNull();
   });
 
+  it("counts HealthLog's estimates, which close the page", () => {
+    expect(
+      resolveRecoveryEmpty({ STRESS_SCORE: { count: 2 } }, none),
+    ).toBeNull();
+    expect(
+      resolveRecoveryEmpty({ STRAIN_SCORE: { count: 2 } }, none),
+    ).toBeNull();
+  });
+
   it("does not count types the page does not chart", () => {
     expect(resolveRecoveryEmpty({ RECOVERY_SCORE: { count: 30 } }, none)).toBe(
       "general",

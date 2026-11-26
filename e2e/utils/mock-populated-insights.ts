@@ -254,6 +254,31 @@ function wellnessScore(
   };
 }
 
+/**
+ * A fresh readiness (`ReadinessValue`), the first ring at the head of the
+ * overview. Its components are left empty: the head reads score, band,
+ * freshness and course only.
+ */
+function readiness(score: number, band: "green" | "yellow" | "red") {
+  return {
+    metric: "READINESS",
+    status: "ok" as const,
+    value: {
+      score,
+      band,
+      components: [],
+      series: series(score, 6),
+      asOfDay: NOW.slice(0, 10),
+      fresh: true,
+    },
+    coverage: coverage(),
+    confidence: confidence(),
+    provenance: provenance(["RESTING_HEART_RATE", "HEART_RATE_VARIABILITY"]),
+    reason: null,
+    assessment: null,
+  };
+}
+
 /** A populated `VitalsBaselineValue` tile — exact wire shape. */
 function vitalsBaseline(type: string, center: number, spread: number) {
   return {
@@ -315,7 +340,7 @@ function buildBatchMetrics(): Record<string, unknown> {
     RECOVERY_SCORE: wellnessScore("RECOVERY_SCORE", 66, "yellow"),
     STRESS_SCORE: wellnessScore("STRESS_SCORE", 41, "green"),
     STRAIN_SCORE: wellnessScore("STRAIN_SCORE", 72, "yellow"),
-    READINESS: insufficient("READINESS"),
+    READINESS: readiness(74, "green"),
     SLEEP_SCORE: insufficient("SLEEP_SCORE"),
     FITNESS_AGE: insufficient("FITNESS_AGE"),
     VASCULAR_AGE_DELTA: insufficient("VASCULAR_AGE_DELTA"),

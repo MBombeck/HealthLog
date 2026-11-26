@@ -1162,7 +1162,14 @@
     "valueOutOfRangeNoUnit": "Vul een waarde in tussen {min} en {max}.",
     "lastValue": "Laatst {value}, {when}",
     "lastValueDeviates": "Flink anders dan je vorige meting. Klopt dat?",
-    "saveAndNext": "Opslaan en volgende"
+    "saveAndNext": "Opslaan en volgende",
+    "typeRecoveryScoreWhoop": "WHOOP Recovery",
+    "typeRecoveryScoreOura": "Oura Readiness",
+    "typeRecoveryScorePolar": "Polar Nightly Recharge",
+    "typeRecoveryScoreComputed": "Paraatheid (HealthLog)",
+    "typeSleepScoreOura": "Oura-slaapscore",
+    "typeSleepScoreGarmin": "Garmin-slaapscore",
+    "typeSleepScoreWithings": "Withings-slaapscore"
   },
   "metricCatalog": {
     "title": "Wat HealthLog kan bijhouden",
@@ -3107,7 +3114,6 @@
     "bmiEmptyDescription": "Voor de BMI is je lengte nodig. Voeg die toe onder Instellingen > Account.",
     "bmiEmptyAction": "Accountinstellingen openen",
     "loadError": "Inzichten kunnen niet worden geladen",
-    "heroPersonalBaseline": "Op basis van je afgelopen 90 dagen",
     "heroRegenerating": "Opnieuw genereren",
     "regenerateAnalysis": "Beoordeling opnieuw uitvoeren",
     "regenerateSuccess": "Beoordeling vernieuwd",
@@ -3115,10 +3121,6 @@
     "narrativeWeek": "Deze week",
     "narrativeMonth": "Deze maand",
     "narrativeUpdating": "Bijwerken…",
-    "heroFallbackSubtitle": "Een dagelijkse kijk op je trends, rechtstreeks gebaseerd op de cijfers die je hebt vastgelegd.",
-    "heroGreetingMorning": "Goedemorgen",
-    "heroGreetingAfternoon": "Goedemiddag",
-    "heroGreetingEvening": "Goedenavond",
     "heroActionAskCoach": "Vraag het de Coach",
     "healthScore": {
       "label": "Gezondheidsscore",
@@ -3900,7 +3902,7 @@
         "recoveryBody": "Herstel weerspiegelt hoe goed je lichaam is bijgekomen, op basis van nachtelijke signalen zoals hartslagvariabiliteit en rusthartslag. Het is een door een apparaat afgeleide benadering, afgezet tegen je eigen basiswaarde, geen klinische maat, en niet vergelijkbaar tussen apparaten. Een sterke score is groen licht om door te zetten; een lagere score geeft aan dat je lichaam nog aan het herstellen is.",
         "strainBody": "Belasting geeft aan hoeveel cardiovasculaire en lichamelijke belasting je je lichaam hebt opgelegd, van trainingen tot een actieve dag op de been. Het is een door een apparaat afgeleide index, beoordeeld ten opzichte van je eigen gebruikelijke inspanning, geen klinische maat, en het hoofdgetal is niet vergelijkbaar tussen apparaten.",
         "stressBody": "Stress is hier een heuristiek van je apparaat, afgeleid van patronen in de hartslagvariabiliteit. Het is geen cortisolmeting, geen weergave van hoe je je bewust voelt en geen klinische stressscore. Vergelijk het met je eigen basislijn; het is niet vergelijkbaar tussen apparaten. Een lagere score wijst op een kalme, goed gereguleerde toestand; een hogere is een uitnodiging om herstel in te bouwen.",
-        "recoveryPageBody": "Herstel brengt de nachtelijke signalen samen die je wearable registreert (opladen, inspanning, belasting en de dagtotalen van je hartslag en energie) om te laten zien hoe goed je lichaam zich heeft hersteld. Kijk naar het patroon over meerdere dagen in plaats van naar één getal; een minder gunstige meting is een uitnodiging om het rustiger aan te doen, geen alarmsignaal.",
+        "recoveryPageBody": "Wat je wearable meldt, onder zijn eigen namen.",
         "pulsePressureBody": "De polsdruk is het verschil tussen je systolische en diastolische meting (systolisch min diastolisch). Als algemene richtlijn is ongeveer 40 mmHg gebruikelijk in rust; een groot verschil van meer dan ongeveer 60 mmHg op middelbare leeftijd kan wijzen op stijver wordende slagaders, terwijl een klein verschil van minder dan ongeveer 25 mmHg kan samengaan met een laag slagvolume (StatPearls/NIH 2023). Het is een aanleiding voor een gesprek, geen diagnose.",
         "meanArterialPressureBody": "De gemiddelde arteriële druk is de gemiddelde druk die je organen tijdens een hartslag ervaren, ongeveer de diastolische druk plus een derde van het verschil met de systolische. Als algemene richtlijn ligt een waarde in rust rond 70–100 mmHg (StatPearls/NIH 2023). De vaak genoemde ondergrens van ~60 mmHg is een begrip uit de acute zorg, geen alarmgrens voor zelfmeting.",
         "cycleEducationBody": "Je cyclus doorloopt vier fasen die worden aangestuurd door wisselende hormonen, en de lengte en regelmaat ervan geven een toegankelijk beeld van je algehele gezondheid. Als algemene richtlijn duurt een cyclus bij volwassenen doorgaans 21–35 dagen (klinische bronnen noemen 24–38), met ongeveer vijf dagen bloedverlies (ACOG 2015). De luteale fase is het stabiele ankerpunt, dus de ovulatie schat je het best door terug te tellen vanaf je volgende verwachte menstruatie, nooit als een vaste 'dag 14'. Een voorspelde vruchtbare periode is een schatting die meerdere geregistreerde cycli nodig heeft en altijd bij benadering blijft, en de basale lichaamstemperatuur bevestigt de ovulatie achteraf in plaats van die te voorspellen. Dit is geen anticonceptiemethode.",
@@ -4100,7 +4102,7 @@
       }
     },
     "navWorkouts": "Trainingen",
-    "navRecovery": "Herstel",
+    "navRecovery": "Apparaatscores",
     "workouts": {
       "title": "Trainingen",
       "description": "Recente hardloop-, fiets-, wandel- en krachttrainingen, ontdubbeld over bronnen van Apple Watch en Withings.",
@@ -5118,7 +5120,6 @@
     "recovery": {
       "title": "Herstel",
       "description": "Hoe goed je lichaam zich heeft hersteld: de signalen voor herstel, belasting en trainingsbelasting die je wearable 's nachts vastlegt.",
-      "scoreCrossLink": "Bekijk de samengestelde herstelscore",
       "emptyTitle": "Nog geen herstelgegevens",
       "empty": "Deze pagina vult zich met de metingen voor opladen, belasting en trainingsbelasting van WHOOP of Polar en met het veerkrachtniveau van Oura.",
       "block": {
@@ -5322,7 +5323,6 @@
       "coachPrefill": "Ik heb nog geen medicatie toegevoegd. Wat moet ik weten voordat ik hier begin met het bijhouden van mijn medicatietrouw?"
     },
     "scoreHistory": {
-      "healthTitle": "Geschiedenis van de gezondheidsscore",
       "healthDescription": "Je gezondheidsscore per dag, zoals die op elke dag werd getoond.",
       "emptyDescription": "In deze periode is nog geen score vastgelegd.",
       "usualRange": "Gearceerd: je gebruikelijke bereik, {lo} tot {hi}.",
@@ -5361,6 +5361,29 @@
         "midday": "'s middags",
         "evening": "'s avonds"
       }
+    },
+    "scores": {
+      "historyWindow": "Verloop {days} dagen",
+      "staleLast": "Laatst {score} op {date}",
+      "valuesFrom": "Waarden van {date}",
+      "loadError": "Je scores konden nu niet worden geladen.",
+      "loadingLabel": "Je scores worden geladen",
+      "regionLabel": "Je scores",
+      "bandNote": "Sinds 1.50 geldt 50 tot 69 als {fair} en onder 50 als {low}.",
+      "loadBand": {
+        "green": "laag",
+        "yellow": "gemiddeld",
+        "red": "hoog"
+      }
+    },
+    "deviceScores": {
+      "title": "Apparaatscores",
+      "description": "Wat je wearable meldt, onder zijn eigen namen.",
+      "valueOfScale": "{value} van {max}",
+      "estimatesTitle": "Schattingen van HealthLog",
+      "estimatesSubtitle": "Berekend uit je hartgegevens, niet door een apparaat gemeld.",
+      "stress": "Stress (schatting)",
+      "strain": "Belasting (schatting)"
     }
   },
   "thresholds": {
@@ -10789,10 +10812,6 @@
       "currentDay": "Dag {day} van je cyclus",
       "noActiveCycle": "Nog geen actieve cyclus",
       "viewDetails": "Cyclusinzichten bekijken"
-    },
-    "wellnessRing": {
-      "label": "Cyclus",
-      "loadError": "Je cyclus kon niet worden geladen."
     },
     "disclaimer": "Deze voorspellingen zijn beschrijvende schattingen op basis van je geregistreerde gegevens, geen anticonceptiemethode en geen medisch advies. Ze geven nooit aan dat onbeschermde seks veilig is. Raadpleeg voor anticonceptie of een medische beslissing een zorgverlener.",
     "title": "Cyclus",

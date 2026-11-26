@@ -95,6 +95,14 @@ export interface ScoreAnatomyViewProps {
   insufficientNote?: ReactNode;
   /** Keep the shared provisional ring unless the caller requires rows only. */
   showProvisionalRing?: boolean;
+  /**
+   * A score that exists but is not about today (a readiness resting on
+   * yesterday's values): the ring shows its bare track with this as its
+   * accessible name, and `caption` says when the values are from.
+   */
+  staleLabel?: string;
+  /** Heading over the contributor rows; "Contributors" when omitted. */
+  contributorsHeading?: ReactNode;
   className?: string;
 }
 
@@ -113,6 +121,8 @@ export function ScoreAnatomyView({
   insufficient = false,
   insufficientNote,
   showProvisionalRing = true,
+  staleLabel,
+  contributorsHeading,
   className,
 }: ScoreAnatomyViewProps) {
   const { t } = useTranslations();
@@ -156,6 +166,8 @@ export function ScoreAnatomyView({
               hue={insufficient ? undefined : hue}
               label={t("insights.derived.anatomy.outOf")}
               size="lg"
+              emptyFace={staleLabel !== undefined}
+              ariaLabel={staleLabel}
             />
           </div>
         ) : null}
@@ -186,7 +198,8 @@ export function ScoreAnatomyView({
       {contributors.length > 0 ? (
         <div data-slot="score-anatomy-contributors" className="space-y-3">
           <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
-            {t("insights.derived.anatomy.contributorsLabel")}
+            {contributorsHeading ??
+              t("insights.derived.anatomy.contributorsLabel")}
           </p>
           <ul className="space-y-2.5">
             {contributors.map((c) => (

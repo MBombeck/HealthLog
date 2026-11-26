@@ -8,9 +8,10 @@ import {
 } from "./utils/horizontal-overflow";
 
 /**
- * The Health Score panel at 360 px.
+ * The Health Score panel at 360 px, on its own page since 1.50, and its
+ * ring at the head of the overview.
  *
- * The panel is the widest-content block in the hero band: a fixed label
+ * The panel is the widest-content block on its page: a fixed label
  * column, a fill bar, a value column and a popover trigger on one line, plus
  * a coalesced failed-read line carrying an inline button, plus a disclosure
  * whose open state adds a bordered tile and three prose paragraphs. 360 px is
@@ -41,7 +42,9 @@ test.describe("the Health Score panel at phone width", () => {
   }) => {
     await mockPopulatedInsights(page);
     await page.setViewportSize({ width: 360, height: 851 });
-    await page.goto("/insights", { waitUntil: "domcontentloaded" });
+    await page.goto("/insights/scores/health", {
+      waitUntil: "domcontentloaded",
+    });
 
     const panel = page.locator(PANEL);
     await expect(panel).toBeVisible();
@@ -71,12 +74,17 @@ test.describe("the Health Score panel at phone width", () => {
   }) => {
     await mockPopulatedInsights(page);
     await page.setViewportSize({ width: 360, height: 851 });
-    await page.goto("/insights", { waitUntil: "domcontentloaded" });
+    await page.goto("/insights/scores/health", {
+      waitUntil: "domcontentloaded",
+    });
 
     const panel = page.locator(PANEL);
     await expect(panel).toBeVisible();
     await settleForOverflowMeasurement(page);
-    await expectNoHorizontalOverflow(page, "/insights score panel @360px");
+    await expectNoHorizontalOverflow(
+      page,
+      "/insights/scores/health panel @360px",
+    );
 
     // Opened, the disclosure adds the bordered weight-goal tile and the method
     // paragraphs — the widest content the panel can hold.
@@ -85,7 +93,10 @@ test.describe("the Health Score panel at phone width", () => {
       panel.locator('[data-slot="health-score-weight-goal"]'),
     ).toBeVisible();
     await settleForOverflowMeasurement(page);
-    await expectNoHorizontalOverflow(page, "/insights score panel open @360px");
+    await expectNoHorizontalOverflow(
+      page,
+      "/insights/scores/health panel open @360px",
+    );
   });
 
   test("keeps the panel inside the band, never wider than it", async ({
@@ -93,7 +104,9 @@ test.describe("the Health Score panel at phone width", () => {
   }) => {
     await mockPopulatedInsights(page);
     await page.setViewportSize({ width: 360, height: 851 });
-    await page.goto("/insights", { waitUntil: "domcontentloaded" });
+    await page.goto("/insights/scores/health", {
+      waitUntil: "domcontentloaded",
+    });
 
     const panel = page.locator(PANEL);
     await expect(panel).toBeVisible();
@@ -103,7 +116,7 @@ test.describe("the Health Score panel at phone width", () => {
     ).toBeVisible();
 
     const measured = await panel.evaluate((el) => {
-      const band = el.closest('[data-slot="insights-hero-strip"]');
+      const band = el.closest('[data-slot="health-score-page"]');
       // The widest descendant that is not contained by its own scroller.
       let widest = 0;
       for (const child of Array.from(el.querySelectorAll("*"))) {
@@ -132,5 +145,24 @@ test.describe("the Health Score panel at phone width", () => {
       measured.widestChild,
       `a child is wider than the panel: ${JSON.stringify(measured)}`,
     ).toBeLessThanOrEqual(measured.panelClient + 1);
+  });
+
+  test("keeps the safety line on the overview's Health score ring", async ({
+    page,
+  }) => {
+    await mockPopulatedInsights(page);
+    await page.setViewportSize({ width: 360, height: 851 });
+    await page.goto("/insights", { waitUntil: "domcontentloaded" });
+
+    const tile = page.locator(
+      '[data-slot="wellness-score-tile"][data-metric="HEALTH_SCORE"]',
+    );
+    await expect(tile).toBeVisible();
+    await expect(tile).toHaveAttribute("href", "/insights/scores/health");
+    await expect(
+      tile.locator('[data-slot="wellness-score-note"]'),
+    ).toBeVisible();
+    await settleForOverflowMeasurement(page);
+    await expectNoHorizontalOverflow(page, "/insights score rings @360px");
   });
 });

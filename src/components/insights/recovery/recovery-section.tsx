@@ -28,6 +28,13 @@ import type { ChartOverlayKey } from "@/lib/dashboard/chart-overlay-prefs";
 import type { MetricStatusMetricId } from "@/lib/insights/metric-status-registry";
 import { RecoveryMetricBlock } from "@/components/insights/recovery/recovery-metric-block";
 import { ResilienceTile } from "@/components/insights/recovery/resilience-tile";
+import { DeviceRecoveryBlock } from "@/components/insights/recovery/device-recovery-block";
+import { EstimatesSection } from "@/components/insights/recovery/estimates-section";
+import {
+  deviceRecoveryOf,
+  useScoreRows,
+} from "@/components/insights/recovery/device-score-rows";
+import { useAuth } from "@/hooks/use-auth";
 
 interface BlockSpec {
   /** One of the types the server's empty decision counts, by construction. */
@@ -209,8 +216,9 @@ function recoveryBlockGroups(
  * whole-day cardiac / energy figures) renders as a canonical block — a
  * short explanatory line, the max / median / mean stat strip, the same
  * `<HealthChartDynamic>` chart with the identical 7 / 30 / 90 / All toggle,
- * and a per-chart AI assessment (`<MetricStatusCard>`). The composite
- * RECOVERY_SCORE keeps its anatomy view at `/insights/scores/recovery`.
+ * and a per-chart AI assessment (`<MetricStatusCard>`). Since 1.50 the
+ * device's own recovery leads the page under its source's name, and the two
+ * HealthLog estimates (stress, strain) close it in a section of their own.
  *
  * B3 — the redundant "Recovery score" link block that used to lead the
  * page is gone: this surface is reached from the overview already, so the
@@ -223,6 +231,13 @@ function recoveryBlockGroups(
  */
 export function RecoverySection() {
   const { t } = useTranslations();
+  const { isAuthenticated } = useAuth();
+  // The device's own recovery, kept apart from HealthLog's stored readiness
+  // that shares its type. A failed read only drops this one block.
+  const recoveryRows = useScoreRows("RECOVERY_SCORE", isAuthenticated);
+  const deviceRecovery = recoveryRows.data
+    ? deviceRecoveryOf(recoveryRows.data)
+    : null;
   const { data, isLoading, error, refetch } =
     useInsightsAnalytics("SLEEP_DURATION");
   // v1.18.1 — Rest Mode parity. The annotation rides the thick analytics
@@ -301,6 +316,9 @@ export function RecoverySection() {
       <RestModeBanner annotation={restMode} />
       {/* v1.19.2 — Oura resilience band, self-gating (renders nothing without
           a reading). A calm ordinal readout, not a chart block. */}
+      {deviceRecovery ? (
+        <DeviceRecoveryBlock recovery={deviceRecovery} />
+      ) : null}
       <ResilienceTile />
       {presentBlocks.map((block) => (
         <RecoveryMetricBlock
@@ -317,6 +335,7 @@ export function RecoverySection() {
           fractionDigits={block.fractionDigits}
         />
       ))}
+      <EstimatesSection />
     </div>
   );
 }

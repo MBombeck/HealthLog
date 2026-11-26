@@ -1,8 +1,9 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Sparkles } from "lucide-react";
 
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { resolveIntlLocale } from "@/lib/format-locale";
 import { useDerivedMetric } from "./use-derived-metric";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -122,6 +123,7 @@ export function CompositeScoreAnatomy({
   className,
 }: CompositeScoreAnatomyProps) {
   const { t, locale } = useTranslations();
+  const fmt = useFormatters();
 
   const query = useDerivedMetric<
     SleepScoreValue | ReadinessValue | WellnessScoreValue
@@ -172,13 +174,11 @@ export function CompositeScoreAnatomy({
   // alarm. The method copy closes the card on its own.
   // Served from the device, the proxy's method does not describe the number
   // on the card; the device line does, on its own.
-  const method = deviceStrain ? (
-    anchorLine
-  ) : (
-    <>
-      {t(meta.methodKey)}
-      {anchorLine ? <span className="mt-1 block">{anchorLine}</span> : null}
-    </>
+  const method = methodNode(
+    metric,
+    deviceStrain ? null : t(meta.methodKey),
+    anchorLine,
+    t,
   );
 
   if (query.isError) {
@@ -228,6 +228,9 @@ export function CompositeScoreAnatomy({
   let score: number | null = null;
   let contributors: AnatomyContributor[] = [];
   let caption: string | undefined;
+  // A stale readiness: see `readinessHead`.
+  let staleLabel: string | undefined;
+  let contributorsHeading: string | undefined;
 
   if (data.status === "ok" && data.value) {
     if (metric === "SLEEP_SCORE") {
@@ -253,8 +256,12 @@ export function CompositeScoreAnatomy({
         .sort(rankByImpact);
     } else if (metric === "READINESS") {
       const v = data.value as ReadinessValue;
-      score = v.score;
-      caption = t(`insights.derived.scoreRing.band.${v.band}`);
+      ({ score, caption, staleLabel, contributorsHeading } = readinessHead(
+        v,
+        title,
+        t,
+        fmt.dateShortSmartCalendar,
+      ));
       contributors = v.components
         .map((c) => ({
           key: c.key,
@@ -272,15 +279,7 @@ export function CompositeScoreAnatomy({
       // READINESS component keys verbatim. STRESS / STRAIN stay row-less.
       const v = data.value as WellnessScoreValue;
       score = v.score;
-      caption = v.device
-        ? t("insights.derived.composite.STRAIN_SCORE.deviceCaption", {
-            value: v.device.value.toLocaleString(resolveIntlLocale(locale), {
-              minimumFractionDigits: 1,
-              maximumFractionDigits: 1,
-            }),
-            max: v.device.scaleMax,
-          })
-        : t(`insights.derived.scoreRing.band.${v.band}`);
+      caption = persistedCaption(metric, v, t, resolveIntlLocale(locale));
       if (metric === "RECOVERY_SCORE" && v.components) {
         contributors = v.components
           .map((c) => ({
@@ -332,7 +331,7 @@ export function CompositeScoreAnatomy({
       <ScoreAnatomyView
         title={title}
         score={score}
-        band={serverBand(data)}
+        band={staleLabel ? undefined : serverBand(data)}
         hue={METRIC_HUE[metric]}
         caption={caption}
         contributors={contributors}
@@ -342,6 +341,8 @@ export function CompositeScoreAnatomy({
         method={method}
         standard={standard}
         insufficient={insufficient}
+        staleLabel={staleLabel}
+        contributorsHeading={contributorsHeading}
         className={className}
       />
       {history}
@@ -379,10 +380,107 @@ function titleFor(metric: AnatomyMetricId, t: (key: string) => string): string {
     case "RECOVERY_SCORE":
       return t("insights.derived.scores.recovery");
     case "STRESS_SCORE":
-      return t("insights.derived.scores.stress");
+      return t("insights.deviceScores.stress");
     case "STRAIN_SCORE":
-      return t("insights.derived.scores.strain");
+      return t("insights.deviceScores.strain");
   }
+}
+
+/**
+ * The method caption that closes the card: the method itself (absent for a
+ * strain served from the device, which its anchor line describes alone), the
+ * strain's anchor line, and for readiness and the sleep score the note that
+ * they moved onto the one band rule in 1.50 (yellow from 50, red below).
+ * Past days recolour with it, so the page says so until 1.51.
+ */
+function methodNode(
+  metric: AnatomyMetricId,
+  methodText: string | null,
+  anchorLine: string | null,
+  t: (key: string, vars?: Record<string, string | number>) => string,
+): ReactNode {
+  if (methodText === null) return anchorLine;
+  const bandNote =
+    metric === "READINESS" || metric === "SLEEP_SCORE"
+      ? t("insights.scores.bandNote", {
+          fair: t("insights.derived.scoreRing.band.yellow"),
+          low: t("insights.derived.scoreRing.band.red"),
+        })
+      : null;
+  return (
+    <>
+      {methodText}
+      {anchorLine ? <span className="mt-1 block">{anchorLine}</span> : null}
+      {bandNote ? (
+        <span data-slot="score-band-note" className="mt-1 block">
+          {bandNote}
+        </span>
+      ) : null}
+    </>
+  );
+}
+
+/**
+ * The head of the readiness card. A readiness resting on values from before
+ * today is no statement about today: no number, no band, no sentence; the
+ * caption says when its values are from ("Last 81 on Nov 24") and the
+ * contributors stay under that day.
+ */
+function readinessHead(
+  v: ReadinessValue,
+  title: string,
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  formatDay: (day: string) => string,
+): {
+  score: number | null;
+  caption: string;
+  staleLabel: string | undefined;
+  contributorsHeading: string | undefined;
+} {
+  if (v.fresh !== false) {
+    return {
+      score: v.score,
+      caption: t(`insights.derived.scoreRing.band.${v.band}`),
+      staleLabel: undefined,
+      contributorsHeading: undefined,
+    };
+  }
+  const date = formatDay(v.asOfDay);
+  const caption = t("insights.scores.staleLast", {
+    score: Math.round(v.score),
+    date,
+  });
+  return {
+    score: null,
+    caption,
+    staleLabel: `${title}. ${caption}`,
+    contributorsHeading: t("insights.scores.valuesFrom", { date }),
+  };
+}
+
+/**
+ * The caption under a stored score's ring: the device's own reading on its
+ * own scale for a strain the device served, the load words for stress and
+ * strain (a heavy stress is "high", never "low"), the band word otherwise.
+ */
+function persistedCaption(
+  metric: AnatomyMetricId,
+  v: WellnessScoreValue,
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  intlLocale: string,
+): string {
+  if (v.device) {
+    return t("insights.derived.composite.STRAIN_SCORE.deviceCaption", {
+      value: v.device.value.toLocaleString(intlLocale, {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      }),
+      max: v.device.scaleMax,
+    });
+  }
+  return metric === "STRESS_SCORE" || metric === "STRAIN_SCORE"
+    ? t(`insights.scores.loadBand.${v.band}`)
+    : t(`insights.derived.scoreRing.band.${v.band}`);
 }
 
 /** Rank contributors by impact: present-and-higher-weight first. */

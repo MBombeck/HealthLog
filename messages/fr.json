@@ -1162,7 +1162,14 @@
     "valueOutOfRangeNoUnit": "Saisissez une valeur entre {min} et {max}.",
     "lastValue": "Dernière valeur : {value}, {when}",
     "lastValueDeviates": "Très différent de votre dernière mesure. Est-ce correct ?",
-    "saveAndNext": "Enregistrer et suivant"
+    "saveAndNext": "Enregistrer et suivant",
+    "typeRecoveryScoreWhoop": "WHOOP Recovery",
+    "typeRecoveryScoreOura": "Oura Readiness",
+    "typeRecoveryScorePolar": "Polar Nightly Recharge",
+    "typeRecoveryScoreComputed": "Disponibilité (HealthLog)",
+    "typeSleepScoreOura": "Score de sommeil Oura",
+    "typeSleepScoreGarmin": "Score de sommeil Garmin",
+    "typeSleepScoreWithings": "Score de sommeil Withings"
   },
   "metricCatalog": {
     "title": "Ce que HealthLog peut suivre",
@@ -3107,7 +3114,6 @@
     "bmiEmptyDescription": "L’IMC nécessite votre taille. Renseignez-la dans Paramètres > Compte.",
     "bmiEmptyAction": "Ouvrir les paramètres du compte",
     "loadError": "Impossible de charger les analyses",
-    "heroPersonalBaseline": "Basé sur vos 90 derniers jours",
     "heroRegenerating": "Génération en cours",
     "regenerateAnalysis": "Relancer l’évaluation",
     "regenerateSuccess": "Évaluation regénérée",
@@ -3115,10 +3121,6 @@
     "narrativeWeek": "Cette semaine",
     "narrativeMonth": "Ce mois-ci",
     "narrativeUpdating": "Mise à jour…",
-    "heroFallbackSubtitle": "Un coup d’œil quotidien sur vos tendances, directement issu des chiffres que vous saisissez.",
-    "heroGreetingMorning": "Bonjour",
-    "heroGreetingAfternoon": "Bonjour",
-    "heroGreetingEvening": "Bonsoir",
     "heroActionAskCoach": "Demander au coach",
     "healthScore": {
       "label": "Score de santé",
@@ -3900,7 +3902,7 @@
         "recoveryBody": "La récupération reflète la qualité du rétablissement de votre corps, à partir de signaux nocturnes comme la variabilité de la fréquence cardiaque et la fréquence au repos. Un score élevé est un feu vert pour pousser ; un score plus bas suggère que votre organisme se reconstruit encore.",
         "strainBody": "La charge mesure l'effort cardiovasculaire et physique que vous avez imposé à votre corps, des entraînements à une journée active debout. Dès qu'il y a assez d'historique, elle est évaluée par rapport à votre propre effort habituel, pas à un standard extérieur.",
         "stressBody": "Le stress est ici une estimation de la charge physiologique sur votre système nerveux, lue surtout à partir des schémas de variabilité de la fréquence cardiaque et non de ce que vous ressentez consciemment. Un score plus bas indique un état calme et bien régulé ; un score plus élevé invite à prévoir de la récupération.",
-        "recoveryPageBody": "La récupération rassemble les signaux nocturnes enregistrés par votre wearable (recharge, effort, charge ainsi que vos totaux de fréquence cardiaque et d'énergie du jour) pour montrer à quel point votre corps a récupéré. Observez la tendance sur plusieurs jours plutôt qu'un seul chiffre ; une valeur plus faible invite à lever le pied, ce n'est pas une alarme.",
+        "recoveryPageBody": "Ce que votre appareil connecté rapporte, sous ses propres noms.",
         "pulsePressureBody": "La pression pulsée est l'écart entre votre valeur systolique et diastolique (systolique moins diastolique). À titre indicatif général, environ 40 mmHg est typique au repos ; un écart large au-dessus d'environ 60 mmHg à l'âge moyen peut refléter des artères rigidifiées, tandis qu'un écart étroit en dessous d'environ 25 mmHg peut accompagner un faible volume d'éjection (StatPearls/NIH 2023). C'est un sujet de discussion, pas un diagnostic.",
         "meanArterialPressureBody": "La pression artérielle moyenne est la pression moyenne que voient vos organes sur un battement, soit grosso modo la diastolique plus un tiers de l'écart avec la systolique. À titre indicatif général, une valeur au repos se situe autour de 70–100 mmHg (StatPearls/NIH 2023). Le seuil de ~60 mmHg souvent cité est un concept de soins aigus, pas une alarme pour l'autosurveillance.",
         "cycleEducationBody": "Votre cycle traverse quatre phases pilotées par les hormones, et sa durée et sa régularité sont une fenêtre accessible sur la santé globale. À titre indicatif général, les cycles chez l'adulte durent typiquement 21–35 jours (les références cliniques citent 24–38), avec des règles d'environ cinq jours (ACOG 2015). La phase lutéale est l'ancrage stable, donc l'ovulation s'estime au mieux en comptant à rebours depuis vos prochaines règles prévues, jamais à un « jour 14 » fixe. Une fenêtre fertile prédite est une estimation qui demande plusieurs cycles enregistrés et reste approximative, et la température basale confirme l'ovulation après coup plutôt qu'elle ne la prédit. Ce n'est pas une méthode de contraception.",
@@ -4100,7 +4102,7 @@
       }
     },
     "navWorkouts": "Entraînements",
-    "navRecovery": "Récupération",
+    "navRecovery": "Scores des appareils",
     "workouts": {
       "title": "Entraînements",
       "description": "Courses, sorties à vélo, marches et séances de musculation récentes, dédupliquées entre Apple Watch et Withings.",
@@ -5118,7 +5120,6 @@
     "recovery": {
       "title": "Récupération",
       "description": "À quel point votre corps a récupéré : les signaux de récupération, de charge et d'effort que votre wearable enregistre la nuit.",
-      "scoreCrossLink": "Voir le score de récupération composite",
       "emptyTitle": "Pas encore de données de récupération",
       "empty": "Cette page se remplit avec les valeurs de récupération, d'effort et de charge de WHOOP ou Polar et avec le niveau de résilience d'Oura.",
       "emptyOuraPermission": "Le niveau de résilience d'Oura demande l'autorisation d'accès aux données de stress : reconnectez Oura une fois dans Intégrations et autorisez-la.",
@@ -5322,7 +5323,6 @@
       "coachPrefill": "Je n’ai encore ajouté aucun médicament. Que dois-je savoir avant de suivre ici l’observance ?"
     },
     "scoreHistory": {
-      "healthTitle": "Évolution du score de santé",
       "healthDescription": "Votre score de santé jour après jour, tel qu’il s’affichait chaque jour.",
       "emptyDescription": "Aucun score n’a encore été enregistré sur cette période.",
       "usualRange": "En grisé : votre plage habituelle, de {lo} à {hi}.",
@@ -5361,6 +5361,29 @@
         "midday": "à midi",
         "evening": "le soir"
       }
+    },
+    "scores": {
+      "historyWindow": "Historique sur {days} jours",
+      "staleLast": "Dernier : {score} le {date}",
+      "valuesFrom": "Valeurs du {date}",
+      "loadError": "Vos scores n'ont pas pu être chargés pour le moment.",
+      "loadingLabel": "Chargement de vos scores",
+      "regionLabel": "Vos scores",
+      "bandNote": "Depuis la 1.50, de 50 à 69 se lit {fair} et sous 50 {low}.",
+      "loadBand": {
+        "green": "faible",
+        "yellow": "modéré",
+        "red": "élevé"
+      }
+    },
+    "deviceScores": {
+      "title": "Scores des appareils",
+      "description": "Ce que votre appareil connecté rapporte, sous ses propres noms.",
+      "valueOfScale": "{value} sur {max}",
+      "estimatesTitle": "Estimations de HealthLog",
+      "estimatesSubtitle": "Calculées à partir de vos données cardiaques, pas transmises par un appareil.",
+      "stress": "Stress (estimation)",
+      "strain": "Effort (estimation)"
     }
   },
   "thresholds": {
@@ -10789,10 +10812,6 @@
       "currentDay": "Jour {day} de votre cycle",
       "noActiveCycle": "Aucun cycle actif pour l'instant",
       "viewDetails": "Voir les analyses du cycle"
-    },
-    "wellnessRing": {
-      "label": "Cycle",
-      "loadError": "Impossible de charger votre cycle."
     },
     "disclaimer": "Ces prévisions sont des estimations descriptives issues de vos données enregistrées, ni une méthode de contraception ni un avis médical. Elles n'indiquent jamais qu'il est sûr d'avoir des rapports non protégés. Pour la contraception ou toute décision médicale, consultez un professionnel de santé.",
     "title": "Cycle",

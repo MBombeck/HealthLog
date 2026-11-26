@@ -124,10 +124,6 @@ const STATIC_SURFACE_MODULE = {
 
   // ── Insights overview blocks ──
   "overview:cycle-summary": "cycle",
-  // The cycle ring rides the wellness-scores strip rather than being a
-  // section of its own; it follows the same key as the cycle summary, so the
-  // two cannot disagree.
-  "overview:cycle-ring": "cycle",
   // Breathing disturbances are measured overnight; the screening card is the
   // sleep module's.
   "overview:breathing": "sleep",

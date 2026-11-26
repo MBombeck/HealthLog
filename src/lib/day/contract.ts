@@ -158,8 +158,10 @@ export type DayScoreKey = (typeof DAY_SCORE_KEYS)[number];
 
 /** The page each score opens on. */
 export const DAY_SCORE_HREF: Readonly<Record<DayScoreKey, string>> = {
-  healthScore: "/insights/health-score",
+  healthScore: "/insights/scores/health",
   readiness: "/insights/scores/readiness",
+  // The retired recovery slug sends a device's recovery to "Device scores"
+  // and HealthLog's stored readiness to readiness, per account.
   recovery: "/insights/scores/recovery",
   sleepScore: "/insights/scores/sleep",
   strain: "/insights/scores/strain",
