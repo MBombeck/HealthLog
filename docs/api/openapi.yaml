@@ -4798,6 +4798,32 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
+  /api/auth/password-strength:
+    post:
+      security: []
+      tags:
+        - Auth
+      summary: Score a password for the strength meter
+      description: Anonymous. Runs the same estimator the registration and password routes run on submit and answers its score
+        and untranslated feedback; stores nothing and compares against no account. The account-specific check (the
+        password against the username and e-mail) happens only on submit. Rate-limited to 60 requests a minute per
+        address.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordStrengthRequest"
+      responses:
+        "200":
+          description: The estimate.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PasswordStrengthEnvelope"
+        "401": *a1
+        "422": *a4
+        "429": *a5
   /api/auth/register/setup:
     post:
       security: []
@@ -33428,6 +33454,16 @@ components:
         - mirrorToAppleHealth
       additionalProperties: false
       description: "The one setting a measurement token has. Strict: any other key is refused 422."
+    PasswordStrengthRequest:
+      type: object
+      properties:
+        password:
+          type: string
+          minLength: 1
+          maxLength: 256
+      required:
+        - password
+      description: The password as typed, at most 256 characters (every longer one scores 4).
     SetupTokenRequest:
       type: object
       properties:
@@ -58698,6 +58734,44 @@ components:
       required:
         - id
         - mirrorToAppleHealth
+      additionalProperties: false
+    PasswordStrengthEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/PasswordStrengthResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    PasswordStrengthResponse:
+      type: object
+      properties:
+        score:
+          type: integer
+          minimum: 0
+          maximum: 4
+          description: zxcvbn's score, 0 (guessable) to 4 (very hard to guess).
+        warning:
+          type: string
+          description: zxcvbn's English warning, empty when there is none. Clients translate it.
+        suggestions:
+          type: array
+          items:
+            type: string
+          description: zxcvbn's English suggestions. Clients translate them.
+      required:
+        - score
+        - warning
+        - suggestions
       additionalProperties: false
     SetupProvenEnvelope:
       type: object

@@ -1,9 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
-import { getZxcvbnTranslations } from "@/lib/zxcvbn-i18n";
+import {
+  getZxcvbnTranslations,
+  PASSWORD_STRENGTH_MAX_LENGTH,
+} from "@/lib/zxcvbn-i18n";
 import { useTranslations } from "@/lib/i18n/context";
+import { apiFetch } from "@/lib/api/api-fetch";
+import type { PasswordStrengthEstimate } from "@/lib/auth/password";
+
+const ESTIMATE_DEBOUNCE_MS = 200;
 
 interface PasswordStrengthProps {
   password: string;
@@ -29,32 +36,42 @@ export function PasswordStrength({
 }: PasswordStrengthProps) {
   const { t, locale } = useTranslations();
   const { translate } = useMemo(() => getZxcvbnTranslations(locale), [locale]);
-  const [result, setResult] = useState<{
-    score: number;
-    feedback: { warning: string; suggestions: string[] };
-  } | null>(null);
-  const zxcvbnRef = useRef<typeof import("zxcvbn-typescript").default | null>(
-    null,
-  );
+  const [result, setResult] = useState<PasswordStrengthEstimate | null>(null);
 
+  // The estimator runs on the server (`POST /api/auth/password-strength`):
+  // its dictionaries are about 375 KB gzip, more than any page of the app.
+  // The meter asks once typing pauses and keeps showing the last answer until
+  // the next one arrives; a failed request leaves the last answer standing,
+  // and the password is scored again on submit either way.
   useEffect(() => {
     if (!password) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setResult(null);
       return;
     }
-    let cancelled = false;
-    (async () => {
-      if (!zxcvbnRef.current) {
-        const mod = await import("zxcvbn-typescript");
-        zxcvbnRef.current = mod.default;
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const estimate = await apiFetch<PasswordStrengthEstimate>(
+          "/api/auth/password-strength",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              password: password.slice(0, PASSWORD_STRENGTH_MAX_LENGTH),
+            }),
+            signal: controller.signal,
+          },
+        );
+        setResult(estimate);
+      } catch {
+        // Aborted by the next keystroke, refused or offline: keep the last
+        // answer.
       }
-      if (!cancelled) {
-        setResult(zxcvbnRef.current(password));
-      }
-    })();
+    }, ESTIMATE_DEBOUNCE_MS);
     return () => {
-      cancelled = true;
+      clearTimeout(timer);
+      controller.abort();
     };
   }, [password]);
 
@@ -77,11 +94,11 @@ export function PasswordStrength({
   if (isTooShort) {
     feedback.push(t("passwordStrength.minLength", { count: minLength }));
   }
-  if (result?.feedback?.warning) {
-    feedback.push(translate(result.feedback.warning));
+  if (result?.warning) {
+    feedback.push(translate(result.warning));
   }
-  if (result?.feedback?.suggestions) {
-    feedback.push(...result.feedback.suggestions.map(translate));
+  if (result?.suggestions) {
+    feedback.push(...result.suggestions.map(translate));
   }
 
   return (

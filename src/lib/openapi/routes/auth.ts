@@ -16,6 +16,7 @@ import type { ZodOpenApiObject } from "zod-openapi";
 import {
   changePasswordSchema,
   passkeyRenameSchema,
+  passwordStrengthRequestSchema,
   registerSchema,
   setupTokenSchema,
 } from "@/lib/validations/auth";
@@ -484,6 +485,31 @@ const setupTokenRequest = setupTokenSchema.meta({
   description:
     "The instance's setup token: `SETUP_TOKEN` from the server's environment, or the `hlu_` token every server process prints to its log at start while the instance has no account.",
 });
+
+const passwordStrengthRequest = passwordStrengthRequestSchema.meta({
+  id: "PasswordStrengthRequest",
+  description:
+    "The password as typed, at most 256 characters (every longer one scores 4).",
+});
+
+const passwordStrengthResponse = z
+  .object({
+    score: z
+      .number()
+      .int()
+      .min(0)
+      .max(4)
+      .describe("zxcvbn's score, 0 (guessable) to 4 (very hard to guess)."),
+    warning: z
+      .string()
+      .describe(
+        "zxcvbn's English warning, empty when there is none. Clients translate it.",
+      ),
+    suggestions: z
+      .array(z.string())
+      .describe("zxcvbn's English suggestions. Clients translate them."),
+  })
+  .meta({ id: "PasswordStrengthResponse" });
 
 const setupProvenResponse = z
   .object({ proven: z.literal(true) })
@@ -2328,6 +2354,34 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   },
   // ── Appended: registration, credential rotation, the OIDC entry point and
   // the Codex device-auth flow.
+  "/api/auth/password-strength": {
+    post: {
+      // No credential: the registration form uses it before one exists.
+      security: [],
+      tags: ["Auth"],
+      summary: "Score a password for the strength meter",
+      description:
+        "Anonymous. Runs the same estimator the registration and password routes run on submit and answers its score and untranslated feedback; stores nothing and compares against no account. The account-specific check (the password against the username and e-mail) happens only on submit. Rate-limited to 60 requests a minute per address.",
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: passwordStrengthRequest } },
+      },
+      responses: {
+        "200": {
+          description: "The estimate.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                passwordStrengthResponse,
+                "PasswordStrengthEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+  },
   "/api/auth/register/setup": {
     post: {
       // No credential: this operation is reachable before one exists.

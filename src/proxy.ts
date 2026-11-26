@@ -36,6 +36,7 @@ export const PUBLIC_PATHS = [
   "/api/auth/login",
   "/api/auth/register",
   "/api/auth/registration-status",
+  "/api/auth/password-strength", // the meter on the sign-up form; stores nothing
   "/api/auth/passkey/login-options",
   "/api/auth/passkey/login-verify",
   // OIDC SSO login. `login` starts the redirect to the IdP, `callback`
