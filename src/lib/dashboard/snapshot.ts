@@ -50,7 +50,7 @@ import {
   GLUCOSE_PANEL_WINDOW_DAYS,
   type GlucoseClinicalMetrics,
 } from "@/lib/analytics/glucose-metrics";
-import { groupByGlucoseContext, resolveGlucoseUnit } from "@/lib/glucose";
+import { groupByGlucoseContext } from "@/lib/glucose";
 import {
   computeBpInTargetFastPath,
   type BpInTargetEnvelope,
@@ -87,7 +87,10 @@ import {
   buildMedsTodayBlock,
   type MedsTodayBlock,
 } from "@/lib/dashboard/meds-today";
-import { computeAndRecordUserHealthScore } from "@/lib/analytics/score/record";
+import {
+  computeSnapshotScoreReport,
+  heldBackScore,
+} from "@/lib/dashboard/snapshot-held-back-score";
 import {
   buildDashboardBands as buildTargetBands,
   type DashboardTargetBands,
@@ -100,7 +103,6 @@ import type {
   ScorePillarId,
 } from "@/lib/analytics/score/types";
 import {
-  coldPhaseHealthScore,
   snapshotHealthScore,
   type DashboardSnapshotScorePillar,
 } from "@/lib/dashboard/snapshot-health-score";
@@ -758,31 +760,12 @@ async function buildExtras(
   // ring and the insights card grade the pillar off identical inputs (same
   // 90-day window via W1d, same all-time fallback, same graded score, same
   // prior-week delta values). Closes the dashboard-vs-insights divergence.
-  const scoreSourcePriority = user.sourcePriorityJson ?? null;
   const scoreResult = await time("healthScore", () =>
-    computeAndRecordUserHealthScore({
-      prisma,
-      userId: user.id,
-      now,
-      profile: {
-        dateOfBirth: user.dateOfBirth,
-        heightCm: user.heightCm,
-        timezone: userTz,
-        sourcePriorityJson: scoreSourcePriority,
-        thresholdsJson: user.thresholdsJson,
-        glucoseUnit: resolveGlucoseUnit(user.glucoseUnit),
-      },
-      modules: {
-        glucose: modules.glucose !== false,
-        labs: modules.labs !== false,
-        sleep: modules.sleep !== false,
-        mentalHealth: modules.mentalHealth !== false,
-      },
-      healthScoreConfigJson: user.healthScoreConfigJson,
-      bpTargets: clinicalBpTargets,
-      bpEnvelope,
-      bpEnvelopePriorWeek,
-      bpEnvelopePriorTwoWeeks,
+    computeSnapshotScoreReport(prisma, user, userTz, now, modules, {
+      targets: clinicalBpTargets,
+      envelope: bpEnvelope,
+      priorWeek: bpEnvelopePriorWeek,
+      priorTwoWeeks: bpEnvelopePriorTwoWeeks,
     }),
   );
   const healthScore = await snapshotHealthScore(
@@ -1447,7 +1430,7 @@ export async function buildDashboardSnapshot(
         }
       : warm
         ? null
-        : await coldPhaseHealthScore(user.id, userTz, coverage, now, locale),
+        : await heldBackScore(prisma, user, coverage, now, modules, locale),
     // The resolved hero score rings (selection order, data-gated); optional
     // on the type so older cached snapshots stay valid.
     scoreRings,

@@ -185,6 +185,52 @@ describe("health score on the start page and on Insights", () => {
     expect(snap.healthScore?.score).toBe(fromAnalytics);
   });
 
+  it("computes the score itself on the day's first read, before any other surface or fold", async () => {
+    const user = await seedHistoryWithoutFold();
+
+    // The first read of the day: nothing kept, nothing folded.
+    const first = await snapshotFor(user);
+    expect(first.extras).toBeNull();
+    expect(first.healthScore).not.toBeNull();
+
+    // What Insights answers for the same day, computed apart from it.
+    __resetAllCachesForTests();
+    expect(await analyticsScore()).toBe(first.healthScore!.score);
+  });
+
+  it("recomputes rather than serving a kept score a write has made stale", async () => {
+    const user = await seedHistoryWithoutFold();
+    expect(await analyticsScore()).not.toBeNull();
+    await settleBackgroundTasks();
+    _resetRollupFoldRequestsForTests();
+
+    // A write marks the kept report stale; the score it stood for is gone.
+    const { invalidateUserMeasurements } =
+      await import("@/lib/cache/invalidate");
+    await getPrismaClient().measurement.deleteMany({
+      where: { userId: user.id, type: "WAIST_CIRCUMFERENCE" },
+    });
+    invalidateUserMeasurements(user.id);
+
+    const snap = await snapshotFor(user);
+    __resetAllCachesForTests();
+    const fresh = await analyticsScore();
+    expect(snap.healthScore?.score ?? null).toBe(fresh);
+  });
+
+  it("never takes the held-back read on a folded account (the budgets' fixture)", async () => {
+    const user = await seedHistoryWithoutFold();
+    const { recomputeUserRollups } =
+      await import("@/lib/rollups/measurement-rollups");
+    await recomputeUserRollups(user.id);
+
+    const snap = await snapshotFor(user);
+    // Warm: the score came from the second phase, not the miss path, so the
+    // live fallback adds nothing to a covered account's reads.
+    expect(snap.extras).not.toBeNull();
+    expect(snap.healthScore).not.toBeNull();
+  });
+
   it("asks for the fold, after which the snapshot computes the same score itself", async () => {
     const user = await seedHistoryWithoutFold();
 

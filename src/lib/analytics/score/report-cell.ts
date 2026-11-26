@@ -6,7 +6,8 @@
  * its own read (the dashboard snapshot while the rollup tier is still folding
  * an account's history) serves this report instead of saying there is not
  * enough data, so the start page, the digest, the morning and `/api/analytics`
- * never show two answers for the same day.
+ * never show two answers for the same day. A held-back snapshot serves the
+ * kept report when it is fresh and computes the score live otherwise.
  *
  * Lives in the analytics bucket under the `${userId}|` prefix, so every
  * invalidator that touches the score's inputs (a measurement write marks it
@@ -35,17 +36,14 @@ export function keepHealthScoreReport(
 }
 
 /**
- * The last report computed for the account's local day of `now`, or null.
- * A stale entry (a write landed since) still counts: it is the number every
- * other surface serves until its own recompute lands, and it is the same day.
+ * The report computed for the account's local day of `now`, or null when
+ * there is none or a write has landed since (a stale entry is a number the
+ * data no longer stands behind; the caller recomputes instead).
  */
-export function lastHealthScoreReport(
+export function keptHealthScoreReport(
   userId: string,
   timezone: string,
   now: Date,
 ): HealthScoreReport | null {
-  return (
-    cell().getAllowStale(reportCellKey(userId, userDayKey(now, timezone)))
-      ?.value ?? null
-  );
+  return cell().get(reportCellKey(userId, userDayKey(now, timezone)));
 }

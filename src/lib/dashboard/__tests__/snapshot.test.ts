@@ -13,6 +13,8 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+import { __resetAllCachesForTests } from "@/lib/cache/server-cache";
+
 const readSummariesSlice = vi.fn();
 const probeRollupCoverage = vi.fn();
 const isFullyCovered = vi.fn();
@@ -215,6 +217,8 @@ function baseUser(
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Each computed score is kept per account and day; no test reads another's.
+  __resetAllCachesForTests();
   readSummariesSlice.mockResolvedValue({
     summaries: { WEIGHT: { ...emptySummary, count: 3, latest: 80 } },
     lastSeenByType: {
@@ -401,9 +405,10 @@ describe("buildDashboardSnapshot — two-phase null extras", () => {
     expect(snap.extras).toBeNull();
     // The fast phase still resolved fully.
     expect(snap.tiles.summaries.WEIGHT.latest).toBe(80);
-    // The thick BP read must NOT have fired — paint-together vs
-    // slowest-wins mitigation.
-    expect(computeBpInTargetFastPath).not.toHaveBeenCalled();
+    // Only the health score's clinical windows are read (now, a week and two
+    // weeks back), by the fast path with its live fallback, as analytics
+    // reads them; the tile's own windows wait for the fold.
+    expect(computeBpInTargetFastPath).toHaveBeenCalledTimes(3);
     // The glucose findMany (part of the thick read) must NOT have fired.
     expect(fakePrisma.measurement.findMany).not.toHaveBeenCalled();
   });
@@ -479,16 +484,22 @@ describe("buildDashboardSnapshot — per-type thick-phase gate", () => {
     expect(computeUserHealthScoreMock).toHaveBeenCalledTimes(1);
   });
 
-  it("a fresh account with zero coverage entries stays null", async () => {
+  it("an account with no measurements holds the phase back but still reads its score", async () => {
+    // Labs and questionnaires can carry a score without a single measurement;
+    // `/api/analytics` reads it, so the start page does too, by the same reader.
     probeRollupCoverage.mockResolvedValue(new Map());
     isFullyCovered.mockReturnValue(false);
+    computeUserHealthScoreMock.mockResolvedValue({
+      score: 71,
+      band: "yellow",
+      delta: 3,
+    });
 
     const snap = await buildDashboardSnapshot(fakePrisma, baseUser());
 
     expect(snap.extras).toBeNull();
-    expect(snap.healthScore).toBeNull();
-    expect(computeBpInTargetFastPath).not.toHaveBeenCalled();
-    expect(computeUserHealthScoreMock).not.toHaveBeenCalled();
+    expect(computeUserHealthScoreMock).toHaveBeenCalledTimes(1);
+    expect(snap.healthScore?.score).toBe(71);
   });
 
   it("a gated type ABSENT from the map (never logged) keeps the phase warm", async () => {
@@ -526,13 +537,13 @@ describe("buildDashboardSnapshot — per-type thick-phase gate", () => {
 
       const snap = await buildDashboardSnapshot(fakePrisma, baseUser());
 
-      // Rows without buckets on a gated type would route the helper
-      // onto its multi-second live fallback — the snapshot must not
-      // wait on it. Null is acceptable here; the all-types poison was
-      // the bug.
+      // The tiles wait for the fold; the health score does not. It is read
+      // the way analytics reads it (the score's three clinical windows, live
+      // where uncovered), so the start page never says "not enough data"
+      // beside a number on Insights.
       expect(snap.extras).toBeNull();
-      expect(snap.healthScore).toBeNull();
-      expect(computeBpInTargetFastPath).not.toHaveBeenCalled();
+      expect(computeBpInTargetFastPath).toHaveBeenCalledTimes(3);
+      expect(computeUserHealthScoreMock).toHaveBeenCalledTimes(1);
     },
   );
 });
@@ -563,15 +574,21 @@ describe("buildDashboardSnapshot — medsToday (fast phase)", () => {
   });
 });
 
-describe("buildDashboardSnapshot — healthScore (warm phase only)", () => {
-  it("is null on a rollup-coverage miss and the fast path never runs", async () => {
+describe("buildDashboardSnapshot — healthScore", () => {
+  it("is read live on a rollup-coverage miss, as analytics reads it", async () => {
     probeRollupCoverage.mockResolvedValue(new Map([["WEIGHT", false]]));
     isFullyCovered.mockReturnValue(false);
+    computeUserHealthScoreMock.mockResolvedValue({
+      score: 71,
+      band: "yellow",
+      delta: 3,
+    });
 
     const snap = await buildDashboardSnapshot(fakePrisma, baseUser());
 
-    expect(snap.healthScore).toBeNull();
-    expect(computeUserHealthScoreMock).not.toHaveBeenCalled();
+    expect(snap.extras).toBeNull();
+    expect(computeUserHealthScoreMock).toHaveBeenCalledTimes(1);
+    expect(snap.healthScore?.score).toBe(71);
   });
 
   it("serialises the additive score identity when warm", async () => {
@@ -1487,9 +1504,15 @@ describe("buildDashboardSnapshot — ambient narrative (A4/A5/A6)", () => {
     expect(snap.healthScore!.returnToBand).toBeNull();
   });
 
-  it("does NOT run the score narrative when no health score rendered", async () => {
-    // No warm coverage → healthScore null → the narrative branch is skipped.
+  it("does NOT run the score narrative while the phase is held back", async () => {
+    // No warm coverage: the score is read live, the narrative (which reads
+    // the windows the gate holds back) is skipped.
     probeRollupCoverage.mockResolvedValue(new Map());
+    computeUserHealthScoreMock.mockResolvedValue({
+      score: 71,
+      band: "yellow",
+      delta: 3,
+    });
     const scoreNarrative = vi.fn(async () => ({
       tension: null,
       returnToBand: null,
@@ -1497,7 +1520,8 @@ describe("buildDashboardSnapshot — ambient narrative (A4/A5/A6)", () => {
     const snap = await buildDashboardSnapshot(fakePrisma, baseUser(), {
       scoreNarrative,
     });
-    expect(snap.healthScore).toBeNull();
+    expect(snap.healthScore).not.toBeNull();
+    expect(snap.healthScore?.tension).toBeUndefined();
     expect(scoreNarrative).not.toHaveBeenCalled();
   });
 

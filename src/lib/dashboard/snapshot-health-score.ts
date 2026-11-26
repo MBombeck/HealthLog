@@ -18,7 +18,8 @@ import {
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import type { Locale } from "@/lib/i18n/config";
 import { resolveRestMode } from "@/lib/illness/rest-mode";
-import { lastHealthScoreReport } from "@/lib/analytics/score/report-cell";
+import { keptHealthScoreReport } from "@/lib/analytics/score/report-cell";
+import { getEvent } from "@/lib/logging/context";
 import { requestRollupHistoryFold } from "@/lib/rollups/full-backfill";
 import type { RollupCoverageMap } from "@/lib/rollups/measurement-coverage";
 import { runDetached } from "@/lib/logging/detached";
@@ -130,16 +131,20 @@ export async function snapshotHealthScore(
 }
 
 /**
- * The health score while the second phase is held back. The rollup tier does
- * not yet cover a dense type the phase reads, so the builder does not compute
- * the score itself (that would drop it into the live fallback the gate exists
- * to avoid). It serves the score another surface computed for the same day
- * (`report-cell.ts`) instead of nothing: `/api/analytics` computes without the
- * gate, and a start page that said "not enough data" beside an Insights page
- * showing a number was two answers for one day. It also asks for the fold
- * that ends the wait (`requestRollupHistoryFold`), since a history that
- * arrived without the write hooks is otherwise only folded at the next boot.
- * The score narrative stays off here: it reads the windows the gate holds back.
+ * The health score while the second phase is held back.
+ *
+ * The rollup tier does not yet cover a dense type the phase reads (or the
+ * account has no measurements at all and its score rests on labs and
+ * questionnaires). The rest of the phase waits; the score does not, because
+ * `/api/analytics` answers it either way and the start page, the digest and
+ * the morning must not answer "not enough data" beside it. A report computed
+ * for the same day that no write has made stale since is served
+ * (`report-cell.ts`); otherwise `compute` reads it live by the same function
+ * analytics uses. Readings without buckets also ask for the fold that ends
+ * the wait (`requestRollupHistoryFold`): a history that arrived without the
+ * write hooks is otherwise only folded at the next boot. Miss path only; a
+ * covered account never reaches it. Fail-soft like the rest of the snapshot:
+ * a failed read leaves the score empty and says so on the wide event.
  */
 export async function coldPhaseHealthScore(
   userId: string,
@@ -147,11 +152,25 @@ export async function coldPhaseHealthScore(
   coverage: RollupCoverageMap,
   now: Date,
   locale: Locale,
+  compute: () => Promise<HealthScoreReport>,
 ): Promise<DashboardSnapshotHealthScore | null> {
-  if (coverage.size === 0) return null;
-  trackBackgroundTask(
-    runDetached(() => requestRollupHistoryFold(userId)).catch(() => undefined),
-  );
-  const report = lastHealthScoreReport(userId, userTz, now);
-  return report ? snapshotHealthScore(report, userId, now, locale) : null;
+  if (coverage.size > 0) {
+    trackBackgroundTask(
+      runDetached(() => requestRollupHistoryFold(userId)).catch(
+        () => undefined,
+      ),
+    );
+  }
+  try {
+    const report =
+      keptHealthScoreReport(userId, userTz, now) ?? (await compute());
+    return await snapshotHealthScore(report, userId, now, locale);
+  } catch (err) {
+    getEvent()?.addWarning(
+      `held-back health score read failed: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    );
+    return null;
+  }
 }
