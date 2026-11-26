@@ -137,16 +137,8 @@ export function useDocumentDetailAi({
     );
   };
 
-  const runSummary = (output: DocumentSummaryMode) => {
-    if (!aiTarget) return;
-    summary.reset();
-    setSummaryOutput(output);
-    summary.mutate({ mode: aiMode, target: aiTarget, output });
-  };
-
-  // Generate or regenerate the STORED summary from the detail block. Only the
-  // stored-summary branch requests replacement; the empty-state action keeps
-  // first-write-wins if another worker or tab finishes while AI is running.
+  // The stored summary, asked for by the summary block and the action row
+  // alike (`documentReadRequest`).
   const generateStoredSummary = () => {
     if (!aiTarget || !documentId) return;
     storedSummary.reset();
@@ -154,9 +146,7 @@ export function useDocumentDetailAi({
       {
         mode: aiMode,
         target: aiTarget,
-        output: "summary",
-        persist: true,
-        replace: doc?.summary != null,
+        ...documentReadRequest("summary", doc?.summary != null),
       },
       {
         onSuccess: (result) => {
@@ -175,6 +165,15 @@ export function useDocumentDetailAi({
           showErrorToast(aiErrorText(error), { cause: error }),
       },
     );
+  };
+
+  // The action row: a summary is stored, the extracted text shown here only.
+  const runSummary = (output: DocumentSummaryMode) => {
+    summary.reset();
+    if (output === "summary") return generateStoredSummary();
+    if (!aiTarget) return;
+    setSummaryOutput(output);
+    summary.mutate({ mode: aiMode, target: aiTarget, output });
   };
 
   const runIndex = () => {
@@ -232,6 +231,22 @@ export function useDocumentDetailAi({
     suggestionKindLabel,
     suggestionDateLabel,
   };
+}
+
+/**
+ * What one summary-route request asks for. A summary is the document's own
+ * paragraph: it is stored, and replaces the stored one when there is one, from
+ * whichever button asked. The action row's "Summarise" used to ask for a
+ * session-only copy of the same paragraph, at the same cost, and lost it when
+ * the sheet closed. The extracted text stays session-only.
+ */
+export function documentReadRequest(
+  output: DocumentSummaryMode,
+  hasStoredSummary: boolean,
+): { output: DocumentSummaryMode; persist: boolean; replace: boolean } {
+  return output === "summary"
+    ? { output, persist: true, replace: hasStoredSummary }
+    : { output, persist: false, replace: false };
 }
 
 /**
