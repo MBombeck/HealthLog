@@ -19,6 +19,7 @@ import { prisma } from "@/lib/db";
 import { planDayValue } from "@/lib/jobs/coach-plan-review";
 import { resolvePlanMetric } from "@/lib/ai/coach/plan-metric";
 import { readDayAggregates } from "@/lib/measurements/day-aggregates";
+import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import {
   applyDisplayTransform,
   applyDisplayTransformDelta,
@@ -124,6 +125,7 @@ export async function computePlanProgress(
     since: new Date(plan.startedAt.getTime() - (BEFORE_DAYS + 1) * MS_PER_DAY),
     until: ctx.now,
     timeZone: ctx.timeZone,
+    sourcePriority: await loadUserSourcePriority(ctx.userId),
     ...(ctx.db ? { db: ctx.db } : {}),
   });
   const beforeFromKey = shiftDateKey(startKey, -BEFORE_DAYS);

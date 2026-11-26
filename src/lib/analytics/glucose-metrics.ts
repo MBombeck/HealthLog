@@ -41,7 +41,7 @@
 
 import { GLUCOSE_TIR_CUT_POINTS } from "@/lib/glucose";
 import { standardDeviation } from "@/lib/stats/spread";
-import { mean } from "@/lib/stats/central";
+import { compensatedSum, roundStableTo } from "@/lib/stats/central";
 
 // ── Inputs ───────────────────────────────────────────────
 
@@ -245,7 +245,7 @@ export function glucoseVariability(
 ): GlucoseVariability | null {
   const sd = glucoseSD(values);
   if (sd === null) return null;
-  const m = mean(values)!;
+  const m = stableMean(values)!;
   if (m === 0) return null;
   const cv = (sd / m) * 100;
   return { sd, cv, unstable: cv >= CV_INSTABILITY_THRESHOLD };
@@ -280,7 +280,7 @@ export function estimatedA1c(meanMgdl: number): number {
 export function jIndex(values: number[]): number | null {
   const sd = glucoseSD(values);
   if (sd === null) return null;
-  const m = mean(values)!;
+  const m = stableMean(values)!;
   const s = m + sd;
   return 0.001 * s * s;
 }
@@ -294,7 +294,10 @@ export function jIndex(values: number[]): number | null {
  * DOI 10.2337/diacare.20.11.1655.
  */
 function kovatchevSymmetrize(bgMgdl: number): number {
-  return 1.509 * (Math.pow(Math.log(bgMgdl), 1.084) - 5.381);
+  // (ln BG)^1.084 as exp(1.084 × ln ln BG), not Math.pow: a fractional
+  // exponent returned different last bits on Node 22 than on Node 24 and
+  // later on the same machine, while Math.exp and Math.log did not.
+  return 1.509 * (Math.exp(1.084 * Math.log(Math.log(bgMgdl))) - 5.381);
 }
 
 /**
@@ -310,23 +313,25 @@ function kovatchevSymmetrize(bgMgdl: number): number {
 export function bloodGlucoseRiskIndices(
   values: number[],
 ): { lbgi: number; hbgi: number } | null {
-  let lowSum = 0;
-  let highSum = 0;
+  const low: number[] = [];
+  const high: number[] = [];
   let n = 0;
   for (const bg of values) {
     if (!Number.isFinite(bg) || bg <= 0) continue;
     const f = kovatchevSymmetrize(bg);
     const r = 10 * f * f;
     if (f < 0) {
-      lowSum += r;
+      low.push(r);
     } else if (f > 0) {
-      highSum += r;
+      high.push(r);
     }
     // f === 0 contributes 0 to both branches but still counts in n.
     n += 1;
   }
   if (n === 0) return null;
-  return { lbgi: lowSum / n, hbgi: highSum / n };
+  // Compensated sums: readings that share a timestamp arrive in no fixed
+  // order, and a plain running sum turns that order into the last bits.
+  return { lbgi: compensatedSum(low) / n, hbgi: compensatedSum(high) / n };
 }
 
 /**
@@ -432,10 +437,10 @@ export function computeGlucoseClinicalMetrics(
       : 0;
 
   const values = inWindow.map((r) => r.mgdl);
-  const meanMgdl = mean(values);
+  const meanMgdl = stableMean(values);
 
   const distribution = timeInRange(values);
-  const variability = glucoseVariability(values);
+  const variability = servedVariability(glucoseVariability(values));
   const gmiValue = meanMgdl !== null ? gmi(meanMgdl) : null;
   const eA1cValue = meanMgdl !== null ? estimatedA1c(meanMgdl) : null;
 
@@ -446,9 +451,9 @@ export function computeGlucoseClinicalMetrics(
   const advanced =
     risk !== null
       ? {
-          jIndex: jIndex(values),
-          lbgi: risk.lbgi,
-          hbgi: risk.hbgi,
+          jIndex: servedIndex(jIndex(values)),
+          lbgi: servedIndex(risk.lbgi),
+          hbgi: servedIndex(risk.hbgi),
         }
       : null;
 
@@ -497,6 +502,44 @@ export function computeGlucoseClinicalMetrics(
     variability,
     advanced,
     isSpotEstimate,
+  };
+}
+
+/** The mean over a compensated sum, so the reading order cannot move it. */
+function stableMean(values: readonly number[]): number | null {
+  return values.length === 0 ? null : compensatedSum(values) / values.length;
+}
+
+/**
+ * Decimals the variability indices are served with. Far finer than any
+ * surface shows them (CV% as a whole number, the indices to one decimal) and
+ * far coarser than the last bits, which differ between platforms: the
+ * Kovatchev transform runs through the maths library, the report path sums
+ * the same risks in Postgres, and tied readings arrive in no fixed order.
+ */
+export const SERVED_INDEX_DIGITS = 4;
+
+/** A variability index as served: `roundStableTo` at {@link SERVED_INDEX_DIGITS}. */
+export function servedIndex(value: number): number;
+export function servedIndex(value: number | null): number | null;
+export function servedIndex(value: number | null): number | null {
+  if (value === null || !Number.isFinite(value)) return value;
+  return roundStableTo(value, SERVED_INDEX_DIGITS);
+}
+
+/**
+ * SD and CV% as served, with the Monnier flag read off the served CV so a CV
+ * shown as 36 is never labelled stable.
+ */
+export function servedVariability(
+  v: GlucoseVariability | null,
+): GlucoseVariability | null {
+  if (v === null) return null;
+  const cv = servedIndex(v.cv);
+  return {
+    sd: servedIndex(v.sd),
+    cv,
+    unstable: cv >= CV_INSTABILITY_THRESHOLD,
   };
 }
 

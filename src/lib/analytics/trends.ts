@@ -5,6 +5,9 @@
 
 import { READING_SPREAD, standardDeviation } from "@/lib/stats/spread";
 import { linearFit } from "@/lib/stats/linear-fit";
+// The same window means are summed in Postgres on the slice and the
+// generate paths, so a mean on a half cent must round the same way here.
+import { roundStable2 } from "@/lib/stats/central";
 import {
   isTrendWindowSufficient,
   trendEvidenceOf,
@@ -278,7 +281,7 @@ export function summarize(data: DataPoint[]): DataSummary {
     });
     if (slice.length === 0) return null;
     const sum = slice.reduce((s, p) => s + p.value, 0);
-    return Math.round((sum / slice.length) * 100) / 100;
+    return roundStable2(sum / slice.length);
   };
   const avg30LastMonth = meanOfWindow(30, 60);
   const avg30LastYear = meanOfWindow(365, 395);
@@ -288,19 +291,15 @@ export function summarize(data: DataPoint[]): DataSummary {
     latest: sorted[sorted.length - 1].value,
     min: minVal,
     max: maxVal,
-    mean: Math.round(mean * 100) / 100,
+    mean: roundStable2(mean),
     median: Math.round(median * 100) / 100,
     avg7:
       last7.length > 0
-        ? Math.round(
-            (last7.reduce((s, p) => s + p.value, 0) / last7.length) * 100,
-          ) / 100
+        ? roundStable2(last7.reduce((s, p) => s + p.value, 0) / last7.length)
         : null,
     avg30:
       last30.length > 0
-        ? Math.round(
-            (last30.reduce((s, p) => s + p.value, 0) / last30.length) * 100,
-          ) / 100
+        ? roundStable2(last30.reduce((s, p) => s + p.value, 0) / last30.length)
         : null,
     slope7: trendSlope(data, 7),
     slope30: trendSlope(data, 30),

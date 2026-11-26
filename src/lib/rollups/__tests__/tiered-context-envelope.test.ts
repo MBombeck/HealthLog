@@ -28,6 +28,7 @@ vi.mock("../measurement-rollups", () => ({
 vi.mock("@/lib/db", () => ({
   prisma: {
     measurement: { findMany: mocks.measurementFindMany },
+    user: { findUnique: async () => null },
     $queryRaw: mocks.queryRaw,
   },
 }));

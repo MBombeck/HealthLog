@@ -15,6 +15,7 @@ import { prisma } from "@/lib/db";
 import { runDetached } from "@/lib/logging/detached";
 import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import { summarize, type DataPoint } from "@/lib/analytics/trends";
+import { roundStable2 } from "@/lib/stats/central";
 import {
   ensureUserMoodRollupsFresh,
   readMoodDayRollups,
@@ -115,7 +116,8 @@ function seriesFromDays(
   const entries = days
     .map((r) => ({
       date: utcDayLabel(r.bucketStart),
-      score: Math.round(r.mean * 100) / 100,
+      // The tier and the fold sum a day in different orders.
+      score: roundStable2(r.mean)!,
       samples: r.count,
     }))
     .sort((a, b) => a.date.localeCompare(b.date));
