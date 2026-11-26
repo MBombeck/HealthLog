@@ -383,23 +383,13 @@ export async function computeReadiness(
     tz,
   });
 
-  // An input that has gone quiet drops out like a missing one, so a sensor
-  // the account stopped wearing lowers the blend's coverage instead of
-  // holding it stale for the rest of the window.
   const todayKey = userDayKey(now, tz);
-  const localHour = hourInTz(now, tz);
-  const quiet = (day: string | null) =>
-    readinessInputAge(day, todayKey, localHour) === "quiet";
-  for (const vital of [rhr, hrv, resp]) {
-    if (vital.value !== null && quiet(vital.day)) {
-      vital.value = null;
-      vital.day = null;
-    }
-  }
-  const sleepNight =
-    sleep.status === "ok" && !quiet(sleep.value.night)
-      ? sleep.value.night
-      : null;
+  const sleepNight = dropQuietInputs(
+    [rhr, hrv, resp],
+    sleep.status === "ok" ? sleep.value.night : null,
+    todayKey,
+    hourInTz(now, tz),
+  );
   const sleepValue =
     sleep.status === "ok" && sleepNight !== null ? sleep.value.score : null;
   const sleepHistoryDays =
@@ -502,31 +492,16 @@ export async function computeReadiness(
   // Not fresh: the live blend mixes days, so no surface may print it. The
   // value that was computed for a day is the row the nightly job stored for
   // it; name that one, or nothing.
-  let shown: {
-    score: number;
-    asOfDay: string;
-    components: ReadinessComponent[];
-  } = { score, asOfDay: blendDay.asOfDay, components };
-  if (!fresh && !opts.blendOnly) {
-    const last = await readLastStoredReadiness(userId, now, windowDays, tz);
-    if (last === null) {
-      return buildInsufficient<ReadinessValue>({
-        coverage: cov,
-        provenance: { inputs: inputNames, source, windowDays, computedAt },
-        reason: "not_fresh",
-      });
-    }
-    // The stored row carries no breakdown, and today's contributors are not
-    // that day's: all five stay listed, none with a value.
-    shown = {
-      score: last.score,
-      asOfDay: last.day,
-      components: components.map((c) => ({
-        key: c.key,
-        value: null,
-        weight: 0,
-      })),
-    };
+  const shown =
+    fresh || opts.blendOnly
+      ? { score, asOfDay: blendDay.asOfDay, components }
+      : await readStaleReadiness(userId, now, windowDays, tz, components);
+  if (shown === null) {
+    return buildInsufficient<ReadinessValue>({
+      coverage: cov,
+      provenance: { inputs: inputNames, source, windowDays, computedAt },
+      reason: "not_fresh",
+    });
   }
 
   return buildOk<ReadinessValue>({
@@ -570,6 +545,55 @@ export function readinessInputAge(
     return "pending";
   }
   return "quiet";
+}
+
+/**
+ * Leave an input that has gone quiet out of the blend like a missing one, so
+ * a sensor the account stopped wearing lowers the coverage instead of
+ * holding readiness stale for the rest of the window. Clears each quiet
+ * vital in place and answers the sleep night that still counts, or null.
+ */
+function dropQuietInputs(
+  vitals: { value: number | null; day: string | null }[],
+  night: string | null,
+  todayKey: string,
+  localHour: number,
+): string | null {
+  const quiet = (day: string | null) =>
+    readinessInputAge(day, todayKey, localHour) === "quiet";
+  for (const vital of vitals) {
+    if (vital.value !== null && quiet(vital.day)) {
+      vital.value = null;
+      vital.day = null;
+    }
+  }
+  return night !== null && !quiet(night) ? night : null;
+}
+
+/**
+ * A stale readiness as surfaces show it: the score stored for its day, that
+ * day, and every component listed without a value (the stored row keeps no
+ * breakdown, and today's contributors are not that day's). Null when no
+ * stored day exists to name.
+ */
+async function readStaleReadiness(
+  userId: string,
+  now: Date,
+  windowDays: number,
+  tz: string,
+  components: ReadinessComponent[],
+): Promise<{
+  score: number;
+  asOfDay: string;
+  components: ReadinessComponent[];
+} | null> {
+  const last = await readLastStoredReadiness(userId, now, windowDays, tz);
+  if (last === null) return null;
+  return {
+    score: last.score,
+    asOfDay: last.day,
+    components: components.map((c) => ({ key: c.key, value: null, weight: 0 })),
+  };
 }
 
 /**
