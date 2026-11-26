@@ -79,8 +79,13 @@ RUN NODE_OPTIONS=--max-old-space-size=8192 pnpm build
 # production tree and the build packages whose files are in the output
 # (THIRD_PARTY_NOTICES.md). Written from this stage's install, so it lists the
 # platform builds of this architecture; a licence the policy refuses fails the
-# build. The release pipeline checks the image's SBOM against this file.
-RUN node scripts/third-party-notices.mjs --bundle-pnpm /app/THIRD_PARTY_LICENSES.txt
+# build. Every package the standalone trace copied is listed too: the tracer
+# can pick up a version outside the production closure (a module required
+# without being declared resolves through pnpm's hidden hoist). The runner
+# stage checks the finished filesystem against this file, and the release
+# pipeline checks the image's SBOM against it.
+RUN node scripts/third-party-notices.mjs --bundle-pnpm /app/THIRD_PARTY_LICENSES.txt \
+      --traced /app/.next/standalone
 
 # Record which pdfjs-dist the top-level dependency actually resolves to. pnpm
 # links a direct dependency at `node_modules/<name>`, so this reads the exact
@@ -547,6 +552,16 @@ RUN printf '#!/bin/sh\nexec node /usr/local/lib/healthlog/wget-shim.mjs "$@"\n' 
     chmod 755 /usr/local/bin/wget && \
     wget 2>&1 | grep -q "health check shim" && \
     ! wget --no-verbose --tries=1 --spider http://127.0.0.1:9/api/health
+
+# Every npm package on the finished filesystem is in one of the two licence
+# bundles, found by the rule the SBOM scanner uses. The published image is
+# checked against its SBOM afterwards; this catches the same gap while the
+# image is built, so a pull request fails rather than the nightly.
+COPY --from=builder /app/scripts/third-party-notices.mjs /tmp/third-party-notices.mjs
+RUN node /tmp/third-party-notices.mjs --installed / \
+      --inventory /app/THIRD_PARTY_LICENSES.txt \
+      --inventory /opt/prisma-cli/THIRD_PARTY_LICENSES.txt && \
+    rm /tmp/third-party-notices.mjs
 
 # ISO-8601 build timestamp — /api/version returns it as `builtAt`.
 # Declared this late in the stage on purpose: the value differs on

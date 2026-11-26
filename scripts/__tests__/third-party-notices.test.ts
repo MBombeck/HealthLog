@@ -4,11 +4,21 @@
  * The CI step runs the script against the installed tree; these cases pin
  * the pieces it is made of, and break each rule once to show it can fail.
  */
-import { describe, expect, it } from "vitest";
+import {
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { afterEach, describe, expect, it } from "vitest";
 import { parse } from "yaml";
 
 import {
   bundlePackages,
+  installedManifests,
   licenceOf,
   licenceSummary,
   npmInventory,
@@ -17,6 +27,7 @@ import {
   renderBundle,
   sbomGaps,
   verdict,
+  withTraced,
 } from "../third-party-notices.mjs";
 
 describe("verdict", () => {
@@ -250,5 +261,113 @@ describe("the SBOM check", () => {
       },
     };
     expect(sbomGaps(sbom, bundlePackages(bundle))).toEqual(["left-pad@1.3.0"]);
+  });
+});
+
+describe("the traced tree and the installed check", () => {
+  const roots: string[] = [];
+  afterEach(() => {
+    for (const r of roots.splice(0))
+      rmSync(r, { recursive: true, force: true });
+  });
+
+  const manifest = (root: string, rel: string, body: object) => {
+    const file = join(root, rel);
+    mkdirSync(dirname(file), { recursive: true });
+    writeFileSync(file, JSON.stringify(body));
+  };
+
+  // A standalone output as the tracer writes it: real package copies in the
+  // pnpm store, links between them, a copy vendored inside a package, and the
+  // project's own manifest.
+  const standalone = () => {
+    const root = mkdtempSync(join(tmpdir(), "tpn-"));
+    roots.push(root);
+    manifest(root, "package.json", { name: "healthlog", version: "1.50.0" });
+    manifest(
+      root,
+      "node_modules/.pnpm/react@19.0.0/node_modules/react/package.json",
+      { name: "react", version: "19.0.0", license: "MIT" },
+    );
+    manifest(
+      root,
+      "node_modules/.pnpm/semver@7.8.5/node_modules/semver/package.json",
+      { name: "semver", version: "7.8.5", license: "ISC" },
+    );
+    manifest(
+      root,
+      "node_modules/.pnpm/next@16.0.0/node_modules/next/dist/compiled/semver/package.json",
+      { name: "semver", version: "7.0.0" },
+    );
+    mkdirSync(join(root, "node_modules/.pnpm/node_modules"), {
+      recursive: true,
+    });
+    symlinkSync(
+      "../semver@7.8.5/node_modules/semver",
+      join(root, "node_modules/.pnpm/node_modules/semver"),
+    );
+    return root;
+  };
+
+  it("finds each real package once, by the rule the SBOM check uses", () => {
+    const found = installedManifests(standalone());
+    expect([...found.keys()].sort()).toEqual(["react@19.0.0", "semver@7.8.5"]);
+  });
+
+  it("adds a traced package the lockfile closure misses, and only that one", () => {
+    const root = standalone();
+    const entries = [
+      {
+        name: "react",
+        version: "19.0.0",
+        licence: "MIT",
+        repository: null,
+        dir: "/store/react",
+        installed: true,
+      },
+    ];
+    const store = new Map([
+      [
+        "semver@7.8.5",
+        {
+          pkg: { name: "semver", version: "7.8.5", license: "ISC" },
+          dir: "/store/semver",
+        },
+      ],
+    ]);
+    const result = withTraced(entries, installedManifests(root), store);
+    expect(result.added).toEqual(["semver@7.8.5"]);
+    expect(result.entries.map((e) => `${e.name}@${e.version}`)).toEqual([
+      "react@19.0.0",
+      "semver@7.8.5",
+    ]);
+    // The licence comes from the full install, not the traced copy.
+    expect(result.entries[1]).toMatchObject({
+      licence: "ISC",
+      dir: "/store/semver",
+      installed: true,
+    });
+    // The bundle then lists it, which is what the image check reads.
+    const listed = bundlePackages(
+      renderBundle(
+        "test",
+        result.entries.map((e) => ({ ...e, dir: null })),
+      ),
+    );
+    expect(listed).toEqual(new Set(["react@19.0.0", "semver@7.8.5"]));
+  });
+
+  it("puts a traced package under the same policy", () => {
+    const root = mkdtempSync(join(tmpdir(), "tpn-"));
+    roots.push(root);
+    manifest(
+      root,
+      "node_modules/.pnpm/gpl-thing@1.0.0/node_modules/gpl-thing/package.json",
+      { name: "gpl-thing", version: "1.0.0", license: "GPL-3.0-only" },
+    );
+    const { entries } = withTraced([], installedManifests(root), new Map());
+    expect(policyFailures(entries)).toEqual([
+      "gpl-thing@1.0.0: licence GPL-3.0-only",
+    ]);
   });
 });
