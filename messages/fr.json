@@ -10395,7 +10395,9 @@
       "refreshReuseTitle": "Un appareil a été déconnecté",
       "refreshReuseBody": "Un jeton de connexion a été utilisé deux fois, son appareil a donc été déconnecté. Reconnectez-vous sur cet appareil. Si cela se reproduit, changez votre mot de passe.",
       "deviceReassignedTitle": "Un appareil est passé à un autre compte",
-      "deviceReassignedBody": "Un appareil qui recevait les notifications de ce compte est maintenant connecté à un autre compte et ne les reçoit plus. Si ce n'est pas vous, vérifiez vos appareils et vos connexions."
+      "deviceReassignedBody": "Un appareil qui recevait les notifications de ce compte est maintenant connecté à un autre compte et ne les reçoit plus. Si ce n'est pas vous, vérifiez vos appareils et vos connexions.",
+      "mfaDueTitle": "Second facteur de connexion requis",
+      "mfaDueBody": "Ajoutez une application d’authentification, une clé de sécurité ou une clé d’accès avant le {date}, dans l’application web sous Réglages > Sécurité."
     },
     "sharedRecordIntake": {
       "title": "{name} a marqué une dose",

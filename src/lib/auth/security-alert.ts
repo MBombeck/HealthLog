@@ -4,7 +4,8 @@
  * because its refresh token was presented twice, and a device of the account
  * that another account's registration took over (`device_reassigned`; it
  * reaches the account's other devices and channels, since the taken-over
- * one is no longer the account's).
+ * one is no longer the account's), and the start of a second-factor grace
+ * period (`mfa_due`, with its date; sent once, see `mfa-grace-notice.ts`).
  *
  * Each one is localised against the recipient's own locale and goes through
  * the dispatcher, which applies the per-channel SECURITY_ALERT preference
@@ -23,6 +24,7 @@ import { dispatchNotification } from "@/lib/notifications/dispatcher";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { defaultLocale, isLocale, type Locale } from "@/lib/i18n/config";
 import { getEvent } from "@/lib/logging/context";
+import { resolveUserTimezone } from "@/lib/tz/resolver";
 
 export type SecurityAlertKind =
   | "new_device"
@@ -30,7 +32,8 @@ export type SecurityAlertKind =
   | "passkey_removed"
   | "token_revoked"
   | "refresh_reuse"
-  | "device_reassigned";
+  | "device_reassigned"
+  | "mfa_due";
 
 type Translate = ReturnType<typeof getServerTranslator>["t"];
 
@@ -66,6 +69,10 @@ const TEXT: Record<
     title: t("notifications.security.deviceReassignedTitle"),
     body: t("notifications.security.deviceReassignedBody"),
   }),
+  mfa_due: (t, vars) => ({
+    title: t("notifications.security.mfaDueTitle"),
+    body: t("notifications.security.mfaDueBody", vars),
+  }),
 };
 
 async function localeOf(userId: string): Promise<Locale> {
@@ -82,16 +89,29 @@ async function localeOf(userId: string): Promise<Locale> {
 
 /**
  * Send one security alert to the account. `vars` fills the placeholders of
- * the kind's body (`device` and `location` for `new_device`). Never throws.
+ * the kind's body (`device` and `location` for `new_device`). A `dueAt`
+ * becomes the body's `date`, written in the account's language and time
+ * zone. Never throws.
  */
 export async function sendSecurityAlert(
   userId: string,
   kind: SecurityAlertKind,
   vars: Record<string, string> = {},
+  dueAt?: Date,
 ): Promise<boolean> {
   try {
-    const { t } = getServerTranslator(await localeOf(userId));
-    const text = TEXT[kind](t, vars);
+    const locale = await localeOf(userId);
+    const { t } = getServerTranslator(locale);
+    const filled = dueAt
+      ? {
+          ...vars,
+          date: new Intl.DateTimeFormat(locale, {
+            dateStyle: "long",
+            timeZone: await resolveUserTimezone(userId),
+          }).format(dueAt),
+        }
+      : vars;
+    const text = TEXT[kind](t, filled);
     const outcome = await dispatchNotification({
       eventType: "SECURITY_ALERT",
       userId,

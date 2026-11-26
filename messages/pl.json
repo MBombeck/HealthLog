@@ -10395,7 +10395,9 @@
       "refreshReuseTitle": "Wylogowano urządzenie",
       "refreshReuseBody": "Token logowania został użyty dwa razy, więc jego urządzenie zostało wylogowane. Zaloguj się na nim ponownie. Jeśli to się powtarza, zmień hasło.",
       "deviceReassignedTitle": "Urządzenie przeszło na inne konto",
-      "deviceReassignedBody": "Urządzenie, które otrzymywało powiadomienia z tego konta, jest teraz zalogowane na inne konto i już ich nie otrzymuje. Jeśli to nie Ty, sprawdź swoje urządzenia i logowania."
+      "deviceReassignedBody": "Urządzenie, które otrzymywało powiadomienia z tego konta, jest teraz zalogowane na inne konto i już ich nie otrzymuje. Jeśli to nie Ty, sprawdź swoje urządzenia i logowania.",
+      "mfaDueTitle": "Potrzebny drugi składnik logowania",
+      "mfaDueBody": "Dodaj aplikację uwierzytelniającą, klucz bezpieczeństwa lub klucz dostępu do {date} w aplikacji webowej w Ustawienia > Bezpieczeństwo."
     },
     "sharedRecordIntake": {
       "title": "{name} oznaczył(a) dawkę",
