@@ -2400,6 +2400,8 @@ const GUARDIAN_ROUTES: Record<string, string> = {
     "The emergency card's Apple Wallet pass (v1.50): its status, making it and withdrawing it. The pass carries its own standing URL credential in its QR code, so only the person the card is about, or the guardian of a managed profile, may make one; refused on an adult record at every grant level. Making and withdrawing are cookie-only, making needs a fresh proof; the status also answers the app's full-access token.",
   "app/api/emergency-card/wallet/apple/pass/route.ts":
     "The signed `.pkpass` of that pass, for the owner's Wallet or a managed profile's guardian. Same admission as the pass itself; cookie or the app's full-access token, refused on an adult record at every grant level.",
+  "app/api/emergency-card/wallet/apple/relay-hint/route.ts":
+    "The caller's no to the Wallet relay prompt on the card (v1.50). It writes only the caller's own interface flag, never the record; admitted wherever the card's Wallet action is, so a guardian on a managed profile's card can answer it there, and refused on an adult record at every grant level like the rest of the card.",
   "app/api/onboarding/extras/route.ts":
     "Presence only (counts, never contents) behind the getting-started checklist's optional rows: the emergency card, care calendar and report schedule a managed profile's guardian holds, plus the person-only rows on one's own record. Read only. Refused on an adult record at every grant level, so a delegate sees no such rows.",
   "app/api/care/feed-subscription/route.ts":
@@ -2659,7 +2661,7 @@ const ACTOR_ROUTES: Record<string, string> = {
  * The context marks on metric charts (`insights/context`) join the record
  * list. 354 -> 355.
  */
-const FROZEN_ENTRY_COUNT = 356;
+const FROZEN_ENTRY_COUNT = 357;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

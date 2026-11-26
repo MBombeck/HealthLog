@@ -27,6 +27,9 @@ import { AppleWalletCard } from "../apple-wallet-card";
 const BASE: EmergencyWalletApple = {
   available: true,
   reason: "ok",
+  state: "available",
+  relayAction: null,
+  relayHintDismissed: false,
   signer: "relay",
   passTypeIdentifier: "pass.dev.healthlog.emergency",
   canCreate: true,
@@ -64,13 +67,23 @@ function render(apple: EmergencyWalletApple | null): string {
 describe("<AppleWalletCard>", () => {
   it("shows nothing without the server's answer or to a delegate", () => {
     expect(render(null)).toBe("");
-    expect(render({ ...BASE, available: false, reason: "not_allowed" })).toBe(
-      "",
-    );
+    expect(
+      render({
+        ...BASE,
+        available: false,
+        reason: "not_allowed",
+        state: "not_allowed",
+      }),
+    ).toBe("");
   });
 
   it("names the reason when this server makes no passes", () => {
-    const html = render({ ...BASE, available: false, reason: "signer_off" });
+    const html = render({
+      ...BASE,
+      available: false,
+      reason: "signer_off",
+      state: "not_configured",
+    });
     expect(html).toContain('data-slot="wallet-unavailable"');
     expect(html).toContain("This server does not sign Wallet passes.");
     expect(html).not.toContain('data-slot="wallet-create"');
@@ -134,5 +147,49 @@ describe("<AppleWalletCard>", () => {
     expect(html).toContain("after a password change");
     expect(html).not.toContain("Shows:");
     expect(html).toContain("Make a new pass");
+  });
+
+  describe("while the relay that would sign is off", () => {
+    const OFF: EmergencyWalletApple = {
+      ...BASE,
+      available: false,
+      reason: "relay_not_ready",
+      state: "relay_off",
+      relayAction: "ask_admin",
+      canCreate: false,
+    };
+
+    it("keeps the action, enabled, with one line saying what it needs", () => {
+      const html = render(OFF);
+      const add = /<button(?=[^>]*data-slot="wallet-create")[^>]*>/.exec(
+        html,
+      )?.[0];
+      expect(add).toBeDefined();
+      expect(add).not.toMatch(/\sdisabled(=|\s|>)/);
+      expect(html).toContain('data-slot="wallet-relay-hint"');
+      expect(html).not.toContain('data-slot="wallet-unavailable"');
+    });
+
+    it("drops the line once the caller said no, not the action", () => {
+      const html = render({ ...OFF, relayHintDismissed: true });
+      expect(html).toContain('data-slot="wallet-create"');
+      expect(html).not.toContain('data-slot="wallet-relay-hint"');
+    });
+
+    it("renders the same for an admin, whose tap opens the switch", () => {
+      const html = render({ ...OFF, relayAction: "enable" });
+      expect(html).toContain('data-slot="wallet-create"');
+      expect(html).toContain('data-slot="wallet-relay-hint"');
+    });
+
+    it("names the wait while the relay is on but not signing yet", () => {
+      const html = render({
+        ...OFF,
+        state: "relay_not_ready",
+        relayAction: null,
+      });
+      expect(html).toContain('data-slot="wallet-unavailable"');
+      expect(html).not.toContain('data-slot="wallet-create"');
+    });
   });
 });

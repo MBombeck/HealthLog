@@ -16465,6 +16465,13 @@
         "signerRelay": "O projeto HealthLog o assina. O serviço de assinatura vê hashes de arquivos e horários, nunca o conteúdo.",
         "signerLocal": "Este servidor o assina com seu próprio certificado.",
         "withdraw": "Retirar para o código QR na hora. Um celular offline mantém o passe antigo até voltar a ficar online; se um passe não puder ser atualizado, apague-o na Wallet."
+      },
+      "relay": {
+        "title": "A Wallet precisa do relay de push",
+        "hint": "Precisa do relay de push neste servidor.",
+        "askAdmin": "Peça ao administrador do servidor para ativar as notificações pelo relay de push.",
+        "notNow": "Agora não",
+        "starting": "O relay de push está iniciando. O passe chega em um minuto."
       }
     }
   },

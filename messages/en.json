@@ -16465,6 +16465,13 @@
         "signerRelay": "The HealthLog project signs it. Its signing service sees file hashes and times, never the content.",
         "signerLocal": "This server signs it with its own certificate.",
         "withdraw": "Withdrawing stops the QR code at once. A phone that is offline keeps the old pass until it is back online; if a pass cannot be updated, delete it in Wallet."
+      },
+      "relay": {
+        "title": "Wallet needs the push relay",
+        "hint": "Needs the push relay on this server.",
+        "askAdmin": "Ask this server's administrator to turn on notifications over the push relay.",
+        "notNow": "Not now",
+        "starting": "The push relay is starting. The pass follows in a minute."
       }
     }
   },

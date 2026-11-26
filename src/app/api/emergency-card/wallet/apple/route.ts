@@ -91,6 +91,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
     allowed: true,
     origin: resolveOrigin(request),
     authMethod: auth.authMethod,
+    callerIsAdmin: auth.actor.role === "ADMIN",
+    relayHintDismissed: auth.actor.walletRelayHintDismissed,
   });
   return apiSuccess({ apple });
 });

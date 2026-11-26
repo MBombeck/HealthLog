@@ -47,6 +47,7 @@ import { WALLET_DOWNLOAD_PATH } from "@/lib/emergency-card/wallet-pass/constants
 import {
   E2E_WALLET,
   E2E_WALLET_FULL_NAME,
+  STORAGE_STATE_PATH,
   WALLET_STORAGE_STATE_PATH,
 } from "./setup/global-setup";
 import {
@@ -265,5 +266,167 @@ test.describe("emergency card in Apple Wallet", () => {
     expect(voided.pass.barcodes).toBeUndefined();
     expect(voided.pass.featuredActions).toBeUndefined();
     expect(voided.passText).not.toContain(E2E_WALLET_FULL_NAME);
+  });
+});
+
+/**
+ * A server that signs passes over the push relay while the relay is off.
+ *
+ * The suite's server signs locally and runs no relay, so `/api/auth/me` is
+ * read from the server and only its Wallet block is replaced with the
+ * relay-off answer (`state: relay_off`, the action by role); everything else,
+ * the caller's dismissal included, is the server's own. The relay's answer
+ * to an admin's yes is stubbed, because there is no relay to register at;
+ * the request the card sends is asserted instead.
+ */
+test.describe("emergency card in Apple Wallet while the relay is off", () => {
+  type Apple = Record<string, unknown>;
+
+  /** Rewrite the Wallet block of every `/api/auth/me`; returns a setter. */
+  async function relayOff(page: Page, apple: () => Apple) {
+    await page.route("**/api/auth/me", async (route) => {
+      const response = await route.fetch();
+      const body = (await response.json()) as {
+        data: {
+          emergencyCard?: { wallet: { apple: Apple } } | null;
+          push?: { relay?: Record<string, unknown> };
+        } | null;
+      };
+      const real = body.data?.emergencyCard?.wallet.apple;
+      if (body.data && real) {
+        body.data.emergencyCard = {
+          wallet: { apple: { ...real, pass: null, ...apple() } },
+        };
+      }
+      await route.fulfill({ response, json: body });
+    });
+  }
+
+  const OFF = {
+    available: false,
+    reason: "relay_not_ready",
+    state: "relay_off",
+    signer: "relay",
+    canCreate: false,
+    consentTextVersion: "2026-11-24",
+  };
+
+  test.describe("for anybody but an admin", () => {
+    test.use({ storageState: WALLET_STORAGE_STATE_PATH });
+
+    test("says who switches it on, and remembers the no", async ({ page }) => {
+      await relayOff(page, () => ({ ...OFF, relayAction: "ask_admin" }));
+      await page.goto("/emergency-card");
+      const card = page.locator('[data-slot="emergency-card-wallet-card"]');
+      const hint = card.locator('[data-slot="wallet-relay-hint"]');
+      await expect(hint).toBeVisible();
+
+      // The action stays, and explains instead of doing nothing.
+      const create = card.locator('[data-slot="wallet-create"]');
+      await expect(create).toBeEnabled();
+      await create.click();
+      const gate = page.locator('[data-slot="wallet-relay-gate"]');
+      await expect(gate).toBeVisible();
+      await expect(gate.getByRole("heading")).toBeVisible();
+      await expect(
+        page.locator('[data-slot="wallet-relay-enable"]'),
+      ).toHaveCount(0);
+
+      const dismissed = page.waitForResponse(
+        (r) =>
+          r.url().endsWith("/api/emergency-card/wallet/apple/relay-hint") &&
+          r.request().method() === "POST",
+      );
+      await page.locator('[data-slot="wallet-relay-close"]').click();
+      expect((await dismissed).status()).toBe(200);
+      await expect(gate).toBeHidden();
+      // The server's own dismissal: the line goes, the action stays.
+      await expect(hint).toHaveCount(0);
+      await expect(create).toBeEnabled();
+
+      await page.reload();
+      await expect(card.locator('[data-slot="wallet-create"]')).toBeEnabled();
+      await expect(hint).toHaveCount(0);
+    });
+  });
+
+  test.describe("for an admin", () => {
+    test.use({ storageState: STORAGE_STATE_PATH });
+
+    test("switches it on in place and goes on to the pass", async ({
+      page,
+    }) => {
+      let on = false;
+      await relayOff(page, () =>
+        on
+          ? {
+              ...OFF,
+              available: true,
+              reason: "ok",
+              state: "available",
+              relayAction: null,
+              canCreate: true,
+            }
+          : { ...OFF, relayAction: "enable", relayHintDismissed: false },
+      );
+      const sent: unknown[] = [];
+      const answer = async (route: import("@playwright/test").Route) => {
+        sent.push(route.request().postDataJSON());
+        on = true;
+        await route.fulfill({
+          json: {
+            data: {
+              offered: true,
+              instanceId: "e2e-instance",
+              reason: null,
+              operatorDecision: "on",
+            },
+            error: null,
+          },
+        });
+      };
+      await page.route("**/api/admin/push-relay/decision", answer);
+      await page.route("**/api/admin/push-relay", answer);
+
+      await page.goto("/emergency-card");
+      const card = page.locator('[data-slot="emergency-card-wallet-card"]');
+      await expect(
+        card.locator('[data-slot="wallet-relay-hint"]'),
+      ).toBeVisible();
+      await card.locator('[data-slot="wallet-create"]').click();
+
+      // One sentence of what the relay is, then the switch's own checks.
+      const gate = page.locator('[data-slot="wallet-relay-gate"]');
+      await expect(gate).toBeVisible();
+      await expect(
+        page.locator('[data-slot="wallet-relay-not-now"]'),
+      ).toBeVisible();
+      await page.locator('[data-slot="wallet-relay-enable"]').click();
+      for (const id of [
+        "push-relay-accept-terms",
+        "push-relay-read-privacy",
+        "push-relay-household",
+      ]) {
+        await page.locator(`[data-slot="${id}"]`).click();
+      }
+      await page
+        .getByRole("alertdialog")
+        .getByRole("button", { name: "Turn on" })
+        .click();
+
+      await expect.poll(() => sent.length).toBe(1);
+      expect(sent[0]).toEqual({
+        enabled: true,
+        acceptTerms: true,
+        householdOnly: true,
+      });
+      // The relay signs now: the card goes on by itself to the pass's own
+      // signing notice.
+      await expect(
+        page.locator('[data-slot="wallet-consent-confirm"]'),
+      ).toBeVisible({
+        timeout: 15_000,
+      });
+    });
   });
 });

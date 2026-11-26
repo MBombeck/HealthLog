@@ -296,6 +296,9 @@ async function emergencyCardBlock(
     allowed,
     origin: resolveOrigin(request),
     authMethod: auth.authMethod,
+    // Who may switch the relay on is the caller, whoever's record is open.
+    callerIsAdmin: auth.user.role === "ADMIN",
+    relayHintDismissed: auth.user.walletRelayHintDismissed,
   });
   return { wallet: { apple } };
 }

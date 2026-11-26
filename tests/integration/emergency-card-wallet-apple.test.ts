@@ -53,15 +53,18 @@ import { sessionCookieName } from "@/lib/auth/session-cookie";
 
 import { callRoute, type RouteAuth } from "../kit/call-route";
 import {
+  makeAdmin,
   makeSession,
   makeToken,
   makeUser,
   type BearerFixture,
   type SessionFixture,
 } from "../kit/factories";
+import { createManagedProfile } from "@/lib/managed-profiles/create";
+
 import { cookieJar, headerJar } from "./mock-next-headers";
 import { enableRelay } from "./push-relay-kit";
-import { getPrismaClient, truncateAllTables } from "./setup";
+import { getPrismaClient, switchSessionTo, truncateAllTables } from "./setup";
 
 const prisma = getPrismaClient();
 const HTTPS = { "x-forwarded-proto": "https", host: "health.example.test" };
@@ -103,6 +106,8 @@ const routes = async () => ({
   status: await import("@/app/api/emergency-card/wallet/apple/route"),
   pass: await import("@/app/api/emergency-card/wallet/apple/pass/route"),
   link: await import("@/app/api/emergency-card/link/route"),
+  hint: await import("@/app/api/emergency-card/wallet/apple/relay-hint/route"),
+  decision: await import("@/app/api/admin/push-relay/decision/route"),
   me: await import("@/app/api/auth/me/route"),
 });
 
@@ -129,6 +134,9 @@ async function walletStatus(auth: RouteAuth, headers = HTTPS) {
     apple: {
       available: boolean;
       reason: string;
+      state: string;
+      relayAction: string | null;
+      relayHintDismissed: boolean;
       signer: string | null;
       canCreate: boolean;
       pass: null | { state: string; serialNumber: string };
@@ -658,10 +666,149 @@ describe("without any signer", () => {
     expect((await walletStatus(session)).data.apple).toMatchObject({
       available: false,
       reason: "signer_off",
+      state: "not_configured",
+      relayAction: null,
       signer: null,
     });
     const made = await create(session);
     expect(made.status).toBe(409);
     expect(made.meta?.reason).toBe("signer_off");
+  });
+});
+
+describe("while the relay that would sign is off", () => {
+  async function dismiss(auth: RouteAuth) {
+    const { hint } = await routes();
+    return callRoute<{ dismissed: boolean }>(hint.POST, {
+      method: "POST",
+      route: `${ROUTE}/relay-hint`,
+      auth,
+    });
+  }
+
+  it("lets an admin switch it on in place and then makes the pass", async () => {
+    relay.current = Object.assign(new FakeRelay(), {
+      status: {
+        wallet: {
+          sign: true,
+          notify: true,
+          passTypeIdentifier: "pass.dev.healthlog.vector",
+          teamIdentifier: "VECTOR1234",
+          certNotAfterDay: 24107,
+        },
+      },
+    });
+    const admin = await makeAdmin();
+    await seedCard(admin.id);
+    const session = await makeSession(admin);
+    expect((await walletStatus(session)).data.apple).toMatchObject({
+      available: false,
+      state: "relay_off",
+      relayAction: "enable",
+      relayHintDismissed: false,
+    });
+
+    // The relay question's own answer, with its confirmations and audit.
+    const { decision } = await routes();
+    const yes = await callRoute<{ operatorDecision: string }>(decision.POST, {
+      method: "POST",
+      route: "/api/admin/push-relay/decision",
+      auth: session,
+      body: { enabled: true, acceptTerms: true, householdOnly: true },
+    });
+    expect(yes.status).toBe(200);
+    expect(yes.data.operatorDecision).toBe("on");
+    expect(
+      await prisma.auditLog.count({
+        where: { userId: admin.id, action: "admin.push_relay.enabled" },
+      }),
+    ).toBe(1);
+    // Registered; signing arrives with the next status check.
+    expect((await walletStatus(session)).data.apple.state).toBe(
+      "relay_not_ready",
+    );
+    const { loadRegistration, relayCall } =
+      await import("@/lib/push-relay/registration");
+    const row = await loadRegistration();
+    if (!row) throw new Error("the relay is not on");
+    await relayCall(row, "GET", "/v1/status");
+    expect((await walletStatus(session)).data.apple).toMatchObject({
+      available: true,
+      state: "available",
+      relayAction: null,
+    });
+    expect((await create(session)).status).toBe(201);
+  });
+
+  it("tells anybody else to ask the admin, and remembers their no", async () => {
+    const owner = await makeUser();
+    const admin = await makeAdmin();
+    const session = await makeSession(owner);
+    const adminSession = await makeSession(admin);
+    expect((await walletStatus(session)).data.apple).toMatchObject({
+      state: "relay_off",
+      relayAction: "ask_admin",
+      relayHintDismissed: false,
+    });
+    expect((await create(session)).status).toBe(409);
+
+    const first = await dismiss(session);
+    expect(first.status).toBe(200);
+    expect((await dismiss(session)).status).toBe(200);
+    const { me } = await routes();
+    const res = await callRoute<{
+      emergencyCard: { wallet: { apple: Record<string, unknown> } };
+    }>(me.GET as never, {
+      method: "GET",
+      route: "/api/auth/me",
+      auth: session,
+      headers: HTTPS,
+    });
+    // Still the same action, just no longer prompted.
+    expect(res.data.emergencyCard.wallet.apple).toMatchObject({
+      state: "relay_off",
+      relayAction: "ask_admin",
+      relayHintDismissed: true,
+    });
+    // Per person: the admin is still asked.
+    expect((await walletStatus(adminSession)).data.apple).toMatchObject({
+      relayAction: "enable",
+      relayHintDismissed: false,
+    });
+  });
+
+  it("answers a guardian on a ward's record by the guardian's own role", async () => {
+    const guardian = await makeAdmin();
+    const { profile } = await createManagedProfile({
+      creatorId: guardian.id,
+      displayName: "Managed record",
+      dateOfBirth: null,
+      locale: "en",
+      timezone: "UTC",
+    });
+    const session = await makeSession(guardian);
+    await switchSessionTo(session.sessionId, profile.id);
+    expect((await walletStatus(session)).data.apple).toMatchObject({
+      state: "relay_off",
+      relayAction: "enable",
+    });
+    expect((await dismiss(session)).status).toBe(200);
+    const row = await prisma.user.findUniqueOrThrow({
+      where: { id: guardian.id },
+      select: { walletRelayHintDismissed: true },
+    });
+    expect(row.walletRelayHintDismissed).toBe(true);
+  });
+
+  it("needs no relay with the operator's own signer", async () => {
+    await localEnv();
+    const admin = await makeAdmin();
+    const session = await makeSession(admin);
+    expect((await walletStatus(session)).data.apple).toMatchObject({
+      available: true,
+      state: "available",
+      signer: "local",
+      relayAction: null,
+    });
   });
 });

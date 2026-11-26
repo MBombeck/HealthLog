@@ -3190,6 +3190,7 @@
       "mfaEnforced": false,
       "passkeyUpgradeNudgeDismissed": true,
       "adminNoticesDismissed": [],
+      "walletRelayHintDismissed": false,
       "fullName": "rt-User-fullName",
       "insurerName": "rt-User-insurerName",
       "insuranceNumberEncrypted": "<sealed:v1:rt-User-insuranceNumberEncrypted>",
