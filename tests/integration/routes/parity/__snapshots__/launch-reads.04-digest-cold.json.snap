@@ -8,6 +8,7 @@
       "score": {
         "value": 86,
         "band": "green",
+        "numberBand": "green",
         "delta": null,
         "deltaReason": "first_eligibility_window",
         "scoreVersion": 4,

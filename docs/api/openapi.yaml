@@ -79410,6 +79410,20 @@ components:
                     - green
                     - yellow
                     - red
+                  description: "The health score's colour as shipped apps draw it: the worse of the number's own band (green from 70,
+                    yellow from 50) and the worst counted pillar's band. An 81 over a red pillar is red here. Unchanged
+                    since 1.49; the stored daily score and the \"steady for\" read compare this band. New clients draw
+                    `numberBand` instead."
+                numberBand:
+                  description: "1.50 — the band of the number alone (green from 70, yellow from 50), the rule every other HealthLog score
+                    follows. Draw the ring and its word with this, and show `bandSetterLine` beside it when a pillar
+                    sits in a worse band. It differs from `band` exactly when `bandSetter` is non-null. Optional: a
+                    payload cached before 1.50 lacks it; fall back to `band`."
+                  type: string
+                  enum:
+                    - green
+                    - yellow
+                    - red
                 delta:
                   type:
                     - number
@@ -79458,9 +79472,8 @@ components:
                   exclusiveMinimum: 0
                   maximum: 9007199254740991
                 bandSetter:
-                  description: The worst counted pillar when its band is worse than the score's own band, null otherwise. Since 1.50 it
-                    names that pillar beside the score; it no longer lowers `band`, which follows the number like every
-                    HealthLog score (green from 70, yellow from 50).
+                  description: The worst counted pillar when its band is worse than the number's own band (`numberBand`), null otherwise.
+                    It is the pillar that makes `band` worse than `numberBand`.
                   anyOf:
                     - type: string
                       enum:
@@ -81335,6 +81348,20 @@ components:
                     - green
                     - yellow
                     - red
+                  description: "The health score's colour as shipped apps draw it: the worse of the number's own band (green from 70,
+                    yellow from 50) and the worst counted pillar's band. An 81 over a red pillar is red here. Unchanged
+                    since 1.49; the stored daily score and the \"steady for\" read compare this band. New clients draw
+                    `numberBand` instead."
+                numberBand:
+                  description: "1.50 — the band of the number alone (green from 70, yellow from 50), the rule every other HealthLog score
+                    follows. Draw the ring and its word with this, and show `bandSetterLine` beside it when a pillar
+                    sits in a worse band. It differs from `band` exactly when `bandSetter` is non-null. Optional: a
+                    payload cached before 1.50 lacks it; fall back to `band`."
+                  type: string
+                  enum:
+                    - green
+                    - yellow
+                    - red
                 bandSetter:
                   anyOf:
                     - type: string
@@ -81347,9 +81374,8 @@ components:
                         - WELLBEING
                         - LIPIDS
                     - type: "null"
-                  description: The worst counted pillar when its band is worse than the score's own band, null otherwise. Since 1.50 it
-                    names that pillar beside the score; it no longer lowers `band`, which follows the number like every
-                    HealthLog score (green from 70, yellow from 50).
+                  description: The worst counted pillar when its band is worse than the number's own band (`numberBand`), null otherwise.
+                    It is the pillar that makes `band` worse than `numberBand`.
                 composition:
                   type: array
                   items:
@@ -101131,6 +101157,16 @@ components:
                   type: number
                 band:
                   type: string
+                  description: "The health score's colour as shipped apps draw it: the worse of the number's own band (green from 70,
+                    yellow from 50) and the worst counted pillar's band. An 81 over a red pillar is red here. Unchanged
+                    since 1.49; the stored daily score and the \"steady for\" read compare this band. New clients draw
+                    `numberBand` instead."
+                numberBand:
+                  description: "1.50 — the band of the number alone (green from 70, yellow from 50), the rule every other HealthLog score
+                    follows. Draw the ring and its word with this, and show `bandSetterLine` beside it when a pillar
+                    sits in a worse band. It differs from `band` exactly when `bandSetter` is non-null. Optional: a
+                    payload cached before 1.50 lacks it; fall back to `band`."
+                  type: string
                 delta:
                   type:
                     - number
@@ -101175,13 +101211,13 @@ components:
                     bound, said as \"at least\", and the run's start is unknown. Absent on older cached digests."
                   type: boolean
                 bandSetter:
-                  description: The counted pillar whose band is worse than the score's own (`bandSetter` of the health score), null when
-                    none is. Since 1.50 `band` follows the number, so a green score can sit over a red pillar.
+                  description: The counted pillar whose band is worse than the number's own (`numberBand`), null when none is. Exactly
+                    then `band` is worse than `numberBand`.
                   type:
                     - string
                     - "null"
                 bandSetterBand:
-                  description: That pillar's own band. A sentence about the day uses the worse of this and `band`.
+                  description: That pillar's own band. A sentence about the day uses the worse of this and `numberBand`, which is `band`.
                   anyOf:
                     - type: string
                       enum:
@@ -113308,7 +113344,8 @@ components:
         asOfDay:
           type: string
           description: 1.50 — the local day (YYYY-MM-DD, the account's zone) `score` belongs to. Today when `fresh` is true;
-            otherwise the wake day of the last stored readiness.
+            otherwise the wake day of the last readiness stored for a day before today, never today. A readiness that is
+            not fresh stays on the wire all day, also once too few inputs remain to blend.
         fresh:
           type: boolean
           description: 1.50 — true when every input the account still delivers (resting pulse, HRV, respiratory rate, the scored

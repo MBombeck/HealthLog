@@ -856,7 +856,8 @@ describe("loadDailyDigest — Today overview inputs", () => {
         ...SNAPSHOT.body,
         healthScore: {
           score: 79,
-          band: "green",
+          band: "red",
+          numberBand: "green",
           delta: null,
           bandSetter: "BLOOD_PRESSURE",
           bandSetterBand: "red",
@@ -865,11 +866,25 @@ describe("loadDailyDigest — Today overview inputs", () => {
       },
     } as Awaited<ReturnType<typeof readDashboardSnapshotCached>>);
     const digest = await loadDailyDigest(USER, NOW);
+    // `band` keeps the colour shipped apps draw; `numberBand` is the web's.
     expect(digest.score).toMatchObject({
-      band: "green",
+      band: "red",
+      numberBand: "green",
       bandSetter: "BLOOD_PRESSURE",
       bandSetterBand: "red",
       bandSetterLine: "Blood pressure: outside the reference range",
     });
+  });
+
+  it("falls back to band for a snapshot cached before numberBand", async () => {
+    vi.mocked(readDashboardSnapshotCached).mockResolvedValueOnce({
+      ...SNAPSHOT,
+      body: {
+        ...SNAPSHOT.body,
+        healthScore: { score: 79, band: "green", delta: null },
+      },
+    } as Awaited<ReturnType<typeof readDashboardSnapshotCached>>);
+    const digest = await loadDailyDigest(USER, NOW);
+    expect(digest.score).toMatchObject({ band: "green", numberBand: "green" });
   });
 });

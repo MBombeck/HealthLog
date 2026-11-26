@@ -750,6 +750,8 @@ export async function loadDailyDigest(
     ? {
         value: snapshot.healthScore.score,
         band: snapshot.healthScore.band,
+        numberBand:
+          snapshot.healthScore.numberBand ?? snapshot.healthScore.band,
         delta: snapshot.healthScore.delta,
         deltaReason: snapshot.healthScore.deltaReason,
         scoreVersion: snapshot.healthScore.scoreVersion,

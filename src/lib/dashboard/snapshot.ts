@@ -342,7 +342,10 @@ export interface DashboardLayoutCatalogueEntry {
  */
 export interface DashboardSnapshotHealthScore {
   score: number;
+  /** The worse of the number's band and the worst pillar's (shipped apps). */
   band: ScoreBand;
+  /** 1.50: the number's own band; the web draws this. Old caches lack it. */
+  numberBand?: ScoreBand;
   delta: number | null;
   confidence?: DerivedConfidence;
   composition?: ScorePillarId[];
@@ -794,6 +797,7 @@ async function buildExtras(
       ? {
           score: scoreResult.composite.value.score,
           band: scoreResult.composite.value.band,
+          numberBand: scoreResult.composite.value.numberBand,
           delta: scoreResult.delta,
           confidence: scoreResult.composite.confidence,
           composition: scoreResult.composite.value.composition,

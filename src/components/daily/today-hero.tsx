@@ -342,7 +342,11 @@ export function TodayHero({
       >
         <ScoreRing
           score={digest.score?.value ?? null}
-          band={digest.score ? (digest.score.band as ScoreBand) : undefined}
+          band={
+            digest.score
+              ? ((digest.score.numberBand ?? digest.score.band) as ScoreBand)
+              : undefined
+          }
           size={size}
           flat
           label={t("daily.today.scoreLabel")}

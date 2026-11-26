@@ -262,6 +262,7 @@ function scoredReport(
       value: {
         score: 86,
         band: "green",
+        numberBand: "green",
         bandSetter: null,
         composition: ["BLOOD_PRESSURE", "ACTIVITY", "SLEEP"],
         configured: false,
@@ -405,6 +406,7 @@ describe("<HealthScoreCard> pillars", () => {
             value: {
               score: 31,
               band: "red",
+              numberBand: "red",
               bandSetter: null,
               composition: ["BLOOD_PRESSURE", "GLYCAEMIA"],
               configured: false,
@@ -748,7 +750,8 @@ describe("<HealthScoreCard> band line", () => {
             status: "ok",
             value: {
               score: 81,
-              band: "green",
+              band: "red",
+              numberBand: "green",
               bandSetter: "GLYCAEMIA",
               composition: ["BLOOD_PRESSURE", "GLYCAEMIA"],
               configured: false,
@@ -1073,6 +1076,7 @@ describe("<HealthScoreCard> basis line", () => {
         value: {
           score: 86,
           band,
+          numberBand: band,
           bandSetter: null,
           composition: ["BLOOD_PRESSURE"],
           configured: false,

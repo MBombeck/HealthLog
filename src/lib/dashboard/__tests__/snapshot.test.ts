@@ -75,6 +75,9 @@ vi.mock("@/lib/analytics/score/reader", () => ({
           value: {
             score: legacy.score,
             band: legacy.band,
+            // A yellow BP pillar under a green number: the wire band is
+            // the worse of the two, the number's own band rides beside it.
+            numberBand: "green" as const,
             bandSetter: "BLOOD_PRESSURE" as const,
             composition: ["BLOOD_PRESSURE", "ACTIVITY", "SLEEP"] as const,
             noiseFloor: 2,
@@ -451,6 +454,7 @@ describe("buildDashboardSnapshot — per-type thick-phase gate", () => {
     expect(snap.healthScore).toEqual({
       score: 71,
       band: "yellow",
+      numberBand: "green",
       delta: 3,
       restMode: null,
       confidence: { score: 100, band: "high" },
@@ -603,6 +607,7 @@ describe("buildDashboardSnapshot — healthScore (warm phase only)", () => {
     expect(snap.healthScore).toEqual({
       score: 72,
       band: "yellow",
+      numberBand: "green",
       delta: -12,
       restMode: null,
       confidence: { score: 100, band: "high" },

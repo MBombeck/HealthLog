@@ -27,7 +27,11 @@ import {
 } from "@/lib/daily/morning";
 import { dismissPriorityItemSchema } from "@/lib/validations/daily";
 import { dataEnvelope, recordRefusal, stdResponses } from "./shared";
-import { healthScoreBasis } from "./insights/schemas";
+import {
+  HEALTH_SCORE_BAND_DESCRIPTION,
+  HEALTH_SCORE_NUMBER_BAND_DESCRIPTION,
+  healthScoreBasis,
+} from "./insights/schemas";
 import { aiCapabilityState } from "./profile";
 
 const priorityItemSchema = z
@@ -102,7 +106,11 @@ export const dailyDigestResponse = z
     score: z
       .object({
         value: z.number(),
-        band: z.string(),
+        band: z.string().describe(HEALTH_SCORE_BAND_DESCRIPTION),
+        numberBand: z
+          .string()
+          .optional()
+          .describe(HEALTH_SCORE_NUMBER_BAND_DESCRIPTION),
         delta: z.number().nullable(),
         configured: z
           .boolean()
@@ -156,14 +164,14 @@ export const dailyDigestResponse = z
           .nullable()
           .optional()
           .describe(
-            "The counted pillar whose band is worse than the score's own (`bandSetter` of the health score), null when none is. Since 1.50 `band` follows the number, so a green score can sit over a red pillar.",
+            "The counted pillar whose band is worse than the number's own (`numberBand`), null when none is. Exactly then `band` is worse than `numberBand`.",
           ),
         bandSetterBand: z
           .enum(["yellow", "red"])
           .nullable()
           .optional()
           .describe(
-            "That pillar's own band. A sentence about the day uses the worse of this and `band`.",
+            "That pillar's own band. A sentence about the day uses the worse of this and `numberBand`, which is `band`.",
           ),
         bandSetterLine: z
           .string()
