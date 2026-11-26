@@ -16146,5 +16146,78 @@
     "entry": {
       "description": "Blood group, allergies, medications and contacts for an emergency, with an offline copy, a wallet card and a QR link."
     }
+  },
+  "serverText": {
+    "alerts": {
+      "bmiBelowNormal": {
+        "title": "BMI below normal range",
+        "message": "Your BMI of {bmi} is below the normal range (18.5–24.9)."
+      },
+      "bmiOverweight": {
+        "title": "BMI in overweight range",
+        "message": "Your BMI of {bmi} is in the overweight range. Regular exercise and a balanced diet can help."
+      },
+      "bmiObesity": {
+        "title": "BMI in obesity range",
+        "message": "Your BMI of {bmi} is in the obesity range."
+      },
+      "bmiNormal": {
+        "title": "BMI in normal range",
+        "message": "Your BMI of {bmi} is in the healthy range."
+      },
+      "bpSignificantlyElevated": {
+        "title": "Blood pressure significantly elevated",
+        "message": "Your average blood pressure ({sys}/{dia}) is classified as \"{category}\"."
+      },
+      "bpSlightlyElevated": {
+        "title": "Blood pressure slightly elevated",
+        "message": "Your average blood pressure ({sys}/{dia}) is in the \"{category}\" range."
+      },
+      "bpTargetGood": {
+        "title": "Good blood pressure target adherence",
+        "message": "{percent}% of your readings are within the target range."
+      },
+      "bpTargetLow": {
+        "title": "Blood pressure often outside target range",
+        "message": "Only {percent}% of your readings are within the target range."
+      },
+      "weightIncreasing": {
+        "title": "Weight increasing",
+        "message": "Your weight is increasing by approx. {kg} kg per week over the last 30 days."
+      },
+      "weightDecreasing": {
+        "title": "Weight decreasing",
+        "message": "Your weight is decreasing by approx. {kg} kg per week over the last 30 days."
+      },
+      "pulseOutliers": {
+        "title": "Pulse outliers detected",
+        "message": "{count, plural, one {# unusual pulse reading} other {# unusual pulse readings}} in the last 30 days."
+      },
+      "complianceLow": {
+        "title": "Low compliance: {name}",
+        "message": "Your 7-day compliance for {name} is only {percent}%. Regular intake is important."
+      },
+      "complianceExcellent": {
+        "title": "Excellent compliance: {name}",
+        "message": "{percent}% compliance over the last 7 days. Keep it up!"
+      }
+    },
+    "targetLabels": {
+      "weight": "Weight",
+      "bloodPressure": "Blood pressure",
+      "bloodPressureOnTarget": "Blood pressure on target",
+      "restingPulse": "Resting pulse",
+      "bmi": "BMI",
+      "bodyFat": "Body fat",
+      "stepsPerDay": "Steps/day",
+      "sleepDuration": "Sleep duration",
+      "medicationCompliance": "Medication compliance",
+      "mood": "Mood",
+      "moodStability": "Mood stability"
+    },
+    "metricLabels": {
+      "systolicBloodPressure": "Systolic blood pressure",
+      "diastolicBloodPressure": "Diastolic blood pressure"
+    }
   }
 }

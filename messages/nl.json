@@ -16146,5 +16146,78 @@
     "entry": {
       "description": "Bloedgroep, allergieën, medicijnen en contactpersonen voor een noodgeval, met offline kopie, pasje en QR-link."
     }
+  },
+  "serverText": {
+    "alerts": {
+      "bmiBelowNormal": {
+        "title": "BMI onder het normale bereik",
+        "message": "Je BMI van {bmi} ligt onder het normale bereik (18,5–24,9)."
+      },
+      "bmiOverweight": {
+        "title": "BMI in het bereik overgewicht",
+        "message": "Je BMI van {bmi} ligt in het bereik overgewicht. Regelmatig bewegen en gevarieerd eten kunnen helpen."
+      },
+      "bmiObesity": {
+        "title": "BMI in het bereik obesitas",
+        "message": "Je BMI van {bmi} ligt in het bereik obesitas."
+      },
+      "bmiNormal": {
+        "title": "BMI in het normale bereik",
+        "message": "Je BMI van {bmi} ligt in het gezonde bereik."
+      },
+      "bpSignificantlyElevated": {
+        "title": "Bloeddruk duidelijk verhoogd",
+        "message": "Je gemiddelde bloeddruk ({sys}/{dia}) valt in de categorie ‘{category}’."
+      },
+      "bpSlightlyElevated": {
+        "title": "Bloeddruk licht verhoogd",
+        "message": "Je gemiddelde bloeddruk ({sys}/{dia}) ligt in het bereik ‘{category}’."
+      },
+      "bpTargetGood": {
+        "title": "Bloeddruk meestal binnen het doel",
+        "message": "{percent}% van je metingen ligt binnen het doelbereik."
+      },
+      "bpTargetLow": {
+        "title": "Bloeddruk vaak buiten het doelbereik",
+        "message": "Slechts {percent}% van je metingen ligt binnen het doelbereik."
+      },
+      "weightIncreasing": {
+        "title": "Gewicht stijgt",
+        "message": "Je gewicht stijgt de afgelopen 30 dagen met ongeveer {kg} kg per week."
+      },
+      "weightDecreasing": {
+        "title": "Gewicht daalt",
+        "message": "Je gewicht daalt de afgelopen 30 dagen met ongeveer {kg} kg per week."
+      },
+      "pulseOutliers": {
+        "title": "Afwijkende polswaarden",
+        "message": "{count, plural, one {# ongebruikelijke polswaarde} other {# ongebruikelijke polswaarden}} in de afgelopen 30 dagen."
+      },
+      "complianceLow": {
+        "title": "Lage therapietrouw: {name}",
+        "message": "Je therapietrouw over 7 dagen voor {name} is maar {percent}%. Regelmatig innemen is belangrijk."
+      },
+      "complianceExcellent": {
+        "title": "Uitstekende therapietrouw: {name}",
+        "message": "{percent}% therapietrouw in de afgelopen 7 dagen. Ga zo door!"
+      }
+    },
+    "targetLabels": {
+      "weight": "Gewicht",
+      "bloodPressure": "Bloeddruk",
+      "bloodPressureOnTarget": "Bloeddruk binnen doel",
+      "restingPulse": "Rustpols",
+      "bmi": "BMI",
+      "bodyFat": "Vetpercentage",
+      "stepsPerDay": "Stappen/dag",
+      "sleepDuration": "Slaapduur",
+      "medicationCompliance": "Therapietrouw",
+      "mood": "Stemming",
+      "moodStability": "Stabiliteit van de stemming"
+    },
+    "metricLabels": {
+      "systolicBloodPressure": "Systolische bloeddruk",
+      "diastolicBloodPressure": "Diastolische bloeddruk"
+    }
   }
 }

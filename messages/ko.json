@@ -16146,5 +16146,78 @@
     "entry": {
       "description": "응급 상황용 혈액형, 알레르기, 약, 연락처. 오프라인 사본, 지갑용 카드, QR 링크를 함께 제공합니다."
     }
+  },
+  "serverText": {
+    "alerts": {
+      "bmiBelowNormal": {
+        "title": "BMI 정상 범위 미만",
+        "message": "BMI {bmi}은(는) 정상 범위(18.5–24.9)보다 낮습니다."
+      },
+      "bmiOverweight": {
+        "title": "BMI 과체중 범위",
+        "message": "BMI {bmi}은(는) 과체중 범위입니다. 규칙적인 운동과 균형 잡힌 식단이 도움이 될 수 있습니다."
+      },
+      "bmiObesity": {
+        "title": "BMI 비만 범위",
+        "message": "BMI {bmi}은(는) 비만 범위입니다."
+      },
+      "bmiNormal": {
+        "title": "BMI 정상 범위",
+        "message": "BMI {bmi}은(는) 건강한 범위입니다."
+      },
+      "bpSignificantlyElevated": {
+        "title": "혈압 크게 높음",
+        "message": "평균 혈압({sys}/{dia})이 '{category}'(으)로 분류됩니다."
+      },
+      "bpSlightlyElevated": {
+        "title": "혈압 약간 높음",
+        "message": "평균 혈압({sys}/{dia})이 '{category}' 범위에 있습니다."
+      },
+      "bpTargetGood": {
+        "title": "혈압 목표 달성 양호",
+        "message": "측정값의 {percent}%가 목표 범위 안에 있습니다."
+      },
+      "bpTargetLow": {
+        "title": "혈압이 자주 목표 범위를 벗어남",
+        "message": "측정값의 {percent}%만 목표 범위 안에 있습니다."
+      },
+      "weightIncreasing": {
+        "title": "체중 증가 중",
+        "message": "최근 30일 동안 체중이 주당 약 {kg}kg씩 늘고 있습니다."
+      },
+      "weightDecreasing": {
+        "title": "체중 감소 중",
+        "message": "최근 30일 동안 체중이 주당 약 {kg}kg씩 줄고 있습니다."
+      },
+      "pulseOutliers": {
+        "title": "특이한 맥박 값 감지",
+        "message": "최근 30일 동안 {count, plural, other {특이한 맥박 값 #개}}."
+      },
+      "complianceLow": {
+        "title": "복약 순응도 낮음: {name}",
+        "message": "{name}의 7일 복약 순응도가 {percent}%에 불과합니다. 규칙적인 복용이 중요합니다."
+      },
+      "complianceExcellent": {
+        "title": "복약 순응도 우수: {name}",
+        "message": "최근 7일 복약 순응도 {percent}%. 계속 이렇게 유지하세요!"
+      }
+    },
+    "targetLabels": {
+      "weight": "체중",
+      "bloodPressure": "혈압",
+      "bloodPressureOnTarget": "목표 범위 내 혈압",
+      "restingPulse": "안정 시 맥박",
+      "bmi": "BMI",
+      "bodyFat": "체지방",
+      "stepsPerDay": "걸음 수/일",
+      "sleepDuration": "수면 시간",
+      "medicationCompliance": "복약 순응도",
+      "mood": "기분",
+      "moodStability": "기분 안정성"
+    },
+    "metricLabels": {
+      "systolicBloodPressure": "수축기 혈압",
+      "diastolicBloodPressure": "이완기 혈압"
+    }
   }
 }

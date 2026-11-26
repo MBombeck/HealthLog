@@ -209,7 +209,7 @@ export function buildVitalTargets({
   }
   targets.push({
     type: "WEIGHT",
-    label: "Weight",
+    label: "serverText.targetLabels.weight",
     current: latestByType.WEIGHT ?? null,
     average30: average30ByType.WEIGHT ?? null,
     trend: computeTrend(recentMeasurements, "WEIGHT"),
@@ -246,7 +246,7 @@ export function buildVitalTargets({
   }
   targets.push({
     type: "BLOOD_PRESSURE",
-    label: "Blood pressure",
+    label: "serverText.targetLabels.bloodPressure",
     current: latestByType.BLOOD_PRESSURE_SYS ?? null,
     average30: average30ByType.BLOOD_PRESSURE_SYS ?? null,
     trend: computeTrend(recentMeasurements, "BLOOD_PRESSURE_SYS"),
@@ -287,7 +287,7 @@ export function buildVitalTargets({
         : null;
     targets.push({
       type: "BLOOD_PRESSURE_IN_TARGET",
-      label: "Blood pressure on target",
+      label: "serverText.targetLabels.bloodPressureOnTarget",
       current: rate,
       average30: rate,
       trend: null,
@@ -367,7 +367,7 @@ export function buildVitalTargets({
   }
   targets.push({
     type: "PULSE",
-    label: "Resting pulse",
+    label: "serverText.targetLabels.restingPulse",
     current: restingCurrent,
     average30: restingAverage,
     trend: restingTrend,
@@ -411,7 +411,7 @@ export function buildVitalTargets({
     const bmiRange = whoHeightCm ? { min: 18.5, max: 24.9 } : null;
     targets.push({
       type: "BMI",
-      label: "BMI",
+      label: "serverText.targetLabels.bmi",
       current: currentBmi,
       average30: averageBmi,
       trend: computeTrend(recentMeasurements, "WEIGHT"),
@@ -447,7 +447,7 @@ export function buildVitalTargets({
   const bodyFatRange = age != null ? getBodyFatTargetRange(referenceSex) : null;
   targets.push({
     type: "BODY_FAT",
-    label: "Body fat",
+    label: "serverText.targetLabels.bodyFat",
     current: latestByType.BODY_FAT ?? null,
     average30: average30ByType.BODY_FAT ?? null,
     trend: computeTrend(recentMeasurements, "BODY_FAT"),
@@ -475,7 +475,7 @@ export function buildVitalTargets({
   }
   targets.push({
     type: "ACTIVITY_STEPS",
-    label: "Steps/day",
+    label: "serverText.targetLabels.stepsPerDay",
     current: latestByType.ACTIVITY_STEPS ?? null,
     average30: average30ByType.ACTIVITY_STEPS ?? null,
     trend: computeTrend(recentMeasurements, "ACTIVITY_STEPS"),

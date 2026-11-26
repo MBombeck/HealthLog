@@ -16146,5 +16146,78 @@
     "entry": {
       "description": "Groupe sanguin, allergies, médicaments et contacts pour une urgence, avec copie hors ligne, carte et lien QR."
     }
+  },
+  "serverText": {
+    "alerts": {
+      "bmiBelowNormal": {
+        "title": "IMC en dessous de la normale",
+        "message": "Votre IMC de {bmi} est en dessous de la plage normale (18,5–24,9)."
+      },
+      "bmiOverweight": {
+        "title": "IMC en zone de surpoids",
+        "message": "Votre IMC de {bmi} se situe dans la zone de surpoids. Une activité physique régulière et une alimentation équilibrée peuvent aider."
+      },
+      "bmiObesity": {
+        "title": "IMC en zone d’obésité",
+        "message": "Votre IMC de {bmi} se situe dans la zone d’obésité."
+      },
+      "bmiNormal": {
+        "title": "IMC dans la plage normale",
+        "message": "Votre IMC de {bmi} se situe dans la plage saine."
+      },
+      "bpSignificantlyElevated": {
+        "title": "Tension artérielle nettement élevée",
+        "message": "Votre tension artérielle moyenne ({sys}/{dia}) est classée « {category} »."
+      },
+      "bpSlightlyElevated": {
+        "title": "Tension artérielle légèrement élevée",
+        "message": "Votre tension artérielle moyenne ({sys}/{dia}) se situe dans la plage « {category} »."
+      },
+      "bpTargetGood": {
+        "title": "Bonne atteinte de l’objectif tensionnel",
+        "message": "{percent} % de vos mesures sont dans la plage cible."
+      },
+      "bpTargetLow": {
+        "title": "Tension souvent hors de la plage cible",
+        "message": "Seulement {percent} % de vos mesures sont dans la plage cible."
+      },
+      "weightIncreasing": {
+        "title": "Poids en hausse",
+        "message": "Votre poids augmente d’environ {kg} kg par semaine sur les 30 derniers jours."
+      },
+      "weightDecreasing": {
+        "title": "Poids en baisse",
+        "message": "Votre poids baisse d’environ {kg} kg par semaine sur les 30 derniers jours."
+      },
+      "pulseOutliers": {
+        "title": "Valeurs de pouls atypiques",
+        "message": "{count, plural, one {# valeur de pouls inhabituelle} other {# valeurs de pouls inhabituelles}} sur les 30 derniers jours."
+      },
+      "complianceLow": {
+        "title": "Observance faible : {name}",
+        "message": "Votre observance sur 7 jours pour {name} n’est que de {percent} %. Une prise régulière est importante."
+      },
+      "complianceExcellent": {
+        "title": "Excellente observance : {name}",
+        "message": "{percent} % d’observance sur les 7 derniers jours. Continuez ainsi !"
+      }
+    },
+    "targetLabels": {
+      "weight": "Poids",
+      "bloodPressure": "Tension artérielle",
+      "bloodPressureOnTarget": "Tension dans la cible",
+      "restingPulse": "Pouls au repos",
+      "bmi": "IMC",
+      "bodyFat": "Masse grasse",
+      "stepsPerDay": "Pas/jour",
+      "sleepDuration": "Durée du sommeil",
+      "medicationCompliance": "Observance du traitement",
+      "mood": "Humeur",
+      "moodStability": "Stabilité de l’humeur"
+    },
+    "metricLabels": {
+      "systolicBloodPressure": "Tension artérielle systolique",
+      "diastolicBloodPressure": "Tension artérielle diastolique"
+    }
   }
 }

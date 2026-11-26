@@ -1218,23 +1218,23 @@
       "alerts": [
         {
           "level": "info",
-          "title": "BMI in overweight range",
-          "message": "Your BMI of 25.9 is in the overweight range. Regular exercise and a balanced diet can help."
+          "title": "BMI im Bereich Übergewicht",
+          "message": "Dein BMI von 25,9 liegt im Bereich Übergewicht. Regelmäßige Bewegung und eine ausgewogene Ernährung können helfen."
         },
         {
           "level": "warning",
-          "title": "Blood pressure often outside target range",
-          "message": "Only 11% of your readings are within the target range."
+          "title": "Blutdruck oft außerhalb des Zielbereichs",
+          "message": "Nur 11 % deiner Messungen liegen im Zielbereich."
         },
         {
           "level": "success",
-          "title": "Excellent compliance: Ramipril",
-          "message": "100% compliance over the last 7 days. Keep it up!"
+          "title": "Sehr gute Therapietreue: Ramipril",
+          "message": "100 % Therapietreue in den letzten 7 Tagen. Weiter so!"
         },
         {
           "level": "warning",
-          "title": "Low compliance: Vitamin D",
-          "message": "Your 7-day compliance for Vitamin D is only 43%. Regular intake is important."
+          "title": "Geringe Therapietreue: Vitamin D",
+          "message": "Deine Therapietreue für Vitamin D liegt in den letzten 7 Tagen bei nur 43 %. Eine regelmäßige Einnahme ist wichtig."
         }
       ],
       "hasProvider": false,

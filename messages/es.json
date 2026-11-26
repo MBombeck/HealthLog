@@ -16146,5 +16146,78 @@
     "entry": {
       "description": "Grupo sanguíneo, alergias, medicamentos y contactos para una emergencia, con copia sin conexión, tarjeta y enlace QR."
     }
+  },
+  "serverText": {
+    "alerts": {
+      "bmiBelowNormal": {
+        "title": "IMC por debajo del rango normal",
+        "message": "Tu IMC de {bmi} está por debajo del rango normal (18,5–24,9)."
+      },
+      "bmiOverweight": {
+        "title": "IMC en rango de sobrepeso",
+        "message": "Tu IMC de {bmi} está en el rango de sobrepeso. El ejercicio regular y una dieta equilibrada pueden ayudar."
+      },
+      "bmiObesity": {
+        "title": "IMC en rango de obesidad",
+        "message": "Tu IMC de {bmi} está en el rango de obesidad."
+      },
+      "bmiNormal": {
+        "title": "IMC en rango normal",
+        "message": "Tu IMC de {bmi} está en el rango saludable."
+      },
+      "bpSignificantlyElevated": {
+        "title": "Presión arterial muy elevada",
+        "message": "Tu presión arterial media ({sys}/{dia}) se clasifica como «{category}»."
+      },
+      "bpSlightlyElevated": {
+        "title": "Presión arterial ligeramente elevada",
+        "message": "Tu presión arterial media ({sys}/{dia}) está en el rango «{category}»."
+      },
+      "bpTargetGood": {
+        "title": "Buen cumplimiento del objetivo de presión arterial",
+        "message": "El {percent} % de tus mediciones está dentro del rango objetivo."
+      },
+      "bpTargetLow": {
+        "title": "Presión arterial a menudo fuera del rango objetivo",
+        "message": "Solo el {percent} % de tus mediciones está dentro del rango objetivo."
+      },
+      "weightIncreasing": {
+        "title": "El peso aumenta",
+        "message": "Tu peso aumenta unos {kg} kg por semana en los últimos 30 días."
+      },
+      "weightDecreasing": {
+        "title": "El peso disminuye",
+        "message": "Tu peso disminuye unos {kg} kg por semana en los últimos 30 días."
+      },
+      "pulseOutliers": {
+        "title": "Valores de pulso atípicos",
+        "message": "{count, plural, one {# valor de pulso inusual} other {# valores de pulso inusuales}} en los últimos 30 días."
+      },
+      "complianceLow": {
+        "title": "Cumplimiento bajo: {name}",
+        "message": "Tu cumplimiento de 7 días con {name} es solo del {percent} %. Tomarlo con regularidad es importante."
+      },
+      "complianceExcellent": {
+        "title": "Cumplimiento excelente: {name}",
+        "message": "{percent} % de cumplimiento en los últimos 7 días. ¡Sigue así!"
+      }
+    },
+    "targetLabels": {
+      "weight": "Peso",
+      "bloodPressure": "Presión arterial",
+      "bloodPressureOnTarget": "Presión arterial en objetivo",
+      "restingPulse": "Pulso en reposo",
+      "bmi": "IMC",
+      "bodyFat": "Grasa corporal",
+      "stepsPerDay": "Pasos/día",
+      "sleepDuration": "Duración del sueño",
+      "medicationCompliance": "Cumplimiento de la medicación",
+      "mood": "Estado de ánimo",
+      "moodStability": "Estabilidad del estado de ánimo"
+    },
+    "metricLabels": {
+      "systolicBloodPressure": "Presión arterial sistólica",
+      "diastolicBloodPressure": "Presión arterial diastólica"
+    }
   }
 }

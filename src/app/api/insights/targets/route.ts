@@ -11,6 +11,8 @@ import { annotate } from "@/lib/logging/context";
 import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { NO_STORE_BUT_BFCACHE } from "@/lib/http/cache-headers";
 import { buildTargetsResponse } from "@/lib/targets/build-response";
+import { localiseTargetLabels } from "@/lib/targets/localise-labels";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +20,7 @@ export const GET = apiHandler(async () => {
   // A read of the whole record, with no provider anywhere on the path, at the
   // level the dashboard snapshot answers: the weight band and the BMI chart
   // read it inside a shared record, and a read or write grant got a 403.
-  const { user } = await requireRecordAuth("read", "record");
+  const { user, actor } = await requireRecordAuth("read", "record");
   // v1.16.8 — stale-while-revalidate read. The cold build is the multi-query
   // walk in `buildTargetsResponse`; past the 60 s fresh TTL the prior body
   // serves immediately while ONE background rebuild warms the cell. Writes
@@ -32,7 +34,11 @@ export const GET = apiHandler(async () => {
     () => buildTargetsResponse(user),
     annotate,
   );
-  const response = apiSuccess(body);
+  // The cached body carries label keys; the reader's language words them.
+  const locale = await resolveServerLocale({
+    userLocale: actor.locale ?? null,
+  });
+  const response = apiSuccess(localiseTargetLabels(body, locale));
   response.headers.set("Cache-Control", NO_STORE_BUT_BFCACHE);
   return response;
 });

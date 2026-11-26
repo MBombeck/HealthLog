@@ -21,8 +21,8 @@ import {
   bmiOf,
   classifyBMI,
   classifyBP,
-  generateAlerts,
 } from "@/lib/analytics/classifications";
+import { generateAlertSpecs } from "@/lib/analytics/health-alerts";
 import { annotate } from "@/lib/logging/context";
 import { buildComprehensiveAggregate } from "@/lib/insights/comprehensive-aggregator";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
@@ -202,7 +202,9 @@ export async function buildComprehensiveResponse(user: OverviewRecord) {
   const { bpMedicationCorrelation, bpMedicationScatterData } =
     bpMedicationContinuity({ bpMedications, bpMedicationEvents, sysDaily });
 
-  const alerts = generateAlerts({
+  // Which alerts fire, not their wording: the body is cached per record and
+  // the route words them in the reader's language (`localiseAlerts`).
+  const alerts = generateAlertSpecs({
     bmi,
     bpAvgSys: summaries.BLOOD_PRESSURE_SYS?.avg30 ?? null,
     bpAvgDia: summaries.BLOOD_PRESSURE_DIA?.avg30 ?? null,
