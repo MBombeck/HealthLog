@@ -41,8 +41,11 @@
  *     statement about today. A client built before 1.50 skips a ring it
  *     cannot decode, so it shows no stale band either.
  *   - RECOVERY_SCORE carries the `source` of the row it rests on. When that
- *     row is the computed proxy (`isProxyRecovery`) and READINESS is also
- *     selected, the recovery ring is left out: it is the same blend twice.
+ *     row is the computed proxy (`isProxyRecovery`) and a fresh READINESS
+ *     ring (one with a band) is also served, the recovery ring is left out:
+ *     it is the same blend twice. Beside a stale READINESS ring the proxy
+ *     stays, because a shipped app skips the band-less ring and would
+ *     otherwise show neither.
  *     The proxy ring otherwise stays in 1.50 and retires with the iOS ring
  *     rebuild in 1.51; a device's recovery ring always stays.
  */
@@ -210,9 +213,13 @@ export async function buildScoreRingsBlock(
     }),
   );
   const rings = resolved.filter((r): r is DashboardScoreRing => r !== null);
-  // The proxy recovery ring beside a READINESS ring that resolved is the same
-  // blend twice; it gives way. Without a READINESS ring it stays (1.50).
-  const hasReadiness = rings.some((r) => r.id === "READINESS");
+  // The proxy recovery ring beside a READINESS ring with a band is the same
+  // blend twice; it gives way. Beside a stale READINESS ring (band null) it
+  // stays: every shipped app skips a ring without a band, so dropping the
+  // proxy there would leave such a client with neither ring.
+  const hasReadiness = rings.some(
+    (r) => r.id === "READINESS" && r.band !== null,
+  );
   return rings.filter(
     (r) =>
       !(

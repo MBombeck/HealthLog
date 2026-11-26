@@ -701,7 +701,9 @@ describe("buildDailyDigest — worth-a-look rail item builders", () => {
     expect(quiet[1].actions).toEqual([
       {
         labelKey: "daily.action.openSource",
-        intent: "sync.open",
+        // The intent every shipped iOS build already routes to the
+        // integrations screen; a new token would be a dead button there.
+        intent: "sync.reconnect",
         href: "/settings/integrations#oura",
       },
     ]);
