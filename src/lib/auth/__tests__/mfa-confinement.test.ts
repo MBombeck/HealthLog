@@ -6,7 +6,10 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/db", () => ({
-  prisma: { session: { update: vi.fn() }, user: { findUnique: vi.fn() } },
+  prisma: {
+    session: { update: vi.fn(async () => ({})) },
+    user: { findUnique: vi.fn() },
+  },
 }));
 vi.mock("@/lib/logging/context", () => ({
   getEvent: () =>
@@ -22,11 +25,19 @@ vi.mock("next/navigation", () => ({
     throw new Error(`redirect:${to}`);
   }),
 }));
-vi.mock("@/lib/auth/mfa-enrollment", () => ({
-  resolveMfaEnrollment: vi.fn(),
-  sessionMfaDueAt: (e: { state: string; dueAt: Date | null }) =>
-    e.state === "none" ? null : e.dueAt,
-}));
+vi.mock("@/lib/auth/mfa-enrollment", async (importActual) => {
+  const actual =
+    await importActual<typeof import("@/lib/auth/mfa-enrollment")>();
+  const resolveMfaEnrollment = vi.fn();
+  return {
+    MFA_POLICY_USER_SELECT: actual.MFA_POLICY_USER_SELECT,
+    sessionMfaDueAt: actual.sessionMfaDueAt,
+    sessionMfaRecordStale: actual.sessionMfaRecordStale,
+    resolveMfaEnrollment,
+    resolveMfaEnrollmentRequired: async (...args: unknown[]) =>
+      (await resolveMfaEnrollment(...args)).state === "required",
+  };
+});
 
 import { prisma } from "@/lib/db";
 import { resolveMfaEnrollment } from "@/lib/auth/mfa-enrollment";
@@ -34,6 +45,7 @@ import {
   enforceMfaEnrollment,
   isMfaEnrollmentApiPath,
   isMfaEnrollmentPagePath,
+  refuseConfinedBearer,
 } from "../mfa-confinement";
 
 const PAST = new Date(Date.now() - 60_000);
@@ -42,6 +54,7 @@ const USER = {
   role: "ADMIN",
   totpConfirmedAt: null,
   mfaEnforced: false,
+  createdAt: new Date("2026-01-01T00:00:00Z"),
 };
 
 function session(due: Date | null) {
@@ -73,10 +86,46 @@ describe("the enrolment allowlist", () => {
 });
 
 describe("enforceMfaEnrollment", () => {
-  it("asks nothing of a session without a due date or with one ahead", async () => {
-    await enforceMfaEnrollment(session(null));
-    await enforceMfaEnrollment(session(new Date(Date.now() + 60_000)));
-    expect(resolveMfaEnrollment).not.toHaveBeenCalled();
+  it("judges every session by the policy, a recorded date or none", async () => {
+    // A session from before the policy carries no date; one recorded under an
+    // older policy may say "ahead". Neither decides: the resolution does.
+    state.apiPath = "/api/measurements";
+    for (const recorded of [null, new Date(Date.now() + 60_000)]) {
+      await expect(
+        enforceMfaEnrollment(session(recorded)),
+      ).rejects.toMatchObject({
+        statusCode: 403,
+        errorCode: "auth.mfa.enrollment_required",
+      });
+    }
+    expect(resolveMfaEnrollment).toHaveBeenCalledTimes(2);
+  });
+
+  it("records the resolved date without rewriting a past one per request", async () => {
+    state.apiPath = "/api/auth/me";
+    const fresh = session(null);
+    await enforceMfaEnrollment(fresh);
+    expect(prisma.session.update).toHaveBeenCalledWith({
+      where: { id: "s1" },
+      data: { mfaEnrollmentDueAt: PAST },
+    });
+    vi.mocked(prisma.session.update).mockClear();
+    // A per-account enforcement resolves to "due now" on every call.
+    vi.mocked(resolveMfaEnrollment).mockResolvedValue({
+      state: "required",
+      dueAt: new Date(),
+    });
+    await enforceMfaEnrollment(session(PAST));
+    expect(prisma.session.update).not.toHaveBeenCalled();
+  });
+
+  it("lets a session in its grace period through, wherever it goes", async () => {
+    vi.mocked(resolveMfaEnrollment).mockResolvedValue({
+      state: "grace",
+      dueAt: new Date(Date.now() + 60_000),
+    });
+    state.apiPath = "/api/measurements";
+    await expect(enforceMfaEnrollment(session(null))).resolves.toBeUndefined();
   });
 
   it("refuses an API route outside the allowlist past the due date", async () => {
@@ -120,5 +169,32 @@ describe("enforceMfaEnrollment", () => {
       data: { mfaEnrollmentDueAt: null },
     });
     expect(s.mfaEnrollmentDueAt).toBeNull();
+  });
+});
+
+describe("refuseConfinedBearer", () => {
+  it("confines a sign-in token past the due date to the enrolment API", async () => {
+    state.apiPath = "/api/measurements";
+    await expect(refuseConfinedBearer(USER)).rejects.toMatchObject({
+      statusCode: 403,
+      errorCode: "auth.mfa.enrollment_required",
+    });
+    state.apiPath = "/api/auth/me";
+    await expect(refuseConfinedBearer(USER)).resolves.toBeUndefined();
+  });
+
+  it("fails closed when the path is unknown", async () => {
+    await expect(refuseConfinedBearer(USER)).rejects.toMatchObject({
+      statusCode: 403,
+    });
+  });
+
+  it("lets a token through during the grace period", async () => {
+    vi.mocked(resolveMfaEnrollment).mockResolvedValue({
+      state: "grace",
+      dueAt: new Date(Date.now() + 60_000),
+    });
+    state.apiPath = "/api/measurements";
+    await expect(refuseConfinedBearer(USER)).resolves.toBeUndefined();
   });
 });

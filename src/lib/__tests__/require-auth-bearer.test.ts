@@ -2,6 +2,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // --- Mocks must be hoisted before importing the module under test. ---
 
+// The second-factor policy is not this file's subject: no policy applies.
+vi.mock("@/lib/auth/mfa-confinement", async (importActual) => ({
+  ...(await importActual<typeof import("@/lib/auth/mfa-confinement")>()),
+  refuseConfinedBearer: vi.fn(async () => {}),
+}));
 vi.mock("@/lib/db", () => ({
   prisma: {
     apiToken: {

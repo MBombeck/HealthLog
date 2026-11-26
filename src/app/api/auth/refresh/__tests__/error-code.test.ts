@@ -98,6 +98,17 @@ describe("POST /api/auth/refresh — stable errorCode (v1.7.0)", () => {
     expect(json.meta?.errorCode).toBe("auth.refresh.revoked");
   });
 
+  it("returns 403 auth.mfa.enrollment_required for an account past its second-factor due date", async () => {
+    vi.mocked(rotateRefreshToken).mockResolvedValue({
+      ok: false,
+      reason: "mfa_enrollment_required",
+    });
+    const res = await POST(makeRequest({ refreshToken: "hlr_x" }));
+    expect(res.status).toBe(403);
+    const json = (await res.json()) as Envelope;
+    expect(json.meta?.errorCode).toBe("auth.mfa.enrollment_required");
+  });
+
   it("returns auth.refresh.invalid for a not-found token", async () => {
     vi.mocked(rotateRefreshToken).mockResolvedValue({
       ok: false,

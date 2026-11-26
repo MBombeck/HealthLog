@@ -3943,6 +3943,13 @@ paths:
         with the same token: the other request rotated it, nothing is revoked, and its pair is live. Not terminal: read
         the credentials the winning request stored and continue. Do not present this refresh token again, since that is
         a replay and revokes the device family. Before v1.49.0 this case answered 401 `auth.refresh.reuse`.
+
+
+        A 403 with `meta.errorCode` = `auth.mfa.enrollment_required` (v1.50) means a second-factor policy covers the
+        account, it has no factor, and its grace period is over. No pair is issued and the refresh token is not
+        consumed: once the person adds a factor in a browser (Settings > Security), the same token refreshes again. A
+        sign-in token of such an account answers the same 403 on every route except the enrolment ones (`/api/auth/me`,
+        `/api/auth/logout`, the `/api/auth/me/mfa` and passkey registration routes).
       requestBody:
         required: true
         content:

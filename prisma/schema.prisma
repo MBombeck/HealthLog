@@ -1536,9 +1536,11 @@ model Session {
   /// only this, so it never satisfies a gate that asks for a second factor.
   reproofAt          DateTime? @map("reproof_at")
   /// When this session's account has to have a second factor by, under the
-  /// instance policy (`src/lib/auth/mfa-enrollment.ts`). NULL: no policy
-  /// covers the account or it has a factor. From this instant on the session
-  /// reaches only the enrolment routes until the account enrols one.
+  /// instance policy (`src/lib/auth/mfa-enrollment.ts`), as last resolved for
+  /// this session. NULL: no policy covered the account or it had a factor. A
+  /// record for operators, kept in line on every request by
+  /// `enforceMfaEnrollment`; confinement is decided from the account and the
+  /// policy at request time and never from this column.
   mfaEnrollmentDueAt DateTime? @map("mfa_enrollment_due_at")
   // v1.23 — sliding "last seen" for the user-facing active-session list.
   lastActiveAt       DateTime? @map("last_active_at")

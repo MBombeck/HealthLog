@@ -7,7 +7,10 @@ import { prisma } from "@/lib/db";
 import { apiError } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { annotate } from "@/lib/logging/context";
-import { resolveMfaEnrollment } from "@/lib/auth/mfa-enrollment";
+import {
+  MFA_POLICY_USER_SELECT,
+  resolveMfaEnrollment,
+} from "@/lib/auth/mfa-enrollment";
 
 /**
  * The native half: a Bearer sign-in (password, the native web hand-off, the
@@ -23,7 +26,7 @@ export async function refuseNativeSignInWithoutFactor(
 ): Promise<Response | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { role: true, totpConfirmedAt: true, mfaEnforced: true },
+    select: MFA_POLICY_USER_SELECT,
   });
   if (!user) return null;
   const enrollment = await resolveMfaEnrollment(userId, user);

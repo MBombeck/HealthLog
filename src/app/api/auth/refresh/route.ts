@@ -115,6 +115,17 @@ export const POST = apiHandler(async (request: NextRequest) => {
         { errorCode: "auth.refresh.superseded" },
       );
     }
+    //   - `auth.mfa.enrollment_required` (403) — a second-factor policy
+    //     covers the account, it has none, and its grace period is over. The
+    //     token is not consumed: the person adds a factor in a browser and the
+    //     same token refreshes again.
+    if (result.reason === "mfa_enrollment_required") {
+      return apiError(
+        "This account needs two-factor sign-in. Set it up in the web app under Settings > Security, then sign in here again.",
+        403,
+        { errorCode: "auth.mfa.enrollment_required" },
+      );
+    }
     if (result.reason === "revoked") {
       return apiError(
         "Refresh token has been revoked. Please log in again.",

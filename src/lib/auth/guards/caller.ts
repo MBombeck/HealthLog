@@ -16,6 +16,7 @@ import {
 } from "@/lib/auth/write-meter";
 import { getSession } from "@/lib/auth/session";
 import { refuseCookieIdentityConflict } from "@/lib/auth/cookie-identity-conflict";
+import { refuseConfinedBearer } from "@/lib/auth/mfa-confinement";
 import { AUTH_ERROR_CODES, HttpError } from "@/lib/api-errors";
 
 import { readActingCarrier, refuseUndeclaredMode } from "./acting";
@@ -241,6 +242,11 @@ export async function authenticateBearer(
       );
     }
   }
+
+  // A sign-in token past its account's second-factor due date reaches the
+  // enrolment API only, as a browser session does. Judged now, not when the
+  // token was minted: one issued before the policy applied is confined too.
+  if (permissions.includes("*")) await refuseConfinedBearer(user);
 
   // #179 — the app's sign-in token keeps its device's `lastSeen` fresh, at
   // most once an hour and fire-and-forget. Only a wildcard token is a native
