@@ -1,5 +1,6 @@
 /**
  * GET /api/measurements/series?kind=&days=
+ * GET /api/measurements/series?kinds=a,b,c&days=
  *
  * iOS-friendly time-series adapter. Maps the camelCase `kind` to the
  * canonical Prisma `MeasurementType`(s) and returns
@@ -13,6 +14,10 @@
  * metric counts for this person), `change` (first and last day value of the
  * window, judged by that direction) and `referenceLines` (the person's own
  * target lines, else the clinical ones, in the unit of the points).
+ *
+ * `kinds` (up to eight) answers `{ series: [...] }`, one answer of the
+ * single shape per kind in the order asked, from one read of the account
+ * lookups and one dense-window count.
  */
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
@@ -27,18 +32,44 @@ import {
 import { annotate } from "@/lib/logging/context";
 import { redactForExcerpt } from "@/lib/observability/redact-payload";
 import { kindEnum } from "@/lib/measurements/series/kinds";
-import { readSeries } from "@/lib/measurements/series/read-series";
+import {
+  readSeries,
+  readSeriesBatch,
+  SERIES_KINDS_MAX,
+} from "@/lib/measurements/series/read-series";
 
-const querySchema = z.object({
-  kind: kindEnum,
-  // v1.5.5 — the 365-day cap rejected the iOS app's "Alle"-range
-  // request (days = 3650) with a 422, painting an error banner on
-  // every metric tile. Ten years matches the recurrence engine's
-  // nextOccurrenceAfter hard cap and the medication course-window
-  // upper bound, so the ceiling stays consistent across the surface
-  // area that the user can wire to a "show me everything" intent.
-  days: z.coerce.number().int().min(1).max(3650).optional().default(30),
-});
+/**
+ * `kinds=a,b,c`: several series over one window in one request, in the
+ * order asked, at most eight and each once.
+ */
+const kindsList = z.preprocess(
+  (raw) =>
+    typeof raw === "string" ? raw.split(",").map((k) => k.trim()) : raw,
+  z
+    .array(kindEnum)
+    .min(1)
+    .max(SERIES_KINDS_MAX)
+    .refine((list) => new Set(list).size === list.length, {
+      message: "Each kind may be asked for once.",
+    }),
+);
+
+const querySchema = z
+  .object({
+    kind: kindEnum.optional(),
+    kinds: kindsList.optional(),
+    // v1.5.5 — the 365-day cap rejected the iOS app's "Alle"-range
+    // request (days = 3650) with a 422, painting an error banner on
+    // every metric tile. Ten years matches the recurrence engine's
+    // nextOccurrenceAfter hard cap and the medication course-window
+    // upper bound, so the ceiling stays consistent across the surface
+    // area that the user can wire to a "show me everything" intent.
+    days: z.coerce.number().int().min(1).max(3650).optional().default(30),
+  })
+  .refine((q) => (q.kind === undefined) !== (q.kinds === undefined), {
+    message: "Ask for either kind or kinds.",
+    path: ["kind"],
+  });
 
 export const GET = apiHandler(async (request: NextRequest) => {
   const { user, actor } = await requireRecordAuth("read", "measurements");
@@ -88,8 +119,27 @@ export const GET = apiHandler(async (request: NextRequest) => {
     return returnAllZodIssues(parsed.error, 422);
   }
 
-  const { kind, days } = parsed.data;
+  const { kind, kinds, days } = parsed.data;
+  if (kinds !== undefined) {
+    const series = await readSeriesBatch({
+      userId: user.id,
+      actorId: actor.id,
+      kinds,
+      days,
+    });
+    annotate({
+      action: { name: "measurements.series.batch" },
+      meta: { kinds, days, counts: series.map((s) => s.points.length) },
+    });
+    return apiSuccess({ series });
+  }
   return apiSuccess(
-    await readSeries({ userId: user.id, actorId: actor.id, kind, days }),
+    await readSeries({
+      userId: user.id,
+      actorId: actor.id,
+      // The refinement admits exactly one of the two.
+      kind: kind!,
+      days,
+    }),
   );
 });

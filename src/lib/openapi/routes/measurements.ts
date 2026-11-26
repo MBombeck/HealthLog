@@ -798,7 +798,16 @@ const seriesKindEnum = z.enum([
 ]);
 
 const seriesQuerySchema = z.object({
-  kind: seriesKindEnum,
+  kind: seriesKindEnum
+    .optional()
+    .describe("One series. Send either `kind` or `kinds`."),
+  kinds: z
+    .string()
+    .optional()
+    .describe(
+      "Several series over the same window, comma-separated, at most 8, each once, e.g. `bloodPressure,pulse,weight`. The answer is `{ series: [...] }` in the order asked. Send either `kind` or `kinds`; feature key `measurements.series-kinds`.",
+    )
+    .meta({ example: "bloodPressure,pulse,weight" }),
   days: z.coerce
     .number()
     .int()
@@ -900,6 +909,49 @@ const seriesResponse = z
     id: "MeasurementsSeriesResponse",
     description:
       "iOS-friendly per-kind time series: one point per reading (or per reconstructed night for `sleep`), an explicit `unit` token, and a summary `stats` block. Sample-dense kinds (`pulse`, `glucose`, `heartRateVariability`, `oxygenSaturation`) are bucketed server-side: beyond 90 days per local day, and within 90 days per local hour when the window holds more than 10 000 readings (a continuous glucose sensor, a watch or ring recording every minute; a cuff, a fingerstick meter or a few readings a night stay raw). A bucket carries the mean as `value` and otherwise has the shape of a reading of its kind; a `pulse` bucket also carries its range as `valueMin` / `valueMax`, and a `glucose` bucket is converted to the user's unit like a raw reading. `stats` is always computed over the underlying readings, never over the buckets. `glucoseKetoneIndex` (#1367) is derived at read time, never stored: one point per ketone reading above zero that has a glucose reading at the same instant or, failing that, the nearest one within 15 minutes either side; value = glucose (mmol/L, from mg/dL by 18.0182) / ketones (mmol/L), one decimal. Draw it as given; do not recompute it.",
+  });
+
+const seriesKindsResponse = z
+  .object({
+    series: z
+      .array(seriesResponse)
+      .describe(
+        "One answer per requested kind, in the order asked, each the shape of the single-kind answer.",
+      ),
+  })
+  .meta({
+    id: "MeasurementsSeriesKindsResponse",
+    description:
+      "`?kinds=` answer: several series over one window from one request. The account lookups and the dense-window count are read once for all kinds.",
+    example: {
+      series: [
+        {
+          kind: "weight",
+          unit: "kg",
+          points: [
+            {
+              id: "cm0example0000000000000001",
+              at: "2026-11-20T06:45:00.000Z",
+              value: 80.4,
+              secondary: null,
+            },
+          ],
+          stats: { mean: 80.4, min: 80.4, max: 80.4, stdDev: 0, count: 1 },
+          direction: null,
+          change: null,
+          referenceLines: [],
+        },
+        {
+          kind: "vo2Max",
+          unit: "mL/(kg·min)",
+          points: [],
+          stats: { mean: 0, min: 0, max: 0, stdDev: 0, count: 0 },
+          direction: null,
+          change: null,
+          referenceLines: [],
+        },
+      ],
+    },
   });
 
 // ── Batched daily series (v1.18.6 dashboard fetch coalescing) ────────
@@ -1095,11 +1147,12 @@ export const measurementPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       responses: {
         ...recordRefusal(),
         "200": {
-          description: "Resolved series.",
+          description:
+            "Resolved series: the single shape for `kind`, `{ series: [...] }` for `kinds`.",
           content: {
             "application/json": {
               schema: dataEnvelope(
-                seriesResponse,
+                z.union([seriesResponse, seriesKindsResponse]),
                 "GetMeasurementsSeriesResponse",
               ),
             },

@@ -5,7 +5,6 @@
  */
 import { prisma } from "@/lib/db";
 import { readDenseSeries } from "@/lib/measurements/dense-series-read";
-import { countLiveReadingsPerType } from "@/lib/measurements/newest-per-type";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { resolveUserTimezone, userDayKey } from "@/lib/tz/resolver";
 import { convertGlucose, resolveGlucoseUnit } from "@/lib/glucose";
@@ -18,31 +17,26 @@ import {
   type SeriesKind,
   type SeriesPoint,
   type SeriesRead,
+  type SeriesShared,
   type SeriesStats,
 } from "./kinds";
 
-/** Whether this request takes the bucketed read. */
-export async function takesBucketedRead(
-  userId: string,
+/**
+ * Whether this request takes the bucketed read: always past the raw window,
+ * and inside it once the window holds more readings than the cap.
+ * `counted` is the window's live reading count per type, counted one past
+ * the cap and no further (a full count read every reading of a dense stream
+ * on each chart request to answer it), for every dense kind of the request
+ * in one statement.
+ */
+export function takesBucketedRead(
   kind: SeriesKind,
   days: number,
-  since: Date,
-): Promise<boolean> {
-  return (
-    (DENSE_SERIES_KINDS.has(kind) && days > DENSE_SERIES_RAW_WINDOW_DAYS) ||
-    (DENSE_SERIES_KINDS.has(kind) &&
-      // Counted one past the cap and no further: the question is whether
-      // the window holds more than the cap, and a full count read every
-      // reading of a dense stream on each chart request to answer it.
-      ((
-        await countLiveReadingsPerType(
-          userId,
-          [KIND_TO_TYPE[kind]],
-          DENSE_SERIES_RAW_ROW_CAP + 1,
-          since,
-        )
-      ).get(KIND_TO_TYPE[kind]) ?? 0) > DENSE_SERIES_RAW_ROW_CAP)
-  );
+  counted: ReadonlyMap<string, number>,
+): boolean {
+  if (!DENSE_SERIES_KINDS.has(kind)) return false;
+  if (days > DENSE_SERIES_RAW_WINDOW_DAYS) return true;
+  return (counted.get(KIND_TO_TYPE[kind]) ?? 0) > DENSE_SERIES_RAW_ROW_CAP;
 }
 
 export async function readBucketedSeries(
@@ -50,6 +44,7 @@ export async function readBucketedSeries(
   kind: SeriesKind,
   days: number,
   since: Date,
+  shared?: SeriesShared,
 ): Promise<SeriesRead> {
   let points: SeriesPoint[] = [];
   let unit: string | undefined;
@@ -64,10 +59,12 @@ export async function readBucketedSeries(
   // mirror the rollup tier's `date_trunc(... ) GROUP BY` aggregate
   // (measurement-rollups.ts), and the rows are the ladder-winning source per
   // day, the same rule the rollup tier and sleep apply.
-  const [userTz, priorityJson] = await Promise.all([
-    resolveUserTimezone(userId),
-    loadUserSourcePriority(userId),
-  ]);
+  const [userTz, priorityJson] = shared
+    ? [shared.tz, shared.priorityJson]
+    : await Promise.all([
+        resolveUserTimezone(userId),
+        loadUserSourcePriority(userId),
+      ]);
   const type = KIND_TO_TYPE[kind];
   // A day of a type with an activity-dependent sampling rate (pulse) is the
   // weighted mean of its local hours' means, so a workout hour with hundreds
@@ -89,11 +86,16 @@ export async function readBucketedSeries(
   if (kind === "glucose") {
     // Same unit engine as the raw glucose branch: canonical mg/dL in
     // the DB, converted ONCE at serialization to the user's preference.
-    const profile = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { glucoseUnit: true },
-    });
-    const glucoseUnit = resolveGlucoseUnit(profile?.glucoseUnit ?? null);
+    const glucoseUnit = resolveGlucoseUnit(
+      shared
+        ? shared.glucoseUnit
+        : ((
+            await prisma.user.findUnique({
+              where: { id: userId },
+              select: { glucoseUnit: true },
+            })
+          )?.glucoseUnit ?? null),
+    );
     unit = glucoseUnit;
     points = bucketRows.map((r) => ({
       id: dayId(r.bucket_start),
