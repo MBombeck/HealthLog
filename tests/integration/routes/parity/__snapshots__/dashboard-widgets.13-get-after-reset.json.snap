@@ -221,6 +221,7 @@
       ],
       "hero": "reminders",
       "todayCardVisible": true,
+      "tilesExpanded": false,
       "updatedAt": "<updatedAt>"
     },
     "error": null

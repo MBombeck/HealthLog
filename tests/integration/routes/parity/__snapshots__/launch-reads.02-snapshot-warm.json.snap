@@ -33,6 +33,7 @@
         ],
         "hero": "score",
         "todayCardVisible": true,
+        "tilesExpanded": false,
         "widgets": [
           {
             "id": "weight",
@@ -3248,7 +3249,39 @@
             "targetPosition": null,
             "basis": "metric_default"
           }
-        }
+        },
+        "attention": {
+          "weight": "range",
+          "bp": "today",
+          "pulse": "range",
+          "hrv": "change",
+          "oxygenSaturation": "today",
+          "bodyFat": "today",
+          "sleep": "today",
+          "steps": "change",
+          "glucose": "today"
+        },
+        "order": [
+          "weight",
+          "pulse",
+          "hrv",
+          "steps",
+          "bp",
+          "oxygenSaturation",
+          "bodyFat",
+          "sleep",
+          "glucose",
+          "respiratoryRate",
+          "wristTemperature",
+          "muscleMass",
+          "totalBodyWater",
+          "boneMass",
+          "mood",
+          "bpInTarget",
+          "medications",
+          "vo2Max",
+          "recentWorkouts"
+        ]
       },
       "extras": {
         "bpInTargetPct": 11,
@@ -3360,8 +3393,8 @@
           },
           "advanced": {
             "jIndex": 17.280318718401364,
-            "lbgi": 0.37857697435062837,
-            "hbgi": 0.48362299410937315
+            "lbgi": 0.3785769743506285,
+            "hbgi": 0.48362299410937354
           },
           "isSpotEstimate": true
         }

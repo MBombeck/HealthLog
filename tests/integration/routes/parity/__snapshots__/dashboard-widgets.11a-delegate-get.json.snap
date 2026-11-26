@@ -211,6 +211,7 @@
       "enabledHeroItemKinds": [],
       "hero": "reminders",
       "todayCardVisible": false,
+      "tilesExpanded": false,
       "updatedAt": "<updatedAt>"
     },
     "error": null

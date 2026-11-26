@@ -23,6 +23,7 @@
       ],
       "hero": "score",
       "todayCardVisible": true,
+      "tilesExpanded": false,
       "widgets": [
         {
           "id": "weight",
