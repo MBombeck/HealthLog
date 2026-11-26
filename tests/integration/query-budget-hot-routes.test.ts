@@ -140,7 +140,10 @@ const BUDGET = {
   // 126 → 127 (1.50.0): readiness with too few fresh inputs reads its stored
   // day before today, one statement (126 locally, the runner's extra
   // source-order read on top).
-  dailyMorning: 127,
+  // 127 → 122: one read of the source order per GET request (see the
+  // summary); readiness and the sleep score share it, so the in-flight
+  // timing between them no longer moves the count.
+  dailyMorning: 122,
   // The target cards; their seven-day means come from the slice when a
   // fresh one is cached, here (evicted) from the slice's window aggregate.
   // 22 → 23, health status 59 → 60 (1.49.0): both grade weight and BMI, and
