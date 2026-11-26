@@ -132,6 +132,8 @@ import {
   buildNutrientTileBlocks,
   foldNutrientTiles,
 } from "@/lib/dashboard/nutrient-tiles";
+import { withTileOrder } from "@/lib/dashboard/tile-attention";
+import type { TileAttentionMap } from "@/lib/dashboard/tile-priority";
 
 /** Briefing freshness window — mirrors the 24 h TTL on the advisor cache. */
 const BRIEFING_TTL_MS = 24 * 60 * 60 * 1000;
@@ -478,6 +480,9 @@ export interface DashboardSnapshot {
      * Optional on the type so older cached snapshots stay valid.
      */
     directions?: Record<string, TrendVerdict>;
+    /** Why a tile speaks today, and the one-row order (`withTileOrder`). */
+    attention?: TileAttentionMap;
+    order?: string[];
   };
   /** Thick phase — null on a rollup-coverage miss. */
   extras: DashboardSnapshotExtras | null;
@@ -1407,7 +1412,7 @@ export async function buildDashboardSnapshot(
 
   const framing = await weightTargetFor(prisma, user.id, user, now);
 
-  return {
+  return withTileOrder({
     user: {
       username: user.displayName?.trim() || user.username,
       timezone: userTz,
@@ -1478,5 +1483,5 @@ export async function buildDashboardSnapshot(
     // Applied per read, after the cache (`applyBriefingCapability`).
     briefingAi: null,
     generatedAt: now.toISOString(),
-  };
+  });
 }

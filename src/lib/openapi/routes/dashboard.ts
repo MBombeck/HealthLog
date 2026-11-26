@@ -49,6 +49,12 @@ const dashboardWidgetConfig = z.object({
   visible: z.boolean(),
   tileVisible: z.boolean().optional(),
   order: z.number().int().min(0).max(99),
+  pinned: z
+    .boolean()
+    .optional()
+    .describe(
+      "v1.50 — the tile always makes the dashboard's one row, ahead of the tiles with something to say. Only `true` is stored. Additive.",
+    ),
 });
 
 const dashboardChartOverlayPrefs = z.object({
@@ -99,11 +105,17 @@ const dashboardLayoutSchema = z
       .describe(
         "v1.42 — whether the dashboard shows its top card (the Today card above the tiles). Missing resolves to `true`; only an explicit `false` hides it. The stored default is omitted. A layout reset (DELETE) shows it again. Additive.",
       ),
+    tilesExpanded: z
+      .boolean()
+      .optional()
+      .describe(
+        'v1.50 — whether "All values" under the dashboard\'s one tile row is open. Missing resolves to `false` (one row); the stored default is omitted. Additive.',
+      ),
   })
   .meta({
     id: "DashboardLayoutBody",
     description:
-      "Per-user dashboard widget layout. `widgets` is the ordered tile and chart list. `comparisonBaseline`, `chartOverlayPrefs`, `selectedScoreRings`, `heroRingOrder`, `enabledHeroItemKinds`, `hero`, and `todayCardVisible` are additive dashboard preferences. Every field except `version` is optional on input and preserved when absent from PUT. Missing `enabledHeroItemKinds` resolves to every current kind, while an empty array hides every Today highlight. Widget ids use the closed dashboard catalogue; unknown ids are dropped before validation.",
+      "Per-user dashboard widget layout. `widgets` is the ordered tile and chart list. `comparisonBaseline`, `chartOverlayPrefs`, `selectedScoreRings`, `heroRingOrder`, `enabledHeroItemKinds`, `hero`, `todayCardVisible` and `tilesExpanded` are additive dashboard preferences. Every field except `version` is optional on input and preserved when absent from PUT. Missing `enabledHeroItemKinds` resolves to every current kind, while an empty array hides every Today highlight. Widget ids use the closed dashboard catalogue; unknown ids are dropped before validation.",
   });
 
 const dashboardLayoutPutBody = dashboardLayoutSchema

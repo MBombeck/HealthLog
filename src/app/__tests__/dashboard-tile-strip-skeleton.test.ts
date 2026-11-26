@@ -99,17 +99,12 @@ describe("resolveDashboardFirstPaintGate", () => {
 });
 
 describe("resolveConfiguredTileCount (v1.16.8)", () => {
-  it("counts only widgets that paint a strip tile, with bp counting double", () => {
-    // Default layout: weight, bp, pulse, bodyFat, mood, bpInTarget, vo2Max
-    // plus the v1.20.0 sleep / steps / glucose flips are tile-visible AND
-    // tile-capable; medications + recentWorkouts are tile-visible in the
-    // stored layout but paint NO strip tile, so they must not inflate the
-    // silhouette. bp paints sys + dia = 2. v1.28.52 added seven vitals +
-    // body-composition strip tiles (hrv, oxygenSaturation, respiratoryRate,
-    // wristTemperature, muscleMass, totalBodyWater, boneMass), each
-    // single-count: 11 + 7 = 18. v1.29 added the fluid-intake strip tile
-    // (waterIntake), single-count: 18 + 1 = 19.
-    expect(resolveConfiguredTileCount(DEFAULT_DASHBOARD_LAYOUT)).toBe(19);
+  it("counts only widgets that paint a strip tile, one each", () => {
+    // Default layout: every tile-visible, tile-capable widget counts once,
+    // blood pressure included (one tile, systolic over diastolic);
+    // medications and recentWorkouts are tile-visible in the stored layout
+    // but paint no strip tile, so they must not inflate the silhouette.
+    expect(resolveConfiguredTileCount(DEFAULT_DASHBOARD_LAYOUT)).toBe(18);
   });
 
   it("ignores chart-only and iOS-pin-only widget ids", () => {

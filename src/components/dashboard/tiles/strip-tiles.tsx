@@ -26,6 +26,7 @@ import { TrendCard } from "@/components/charts/trend-card";
 import {
   getRangeColorClass,
   getRangeHint,
+  getRangeTone,
   toHoursSummary,
 } from "@/components/dashboard/range-display";
 import { SleepSourceDiscrepancyMarker } from "@/components/insights/sleep-source-discrepancy-marker";
@@ -45,6 +46,8 @@ import type { DashboardTileContext } from "./tile-context";
 /** One card in the tile strip, positioned by `order`. */
 export interface StripEntry {
   id: string;
+  /** The layout widget the card belongs to. */
+  widget: string;
   order: number;
   node: ReactNode;
 }
@@ -55,8 +58,8 @@ export interface StripEntry {
  *
  * The layout toggle is applied by `buildStripEntries` for every tile, so
  * `visible` holds only the tile's own rule (a data floor, a module gate).
- * A tile can paint more than one card (blood pressure paints two, glucose one
- * per meal-time context); each card's `orderOffset` keeps them together
+ * A tile can paint more than one card (glucose paints one per meal-time
+ * context); each card's `orderOffset` keeps them together
  * behind the widget's position.
  */
 interface StripTile {
@@ -226,38 +229,74 @@ export const STRIP_TILES: readonly StripTile[] = [
     direction: ctx.weightTrend.direction,
   })),
   {
-    // One signal, two tiles: systolic and diastolic side by side at the size
-    // of every other tile. The diastolic card's offset keeps it right behind
-    // the systolic one.
+    // One signal, one tile: systolic over diastolic ("126/83 mmHg"), both
+    // means and both trends side by side. The means take the colour of the
+    // side that sits further from its band.
     widget: "bp",
     visible: (ctx) =>
       countOf(ctx.summaries?.BLOOD_PRESSURE_SYS) > 0 ||
       countOf(ctx.summaries?.BLOOD_PRESSURE_DIA) > 0,
-    cards: (ctx) => [
-      {
-        id: "bp-sys",
-        node: metricCard(ctx, "bp-sys", {
-          type: "BLOOD_PRESSURE_SYS",
-          label: ctx.t("dashboard.bloodPressureSysShort"),
-          unit: "mmHg",
-          icon: Heart,
-          fractionDigits: 0,
-          range: ctx.bpSysRange,
-        }),
-      },
-      {
-        id: "bp-dia",
-        orderOffset: 0.001,
-        node: metricCard(ctx, "bp-dia", {
-          type: "BLOOD_PRESSURE_DIA",
-          label: ctx.t("dashboard.bloodPressureDiaShort"),
-          unit: "mmHg",
-          icon: Heart,
-          fractionDigits: 0,
-          range: ctx.bpDiaRange,
-        }),
-      },
-    ],
+    cards: (ctx) => {
+      const sys = ctx.summaries?.BLOOD_PRESSURE_SYS;
+      const dia = ctx.summaries?.BLOOD_PRESSURE_DIA;
+      // The side further from its band colours the pair's means.
+      const worse = (key: "avg7" | "avg30") =>
+        getRangeTone(sys?.[key], { range: ctx.bpSysRange }) >=
+        getRangeTone(dia?.[key], { range: ctx.bpDiaRange })
+          ? getRangeColorClass(sys?.[key], { range: ctx.bpSysRange })
+          : getRangeColorClass(dia?.[key], { range: ctx.bpDiaRange });
+      const sideHint = (key: string, range: TrafficRange) => {
+        const hint = getRangeHint("mmHg", { range }, ctx.t, ctx.fmt.number);
+        return hint ? (
+          <>
+            <p className="font-medium">{ctx.t(key)}</p>
+            {hint}
+          </>
+        ) : null;
+      };
+      const sysHint = sideHint("charts.systolic", ctx.bpSysRange);
+      const diaHint = sideHint("charts.diastolic", ctx.bpDiaRange);
+      const hint =
+        sysHint || diaHint ? (
+          <>
+            {sysHint}
+            {diaHint}
+          </>
+        ) : undefined;
+      return [
+        {
+          id: "bp",
+          node: (
+            <TrendCard
+              key="bp"
+              label={ctx.t("dashboard.bloodPressure")}
+              latest={headlineValue(sys)}
+              secondary={{
+                latest: headlineValue(dia),
+                avg7: dia?.avg7 ?? null,
+                avg30: dia?.avg30 ?? null,
+                trend7Delta: summaryToTrend7Delta(dia),
+              }}
+              unit="mmHg"
+              fractionDigits={0}
+              avg7={sys?.avg7 ?? null}
+              avg30={sys?.avg30 ?? null}
+              avg7ColorClass={worse("avg7")}
+              avg30ColorClass={worse("avg30")}
+              avg7Hint={hint}
+              avg30Hint={hint}
+              slope30={sys?.slope30 ?? null}
+              trend7Delta={summaryToTrend7Delta(sys)}
+              icon={Heart}
+              directionSentiment={ctx.directionOf("BLOOD_PRESSURE_SYS")}
+              compareBaseline={ctx.compareBaseline}
+              compareDelta={ctx.tileCompareDelta(sys)}
+              staleDays={ctx.tileStaleDays("BLOOD_PRESSURE_SYS")}
+            />
+          ),
+        },
+      ];
+    },
   },
   one(
     "pulse",
@@ -517,13 +556,18 @@ export const STRIP_TILES: readonly StripTile[] = [
  * whose own rule passes, sorted by layout order.
  */
 export function buildStripEntries(ctx: DashboardTileContext): StripEntry[] {
+  // The server's one-row order (`tiles.order`): the row shows the front of
+  // this list. A snapshot without it keeps the saved order.
+  const priority = ctx.tileOrder;
   const entries: StripEntry[] = [];
   for (const tile of STRIP_TILES) {
     if (!ctx.isTileVisible(tile.widget) || !tile.visible(ctx)) continue;
-    const order = ctx.widgetOrder(tile.widget);
+    const at = priority?.indexOf(tile.widget) ?? -1;
+    const order = at >= 0 ? at : 100 + ctx.widgetOrder(tile.widget);
     for (const card of tile.cards(ctx)) {
       entries.push({
         id: card.id,
+        widget: tile.widget,
         order: order + (card.orderOffset ?? 0),
         node: card.node,
       });

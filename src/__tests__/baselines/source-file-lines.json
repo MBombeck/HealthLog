@@ -33,7 +33,7 @@
     "lib/cycle/prediction.ts": 883,
     "lib/daily/digest.ts": 1370,
     "lib/daily/load-digest.ts": 1022,
-    "lib/dashboard/snapshot.ts": 1482,
+    "lib/dashboard/snapshot.ts": 1487,
     "lib/day/records.ts": 1154,
     "lib/export/coach-backup.ts": 1070,
     "lib/export/profile-backup.ts": 1019,

@@ -5,6 +5,7 @@
  * Schemas come from `src/lib/validations/*` where shared with the
  * runtime request parsing, so the wire contract stays single-source.
  */
+import { TILE_ATTENTION_REASONS } from "@/lib/dashboard/tile-priority";
 import { dashboardScorePillarsExample } from "@/lib/openapi/examples";
 import { recoveryEmptySchema } from "../recovery-empty";
 import { trendSentiment, trendVerdict } from "../trend-verdict";
@@ -1422,6 +1423,18 @@ export const dashboardSnapshotResponse = z
         "Server-computed band / target math resolved from the user's profile facts, so the client reads these numbers instead of recomputing them. Every sub-field is null only when the driving profile fact is missing (no date of birth for blood pressure, no height and no weight target for weight).",
       ),
     tiles: z.object({
+      attention: z
+        .record(z.string(), z.enum(TILE_ATTENTION_REASONS))
+        .optional()
+        .describe(
+          "v1.50 — per tile widget id (`weight`, `bp`, `pulse`, …), the strongest reason it has something to say today: `range` (latest reading outside the person's target band), `change` (the past week moved clearly: a fit of at least 0.7 adding up to 5 % of the monthly mean), `today` (a reading arrived on the local today). Widgets without one are absent. Readings older than seven days never count.",
+        ),
+      order: z
+        .array(z.string())
+        .optional()
+        .describe(
+          'v1.50 — every widget whose tile is switched on, in the order the tile row shows them: pinned widgets (`widgets[].pinned`) first, then those in `attention` (range, change, today), then the rest; each group by saved order. A client shows as many as fit one row and puts the rest behind "All values" (open state in `layout.tilesExpanded`). Widgets without data are not removed here; skip them when rendering.',
+        ),
       directions: z
         .record(z.string(), trendVerdict)
         .optional()

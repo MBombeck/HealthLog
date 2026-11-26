@@ -228,8 +228,7 @@ describe("dashboard.*Short keys exist across all six locales", () => {
   // missing in locale Y" surface.
   const REQUIRED_KEYS = [
     "weightShort",
-    "bloodPressureSysShort",
-    "bloodPressureDiaShort",
+    "bloodPressure",
     "pulseShort",
     "bodyFatShort",
     "moodShort",

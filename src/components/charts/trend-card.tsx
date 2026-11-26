@@ -24,6 +24,8 @@ interface SecondaryMetric {
   latest: number | null;
   avg7: number | null;
   avg30: number | null;
+  /** The second value's 7-day trend, printed beside the first ("+3/+1"). */
+  trend7Delta?: number | null;
 }
 
 /**
@@ -226,11 +228,11 @@ export function TrendCard({
     const sign = value > 0 ? "+" : "−";
     return `${sign}${fmt.number(Math.abs(value), fractionDigits)}`;
   };
+  const trendText = [trend7Delta, secondary?.trend7Delta]
+    .flatMap((d) => (d == null ? [] : [formatDelta(d)]))
+    .join("/");
 
-  // The label flips from "7d" / "7T" (mean) to "7d trend" / "7T-Trend"
-  // when the call site supplies a delta. the maintainer's v1.4.15 feedback —
-  // "7-Tage-Schnitt" sounds like an average, but the value next to it
-  // is now a TREND. Distinct keys keep the label change in i18n.
+  // "7d" names a mean; with a delta beside it the label reads "7d trend".
   const avg7LabelKey =
     trend7Delta != null ? "charts.trend7dShort" : "charts.avg7dShort";
 
@@ -243,6 +245,28 @@ export function TrendCard({
       return `${formatValue(primary)}/${formatValue(secondaryValue)}`;
     }
     return formatValue(primary);
+  };
+
+  // A mean, coloured against its band; a coloured one opens what the colour
+  // says.
+  const mean = (
+    value: number | null,
+    second: number | null | undefined,
+    colorClass: string | undefined,
+    hint: React.ReactNode,
+  ) => {
+    const className = cn(
+      "font-medium [overflow-wrap:anywhere] tabular-nums",
+      colorClass,
+    );
+    const text = value !== null ? renderPair(value, second) : "—";
+    return hint ? (
+      <HintedValue hint={hint} className={className}>
+        {text}
+      </HintedValue>
+    ) : (
+      <span className={className}>{text}</span>
+    );
   };
 
   return (
@@ -375,13 +399,10 @@ export function TrendCard({
             )}
             data-slot="tile-compare-delta"
             data-compare-baseline={compareBaseline}
-            aria-label={`${formatDelta(compareDelta)}${unit ? ` ${unit}` : ""} ${t(
-              compareBaseline === "lastMonth"
-                ? "comparison.captionLastMonth"
-                : "comparison.captionLastYear",
-            )}`}
           >
-            {`Δ ${formatDelta(compareDelta)}${unit ? ` ${unit}` : ""} ${t(
+            {/* The sign reads aloud; the Δ glyph does not. */}
+            <span aria-hidden="true">Δ </span>
+            {`${formatDelta(compareDelta)}${unit ? ` ${unit}` : ""} ${t(
               compareBaseline === "lastMonth"
                 ? "comparison.captionLastMonth"
                 : "comparison.captionLastYear",
@@ -431,26 +452,7 @@ export function TrendCard({
       <div className="text-muted-foreground mt-auto flex min-w-0 flex-nowrap items-baseline gap-x-3 overflow-hidden pt-1 text-xs leading-snug sm:flex-wrap sm:gap-y-1">
         <span className="max-w-full min-w-0 [overflow-wrap:anywhere]">
           {t(avg7LabelKey)}:{" "}
-          {avg7Hint ? (
-            <HintedValue
-              hint={avg7Hint}
-              className={cn(
-                "font-medium [overflow-wrap:anywhere] tabular-nums",
-                avg7ColorClass,
-              )}
-            >
-              {avg7 !== null ? renderPair(avg7, secondary?.avg7) : "—"}
-            </HintedValue>
-          ) : (
-            <span
-              className={cn(
-                "font-medium [overflow-wrap:anywhere] tabular-nums",
-                avg7ColorClass,
-              )}
-            >
-              {avg7 !== null ? renderPair(avg7, secondary?.avg7) : "—"}
-            </span>
-          )}
+          {mean(avg7, secondary?.avg7, avg7ColorClass, avg7Hint)}
           {trend7Delta != null && (
             <span
               className={cn(
@@ -458,34 +460,15 @@ export function TrendCard({
                 deltaColor,
               )}
               data-slot="trend7-delta"
-              aria-label={`${t("charts.trend7dShort")} ${formatDelta(trend7Delta)}`}
+              aria-label={`${t("charts.trend7dShort")} ${trendText}`}
             >
-              ({formatDelta(trend7Delta)})
+              ({trendText})
             </span>
           )}
         </span>
         <span className="max-w-full min-w-0 [overflow-wrap:anywhere]">
           {t("charts.avg30dShort")}:{" "}
-          {avg30Hint ? (
-            <HintedValue
-              hint={avg30Hint}
-              className={cn(
-                "font-medium [overflow-wrap:anywhere] tabular-nums",
-                avg30ColorClass,
-              )}
-            >
-              {avg30 !== null ? renderPair(avg30, secondary?.avg30) : "—"}
-            </HintedValue>
-          ) : (
-            <span
-              className={cn(
-                "font-medium [overflow-wrap:anywhere] tabular-nums",
-                avg30ColorClass,
-              )}
-            >
-              {avg30 !== null ? renderPair(avg30, secondary?.avg30) : "—"}
-            </span>
-          )}
+          {mean(avg30, secondary?.avg30, avg30ColorClass, avg30Hint)}
         </span>
         {/* v1.4.28 — the all-time third sub-value retired
               alongside the `avgAllTime*` props. The BD-Zielbereich

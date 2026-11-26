@@ -29,11 +29,16 @@ import {
   type DashboardWidgetCatalogueId,
   type DashboardWidgetId,
 } from "@/lib/dashboard-layout";
+import { TILE_CAPABLE_WIDGET_IDS } from "@/lib/dashboard/tile-widgets";
 import { NATIVE_ONLY_WIDGET_LABEL_KEYS } from "@/lib/dashboard/widget-modules";
 import { useTranslations } from "@/lib/i18n/context";
 import { isSurfaceVisible } from "@/lib/modules/surface";
 
 import { WIDGET_LABEL_KEYS } from "./layout-model";
+
+const TILE_CAPABLE_WIDGET_ID_SET: ReadonlySet<string> = new Set(
+  TILE_CAPABLE_WIDGET_IDS,
+);
 import type { DashboardLayoutDraft } from "./use-dashboard-layout-draft";
 
 /**
@@ -60,6 +65,7 @@ export function WebWidgetList({
     unavailableIds,
     saveMutation,
     toggleTile,
+    togglePin,
     toggle,
     move,
     handleDragEnd,
@@ -124,12 +130,14 @@ export function WebWidgetList({
             labels={{
               tileColumn: t("dashboard.layoutTileColumn"),
               chartColumn: t("dashboard.layoutChartColumn"),
+              pinColumn: t("dashboard.layoutPinColumn"),
               moveUp: t("dashboard.moveUp"),
               moveDown: t("dashboard.moveDown"),
               dragHandle: t("dashboard.dragHandle"),
               widgetLabel: t(WIDGET_LABEL_KEYS[widget.id] ?? widget.id),
             }}
             onToggleTile={toggleTile}
+            onTogglePin={togglePin}
             onToggleChart={toggle}
             onMove={move}
           />
@@ -226,6 +234,7 @@ interface SortableWidgetRowProps {
     visible: boolean;
     tileVisible?: boolean;
     order: number;
+    pinned?: boolean;
   };
   labelKey: string;
   index: number;
@@ -235,12 +244,14 @@ interface SortableWidgetRowProps {
   labels: {
     tileColumn: string;
     chartColumn: string;
+    pinColumn: string;
     moveUp: string;
     moveDown: string;
     dragHandle: string;
     widgetLabel: string;
   };
   onToggleTile: (id: DashboardWidgetId, value: boolean) => void;
+  onTogglePin: (id: DashboardWidgetId, value: boolean) => void;
   onToggleChart: (id: DashboardWidgetId, value: boolean) => void;
   onMove: (id: DashboardWidgetId, delta: -1 | 1) => void;
 }
@@ -253,6 +264,7 @@ function SortableWidgetRow({
   disabled,
   labels,
   onToggleTile,
+  onTogglePin,
   onToggleChart,
   onMove,
 }: SortableWidgetRowProps) {
@@ -292,7 +304,7 @@ function SortableWidgetRow({
       style={style}
       data-slot="widget-row"
       data-dragging={isDragging ? "true" : undefined}
-      className={`border-border bg-background/30 flex min-h-12 flex-wrap items-center gap-2 rounded-md border px-3 py-2 sm:flex-nowrap ${
+      className={`border-border bg-background/30 flex min-h-12 flex-wrap items-center gap-2 rounded-md border px-3 py-2 lg:flex-nowrap ${
         isDragging ? "ring-primary z-10 opacity-90 shadow-lg ring-2" : ""
       }`}
     >
@@ -321,12 +333,12 @@ function SortableWidgetRow({
       <span className="flex-1 truncate text-sm" title={labels.widgetLabel}>
         {labels.widgetLabel}
       </span>
-      {/* On a phone the two switches and two arrows (~250 px) left the name
-          five characters ("Gewic…"). Below `sm` the controls wrap onto a
-          second line, right-aligned under the column heads, and the name
+      {/* Three switches and two arrows (~300 px) leave a name only a few
+          characters in a narrow column, so below `lg` the controls wrap onto
+          a second line, right-aligned under the column heads, and the name
           keeps the first line to itself. */}
-      <span className="basis-full sm:hidden" aria-hidden="true" />
-      <div className="flex w-12 justify-center max-sm:ml-auto">
+      <span className="basis-full lg:hidden" aria-hidden="true" />
+      <div className="flex w-12 justify-center max-lg:ml-auto">
         <Switch
           checked={tileChecked}
           onCheckedChange={(v) => onToggleTile(widget.id, v)}
@@ -334,6 +346,19 @@ function SortableWidgetRow({
           disabled={disabled}
           data-slot="widget-tile-switch"
         />
+      </div>
+      <div className="flex w-12 justify-center">
+        {/* Only a tile can be pinned; without one the switch has nothing
+            to hold in the row. */}
+        {TILE_CAPABLE_WIDGET_ID_SET.has(widget.id) ? (
+          <Switch
+            checked={tileChecked && widget.pinned === true}
+            onCheckedChange={(v) => onTogglePin(widget.id, v)}
+            aria-label={`${labels.widgetLabel}: ${labels.pinColumn}`}
+            disabled={disabled || !tileChecked}
+            data-slot="widget-pin-switch"
+          />
+        ) : null}
       </div>
       <div className="flex w-12 justify-center">
         <Switch

@@ -20,7 +20,7 @@ import type { DashboardTileContext } from "@/components/dashboard/tiles/tile-con
 import {
   TILE_CAPABLE_WIDGET_IDS,
   type TileCapableWidgetId,
-} from "@/components/dashboard/dashboard-gates";
+} from "@/lib/dashboard/tile-widgets";
 import {
   TILE_DESTINATION,
   dashboardTileHref,
@@ -216,10 +216,8 @@ describe("dashboard tile destinations", () => {
 
   it("resolves the rendered tile ids to their hrefs", () => {
     expect(dashboardTileHref("bodyFat", undefined)).toBe("/insights/body-fat");
-    expect(dashboardTileHref("bp-sys", undefined)).toBe(
-      "/insights/blood-pressure",
-    );
-    expect(dashboardTileHref("bp-dia", null)).toBe("/insights/blood-pressure");
+    expect(dashboardTileHref("bp", undefined)).toBe("/insights/blood-pressure");
+    expect(dashboardTileHref("bp", null)).toBe("/insights/blood-pressure");
     expect(dashboardTileHref("glucose-FASTING", {})).toBe(
       "/insights/blood-glucose",
     );

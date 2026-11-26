@@ -43574,6 +43574,10 @@ components:
                 type: integer
                 minimum: 0
                 maximum: 99
+              pinned:
+                description: v1.50 — the tile always makes the dashboard's one row, ahead of the tiles with something to say. Only
+                  `true` is stored. Additive.
+                type: boolean
             required:
               - id
               - visible
@@ -43751,6 +43755,10 @@ components:
           description: v1.42 — whether the dashboard shows its top card (the Today card above the tiles). Missing resolves to
             `true`; only an explicit `false` hides it. The stored default is omitted. A layout reset (DELETE) shows it
             again. Additive.
+          type: boolean
+        tilesExpanded:
+          description: v1.50 — whether "All values" under the dashboard's one tile row is open. Missing resolves to `false` (one
+            row); the stored default is omitted. Additive.
           type: boolean
         baseUpdatedAt:
           description: "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the
@@ -79122,6 +79130,28 @@ components:
         tiles:
           type: object
           properties:
+            attention:
+              description: "v1.50 — per tile widget id (`weight`, `bp`, `pulse`, …), the strongest reason it has something to say
+                today: `range` (latest reading outside the person's target band), `change` (the past week moved clearly:
+                a fit of at least 0.7 adding up to 5 % of the monthly mean), `today` (a reading arrived on the local
+                today). Widgets without one are absent. Readings older than seven days never count."
+              type: object
+              propertyNames:
+                type: string
+              additionalProperties:
+                type: string
+                enum:
+                  - range
+                  - change
+                  - today
+            order:
+              description: 'v1.50 — every widget whose tile is switched on, in the order the tile row shows them: pinned widgets
+                (`widgets[].pinned`) first, then those in `attention` (range, change, today), then the rest; each group
+                by saved order. A client shows as many as fit one row and puts the rest behind "All values" (open state
+                in `layout.tilesExpanded`). Widgets without data are not removed here; skip them when rendering.'
+              type: array
+              items:
+                type: string
             directions:
               description: v1.43 — per measurement type, which way a change counts. `weightTrend` stays.
               type: object
@@ -102178,6 +102208,10 @@ components:
                 type: integer
                 minimum: 0
                 maximum: 99
+              pinned:
+                description: v1.50 — the tile always makes the dashboard's one row, ahead of the tiles with something to say. Only
+                  `true` is stored. Additive.
+                type: boolean
             required:
               - id
               - visible
@@ -102358,6 +102392,10 @@ components:
             `true`; only an explicit `false` hides it. The stored default is omitted. A layout reset (DELETE) shows it
             again. Additive.
           type: boolean
+        tilesExpanded:
+          description: v1.50 — whether "All values" under the dashboard's one tile row is open. Missing resolves to `false` (one
+            row); the stored default is omitted. Additive.
+          type: boolean
         updatedAt:
           description: "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this
             resource changes, never on another write to the account. Echo it back as `baseUpdatedAt` on the next write.
@@ -102462,6 +102500,10 @@ components:
                 type: integer
                 minimum: 0
                 maximum: 99
+              pinned:
+                description: v1.50 — the tile always makes the dashboard's one row, ahead of the tiles with something to say. Only
+                  `true` is stored. Additive.
+                type: boolean
             required:
               - id
               - visible
@@ -102641,6 +102683,10 @@ components:
           description: v1.42 — whether the dashboard shows its top card (the Today card above the tiles). Missing resolves to
             `true`; only an explicit `false` hides it. The stored default is omitted. A layout reset (DELETE) shows it
             again. Additive.
+          type: boolean
+        tilesExpanded:
+          description: v1.50 — whether "All values" under the dashboard's one tile row is open. Missing resolves to `false` (one
+            row); the stored default is omitted. Additive.
           type: boolean
         updatedAt:
           description: "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this

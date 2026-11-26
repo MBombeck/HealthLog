@@ -17,12 +17,11 @@
  */
 import type { SubPageSlug } from "@/lib/insights/sub-page-metric";
 import { insightsPageHref } from "@/lib/links/hrefs";
-import { isSurfaceVisible, type SurfaceModuleMap } from "@/lib/modules/surface";
-
 import {
   TILE_CAPABLE_WIDGET_IDS,
   type TileCapableWidgetId,
-} from "./dashboard-gates";
+} from "@/lib/dashboard/tile-widgets";
+import { isSurfaceVisible, type SurfaceModuleMap } from "@/lib/modules/surface";
 
 export const TILE_DESTINATION: Readonly<
   Record<TileCapableWidgetId, SubPageSlug | null>
@@ -53,12 +52,10 @@ export const TILE_DESTINATION: Readonly<
 const TILE_WIDGET_IDS: ReadonlySet<string> = new Set(TILE_CAPABLE_WIDGET_IDS);
 
 /**
- * The widget a rendered tile belongs to. Blood pressure paints two tiles
- * (`bp-sys`, `bp-dia`) and glucose one per logged context (`glucose-<ctx>`);
- * every other tile carries its widget id verbatim.
+ * The widget a rendered tile belongs to. Glucose paints one per logged
+ * context (`glucose-<ctx>`); every other tile carries its widget id verbatim.
  */
 export function tileWidgetId(tileId: string): TileCapableWidgetId | null {
-  if (tileId === "bp-sys" || tileId === "bp-dia") return "bp";
   if (tileId.startsWith("glucose-")) return "glucose";
   return TILE_WIDGET_IDS.has(tileId) ? (tileId as TileCapableWidgetId) : null;
 }

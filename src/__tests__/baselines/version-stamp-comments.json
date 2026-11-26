@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2826,
-  "total": 8756,
+  "total": 8753,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -787,7 +787,7 @@
     "components/dashboard/__tests__/medication-intake-quick-add.test.tsx": 3,
     "components/dashboard/__tests__/recent-workouts-tile.test.tsx": 2,
     "components/dashboard/chart-reveal.tsx": 1,
-    "components/dashboard/dashboard-gates.ts": 9,
+    "components/dashboard/dashboard-gates.ts": 6,
     "components/dashboard/medication-intake-quick-add.tsx": 7,
     "components/dashboard/quick-entry-sheets.tsx": 3,
     "components/dashboard/range-display.tsx": 1,

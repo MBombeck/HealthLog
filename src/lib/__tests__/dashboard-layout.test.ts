@@ -1064,6 +1064,7 @@ describe("layout field merge disposition", () => {
     enabledHeroItemKinds: [...PRIORITY_ITEM_KINDS],
     hero: "reminders",
     todayCardVisible: false,
+    tilesExpanded: true,
   };
 
   it("assigns a disposition to every top-level layout field", () => {
@@ -1090,6 +1091,7 @@ describe("layout field merge disposition", () => {
       "hero",
       "heroRingOrder",
       "selectedScoreRings",
+      "tilesExpanded",
       "todayCardVisible",
       "widgets",
     ]);
