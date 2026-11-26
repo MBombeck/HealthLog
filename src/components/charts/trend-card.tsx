@@ -17,6 +17,7 @@ import {
 } from "@/lib/insights/trend-sentiment";
 import { TrendTile } from "@/components/ui/trend-tile";
 import { TileHeader } from "@/components/insights/tile-header";
+import type { MetricName } from "@/lib/measurements/type-label-keys";
 
 interface SecondaryMetric {
   /** Sub-value latest reading (e.g. diastolic when latest is systolic). */
@@ -65,7 +66,8 @@ function HintedValue({
 }
 
 interface TrendCardProps {
-  label: string;
+  /** A metric's `MetricName` shows its short form; see `TileHeader`. */
+  label: string | MetricName;
   latest: number | null;
   unit: string;
   avg7: number | null;

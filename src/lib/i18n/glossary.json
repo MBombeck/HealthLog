@@ -1,5 +1,5 @@
 {
-  "about": "Canonical product vocabulary: one term per concept per locale. `name` is the label form (nav entry, page title, section heading); `item` is the countable noun used in running text. Anchors are message keys that must carry the term (exact, or containing it). Forbidden lists the retired synonyms per locale; `allow` names the few message values that keep one for a stated reason. Display strings only: wire values, routes and enum ids never change with this file. A forbidden entry with `keys` applies only to message keys under that prefix. `decision` records why a concept carries the term it does. `spelling` lists retired spellings per locale. Guarded by src/__tests__/glossary-guard.test.ts. The term covers every form of the concept in display copy: singular, plural and verb phrases ('Medicijn toevoegen', 'Registrar glucemia'), not only the bare noun, so a missing retired synonym is no licence for a second word. A word for a different thing is not a synonym: es 'glucosa' for the analyte (mean glucose, GMI) stays. Every `item` is anchored at least once, or `itemUnanchored` says why it cannot be; every term occurs in its locale's bundle.",
+  "about": "Canonical product vocabulary: one term per concept per locale. `name` is the label form (nav entry, page title, section heading); `item` is the countable noun used in running text. Anchors are message keys that must carry the term (exact, or containing it). Forbidden lists the retired synonyms per locale; `allow` names the few message values that keep one for a stated reason. Display strings only: wire values, routes and enum ids never change with this file. A forbidden entry with `keys` applies only to message keys under that prefix. `decision` records why a concept carries the term it does. `spelling` lists retired spellings per locale. Guarded by src/__tests__/glossary-guard.test.ts. The term covers every form of the concept in display copy: singular, plural and verb phrases ('Medicijn toevoegen', 'Registrar glucemia'), not only the bare noun, so a missing retired synonym is no licence for a second word. A word for a different thing is not a synonym: es 'glucosa' for the analyte (mean glucose, GMI) stays. Every `item` is anchored at least once, or `itemUnanchored` says why it cannot be; every term occurs in its locale's bundle. `short` is the form for a one-line slot (tile, heading, chip, tab), shared with the iOS client; `shortKey` is the message key that carries it, or the full name in a locale without one. A short form is shorter than the name, names one thing, reuses no retired synonym, and reaches a surface only through `metricName` (src/lib/measurements/type-label-keys.ts).",
   "locales": ["de", "en", "fr", "es", "it", "pl", "ko", "nl", "pt-BR", "ru"],
   "concepts": [
     {
@@ -4549,6 +4549,2556 @@
           "match": "exact"
         }
       ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "stateOfMind",
+      "description": "The HealthKit state-of-mind valence (a momentary emotion or daily mood on a pleasant-unpleasant scale), as distinct from the mood log.",
+      "decision": "Spanish Estado emocional, the word the mood page already used for this section: Estado de ánimo is the Mood area's name, and one word must not name both. Other locales already keep the two apart.",
+      "terms": {
+        "de": {
+          "name": "Gemütszustand"
+        },
+        "en": {
+          "name": "State of mind"
+        },
+        "fr": {
+          "name": "État d’esprit"
+        },
+        "es": {
+          "name": "Estado emocional"
+        },
+        "it": {
+          "name": "Stato d’animo"
+        },
+        "pl": {
+          "name": "Stan umysłu"
+        },
+        "ko": {
+          "name": "마음 상태"
+        },
+        "nl": {
+          "name": "Gemoedstoestand"
+        },
+        "pt-BR": {
+          "name": "Estado mental"
+        },
+        "ru": {
+          "name": "Состояние души"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeStateOfMindValence",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [
+          {
+            "text": "estado de ánimo",
+            "keys": "measurements.typeStateOfMind"
+          },
+          {
+            "text": "estado de ánimo",
+            "keys": "insights.correlation.channel.STATE_OF_MIND"
+          }
+        ],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.totalBodyWater",
+      "description": "The Total body water metric (TOTAL_BODY_WATER).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Gesamtkörperwasser",
+          "short": "Körperwasser"
+        },
+        "en": {
+          "name": "Total body water"
+        },
+        "fr": {
+          "name": "Eau corporelle totale"
+        },
+        "es": {
+          "name": "Agua corporal total"
+        },
+        "it": {
+          "name": "Acqua corporea totale"
+        },
+        "pl": {
+          "name": "Całkowita woda w organizmie"
+        },
+        "ko": {
+          "name": "체수분"
+        },
+        "nl": {
+          "name": "Totaal lichaamswater",
+          "short": "Lichaamswater"
+        },
+        "pt-BR": {
+          "name": "Água corporal total"
+        },
+        "ru": {
+          "name": "Общая вода в организме"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeTotalBodyWater",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeTotalBodyWater",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.walkingRunningDistance",
+      "description": "The Walking + running distance metric (WALKING_RUNNING_DISTANCE).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Geh- und Laufstrecke"
+        },
+        "en": {
+          "name": "Walking + running distance",
+          "short": "Walk/run distance"
+        },
+        "fr": {
+          "name": "Distance à pied et en course"
+        },
+        "es": {
+          "name": "Distancia a pie y corriendo"
+        },
+        "it": {
+          "name": "Distanza a piedi e di corsa"
+        },
+        "pl": {
+          "name": "Dystans marszu i biegu"
+        },
+        "ko": {
+          "name": "걷기 + 달리기 거리"
+        },
+        "nl": {
+          "name": "Afstand wandelen + hardlopen"
+        },
+        "pt-BR": {
+          "name": "Distância caminhada + corrida"
+        },
+        "ru": {
+          "name": "Расстояние ходьбы + бега"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeWalkingRunningDistance",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeWalkingRunningDistance",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.skinTemperature",
+      "description": "The Skin temperature metric (SKIN_TEMPERATURE).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Hauttemperatur"
+        },
+        "en": {
+          "name": "Skin temperature"
+        },
+        "fr": {
+          "name": "Température cutanée"
+        },
+        "es": {
+          "name": "Temperatura de la piel",
+          "short": "Temp. de la piel"
+        },
+        "it": {
+          "name": "Temperatura cutanea"
+        },
+        "pl": {
+          "name": "Temperatura skóry"
+        },
+        "ko": {
+          "name": "피부 온도"
+        },
+        "nl": {
+          "name": "Huidtemperatuur"
+        },
+        "pt-BR": {
+          "name": "Temperatura da pele"
+        },
+        "ru": {
+          "name": "Температура кожи"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeSkinTemperature",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeSkinTemperature",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.audioExposureEnv",
+      "description": "The Audio Exposure (Environment) metric (AUDIO_EXPOSURE_ENV).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Lärmbelastung (Umgebung)",
+          "short": "Umgebungslärm"
+        },
+        "en": {
+          "name": "Audio Exposure (Environment)",
+          "short": "Ambient noise"
+        },
+        "fr": {
+          "name": "Exposition au bruit (environnement)"
+        },
+        "es": {
+          "name": "Exposición al ruido (ambiente)",
+          "short": "Ruido ambiental"
+        },
+        "it": {
+          "name": "Esposizione al rumore (ambiente)"
+        },
+        "pl": {
+          "name": "Ekspozycja na hałas (otoczenie)"
+        },
+        "ko": {
+          "name": "소음 노출 (주변)"
+        },
+        "nl": {
+          "name": "Geluidsblootstelling (omgeving)",
+          "short": "Omgevingsgeluid"
+        },
+        "pt-BR": {
+          "name": "Exposição sonora (ambiente)"
+        },
+        "ru": {
+          "name": "Воздействие звука (окружение)"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeAudioExposureEnv",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeAudioExposureEnv",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.audioExposureHeadphone",
+      "description": "The Audio Exposure (Headphones) metric (AUDIO_EXPOSURE_HEADPHONE).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Lärmbelastung (Kopfhörer)",
+          "short": "Kopfhörerpegel"
+        },
+        "en": {
+          "name": "Audio Exposure (Headphones)"
+        },
+        "fr": {
+          "name": "Exposition au bruit (écouteurs)"
+        },
+        "es": {
+          "name": "Exposición al ruido (auriculares)"
+        },
+        "it": {
+          "name": "Esposizione al rumore (cuffie)"
+        },
+        "pl": {
+          "name": "Ekspozycja na hałas (słuchawki)"
+        },
+        "ko": {
+          "name": "소음 노출 (헤드폰)"
+        },
+        "nl": {
+          "name": "Geluidsblootstelling (koptelefoon)"
+        },
+        "pt-BR": {
+          "name": "Exposição sonora (fones)"
+        },
+        "ru": {
+          "name": "Воздействие звука (наушники)"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeAudioExposureHeadphone",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeAudioExposureHeadphone",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.timeInDaylight",
+      "description": "The Time in Daylight metric (TIME_IN_DAYLIGHT).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Zeit im Tageslicht"
+        },
+        "en": {
+          "name": "Time in Daylight"
+        },
+        "fr": {
+          "name": "Temps à la lumière du jour"
+        },
+        "es": {
+          "name": "Tiempo a la luz del día",
+          "short": "Luz del día"
+        },
+        "it": {
+          "name": "Tempo alla luce del giorno"
+        },
+        "pl": {
+          "name": "Czas w świetle dziennym"
+        },
+        "ko": {
+          "name": "햇빛 노출 시간"
+        },
+        "nl": {
+          "name": "Tijd in daglicht"
+        },
+        "pt-BR": {
+          "name": "Tempo sob luz do dia"
+        },
+        "ru": {
+          "name": "Время на дневном свете"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeTimeInDaylight",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeTimeInDaylight",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.audioExposureEvent",
+      "description": "The Loud-Listening Event metric (AUDIO_EXPOSURE_EVENT).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Lautes-Hören-Ereignis",
+          "short": "Lautstärkehinweis"
+        },
+        "en": {
+          "name": "Loud-Listening Event",
+          "short": "Loud audio alert"
+        },
+        "fr": {
+          "name": "Événement d’écoute forte"
+        },
+        "es": {
+          "name": "Evento de escucha alta"
+        },
+        "it": {
+          "name": "Evento di ascolto forte"
+        },
+        "pl": {
+          "name": "Zdarzenie głośnego słuchania"
+        },
+        "ko": {
+          "name": "큰 소리 청취 이벤트"
+        },
+        "nl": {
+          "name": "Melding hard geluid via koptelefoon",
+          "short": "Melding hard geluid"
+        },
+        "pt-BR": {
+          "name": "Evento de escuta alta"
+        },
+        "ru": {
+          "name": "Событие громкого прослушивания"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeAudioExposureEvent",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeAudioExposureEvent",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.respiratoryRate",
+      "description": "The Respiratory rate metric (RESPIRATORY_RATE).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Atemfrequenz"
+        },
+        "en": {
+          "name": "Respiratory rate"
+        },
+        "fr": {
+          "name": "Fréquence respiratoire"
+        },
+        "es": {
+          "name": "Frecuencia respiratoria",
+          "short": "Frec. respiratoria"
+        },
+        "it": {
+          "name": "Frequenza respiratoria"
+        },
+        "pl": {
+          "name": "Częstość oddechów"
+        },
+        "ko": {
+          "name": "호흡수"
+        },
+        "nl": {
+          "name": "Ademhalingsfrequentie",
+          "short": "Ademfrequentie"
+        },
+        "pt-BR": {
+          "name": "Frequência respiratória"
+        },
+        "ru": {
+          "name": "Частота дыхания"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeRespiratoryRate",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeRespiratoryRate",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.leanBodyMass",
+      "description": "The Lean body mass metric (LEAN_BODY_MASS).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Magermasse"
+        },
+        "en": {
+          "name": "Lean body mass"
+        },
+        "fr": {
+          "name": "Masse maigre"
+        },
+        "es": {
+          "name": "Masa magra"
+        },
+        "it": {
+          "name": "Massa magra"
+        },
+        "pl": {
+          "name": "Szczupła masa ciała"
+        },
+        "ko": {
+          "name": "제지방량"
+        },
+        "nl": {
+          "name": "Vetvrije lichaamsmassa",
+          "short": "Magere massa"
+        },
+        "pt-BR": {
+          "name": "Massa corporal magra"
+        },
+        "ru": {
+          "name": "Тощая масса тела"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeLeanBodyMass",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeLeanBodyMass",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.walkingHeartRateAverage",
+      "description": "The Walking heart rate (avg) metric (WALKING_HEART_RATE_AVERAGE).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Geh-Puls (Mittelwert)"
+        },
+        "en": {
+          "name": "Walking heart rate (avg)"
+        },
+        "fr": {
+          "name": "Fréquence cardiaque à la marche (moy.)"
+        },
+        "es": {
+          "name": "Frecuencia cardíaca al caminar (media)",
+          "short": "Pulso al caminar"
+        },
+        "it": {
+          "name": "Frequenza cardiaca a passo (media)"
+        },
+        "pl": {
+          "name": "Tętno przy chodzeniu (śr.)"
+        },
+        "ko": {
+          "name": "보행 심박수 (평균)"
+        },
+        "nl": {
+          "name": "Hartslag tijdens wandelen (gem.)",
+          "short": "Wandelhartslag"
+        },
+        "pt-BR": {
+          "name": "Frequência cardíaca ao caminhar (média)"
+        },
+        "ru": {
+          "name": "ЧСС при ходьбе (сред.)"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeWalkingHeartRateAverage",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeWalkingHeartRateAverage",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.walkingDoubleSupport",
+      "description": "The Walking double support metric (WALKING_DOUBLE_SUPPORT).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Gang-Doppelstand",
+          "short": "Doppelstand"
+        },
+        "en": {
+          "name": "Walking double support",
+          "short": "Double support"
+        },
+        "fr": {
+          "name": "Double appui à la marche"
+        },
+        "es": {
+          "name": "Doble apoyo al caminar",
+          "short": "Doble apoyo"
+        },
+        "it": {
+          "name": "Doppio appoggio nel cammino"
+        },
+        "pl": {
+          "name": "Podwójna podpora chodu"
+        },
+        "ko": {
+          "name": "보행 이중 지지"
+        },
+        "nl": {
+          "name": "Dubbele steunfase bij lopen",
+          "short": "Dubbele steun"
+        },
+        "pt-BR": {
+          "name": "Apoio duplo ao caminhar"
+        },
+        "ru": {
+          "name": "Двойная опора при ходьбе"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeWalkingDoubleSupport",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeWalkingDoubleSupport",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.walkingSpeed",
+      "description": "The Walking speed metric (WALKING_SPEED).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Gehgeschwindigkeit",
+          "short": "Gehtempo"
+        },
+        "en": {
+          "name": "Walking speed"
+        },
+        "fr": {
+          "name": "Vitesse de marche"
+        },
+        "es": {
+          "name": "Velocidad al caminar"
+        },
+        "it": {
+          "name": "Velocità del cammino"
+        },
+        "pl": {
+          "name": "Prędkość chodu"
+        },
+        "ko": {
+          "name": "보행 속도"
+        },
+        "nl": {
+          "name": "Loopsnelheid"
+        },
+        "pt-BR": {
+          "name": "Velocidade ao caminhar"
+        },
+        "ru": {
+          "name": "Скорость ходьбы"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeWalkingSpeed",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeWalkingSpeed",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.cardioRecovery",
+      "description": "The Cardio recovery metric (CARDIO_RECOVERY).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Erholungspuls"
+        },
+        "en": {
+          "name": "Cardio recovery"
+        },
+        "fr": {
+          "name": "Récupération cardiaque"
+        },
+        "es": {
+          "name": "Recuperación cardiaca",
+          "short": "Recup. cardiaca"
+        },
+        "it": {
+          "name": "Recupero cardiaco"
+        },
+        "pl": {
+          "name": "Regeneracja serca"
+        },
+        "ko": {
+          "name": "심박 회복"
+        },
+        "nl": {
+          "name": "Hartslagherstel"
+        },
+        "pt-BR": {
+          "name": "Recuperação cardiovascular"
+        },
+        "ru": {
+          "name": "Кардиовосстановление"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeCardioRecovery",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeCardioRecovery",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.wristTemperature",
+      "description": "The Wrist temperature metric (WRIST_TEMPERATURE).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Handgelenktemperatur",
+          "short": "Handgelenktemp."
+        },
+        "en": {
+          "name": "Wrist temperature"
+        },
+        "fr": {
+          "name": "Température du poignet"
+        },
+        "es": {
+          "name": "Temperatura de muñeca",
+          "short": "Temp. de muñeca"
+        },
+        "it": {
+          "name": "Temperatura del polso"
+        },
+        "pl": {
+          "name": "Temperatura nadgarstka"
+        },
+        "ko": {
+          "name": "손목 온도"
+        },
+        "nl": {
+          "name": "Polstemperatuur"
+        },
+        "pt-BR": {
+          "name": "Temperatura do pulso"
+        },
+        "ru": {
+          "name": "Температура запястья"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeWristTemperature",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeWristTemperature",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.sixMinuteWalkDistance",
+      "description": "The Six-minute walk distance metric (SIX_MINUTE_WALK_DISTANCE).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "6-Minuten-Gehstrecke"
+        },
+        "en": {
+          "name": "Six-minute walk distance"
+        },
+        "fr": {
+          "name": "Distance de marche de 6 minutes"
+        },
+        "es": {
+          "name": "Distancia en marcha de 6 minutos",
+          "short": "Distancia marcha 6 min"
+        },
+        "it": {
+          "name": "Distanza nel cammino di 6 minuti"
+        },
+        "pl": {
+          "name": "Dystans marszu 6-minutowego"
+        },
+        "ko": {
+          "name": "6분 보행 거리"
+        },
+        "nl": {
+          "name": "Afstand zesminutenwandeltest",
+          "short": "Afstand 6 min wandelen"
+        },
+        "pt-BR": {
+          "name": "Distância de caminhada de seis minutos"
+        },
+        "ru": {
+          "name": "Дистанция шестиминутной ходьбы"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeSixMinuteWalkDistance",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeSixMinuteWalkDistance",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.stairAscentSpeed",
+      "description": "The Stair ascent speed metric (STAIR_ASCENT_SPEED).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Treppensteig-Tempo",
+          "short": "Treppauf-Tempo"
+        },
+        "en": {
+          "name": "Stair ascent speed"
+        },
+        "fr": {
+          "name": "Vitesse en montée d'escaliers"
+        },
+        "es": {
+          "name": "Velocidad subiendo escaleras"
+        },
+        "it": {
+          "name": "Velocità in salita scale"
+        },
+        "pl": {
+          "name": "Prędkość wchodzenia po schodach"
+        },
+        "ko": {
+          "name": "계단 오르기 속도"
+        },
+        "nl": {
+          "name": "Snelheid trap op"
+        },
+        "pt-BR": {
+          "name": "Velocidade de subida de escadas"
+        },
+        "ru": {
+          "name": "Скорость подъёма по лестнице"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeStairAscentSpeed",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeStairAscentSpeed",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.irregularRhythmNotification",
+      "description": "The Irregular rhythm notification metric (IRREGULAR_RHYTHM_NOTIFICATION).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Hinweis auf unregelmäßigen Rhythmus",
+          "short": "Unregelmäßiger Rhythmus"
+        },
+        "en": {
+          "name": "Irregular rhythm notification",
+          "short": "Irregular rhythm"
+        },
+        "fr": {
+          "name": "Notification de rythme irrégulier"
+        },
+        "es": {
+          "name": "Aviso de ritmo irregular",
+          "short": "Ritmo irregular"
+        },
+        "it": {
+          "name": "Notifica di ritmo irregolare"
+        },
+        "pl": {
+          "name": "Powiadomienie o nieregularnym rytmie"
+        },
+        "ko": {
+          "name": "불규칙 심장 리듬 알림"
+        },
+        "nl": {
+          "name": "Melding onregelmatig ritme",
+          "short": "Onregelmatig ritme"
+        },
+        "pt-BR": {
+          "name": "Notificação de ritmo irregular"
+        },
+        "ru": {
+          "name": "Уведомление о нерегулярном ритме"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeIrregularRhythmNotification",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeIrregularRhythmNotification",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.highHeartRateEvent",
+      "description": "The High heart rate notification metric (HIGH_HEART_RATE_EVENT).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Hinweis auf hohe Herzfrequenz",
+          "short": "Hoher Puls"
+        },
+        "en": {
+          "name": "High heart rate notification",
+          "short": "High heart rate"
+        },
+        "fr": {
+          "name": "Notification de fréquence cardiaque élevée"
+        },
+        "es": {
+          "name": "Aviso de frecuencia cardíaca alta",
+          "short": "Pulso alto"
+        },
+        "it": {
+          "name": "Notifica di frequenza cardiaca alta"
+        },
+        "pl": {
+          "name": "Powiadomienie o wysokim tętnie"
+        },
+        "ko": {
+          "name": "높은 심박수 알림"
+        },
+        "nl": {
+          "name": "Melding hoge hartslag"
+        },
+        "pt-BR": {
+          "name": "Notificação de frequência cardíaca alta"
+        },
+        "ru": {
+          "name": "Уведомление о высокой ЧСС"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeHighHeartRateEvent",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeHighHeartRateEvent",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.lowHeartRateEvent",
+      "description": "The Low heart rate notification metric (LOW_HEART_RATE_EVENT).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Hinweis auf niedrige Herzfrequenz",
+          "short": "Niedriger Puls"
+        },
+        "en": {
+          "name": "Low heart rate notification",
+          "short": "Low heart rate"
+        },
+        "fr": {
+          "name": "Notification de fréquence cardiaque basse"
+        },
+        "es": {
+          "name": "Aviso de frecuencia cardíaca baja",
+          "short": "Pulso bajo"
+        },
+        "it": {
+          "name": "Notifica di frequenza cardiaca bassa"
+        },
+        "pl": {
+          "name": "Powiadomienie o niskim tętnie"
+        },
+        "ko": {
+          "name": "낮은 심박수 알림"
+        },
+        "nl": {
+          "name": "Melding lage hartslag",
+          "short": "Lage hartslag"
+        },
+        "pt-BR": {
+          "name": "Notificação de frequência cardíaca baixa"
+        },
+        "ru": {
+          "name": "Уведомление о низкой ЧСС"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeLowHeartRateEvent",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeLowHeartRateEvent",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.hypertensionEvent",
+      "description": "The Hypertension notification metric (HYPERTENSION_EVENT).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Hinweis auf Bluthochdruck",
+          "short": "Bluthochdruck-Hinweis"
+        },
+        "en": {
+          "name": "Hypertension notification",
+          "short": "Hypertension alert"
+        },
+        "fr": {
+          "name": "Notification d'hypertension"
+        },
+        "es": {
+          "name": "Aviso de hipertensión"
+        },
+        "it": {
+          "name": "Notifica di ipertensione"
+        },
+        "pl": {
+          "name": "Powiadomienie o nadciśnieniu"
+        },
+        "ko": {
+          "name": "고혈압 알림"
+        },
+        "nl": {
+          "name": "Melding hoge bloeddruk"
+        },
+        "pt-BR": {
+          "name": "Notificação de hipertensão"
+        },
+        "ru": {
+          "name": "Уведомление о гипертонии"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeHypertensionEvent",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeHypertensionEvent",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.lowCardioFitnessEvent",
+      "description": "The Low cardio fitness notification metric (LOW_CARDIO_FITNESS_EVENT).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Hinweis auf niedrige Cardiofitness",
+          "short": "Niedrige Cardiofitness"
+        },
+        "en": {
+          "name": "Low cardio fitness notification",
+          "short": "Low cardio fitness"
+        },
+        "fr": {
+          "name": "Notification de faible forme cardio"
+        },
+        "es": {
+          "name": "Aviso de baja forma cardiovascular",
+          "short": "Baja forma cardiovascular"
+        },
+        "it": {
+          "name": "Notifica di bassa forma cardio"
+        },
+        "pl": {
+          "name": "Powiadomienie o niskiej wydolności"
+        },
+        "ko": {
+          "name": "낮은 심폐 체력 알림"
+        },
+        "nl": {
+          "name": "Melding lage cardiofitheid",
+          "short": "Lage cardiofitheid"
+        },
+        "pt-BR": {
+          "name": "Notificação de baixo condicionamento cardio"
+        },
+        "ru": {
+          "name": "Уведомление о низкой кардиовыносливости"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeLowCardioFitnessEvent",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeLowCardioFitnessEvent",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.insulinDelivery",
+      "description": "The Insulin delivery metric (INSULIN_DELIVERY).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Insulinabgabe"
+        },
+        "en": {
+          "name": "Insulin delivery"
+        },
+        "fr": {
+          "name": "Administration d'insuline"
+        },
+        "es": {
+          "name": "Administración de insulina",
+          "short": "Insulina administrada"
+        },
+        "it": {
+          "name": "Somministrazione di insulina"
+        },
+        "pl": {
+          "name": "Podanie insuliny"
+        },
+        "ko": {
+          "name": "인슐린 투여"
+        },
+        "nl": {
+          "name": "Insulinetoediening"
+        },
+        "pt-BR": {
+          "name": "Aplicação de insulina"
+        },
+        "ru": {
+          "name": "Введение инсулина"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeInsulinDelivery",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeInsulinDelivery",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.peakExpiratoryFlow",
+      "description": "The Peak expiratory flow metric (PEAK_EXPIRATORY_FLOW).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Peak-Flow"
+        },
+        "en": {
+          "name": "Peak expiratory flow",
+          "short": "Peak flow"
+        },
+        "fr": {
+          "name": "Débit expiratoire de pointe"
+        },
+        "es": {
+          "name": "Flujo espiratorio máximo",
+          "short": "Flujo máximo"
+        },
+        "it": {
+          "name": "Picco di flusso espiratorio"
+        },
+        "pl": {
+          "name": "Szczytowy przepływ wydechowy"
+        },
+        "ko": {
+          "name": "최대 호기 유량"
+        },
+        "nl": {
+          "name": "Piekstroom"
+        },
+        "pt-BR": {
+          "name": "Pico de fluxo expiratório"
+        },
+        "ru": {
+          "name": "Пиковая скорость выдоха"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typePeakExpiratoryFlow",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypePeakExpiratoryFlow",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.walkingSteadinessEvent",
+      "description": "The Walking steadiness alert metric (WALKING_STEADINESS_EVENT).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Hinweis zur Gehstabilität"
+        },
+        "en": {
+          "name": "Walking steadiness alert",
+          "short": "Steadiness alert"
+        },
+        "fr": {
+          "name": "Alerte de stabilité de la marche"
+        },
+        "es": {
+          "name": "Aviso de estabilidad al caminar",
+          "short": "Aviso de estabilidad"
+        },
+        "it": {
+          "name": "Avviso di stabilità della camminata"
+        },
+        "pl": {
+          "name": "Alert stabilności chodu"
+        },
+        "ko": {
+          "name": "보행 안정성 경고"
+        },
+        "nl": {
+          "name": "Waarschuwing loopstabiliteit",
+          "short": "Stabiliteitsmelding"
+        },
+        "pt-BR": {
+          "name": "Alerta de estabilidade ao caminhar"
+        },
+        "ru": {
+          "name": "Оповещение об устойчивости ходьбы"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeWalkingSteadinessEvent",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeWalkingSteadinessEvent",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.breathingDisturbanceEvent",
+      "description": "The Breathing disturbance metric (BREATHING_DISTURBANCE_EVENT).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Atemstörung"
+        },
+        "en": {
+          "name": "Breathing disturbance"
+        },
+        "fr": {
+          "name": "Trouble respiratoire"
+        },
+        "es": {
+          "name": "Alteración respiratoria",
+          "short": "Alteración resp."
+        },
+        "it": {
+          "name": "Disturbo respiratorio"
+        },
+        "pl": {
+          "name": "Zaburzenie oddychania"
+        },
+        "ko": {
+          "name": "호흡 장애"
+        },
+        "nl": {
+          "name": "Ademhalingsstoornis",
+          "short": "Ademstoornis"
+        },
+        "pt-BR": {
+          "name": "Distúrbio respiratório"
+        },
+        "ru": {
+          "name": "Нарушение дыхания"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeBreathingDisturbanceEvent",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeBreathingDisturbanceEvent",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.sleepNeed",
+      "description": "The Sleep need metric (SLEEP_NEED).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Schlafbedarf"
+        },
+        "en": {
+          "name": "Sleep need"
+        },
+        "fr": {
+          "name": "Besoin de sommeil"
+        },
+        "es": {
+          "name": "Necesidad de sueño",
+          "short": "Sueño necesario"
+        },
+        "it": {
+          "name": "Fabbisogno di sonno"
+        },
+        "pl": {
+          "name": "Zapotrzebowanie na sen"
+        },
+        "ko": {
+          "name": "필요 수면 시간"
+        },
+        "nl": {
+          "name": "Slaapbehoefte"
+        },
+        "pt-BR": {
+          "name": "Necessidade de sono"
+        },
+        "ru": {
+          "name": "Потребность во сне"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeSleepNeed",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeSleepNeed",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.averageHeartRate",
+      "description": "The Average heart rate metric (AVERAGE_HEART_RATE).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Durchschnittlicher Puls",
+          "short": "Mittlerer Puls"
+        },
+        "en": {
+          "name": "Average heart rate"
+        },
+        "fr": {
+          "name": "Fréquence cardiaque moyenne"
+        },
+        "es": {
+          "name": "Frecuencia cardíaca media",
+          "short": "Pulso medio"
+        },
+        "it": {
+          "name": "Frequenza cardiaca media"
+        },
+        "pl": {
+          "name": "Średnie tętno"
+        },
+        "ko": {
+          "name": "평균 심박수"
+        },
+        "nl": {
+          "name": "Gemiddelde hartslag",
+          "short": "Gem. hartslag"
+        },
+        "pt-BR": {
+          "name": "Frequência cardíaca média"
+        },
+        "ru": {
+          "name": "Средняя ЧСС"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeAverageHeartRate",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeAverageHeartRate",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.maxHeartRate",
+      "description": "The Maximum heart rate metric (MAX_HEART_RATE).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Maximaler Puls"
+        },
+        "en": {
+          "name": "Maximum heart rate"
+        },
+        "fr": {
+          "name": "Fréquence cardiaque maximale"
+        },
+        "es": {
+          "name": "Frecuencia cardíaca máxima",
+          "short": "Pulso máximo"
+        },
+        "it": {
+          "name": "Frequenza cardiaca massima"
+        },
+        "pl": {
+          "name": "Maksymalne tętno"
+        },
+        "ko": {
+          "name": "최대 심박수"
+        },
+        "nl": {
+          "name": "Maximale hartslag"
+        },
+        "pt-BR": {
+          "name": "Frequência cardíaca máxima"
+        },
+        "ru": {
+          "name": "Максимальная ЧСС"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeMaxHeartRate",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeMaxHeartRate",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.bodyTemperatureDeviation",
+      "description": "The Body temperature deviation metric (BODY_TEMPERATURE_DEVIATION).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Körpertemperaturabweichung",
+          "short": "Temp.-Abweichung"
+        },
+        "en": {
+          "name": "Body temperature deviation",
+          "short": "Temp. deviation"
+        },
+        "fr": {
+          "name": "Écart de température corporelle"
+        },
+        "es": {
+          "name": "Desviación de temperatura corporal",
+          "short": "Desviación de temp."
+        },
+        "it": {
+          "name": "Deviazione della temperatura corporea"
+        },
+        "pl": {
+          "name": "Odchylenie temperatury ciała"
+        },
+        "ko": {
+          "name": "체온 편차"
+        },
+        "nl": {
+          "name": "Afwijking lichaamstemperatuur",
+          "short": "Temp.-afwijking"
+        },
+        "pt-BR": {
+          "name": "Desvio da temperatura corporal"
+        },
+        "ru": {
+          "name": "Отклонение температуры тела"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeBodyTemperatureDeviation",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeBodyTemperatureDeviation",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.who5Score",
+      "description": "The WHO-5 score metric (WHO5_SCORE).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "WHO-5-Wert",
+          "short": "WHO-5"
+        },
+        "en": {
+          "name": "WHO-5 score"
+        },
+        "fr": {
+          "name": "Score WHO-5"
+        },
+        "es": {
+          "name": "Puntuación WHO-5"
+        },
+        "it": {
+          "name": "Punteggio WHO-5"
+        },
+        "pl": {
+          "name": "Wynik WHO-5"
+        },
+        "ko": {
+          "name": "WHO-5 점수"
+        },
+        "nl": {
+          "name": "WHO-5-score"
+        },
+        "pt-BR": {
+          "name": "Pontuação WHO-5"
+        },
+        "ru": {
+          "name": "Балл WHO-5"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeWho5Score",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeWho5Score",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.mindfulMinutes",
+      "description": "The Mindful minutes metric (MINDFUL_MINUTES).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Achtsamkeitsminuten",
+          "short": "Achtsamkeit"
+        },
+        "en": {
+          "name": "Mindful minutes"
+        },
+        "fr": {
+          "name": "Minutes de pleine conscience"
+        },
+        "es": {
+          "name": "Minutos de atención plena",
+          "short": "Atención plena"
+        },
+        "it": {
+          "name": "Minuti di consapevolezza"
+        },
+        "pl": {
+          "name": "Minuty uważności"
+        },
+        "ko": {
+          "name": "마음 챙기기 시간(분)"
+        },
+        "nl": {
+          "name": "Mindfulnessminuten",
+          "short": "Mindfulness"
+        },
+        "pt-BR": {
+          "name": "Minutos de atenção plena"
+        },
+        "ru": {
+          "name": "Минуты осознанности"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeMindfulMinutes",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeMindfulMinutes",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.workoutEffortScore",
+      "description": "The Workout effort metric (WORKOUT_EFFORT_SCORE).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Trainingsaufwand"
+        },
+        "en": {
+          "name": "Workout effort"
+        },
+        "fr": {
+          "name": "Effort d'entraînement"
+        },
+        "es": {
+          "name": "Puntuación de esfuerzo del entrenamiento",
+          "short": "Puntuación de esfuerzo"
+        },
+        "it": {
+          "name": "Sforzo allenamento"
+        },
+        "pl": {
+          "name": "Wysiłek treningowy"
+        },
+        "ko": {
+          "name": "운동 강도 점수"
+        },
+        "nl": {
+          "name": "Trainingsinspanning"
+        },
+        "pt-BR": {
+          "name": "Pontuação de esforço do treino"
+        },
+        "ru": {
+          "name": "Оценка нагрузки тренировки"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeWorkoutEffortScore",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeWorkoutEffortScore",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.estimatedWorkoutEffortScore",
+      "description": "The Estimated workout effort metric (ESTIMATED_WORKOUT_EFFORT_SCORE).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Geschätzter Trainingsaufwand",
+          "short": "Geschätzter Aufwand"
+        },
+        "en": {
+          "name": "Estimated workout effort",
+          "short": "Estimated effort"
+        },
+        "fr": {
+          "name": "Effort d'entraînement estimé"
+        },
+        "es": {
+          "name": "Esfuerzo estimado del entrenamiento",
+          "short": "Esfuerzo estimado"
+        },
+        "it": {
+          "name": "Sforzo allenamento stimato"
+        },
+        "pl": {
+          "name": "Szacowany wysiłek treningowy"
+        },
+        "ko": {
+          "name": "추정 운동 강도 점수"
+        },
+        "nl": {
+          "name": "Geschatte trainingsinspanning",
+          "short": "Geschatte inspanning"
+        },
+        "pt-BR": {
+          "name": "Esforço estimado do treino"
+        },
+        "ru": {
+          "name": "Расчётная оценка нагрузки"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeEstimatedWorkoutEffortScore",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeEstimatedWorkoutEffortScore",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.physicalEffort",
+      "description": "The Physical effort metric (PHYSICAL_EFFORT).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Körperliche Anstrengung",
+          "short": "Anstrengung"
+        },
+        "en": {
+          "name": "Physical effort"
+        },
+        "fr": {
+          "name": "Effort physique"
+        },
+        "es": {
+          "name": "Esfuerzo físico"
+        },
+        "it": {
+          "name": "Sforzo fisico"
+        },
+        "pl": {
+          "name": "Wysiłek fizyczny"
+        },
+        "ko": {
+          "name": "신체 활동 강도"
+        },
+        "nl": {
+          "name": "Fysieke inspanning"
+        },
+        "pt-BR": {
+          "name": "Esforço físico"
+        },
+        "ru": {
+          "name": "Физическая нагрузка"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typePhysicalEffort",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypePhysicalEffort",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.cyclingDistance",
+      "description": "The Cycling distance metric (CYCLING_DISTANCE).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Radstrecke"
+        },
+        "en": {
+          "name": "Cycling distance"
+        },
+        "fr": {
+          "name": "Distance à vélo"
+        },
+        "es": {
+          "name": "Distancia en bicicleta",
+          "short": "Distancia en bici"
+        },
+        "it": {
+          "name": "Distanza in bicicletta"
+        },
+        "pl": {
+          "name": "Dystans na rowerze"
+        },
+        "ko": {
+          "name": "사이클 거리"
+        },
+        "nl": {
+          "name": "Fietsafstand"
+        },
+        "pt-BR": {
+          "name": "Distância de ciclismo"
+        },
+        "ru": {
+          "name": "Расстояние на велосипеде"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeCyclingDistance",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeCyclingDistance",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.runningGroundContactTime",
+      "description": "The Ground contact time metric (RUNNING_GROUND_CONTACT_TIME).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Bodenkontaktzeit"
+        },
+        "en": {
+          "name": "Ground contact time",
+          "short": "Ground contact"
+        },
+        "fr": {
+          "name": "Temps de contact au sol"
+        },
+        "es": {
+          "name": "Tiempo de contacto con el suelo",
+          "short": "Contacto con el suelo"
+        },
+        "it": {
+          "name": "Tempo di contatto con il suolo"
+        },
+        "pl": {
+          "name": "Czas kontaktu z podłożem"
+        },
+        "ko": {
+          "name": "지면 접촉 시간"
+        },
+        "nl": {
+          "name": "Grondcontacttijd"
+        },
+        "pt-BR": {
+          "name": "Tempo de contato com o solo"
+        },
+        "ru": {
+          "name": "Время контакта с землёй"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeRunningGroundContactTime",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeRunningGroundContactTime",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.runningVerticalOscillation",
+      "description": "The Vertical oscillation metric (RUNNING_VERTICAL_OSCILLATION).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Vertikale Bewegung",
+          "short": "Vertikalbewegung"
+        },
+        "en": {
+          "name": "Vertical oscillation"
+        },
+        "fr": {
+          "name": "Oscillation verticale"
+        },
+        "es": {
+          "name": "Oscilación vertical"
+        },
+        "it": {
+          "name": "Oscillazione verticale"
+        },
+        "pl": {
+          "name": "Oscylacja pionowa"
+        },
+        "ko": {
+          "name": "수직 진폭"
+        },
+        "nl": {
+          "name": "Verticale oscillatie"
+        },
+        "pt-BR": {
+          "name": "Oscilação vertical"
+        },
+        "ru": {
+          "name": "Вертикальные колебания"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeRunningVerticalOscillation",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeRunningVerticalOscillation",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.runningStrideLength",
+      "description": "The Running stride length metric (RUNNING_STRIDE_LENGTH).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Schrittlänge beim Laufen",
+          "short": "Laufschrittlänge"
+        },
+        "en": {
+          "name": "Running stride length",
+          "short": "Stride length"
+        },
+        "fr": {
+          "name": "Longueur de foulée en course"
+        },
+        "es": {
+          "name": "Longitud de zancada al correr",
+          "short": "Zancada al correr"
+        },
+        "it": {
+          "name": "Lunghezza del passo di corsa"
+        },
+        "pl": {
+          "name": "Długość kroku biegowego"
+        },
+        "ko": {
+          "name": "달리기 보폭"
+        },
+        "nl": {
+          "name": "Paslengte bij hardlopen"
+        },
+        "pt-BR": {
+          "name": "Comprimento da passada de corrida"
+        },
+        "ru": {
+          "name": "Длина шага при беге"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeRunningStrideLength",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeRunningStrideLength",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.indoorHumidity",
+      "description": "The Indoor humidity metric (INDOOR_HUMIDITY).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Luftfeuchtigkeit (innen)",
+          "short": "Luftfeuchte innen"
+        },
+        "en": {
+          "name": "Indoor humidity"
+        },
+        "fr": {
+          "name": "Humidité intérieure"
+        },
+        "es": {
+          "name": "Humedad interior"
+        },
+        "it": {
+          "name": "Umidità interna"
+        },
+        "pl": {
+          "name": "Wilgotność w pomieszczeniu"
+        },
+        "ko": {
+          "name": "실내 습도"
+        },
+        "nl": {
+          "name": "Luchtvochtigheid binnen",
+          "short": "Vochtigheid binnen"
+        },
+        "pt-BR": {
+          "name": "Umidade interna"
+        },
+        "ru": {
+          "name": "Влажность в помещении"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeIndoorHumidity",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeIndoorHumidity",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.acuteTrainingLoad",
+      "description": "The Acute training load metric (ACUTE_TRAINING_LOAD).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Akute Trainingsbelastung",
+          "short": "Akute Belastung"
+        },
+        "en": {
+          "name": "Acute training load"
+        },
+        "fr": {
+          "name": "Charge d'entraînement aiguë"
+        },
+        "es": {
+          "name": "Carga de entrenamiento aguda",
+          "short": "Carga aguda"
+        },
+        "it": {
+          "name": "Carico di allenamento acuto"
+        },
+        "pl": {
+          "name": "Ostre obciążenie treningowe"
+        },
+        "ko": {
+          "name": "급성 훈련 부하"
+        },
+        "nl": {
+          "name": "Acute trainingsbelasting",
+          "short": "Acute belasting"
+        },
+        "pt-BR": {
+          "name": "Carga de treino aguda"
+        },
+        "ru": {
+          "name": "Острая тренировочная нагрузка"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeAcuteTrainingLoad",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeAcuteTrainingLoad",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.waistCircumference",
+      "description": "The Waist circumference metric (WAIST_CIRCUMFERENCE).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Taillenumfang"
+        },
+        "en": {
+          "name": "Waist circumference",
+          "short": "Waist"
+        },
+        "fr": {
+          "name": "Tour de taille"
+        },
+        "es": {
+          "name": "Perímetro de cintura",
+          "short": "Cintura"
+        },
+        "it": {
+          "name": "Circonferenza vita"
+        },
+        "pl": {
+          "name": "Obwód talii"
+        },
+        "ko": {
+          "name": "허리둘레"
+        },
+        "nl": {
+          "name": "Middelomtrek"
+        },
+        "pt-BR": {
+          "name": "Circunferência da cintura"
+        },
+        "ru": {
+          "name": "Окружность талии"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeWaistCircumference",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeWaistCircumference",
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "metric.waistToHeight",
+      "description": "The Waist-to-height ratio metric (WAIST_TO_HEIGHT).",
+      "decision": "Short forms agreed with the iOS client for one-line headings; the full name stays in running text, tooltips, accessible names and the doctor report.",
+      "terms": {
+        "de": {
+          "name": "Taille-Größe-Verhältnis",
+          "short": "Taille/Größe"
+        },
+        "en": {
+          "name": "Waist-to-height ratio",
+          "short": "Waist/height"
+        },
+        "fr": {
+          "name": "Rapport taille-taille"
+        },
+        "es": {
+          "name": "Índice cintura-altura",
+          "short": "Cintura/altura"
+        },
+        "it": {
+          "name": "Rapporto vita-altezza"
+        },
+        "pl": {
+          "name": "Stosunek talii do wzrostu"
+        },
+        "ko": {
+          "name": "허리-키 비율"
+        },
+        "nl": {
+          "name": "Middel-lengteverhouding",
+          "short": "Middel/lengte"
+        },
+        "pt-BR": {
+          "name": "Relação cintura-altura"
+        },
+        "ru": {
+          "name": "Отношение талии к росту"
+        }
+      },
+      "anchors": [
+        {
+          "key": "measurements.typeWaistToHeight",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "shortKey": "measurements.shortTypeWaistToHeight",
       "forbidden": {
         "de": [],
         "en": [],

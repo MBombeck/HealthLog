@@ -1,6 +1,6 @@
 /**
  * The health score as the dashboard snapshot carries it: the slim pillar
- * rows (1.50) and the Rest Mode annotation that frames the number.
+ * rows and the Rest Mode annotation that frames the number.
  */
 import type {
   RestModeAnnotation,
@@ -16,7 +16,7 @@ import { getServerTranslator } from "@/lib/i18n/server-translator";
 import type { Locale } from "@/lib/i18n/config";
 import { resolveRestMode } from "@/lib/illness/rest-mode";
 
-/** One pillar of the health score as the snapshot carries it (1.50). */
+/** One pillar of the health score as the snapshot carries it. */
 export interface DashboardSnapshotScorePillar {
   id: ScorePillarId;
   /** The pillar's name in the response language. */
@@ -56,7 +56,7 @@ export function snapshotScorePillars(
 }
 
 /**
- * v1.18.1 — the value-free Rest Mode annotation beside the score, so the
+ * The value-free Rest Mode annotation beside the score, so the
  * dashboard hero can frame (never penalise) the number, matching the
  * `/api/analytics` payload and iOS. Fail-soft inside `resolveRestMode`.
  */

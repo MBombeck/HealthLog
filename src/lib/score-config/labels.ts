@@ -6,7 +6,11 @@
  * surface renames a pillar, and the two surfaces would then be talking
  * about different things while showing the same list.
  */
-import type { ScorePillarId } from "@/lib/analytics/score/types";
+import { scoreBand } from "@/lib/analytics/score/shared";
+import type {
+  HealthScoreReport,
+  ScorePillarId,
+} from "@/lib/analytics/score/types";
 
 export const SCORE_PILLAR_LABEL_KEYS: Record<ScorePillarId, string> = {
   BLOOD_PRESSURE: "insights.healthScore.pillar.bloodPressure",
@@ -43,4 +47,27 @@ export const SCORE_PILLAR_REASON_KEYS: Readonly<Record<string, string>> = {
 /** The full message key for a pillar's not-scored reason. */
 export function scorePillarReasonKey(reason: string): string {
   return `insights.healthScore.reason.${SCORE_PILLAR_REASON_KEYS[reason] ?? "unavailable"}`;
+}
+
+/**
+ * The line that names the pillar sitting in a worse band than the health
+ * score itself (`bandSetter`), or null when none does. Since 1.50 the
+ * score's band follows its number like every other score, so an 81 reads
+ * good; a red or yellow pillar under it is said here, by name, on every
+ * surface that shows the score, rather than folded into its band word.
+ */
+export function healthScoreSetterLine(
+  report: Pick<HealthScoreReport, "composite" | "pillars">,
+  t: (key: string, params?: Record<string, string | number>) => string,
+): string | null {
+  const { composite } = report;
+  if (composite.status !== "ok" || !composite.value.bandSetter) return null;
+  const id = composite.value.bandSetter;
+  const pillar = report.pillars.find((p) => p.id === id);
+  if (!pillar || pillar.result.status !== "ok") return null;
+  const key =
+    scoreBand(pillar.result.value.score) === "red"
+      ? "insights.healthScore.setter.outside"
+      : "insights.healthScore.setter.attention";
+  return t(key, { pillar: t(SCORE_PILLAR_LABEL_KEYS[id]) });
 }

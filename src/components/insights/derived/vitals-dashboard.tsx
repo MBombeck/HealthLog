@@ -9,10 +9,8 @@ import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { measurementUnitLabel } from "@/lib/measurements/unit-label";
 import { getUnitForType } from "@/lib/measurements/unit-map";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
-import {
-  MEASUREMENT_TYPE_ICONS,
-  MEASUREMENT_TYPE_LABEL_KEYS,
-} from "@/components/measurements/measurement-list-meta";
+import { MEASUREMENT_TYPE_ICONS } from "@/components/measurements/measurement-list-meta";
+import { metricName } from "@/lib/measurements/type-label-keys";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { SparklineDeltaTile } from "./sparkline-delta-tile";
 import { LearnMoreLink } from "@/components/ui/learn-more-link";
@@ -187,8 +185,7 @@ function BaselineTile({
   }
 
   const Icon = MEASUREMENT_TYPE_ICONS[type] ?? Gauge;
-  const labelKey = MEASUREMENT_TYPE_LABEL_KEYS[type];
-  const label = labelKey ? t(labelKey) : type;
+  const name = metricName(type, t);
   // v1.32.26 — resolve the display unit from the user's preference. For an
   // absolute temperature this converts celsius→°F (affine); the reporter's
   // proven canonical-label bug (a value labelled by the storage unit rather
@@ -208,7 +205,7 @@ function BaselineTile({
         metric={tileId}
         state="provisional"
         icon={Icon}
-        title={label}
+        title={name}
         messageSlot="vitals-tile-building"
         message={t("insights.derived.vitals.building", {
           count: data.coverage.historyDays,
@@ -236,7 +233,7 @@ function BaselineTile({
   return (
     <div data-slot="vitals-tile" data-metric={tileId} data-state="ok">
       <SparklineDeltaTile
-        label={label}
+        label={name}
         value={latest === null ? null : toShown(latest)}
         unit={unit}
         icon={Icon}
@@ -287,7 +284,7 @@ function SixMinuteWalkTile({ read, isLoading }: TileProps) {
       data-state="ok"
     >
       <SparklineDeltaTile
-        label={t("measurements.typeSixMinuteWalkDistance")}
+        label={metricName("SIX_MINUTE_WALK_DISTANCE", t)}
         value={v.distanceM}
         unit={unitLabel("SIX_MINUTE_WALK_DISTANCE", t)}
         icon={MEASUREMENT_TYPE_ICONS.SIX_MINUTE_WALK_DISTANCE ?? Footprints}

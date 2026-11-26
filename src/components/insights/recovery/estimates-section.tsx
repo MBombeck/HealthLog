@@ -10,6 +10,7 @@ import {
   baselineOf,
   historyOf,
 } from "@/components/insights/derived/wellness-scores";
+import { scoreBandWordKey } from "@/components/insights/derived/band-tokens";
 // Type-only — the compute payload never drags the server graph into the bundle.
 import type { WellnessScoreValue } from "@/lib/insights/derived/wellness-scores";
 import { cn } from "@/lib/utils";
@@ -33,9 +34,11 @@ export function EstimatesSection() {
   const stress = useDerivedMetric<WellnessScoreValue>("STRESS_SCORE");
   const strain = useDerivedMetric<WellnessScoreValue>("STRAIN_SCORE");
 
-  const bandWord = (band: WellnessScoreValue["band"]) =>
-    // A load reads as a load: a heavy stress is "high", never "low".
-    t(`insights.scores.loadBand.${band}`);
+  // A load reads as a load: a heavy stress is "high", never "low".
+  const bandWord = (
+    kind: "stress" | "strain",
+    band: WellnessScoreValue["band"],
+  ) => t(scoreBandWordKey(kind, band));
 
   const tiles: React.ReactNode[] = [];
   const stressRead = stress.data;
@@ -47,8 +50,8 @@ export function EstimatesSection() {
         score={v.score}
         band={v.band}
         label={t("insights.deviceScores.stress")}
-        bandWord={bandWord(v.band)}
-        ariaLabel={`${t("insights.deviceScores.stress")}: ${v.score}, ${bandWord(v.band)}`}
+        bandWord={bandWord("stress", v.band)}
+        ariaLabel={`${t("insights.deviceScores.stress")}: ${v.score}, ${bandWord("stress", v.band)}`}
         href={metricHref("stress-score") ?? ""}
         metricSlot="STRESS_SCORE"
         hue="stress"
@@ -74,8 +77,8 @@ export function EstimatesSection() {
         score={v.score}
         band={v.band}
         label={t("insights.deviceScores.strain")}
-        bandWord={bandWord(v.band)}
-        ariaLabel={`${t("insights.deviceScores.strain")}: ${v.score}, ${bandWord(v.band)}`}
+        bandWord={bandWord("strain", v.band)}
+        ariaLabel={`${t("insights.deviceScores.strain")}: ${v.score}, ${bandWord("strain", v.band)}`}
         href={metricHref("strain-score") ?? ""}
         metricSlot="STRAIN_SCORE"
         hue="strain"

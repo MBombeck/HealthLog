@@ -384,7 +384,7 @@ export interface DashboardSnapshotHealthScore {
    * builder always sets it (null when not in Rest Mode).
    */
   restMode?: RestModeAnnotation | null;
-  /** 1.50 — one row per pillar, worded (`snapshotScorePillars`). Additive. */
+  /** One row per pillar, worded (`snapshotScorePillars`). Additive. */
   pillars?: DashboardSnapshotScorePillar[];
   /**
    * v1.21.2 — Tension Verdict, locale-agnostic. Fires only when the
@@ -1282,7 +1282,7 @@ export async function buildDashboardSnapshot(
     time("mood", () => buildMoodBlock(prisma, user.id)),
     // v1.34 — the thick slice awaits the shared `modulesPromise` (as the
     // score-ring task does) so the health score gates its mood pillar on the
-    // resolved module map; the locale words its pillar rows (1.50).
+    // resolved module map; the locale words its pillar rows.
     warm
       ? time("extras", async () =>
           buildExtras(

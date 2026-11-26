@@ -317,7 +317,7 @@ const compositeValue = z.object({
   bandSetter: scorePillarIdEnum
     .nullable()
     .describe(
-      "The pillar that pulled the band down, non-null only when the worst pillar's band is below the mean score's.",
+      "The worst counted pillar when its band is worse than the score's own band, null otherwise. Since 1.50 it names that pillar beside the score; it no longer lowers `band`, which follows the number like every HealthLog score (green from 70, yellow from 50).",
     ),
   composition: z
     .array(scorePillarIdEnum)

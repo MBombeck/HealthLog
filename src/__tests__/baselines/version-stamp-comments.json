@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2826,
-  "total": 8758,
+  "total": 8757,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1906,7 +1906,7 @@
     "lib/dashboard/score-narrative.ts": 1,
     "lib/dashboard/score-rings.ts": 2,
     "lib/dashboard/snapshot-read.ts": 1,
-    "lib/dashboard/snapshot.ts": 51,
+    "lib/dashboard/snapshot.ts": 50,
     "lib/dashboard/summary-reads.ts": 5,
     "lib/dashboard/widget-modules.ts": 1,
     "lib/data-wipe/wipe-plan.ts": 11,

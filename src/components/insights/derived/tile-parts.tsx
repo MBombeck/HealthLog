@@ -11,6 +11,7 @@ import type { DerivedProvenance } from "@/lib/insights/derived/types";
 import { CoverageMeter } from "./coverage-meter";
 import { METRIC_PROVENANCE, type MetricProvenanceMeta } from "./standards";
 import { type DerivedBatchRead } from "./use-derived-metric";
+import type { MetricName } from "@/lib/measurements/type-label-keys";
 
 /**
  * The pieces every tile of the vitals dashboard shares: the layout
@@ -96,7 +97,7 @@ export function BuildingTile({
   metric: string;
   state: string;
   icon: LucideIcon;
-  title: string;
+  title: string | MetricName;
   message: string;
   messageSlot: string;
   coverage: ComponentProps<typeof CoverageMeter>["coverage"];

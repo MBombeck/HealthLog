@@ -146,3 +146,86 @@ export const MEASUREMENT_TYPE_LABEL_KEYS: Record<MeasurementType, string> = {
   WAIST_CIRCUMFERENCE: "measurements.typeWaistCircumference",
   WAIST_TO_HEIGHT: "measurements.typeWaistToHeight",
 };
+
+/**
+ * Short forms for the places a metric name has one line: a tile header, a
+ * trend-strip label, a list row's type line. Each value is the glossary's
+ * `short` for the metric (`src/lib/i18n/glossary.json`, the concept whose
+ * `shortKey` names it), agreed with the iOS client so both shorten alike; a
+ * locale without a short carries the full name under the key. Running text,
+ * tooltips, accessible names and the doctor report keep the full name.
+ * Read it through `metricName`, never directly: the glossary guard holds
+ * this map, the bundle and the glossary to one another.
+ */
+export const MEASUREMENT_TYPE_SHORT_LABEL_KEYS: Partial<
+  Record<MeasurementType, string>
+> = {
+  TOTAL_BODY_WATER: "measurements.shortTypeTotalBodyWater",
+  WALKING_RUNNING_DISTANCE: "measurements.shortTypeWalkingRunningDistance",
+  SKIN_TEMPERATURE: "measurements.shortTypeSkinTemperature",
+  AUDIO_EXPOSURE_ENV: "measurements.shortTypeAudioExposureEnv",
+  AUDIO_EXPOSURE_HEADPHONE: "measurements.shortTypeAudioExposureHeadphone",
+  TIME_IN_DAYLIGHT: "measurements.shortTypeTimeInDaylight",
+  AUDIO_EXPOSURE_EVENT: "measurements.shortTypeAudioExposureEvent",
+  RESPIRATORY_RATE: "measurements.shortTypeRespiratoryRate",
+  LEAN_BODY_MASS: "measurements.shortTypeLeanBodyMass",
+  WALKING_HEART_RATE_AVERAGE: "measurements.shortTypeWalkingHeartRateAverage",
+  WALKING_DOUBLE_SUPPORT: "measurements.shortTypeWalkingDoubleSupport",
+  WALKING_SPEED: "measurements.shortTypeWalkingSpeed",
+  CARDIO_RECOVERY: "measurements.shortTypeCardioRecovery",
+  WRIST_TEMPERATURE: "measurements.shortTypeWristTemperature",
+  SIX_MINUTE_WALK_DISTANCE: "measurements.shortTypeSixMinuteWalkDistance",
+  STAIR_ASCENT_SPEED: "measurements.shortTypeStairAscentSpeed",
+  IRREGULAR_RHYTHM_NOTIFICATION:
+    "measurements.shortTypeIrregularRhythmNotification",
+  HIGH_HEART_RATE_EVENT: "measurements.shortTypeHighHeartRateEvent",
+  LOW_HEART_RATE_EVENT: "measurements.shortTypeLowHeartRateEvent",
+  HYPERTENSION_EVENT: "measurements.shortTypeHypertensionEvent",
+  LOW_CARDIO_FITNESS_EVENT: "measurements.shortTypeLowCardioFitnessEvent",
+  INSULIN_DELIVERY: "measurements.shortTypeInsulinDelivery",
+  PEAK_EXPIRATORY_FLOW: "measurements.shortTypePeakExpiratoryFlow",
+  WALKING_STEADINESS_EVENT: "measurements.shortTypeWalkingSteadinessEvent",
+  BREATHING_DISTURBANCE_EVENT:
+    "measurements.shortTypeBreathingDisturbanceEvent",
+  SLEEP_NEED: "measurements.shortTypeSleepNeed",
+  AVERAGE_HEART_RATE: "measurements.shortTypeAverageHeartRate",
+  MAX_HEART_RATE: "measurements.shortTypeMaxHeartRate",
+  BODY_TEMPERATURE_DEVIATION: "measurements.shortTypeBodyTemperatureDeviation",
+  WHO5_SCORE: "measurements.shortTypeWho5Score",
+  MINDFUL_MINUTES: "measurements.shortTypeMindfulMinutes",
+  WORKOUT_EFFORT_SCORE: "measurements.shortTypeWorkoutEffortScore",
+  ESTIMATED_WORKOUT_EFFORT_SCORE:
+    "measurements.shortTypeEstimatedWorkoutEffortScore",
+  PHYSICAL_EFFORT: "measurements.shortTypePhysicalEffort",
+  CYCLING_DISTANCE: "measurements.shortTypeCyclingDistance",
+  RUNNING_GROUND_CONTACT_TIME: "measurements.shortTypeRunningGroundContactTime",
+  RUNNING_VERTICAL_OSCILLATION:
+    "measurements.shortTypeRunningVerticalOscillation",
+  RUNNING_STRIDE_LENGTH: "measurements.shortTypeRunningStrideLength",
+  INDOOR_HUMIDITY: "measurements.shortTypeIndoorHumidity",
+  ACUTE_TRAINING_LOAD: "measurements.shortTypeAcuteTrainingLoad",
+  WAIST_CIRCUMFERENCE: "measurements.shortTypeWaistCircumference",
+  WAIST_TO_HEIGHT: "measurements.shortTypeWaistToHeight",
+};
+
+/** A metric's full name and the form for a one-line slot. */
+export interface MetricName {
+  /** The name for running text, tooltips, accessible names and reports. */
+  full: string;
+  /** The name for a one-line slot; the full name when there is no short. */
+  short: string;
+}
+
+/**
+ * The one way a surface names a measurement type. An unknown type reads as
+ * itself in both forms rather than as a missing key.
+ */
+export function metricName(
+  type: string,
+  t: (key: string) => string,
+): MetricName {
+  const fullKey = MEASUREMENT_TYPE_LABEL_KEYS[type as MeasurementType];
+  const full = fullKey ? t(fullKey) : type;
+  const shortKey = MEASUREMENT_TYPE_SHORT_LABEL_KEYS[type as MeasurementType];
+  return { full, short: shortKey ? t(shortKey) : full };
+}

@@ -1581,7 +1581,10 @@ export const dashboardSnapshotResponse = z
             "LIPIDS",
           ])
           .nullable()
-          .optional(),
+          .optional()
+          .describe(
+            "The worst counted pillar when its band is worse than the score's own band, null otherwise. Since 1.50 it names that pillar beside the score; it no longer lowers `band`, which follows the number like every HealthLog score (green from 70, yellow from 50).",
+          ),
         restMode: z
           .object({
             active: z.boolean(),
@@ -2456,7 +2459,7 @@ const healthScoreComposite = z
           .string()
           .nullable()
           .describe(
-            "The pillar that lowered the mean score's band; null when no pillar did.",
+            "The worst counted pillar when its band is worse than the score's own band, null otherwise. Since 1.50 it names that pillar beside the score; it no longer lowers `band`, which follows the number like every HealthLog score (green from 70, yellow from 50).",
           ),
         composition: z
           .array(z.string())

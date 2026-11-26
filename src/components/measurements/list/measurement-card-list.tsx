@@ -9,6 +9,8 @@ import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { rawDisplayFractionDigits } from "@/lib/measurements/display-transform";
 import { ListRow } from "@/components/ui/list-row";
 import { measurementUnitMetaLead } from "@/lib/measurements/unit-label";
+import { metricName } from "@/lib/measurements/type-label-keys";
+import { ShortName } from "@/components/ui/short-name";
 
 import {
   MEASUREMENT_TYPE_COLORS as TYPE_COLORS,
@@ -20,7 +22,6 @@ import {
   MeasurementRowActions,
   isServerComputed,
   rowState,
-  typeLabel,
   type MeasurementRowContext,
 } from "./row-actions";
 import {
@@ -63,7 +64,7 @@ function MeasurementCard({
   const Icon = TYPE_ICONS[m.type];
   const isSleep = m.type === "SLEEP_DURATION";
   const drilldownId = `drilldown-mobile-${m.dayKey ?? m.id}`;
-  const label = typeLabel(m.type, t);
+  const name = metricName(m.type, t);
   // The unit is meta: on a phone a long one ("Atemzüge/min") beside the
   // value pushed the row's controls, so it leads the meta line instead. A
   // night reads as a duration and has none.
@@ -103,7 +104,7 @@ function MeasurementCard({
               type="button"
               onClick={() => navigateForType(m.type)}
               aria-label={t("measurements.openMetricInsights", {
-                type: label,
+                type: name.full,
               })}
               className={`focus-visible:ring-ring/50 flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none ${TYPE_COLORS[m.type] ?? ""}`}
             >
@@ -117,8 +118,9 @@ function MeasurementCard({
             <p
               className="truncate text-xs font-medium"
               data-slot="measurement-row-type"
+              title={name.full}
             >
-              {label}
+              <ShortName short={name.short} full={name.full} />
             </p>
             <span
               className="font-semibold tabular-nums"
