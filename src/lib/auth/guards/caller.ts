@@ -15,7 +15,7 @@ import {
 } from "@/lib/auth/write-meter";
 import { getSession } from "@/lib/auth/session";
 import { refuseCookieIdentityConflict } from "@/lib/auth/cookie-identity-conflict";
-import { ownBearerToken } from "@/lib/auth/token-transport";
+import { requestOwnBearerToken } from "@/lib/auth/token-transport";
 import { AUTH_ERROR_CODES, HttpError } from "@/lib/api-errors";
 
 import { readActingCarrier, refuseUndeclaredMode } from "./acting";
@@ -91,20 +91,10 @@ export async function authenticateCaller(
   // sign-in, even another account's, rides along with the current token. The
   // credential the client chose to present is the header; it decides.
   //
-  // `headers()` is only valid inside a Next.js request scope. Outside one
-  // (e.g. during direct unit tests of legacy routes that pre-date Bearer auth)
-  // we treat the absence of a header context as "no Bearer present" and fall
-  // through to the cookie path.
-  let authHeader: string | null = null;
-  try {
-    const headerList = await headers();
-    authHeader = headerList.get("authorization");
-  } catch {
-    authHeader = null;
-  }
-  // A Bearer of this app's own format only; a reverse proxy's credential in
-  // the same header names nobody here and leaves the cookie to decide.
-  const ownToken = ownBearerToken(authHeader);
+  // Only a Bearer of this app's own format (`hlk_`); a reverse proxy's
+  // credential in the same header names nobody here and leaves the cookie to
+  // decide. Outside a request scope there is no header, so no Bearer.
+  const ownToken = await requestOwnBearerToken();
   if (ownToken !== null) {
     return await authenticateBearer(ownToken, requiredPermission);
   }

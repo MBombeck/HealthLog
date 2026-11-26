@@ -92,6 +92,12 @@ export async function requestCarriesBearer(): Promise<boolean> {
   return list ? carriesBearer(list) : false;
 }
 
+/** `ownBearerToken` for the request being handled; null outside one. */
+export async function requestOwnBearerToken(): Promise<string | null> {
+  const list = await currentHeaders();
+  return list ? ownBearerToken(list.get("authorization")) : null;
+}
+
 /** `usesTokenTransport` for the request being handled. */
 export async function requestUsesTokenTransport(): Promise<boolean> {
   const list = await currentHeaders();
