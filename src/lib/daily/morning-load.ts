@@ -63,13 +63,10 @@ import {
   floorFromReadings,
   type MorningFloor,
 } from "@/lib/daily/morning-floor";
-import type {
-  TodayRestMode,
-  TodaySleep,
-  TodayVital,
-} from "@/lib/daily/today-overview";
+import type { TodayRestMode, TodayVital } from "@/lib/daily/today-overview";
 import {
   buildDailyMorning,
+  resolveLastNight,
   type Band,
   type DailyMorning,
   type DeviceSourceValue,
@@ -216,7 +213,12 @@ async function readSleepScore(
     });
     if (derived.status !== "ok" || !derived.value) return null;
     const value = derived.value as SleepScoreValue;
-    return { score: value.score, band: value.band, night: value.night };
+    return {
+      score: value.score,
+      band: value.band,
+      night: value.night,
+      asleepMinutes: value.asleepMinutes,
+    };
   } catch {
     return null;
   }
@@ -594,29 +596,45 @@ export async function loadDailyMorning(
     (user.dateFormat ?? "AUTO") as DateFormatPreference,
   );
 
-  // Sleep: the same reads the digest makes from the same snapshot, so the
-  // morning and the hero agree on whether last night is in.
+  // Sleep: whether sleep is tracked at all comes from the snapshot; whether
+  // last night is in comes from one rule, the sleep score's night
+  // (`resolveLastNight`), which the sentence, the line, the ring and the
+  // pending state all read.
   const sleepSlot = snapshot.tiles.lastSeenByType["SLEEP_DURATION"];
   const sleepLastSeenDaysAgo = sleepSlot ? sleepSlot.daysAgo : null;
   const sleepOn = modules.sleep !== false;
   const sleepExpected = sleepOn && isSleepExpected(sleepLastSeenDaysAgo);
-  const morningRefreshedToday = user.morningDigestRefreshedOn === todayKey;
-  const sleepPending =
-    sleepExpected && !morningRefreshedToday && sleepLastSeenDaysAgo !== 0;
   const sleepSummary = snapshot.tiles.summaries?.SLEEP_DURATION;
-  const sleep: TodaySleep | null =
-    sleepLastSeenDaysAgo === 0 &&
-    sleepSummary?.latest !== null &&
-    sleepSummary?.latest !== undefined &&
-    sleepSummary.latest > 0
+  const sleepScore = extras.sleepScore;
+  const lastNight = resolveLastNight({
+    todayKey,
+    sleepOn,
+    sleepExpected,
+    morningRefreshedToday: user.morningDigestRefreshedOn === todayKey,
+    sleepScore: sleepScore
       ? {
-          minutes: sleepSummary.latest,
-          usualMinutes:
-            sleepSummary.avg30 !== null && sleepSummary.avg30 > 0
-              ? sleepSummary.avg30
-              : null,
+          night: sleepScore.night,
+          asleepMinutes:
+            sleepScore.asleepMinutes ??
+            (sleepSlot &&
+            userDayKey(new Date(sleepSlot.lastSeenAt), tz) === sleepScore.night
+              ? (sleepSummary?.latest ?? 0)
+              : 0),
         }
-      : null;
+      : null,
+    latestSleep: sleepSlot
+      ? {
+          wakeDay: userDayKey(new Date(sleepSlot.lastSeenAt), tz),
+          minutes: sleepSummary?.latest ?? null,
+        }
+      : null,
+    usualMinutes:
+      sleepSummary?.avg30 !== null &&
+      sleepSummary?.avg30 !== undefined &&
+      sleepSummary.avg30 > 0
+        ? sleepSummary.avg30
+        : null,
+  });
 
   const restMode: TodayRestMode | null =
     restModeContext?.active && restModeContext.since
@@ -645,16 +663,12 @@ export async function loadDailyMorning(
     vitals: extras.vitals.map((v) => renderMorningVital(v, units, locale, t)),
     illnessExplained: extras.illnessExplained,
     sleepExpected,
-    sleepPending,
-    sleep,
-    latestNightLabel: sleepSlot
-      ? new Intl.DateTimeFormat(resolveIntlLocale(locale), {
-          day: "numeric",
-          month: "short",
-          timeZone: tz,
-        }).format(new Date(sleepSlot.lastSeenAt))
+    sleepPending: lastNight.sleepPending,
+    sleep: lastNight.sleep,
+    latestNightLabel: lastNight.latestNightDay
+      ? shortDate(lastNight.latestNightDay, locale)
       : null,
-    sleepScore: extras.sleepScore,
+    sleepScore,
     sleepSourceValues: sleepOn
       ? todaysDeviceValues(
           extras.deviceScores,
