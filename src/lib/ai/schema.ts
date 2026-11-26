@@ -281,6 +281,12 @@ export const dailyBriefingKeyFindingSchema = z.object({
     // enum value lets the UI pin the right icon + filter.
     "readiness",
     "recovery",
+    // ── v1.50.0 additive ──
+    // Blood glucose. The signals-of-the-day block has carried a glucose
+    // entry (compared by the same hours of the day) since v1.18.7; without
+    // the value here every glucose row the model wrote was dropped. Its
+    // figures reach the model in the reader's glucose unit.
+    "glucose",
   ]),
 });
 

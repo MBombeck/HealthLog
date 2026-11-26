@@ -302,13 +302,16 @@ gib die obige Verweigerung zurück.`,
        so far with the same hours of the earlier days: "latest" is
        today's mean so far and avg7 / avg30 are the usual level by this
        time of day. Say "by this time of day", never "your average".
+       Its sourceMetric is "glucose", and its figures are already in the
+       reader's glucose unit (the entry's "unit"): write every glucose
+       number and delta in that unit, never converted.
      - keyFindings: 0-5 short rows — the longer-horizon trend list
        below the signals. Each row has tone ("good" | "watch" |
        "info"), a headline (≤ 60 chars), a one-sentence detail, an
        optional delta string (e.g. "↓ 4 mmHg" or null), a sourceWindow
        ("7d" | "30d" | "90d" | "1y"; default "30d") and a sourceMetric
-       ("bp" | "weight" | "pulse" | "mood" | "compliance"). Findings
-       MUST be derived from numbers in the snapshot. Five is the hard
+       ("bp" | "weight" | "pulse" | "mood" | "compliance" | "glucose").
+       Findings MUST be derived from numbers in the snapshot. Five is the hard
        cap — three is a healthier default. Do not repeat a signalsOfDay
        entry verbatim as a keyFinding; the two surfaces complement
        (now vs trend), they do not duplicate.
@@ -521,13 +524,17 @@ gib die obige Verweigerung zurück.`,
        bisherigen Tag mit denselben Stunden der Vortage: "latest" ist der
        Mittelwert von heute bis jetzt, avg7 / avg30 sind das übliche
        Niveau bis zu dieser Tageszeit. Sag "bis zu dieser Tageszeit",
-       nie "dein Durchschnitt".
+       nie "dein Durchschnitt". Sein sourceMetric ist "glucose", und
+       seine Zahlen stehen schon in der Blutzucker-Einheit der Person
+       ("unit" des Eintrags): schreib jeden Blutzuckerwert und jedes Delta
+       in dieser Einheit, nie umgerechnet.
      - keyFindings: 0-5 kurze Zeilen — die Trend-Liste mit längerem
        Horizont unter den Signalen. Jede Zeile hat tone ("good" | "watch"
        | "info"), eine headline (≤ 60 Zeichen), ein detail im Einzelsatz,
        einen optionalen delta-String (z.B. "↓ 4 mmHg" oder null), ein
        sourceWindow ("7d" | "30d" | "90d" | "1y"; Standard "30d") und ein
-       sourceMetric ("bp" | "weight" | "pulse" | "mood" | "compliance").
+       sourceMetric ("bp" | "weight" | "pulse" | "mood" | "compliance" |
+       "glucose").
        Findings MÜSSEN aus Zahlen im Snapshot abgeleitet sein. Fünf ist
        die harte Obergrenze — drei der gesündere Standardwert. Wiederhole
        kein signalsOfDay als keyFinding wortgleich; die beiden Flächen
@@ -733,7 +740,7 @@ Du MUSST JSON exakt nach diesem Schema liefern:`,
     "paragraph": "80-200 word PRESENT-focused narrative leading with today's signal, grounded in this snapshot's numbers",
     "signalsOfDay": [
       {
-        "sourceMetric": "bp | weight | pulse | mood | compliance | hrv | sleep | resting_hr | steps | active_energy | flights | distance | vo2_max | body_temp",
+        "sourceMetric": "bp | weight | pulse | mood | compliance | hrv | sleep | resting_hr | steps | active_energy | flights | distance | vo2_max | body_temp | glucose",
         "tone": "good | watch | info",
         "headline": "present-tense ≤60 char headline of what is happening now",
         "nudge": "one concrete, doable action tied to the signal",
@@ -747,7 +754,7 @@ Du MUSST JSON exakt nach diesem Schema liefern:`,
         "detail": "one-sentence detail",
         "delta": "optional delta string (e.g. '↓ 4 mmHg') or null",
         "sourceWindow": "7d | 30d | 90d | 1y",
-        "sourceMetric": "bp | weight | pulse | mood | compliance | hrv | sleep | resting_hr | steps | active_energy | flights | distance | vo2_max | body_temp"
+        "sourceMetric": "bp | weight | pulse | mood | compliance | hrv | sleep | resting_hr | steps | active_energy | flights | distance | vo2_max | body_temp | glucose"
       }
     ]
   },
@@ -808,7 +815,7 @@ Du MUSST JSON exakt nach diesem Schema liefern:`,
     "paragraph": "80-200 Wörter GEGENWARTSBEZOGENER Fließtext, der mit dem heutigen Signal eröffnet, geerdet in den Zahlen dieses Snapshots",
     "signalsOfDay": [
       {
-        "sourceMetric": "bp | weight | pulse | mood | compliance | hrv | sleep | resting_hr | steps | active_energy | flights | distance | vo2_max | body_temp",
+        "sourceMetric": "bp | weight | pulse | mood | compliance | hrv | sleep | resting_hr | steps | active_energy | flights | distance | vo2_max | body_temp | glucose",
         "tone": "good | watch | info",
         "headline": "Präsens-Headline (≤60 Zeichen), was gerade jetzt passiert",
         "nudge": "eine konkrete, machbare Aktion zum Signal",
@@ -822,7 +829,7 @@ Du MUSST JSON exakt nach diesem Schema liefern:`,
         "detail": "ein Satz Detail",
         "delta": "optionaler Delta-String (z.B. '↓ 4 mmHg') oder null",
         "sourceWindow": "7d | 30d | 90d | 1y",
-        "sourceMetric": "bp | weight | pulse | mood | compliance | hrv | sleep | resting_hr | steps | active_energy | flights | distance | vo2_max | body_temp"
+        "sourceMetric": "bp | weight | pulse | mood | compliance | hrv | sleep | resting_hr | steps | active_energy | flights | distance | vo2_max | body_temp | glucose"
       }
     ]
   },

@@ -77,10 +77,32 @@ describe("readDailyBriefing", () => {
   it("drops a row with a metric the enum does not know and keeps the rest", () => {
     const read = valid({
       ...BRIEFING,
-      signalsOfDay: [{ ...SIGNAL, sourceMetric: "glucose" }, SIGNAL],
+      signalsOfDay: [{ ...SIGNAL, sourceMetric: "ketones" }, SIGNAL],
     });
     expect(read.briefing.signalsOfDay).toEqual([SIGNAL]);
     expect(read.repairs).toContain("signals-dropped");
+  });
+
+  it("keeps glucose rows, the metric the signals block has always carried", () => {
+    const glucoseSignal = {
+      ...SIGNAL,
+      sourceMetric: "glucose",
+      headline: "Glucose is up by this time of day",
+      delta: "+0.8 mmol/L",
+    };
+    const glucoseFinding = {
+      ...FINDING,
+      sourceMetric: "glucose",
+      headline: "Glucose steady",
+    };
+    const read = valid({
+      ...BRIEFING,
+      signalsOfDay: [glucoseSignal, SIGNAL],
+      keyFindings: [glucoseFinding],
+    });
+    expect(read.briefing.signalsOfDay).toEqual([glucoseSignal, SIGNAL]);
+    expect(read.briefing.keyFindings).toEqual([glucoseFinding]);
+    expect(read.repairs).toEqual([]);
   });
 
   it("keeps the first rows of a list over its cap", () => {

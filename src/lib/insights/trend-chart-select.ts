@@ -250,6 +250,10 @@ export const TREND_CHART_CONFIG: Record<
   // score-anatomy page, not a single plottable trend series in this row.
   readiness: null,
   recovery: null,
+  // Glucose reads in the reader's own unit (mg/dL or mmol/L), which this
+  // row's unit transform does not cover; its page draws it in that unit,
+  // and the finding row links there.
+  glucose: null,
 };
 
 /**
