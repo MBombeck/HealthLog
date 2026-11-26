@@ -156,10 +156,12 @@ export interface PriorityItemAction {
 export interface PriorityItem {
   kind: PriorityItemKind;
   /**
-   * Stable identity for THIS item instance, namespaced `<kind>:...` — present
-   * only on the dismissible observational kinds (see
-   * `DISMISSIBLE_PRIORITY_ITEM_KINDS`). The client only offers a dismiss
-   * affordance when this is set; the actionable kinds never carry one.
+   * Stable identity for THIS item instance, namespaced `<kind>:...`
+   * (`./priority-item-key.ts`). Every item the digest builds carries one, so
+   * clients key rows on it rather than on what a row shows. Only the
+   * dismissible observational kinds (`DISMISSIBLE_PRIORITY_ITEM_KINDS`) can
+   * be dismissed by it; the client offers dismiss by kind, never by the
+   * key's presence.
    */
   itemKey?: string;
   /** i18n-resolved headline (server-side). */

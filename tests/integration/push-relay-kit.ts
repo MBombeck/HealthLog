@@ -85,7 +85,11 @@ export async function registerDevice(
   body: Record<string, unknown>,
 ) {
   const { POST } = await import("@/app/api/devices/route");
-  return callRoute<{ id: string; push: Record<string, unknown> }>(POST, {
+  return callRoute<{
+    id: string;
+    push: Record<string, unknown>;
+    ignored?: Array<{ field: string; code: string }>;
+  }>(POST, {
     method: "POST",
     route: "/api/devices",
     auth: session,

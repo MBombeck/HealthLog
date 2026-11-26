@@ -31,7 +31,7 @@
     "lib/analytics/summaries-slice.ts": 893,
     "lib/cache/server-cache.ts": 845,
     "lib/cycle/prediction.ts": 883,
-    "lib/daily/digest.ts": 1355,
+    "lib/daily/digest.ts": 1370,
     "lib/daily/load-digest.ts": 1022,
     "lib/dashboard/snapshot.ts": 1482,
     "lib/day/records.ts": 1154,
