@@ -15,6 +15,7 @@ import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
+import { forgetMfaFactors } from "@/lib/auth/mfa-enrollment";
 import { mfaWebauthnRenameSchema } from "@/lib/validations/mfa";
 
 export const dynamic = "force-dynamic";
@@ -79,6 +80,7 @@ export const DELETE = apiHandler(
     await auth.commitElevation();
 
     await prisma.webauthnMfaCredential.delete({ where: { id } });
+    forgetMfaFactors(user.id);
 
     await auditLog("auth.mfa.webauthn.remove", {
       userId: user.id,

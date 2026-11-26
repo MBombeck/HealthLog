@@ -20,14 +20,26 @@
  *   - in the browser, the session reaches only the enrolment surface
  *     (`enforceMfaEnrollment`, run by `getSession` on every request; the hint
  *     cookie below sends pages to `/enroll-mfa` without a database read);
- *   - a sign-in token (`["*"]`) reaches only the enrolment API
- *     (`refuseConfinedBearer`), a refresh is refused, and a native or
- *     SSO-native sign-in is refused with `auth.mfa.enrollment_required`
- *     (`finishLogin`).
+ *   - a new native or SSO-native sign-in is refused with
+ *     `auth.mfa.enrollment_required` (`refuseNativeSignInWithoutFactor`). A
+ *     sign-in token minted before, and its refresh, keep working in 1.50: the
+ *     shipped iPhone builds are not built for a refusal there. The account
+ *     payload carries the state and the date, and the account's devices are
+ *     told once when the grace period starts (`mfa-grace-notice.ts`). 1.51
+ *     confines those tokens as well.
  *
  * The decision is made from the account and the policy at request time,
  * never from a value stored when a session began: a session that predates the
  * policy, or a policy changed after sign-in, is judged by what holds now.
+ *
+ * What it reads is held briefly, because a covered account asks on every
+ * request and an app start sends some thirty at once: the policy columns and
+ * whether an account has a security key or a passkey are kept for a minute in
+ * the process and shared inside a request. A write that changes either (the
+ * admin settings, a settings restore, adding or removing a key or a passkey)
+ * drops the copy in this process at once; another instance follows within the
+ * minute. The state itself is computed against the clock on every call, so a
+ * due date takes effect at its moment.
  *
  * The operator/CLI escape hatch (`scripts/disable-mfa.ts`, switching the
  * policies off) stays the recovery of last resort. A public demo shares one
@@ -37,6 +49,7 @@
 import { readOperatorRow } from "@/lib/settings/operator-row";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
+import { memoizePerRequest } from "@/lib/request-cache";
 import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
 import { requestUsesTokenTransport } from "@/lib/auth/token-transport";
 
@@ -78,13 +91,53 @@ export interface MfaEnrollment {
 const NOT_REQUIRED: MfaEnrollment = { state: "none", dueAt: null };
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** The policy columns, from the request's operator row or a fresh singleton. */
-async function readPolicy(): Promise<{
+interface MfaPolicy {
   mfaRequired: boolean;
   mfaRequiredForAdmins: boolean;
   mfaGraceDays: number;
   mfaPolicySince: Date;
-}> {
+}
+
+/** How long this process keeps the policy and an account's factor presence. */
+const HOLD_MS = 60_000;
+/** Accounts whose factor presence is held at most; older entries go first. */
+const MAX_HELD_ACCOUNTS = 1_000;
+
+let heldPolicy: { value: MfaPolicy; until: number } | null = null;
+const heldFactors = new Map<string, { hasFactor: boolean; until: number }>();
+// Bumped by every drop, so a read that began before it is not stored after.
+let generation = 0;
+
+/**
+ * Drop this process's copy of the policy. Called after every write of the
+ * policy columns.
+ */
+export function forgetMfaPolicy(): void {
+  heldPolicy = null;
+  generation += 1;
+}
+
+/**
+ * Drop this process's copy of whether the account has a security key or a
+ * passkey. Called after every write that adds or removes one.
+ */
+export function forgetMfaFactors(userId: string): void {
+  heldFactors.delete(userId);
+  generation += 1;
+}
+
+/** The policy, held for `HOLD_MS`. */
+async function readPolicy(): Promise<MfaPolicy> {
+  const now = Date.now();
+  if (heldPolicy && heldPolicy.until > now) return heldPolicy.value;
+  const started = generation;
+  const value = await loadPolicy();
+  if (started === generation) heldPolicy = { value, until: now + HOLD_MS };
+  return value;
+}
+
+/** The policy columns, from the request's operator row or a fresh singleton. */
+async function loadPolicy(): Promise<MfaPolicy> {
   const row = await readOperatorRow();
   if (row) return row;
   // No settings row: the defaults, with the grace period counted from when
@@ -141,11 +194,7 @@ export async function resolveMfaEnrollment(
   // factor and stamps `mfaVerifiedAt` (M-review M1), so a passkey user is
   // "enrolled" for enforcement purposes and is not nagged to add a second
   // factor on top.
-  const [webauthnKeyCount, passkeyCount] = await Promise.all([
-    prisma.webauthnMfaCredential.count({ where: { userId } }),
-    prisma.passkey.count({ where: { userId } }),
-  ]);
-  if (webauthnKeyCount > 0 || passkeyCount > 0) return NOT_REQUIRED;
+  if (await hasKeyOrPasskey(userId)) return NOT_REQUIRED;
 
   // An admin's per-account enforcement is a deliberate act and applies at
   // once, as it always has.
@@ -162,28 +211,34 @@ export async function resolveMfaEnrollment(
   return { state: dueAt > now ? "grace" : "required", dueAt };
 }
 
-/** Whether the account must enrol before using the app any further. */
-export async function resolveMfaEnrollmentRequired(
-  userId: string,
-  user: MfaPolicyUser,
-): Promise<boolean> {
-  return (await resolveMfaEnrollment(userId, user)).state === "required";
-}
-
 /**
- * The same answer for an account known only by id (a refresh token's owner):
- * false for an account that no longer exists, which its credential's own
- * checks refuse.
+ * Whether the account has a registered security key or a passkey: held for
+ * `HOLD_MS` in the process, and one lookup for all callers in a request.
  */
-export async function accountMfaEnrollmentRequired(
-  userId: string,
-): Promise<boolean> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: MFA_POLICY_USER_SELECT,
-  });
-  if (!user) return false;
-  return resolveMfaEnrollmentRequired(userId, user);
+function hasKeyOrPasskey(userId: string): Promise<boolean> {
+  const now = Date.now();
+  const held = heldFactors.get(userId);
+  if (held && held.until > now) return Promise.resolve(held.hasFactor);
+  return memoizePerRequest(
+    `mfa-factor-presence:${userId}`,
+    async () => {
+      const started = generation;
+      const [webauthnKeyCount, passkeyCount] = await Promise.all([
+        prisma.webauthnMfaCredential.count({ where: { userId } }),
+        prisma.passkey.count({ where: { userId } }),
+      ]);
+      const hasFactor = webauthnKeyCount > 0 || passkeyCount > 0;
+      if (started !== generation) return hasFactor;
+      if (heldFactors.size >= MAX_HELD_ACCOUNTS) {
+        const oldest = heldFactors.keys().next().value;
+        if (oldest !== undefined) heldFactors.delete(oldest);
+      }
+      heldFactors.set(userId, { hasFactor, until: Date.now() + HOLD_MS });
+      return hasFactor;
+    },
+    // A request that adds or removes a factor reads afresh after its write.
+    { readsOnly: true },
+  );
 }
 
 /**

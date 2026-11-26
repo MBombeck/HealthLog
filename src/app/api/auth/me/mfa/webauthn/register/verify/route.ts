@@ -13,6 +13,7 @@ import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
+import { forgetMfaFactors } from "@/lib/auth/mfa-enrollment";
 import { destroyOtherSessions } from "@/lib/auth/session";
 import { verifyMfaRegistration } from "@/lib/auth/mfa/webauthn";
 import { mfaWebauthnRegisterVerifySchema } from "@/lib/validations/mfa";
@@ -64,6 +65,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     },
     select: { id: true, name: true, createdAt: true, lastUsedAt: true },
   });
+  forgetMfaFactors(user.id);
 
   // v1.23 — a registered security key satisfies an admin-enforced MFA policy,
   // so clear any forced-enrollment redirect immediately.
