@@ -156,28 +156,18 @@ describe("diagnostic shapes", () => {
       reason: null,
       at: at.toISOString(),
     });
-    const device = diagnosticDevice(
-      {
-        id: "d1",
-        platform: "ios",
-        apnsToken: "",
-        apnsEnvironment: null,
-        lastSeen: at,
-        relayState: "none",
-        relayConflictAt: null,
-        relayBoundAt: null,
-        laStartedAt: null,
-        envelopeReportedAt: null,
-        pushKeyPublic: null,
-        relayConsentAt: null,
-        relayBindingKey: null,
-        liveActivityConsentAt: null,
-        laStartToken: null,
-        laStartSignature: null,
-        laStartStatement: null,
-      },
-      { registration: null, keys: null },
-    );
+    const device = diagnosticDevice({
+      id: "d1",
+      platform: "ios",
+      apnsToken: "",
+      apnsEnvironment: null,
+      lastSeen: at,
+      relayState: "none",
+      relayConflictAt: null,
+      relayBoundAt: null,
+      laStartedAt: null,
+      envelopeReportedAt: null,
+    });
     expect(device.hasApnsToken).toBe(false);
     expect(device.apnsTokenPrefix).toBeNull();
   });

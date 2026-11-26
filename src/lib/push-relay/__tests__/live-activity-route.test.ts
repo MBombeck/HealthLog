@@ -10,7 +10,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/db", () => ({ prisma: {} }));
 
-import { diagnosticDevice } from "../diagnostics";
 import {
   laRelayBlock,
   laRelayEligible,
@@ -89,29 +88,5 @@ describe("Live Activity eligibility", () => {
         NOW,
       ),
     ).toBe("no_start_token");
-  });
-
-  it("is what the admin diagnostic shows", () => {
-    vi.stubEnv("PUSH_RELAY_LIVE_ACTIVITY", "on");
-    const row = {
-      ...device,
-      platform: "ios",
-      lastSeen: NOW,
-      relayConflictAt: null,
-      relayBoundAt: NOW,
-      laStartedAt: null,
-      envelopeReportedAt: null,
-    };
-    expect(diagnosticDevice(row, ctx(true), NOW).liveActivityStart).toBe(
-      "ready",
-    );
-    expect(
-      diagnosticDevice({ ...row, liveActivityConsentAt: null }, ctx(true), NOW)
-        .liveActivityStart,
-    ).toBe("no_consent");
-    expect(
-      diagnosticDevice({ ...row, platform: "android" }, ctx(true), NOW)
-        .liveActivityStart,
-    ).toBeNull();
   });
 });

@@ -65,7 +65,10 @@ import {
   STARTABLE_MEDICATION_WHERE,
 } from "@/lib/push-relay/activity-slot";
 import { liveActivityRelayEnabled } from "@/lib/push-relay/config";
-import { laRelayEligible } from "@/lib/push-relay/live-activity-eligibility";
+import {
+  laRelayEligible,
+  liveActivityStartState,
+} from "@/lib/push-relay/live-activity-eligibility";
 import {
   laStartTokenUsable,
   statementIat,
@@ -737,8 +740,13 @@ export async function runLiveActivityRelayPass(
     }),
     take: PASS_LIMIT,
   });
+  // Why a device gets no start, by the first reason in the way, so a server
+  // whose Activities never start says why in its log.
+  const blocked: Record<string, number> = {};
   for (const device of devices) {
     facts.devices += 1;
+    const state = liveActivityStartState(device, ctx, now);
+    if (state !== "ready") blocked[state] = (blocked[state] ?? 0) + 1;
     try {
       const done = await runDeviceLiveActivities(device, ctx, now);
       facts.started += done.started;
@@ -749,6 +757,9 @@ export async function runLiveActivityRelayPass(
         `live_activity_relay_failed: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
+  }
+  if (Object.keys(blocked).length > 0) {
+    getEvent()?.addMeta("live_activity_start_blocked", blocked);
   }
   return facts;
 }

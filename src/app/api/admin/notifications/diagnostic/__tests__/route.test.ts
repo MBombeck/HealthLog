@@ -56,19 +56,6 @@ vi.mock("@/lib/logging/context", () => ({
   },
 }));
 
-// No relay registration and no APNs key: every device's Live Activity start
-// reads `switch_off` or `not_bound`.
-vi.mock("@/lib/push-relay/route-device", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/push-relay/route-device")>()),
-  loadPushContext: vi.fn(async () => ({
-    config: {},
-    registration: null,
-    apnsConfigured: false,
-    bundleId: null,
-    keys: null,
-  })),
-}));
-
 vi.mock("@/lib/logging/transports", () => ({
   emitIfSampled: vi.fn(),
 }));

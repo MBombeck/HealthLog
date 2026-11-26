@@ -1,8 +1,7 @@
 /**
  * Whether the relay may start or update a Live Activity on a device, read by
- * the pass (`live-activity.ts`) and by the admin diagnostic
- * (`diagnostics.ts`), so the two never differ. Kept apart from the sender so
- * reading it sends nothing.
+ * the pass (`live-activity.ts`), which logs the first reason a start is held
+ * back. Kept apart from the sender so reading it sends nothing.
  *
  * The answer never depends on the way the device's ordinary pushes take
  * (`routeFor`): a server with its own APNs key and a relay registration sends
@@ -62,8 +61,8 @@ export function laRelayEligible(
 }
 
 /**
- * Whether the relay can start an Activity on `device` now, as the admin
- * diagnostic reads it: `ready`, the first {@link LaRelayBlock}, or
+ * Whether the relay can start an Activity on `device` now, as the pass logs
+ * it: `ready`, the first {@link LaRelayBlock}, or
  * `no_start_token` when the device holds no push-to-start token the relay
  * still takes. The start reads the same two checks.
  */

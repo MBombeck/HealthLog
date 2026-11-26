@@ -36,16 +36,11 @@ import {
   type RelayHealth,
 } from "@/lib/push-relay/capability";
 import { relayConfig } from "@/lib/push-relay/config";
-import {
-  liveActivityStartState,
-  type LiveActivityStartState,
-} from "@/lib/push-relay/live-activity-eligibility";
 import { relayStateAt } from "@/lib/push-relay/relay-state";
 import { loadRegistration } from "@/lib/push-relay/registration";
 import {
   ROUTABLE_DEVICE_SELECT,
   type DeviceRoute,
-  type PushContext,
 } from "@/lib/push-relay/route-device";
 import {
   silentBudgetSummary,
@@ -113,13 +108,6 @@ export interface DiagnosticDevice {
   relayBoundAt: string | null;
   liveActivityStartedAt: string | null;
   envelopesReportedAt: string | null;
-  /**
-   * Whether the server can start a medication Live Activity on this device
-   * over the relay, by the checks the start itself reads
-   * ({@link liveActivityStartState}): `ready`, or the first thing in the
-   * way. Null for a device that is no iPhone.
-   */
-  liveActivityStart: LiveActivityStartState | null;
 }
 
 export const DIAGNOSTIC_DEVICE_SELECT = {
@@ -133,38 +121,20 @@ export const DIAGNOSTIC_DEVICE_SELECT = {
   relayBoundAt: true,
   laStartedAt: true,
   envelopeReportedAt: true,
-  pushKeyPublic: true,
-  relayConsentAt: true,
-  relayBindingKey: true,
-  liveActivityConsentAt: true,
-  laStartToken: true,
-  laStartSignature: true,
-  laStartStatement: true,
 } as const;
 
-export function diagnosticDevice(
-  d: {
-    id: string;
-    platform: string;
-    apnsToken: string | null;
-    apnsEnvironment: string | null;
-    lastSeen: Date;
-    relayState: string;
-    relayConflictAt: Date | null;
-    relayBoundAt: Date | null;
-    laStartedAt: Date | null;
-    envelopeReportedAt: Date | null;
-    pushKeyPublic: string | null;
-    relayConsentAt: Date | null;
-    relayBindingKey: string | null;
-    liveActivityConsentAt: Date | null;
-    laStartToken: string | null;
-    laStartSignature: string | null;
-    laStartStatement: unknown;
-  },
-  ctx: Pick<PushContext, "registration" | "keys">,
-  now: Date = new Date(),
-): DiagnosticDevice {
+export function diagnosticDevice(d: {
+  id: string;
+  platform: string;
+  apnsToken: string | null;
+  apnsEnvironment: string | null;
+  lastSeen: Date;
+  relayState: string;
+  relayConflictAt: Date | null;
+  relayBoundAt: Date | null;
+  laStartedAt: Date | null;
+  envelopeReportedAt: Date | null;
+}): DiagnosticDevice {
   const { prefix, suffix } = maskApnsToken(d.apnsToken);
   return {
     id: d.id,
@@ -178,8 +148,6 @@ export function diagnosticDevice(
     relayBoundAt: d.relayBoundAt?.toISOString() ?? null,
     liveActivityStartedAt: d.laStartedAt?.toISOString() ?? null,
     envelopesReportedAt: d.envelopeReportedAt?.toISOString() ?? null,
-    liveActivityStart:
-      d.platform === "ios" ? liveActivityStartState(d, ctx, now) : null,
   };
 }
 
