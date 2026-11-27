@@ -20,6 +20,7 @@
  */
 import type { HealthLogScoreKind } from "@/lib/analytics/score/shared";
 import { translateOrNull } from "@/lib/i18n/translate-code";
+import { metricName } from "@/lib/measurements/type-label-keys";
 
 /** HealthLog's own scores. */
 export const HEALTHLOG_SCORE_IDS = [
@@ -40,6 +41,11 @@ export interface HealthLogScoreEntry {
   slug: string;
   /** The message key of its display name. */
   titleKey: string;
+  /**
+   * The metric whose glossary short form names it on a tile
+   * (`metricName(...).short`); absent when the name is already short.
+   */
+  shortMetric?: string;
 }
 
 export const HEALTHLOG_SCORES: Readonly<
@@ -49,6 +55,7 @@ export const HEALTHLOG_SCORES: Readonly<
     bandKind: "health",
     slug: "health",
     titleKey: "insights.healthScore.label",
+    shortMetric: "HEALTH_SCORE",
   },
   READINESS: {
     bandKind: "readiness",
@@ -79,6 +86,23 @@ export const HEALTHLOG_SCORES: Readonly<
     titleKey: "insights.derived.scores.strain",
   },
 };
+
+type ShortTranslate = (key: string) => string;
+
+/**
+ * A score's short name for a tile ("Gesundheit", "Schlafscore",
+ * "Bereitschaft"): the glossary short form where the score has one, else its
+ * name. Every surface and the wire (`shortLabel`) read it from here.
+ */
+export function scoreShortLabel(
+  id: HealthLogScoreId,
+  t: ShortTranslate,
+): string {
+  const entry = HEALTHLOG_SCORES[id];
+  return entry.shortMetric
+    ? metricName(entry.shortMetric, t).short
+    : t(entry.titleKey);
+}
 
 /** Every slug `/insights/scores/<slug>` may answer to. */
 export const SCORE_SLUGS: readonly string[] = HEALTHLOG_SCORE_IDS.map(

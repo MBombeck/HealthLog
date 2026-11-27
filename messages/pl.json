@@ -13903,6 +13903,14 @@
       "vitalsInRangeFew": "Wszystkie {count} dzisiejsze wartości są w zwykłym zakresie.",
       "vitalsInRangeOther": "Wszystkie {count} dzisiejszych wartości jest w zwykłym zakresie.",
       "vitalInRange": "{metric}: dziś średnio {value}, w Twoim zwykłym zakresie ({range}).",
+      "pillarFlagged": {
+        "yellow": "{pillar} wymaga dziś uwagi w twoim wyniku zdrowia.",
+        "red": "{pillar} jest dziś poza zakresem referencyjnym w twoim wyniku zdrowia."
+      },
+      "scoreFlagged": {
+        "yellow": "Twój wynik zdrowia wskazuje dziś obszar wymagający uwagi.",
+        "red": "Twój wynik zdrowia wskazuje dziś obszar poza zakresem referencyjnym."
+      },
       "floor": {
         "bpHigh": "Ciśnienie krwi osiągnęło {value} w ciągu ostatnich 24 godzin.",
         "bpLow": "Ciśnienie krwi spadło do {value} w ciągu ostatnich 24 godzin.",
@@ -13973,6 +13981,9 @@
         "allInOne": "Sprawdzono {count}, w zakresie",
         "allInFew": "Sprawdzono {count}, wszystkie w zakresie",
         "allInOther": "Sprawdzono {count}, wszystkie w zakresie",
+        "checkedOne": "Sprawdzono {count}",
+        "checkedFew": "Sprawdzono {count}",
+        "checkedOther": "Sprawdzono {count}",
         "oneOut": {
           "above": "{metric} powyżej zakresu",
           "below": "{metric} poniżej zakresu"
