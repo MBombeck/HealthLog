@@ -466,10 +466,12 @@ function FitBatchList({
             key={row.key}
             data-testid="import-fit-file"
             data-status={row.state.status}
-            className="flex items-center justify-between gap-3 px-3 py-2"
+            className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 px-3 py-2"
           >
+            {/* A long status on a narrow card moves to its own line
+                instead of cutting the file name down to a few letters. */}
             <span
-              className="text-foreground min-w-0 flex-1 truncate"
+              className="text-foreground min-w-24 flex-1 truncate"
               title={row.name}
             >
               {row.name}
@@ -491,7 +493,7 @@ function FitFileStatus({
 }) {
   if (state.status === "failed")
     return (
-      <span className="text-destructive flex shrink-0 items-center gap-1">
+      <span className="text-destructive ml-auto flex shrink-0 items-center gap-1">
         <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
         {labels.fileFailures[state.reason]}
       </span>
@@ -524,7 +526,7 @@ function FitFileStatus({
     );
   }
   return (
-    <span className="text-muted-foreground shrink-0">
+    <span className="text-muted-foreground ml-auto shrink-0">
       {labels.fileStatus[state.status]}
     </span>
   );
