@@ -49979,6 +49979,7 @@ components:
               - medication.side-effect-headache
               - medication.low-stock-trigger
               - insights.score-origin
+              - account.dismissed-hints
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices; since
@@ -50115,7 +50116,11 @@ components:
             RECOVERY_SCORE, STRESS_SCORE and STRAIN_SCORE values on GET /api/insights/derived carry origin (estimate |
             device | computed) and deviceSource (the measurement source of a device value, else null); the health score
             composite carries weights (one { id, weight } per counted pillar, summing to 1) and each snapshot
-            healthScore.pillars row its weight (null when it did not count)."
+            healthScore.pillars row its weight (null when it did not count). `account.dismissed-hints`: GET /api/auth/me
+            carries dismissedHints, the ids of the one-time hints the account has closed (a family such as
+            timeline-readiness, or family.member such as i18n-banner.fr); PATCH /api/auth/me/dismissed-hints with
+            dismiss and/or restore changes it and answers the stored list. Restoring a family restores its members. Show
+            a hint only while neither its id nor its family is listed."
       required:
         - version
         - buildSha
