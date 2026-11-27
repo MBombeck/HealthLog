@@ -689,3 +689,92 @@ describe("floor readings", () => {
     ).toEqual({ reason: "glucose_hyper", valueLabel: "260 mg/dL" });
   });
 });
+
+describe("morning scores: the start page's sleep and readiness tiles", () => {
+  it("has no tile for a score the record does not produce", () => {
+    const m = buildDailyMorning(input(), t);
+    expect(m.scores).toEqual({ sleep: null, readiness: null });
+    const off = buildDailyMorning(
+      input({
+        modules: { sleep: false, recovery: false },
+        sleepExpected: true,
+        readiness: readiness(),
+      }),
+      t,
+    );
+    expect(off.scores).toEqual({ sleep: null, readiness: null });
+  });
+
+  it("scores last night with its time asleep", () => {
+    const m = buildDailyMorning(
+      input({
+        sleepExpected: true,
+        sleep: { minutes: 440, usualMinutes: 450 },
+        sleepScore: { score: 81, band: "green", night: TODAY },
+      }),
+      t,
+    );
+    expect(m.scores.sleep).toMatchObject({
+      ring: { score: 81, band: "green", fresh: true, asOfDay: TODAY },
+      line: "7h 20m",
+    });
+  });
+
+  it("shows no number for an older night, and says the night is not in", () => {
+    const m = buildDailyMorning(
+      input({
+        sleepExpected: true,
+        sleepPending: true,
+        sleepScore: { score: 81, band: "green", night: "2026-11-25" },
+      }),
+      t,
+    );
+    expect(m.scores.sleep).toMatchObject({
+      ring: { score: null, band: null, fresh: false, asOfDay: "2026-11-25" },
+      line: "Not in yet",
+    });
+  });
+
+  it("names the heaviest pull on readiness, not the sleep score beside it", () => {
+    const m = buildDailyMorning(
+      input({
+        readiness: readiness({
+          components: [
+            { key: "sleep", value: 10, weight: 0.5 },
+            { key: "rhr", value: 40, weight: 0.25 },
+          ],
+        }),
+        sleepExpected: true,
+        sleep: { minutes: 440, usualMinutes: 450 },
+        sleepScore: { score: 30, band: "red", night: TODAY },
+      }),
+      t,
+    );
+    expect(m.scores.readiness).toMatchObject({
+      ring: { score: 58, band: "yellow", fresh: true },
+      line: "Resting HR 40/100",
+    });
+  });
+
+  it("keeps a stale readiness without a number, with its last value as past", () => {
+    const m = buildDailyMorning(
+      input({
+        readiness: readiness({ fresh: false, asOfDay: "2026-11-24" }),
+        readinessAsOfLabel: "Nov 24",
+      }),
+      t,
+    );
+    expect(m.scores.readiness).toMatchObject({
+      ring: { score: null, band: null, fresh: false, asOfDay: "2026-11-24" },
+      line: "Last 58 on Nov 24",
+    });
+  });
+
+  it("drops the band in Rest mode but keeps the number", () => {
+    const m = buildDailyMorning(
+      input({ readiness: readiness(), restMode: { day: 2 } }),
+      t,
+    );
+    expect(m.scores.readiness?.ring).toMatchObject({ score: 58, band: null });
+  });
+});

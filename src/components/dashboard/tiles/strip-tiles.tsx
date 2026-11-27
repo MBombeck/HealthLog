@@ -35,7 +35,6 @@ import { isWindowSufficient } from "@/lib/analytics/window-confidence";
 import { headlineValue } from "@/lib/dashboard/headline-value";
 import { convertGlucose, glucoseFractionDigits } from "@/lib/glucose";
 import {
-  MEASUREMENT_TYPE_LABEL_KEYS,
   metricName,
   type MetricName,
 } from "@/lib/measurements/type-label-keys";
@@ -269,7 +268,7 @@ export const STRIP_TILES: readonly StripTile[] = [
           node: (
             <TrendCard
               key="bp"
-              label={ctx.t("dashboard.bloodPressure")}
+              label={metricName("BLOOD_PRESSURE", ctx.t)}
               latest={headlineValue(sys)}
               secondary={{
                 latest: headlineValue(dia),
@@ -309,7 +308,7 @@ export const STRIP_TILES: readonly StripTile[] = [
         type,
         summary,
         label: hasRestingHr
-          ? ctx.t(MEASUREMENT_TYPE_LABEL_KEYS.RESTING_HEART_RATE)
+          ? metricName("RESTING_HEART_RATE", ctx.t)
           : ctx.t("dashboard.pulseShort"),
         unit: "bpm",
         icon: TrendingUp,
@@ -394,7 +393,7 @@ export const STRIP_TILES: readonly StripTile[] = [
       metricCard(ctx, "hrv", {
         type: ctx.hrv.type,
         summary: ctx.hrv.summary,
-        label: ctx.t(ctx.hrv.labelKey),
+        label: metricName(ctx.hrv.type, ctx.t),
         unit: "ms",
         icon: HeartPulse,
         fractionDigits: 0,
@@ -535,7 +534,12 @@ export const STRIP_TILES: readonly StripTile[] = [
           node: (
             <TrendCard
               key={`glucose-${bucket}`}
-              label={ctx.t(labelKey)}
+              // The short name on one line; the context (fasting, after a
+              // meal) is in the full name, its tooltip and accessible name.
+              label={{
+                full: ctx.t(labelKey),
+                short: metricName("BLOOD_GLUCOSE", ctx.t).short,
+              }}
               latest={convert(headlineValue(s))}
               unit={unit}
               fractionDigits={glucoseFractionDigits(unit)}

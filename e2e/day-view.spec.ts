@@ -488,16 +488,12 @@ test.describe("the day view", () => {
     await expect(
       page.locator('[data-slot="main-content-wrapper"]'),
     ).toBeVisible();
-    // The hero is today: nothing in it opens another day. (The charts
-    // further down do; `day-doors.spec.ts` walks one.)
-    await expect(
-      page
-        .locator('[data-slot="morning-block"], [data-slot^="today-hero"]')
-        .first(),
-    ).toBeVisible();
+    // The asks and the score row are today: nothing in them opens another
+    // day. (The charts further down do; `day-doors.spec.ts` walks one.)
+    await expect(page.locator('[data-slot="today-scores"]')).toBeVisible();
     await expect(
       page.locator(
-        '[data-slot="morning-block"] [data-slot="day-link"], [data-slot="morning-block"] [data-day-links="true"], [data-slot^="today-hero"] [data-slot="day-link"], [data-slot^="today-hero"] [data-day-links="true"]',
+        '[data-slot^="today-"] [data-slot="day-link"], [data-slot^="today-"] [data-day-links="true"]',
       ),
     ).toHaveCount(0);
   });

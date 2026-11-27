@@ -46,9 +46,9 @@ describe("the health score's band is never said without its weakest pillar", () 
   const files = [...new Set(matches.map((m) => m.file))].sort();
 
   it("finds the surfaces it guards", () => {
-    // The push, the evidence, the Insights tile and panel, the morning
-    // block and the Today hero. Fewer means a matcher went blind.
-    expect(files.length).toBeGreaterThanOrEqual(6);
+    // The push, the evidence, the Insights tile and panel, and the start
+    // page's score row. Fewer means a matcher went blind.
+    expect(files.length).toBeGreaterThanOrEqual(5);
   });
 
   it.each(files)("%s reads the setter", (file) => {

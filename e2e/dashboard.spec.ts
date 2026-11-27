@@ -96,10 +96,10 @@ test.describe("authenticated dashboard render", () => {
       }),
     );
 
-    // The Today hero reads the unified daily digest from
-    // `/api/daily/digest`. Mock it with a deterministic digest (a score +
-    // one worth-a-look item) so the hero paints without reaching the real
-    // route, and so a slow/absent digest can never hang the render or
+    // The top of the dashboard reads the unified daily digest from
+    // `/api/daily/digest`. Mock it with a deterministic digest (a score and
+    // one ask) so the ask card and the score row paint without reaching the
+    // real route, and so a slow/absent digest can never hang the render or
     // surface a console error under the significant-error gate below.
     await page.route(/\/api\/daily\/digest(\?|$)/, (route) =>
       route.fulfill({
@@ -117,29 +117,19 @@ test.describe("authenticated dashboard render", () => {
             today: [],
             restMode: null,
             line: "Your week is trending steady.",
-            worthALook: [
-              {
-                kind: "sync_issue",
-                title: "Sync needs attention",
-                body: "Withings isn't syncing.",
-                status: "warning",
-                actions: [
-                  {
-                    labelKey: "daily.action.reconnect",
-                    intent: "sync.reconnect",
-                    href: "/settings/integrations",
-                  },
-                ],
-              },
+            worthALook: [],
+            asks: [
               // S3 — a coach check-in card (keep / adjust / let-go). Rendered
               // only; the mutating taps PATCH the plan route, which this spec
               // never clicks, so it stays green without a plan-route stub.
               {
                 kind: "coach_checkin",
+                tier: "decision",
+                itemKey: "coach_checkin:p1",
+                subject: null,
+                learnMore: null,
                 title: "Time to check in on a plan",
                 body: "About a week ago you set: “every morning → weigh in”.",
-                status: "info",
-                moduleKey: "coach",
                 actions: [
                   {
                     labelKey: "daily.action.checkinKeep",
@@ -274,15 +264,12 @@ test.describe("authenticated dashboard render", () => {
     const tileCount = Number(await strip.getAttribute("data-tile-count"));
     expect(tileCount).toBeGreaterThan(0);
 
-    // The morning block paints above the tile strip: the health score
-    // beside the sentence, and the mocked digest's rows in "To do today".
-    const morning = page.locator('[data-slot="morning-block"]');
-    await expect(morning).toBeVisible({ timeout: 10_000 });
-    await expect(morning.locator('[data-slot="morning-score"]')).toBeVisible();
-    await expect(
-      morning.locator('[data-slot="morning-card"][data-kind="to_do"]'),
-    ).toBeVisible();
-    await expect(page.locator('[data-slot="today-hero"]')).toHaveCount(0);
+    // Above the tile strip: the mocked digest's one ask in the ask card,
+    // then the score row.
+    const asks = page.locator('[data-slot="today-asks"]');
+    await expect(asks).toBeVisible({ timeout: 10_000 });
+    await expect(asks.locator('[data-slot="today-ask"]')).toHaveCount(1);
+    await expect(page.locator('[data-slot="today-scores"]')).toBeVisible();
 
     // At least one chart must render. Recharts mounts a `<svg>` with
     // `class="recharts-surface"` (or a `<div class="recharts-wrapper">`

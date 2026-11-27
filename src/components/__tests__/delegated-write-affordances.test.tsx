@@ -19,8 +19,8 @@
  *   - `DeleteButton` dropping its `canManageDomain` bail → "no row delete inside
  *     somebody else's record" goes red; answering it for every section → the
  *     vault leg of "a guardian's row delete follows the section" goes red.
- *   - `TodayHero` passing `onDismiss` / `onAction` unconditionally → the rail
- *     legs go red, printing the dismiss control and the check-in buttons.
+ *   - `TodayAsks` resolving its writing actions without the own-record
+ *     check → the ask-card legs go red, printing the check-in button.
  *   - `VorsorgeDashboardCard` dropping its `canManageDomain` bail → the
  *     mark-done leg goes red.
  *   - `EpisodeDocumentsCard` dropping its `canManageDomain` bail → the link +
@@ -205,7 +205,7 @@ import {
   visibleCaptureKinds,
 } from "@/components/layout/capture-picker";
 import { admittedQuickEntry } from "@/components/dashboard/quick-entry-sheets";
-import { TodayHero } from "@/components/daily/today-hero";
+import { TodayAsks } from "@/components/dashboard/today-asks";
 import { VorsorgeDashboardCard } from "@/components/measurement-reminders/vorsorge-dashboard-card";
 import { EpisodeDocumentsCard } from "@/components/documents/episode-documents-card";
 import { LedgerRowItem } from "@/components/medications/dose-history/ledger-row-item";
@@ -213,9 +213,8 @@ import { VaccinationsView } from "@/components/vaccinations/vaccinations-view";
 import { VisitsSection } from "@/components/encounters/visits-section";
 import type { EncounterDTO } from "@/lib/encounters/dto";
 import { queryKeys } from "@/lib/query-keys";
-import type { DailyDigest } from "@/lib/daily/digest";
+import type { DailyAsk } from "@/lib/daily/asks";
 import type { MeasurementReminder } from "@/hooks/use-measurement-reminders";
-import { DIGEST_AI_AVAILABLE } from "@/__tests__/helpers/ai-capability-fixtures";
 
 function render(
   access: AccountAccess,
@@ -391,71 +390,69 @@ describe("the medication card menu", () => {
 });
 
 /* -------------------------------------------------------------------------- */
-/* The Today rail                                                             */
+/* The ask card                                                               */
 /* -------------------------------------------------------------------------- */
 
-const DIGEST: DailyDigest = {
-  generatedAt: "2026-08-03T06:00:00.000Z",
-  ai: DIGEST_AI_AVAILABLE,
-  phase: "final",
-  sleepPending: false,
-  score: null,
-  topSignal: null,
-  signalLine: null,
-  briefingLead: "A steady week so far.",
-  lead: { text: "A steady week so far.", source: "briefing" },
-  today: [],
-  restMode: null,
-  line: "A steady week so far.",
-  justIn: null,
-  reactionLine: null,
-  worthALook: [
-    {
-      kind: "milestone",
-      itemKey: "milestone:steps-10k",
-      title: "Ten thousand steps",
-      actions: [],
-    },
-    {
-      kind: "coach_checkin",
-      title: "Still worth keeping?",
-      actions: [
-        {
-          labelKey: "daily.action.checkinKeep",
-          intent: "coach.plan.keep:plan-1",
-        },
-        {
-          labelKey: "daily.action.viewCheckups",
-          intent: "checkup.view",
-          href: "/checkups",
-        },
-      ],
-    },
-  ],
-};
+const ASKS: DailyAsk[] = [
+  {
+    kind: "coach_checkin",
+    tier: "decision",
+    itemKey: "coach_checkin:plan-1",
+    title: "Still worth keeping?",
+    body: null,
+    subject: null,
+    learnMore: null,
+    actions: [
+      {
+        labelKey: "daily.action.answer",
+        intent: "coach.checkin.adjust",
+        href: "/coach?ask=plan-1",
+      },
+      {
+        labelKey: "daily.action.later",
+        intent: "ask.later:ask-later:2026-08-03:coach_checkin:plan-1",
+      },
+    ],
+  },
+  {
+    kind: "preventive_care",
+    tier: "due",
+    itemKey: "preventive_care:2026-08-03",
+    title: "Check-ups due",
+    body: "Dental check-up",
+    subject: null,
+    learnMore: null,
+    actions: [
+      {
+        labelKey: "daily.action.viewCheckups",
+        intent: "checkup.view",
+        href: "/checkups",
+      },
+    ],
+  },
+];
 
-describe("the Today rail's mutating affordances", () => {
-  const node = <TodayHero digest={DIGEST} />;
+describe("the ask card's mutating affordances", () => {
+  const node = <TodayAsks asks={ASKS} />;
 
-  it("offers the dismiss and the check-in answer in the caller's own record", () => {
+  it("offers Later on the check-in in the caller's own record", () => {
     const html = render(OWN_RECORD, node);
-    expect(html).toContain('data-slot="priority-card-dismiss"');
-    expect(html).toContain("Keep it");
+    expect(html).toContain(">Later<");
+    expect(html).toContain('href="/coach?ask=plan-1"');
+    expect(html).toContain('href="/checkups"');
   });
 
-  it("withholds both inside somebody else's record, at every level", () => {
-    // Dismissing an observation and answering a coach check-in are neither of
-    // them an admitted create, and both write through routes that resolve the
-    // CALLER — so a delegate tapping either would file it against their own
-    // record if the route allowed it, and gets a 403 because it does not. A
-    // MANAGE grant changes nothing here: no section reaches a caller route.
+  it("withholds it inside somebody else's record, at every level", () => {
+    // Answering a coach check-in is not an admitted create, and it writes
+    // through a route that resolves the CALLER — so a delegate tapping it
+    // would file it against their own record if the route allowed it, and
+    // gets a 403 because it does not. A MANAGE grant changes nothing here.
     for (const access of [READ_ONLY, WRITABLE, MANAGING]) {
       const html = render(access, node);
-      expect(html).not.toContain('data-slot="priority-card-dismiss"');
-      expect(html).not.toContain("Keep it");
-      // The rail itself stays: reading what is worth a look is the point of
-      // opening somebody's record, and the navigation action survives with it.
-      expect(html).toContain('data-slot="today-hero-rail"');
+      expect(html).not.toContain(">Later<");
+      // The card itself stays, with its navigation: reading what is due is
+      // the point of opening somebody's record.
+      expect(html).toContain('data-slot="today-asks"');
       expect(html).toContain('href="/checkups"');
     }
   });
