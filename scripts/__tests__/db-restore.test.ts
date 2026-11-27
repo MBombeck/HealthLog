@@ -16,7 +16,9 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const tablesInTarget = vi.fn(async (): Promise<string[]> => []);
-const runTool = vi.fn(async () => "");
+const runTool = vi.fn(async (..._args: unknown[]) => "");
+/** What the target answers for `server_version_num`; null answers nothing. */
+let serverVersionNum: number | null = null;
 const end = vi.fn(async () => {});
 /** What the stand-in bucket lists under `database/`; downloads are refused. */
 const bucketKeys = vi.fn(async (): Promise<string[]> => []);
@@ -26,7 +28,15 @@ const downloads = vi.fn(async (key: string) => {
 
 vi.mock("../../src/lib/database-backup/dump-core.mjs", async (original) => ({
   ...(await original<Record<string, unknown>>()),
-  connect: async () => ({ query: async () => ({ rows: [] }), end }),
+  connect: async () => ({
+    query: async (sql: string) =>
+      serverVersionNum !== null && /server_version_num/.test(sql)
+        ? {
+            rows: [{ v: `${serverVersionNum / 10000}.0`, n: serverVersionNum }],
+          }
+        : { rows: [] },
+    end,
+  }),
   listUserTables: () => tablesInTarget(),
   runTool: (...args: unknown[]) => runTool(...(args as [])),
   openBucket: async () => ({
@@ -93,7 +103,9 @@ beforeEach(() => {
     lines.push(String(line));
   });
   tablesInTarget.mockResolvedValue([]);
-  runTool.mockClear();
+  runTool.mockReset();
+  runTool.mockResolvedValue("");
+  serverVersionNum = null;
 });
 afterEach(() => {
   rmSync(dir, { recursive: true, force: true });
@@ -148,6 +160,44 @@ describe("db-restore refuses before it writes", () => {
     expect(await main(["other.dump"], env())).toBe(1);
     expect(errors.join("\n")).toMatch(/not a HealthLog database dump/);
     expect(runTool).not.toHaveBeenCalled();
+  });
+
+  // #1431: the same ceiling as the dump's. `pg_restore` is not run against a
+  // server newer than its own major; the refusal names both and the way out.
+  it("refuses a server newer than this image's pg_restore, before it restores", async () => {
+    writeDump();
+    serverVersionNum = 200000;
+    runTool.mockImplementation(async (...args: unknown[]) =>
+      (args[1] as string[]).includes("--version")
+        ? "pg_restore (PostgreSQL) 19.1\n"
+        : "",
+    );
+    expect(await main(["latest"], env())).toBe(1);
+    expect(errors.join("\n")).toMatch(
+      /This image's PostgreSQL client \(pg_restore\) is 19; your server is 20\./,
+    );
+    const restored = runTool.mock.calls.filter(
+      (c) => !(c[1] as string[]).includes("--version"),
+    );
+    expect(restored).toEqual([]);
+  });
+
+  it("restores into a server of the client's own major", async () => {
+    writeDump();
+    serverVersionNum = 190001;
+    runTool.mockImplementation(async (...args: unknown[]) =>
+      (args[1] as string[]).includes("--version")
+        ? "pg_restore (PostgreSQL) 19.1\n"
+        : "",
+    );
+    await main(["latest"], env());
+    expect(
+      runTool.mock.calls.some(
+        (c) =>
+          c[0] === "pg_restore" &&
+          (c[1] as string[]).includes("--single-transaction"),
+      ),
+    ).toBe(true);
   });
 
   it("says when there is nothing to restore, and how it is used", async () => {

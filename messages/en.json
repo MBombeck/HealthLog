@@ -9497,6 +9497,7 @@
           "first_pending": "The first database dump has not run yet.",
           "stale": "The newest database dump is {hours, plural, one {# hour} other {# hours}} old.",
           "last_failed": "The last database dump failed. The one before it is still recent.",
+          "client_too_old": "This image's PostgreSQL client is {client}, but the database server runs {server}, so no database dump can be taken. Use a HealthLog image whose client is {server} or newer, or keep the server on {client} or older.",
           "fresh": "The newest database dump is recent.",
           "nowhere_to_write": "The dump directory {directory} cannot be written to and no off-host bucket is set up, so no dump can be kept.",
           "not_persistent": "The dump directory {directory} is not on persistent storage and no off-host bucket is set up, so every dump would be lost at the next update. Mount the backups volume.",

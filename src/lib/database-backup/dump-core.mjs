@@ -920,11 +920,117 @@ async function createPrivateFile(path) {
 
 /** `pg_dump (PostgreSQL) 18.6`, or null when it cannot be asked. */
 export async function pgDumpVersion() {
+  return toolVersion("pg_dump");
+}
+
+/**
+ * A client tool's `--version` line, or null when it cannot be asked.
+ * @param {string} tool
+ */
+export async function toolVersion(tool) {
   try {
-    return (await runTool("pg_dump", ["--version"], { capture: true })).trim();
+    return (await runTool(tool, ["--version"], { capture: true })).trim();
   } catch {
     return null;
   }
+}
+
+// ── The client's major caps the server's ───────────────────────────────────
+//
+// `pg_dump` reads servers of its own major and older, and refuses a newer one
+// with a version-mismatch line. So the client major in the image is the
+// highest server major HealthLog can dump, and the dump before migrating
+// gates the boot: a server moved past it took the app down at the next
+// release with a migration, and the nightly dump failed with the same line
+// (#1431). `pg_restore` is held to the same rule. Every path that runs either
+// tool against a server checks the pair first and refuses with one message
+// that names both majors and the way out.
+
+/**
+ * The major in a `--version` line: `pg_dump (PostgreSQL) 19.1` is 19, and so
+ * are `19devel`, `19beta2` and `19rc1`. Null when the line names none.
+ *
+ * @param {string | null | undefined} line
+ * @returns {number | null}
+ */
+export function clientMajorFromVersionLine(line) {
+  const match = /\(PostgreSQL\)\s+(\d+)/.exec(line ?? "");
+  return match ? Number(match[1]) : null;
+}
+
+/**
+ * The major in `server_version_num`: 190001 is 19. A development or beta
+ * build reports its major's `.0` (190000). Null for anything else.
+ *
+ * @param {number | null | undefined} num
+ * @returns {number | null}
+ */
+export function serverMajorFromVersionNum(num) {
+  return typeof num === "number" && Number.isSafeInteger(num) && num > 0
+    ? Math.floor(num / 10000)
+    : null;
+}
+
+/**
+ * The operator message for a client older than the server, or null when the
+ * pair works. A side that cannot be read is not refused: the tool runs and
+ * says what is wrong in its own words.
+ *
+ * The message opens with a fixed sentence `clientTooOldIn` (dump-problems.ts)
+ * reads back from a stored failure, and stays under the ledger's 500
+ * characters.
+ *
+ * @param {{ tool: string; clientMajor: number | null; serverMajor: number | null }} pair
+ * @returns {string | null}
+ */
+export function clientServerMismatch({ tool, clientMajor, serverMajor }) {
+  if (clientMajor === null || serverMajor === null) return null;
+  if (serverMajor <= clientMajor) return null;
+  return (
+    `This image's PostgreSQL client (${tool}) is ${clientMajor}; your server is ${serverMajor}. ` +
+    `${tool} cannot work with a server newer than its own major, so this image supports PostgreSQL ${clientMajor} and older. ` +
+    `Use a HealthLog image whose client is ${serverMajor} or newer, or keep the server on ${clientMajor} or older ` +
+    `(docs/ops/postgres-major-upgrade.md).`
+  );
+}
+
+/** A client tool older than the server it was about to run against. */
+export class ClientTooOldError extends Error {
+  /**
+   * @param {string} message
+   * @param {{ tool: string; clientMajor: number; serverMajor: number }} pair
+   */
+  constructor(message, pair) {
+    super(message);
+    this.name = "ClientTooOldError";
+    this.tool = pair.tool;
+    this.clientMajor = pair.clientMajor;
+    this.serverMajor = pair.serverMajor;
+  }
+}
+
+/**
+ * The check before `tool` runs against the server `client` is connected to:
+ * throws `ClientTooOldError` when the server's major is newer than the
+ * tool's. Answers both majors, either null when it could not be read.
+ *
+ * @param {Queryable} client
+ * @param {string} tool
+ * @param {{ versionLine?: () => Promise<string | null> }} [options]
+ * @returns {Promise<{ clientMajor: number | null; serverMajor: number | null }>}
+ */
+export async function assertClientServesServer(client, tool, options = {}) {
+  const [line, server] = await Promise.all([
+    (options.versionLine ?? (() => toolVersion(tool)))(),
+    serverVersion(client).catch(() => null),
+  ]);
+  const clientMajor = clientMajorFromVersionLine(line);
+  const serverMajor = serverMajorFromVersionNum(server?.versionNum ?? null);
+  const message = clientServerMismatch({ tool, clientMajor, serverMajor });
+  if (message !== null && clientMajor !== null && serverMajor !== null) {
+    throw new ClientTooOldError(message, { tool, clientMajor, serverMajor });
+  }
+  return { clientMajor, serverMajor };
 }
 
 /**
@@ -1090,6 +1196,10 @@ export async function createDatabaseDump(options) {
   /** The files this call created, and only those, go on a failure. */
   const created = [];
   try {
+    // Before anything is written: a server newer than this image's
+    // `pg_dump` is refused with the majors and the way out, not with the
+    // tool's own mismatch line.
+    await assertClientServesServer(client, "pg_dump");
     await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ, READ ONLY");
     const { rows } = await client.query(
       "SELECT pg_export_snapshot() AS snapshot",

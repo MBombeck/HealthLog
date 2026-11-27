@@ -21,7 +21,11 @@
  * not a reason to keep the app down. Exit 1: the directory is kept and the
  * dump failed. The entrypoint then stops the boot and names the switch that skips
  * the dump, because migrating without the way back the operator was promised
- * is the one thing this step exists to prevent.
+ * is the one thing this step exists to prevent. Exit 3: the dump cannot be
+ * taken at all, because the server's major is newer than this image's
+ * `pg_dump` (#1431). That does not pass with a restart, so the entrypoint
+ * says so once and does not restart in a hot loop. At a boot with nothing to
+ * migrate the same pair is a warning, since the nightly dump fails on it.
  *
  * Fast on purpose: one snapshot, `pg_dump`, a count per table for the
  * manifest, `pg_restore --list` to prove the file reads. Nothing else.
@@ -32,7 +36,9 @@ import { pathToFileURL } from "node:url";
 
 import {
   applyRetention,
+  assertClientServesServer,
   backupDirectoryStatus,
+  ClientTooOldError,
   connect,
   createDatabaseDump,
   latestMigration,
@@ -56,6 +62,32 @@ function imageVersion(env) {
       .version;
   } catch {
     return null;
+  }
+}
+
+/** The exit code for a server newer than this image's `pg_dump`. */
+export const CLIENT_TOO_OLD_EXIT = 3;
+
+/**
+ * Warn, and only warn, when this image's `pg_dump` cannot dump the server:
+ * nothing is migrated at this boot, but the nightly dump fails until the
+ * pair is fixed. Any other error here is not this step's to report.
+ *
+ * @param {string} databaseUrl
+ */
+async function warnIfClientTooOld(databaseUrl) {
+  let client;
+  try {
+    client = await connect(databaseUrl);
+    await assertClientServesServer(client, "pg_dump");
+  } catch (error) {
+    if (error instanceof ClientTooOldError) {
+      warn(
+        `${error.message} The nightly database dump fails until the two match; the app starts.`,
+      );
+    }
+  } finally {
+    await client?.end().catch(() => {});
   }
 }
 
@@ -93,7 +125,10 @@ export async function preMigrationDump(env = process.env, options = {}) {
     );
     pending = null;
   }
-  if (pending !== null && pending.length === 0) return 0;
+  if (pending !== null && pending.length === 0) {
+    await warnIfClientTooOld(databaseUrl);
+    return 0;
+  }
   const migrations =
     pending === null
       ? "any pending migrations"
@@ -129,6 +164,7 @@ export async function preMigrationDump(env = process.env, options = {}) {
       `${dir} ${why}, so no dump is taken before ${pending === null ? migrations : `the ${migrations}`}. ` +
         "Mount the backups volume (docker-compose.yml) to keep a way back; continuing.",
     );
+    await warnIfClientTooOld(databaseUrl);
     return 0;
   }
 
@@ -148,6 +184,10 @@ export async function preMigrationDump(env = process.env, options = {}) {
         `${Object.keys(manifest.rowCounts).length} tables, ${Math.round((Date.now() - started) / 1000)} s).`,
     );
   } catch (error) {
+    if (error instanceof ClientTooOldError) {
+      console.error(`HealthLog: ERROR — ${error.message}`);
+      return CLIENT_TOO_OLD_EXIT;
+    }
     console.error(
       `HealthLog: ERROR — the database dump before migrating failed: ${error instanceof Error ? error.message : String(error)}`,
     );

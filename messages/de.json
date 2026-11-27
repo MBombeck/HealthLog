@@ -9497,6 +9497,7 @@
           "first_pending": "Der erste Datenbank-Dump ist noch nicht gelaufen.",
           "stale": "Der neueste Datenbank-Dump ist {hours, plural, one {# Stunde} other {# Stunden}} alt.",
           "last_failed": "Der letzte Datenbank-Dump ist fehlgeschlagen. Der davor ist noch aktuell.",
+          "client_too_old": "Der PostgreSQL-Client dieses Images hat Version {client}, der Datenbankserver läuft aber auf {server}, daher kann kein Datenbank-Dump erstellt werden. Nutze ein HealthLog-Image mit Client {server} oder neuer, oder lass den Server auf {client} oder älter.",
           "fresh": "Der neueste Datenbank-Dump ist aktuell.",
           "nowhere_to_write": "Das Dump-Verzeichnis {directory} ist nicht beschreibbar und es ist kein externer Bucket eingerichtet, daher kann kein Dump aufbewahrt werden.",
           "not_persistent": "Das Dump-Verzeichnis {directory} liegt nicht auf dauerhaftem Speicher, und es ist kein externer Bucket eingerichtet. Jeder Dump wäre beim nächsten Update verloren. Binde das Backup-Volume ein.",
