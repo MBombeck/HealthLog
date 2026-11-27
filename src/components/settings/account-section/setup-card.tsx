@@ -13,7 +13,9 @@ import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useOnboardingRestart } from "@/components/onboarding/use-onboarding-flow";
 import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
-import { resetChecklistDismissals } from "@/lib/onboarding/checklist-storage";
+import { useDismissedHints } from "@/hooks/use-dismissed-hints";
+import { hintId } from "@/lib/hints/dismissible-hints";
+import { markChecklistExpanded } from "@/lib/onboarding/checklist-storage";
 
 /**
  * v1.39 — Settings → Account → Setup.
@@ -30,6 +32,7 @@ export function SetupCard() {
   const { t } = useTranslations();
   const router = useRouter();
   const restart = useOnboardingRestart();
+  const hints = useDismissedHints();
 
   async function setUpAgain() {
     if (restart.isPending) return;
@@ -43,13 +46,22 @@ export function SetupCard() {
     }
   }
 
-  function showChecklist() {
+  async function showChecklist() {
     // Something was hidden and is back: a written outcome. Nothing was
     // hidden: an empty one — there was nothing to bring back.
-    if (resetChecklistDismissals()) {
+    const family = hintId("getting-started");
+    const hidden = hints.ids.some(
+      (id) => id === family || id.startsWith(`${family}.`),
+    );
+    markChecklistExpanded();
+    if (!hidden) {
+      toastWrittenOutcome("empty", t("settings.setup.checklistNothingHidden"));
+      return;
+    }
+    if (await hints.restore(family)) {
       toastWrittenOutcome("success", t("settings.setup.checklistShown"));
     } else {
-      toastWrittenOutcome("empty", t("settings.setup.checklistNothingHidden"));
+      showErrorToast(t("settings.savingError"));
     }
   }
 

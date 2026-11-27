@@ -4,7 +4,8 @@
  * The readiness inventory as a card on top of the timeline (v1.42, #613),
  * while a lane is thin or empty and offers a way to close the gap. One
  * sentence on what the timeline already carries, then each gap with its one
- * link. Closing it is remembered on this device; the full inventory stays
+ * link. Closing it is remembered on the account (`useDismissedHints`), so it
+ * stays closed on every device; the full inventory stays
  * one tap away under "Data coverage".
  */
 import Link from "next/link";

@@ -35,11 +35,9 @@ import {
   type ChecklistItemId,
 } from "@/lib/onboarding/checklist";
 import { apiGet } from "@/lib/api/api-fetch";
-import {
-  CHECKLIST_DISMISSED_ALL_KEY as DISMISSED_ALL_KEY,
-  CHECKLIST_DISMISSED_ITEMS_KEY as DISMISSED_ITEMS_KEY,
-  CHECKLIST_EXPANDED_KEY as EXPANDED_KEY,
-} from "@/lib/onboarding/checklist-storage";
+import { CHECKLIST_EXPANDED_KEY as EXPANDED_KEY } from "@/lib/onboarding/checklist-storage";
+import { useDismissedHints } from "@/hooks/use-dismissed-hints";
+import { hintId } from "@/lib/hints/dismissible-hints";
 import { sourceConnectionLabelKey } from "@/lib/onboarding/first-result-config";
 import { isBrowserConnectableSource } from "@/lib/onboarding/wizard-steps";
 import { GettingStartedExtras } from "@/components/onboarding/getting-started-extras";
@@ -114,36 +112,6 @@ interface NotificationsPreferences {
   channels?: NotificationChannel[];
 }
 
-/**
- * The dismissed rows, by id: a checklist row's own id, or `extra:<id>` for a
- * row of the optional "More" group (1.49), one list for both.
- */
-function readDismissedSet(): Set<string> {
-  if (typeof window === "undefined") return new Set();
-  try {
-    const raw = window.localStorage.getItem(DISMISSED_ITEMS_KEY);
-    if (!raw) return new Set();
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) {
-      return new Set(
-        parsed.filter((id): id is string => typeof id === "string"),
-      );
-    }
-  } catch {
-    /* ignore corrupt storage */
-  }
-  return new Set();
-}
-
-function readDismissedAll(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    return window.localStorage.getItem(DISMISSED_ALL_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
 function readExpanded(): boolean {
   // Default = collapsed. v1.4.15: the card auto-opening
   // on every page-load was the dominant complaint after the flicker —
@@ -160,45 +128,35 @@ function readExpanded(): boolean {
 }
 
 /**
- * The card's three per-browser conveniences (hidden rows, hidden card, open
- * state), read once and written back on change. Every access is wrapped, and
- * the card renders correctly with no stored value.
+ * The card's state: hidden rows and the hidden card from the account, the
+ * open state from this browser (a convenience; every access is wrapped and
+ * the card renders correctly with no stored value).
  */
 function usePersistedChecklistState() {
-  const [dismissedIds, setDismissedIds] = useState<Set<string>>(() =>
-    readDismissedSet(),
+  // Hidden rows and the hidden card live on the account
+  // (`getting-started.<row>` and `getting-started`), so they stay hidden on
+  // every device. Until the account loads the card counts as hidden.
+  const hints = useDismissedHints();
+  const rowPrefix = `${hintId("getting-started")}.`;
+  const dismissedIds = useMemo(
+    () =>
+      new Set(
+        hints.ids
+          .filter((id) => id.startsWith(rowPrefix))
+          .map((id) => id.slice(rowPrefix.length)),
+      ),
+    [hints.ids, rowPrefix],
   );
-  const [dismissedAll, setDismissedAll] = useState<boolean>(() =>
-    readDismissedAll(),
-  );
+  const dismissedAll = hints.isDismissed("getting-started");
+  const dismissRow = (id: string) =>
+    void hints.dismiss(hintId("getting-started", id));
+  const dismissAll = () => void hints.dismiss(hintId("getting-started"));
   // v1.4.15 #3 — collapsed by default. The card used to
   // render expanded on every load, pushing actual dashboard tiles below
   // the fold. The collapsed shell still surfaces the progress meter +
   // CTA-row count via `gettingStarted.progress`, so users see at a
   // glance how much setup is left without the visual noise.
   const [expanded, setExpanded] = useState<boolean>(() => readExpanded());
-
-  // Sync state to localStorage. Effect, not setState-in-effect.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(
-        DISMISSED_ITEMS_KEY,
-        JSON.stringify([...dismissedIds]),
-      );
-    } catch {
-      /* storage may be full or disabled */
-    }
-  }, [dismissedIds]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(DISMISSED_ALL_KEY, dismissedAll ? "1" : "0");
-    } catch {
-      /* storage may be full or disabled */
-    }
-  }, [dismissedAll]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -211,9 +169,9 @@ function usePersistedChecklistState() {
 
   return {
     dismissedIds,
-    setDismissedIds,
+    dismissRow,
     dismissedAll,
-    setDismissedAll,
+    dismissAll,
     expanded,
     setExpanded,
   };
@@ -237,9 +195,9 @@ export function GettingStartedChecklist() {
 
   const {
     dismissedIds,
-    setDismissedIds,
+    dismissRow,
     dismissedAll,
-    setDismissedAll,
+    dismissAll,
     expanded,
     setExpanded,
   } = usePersistedChecklistState();
@@ -504,7 +462,7 @@ export function GettingStartedChecklist() {
           // `sm:min-h-10` here was a no-op against the Button default
           // of `h-10`.
           className="text-muted-foreground hover:text-foreground min-h-11 sm:min-h-9"
-          onClick={() => setDismissedAll(true)}
+          onClick={dismissAll}
         >
           {t("gettingStarted.dismissAll")}
         </Button>
@@ -593,13 +551,7 @@ export function GettingStartedChecklist() {
                 ) : null}
                 <button
                   type="button"
-                  onClick={() =>
-                    setDismissedIds((prev) => {
-                      const next = new Set(prev);
-                      next.add(item.id);
-                      return next;
-                    })
-                  }
+                  onClick={() => dismissRow(item.id)}
                   aria-label={t("gettingStarted.dismissTooltip")}
                   className="text-muted-foreground hover:text-foreground inline-flex h-11 w-11 items-center justify-center rounded transition-colors"
                 >
@@ -612,10 +564,7 @@ export function GettingStartedChecklist() {
       ) : null}
 
       {expanded ? (
-        <GettingStartedExtras
-          dismissed={dismissedIds}
-          onDismiss={(id) => setDismissedIds((prev) => new Set(prev).add(id))}
-        />
+        <GettingStartedExtras dismissed={dismissedIds} onDismiss={dismissRow} />
       ) : null}
     </section>
   );
