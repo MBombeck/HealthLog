@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2814,
-  "total": 8707,
+  "total": 8705,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1878,7 +1878,7 @@
     "lib/daily/__tests__/digest.test.ts": 1,
     "lib/daily/__tests__/load-digest.test.ts": 1,
     "lib/daily/__tests__/morning-refresh-trigger.test.ts": 1,
-    "lib/daily/digest.ts": 7,
+    "lib/daily/digest.ts": 5,
     "lib/daily/load-digest.ts": 1,
     "lib/daily/morning-refresh-trigger.ts": 1,
     "lib/dashboard-layout.ts": 39,

@@ -13989,6 +13989,14 @@
       "vitalsInRangeFew": "Les {count} valeurs du jour sont dans leur plage habituelle.",
       "vitalsInRangeOther": "Les {count} valeurs du jour sont dans leur plage habituelle.",
       "vitalInRange": "{metric} : aujourd'hui {value} en moyenne, dans votre plage habituelle ({range}).",
+      "pillarFlagged": {
+        "yellow": "{pillar} demande une attention dans votre score de santé aujourd'hui.",
+        "red": "{pillar} est hors de la plage de référence dans votre score de santé aujourd'hui."
+      },
+      "scoreFlagged": {
+        "yellow": "Votre score de santé signale aujourd'hui un domaine qui demande une attention.",
+        "red": "Votre score de santé signale aujourd'hui un domaine hors de sa plage de référence."
+      },
       "floor": {
         "bpHigh": "La tension artérielle a atteint {value} au cours des dernières 24 heures.",
         "bpLow": "La tension artérielle est descendue à {value} au cours des dernières 24 heures.",
@@ -14059,6 +14067,9 @@
         "allInOne": "{count} vérifié, dans votre plage",
         "allInFew": "{count} vérifiés, tous dans votre plage",
         "allInOther": "{count} vérifiés, tous dans votre plage",
+        "checkedOne": "{count} vérifié",
+        "checkedFew": "{count} vérifiés",
+        "checkedOther": "{count} vérifiés",
         "oneOut": {
           "above": "{metric} au-dessus de votre plage",
           "below": "{metric} en dessous de votre plage"

@@ -13989,6 +13989,14 @@
       "vitalsInRangeFew": "Alle {count} heutigen Werte liegen in ihrem üblichen Bereich.",
       "vitalsInRangeOther": "Alle {count} heutigen Werte liegen in ihrem üblichen Bereich.",
       "vitalInRange": "{metric} liegt heute im Mittel bei {value}, in deinem üblichen Bereich ({range}).",
+      "pillarFlagged": {
+        "yellow": "{pillar} braucht im Gesundheitsscore heute Aufmerksamkeit.",
+        "red": "{pillar} liegt im Gesundheitsscore heute außerhalb des Referenzbereichs."
+      },
+      "scoreFlagged": {
+        "yellow": "Dein Gesundheitsscore zeigt heute einen Bereich, der Aufmerksamkeit braucht.",
+        "red": "Dein Gesundheitsscore zeigt heute einen Bereich außerhalb des Referenzbereichs."
+      },
       "floor": {
         "bpHigh": "Der Blutdruck stieg in den letzten 24 Stunden auf {value}.",
         "bpLow": "Der Blutdruck fiel in den letzten 24 Stunden auf {value}.",
@@ -14059,6 +14067,9 @@
         "allInOne": "{count} geprüft, im Bereich",
         "allInFew": "{count} geprüft, alle im Bereich",
         "allInOther": "{count} geprüft, alle im Bereich",
+        "checkedOne": "{count} geprüft",
+        "checkedFew": "{count} geprüft",
+        "checkedOther": "{count} geprüft",
         "oneOut": {
           "above": "{metric} über deinem Bereich",
           "below": "{metric} unter deinem Bereich"

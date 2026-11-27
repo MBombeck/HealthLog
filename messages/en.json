@@ -13989,6 +13989,14 @@
       "vitalsInRangeFew": "All {count} of today's values sit inside their usual range.",
       "vitalsInRangeOther": "All {count} of today's values sit inside their usual range.",
       "vitalInRange": "{metric} averages {value} today, inside your usual range ({range}).",
+      "pillarFlagged": {
+        "yellow": "{pillar} needs attention in your health score today.",
+        "red": "{pillar} is outside the reference range in your health score today."
+      },
+      "scoreFlagged": {
+        "yellow": "Your health score marks an area that needs attention today.",
+        "red": "Your health score marks an area outside its reference range today."
+      },
       "floor": {
         "bpHigh": "Blood pressure reached {value} in the last 24 hours.",
         "bpLow": "Blood pressure fell to {value} in the last 24 hours.",
@@ -14059,6 +14067,9 @@
         "allInOne": "{count} checked, in your range",
         "allInFew": "{count} checked, all in your range",
         "allInOther": "{count} checked, all in your range",
+        "checkedOne": "{count} checked",
+        "checkedFew": "{count} checked",
+        "checkedOther": "{count} checked",
         "oneOut": {
           "above": "{metric} above your range",
           "below": "{metric} below your range"
