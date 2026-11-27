@@ -12705,6 +12705,43 @@ paths:
         "415": *a33
         "422": *a4
         "429": *a5
+  /api/auth/me/dismissed-hints:
+    patch:
+      tags:
+        - Auth
+      summary: Put one-time hints away or bring them back
+      description: >-
+        The one-time hints, notes and banners the caller has put away, stored on the account so a closed hint stays
+        closed on every device. The current list is `dismissedHints` on `/api/auth/me`; a client shows a hint only while
+        its id is absent there.
+
+
+        Idempotent, audit-logged. Rate-limited 60 / min per user. The caller's own list: under a switched session it is
+        still the caller's. An unknown id is 422.
+
+
+        The body is capped at 4 KB and must carry `Content-Type: application/json`. Anything larger is 413, a wrong
+        content type is 415, and a body that is not JSON at all is 400.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DismissedHintsPatchRequest"
+      responses:
+        "200":
+          description: The stored list after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatchDismissedHintsEnvelope"
+        "400": *a31
+        "401": *a1
+        "403": *a9
+        "413": *a32
+        "415": *a33
+        "422": *a4
+        "429": *a5
   /api/auth/me/show-nav-counts:
     patch:
       tags:
@@ -37006,6 +37043,25 @@ components:
       required:
         - storeWorkoutRoutes
       description: Keep or stop keeping the GPS track of new workouts. Off by default.
+    DismissedHintsPatchRequest:
+      type: object
+      properties:
+        dismiss:
+          maxItems: 200
+          type: array
+          items:
+            type: string
+            maxLength: 96
+        restore:
+          maxItems: 200
+          type: array
+          items:
+            type: string
+            maxLength: 96
+      description: Put one-time hints away (`dismiss`) or bring them back (`restore`). An id is a hint family
+        (`timeline-readiness`, `ai-setup`, `ai-consent-request`, `correlation-seasonal`, `i18n-banner`,
+        `getting-started`) or `family.member` (`i18n-banner.fr`, `getting-started.<row>`). Restoring a family restores
+        its members too.
     ShowNavCountsPatchRequest:
       type: object
       properties:
@@ -49930,6 +49986,7 @@ components:
               - medication.side-effect-headache
               - medication.low-stock-trigger
               - insights.score-origin
+              - account.dismissed-hints
               - daily.asks
               - daily.scores-short-labels
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
@@ -50071,15 +50128,19 @@ components:
             composite carries weights (one { id, weight } per counted pillar, summing to 1) and each snapshot
             healthScore.pillars row its weight (null when it did not count); every scored pillar carries its own band
             (green | yellow | red), resolved on the server: value.band on the score report's pillars (/api/analytics)
-            and band on each snapshot healthScore.pillars row (null when it did not count). `daily.asks`: GET
-            /api/daily/digest carries asks: every row the start page asks today, often none (kind, tier safety |
-            decision | due, itemKey, title, body, subject, exactly two actions with the primary first, learnMore),
-            ranked on the server, never capped or folded; render as delivered, no card when empty. Later is
-            dose.snooze:<medicationId> on a dose and ask.later:<dismissKey> on other reminders; the admin rows
-            (push_relay, server_setup) come only to a browser session. `daily.scores-short-labels`: Each start-page
-            score carries shortLabel, its short name for a tile from the score registry, worded in the response
-            language: GET /api/daily/morning scores.sleep and scores.readiness, and GET /api/daily/digest score (the
-            Health score). Render it as is; the web shows the same words."
+            and band on each snapshot healthScore.pillars row (null when it did not count). `account.dismissed-hints`:
+            GET /api/auth/me carries dismissedHints, the ids of the one-time hints the account has closed (a family such
+            as timeline-readiness, or family.member such as i18n-banner.fr); PATCH /api/auth/me/dismissed-hints with
+            dismiss and/or restore changes it and answers the stored list. Restoring a family restores its members. Show
+            a hint only while neither its id nor its family is listed. `daily.asks`: GET /api/daily/digest carries asks:
+            every row the start page asks today, often none (kind, tier safety | decision | due, itemKey, title, body,
+            subject, exactly two actions with the primary first, learnMore), ranked on the server, never capped or
+            folded; render as delivered, no card when empty. Later is dose.snooze:<medicationId> on a dose and
+            ask.later:<dismissKey> on other reminders; the admin rows (push_relay, server_setup) come only to a browser
+            session. `daily.scores-short-labels`: Each start-page score carries shortLabel, its short name for a tile
+            from the score registry, worded in the response language: GET /api/daily/morning scores.sleep and
+            scores.readiness, and GET /api/daily/digest score (the Health score). Render it as is; the web shows the
+            same words."
       required:
         - version
         - buildSha
@@ -74080,6 +74141,33 @@ components:
       required:
         - data
         - error
+      additionalProperties: false
+    PatchDismissedHintsEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/DismissedHintsResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DismissedHintsResponse:
+      type: object
+      properties:
+        dismissedHints:
+          type: array
+          items:
+            type: string
+      required:
+        - dismissedHints
       additionalProperties: false
     PatchShowNavCountsEnvelope:
       type: object
@@ -103611,6 +103699,13 @@ components:
           description: "#1113 — whether the navigation shows its counts (doses due on Medications, check-ups due on Checkups).
             `true` by default. When `false`, show no count and do not call `GET /api/nav/counts`. Set it with `PATCH
             /api/auth/me/show-nav-counts`."
+        dismissedHints:
+          type: array
+          items:
+            type: string
+          description: The one-time hints, notes and banners this account has put away, by id (a family such as
+            `timeline-readiness`, or `family.member` such as `i18n-banner.fr`). Show a hint only while its id, or its
+            family, is absent. Change it with `PATCH /api/auth/me/dismissed-hints`.
         features:
           type: object
           properties:
@@ -103727,6 +103822,7 @@ components:
         - glucoseUnit
         - medicineRegistry
         - showNavCounts
+        - dismissedHints
         - features
         - push
         - emergencyCard
