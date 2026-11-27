@@ -31,16 +31,21 @@ export const GET = apiHandler(async (request: Request) => {
   // AI parts resolve against the RECORD, so a delegate sees the owner's
   // capabilities, never their own. Re-examine with the snapshot when
   // per-module scope lands; a digest is a summary of several modules at once.
-  const { user, authMethod } = await requireRecordAuth("read", "record");
+  const { user, authMethod, grantId } = await requireRecordAuth(
+    "read",
+    "record",
+  );
 
   // #176 — the app's own language (Accept-Language) words the texts the
   // server writes itself; a browser's cookie already does that.
   const locale = nativeRequestLocale(authMethod, request);
-  const digest = await loadDailyDigest(
-    user,
-    new Date(),
-    locale ? { locale } : {},
-  );
+  // The admin question is asked only where it can be answered: a browser
+  // session on the admin's own record (the answers are cookie-only routes).
+  const adminAsks = authMethod === "cookie" && grantId === null;
+  const digest = await loadDailyDigest(user, new Date(), {
+    ...(locale ? { locale } : {}),
+    adminAsks,
+  });
 
   return apiSuccess(digest);
 });

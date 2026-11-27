@@ -161,6 +161,8 @@ export const MEASUREMENT_TYPE_SHORT_LABEL_KEYS: Partial<
   Record<MeasurementType, string>
 > = {
   TOTAL_BODY_WATER: "measurements.shortTypeTotalBodyWater",
+  RESTING_HEART_RATE: "measurements.shortTypeRestingHeartRate",
+  BLOOD_GLUCOSE: "measurements.shortTypeBloodGlucose",
   WALKING_RUNNING_DISTANCE: "measurements.shortTypeWalkingRunningDistance",
   SKIN_TEMPERATURE: "measurements.shortTypeSkinTemperature",
   AUDIO_EXPOSURE_ENV: "measurements.shortTypeAudioExposureEnv",
@@ -225,10 +227,33 @@ export interface MetricName {
  * The one way a surface names a measurement type. An unknown type reads as
  * itself in both forms rather than as a missing key.
  */
+/**
+ * Metrics read as one value that are no single `MeasurementType`: blood
+ * pressure is systolic over diastolic, the Health score is composed. Same contract as the maps above, the
+ * full name and the glossary's short form, reached through `metricName`.
+ */
+export const COMPOSITE_METRIC_LABEL_KEYS = {
+  BLOOD_PRESSURE: {
+    full: "measurements.typeBloodPressure",
+    short: "measurements.shortTypeBloodPressure",
+  },
+  HEALTH_SCORE: {
+    full: "insights.healthScore.label",
+    short: "measurements.shortTypeHealthScore",
+  },
+} as const;
+
 export function metricName(
   type: string,
   t: (key: string) => string,
 ): MetricName {
+  if (Object.hasOwn(COMPOSITE_METRIC_LABEL_KEYS, type)) {
+    const keys =
+      COMPOSITE_METRIC_LABEL_KEYS[
+        type as keyof typeof COMPOSITE_METRIC_LABEL_KEYS
+      ];
+    return { full: t(keys.full), short: t(keys.short) };
+  }
   const fullKey = MEASUREMENT_TYPE_LABEL_KEYS[type as MeasurementType];
   const full = fullKey ? t(fullKey) : type;
   const shortKey = MEASUREMENT_TYPE_SHORT_LABEL_KEYS[type as MeasurementType];

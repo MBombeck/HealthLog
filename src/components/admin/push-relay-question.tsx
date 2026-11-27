@@ -19,23 +19,12 @@ import {
 } from "./use-push-relay";
 
 /**
- * The one question to an admin: "Use the HealthLog push relay?". Shown on
- * the admin start page and in the server setup's notifications step while the
- * operator's decision is `undecided`, and only for an admin of a server whose
- * relay can be used at all (`push.relay.canDecide` of `/api/auth/me`). The
- * dashboard does not ask it; `ServerSetupNotice` names it there once and links
- * to the admin start page.
- *
- * It goes away only by an answer, and the answer holds for the whole server:
- * no keeps the relay off and nobody is asked again; yes opens the switch's own
- * confirmations (terms, privacy notice, household, invite code), and the
- * decision is `on` once the registration at the relay succeeded. A refused
- * registration leaves the question open, with the reason, so the admin can
- * answer yes again with a code. The card is the shared `DecisionCard`: yes
- * goes ahead (primary), no declines (secondary), and the details sit behind
- * the one "Learn more".
+ * Answering the relay question, wherever it is asked (the admin start page,
+ * the dashboard's ask card): no is sent at once, yes opens the switch's own
+ * confirmations, and a refused registration leaves the question open with
+ * its reason. `onAnswered` runs once the decision is no longer `undecided`.
  */
-export function PushRelayQuestion() {
+export function usePushRelayAnswer(onAnswered?: () => void) {
   const { t } = useTranslations();
   const { user } = useAuth();
   const answer = useAnswerPushRelayQuestion();
@@ -50,21 +39,15 @@ export function PushRelayQuestion() {
   const [refusalNeedsInvite, setRefusalNeedsInvite] = useState(false);
   // Answered here: hidden at once, before `/api/auth/me` is read again.
   const [answered, setAnswered] = useState(false);
-
   const relay = user?.push?.relay;
-  if (
-    answered ||
-    user?.role !== "ADMIN" ||
-    relay?.canDecide !== true ||
-    relay.operatorDecision !== "undecided"
-  ) {
-    return null;
-  }
 
   function send(body: PushRelaySwitchBody) {
     answer.mutate(body, {
       onSuccess: (next) => {
-        if (next.operatorDecision !== "undecided") setAnswered(true);
+        if (next.operatorDecision !== "undecided") {
+          setAnswered(true);
+          onAnswered?.();
+        }
         if (!body.enabled) {
           toastWrittenOutcome(
             "success",
@@ -96,6 +79,66 @@ export function PushRelayQuestion() {
     });
   }
 
+  return {
+    answered,
+    pending: answer.isPending,
+    yes: () => {
+      setDialogKey((key) => key + 1);
+      setDialogOpen(true);
+    },
+    no: () => send({ enabled: false }),
+    refusalNote: refusal ? (
+      <p className="text-sm" data-slot="push-relay-question-refusal">
+        {t(refusal)}
+      </p>
+    ) : null,
+    dialog: (
+      <PushRelayEnableDialog
+        key={dialogKey}
+        mode="enable"
+        termsUrl={relay?.termsUrl ?? null}
+        privacyUrl={relay?.privacyUrl ?? null}
+        inviteOpen={refusalNeedsInvite}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onConfirm={send}
+      />
+    ),
+  };
+}
+
+/**
+ * The one question to an admin: "Use the HealthLog push relay?". Shown on
+ * the admin start page and in the server setup's notifications step while the
+ * operator's decision is `undecided`, and only for an admin of a server whose
+ * relay can be used at all (`push.relay.canDecide` of `/api/auth/me`). The
+ * dashboard asks it as one row of its ask card (the digest's `asks`), with
+ * the same answers through {@link usePushRelayAnswer}.
+ *
+ * It goes away only by an answer, and the answer holds for the whole server:
+ * no keeps the relay off and nobody is asked again; yes opens the switch's own
+ * confirmations (terms, privacy notice, household, invite code), and the
+ * decision is `on` once the registration at the relay succeeded. A refused
+ * registration leaves the question open, with the reason, so the admin can
+ * answer yes again with a code. The card is the shared `DecisionCard`: yes
+ * goes ahead (primary), no declines (secondary), and the details sit behind
+ * the one "Learn more".
+ */
+export function PushRelayQuestion() {
+  const { t } = useTranslations();
+  const { user } = useAuth();
+  const relayAnswer = usePushRelayAnswer();
+
+  const relay = user?.push?.relay;
+  if (
+    relayAnswer.answered ||
+    user?.role !== "ADMIN" ||
+    relay?.canDecide !== true ||
+    relay.operatorDecision !== "undecided"
+  ) {
+    return null;
+  }
+
   return (
     <DecisionCard
       data-slot="push-relay-question"
@@ -106,38 +149,20 @@ export function PushRelayQuestion() {
         href: SERVER_SETUP_DOCS.pushRelay,
         label: t("admin.pushRelay.docs"),
       }}
-      note={
-        refusal ? (
-          <p className="text-sm" data-slot="push-relay-question-refusal">
-            {t(refusal)}
-          </p>
-        ) : null
-      }
-      pending={answer.isPending}
+      note={relayAnswer.refusalNote}
+      pending={relayAnswer.pending}
       decline={{
         label: t("admin.pushRelay.question.no"),
         slot: "push-relay-question-no",
-        onClick: () => send({ enabled: false }),
+        onClick: relayAnswer.no,
       }}
       accept={{
         label: t("admin.pushRelay.question.yes"),
         slot: "push-relay-question-yes",
-        onClick: () => {
-          setDialogKey((key) => key + 1);
-          setDialogOpen(true);
-        },
+        onClick: relayAnswer.yes,
       }}
     >
-      <PushRelayEnableDialog
-        key={dialogKey}
-        mode="enable"
-        termsUrl={relay.termsUrl ?? null}
-        privacyUrl={relay.privacyUrl ?? null}
-        inviteOpen={refusalNeedsInvite}
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onConfirm={send}
-      />
+      {relayAnswer.dialog}
     </DecisionCard>
   );
 }
