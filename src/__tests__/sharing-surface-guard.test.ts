@@ -1255,7 +1255,17 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
   },
   "app/api/medications/categories/route.ts": {
     domain: "medications",
-    why: "The record's own medication category vocabulary, read and added to from the wizard. The labels and the per-category counts are scoped to the resolved id; renaming and deleting live in the owner-only `[key]` sibling.",
+    why: "The record's own medication category vocabulary, read and added to from the wizard. The labels and the per-category counts are scoped to the resolved id; renaming and deleting live in the `[key]` sibling, the owner's and a managed profile's guardian's.",
+  },
+  // #1615 -- a guardian could add a category or a custom symptom and then
+  // neither rename nor remove it.
+  "app/api/medications/categories/[key]/route.ts": {
+    domain: "medications",
+    why: "Renaming, hiding or deleting one custom medication category of the resolved record. Declares `\"guardian\"`: the owner or a managed profile's guardian, never an adult's delegate.",
+  },
+  "app/api/cycle/symptoms/custom/[key]/route.ts": {
+    domain: "cycle",
+    why: "Renaming, recolouring or removing one custom symptom of the resolved record. Declares `\"guardian\"`: the owner or a managed profile's guardian, never an adult's delegate.",
   },
   "app/api/medications/[id]/route.ts": {
     domain: "medications",
@@ -2073,7 +2083,7 @@ const DELEGABLE_MANAGE_ROUTES: Record<string, ManageEntry> = {
   "app/api/medications/[id]/route.ts": {
     domain: "medications",
     conditions: ["C4", "C7"],
-    why: "Replacing a medication and its schedule. C4, and C7 because the previous cadence and the tombstoned pending slots are the only unrecoverable part. The DELETE beside it stays refused.",
+    why: 'Replacing a medication and its schedule. C4, and C7 because the previous cadence and the tombstoned pending slots are the only unrecoverable part. The DELETE beside it declares `"guardian"` and is frozen again in the guardian literal.',
   },
   "app/api/medications/[id]/courses/end/route.ts": {
     domain: "medications",
@@ -2420,6 +2430,14 @@ const DELEGABLE_GUARDIAN_ROUTES: Record<string, string> = {
     "Editing or removing one course, the same service and the same audit as the start.",
   "app/api/medications/[id]/efficacy/target/route.ts":
     "Pinning or clearing what the Effect view follows. Audited on both arms; the row names the guardian.",
+  // #1615 -- a medication entered on a managed profile by mistake had nobody
+  // who could remove it.
+  "app/api/medications/[id]/route.ts":
+    "Deleting a medication of the resolved record, with its dose history and its ingest tokens. Owner or managed-profile guardian only; an adult's delegate at MANAGE stays refused. Audited; the row names the guardian.",
+  "app/api/medications/categories/[key]/route.ts":
+    "Renaming, hiding or deleting a custom medication category the guardian may add. Audited on both arms; the row names the guardian. The rate bucket is the actor's.",
+  "app/api/cycle/symptoms/custom/[key]/route.ts":
+    "Renaming or removing a custom symptom the guardian may add. Audited on both arms; the row names the guardian. The rate bucket is the actor's.",
 };
 
 /**
@@ -2609,8 +2627,12 @@ const ACTOR_ROUTES: Record<string, string> = {
  *
  * 1.49: the getting-started checklist's optional-row presence read joins the
  * guardian list. 342 -> 343.
+ *
+ * #1615: the medication DELETE joins the guardian-need list, and the custom
+ * medication category and custom cycle symptom edits join both lists.
+ * 344 -> 349.
  */
-const FROZEN_ENTRY_COUNT = 344;
+const FROZEN_ENTRY_COUNT = 349;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

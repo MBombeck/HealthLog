@@ -11,7 +11,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -31,13 +31,16 @@ type RouteParams = { params: Promise<{ key: string }> };
 /** `PATCH /api/cycle/symptoms/custom/:key` — rename / recolour / (de)activate. */
 export const PATCH = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireAuth();
+    // The owner, or a managed profile's guardian (#1615): the log sheet
+    // offers rename and remove on a custom symptom the guardian may add. An
+    // adult's delegate stays refused. The rate bucket is the actor's.
+    const { user, actor } = await requireRecordAuth("guardian", "cycle");
 
     const gate = await requireCycleEnabled(user.id, user.gender);
     if (!gate.enabled) return gate.response;
 
     const rl = await checkRateLimit(
-      `cycle:symptom:custom:${user.id}`,
+      `cycle:symptom:custom:${actor.id}`,
       30,
       60_000,
     );
@@ -122,13 +125,16 @@ export const PATCH = apiHandler(
  */
 export const DELETE = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireAuth();
+    // The owner, or a managed profile's guardian (#1615): the log sheet
+    // offers rename and remove on a custom symptom the guardian may add. An
+    // adult's delegate stays refused. The rate bucket is the actor's.
+    const { user, actor } = await requireRecordAuth("guardian", "cycle");
 
     const gate = await requireCycleEnabled(user.id, user.gender);
     if (!gate.enabled) return gate.response;
 
     const rl = await checkRateLimit(
-      `cycle:symptom:custom:${user.id}`,
+      `cycle:symptom:custom:${actor.id}`,
       30,
       60_000,
     );
