@@ -6976,7 +6976,7 @@
     "telegramStep2": "봇에게 /start를 보내 채팅을 활성화하세요.",
     "telegramStep3": "@userinfobot이나 Bot API로 채팅 ID를 확인하세요.",
     "ntfy": "ntfy",
-    "ntfyDescription": "ntfy(셀프 호스팅 또는 ntfy.sh)로 보내는 알림이에요.",
+    "ntfyDescription": "ntfy로 받는 알림.",
     "ntfyEnable": "ntfy 켜기",
     "ntfyServer": "서버 URL",
     "ntfyTopic": "토픽",
@@ -7740,8 +7740,7 @@
       "disabledReason": "사유",
       "nextRetry": "다음 재시도",
       "reEnable": "다시 사용",
-      "sendTest": "테스트 발송",
-      "emptyTitle": "아직 설정한 채널이 없어요"
+      "sendTest": "테스트 발송"
     },
     "identity": {
       "description": "건강 기록 내보내기(PDF 표지 + FHIR 내보내기)에 쓰이는 선택 정보예요.",

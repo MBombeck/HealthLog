@@ -6976,7 +6976,7 @@
     "telegramStep2": "Invia /start al tuo bot per attivare la chat.",
     "telegramStep3": "Trova il tuo ID chat tramite @userinfobot o l’API del bot.",
     "ntfy": "ntfy",
-    "ntfyDescription": "Notifiche tramite ntfy (self-hosted o ntfy.sh).",
+    "ntfyDescription": "Notifiche tramite ntfy.",
     "ntfyEnable": "Attiva ntfy",
     "ntfyServer": "URL del server",
     "ntfyTopic": "Topic",
@@ -7740,8 +7740,7 @@
       "disabledReason": "Motivo",
       "nextRetry": "Prossimo tentativo",
       "reEnable": "Riattiva",
-      "sendTest": "Invia prova",
-      "emptyTitle": "Nessun canale ancora configurato"
+      "sendTest": "Invia prova"
     },
     "identity": {
       "description": "Dati facoltativi per l’esportazione della cartella sanitaria (copertina PDF + esportazione FHIR).",

@@ -6976,7 +6976,7 @@
     "telegramStep2": "Envía /start a tu bot para activar el chat.",
     "telegramStep3": "Obtén tu ID del chat con @userinfobot o la API del bot.",
     "ntfy": "ntfy",
-    "ntfyDescription": "Notificaciones a través de ntfy (autoalojado o ntfy.sh).",
+    "ntfyDescription": "Notificaciones con ntfy.",
     "ntfyEnable": "Activar ntfy",
     "ntfyServer": "URL del servidor",
     "ntfyTopic": "Topic",
@@ -7740,8 +7740,7 @@
       "disabledReason": "Motivo",
       "nextRetry": "Próximo intento",
       "reEnable": "Reactivar",
-      "sendTest": "Enviar prueba",
-      "emptyTitle": "Aún no hay canales configurados"
+      "sendTest": "Enviar prueba"
     },
     "identity": {
       "description": "Datos opcionales para la exportación del historial de salud (portada PDF + exportación FHIR).",

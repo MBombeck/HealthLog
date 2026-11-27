@@ -6976,7 +6976,7 @@
     "telegramStep2": "Sende /start an deinen Bot, um den Chat zu aktivieren.",
     "telegramStep3": "Finde deine Chat-ID über @userinfobot oder die Bot-API.",
     "ntfy": "ntfy",
-    "ntfyDescription": "Benachrichtigungen über ntfy (self-hosted oder ntfy.sh).",
+    "ntfyDescription": "Benachrichtigungen über ntfy.",
     "ntfyEnable": "ntfy aktivieren",
     "ntfyServer": "Server-URL",
     "ntfyTopic": "Topic",
@@ -7740,8 +7740,7 @@
       "disabledReason": "Grund",
       "nextRetry": "Nächster Versuch",
       "reEnable": "Wieder aktivieren",
-      "sendTest": "Test senden",
-      "emptyTitle": "Noch keine Kanäle konfiguriert"
+      "sendTest": "Test senden"
     },
     "identity": {
       "description": "Optionale Angaben für die Gesundheitsakte (PDF-Deckblatt + FHIR-Export).",

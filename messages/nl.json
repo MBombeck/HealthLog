@@ -6976,7 +6976,7 @@
     "telegramStep2": "Stuur /start naar je bot om de chat te activeren.",
     "telegramStep3": "Zoek je Chat-ID op via @userinfobot of de Bot API.",
     "ntfy": "ntfy",
-    "ntfyDescription": "Meldingen via ntfy (zelf gehost of ntfy.sh).",
+    "ntfyDescription": "Meldingen via ntfy.",
     "ntfyEnable": "ntfy inschakelen",
     "ntfyServer": "Server-URL",
     "ntfyTopic": "Topic",
@@ -7740,8 +7740,7 @@
       "disabledReason": "Reden",
       "nextRetry": "Volgende poging",
       "reEnable": "Opnieuw inschakelen",
-      "sendTest": "Test versturen",
-      "emptyTitle": "Nog geen kanalen ingesteld"
+      "sendTest": "Test versturen"
     },
     "identity": {
       "description": "Optionele gegevens voor de export van je gezondheidsdossier (PDF-voorblad + FHIR-export).",

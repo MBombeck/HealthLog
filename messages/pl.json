@@ -6976,7 +6976,7 @@
     "telegramStep2": "Wyślij /start do swojego bota, aby aktywować czat.",
     "telegramStep3": "Znajdź swoje ID czatu przez @userinfobot lub API bota.",
     "ntfy": "ntfy",
-    "ntfyDescription": "Powiadomienia przez ntfy (własny serwer lub ntfy.sh).",
+    "ntfyDescription": "Powiadomienia przez ntfy.",
     "ntfyEnable": "Włącz ntfy",
     "ntfyServer": "Adres URL serwera",
     "ntfyTopic": "Topic",
@@ -7740,8 +7740,7 @@
       "disabledReason": "Powód",
       "nextRetry": "Następna próba",
       "reEnable": "Włącz ponownie",
-      "sendTest": "Wyślij test",
-      "emptyTitle": "Nie skonfigurowano jeszcze kanałów"
+      "sendTest": "Wyślij test"
     },
     "identity": {
       "description": "Opcjonalne dane do eksportu dokumentacji zdrowotnej (okładka PDF + eksport FHIR).",

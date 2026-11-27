@@ -6976,7 +6976,7 @@
     "telegramStep2": "Отправьте /start своему боту, чтобы активировать чат.",
     "telegramStep3": "Узнайте свой Chat ID через @userinfobot или Bot API.",
     "ntfy": "ntfy",
-    "ntfyDescription": "Уведомления через ntfy (self-hosted или ntfy.sh).",
+    "ntfyDescription": "Уведомления через ntfy.",
     "ntfyEnable": "Включить ntfy",
     "ntfyServer": "URL сервера",
     "ntfyTopic": "Тема",
@@ -7740,8 +7740,7 @@
       "disabledReason": "Причина",
       "nextRetry": "Следующий повтор",
       "reEnable": "Включить снова",
-      "sendTest": "Отправить тест",
-      "emptyTitle": "Каналы ещё не настроены"
+      "sendTest": "Отправить тест"
     },
     "identity": {
       "description": "Необязательные данные для экспорта истории здоровья (обложка PDF + экспорт FHIR).",

@@ -158,15 +158,25 @@ export function IntegrationRedirectGuide({
  */
 export function IntegrationCardDescription({
   i18nPrefix,
-  provider,
 }: {
   i18nPrefix: string;
+}) {
+  const { t } = useTranslations();
+  return <>{t(`${i18nPrefix}Description`)}</>;
+}
+
+/**
+ * The provider's setup guide, the first line inside the card's folded
+ * "Set up": it belongs with the steps, not under the card's one line.
+ */
+export function IntegrationSetupGuideLink({
+  provider,
+}: {
   provider: IntegrationDocsProvider;
 }) {
   const { t } = useTranslations();
   return (
-    <>
-      {t(`${i18nPrefix}Description`)}{" "}
+    <p className="text-muted-foreground text-xs">
       <a
         href={integrationDocsHref(provider)}
         target="_blank"
@@ -178,6 +188,6 @@ export function IntegrationCardDescription({
         {t("settings.integrationSetupGuide")}
         <ExternalLink className="h-3 w-3" aria-hidden="true" />
       </a>
-    </>
+    </p>
   );
 }
