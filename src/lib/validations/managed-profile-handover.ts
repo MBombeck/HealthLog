@@ -72,7 +72,7 @@ export const claimSchema = z
     token: claimTokenSchema,
     username: accountUsernameSchema,
     email: z.email("Invalid email address").max(254),
-    password: newAccountPasswordSchema.max(1024),
+    password: newAccountPasswordSchema,
   })
   .strict();
 

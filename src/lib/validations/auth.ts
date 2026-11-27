@@ -7,6 +7,15 @@ import { clientTransportSchema } from "@/lib/validations/client-transport";
 const PASSWORD_MIN_LENGTH = 12;
 
 /**
+ * The longest new password a form accepts. Far past anything a person or a
+ * password manager produces; the strength estimator reads only the first
+ * `PASSWORD_STRENGTH_MAX_LENGTH` characters of it either way. Sign-in and the
+ * current-password check carry no such cap, so a longer password set before
+ * the cap still verifies.
+ */
+const PASSWORD_MAX_LENGTH = 1024;
+
+/**
  * v1.42 (#959) — the prefix a managed profile's generated username carries
  * (`managed-<hex>`, `src/lib/managed-profiles/create.ts`). An account a person
  * names themselves may not start with it: a self-chosen `managed-…` would read
@@ -43,7 +52,8 @@ export const newAccountPasswordSchema = z
   .min(
     PASSWORD_MIN_LENGTH,
     `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
-  );
+  )
+  .max(PASSWORD_MAX_LENGTH);
 
 export const registerSchema = z.object({
   email: z.email("Invalid email address"),
@@ -151,7 +161,8 @@ export const changePasswordSchema = z
       .min(
         PASSWORD_MIN_LENGTH,
         `New password must be at least ${PASSWORD_MIN_LENGTH} characters`,
-      ),
+      )
+      .max(PASSWORD_MAX_LENGTH),
     confirmPassword: z.string().min(1, "Password confirmation is required"),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
