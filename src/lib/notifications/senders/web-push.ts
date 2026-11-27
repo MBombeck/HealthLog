@@ -17,7 +17,7 @@ import { isSafeAppPath } from "@/lib/notifications/tap-target";
  * Send Web Push notification to all subscribed devices of a user.
  * VAPID config is loaded from app settings first, then env as fallback.
  *
- * Returns a structured `SendOutcome` (v1.4.15 Phase B3) so the dispatcher
+ * Returns a structured `SendOutcome` (v1.4.15) so the dispatcher
  * can classify the channel state:
  *  - `ok: true`  if at least one device received the push.
  *  - `hardReject: true` only when ALL surviving subscriptions returned a

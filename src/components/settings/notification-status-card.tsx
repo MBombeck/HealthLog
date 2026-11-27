@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Per-channel reliability status surface (v1.4.15 Phase B3).
+ * Per-channel reliability status surface (v1.4.15).
  *
  * Shows for each configured Telegram / ntfy / Web Push channel:
  *  - State badge (Active / Auto-disabled / Sending paused / Manually off)

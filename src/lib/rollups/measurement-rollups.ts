@@ -1,8 +1,7 @@
 /**
  * v1.5.0 — persistent measurement-rollup populator.
  *
- * Sits behind the 60-s in-process LRU as the second cache tier
- * (per `.planning/research/v1434-r-cache-aggregation.md` §9). One row
+ * Sits behind the 60-s in-process LRU as the second cache tier. One row
  * per `(userId, type, granularity, bucketStart)` in
  * `measurement_rollups`, carrying the count / min / max / mean / sd /
  * slope / r2 stats Postgres folds via `STDDEV_POP` / `REGR_SLOPE` /

@@ -2,7 +2,7 @@
  * WebAuthn as a **second factor** — distinct from the passwordless-primary
  * passkey path in `src/lib/auth/passkey.ts`.
  *
- * Differences from the primary path (see `.planning` design §3.2):
+ * Differences from the primary path:
  * - Credentials live in `WebauthnMfaCredential`, NOT `Passkey`. A `Passkey`
  *   row is itself a login credential; an MFA credential is meaningless without
  *   the password, so conflating the two would silently turn a security-key

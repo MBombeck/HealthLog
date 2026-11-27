@@ -14,7 +14,7 @@ primeLocales("de");
 
 /**
  * v1.4.25 — RTL-style component coverage for the GLP-1
- * medication-card variant deferred by phase W4d.
+ * medication-card variant, deferred when the variant first shipped.
  *
  * The project never installed `@testing-library/react`; the convention
  * is `renderToStaticMarkup` + assertions against the SSR string, with
@@ -23,7 +23,7 @@ primeLocales("de");
  * (button onClick → callback) is smoke-checked by invoking the
  * supplied handler directly — SSR can't fire DOM events.
  *
- * Test cases (per phase-W4d-v1425-glp1-full-report.md "Tests deferred"):
+ * Test cases:
  *   1. Renders GLP-1 variant when treatmentClass === "GLP1"
  *   2. Renders default MedicationCard when treatmentClass === null
  *   3. Drug name + current dose ("Mounjaro · 7.5 mg") visible
@@ -485,8 +485,8 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
   });
 
   it("AI-disabled state: no Coach hand-off button is rendered today", () => {
-    // The phase-W4d brief reserves a "Coach hand-off button (if
-    // present)" slot on the GLP-1 card. It has not landed in v1.4.25
+    // The GLP-1 card design reserves a "Coach hand-off button (if
+    // present)" slot. It has not landed in v1.4.25
     // — the GLP-1 Coach context flows through the global Coach via
     // GROUND RULE 9, not a per-card button. This test pins the
     // current absence so a future hand-off button that doesn't

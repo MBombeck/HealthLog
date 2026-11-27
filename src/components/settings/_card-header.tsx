@@ -10,8 +10,8 @@
  * justify-between` permutations across `account-section.tsx`,
  * `integrations-section.tsx`, `notification-status-card.tsx`,
  * `telegram-card.tsx`, `ntfy-card.tsx`, `web-push-card.tsx`,
- * `api-section.tsx`, and `advanced-section.tsx`. The audit's mechanical
- * drift report (`.planning/round-v1433-audit-settings.md` §2.5) listed
+ * `api-section.tsx`, and `advanced-section.tsx`. A mechanical drift
+ * report listed
  * one card with `mb-4 flex items-center gap-2`, the next with
  * `flex flex-col gap-3 sm:flex-row sm:justify-between`, another with
  * `flex flex-wrap items-start justify-between`, etc.

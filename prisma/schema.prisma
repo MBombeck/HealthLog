@@ -1,5 +1,5 @@
 // v1.4.34 web-freeze. Schema is locked additive-only until iOS launch
-// + v1.5.0 marker. See .planning/v15-strategic-plan.md §2.
+// + v1.5.0 marker.
 //
 // ─── Timezone storage convention (UTC-only invariant) ───────────────
 //
@@ -547,7 +547,7 @@ model User {
   aiCompatKeyEncrypted String? @map("ai_compat_key_encrypted")
   aiCompatModel        String? @map("ai_compat_model")
 
-  // v1.4.16 phase B5b — ordered fallback chain for multi-provider AI
+  // v1.4.16: ordered fallback chain for multi-provider AI
   // redundancy. Each entry is `{ providerType, priority, enabled }`,
   // sorted by ascending priority at runtime. Credentials live in the
   // dedicated encrypted columns (codex* / aiAnthropicKeyEncrypted /
@@ -610,7 +610,7 @@ model User {
   // Onboarding. The first-run redirect's gate; the needs-based setup flow
   // (`OnboardingRecord`) keeps its own ledger and stamps this on confirm.
   onboardingCompletedAt   DateTime? @map("onboarding_completed_at")
-  // v1.4.15 Phase B5: tracks whether the user has finished (or
+  // v1.4.15: tracks whether the user has finished (or
   // explicitly dismissed) the spotlight tour that overlays the
   // dashboard on first arrival. Distinct from the wizard at
   // `/onboarding` (which is gated by `onboardingCompletedAt`); the
@@ -667,7 +667,7 @@ model User {
   // Display name (optional override of username for greetings).
   displayName String? @map("display_name")
 
-  // Doctor-report personalization (v1.4.15 phase B6).
+  // Doctor-report personalization (v1.4.15).
   // Persisted between report exports so the dialog can pre-fill the last-used
   // practice / clinic name. Free-text, hard-capped to 120 chars upstream by
   // `sanitisePracticeName()`. Null = user has never set one.
@@ -916,7 +916,7 @@ model User {
   // secret rides the same AES-256-GCM at-rest envelope as every other
   // credential (registered in ENCRYPTED_COLUMNS + the rotation script);
   // `totpConfirmedAt` marks the pending→active promotion. `mfaEnforced` and
-  // `passkeyUpgradeNudgeDismissed` are per-account flags later waves read.
+  // `passkeyUpgradeNudgeDismissed` are per-account flags.
   totpSecretEncrypted          String?   @map("totp_secret_encrypted")
   totpConfirmedAt              DateTime? @map("totp_confirmed_at")
   // v1.23 — TOTP replay guard. The last accepted time-step counter
@@ -1522,7 +1522,7 @@ model Session {
   ipAddress     String?   @map("ip_address")
   userAgent     String?   @map("user_agent")
   // v1.23 — step-up freshness stamp. Set when the session completes a second
-  // factor (or re-confirms it); `requireFreshMfa` (a later wave) reads it.
+  // factor (or re-confirms it); `requireFreshMfa` reads it.
   mfaVerifiedAt DateTime? @map("mfa_verified_at")
   /// When this session last re-proved a credential through `POST
   /// /api/auth/reproof` (any method). Read by `requireRecentProof`, which on an
@@ -1583,8 +1583,7 @@ model Session {
 }
 
 // ─── v1.23 second-factor (MFA) substrate ───────────────────
-// These tables back the TOTP / WebAuthn-second-factor / recovery-code flows
-// that later waves build on. Phase F lands the empty stores only.
+// These tables back the TOTP / WebAuthn-second-factor / recovery-code flows.
 
 // Single-use step-up ticket minted after a valid password when the account
 // has a second factor enabled. The partial "password OK, awaiting factor 2"
@@ -1832,8 +1831,7 @@ enum MeasurementType {
   // the WHOOP row reuses that type and is distinguished by source; where it
   // would collide with a HealthLog engine (STRAIN_SCORE) or a different
   // physiological measure (SDNN HEART_RATE_VARIABILITY) it gets a NEW type so
-  // the native value and the derived proxy never share a bucket. See
-  // `.planning/v1.11-build/epic-A-whoop-buildspec.md` §3.2 / §5.
+  // the native value and the derived proxy never share a bucket.
   HRV_RMSSD // ms — WHOOP `recovery.score.hrv_rmssd_milli`. The RMSSD HRV metric WHOOP reports; kept structurally distinct from the SDNN HEART_RATE_VARIABILITY (different estimator, not interchangeable).
   DAY_STRAIN // score (0–21) — WHOOP `cycle.score.strain`. The day's cardiovascular load on WHOOP's 0–21 scale. Distinct from the COMPUTED STRAIN_SCORE (0–100 TRIMP proxy) so the two never share a bucket.
   WORKOUT_STRAIN // score (0–21) — WHOOP `workout.score.strain`. Per-workout strain; preferentially stored in `Workout.metadata` (tied to the workout row) rather than as a free-floating Measurement, but the type exists for the rare detached case.
@@ -5671,7 +5669,7 @@ model AppSettings {
   adminCodexConnectedAt           DateTime? @map("admin_codex_connected_at")
   adminCodexConnectionStatus      String    @default("disconnected") @map("admin_codex_connection_status")
 
-  // v1.4.16 phase B5e — daily-aggregated rec-feedback summary written
+  // v1.4.16: daily-aggregated rec-feedback summary written
   // by `feedback-aggregator.ts`. Shape:
   //   {
   //     "generatedAt": "2026-05-09T04:00:00.000Z",
@@ -5909,7 +5907,7 @@ model NotificationChannel {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  // ── v1.4.15 Phase B3: reliability fields ─────────────────────
+  // ── v1.4.15: reliability fields ─────────────────────
   // Reason the channel was auto-disabled (e.g. "hard_reject_410",
   // "telegram_blocked_by_user", "telegram_chat_not_found",
   // "give_up_after_5_failures"). NULL when the channel is healthy
@@ -7383,7 +7381,7 @@ model HostMetric {
   @@map("host_metrics")
 }
 
-// ─── Recommendation Feedback (v1.4.16 phase B5e) ───────────────
+// ─── Recommendation Feedback (v1.4.16) ───────────────
 //
 // Per-recommendation thumbs-up / thumbs-down rating. Captured client-
 // side under each rec card; persisted with provider attribution

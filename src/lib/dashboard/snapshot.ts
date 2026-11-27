@@ -156,8 +156,8 @@ import { translateOrNull } from "@/lib/i18n/translate-code";
  * (`MetricKind.swift:30-122`); the snapshot's `metricStates` block is
  * keyed by them so a cold-launch first-paint seeds every tile without
  * a per-metric round-trip. Most map to the lowercase / camel form of
- * the enum, but a handful are non-obvious and locked verbatim in
- * `.planning/ios-coord/v1.7.0-ios-convergence-locks.md` §4b:
+ * the enum, but a handful are non-obvious and locked verbatim with the
+ * iOS client:
  *
  *   - SpO₂ → `oxygenSaturation`
  *   - body water → `totalBodyWater`

@@ -2,8 +2,8 @@
  * v1.10.0 — the FLAGSHIP shared baseline engine (catalogue metric #1:
  * personal typical-range / vitals baseline).
  *
- * `computeVitalsBaseline(userId, profile, opts)` is the one real metric
- * Wave 1 ships end-to-end. It returns the band of values that is "normal
+ * `computeVitalsBaseline(userId, profile, opts)` is the one metric
+ * implemented end-to-end. It returns the band of values that is "normal
  * for you" for a single vital, computed as a rolling personal baseline:
  *
  *   - **center** = median of the per-day means over the window. The DAY
@@ -337,7 +337,7 @@ export async function readDayMeanSeries(
 }
 
 /**
- * FLAGSHIP — the one real Wave 1 metric. Pure `(userId, profile, opts) =>
+ * FLAGSHIP — the one implemented derived metric. Pure `(userId, profile, opts) =>
  * Promise<Derived<VitalsBaselineValue>>`: rolling personal baseline
  * (median ± k·MAD) for a single vital, reading the rollup tier with a
  * per-type live fallback on a coverage miss. Below the min-history floor

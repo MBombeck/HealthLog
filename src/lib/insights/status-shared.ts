@@ -141,8 +141,7 @@ export interface SeriesSummary {
  * v1.4.33 — fold sum/min/max into a single walk. The previous
  * `Math.min(...series.map(...))` / `Math.max(...series.map(...))`
  * spread tripped V8's ~125 000-arg ceiling on the bound /api/analytics
- * path; see `.planning/round-v1433-analytics-500-report.md` §"Carry-
- * over". These helpers are fed bounded windows today so the crash
+ * path. These helpers are fed bounded windows today so the crash
  * never reached them, but the spread allocates a transient args array
  * on every call — the fold is both stack-safe and cheaper.
  */

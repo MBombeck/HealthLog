@@ -1,6 +1,6 @@
 /**
  * Integration regression guard for the per-type export endpoints
- * (v1.4.16 phase B7):
+ * (v1.4.16):
  *
  *   GET /api/export/measurements
  *   GET /api/export/medications

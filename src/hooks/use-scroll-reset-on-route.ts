@@ -11,8 +11,7 @@ import { useEffect } from "react";
  * on mount. Two consumers doing the same trick is the kind of
  * duplication that drifts; the second `scrollTo` lands ~16 ms after the
  * first and re-snaps the viewport once the chart skeleton has inflated.
- * On slow hydrates the user sees a visible "jump" — exactly the
- * complaint in `.planning/round-v1433-audit-polish.md` §2.1.
+ * On slow hydrates the user sees a visible "jump".
  *
  * This hook is the single owner of that reset. Both the shell and the
  * mother page call into it; the effect is mount-only and uses
