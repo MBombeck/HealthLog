@@ -48,7 +48,7 @@ import {
   type BindingRefusal,
 } from "@/lib/push-relay/binding";
 import { loadRegistration } from "@/lib/push-relay/registration";
-import { endRelayStartedActivities } from "@/lib/push-relay/live-activity";
+import { endRelayStartedActivities } from "@/lib/push-relay/live-activity-relay-end";
 import {
   devicePushBlock,
   type DevicePushBlock,

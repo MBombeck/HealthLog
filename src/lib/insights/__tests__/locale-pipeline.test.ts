@@ -101,6 +101,15 @@ vi.mock("@/lib/insights/recent-readings", async (importOriginal) => {
   };
 });
 
+// Sleep is read as nights; this suite holds no sleep.
+vi.mock("@/lib/measurements/list/sleep-nights", () => ({
+  readSleepNightPoints: async () => [],
+}));
+vi.mock("@/lib/rollups/measurement-read", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/rollups/measurement-read")>()),
+  loadUserSourcePriority: async () => null,
+}));
+
 vi.mock("@/lib/insights/status-provider", () => ({
   runStatusCompletion: vi.fn(),
 }));

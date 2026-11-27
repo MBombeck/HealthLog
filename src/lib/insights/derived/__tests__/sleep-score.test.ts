@@ -453,7 +453,7 @@ describe("computeSleepScore", () => {
       {
         value: 430,
         measuredAt: new Date("2026-06-01T23:30:00Z"),
-        sleepStage: "ASLEEP" as never,
+        sleepStage: "ASLEEP" as const,
         timeZone: "Asia/Tokyo",
       },
     ]);

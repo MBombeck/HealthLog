@@ -1,7 +1,7 @@
 {
   "$comment": "as never casts in tests, per test file under src/. Maintained by src/__tests__/test-realism-ratchet.test.ts.",
   "count": 517,
-  "total": 5316,
+  "total": 5291,
   "entries": {
     "__tests__/api/auth/login/mfa-branch.test.ts": 10,
     "__tests__/api/auth/mfa/verify.test.ts": 9,
@@ -386,7 +386,7 @@
     "lib/insights/__tests__/comprehensive-briefing-reroll.test.ts": 1,
     "lib/insights/__tests__/comprehensive-generate-force.test.ts": 2,
     "lib/insights/__tests__/feature-cache.test.ts": 2,
-    "lib/insights/__tests__/general-status.test.ts": 30,
+    "lib/insights/__tests__/general-status.test.ts": 22,
     "lib/insights/__tests__/glp1-plateau.test.ts": 17,
     "lib/insights/__tests__/locale-pipeline.test.ts": 6,
     "lib/insights/__tests__/medication-compliance-status.test.ts": 19,

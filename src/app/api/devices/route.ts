@@ -59,7 +59,7 @@ import {
 import { drainQueuedUnbinds } from "@/lib/devices/signed-out-push";
 import { sendSecurityAlert } from "@/lib/auth/security-alert";
 import { endDeviceLiveActivities } from "@/lib/notifications/live-activity-end";
-import { endSupersededRelayActivities } from "@/lib/push-relay/live-activity";
+import { endSupersededRelayActivities } from "@/lib/push-relay/live-activity-relay-end";
 import { replaceLiveActivityTokens } from "@/lib/push-relay/live-activity-report";
 import {
   APNS_TOKEN_MAX_HEX,

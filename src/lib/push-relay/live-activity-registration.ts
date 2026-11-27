@@ -24,7 +24,7 @@
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
-import { endRelayStartedActivities } from "@/lib/push-relay/live-activity";
+import { endRelayStartedActivities } from "@/lib/push-relay/live-activity-relay-end";
 import { relayConfig } from "@/lib/push-relay/config";
 import { tokenTagHex } from "@/lib/push-relay/encoding";
 import { loadRegistration, relayCall } from "@/lib/push-relay/registration";
