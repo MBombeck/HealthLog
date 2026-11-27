@@ -7,6 +7,8 @@ import {
   useOnboardingComplete,
 } from "@/components/onboarding/use-onboarding-flow";
 import { screenHref } from "@/components/onboarding/screen-href";
+import { setTourReferrer } from "@/components/onboarding/tour-launcher";
+import { useAuth } from "@/hooks/use-auth";
 import { localizedApiError } from "@/lib/api/localized-error";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { useTranslations } from "@/lib/i18n/context";
@@ -32,6 +34,7 @@ export function usePersonFlow(
 ) {
   const { t } = useTranslations();
   const router = useRouter();
+  const { user } = useAuth();
   const answer = useOnboardingAnswer();
   const complete = useOnboardingComplete();
 
@@ -70,6 +73,8 @@ export function usePersonFlow(
   /** The flow's last screen: settle the ledger and open the dashboard. */
   async function finish(written: OnboardingStateDto): Promise<void> {
     if (stepPending(written, "done")) await record({ step: "done" });
+    // The module tour follows the first run straight away, not a day later.
+    if (user?.id) setTourReferrer(user.id);
     router.push("/");
     router.refresh();
   }

@@ -80,5 +80,3 @@ export function useOnboardingRestart() {
     },
   });
 }
-
-export { screenHref } from "./screen-href";

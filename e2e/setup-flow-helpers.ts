@@ -122,16 +122,6 @@ export interface MePayload {
   };
 }
 
-/** The dashboard layout's tile ids, in order. */
-export async function readTileOrder(page: Page): Promise<string[]> {
-  const res = await sessionCall(page, "GET", "/api/dashboard/widgets");
-  expect(res.status, "reading the dashboard layout").toBe(200);
-  const { data } = res.json as {
-    data: { widgets: Array<{ id: string; order: number }> };
-  };
-  return [...data.widgets].sort((a, b) => a.order - b.order).map((w) => w.id);
-}
-
 /** One answer through the answers route, on the browser's own session. */
 export async function answer(page: Page, body: unknown): Promise<void> {
   const res = await sessionCall(page, "PATCH", "/api/onboarding/answers", body);
