@@ -30,11 +30,12 @@ import { metricHref } from "@/lib/links/hrefs";
 /**
  * `/insights/scores/<metric>` — a score's own page.
  *
- * Readiness and the sleep score open their anatomy (ring, ranked
- * contributors, method, cited standard, course). Stress and strain, the two
- * estimates, open theirs too. `health` carries the Health score panel
- * unchanged (with its safety line, rest mode, tension, retry and settings
- * link) above its day-by-day course.
+ * Every score page reads in one order, the app's too: the assessment, then
+ * what counts (the factors with their weights, or one sentence for a score
+ * without parts), then the course. Readiness and the sleep score open their
+ * anatomy; stress and strain open theirs, labelled by the server's `origin`.
+ * `health` carries the Health score panel (its explanation lines, the
+ * pillars with their weights, the method) above its day-by-day course.
  *
  * `recovery` has no page of its own any more. The web drew the readiness
  * HealthLog stores each night as a second ring beside the live readiness,
@@ -77,11 +78,11 @@ const HEADER_KEYS: Partial<
     description: "insights.derived.composite.READINESS.description",
   },
   STRESS_SCORE: {
-    title: "insights.deviceScores.stress",
+    title: "insights.derived.scores.stress",
     description: "insights.derived.composite.STRESS_SCORE.description",
   },
   STRAIN_SCORE: {
-    title: "insights.deviceScores.strain",
+    title: "insights.derived.scores.strain",
     description: "insights.derived.composite.STRAIN_SCORE.description",
   },
 };

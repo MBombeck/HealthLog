@@ -5416,16 +5416,18 @@
         "green": "niski",
         "yellow": "umiarkowany",
         "red": "wysoki"
-      }
+      },
+      "origin": {
+        "estimate": "Szacunek",
+        "device": "Wartość z urządzenia"
+      },
+      "estimateNoFactors": "Obliczony z danych o pracy serca, nie zgłoszony przez urządzenie.",
+      "deviceNoFactors": "Ta wartość przychodzi gotowa z twojego urządzenia. Nie podaje ono poszczególnych czynników."
     },
     "deviceScores": {
       "title": "Wyniki urządzeń",
       "description": "To, co zgłasza Twoje urządzenie, pod jego własnymi nazwami.",
-      "valueOfScale": "{value} z {max}",
-      "estimatesTitle": "Szacunki HealthLog",
-      "estimatesSubtitle": "Obliczone z danych o pracy serca, nie zgłoszone przez urządzenie.",
-      "stress": "Stres (szacunek)",
-      "strain": "Obciążenie (szacunek)"
+      "valueOfScale": "{value} z {max}"
     }
   },
   "thresholds": {

@@ -5416,16 +5416,18 @@
         "green": "low",
         "yellow": "moderate",
         "red": "high"
-      }
+      },
+      "origin": {
+        "estimate": "Estimate",
+        "device": "Device value"
+      },
+      "estimateNoFactors": "Worked out from your heart data, not reported by a device.",
+      "deviceNoFactors": "This value comes ready-made from your device. It does not report individual factors."
     },
     "deviceScores": {
       "title": "Device scores",
       "description": "What your wearable reports, under its own names.",
-      "valueOfScale": "{value} of {max}",
-      "estimatesTitle": "Estimates from HealthLog",
-      "estimatesSubtitle": "Worked out from your heart data, not reported by a device.",
-      "stress": "Stress (estimate)",
-      "strain": "Strain (estimate)"
+      "valueOfScale": "{value} of {max}"
     }
   },
   "thresholds": {

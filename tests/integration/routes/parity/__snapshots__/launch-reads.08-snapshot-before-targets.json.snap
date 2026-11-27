@@ -3469,49 +3469,56 @@
             "label": "Blood pressure",
             "value": 73,
             "reason": null,
-            "reasonCode": null
+            "reasonCode": null,
+            "weight": 0.25
           },
           {
             "id": "GLYCAEMIA",
             "label": "Glycemia",
             "value": 100,
             "reason": null,
-            "reasonCode": null
+            "reasonCode": null,
+            "weight": 0.25
           },
           {
             "id": "ACTIVITY",
             "label": "Activity",
             "value": 78,
             "reason": null,
-            "reasonCode": null
+            "reasonCode": null,
+            "weight": 0.25
           },
           {
             "id": "SLEEP",
             "label": "Sleep",
             "value": 92,
             "reason": null,
-            "reasonCode": null
+            "reasonCode": null,
+            "weight": 0.25
           },
           {
             "id": "ADIPOSITY",
             "label": "Adiposity",
             "value": null,
             "reason": "Not tracked",
-            "reasonCode": "not_tracked"
+            "reasonCode": "not_tracked",
+            "weight": null
           },
           {
             "id": "WELLBEING",
             "label": "Wellbeing",
             "value": null,
             "reason": "Not tracked",
-            "reasonCode": "not_tracked"
+            "reasonCode": "not_tracked",
+            "weight": null
           },
           {
             "id": "LIPIDS",
             "label": "Lipids",
             "value": null,
             "reason": "Not tracked",
-            "reasonCode": "not_tracked"
+            "reasonCode": "not_tracked",
+            "weight": null
           }
         ],
         "tension": {

@@ -1854,6 +1854,16 @@
               "tier": "partial",
               "physiological": true
             },
+            "weights": [
+              {
+                "id": "BLOOD_PRESSURE",
+                "weight": 0.5
+              },
+              {
+                "id": "ACTIVITY",
+                "weight": 0.5
+              }
+            ],
             "noiseFloor": 3,
             "scoreVersion": 4
           },

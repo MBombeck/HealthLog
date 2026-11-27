@@ -143,4 +143,45 @@ describe("<ScoreAnatomyView>", () => {
     // No contributor rows in the insufficient state.
     expect(html).not.toContain('data-slot="anatomy-contributor-row"');
   });
+
+  it("puts the one no-factors sentence under the same heading, with the origin beside the title", () => {
+    const html = render(
+      <ScoreAnatomyView
+        title="Stress"
+        score={71}
+        load
+        contributors={[]}
+        noFactorsNote="Worked out from your heart data, not reported by a device."
+        originLabel="Estimate"
+        coverage={COVERAGE}
+        provenance={PROVENANCE}
+        method="A nightly proxy."
+      />,
+    );
+    const block = html.slice(
+      html.indexOf('data-slot="score-anatomy-contributors"'),
+    );
+    expect(block).toContain("Contributors");
+    expect(block).toContain('data-slot="score-anatomy-no-factors"');
+    expect(block).toContain("not reported by a device");
+    expect(html).toContain('data-slot="score-anatomy-origin"');
+    // The sentence stands before the method, where the rows would.
+    expect(html.indexOf("score-anatomy-no-factors")).toBeLessThan(
+      html.indexOf("A nightly proxy."),
+    );
+  });
+
+  it("shows no sentence and no heading for a score that has neither", () => {
+    const html = render(
+      <ScoreAnatomyView
+        title="Recovery"
+        score={64}
+        contributors={[]}
+        coverage={COVERAGE}
+        provenance={PROVENANCE}
+        method="A blend."
+      />,
+    );
+    expect(html).not.toContain('data-slot="score-anatomy-contributors"');
+  });
 });

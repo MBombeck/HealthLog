@@ -2135,6 +2135,24 @@
               "tier": "full",
               "physiological": true
             },
+            "weights": [
+              {
+                "id": "BLOOD_PRESSURE",
+                "weight": 0.25
+              },
+              {
+                "id": "GLYCAEMIA",
+                "weight": 0.25
+              },
+              {
+                "id": "ACTIVITY",
+                "weight": 0.25
+              },
+              {
+                "id": "SLEEP",
+                "weight": 0.25
+              }
+            ],
             "noiseFloor": 2,
             "scoreVersion": 4
           },

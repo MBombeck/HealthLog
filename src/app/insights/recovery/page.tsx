@@ -10,8 +10,8 @@ import { RecoverySection } from "@/components/insights/recovery/recovery-section
  * What a wearable reports under its own names: the device's recovery (WHOOP
  * Recovery, Oura Readiness, Polar Nightly Recharge) with its two-week
  * course, recharge, strain and load, and the day's heart-rate and energy
- * totals. Below them, in a section of their own, the two estimates HealthLog
- * works out from heart data (stress and strain), which no device reports.
+ * totals. HealthLog's own stress and strain stand at the head of Insights
+ * with the other scores, labelled as estimates.
  *
  * The route keeps its name so links, the nav pill and the integration cards
  * keep working. The readiness HealthLog computes lives on the Insights head

@@ -259,6 +259,8 @@ test.describe("wellness scores", () => {
               series: [58, 61, 64, 60, 66],
               anchor: null,
               components: null,
+              origin: "estimate",
+              deviceSource: null,
             },
             coverage: {
               requiredInputs: 1,
@@ -291,6 +293,14 @@ test.describe("wellness scores", () => {
     ]);
     expect(historyBox!.y).toBeGreaterThan(cardBox!.y + cardBox!.height - 1);
     await expect(anatomy.locator(".text-warning")).toHaveCount(0);
+    // 1.50 — an estimate says so beside its title, and a score without
+    // parts says why in the place of the rows.
+    await expect(
+      anatomy.locator('[data-slot="score-anatomy-origin"]'),
+    ).toBeVisible();
+    await expect(
+      anatomy.locator('[data-slot="score-anatomy-no-factors"]'),
+    ).toBeVisible();
   });
 });
 

@@ -7,6 +7,7 @@ import type {
   RestModeAnnotation,
   ScorePillarId,
   ScorePillarResult,
+  ScorePillarWeight,
 } from "@/lib/analytics/score/types";
 import { clampScore } from "@/lib/analytics/score/shared";
 import {
@@ -37,17 +38,25 @@ export interface DashboardSnapshotScorePillar {
   reason: string | null;
   /** The machine reason behind `reason`; null when it counted. */
   reasonCode: string | null;
+  /**
+   * The pillar's share of the number, from the composite's own `weights`;
+   * null when it did not count.
+   */
+  weight: number | null;
 }
 
 /**
  * The slim pillar rows from a score report, worded in `locale` the way the
- * Insights panel words them. Pure.
+ * Insights panel words them, each with the weight the composite gave it
+ * (`weights` is the composite's own list; nothing is re-derived here). Pure.
  */
 export function snapshotScorePillars(
   pillars: readonly ScorePillarResult[],
+  weights: readonly ScorePillarWeight[] | undefined,
   locale: Locale,
 ): DashboardSnapshotScorePillar[] {
   const { t } = getServerTranslator(locale);
+  const weightOf = new Map((weights ?? []).map((w) => [w.id, w.weight]));
   return pillars.map((pillar) => {
     const ok = pillar.result.status === "ok";
     const reasonCode =
@@ -61,6 +70,7 @@ export function snapshotScorePillars(
           : null,
       reason: ok ? null : t(scorePillarReasonKey(reasonCode ?? "")),
       reasonCode: ok ? null : (reasonCode ?? "unavailable"),
+      weight: weightOf.get(pillar.id) ?? null,
     };
   });
 }
@@ -126,7 +136,7 @@ export async function snapshotHealthScore(
     bandSetterBand: setter?.band ?? null,
     bandSetterLine: setter?.line ?? null,
     restMode,
-    pillars: snapshotScorePillars(report.pillars, locale),
+    pillars: snapshotScorePillars(report.pillars, composite.weights, locale),
   };
 }
 

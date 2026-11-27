@@ -422,3 +422,74 @@ describe("computeWellnessScore — strain reads the device's day strain", () => 
     expect(r.status).toBe("insufficient");
   });
 });
+
+/**
+ * 1.50 — whose number a score is, resolved once on the server so neither
+ * client infers it from `components`, `device` or the provenance. Every arm
+ * that builds a value is covered: the COMPUTED read for each type, a vendor
+ * recovery, and the device's day strain.
+ */
+describe("computeWellnessScore — origin and device source", () => {
+  function byType(rows: Record<string, unknown[]>) {
+    findMany.mockImplementation(
+      async (args: { where: { type: string } }) => rows[args.where.type] ?? [],
+    );
+  }
+  const at = new Date("2026-06-01T12:00:00Z");
+
+  it.each([
+    ["STRESS_SCORE", "estimate"],
+    ["STRAIN_SCORE", "estimate"],
+    ["RECOVERY_SCORE", "computed"],
+  ] as const)("%s from the nightly job reads %s", async (type, origin) => {
+    byType({ [type]: [{ value: 60, measuredAt: at, source: "COMPUTED" }] });
+    const r = await computeWellnessScore(type, "u1", PROFILE, { now: NOW });
+    expect(r.status).toBe("ok");
+    if (r.status !== "ok") return;
+    expect(r.value.origin).toBe(origin);
+    expect(r.value.deviceSource).toBeNull();
+  });
+
+  it.each(["WHOOP", "OURA", "POLAR"])(
+    "a %s recovery is the device's number, named",
+    async (source) => {
+      byType({
+        RECOVERY_SCORE: [
+          { value: 77, measuredAt: new Date("2026-06-02T06:00:00Z"), source },
+        ],
+      });
+      const r = await computeWellnessScore("RECOVERY_SCORE", "u1", PROFILE, {
+        now: NOW,
+      });
+      expect(r.status).toBe("ok");
+      if (r.status !== "ok") return;
+      expect(r.value.origin).toBe("device");
+      expect(r.value.deviceSource).toBe(source);
+    },
+  );
+
+  it("a day strain served from the device names the latest reading's source", async () => {
+    byType({
+      STRAIN_SCORE: [],
+      DAY_STRAIN: [
+        {
+          value: 9,
+          measuredAt: new Date("2026-06-02T04:00:00Z"),
+          source: "GARMIN",
+        },
+        {
+          value: 12,
+          measuredAt: new Date("2026-06-01T04:00:00Z"),
+          source: "WHOOP",
+        },
+      ],
+    });
+    const r = await computeWellnessScore("STRAIN_SCORE", "u1", PROFILE, {
+      now: NOW,
+    });
+    expect(r.status).toBe("ok");
+    if (r.status !== "ok") return;
+    expect(r.value.origin).toBe("device");
+    expect(r.value.deviceSource).toBe("GARMIN");
+  });
+});

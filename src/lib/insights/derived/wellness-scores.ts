@@ -86,6 +86,43 @@ export interface WellnessScoreValue {
    * Absent whenever the computed proxy is the source.
    */
   device?: { value: number; scaleMax: number } | null;
+  /**
+   * 1.50 — whose number this is, resolved here and nowhere else
+   * (`wellnessScoreOrigin`): `estimate` for a value HealthLog works out from
+   * heart data alone (stress, the computed strain), `computed` for a score
+   * HealthLog blends from several inputs (the recovery proxy), `device` for a
+   * vendor's own number (a WHOOP, Oura or Polar recovery, a device's day
+   * strain). Clients label the tile from it and never infer it from
+   * `components`, `device` or the provenance.
+   */
+  origin: WellnessScoreOrigin;
+  /**
+   * The source of a `device` value (`WHOOP`, `OURA`, `POLAR`, `GARMIN`, …,
+   * the measurement source spelling); null for `estimate` and `computed`.
+   */
+  deviceSource: string | null;
+}
+
+/** Whose number a wellness score is; see `WellnessScoreValue.origin`. */
+export type WellnessScoreOrigin = "estimate" | "device" | "computed";
+
+/**
+ * The one decision behind `origin` and `deviceSource`. A row the nightly job
+ * wrote (`COMPUTED`) is HealthLog's: the recovery proxy blends five inputs,
+ * stress and strain are worked out from heart data alone. Any other source
+ * is the device that reported the number.
+ */
+export function wellnessScoreOrigin(
+  type: WellnessScoreType | "DAY_STRAIN",
+  source: string | null | undefined,
+): { origin: WellnessScoreOrigin; deviceSource: string | null } {
+  if (source !== "COMPUTED") {
+    return { origin: "device", deviceSource: source ?? null };
+  }
+  return {
+    origin: type === "RECOVERY_SCORE" ? "computed" : "estimate",
+    deviceSource: null,
+  };
 }
 
 /**
@@ -224,6 +261,8 @@ export async function computeWellnessScore(
       }
       return buildDeviceStrain(
         deviceStrainDays(deviceRows, timezone),
+        // Rows are newest-first: the source of the latest reading.
+        deviceRows[0].source,
         windowDays,
         computedAt,
       );
@@ -311,6 +350,7 @@ export async function computeWellnessScore(
       anchor,
       components,
       device: null,
+      ...wellnessScoreOrigin(type, latest.source),
     },
     coverage: {
       requiredInputs: 1,
@@ -375,6 +415,7 @@ export function deviceStrainDays(
 
 function buildDeviceStrain(
   rows: { value: number; measuredAt: Date }[],
+  source: string,
   windowDays: number,
   computedAt: string,
 ): Derived<WellnessScoreValue> {
@@ -402,6 +443,7 @@ function buildDeviceStrain(
         value: Math.round(latest.value * 10) / 10,
         scaleMax: DEVICE_STRAIN_SCALE_MAX,
       },
+      ...wellnessScoreOrigin("DAY_STRAIN", source),
     },
     coverage: {
       requiredInputs: 1,
