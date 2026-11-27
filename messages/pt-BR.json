@@ -6405,7 +6405,7 @@
             "import": "Importar",
             "empty": "Cole a exportação ou escolha um arquivo primeiro.",
             "readFailed": "Não foi possível ler esse arquivo.",
-            "rateLimited": "Máximo de 5 importações por hora. Tente novamente mais tarde.",
+            "rateLimited": "O limite de importações por hora foi atingido. Tente novamente mais tarde.",
             "tooLarge": "Esse arquivo excede o limite de 16 MB.",
             "inProgress": "Uma importação de histórico de doses já está em andamento. Espere ela terminar.",
             "workerUnavailable": "O worker em segundo plano não está disponível, então nada foi importado.",

@@ -6405,7 +6405,7 @@
             "import": "Importeren",
             "empty": "Plak eerst de export of kies een bestand.",
             "readFailed": "Dat bestand kon niet worden gelezen.",
-            "rateLimited": "Maximaal 5 imports per uur. Probeer het later opnieuw.",
+            "rateLimited": "De limiet voor imports per uur is bereikt. Probeer het later opnieuw.",
             "tooLarge": "Dat bestand is groter dan de limiet van 16 MB.",
             "inProgress": "Er loopt al een import van doseringsgeschiedenis. Wacht tot die klaar is.",
             "workerUnavailable": "De achtergrondverwerking is niet beschikbaar, dus er is niets geïmporteerd.",

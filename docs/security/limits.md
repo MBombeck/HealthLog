@@ -50,27 +50,27 @@ fail closed instead).
 
 ## Data in and out
 
-| Surface                                                                            | Limit                                                                                    | Keyed by         |
-| ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------- |
-| Batch ingest (measurements, workouts, mood, doses, cycle, nutrients, FHIR labs)    | 60 / min; at most 500 entries per request (workouts 100, FHIR labs 200); body 1 to 5 MiB | account          |
-| ECG ingest                                                                         | 600 / min; 200 recordings, 32,768 samples each                                           | account          |
-| Imports (JSON, CSV, labs CSV, medications CSV, dose history)                       | 5 / hour, shared; 16 MiB and 10,000 rows (labs 20,000, medications 500)                  | account          |
-| Staged file imports (Apple Health, Health Connect, FIT, Gadgetbridge, FHIR bundle) | 5 / min per kind                                                                         | account          |
-| Exports (every export route)                                                       | 10 / hour, shared                                                                        | account          |
-| FHIR read face                                                                     | 120 / hour                                                                               | account          |
-| Sync changes feed                                                                  | 120 / min                                                                                | account          |
-| Document upload                                                                    | 60 / hour (browser), 120 / hour per scoped token (`DOCUMENT_UPLOAD_LIMIT_PER_HOUR`)      | account, token   |
-| Document original download / thumbnails                                            | 240 / 3,000 per hour                                                                     | account          |
-| Settings changes                                                                   | 60 / min per setting                                                                     | account          |
-| Integration connect, sync, test, disconnect                                        | 5 to 20 / min; a full re-sync once an hour                                               | account          |
-| Medication ingest endpoint                                                         | 60 / min per address and per token                                                       | address, token   |
-| MCP requests / MCP writes                                                          | 120 / min, 60 / 5 min                                                                    | credential       |
-| Share link create and change                                                       | 20 / hour; expiry at most 90 days, at most 50 documents per link                         | account          |
-| Share link documents / report download                                             | 300 / 20 per hour                                                                        | link             |
-| Calendar feeds, emergency card                                                     | 120 / hour per link; 600 / hour per address across these surfaces                        | link, address    |
-| Notification quick answers                                                         | 20 / 10 min                                                                              | address, account |
-| Sharing invitations / acceptances                                                  | 10 / hour, 30 / min                                                                      | account          |
-| Webhooks (Withings, WHOOP, Telegram, deploy), CSP reports                          | 30 to 120 / min                                                                          | address          |
+| Surface                                                                            | Limit                                                                                                              | Keyed by         |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------- |
+| Batch ingest (measurements, workouts, mood, doses, cycle, nutrients, FHIR labs)    | 60 / min; at most 500 entries per request (workouts 100, FHIR labs 200); body 1 to 5 MiB                           | account          |
+| ECG ingest                                                                         | 600 / min; 200 recordings, 32,768 samples each                                                                     | account          |
+| Imports (JSON, CSV, labs CSV, medications CSV, dose history)                       | 5 / hour, shared (`IMPORT_RATE_LIMIT_PER_HOUR`, 1 to 1,000); 16 MiB and 10,000 rows (labs 20,000, medications 500) | account          |
+| Staged file imports (Apple Health, Health Connect, FIT, Gadgetbridge, FHIR bundle) | 5 / min per kind                                                                                                   | account          |
+| Exports (every export route)                                                       | 10 / hour, shared                                                                                                  | account          |
+| FHIR read face                                                                     | 120 / hour                                                                                                         | account          |
+| Sync changes feed                                                                  | 120 / min                                                                                                          | account          |
+| Document upload                                                                    | 60 / hour (browser), 120 / hour per scoped token (`DOCUMENT_UPLOAD_LIMIT_PER_HOUR`)                                | account, token   |
+| Document original download / thumbnails                                            | 240 / 3,000 per hour                                                                                               | account          |
+| Settings changes                                                                   | 60 / min per setting                                                                                               | account          |
+| Integration connect, sync, test, disconnect                                        | 5 to 20 / min; a full re-sync once an hour                                                                         | account          |
+| Medication ingest endpoint                                                         | 60 / min per address and per token                                                                                 | address, token   |
+| MCP requests / MCP writes                                                          | 120 / min, 60 / 5 min                                                                                              | credential       |
+| Share link create and change                                                       | 20 / hour; expiry at most 90 days, at most 50 documents per link                                                   | account          |
+| Share link documents / report download                                             | 300 / 20 per hour                                                                                                  | link             |
+| Calendar feeds, emergency card                                                     | 120 / hour per link; 600 / hour per address across these surfaces                                                  | link, address    |
+| Notification quick answers                                                         | 20 / 10 min                                                                                                        | address, account |
+| Sharing invitations / acceptances                                                  | 10 / hour, 30 / min                                                                                                | account          |
+| Webhooks (Withings, WHOOP, Telegram, deploy), CSP reports                          | 30 to 120 / min                                                                                                    | address          |
 
 Request bodies pass the proxy only up to 1 MiB (`proxyClientMaxBodySize`,
 `next.config.ts`); routes that take more stream their own bounded body, and

@@ -56,7 +56,10 @@ import {
   planAutoExportImport,
   type AutoExportPlan,
 } from "@/lib/medications/import/auto-export-plan";
-import { checkRateLimit } from "@/lib/rate-limit";
+import {
+  checkImportRateLimit,
+  importRateLimitMessage,
+} from "@/lib/import/import-rate-limit";
 
 /** Same ceiling as the measurement CSV import. */
 const MAX_BYTES = 16 * 1024 * 1024;
@@ -78,10 +81,6 @@ const MAX_QUEUED_ROWS = 30_000;
  * conversation than a longer list.
  */
 const MAX_NAMES_REPORTED = 50;
-
-/** Blast-radius bucket shared with every other bulk import surface. */
-const RATE_LIMIT_MAX = 5;
-const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 
 function cap(names: readonly string[]): string[] {
   return names.slice(0, MAX_NAMES_REPORTED);
@@ -119,13 +118,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // v1.37.0 — C1: keyed on the ACTOR. The bucket is shared with the other
   // import surfaces, so keying it on the record would let a manager consume
   // the owner's hourly import budget.
-  const rl = await checkRateLimit(
-    `import:${actor.id}`,
-    RATE_LIMIT_MAX,
-    RATE_LIMIT_WINDOW_MS,
-  );
+  const rl = await checkImportRateLimit(actor.id);
   if (!rl.allowed) {
-    return apiError(`Maximum ${RATE_LIMIT_MAX} imports per hour`, 429);
+    return apiError(importRateLimitMessage(rl.limit), 429);
   }
 
   const contentType = (request.headers.get("content-type") ?? "").toLowerCase();
