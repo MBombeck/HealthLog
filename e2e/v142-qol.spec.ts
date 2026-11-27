@@ -243,9 +243,14 @@ test.describe("wellness scores", () => {
     expect(new Set(boxes.map((b) => b.width)).size).toBe(1);
     for (const tile of await tiles.all()) {
       await expect(tile.locator('[data-slot="score-ring"]')).toHaveCount(1);
-      await expect(
-        tile.locator('[data-slot="score-ring-tile-line"]'),
-      ).not.toHaveText(/^\s*$/);
+      // The band word or the line says how the score stands; a fresh score
+      // with nothing to add leaves the line blank under its band word.
+      const said = await tile
+        .locator(
+          '[data-slot="score-ring-tile-band"], [data-slot="score-ring-tile-line"]',
+        )
+        .allInnerTexts();
+      expect(said.join("").trim()).not.toBe("");
     }
     // The course lives on the score's page, not on the row.
     await expect(
