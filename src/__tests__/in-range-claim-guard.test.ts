@@ -55,6 +55,9 @@ function leaves(node: unknown, prefix = ""): [string, string][] {
   );
 }
 
+const escapeRegExp = (text: string) =>
+  text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 const registered = (key: string) =>
   ALL_IN_RANGE_KEYS.some((k) => key === k || key.startsWith(k));
 
@@ -88,7 +91,7 @@ describe("in-range claim guard", () => {
 
   it("words a registered key only in the rule's own module", () => {
     const pattern = new RegExp(
-      `["'\`](${ALL_IN_RANGE_KEYS.map((k) => k.replace(/\./g, "\\.")).join("|")})`,
+      `["'\`](${ALL_IN_RANGE_KEYS.map(escapeRegExp).join("|")})`,
       "g",
     );
     const matches = scanSourceMatches(join(ROOT, "src"), pattern, {

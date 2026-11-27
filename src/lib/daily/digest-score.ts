@@ -27,13 +27,13 @@ export interface DailyDigestScore {
   scoreVersion?: number;
   composition?: ScorePillarId[];
   /**
-   * v1.35.0 — the resolved "this score is configured" flag, carried
+   * The resolved "this score is configured" flag, carried
    * straight from the snapshot's health-score block. Omitted by older
    * cached digests, like its siblings above.
    */
   configured?: boolean;
   /**
-   * v1.38 — how broad the set behind the number is, carried straight
+   * How broad the set behind the number is, carried straight
    * from the snapshot's health-score block. Since v1.38 a score exists
    * at one or two areas of health as well as three and is computed the
    * same way at each, so this block is what tells a narrow score from a
