@@ -371,13 +371,9 @@ export function SubPageShell({
             className="[&_[data-slot=page-header-row]]:min-h-10"
             titleAccessory={
               explainerMetric || diversityNudge || badge ? (
-                // One group, so the (i) and the nudge glyph wrap together
-                // and stay beside a short title on a phone.
                 <span className="inline-flex items-center gap-1">
-                  {/* The metric's definition sits behind the (i) beside the
-                    title: the page opens on its title alone, and the
-                    definition is one tap away instead of two sentences
-                    in front of every chart. */}
+                  {/* The definition sits behind the (i): the page opens on
+                    its title alone. */}
                   {explainerMetric ? (
                     <InfoPopover
                       align="start"
