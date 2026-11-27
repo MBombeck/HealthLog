@@ -6252,7 +6252,7 @@
             "passphraseHelp": "Wyprowadza klucz archiwum za pomocą Argon2id i pieczętuje je AES-256-GCM. Zapisz plik z rozszerzeniem .hlx.",
             "noRecoveryWarning": "Nie ma odzyskiwania: jeśli zgubisz tę frazę, archiwum nie da się otworzyć. Przechowuj ją bezpiecznie.",
             "detail": "Przenośna kopia twojej dokumentacji do przechowywania i czytania: wartości w zwykłym JSON, dokumenty tylko jako metadane.",
-            "description": "Wszystko w jednym pliku, opcjonalnie zaszyfrowane"
+            "description": "Wszystko, opcjonalnie zaszyfrowane"
           },
           "doctorReport": {
             "title": "Raport dla lekarza",

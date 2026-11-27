@@ -6252,7 +6252,7 @@
             "passphraseHelp": "Argon2id로 보관 파일 키를 만들고 AES-256-GCM으로 봉인해요. 파일은 .hlx 확장자로 저장해 주세요.",
             "noRecoveryWarning": "복구 수단이 없어요. 이 암호문구를 잃어버리면 보관 파일을 열 수 없어요. 안전한 곳에 보관해 주세요.",
             "detail": "보관하고 읽기 위한 기록의 휴대용 사본으로, 값은 일반 JSON이고 문서는 메타데이터만 들어 있어요.",
-            "description": "모든 것을 한 파일에, 원하면 암호화"
+            "description": "전체 데이터, 원하면 암호화"
           },
           "doctorReport": {
             "title": "진료용 리포트",

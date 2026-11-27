@@ -482,7 +482,8 @@ function FullBackupExport() {
       onDownload={() => void download.run(() => recentProof.run(downloadOnce))}
     >
       {/* What the file holds and what it leaves out (document binaries,
-          workout GPS and sample series), folded under "Learn more". */}
+          workout GPS and sample series) and how the passphrase seals it,
+          folded under "Learn more"; the sheet itself says the one warning. */}
       <Disclosure data-fold summary={t("common.learnMore")}>
         <p className="text-sm">
           {t("settings.sections.export.cards.fullBackup.detail")}
@@ -492,6 +493,9 @@ function FullBackupExport() {
           className="text-muted-foreground text-xs"
         >
           {t("settings.sections.export.cards.fullBackup.scopeNote")}
+        </p>
+        <p className="text-muted-foreground text-xs">
+          {t("settings.sections.export.cards.fullBackup.passphraseHelp")}
         </p>
       </Disclosure>
       <SwitchRow
@@ -521,9 +525,6 @@ function FullBackupExport() {
             data-bwignore="true"
             className="h-9"
           />
-          <p className="text-muted-foreground text-xs">
-            {t("settings.sections.export.cards.fullBackup.passphraseHelp")}
-          </p>
           <p className="text-warning text-xs">
             {t("settings.sections.export.cards.fullBackup.noRecoveryWarning")}
           </p>

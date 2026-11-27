@@ -6252,7 +6252,7 @@
             "passphraseHelp": "Deriva a chave do arquivo com Argon2id e a sela com AES-256-GCM. Salve o arquivo com a extensão .hlx.",
             "noRecoveryWarning": "Não há recuperação. Se você perder esta frase-senha, o arquivo não poderá ser aberto. Guarde-a em um lugar seguro.",
             "detail": "Uma cópia portátil do seu registro para guardar e ler: valores em JSON simples, documentos apenas com os metadados.",
-            "description": "Tudo em um arquivo, criptografado se quiser"
+            "description": "Tudo, criptografado se quiser"
           },
           "doctorReport": {
             "title": "Relatório médico",

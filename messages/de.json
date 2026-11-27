@@ -6252,7 +6252,7 @@
             "passphraseHelp": "Leitet den Archivschlüssel per Argon2id ab und versiegelt ihn mit AES-256-GCM. Speichere die Datei mit der Endung .hlx.",
             "noRecoveryWarning": "Es gibt keine Wiederherstellung. Geht diese Passphrase verloren, lässt sich das Archiv nicht mehr öffnen. Bewahre sie sicher auf.",
             "detail": "Eine portable Kopie deiner Akte zum Aufbewahren und Lesen: Werte als einfaches JSON, Dokumente nur mit ihren Metadaten.",
-            "description": "Alles in einer Datei, auf Wunsch verschlüsselt"
+            "description": "Alles, auf Wunsch verschlüsselt"
           },
           "doctorReport": {
             "title": "Arztbericht",

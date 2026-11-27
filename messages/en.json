@@ -6252,7 +6252,7 @@
             "passphraseHelp": "Derives the archive key with Argon2id and seals it with AES-256-GCM. Save the file with a .hlx extension.",
             "noRecoveryWarning": "There is no recovery. If you lose this passphrase, the archive cannot be opened. Keep it somewhere safe.",
             "detail": "A portable copy of your record for you to keep and read: values in plain JSON, documents as metadata only.",
-            "description": "Everything in one file, encrypted if you like"
+            "description": "Everything, encrypted if you like"
           },
           "doctorReport": {
             "title": "Doctor report",

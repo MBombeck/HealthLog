@@ -6252,7 +6252,7 @@
             "passphraseHelp": "Leidt de archiefsleutel af met Argon2id en versleutelt het archief met AES-256-GCM. Sla het bestand op met de extensie .hlx.",
             "noRecoveryWarning": "Herstellen is niet mogelijk. Als je deze wachtzin kwijtraakt, kan het archief niet worden geopend. Bewaar hem op een veilige plek.",
             "detail": "Een draagbare kopie van je dossier om te bewaren en te lezen: waarden als gewone JSON, documenten alleen als metadata.",
-            "description": "Alles in één bestand, desgewenst versleuteld"
+            "description": "Alles, desgewenst versleuteld"
           },
           "doctorReport": {
             "title": "Artsenrapport",

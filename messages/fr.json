@@ -6252,7 +6252,7 @@
             "passphraseHelp": "Dérive la clé de l'archive avec Argon2id et la scelle avec AES-256-GCM. Enregistrez le fichier avec l'extension .hlx.",
             "noRecoveryWarning": "Aucune récupération possible : si vous perdez cette phrase secrète, l'archive ne pourra pas être ouverte. Conservez-la en lieu sûr.",
             "detail": "Une copie portable de votre dossier, à conserver et à lire : valeurs en JSON simple, documents limités à leurs métadonnées.",
-            "description": "Tout dans un fichier, chiffré si vous voulez"
+            "description": "Tout, chiffré si vous voulez"
           },
           "doctorReport": {
             "title": "Rapport médical",
