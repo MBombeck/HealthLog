@@ -26,7 +26,7 @@
       "target": 2200
     },
     "/emergency-card": {
-      "budget": 1300,
+      "budget": 1600,
       "target": 1300
     },
     "/admin": {
@@ -54,8 +54,8 @@
       "target": 1200
     },
     "/notifications": {
-      "budget": 1700,
-      "target": 1200
+      "budget": 800,
+      "target": 800
     },
     "/medications": {
       "budget": 900,
