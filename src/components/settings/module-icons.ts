@@ -5,7 +5,7 @@ import type { ModuleKey } from "@/lib/modules/registry";
 
 /**
  * The glyph per toggleable module: the icon of the destination the module
- * opens, from the one map (`destination-icons.ts`), so a module row and its
+ * opens, from the one map (`layout/destination-icons`), so a module row and its
  * rail entry show the same picture. `insights` is AI analysis, hence the AI
  * glyph rather than the Insights bulb.
  */

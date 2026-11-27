@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 
-import { DESTINATION_ICONS as ICON } from "@/components/layout/destination-icons";
+import { RAIL_ICONS as ICON } from "@/components/layout/destination-icons/rail";
 
 import type { ModuleKey } from "@/lib/modules/registry";
 import { isSurfaceVisible, surfaceModule } from "@/lib/modules/surface";

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { DESTINATION_ICONS } from "@/components/layout/destination-icons";
+import { RAIL_ICONS } from "@/components/layout/destination-icons/rail";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -14,7 +14,7 @@ import { queryKeys } from "@/lib/query-keys";
 
 import { apiGet, apiPost } from "@/lib/api/api-fetch";
 
-const CoachIcon = DESTINATION_ICONS.coach;
+const CoachIcon = RAIL_ICONS.coach;
 
 /**
  * v1.16.8 — the Coach FAB is a permanent launcher again, now on EVERY

@@ -1,7 +1,7 @@
 "use client";
 
 import { MoreHorizontal, Plus, type LucideIcon } from "lucide-react";
-import { DESTINATION_ICONS as ICON } from "@/components/layout/destination-icons";
+import { RAIL_ICONS as ICON } from "@/components/layout/destination-icons/rail";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";

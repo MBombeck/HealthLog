@@ -1,11 +1,11 @@
 "use client";
 
-import { DESTINATION_ICONS } from "@/components/layout/destination-icons";
+import { RAIL_ICONS } from "@/components/layout/destination-icons/rail";
 
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 
-const CoachIcon = DESTINATION_ICONS.coach;
+const CoachIcon = RAIL_ICONS.coach;
 
 /**
  * v1.18.9 — the Coach new-chat hero (page surface only).

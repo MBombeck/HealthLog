@@ -1,6 +1,6 @@
 "use client";
 
-import { DESTINATION_ICONS } from "@/components/layout/destination-icons";
+import { RAIL_ICONS } from "@/components/layout/destination-icons/rail";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -9,7 +9,7 @@ import type { CoachLaunchScope } from "@/lib/insights/coach-launch-context";
 import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
 import { useAiCapability } from "@/hooks/use-ai-capability";
 
-const CoachIcon = DESTINATION_ICONS.coach;
+const CoachIcon = RAIL_ICONS.coach;
 
 /**
  * Inline desktop Coach launch button.
