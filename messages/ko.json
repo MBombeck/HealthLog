@@ -853,8 +853,6 @@
     "customizeTitle": "대시보드 레이아웃",
     "heroItemsDescription": "오늘의 하이라이트에 표시할 항목 유형을 고르세요.",
     "heroItemsNotificationNote": "알림 설정은 따로 관리해요.",
-    "heroContentTitle": "상단 카드 표시 내용",
-    "heroContentScore": "건강 점수와 하루 요약",
     "heroItems": {
       "coach_checkin": "코치 체크인",
       "dose_window": "복용 일정",
@@ -936,7 +934,8 @@
       }
     },
     "quickAddSymptom": "증상 기록",
-    "todayCardVisible": "상단 카드 표시",
+    "scoreRowVisible": "점수 표시",
+    "asksAlwaysShown": "지난 복용과 서버에 관한 질문은 항상 표시됩니다.",
     "recoveryKitBanner": {
       "title": "복구 키트를 보관하세요",
       "body": "이 서버가 사용하는 키의 사본이 없으면 다시 설치한 뒤 데이터를 복구할 수 없습니다. 몇 분이면 됩니다.",
@@ -948,8 +947,7 @@
     "quickAddSeizure": "발작 기록",
     "morning": {
       "heroItemsTitle": "오늘 할 일",
-      "heroItemsDescription": "오늘 할 일에 표시할 항목 유형을 선택하세요.",
-      "heroContentReminders": "오늘 할 일 먼저"
+      "heroItemsDescription": "오늘 할 일에 표시할 항목 유형을 선택하세요."
     }
   },
   "measurements": {
@@ -1179,6 +1177,10 @@
     "shortTypeTimeInDaylight": "햇빛 노출 시간",
     "shortTypeAudioExposureEvent": "큰 소리 청취 이벤트",
     "shortTypeRespiratoryRate": "호흡수",
+    "shortTypeHealthScore": "건강 점수",
+    "shortTypeRestingHeartRate": "안정 시 심박수",
+    "shortTypeBloodPressure": "혈압",
+    "shortTypeBloodGlucose": "혈당",
     "shortTypeLeanBodyMass": "제지방량",
     "shortTypeWalkingHeartRateAverage": "보행 심박수 (평균)",
     "shortTypeWalkingDoubleSupport": "보행 이중 지지",
@@ -9713,6 +9715,8 @@
       },
       "question": {
         "title": "HealthLog 푸시 릴레이를 사용할까요?",
+        "askTitle": "푸시 릴레이로 알림을 받을까요?",
+        "askBody": "내용은 암호화된 채로 유지됩니다.",
         "body": "App Store 앱을 위한 종단간 암호화 알림으로, 릴레이는 알림이 언제 보내지는지만 봅니다.",
         "yes": "예",
         "no": "아니요",
@@ -9805,10 +9809,9 @@
       "notice": {
         "title": "이 서버 설정하기",
         "body": "가입, 알림, AI, 개인정보에 관한 짧은 다섯 단계이며, 어느 단계든 건너뛰거나 나중에 바꿀 수 있습니다.",
+        "bodyShort": "가입, 알림, AI, 개인정보에 관한 짧은 다섯 단계입니다.",
         "open": "설정 시작",
-        "dismiss": "나중에",
-        "relayBody": "iPhone 알림과 Wallet은 관리자 시작 페이지에서 이 답변을 기다려요.",
-        "relayOpen": "관리자 열기"
+        "dismiss": "나중에"
       },
       "accounts": {
         "title": "이 서버를 사용할 수 있는 사람",
@@ -13839,6 +13842,7 @@
       },
       "syncIssue": {
         "title": "동기화 확인이 필요해요",
+        "askTitle": "동기화 중단",
         "body": "{integration} 동기화가 멈췄어요. 데이터를 최신으로 유지하려면 다시 연결해 주세요."
       },
       "sourceQuiet": {
@@ -13890,10 +13894,14 @@
     },
     "action": {
       "logDose": "복용",
+      "later": "나중에",
+      "answer": "답하기",
+      "learnMore": "더 보기",
+      "open": "열기",
+      "setUp": "설정",
+      "reconnectShort": "다시 연결",
       "reconnect": "다시 연결",
       "viewCheckups": "건강검진 보기",
-      "viewAppointment": "진료 보기",
-      "viewAppointments": "진료 목록 보기",
       "checkinKeep": "계속하기",
       "checkinAdjust": "조정",
       "checkinLetGo": "놓아주기",
@@ -13904,14 +13912,8 @@
       "openSource": "열기"
     },
     "today": {
-      "scoreLabel": "건강 점수",
-      "deltaVsBaseline": "기준값 대비 {delta}",
-      "deltaFlat": "기준값과 비슷해요",
-      "sleepPending": "어젯밤 수면이 아직 들어오지 않아 오늘 결과는 잠정치예요.",
-      "worthALook": "살펴볼 만한 것",
-      "allClear": "오늘은 신경 쓸 일이 없어요.",
-      "ringLink": "{metric} 자세히 보기",
-      "heading": "오늘",
+      "deltaShort": "기준값 대비 {delta}",
+      "deltaFlatShort": "기준값 수준",
       "steadyWeeksOne": "{count}주째 안정적",
       "steadyWeeksFew": "{count}주째 안정적",
       "steadyWeeksOther": "{count}주째 안정적",
@@ -14081,6 +14083,7 @@
       "latestNight": "가장 최근 밤: {date}",
       "vitalOutside": "{metric}: 오늘 평균 {value}, 평소 {range}",
       "contributor": "{name}: {value}/100",
+      "contributorShort": "{name} {value}/100",
       "readinessLast": "최근 {score} ({date})",
       "source": {
         "recovery": {

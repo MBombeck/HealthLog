@@ -229,7 +229,7 @@ test.describe("the dashboard and the list of all values", () => {
     await mockDay(page, { index: "full" });
   });
 
-  test("a dashboard chart opens its day; the today hero offers none", async ({
+  test("a dashboard chart opens its day; the asks and scores offer none", async ({
     page,
   }, testInfo) => {
     if (!isPhone(testInfo)) {
@@ -238,7 +238,7 @@ test.describe("the dashboard and the list of all values", () => {
     await page.goto("/");
     await expect(
       page.locator(
-        '[data-slot="morning-block"] [data-slot="day-link"], [data-slot="morning-block"] [data-day-links="true"], [data-slot^="today-hero"] [data-slot="day-link"], [data-slot^="today-hero"] [data-day-links="true"]',
+        '[data-slot^="today-"] [data-slot="day-link"], [data-slot^="today-"] [data-day-links="true"]',
       ),
     ).toHaveCount(0);
     const plot = page

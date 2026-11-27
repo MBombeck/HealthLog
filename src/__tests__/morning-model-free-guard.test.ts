@@ -90,11 +90,14 @@ describe("the morning read is model-free", () => {
       readSource("src/lib/daily/morning.ts", "export interface DailyMorning"),
       "morning.ts",
     );
-    const shape = code.slice(
-      code.indexOf("export interface DailyMorning {"),
-      code.indexOf("}", code.indexOf("export interface DailyMorning {")),
-    );
+    const start = code.indexOf("export interface DailyMorning {");
+    const shape = code.slice(start, code.indexOf("\n}", start));
     expect(shape).toMatch(/lead:/);
-    expect(shape).not.toMatch(/score|composite|healthScore/i);
+    // The score tiles it carries are the sleep score and readiness; the
+    // Health score is the digest's, and stays there.
+    expect(shape).toMatch(
+      /scores:\s*\{\s*sleep: DailyMorningScore \| null;\s*readiness: DailyMorningScore \| null;\s*\}/,
+    );
+    expect(shape).not.toMatch(/composite|healthScore|health:/i);
   });
 });

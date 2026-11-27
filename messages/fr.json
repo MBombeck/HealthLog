@@ -853,8 +853,6 @@
     "customizeTitle": "Mise en page du tableau",
     "heroItemsDescription": "Choisissez les types d’éléments qui peuvent apparaître dans les temps forts du jour.",
     "heroItemsNotificationNote": "Les réglages des notifications sont gérés séparément.",
-    "heroContentTitle": "La carte du haut affiche",
-    "heroContentScore": "Score de santé et résumé du jour",
     "heroItems": {
       "coach_checkin": "Bilan avec Coach",
       "dose_window": "Doses de médicaments",
@@ -936,7 +934,8 @@
       }
     },
     "quickAddSymptom": "Noter un symptôme",
-    "todayCardVisible": "Afficher la carte du haut",
+    "scoreRowVisible": "Afficher les scores",
+    "asksAlwaysShown": "Les doses en retard et les questions sur le serveur s’affichent toujours.",
     "recoveryKitBanner": {
       "title": "Sauvegardez votre kit de récupération",
       "body": "Sans copies des clés utilisées par ce serveur, ses données ne peuvent pas être récupérées après une réinstallation. Ça prend quelques minutes.",
@@ -948,8 +947,7 @@
     "quickAddSeizure": "Enregistrer une crise",
     "morning": {
       "heroItemsTitle": "À faire aujourd'hui",
-      "heroItemsDescription": "Choisissez les types d’éléments qui peuvent apparaître dans « À faire aujourd'hui ».",
-      "heroContentReminders": "À faire aujourd'hui en premier"
+      "heroItemsDescription": "Choisissez les types d’éléments qui peuvent apparaître dans « À faire aujourd'hui »."
     }
   },
   "measurements": {
@@ -1179,6 +1177,10 @@
     "shortTypeTimeInDaylight": "Temps à la lumière du jour",
     "shortTypeAudioExposureEvent": "Événement d’écoute forte",
     "shortTypeRespiratoryRate": "Fréquence respiratoire",
+    "shortTypeHealthScore": "Score de santé",
+    "shortTypeRestingHeartRate": "FC au repos",
+    "shortTypeBloodPressure": "Tension",
+    "shortTypeBloodGlucose": "Glycémie",
     "shortTypeLeanBodyMass": "Masse maigre",
     "shortTypeWalkingHeartRateAverage": "Fréquence cardiaque à la marche (moy.)",
     "shortTypeWalkingDoubleSupport": "Double appui à la marche",
@@ -9713,6 +9715,8 @@
       },
       "question": {
         "title": "Utiliser le relais push HealthLog ?",
+        "askTitle": "Notifications par relais push ?",
+        "askBody": "Le contenu reste chiffré.",
         "body": "Des notifications pour l'app de l'App Store, chiffrées de bout en bout : le relais voit seulement quand l'une d'elles est envoyée.",
         "yes": "Oui",
         "no": "Non",
@@ -9805,10 +9809,9 @@
       "notice": {
         "title": "Configurer ce serveur",
         "body": "Cinq étapes courtes sur les inscriptions, les notifications, l'IA et la confidentialité ; chacune peut être ignorée ou modifiée plus tard.",
+        "bodyShort": "Cinq étapes courtes sur les inscriptions, les notifications, l'IA et la confidentialité.",
         "open": "Commencer la configuration",
-        "dismiss": "Pas maintenant",
-        "relayBody": "Les rappels sur iPhone et Wallet attendent cette réponse, sur la page d’accueil de l’administration.",
-        "relayOpen": "Ouvrir l’administration"
+        "dismiss": "Pas maintenant"
       },
       "accounts": {
         "title": "Qui peut utiliser ce serveur",
@@ -13839,6 +13842,7 @@
       },
       "syncIssue": {
         "title": "La synchronisation demande votre attention",
+        "askTitle": "Synchro interrompue",
         "body": "{integration} ne se synchronise pas. Reconnectez-le pour garder vos données à jour."
       },
       "sourceQuiet": {
@@ -13890,10 +13894,14 @@
     },
     "action": {
       "logDose": "Prendre",
+      "later": "Plus tard",
+      "answer": "Répondre",
+      "learnMore": "Plus",
+      "open": "Ouvrir",
+      "setUp": "Configurer",
+      "reconnectShort": "Reconnecter",
       "reconnect": "Reconnecter",
       "viewCheckups": "Voir les examens",
-      "viewAppointment": "Voir le rendez-vous",
-      "viewAppointments": "Voir les rendez-vous",
       "checkinKeep": "Garder",
       "checkinAdjust": "Ajuster",
       "checkinLetGo": "Laisser tomber",
@@ -13904,14 +13912,8 @@
       "openSource": "Ouvrir"
     },
     "today": {
-      "scoreLabel": "Score de santé",
-      "deltaVsBaseline": "{delta} par rapport à votre référence",
-      "deltaFlat": "Conforme à votre référence",
-      "sleepPending": "Le sommeil de la nuit dernière n'est pas encore arrivé : la lecture du jour est provisoire.",
-      "worthALook": "À regarder",
-      "allClear": "Rien ne requiert votre attention aujourd'hui.",
-      "ringLink": "Ouvrir les détails de {metric}",
-      "heading": "Aujourd'hui",
+      "deltaShort": "{delta} vs référence",
+      "deltaFlatShort": "À la référence",
       "steadyWeeksOne": "Stable depuis {count} semaine",
       "steadyWeeksFew": "Stable depuis {count} semaines",
       "steadyWeeksOther": "Stable depuis {count} semaines",
@@ -14081,6 +14083,7 @@
       "latestNight": "Dernière nuit : {date}",
       "vitalOutside": "{metric} : {value} en moyenne aujourd'hui, habituellement {range}",
       "contributor": "{name} : {value} sur 100",
+      "contributorShort": "{name} {value}/100",
       "readinessLast": "Dernière valeur {score} le {date}",
       "source": {
         "recovery": {

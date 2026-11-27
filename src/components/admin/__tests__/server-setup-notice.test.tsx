@@ -1,16 +1,12 @@
 /**
- * The one notice about the server. On the dashboard it names the relay
- * question while that is open, so an admin who never opens the admin pages
- * still hears of it; on the admin start page it does not, because the
- * question itself stands there. An unfinished setup comes first on both.
+ * The one notice about the server, on the admin start page: an unfinished
+ * setup, offered until the admin sets it aside. The relay question stands on
+ * that page itself, and the dashboard asks both in its ask card (the digest's
+ * `asks`, pinned in `asks.test.ts`), so the notice never names the relay.
  */
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
-type Relay = {
-  operatorDecision: "undecided" | "on" | "off";
-  canDecide: boolean;
-};
 type Setup = {
   offered: boolean;
   completedAt: string | null;
@@ -19,14 +15,17 @@ type Setup = {
 
 const state = vi.hoisted(() => ({
   role: "ADMIN" as "ADMIN" | "USER",
-  relay: null as null | Relay,
   setup: undefined as undefined | Setup,
   enabled: [] as boolean[],
 }));
 
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({
-    user: { id: "u1", role: state.role, push: { relay: state.relay } },
+    user: {
+      id: "u1",
+      role: state.role,
+      push: { relay: { operatorDecision: "undecided", canDecide: true } },
+    },
   }),
 }));
 vi.mock("@/lib/queries/use-server-setup", () => ({
@@ -40,71 +39,46 @@ vi.mock("@/lib/queries/use-server-setup", () => ({
 import { I18nProvider } from "@/lib/i18n/context";
 import { ServerSetupNotice } from "../server-setup-notice";
 
-const OPEN: Relay = { operatorDecision: "undecided", canDecide: true };
-const FINISHED: Setup = {
+const UNFINISHED: Setup = {
   offered: true,
-  completedAt: "2026-11-01T00:00:00.000Z",
+  completedAt: null,
   noticePending: true,
 };
 
-function render(
-  surface: "admin" | "dashboard",
-  {
-    role = "ADMIN",
-    relay = OPEN,
-    setup = FINISHED,
-  }: { role?: "ADMIN" | "USER"; relay?: Relay | null; setup?: Setup } = {},
-) {
+function render({
+  role = "ADMIN",
+  setup = UNFINISHED,
+}: { role?: "ADMIN" | "USER"; setup?: Setup } = {}) {
   state.role = role;
-  state.relay = relay;
   state.setup = setup;
   return renderToStaticMarkup(
     <I18nProvider initialLocale="en">
-      <ServerSetupNotice surface={surface} />
+      <ServerSetupNotice />
     </I18nProvider>,
   );
 }
 
 describe("<ServerSetupNotice>", () => {
-  it("names the open relay question on the dashboard and links to the admin start page", () => {
-    const html = render("dashboard");
-    expect(html).toContain('data-notice="relay"');
-    expect(html).toContain("Use the HealthLog push relay?");
-    expect(html).toContain('href="/admin"');
+  it("offers an unfinished setup, with a way to set it aside", () => {
+    const html = render();
+    expect(html).toContain('data-notice="setup"');
+    expect(html).toContain('href="/onboarding/server"');
     expect(html).toContain("Not now");
   });
 
-  it("leaves the relay to the question itself on the admin start page", () => {
-    expect(render("admin")).toBe("");
+  it("leaves an open relay question to the question itself", () => {
+    expect(
+      render({
+        setup: { ...UNFINISHED, completedAt: "2026-11-01T00:00:00.000Z" },
+      }),
+    ).toBe("");
   });
 
-  it("offers an unfinished setup first, on both pages", () => {
-    const setup = { ...FINISHED, completedAt: null };
-    for (const surface of ["admin", "dashboard"] as const) {
-      const html = render(surface, { setup });
-      expect(html).toContain('data-notice="setup"');
-      expect(html).toContain('href="/onboarding/server"');
-    }
-  });
-
-  it("is quiet once answered, dismissed, on a demo, or for anyone else", () => {
-    expect(
-      render("dashboard", { relay: { ...OPEN, operatorDecision: "on" } }),
-    ).toBe("");
-    expect(
-      render("dashboard", { relay: { ...OPEN, operatorDecision: "off" } }),
-    ).toBe("");
-    expect(render("dashboard", { relay: { ...OPEN, canDecide: false } })).toBe(
-      "",
-    );
-    expect(
-      render("dashboard", { setup: { ...FINISHED, noticePending: false } }),
-    ).toBe("");
-    expect(
-      render("dashboard", { setup: { ...FINISHED, offered: false } }),
-    ).toBe("");
+  it("is quiet once dismissed, on a demo, or for anyone else", () => {
+    expect(render({ setup: { ...UNFINISHED, noticePending: false } })).toBe("");
+    expect(render({ setup: { ...UNFINISHED, offered: false } })).toBe("");
     state.enabled.length = 0;
-    expect(render("dashboard", { role: "USER" })).toBe("");
+    expect(render({ role: "USER" })).toBe("");
     // The admin-only route is never asked on someone else's behalf.
     expect(state.enabled).toEqual([false]);
   });
