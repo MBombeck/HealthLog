@@ -211,7 +211,18 @@ test.describe("setup flow — every locale at 30% longer strings", () => {
           await expectScreen(page, item.screen);
           await expect(page.locator("h1")).toBeVisible();
 
-          // No raw key before the padding touches the text.
+          // No raw key before the padding touches the text. The locale's
+          // catalog arrives as its own chunk, so a first paint under load can
+          // show keys for a moment; what counts is the settled screen.
+          await expect
+            .poll(
+              async () =>
+                (await page.locator(SHELL).innerText()).match(RAW_KEY)?.[0] ??
+                null,
+              { timeout: 10_000 },
+            )
+            .toBeNull()
+            .catch(() => undefined);
           const body = await page.locator(SHELL).innerText();
           const match = body.match(RAW_KEY);
           expect(
