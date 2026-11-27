@@ -1037,6 +1037,30 @@ export function summariseCadence(
 }
 
 /**
+ * The cadence and its times without the course window ("Jeden Tag, um 08:00
+ * und 20:00"): the one-line form the detail page's header shows. The start
+ * and end dates live in the plan below it. `joinTimes` joins the clock times
+ * as a list in the reader's language.
+ */
+export function summariseCadenceShort(
+  payload: WizardPayload,
+  t: (key: string, params?: Record<string, string | number>) => string,
+  wallTime: (hhmm: string) => string = (hhmm) => hhmm,
+  joinTimes: (times: string[]) => string = (times) => times.join(", "),
+): string {
+  const cadenceLine = cadenceLineFor(payload, t);
+  const timesPhrase =
+    payload.mode !== "oneShot" &&
+    payload.mode !== "asNeeded" &&
+    payload.timesOfDay.length > 0
+      ? t("medications.wizard.summary.times", {
+          times: joinTimes(sortTimes(payload.timesOfDay).map(wallTime)),
+        })
+      : "";
+  return [cadenceLine, timesPhrase].filter(Boolean).join(", ");
+}
+
+/**
  * Per-schedule summary the Step 8 list cards render. Skips the
  * course-window phrases (those are medication-global and only need to
  * render once on the summary block at the top of Step 8).

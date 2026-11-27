@@ -225,7 +225,9 @@ export function EfficacyChart({
               tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
               tickLine={false}
               axisLine={false}
-              width={40}
+              // Room for the figure AND its unit: at 40 px "138 mmHg" lost
+              // its number and the axis read "mmHg" five times.
+              width={axisUnitSuffix(unitSuffix) ? 72 : 40}
               unit={axisUnitSuffix(unitSuffix)}
             />
             <YAxis

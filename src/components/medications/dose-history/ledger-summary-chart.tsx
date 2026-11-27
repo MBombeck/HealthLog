@@ -55,17 +55,29 @@ export function LedgerSummaryChart({
           style={{ width: `${pct(missed)}%` }}
         />
       </div>
-      <div className="text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
-        <span className="text-success">
-          {t("medications.dose.state.taken")}: {takenOnTime}
-        </span>
-        <span className="text-warning">
-          {t("medications.dose.state.takenLate")}: {takenLate}
-        </span>
-        <span className="text-destructive">
-          {t("medications.dose.state.missed")}: {missed}
-        </span>
-      </div>
+      <ul
+        className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs"
+        aria-hidden="true"
+      >
+        <li className="flex items-center gap-1.5">
+          <span className="bg-success size-2.5 rounded-xs" />
+          {t("medications.detail.overview.legend.taken", {
+            count: takenOnTime,
+          })}
+        </li>
+        {takenLate > 0 && (
+          <li className="flex items-center gap-1.5">
+            <span className="bg-warning size-2.5 rounded-xs" />
+            {t("medications.detail.overview.legend.late", { count: takenLate })}
+          </li>
+        )}
+        {missed > 0 && (
+          <li className="flex items-center gap-1.5">
+            <span className="bg-destructive size-2.5 rounded-xs" />
+            {t("medications.detail.overview.legend.missed", { count: missed })}
+          </li>
+        )}
+      </ul>
     </div>
   );
 }

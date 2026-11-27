@@ -53,6 +53,7 @@ export const SERVER_FEATURES = [
   "medication.side-effect-headache",
   "medication.low-stock-trigger",
   "insights.score-origin",
+  "medication.efficacy-result",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -151,4 +152,6 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "GET /api/medications and GET /api/medications/{id} (and the create and edit answers) carry lowStockTriggerDays: max(lowStockRunwayDays, reorderLeadDays + one dose-interval) with the medication's own lead over the account default, null when the alert is off or nothing is consumed on a cadence; a row is low on stock when runwayDays <= lowStockTriggerDays.",
   "insights.score-origin":
     "RECOVERY_SCORE, STRESS_SCORE and STRAIN_SCORE values on GET /api/insights/derived carry origin (estimate | device | computed) and deviceSource (the measurement source of a device value, else null); the health score composite carries weights (one { id, weight } per counted pillar, summing to 1) and each snapshot healthScore.pillars row its weight (null when it did not count).",
+  "medication.efficacy-result":
+    "GET /api/medications/{id}/efficacy carries targets[].result: { direction (lower | higher | unchanged | null), text }, the before/after comparison in one sentence in the reader's language.",
 };

@@ -208,7 +208,10 @@ import { admittedQuickEntry } from "@/components/dashboard/quick-entry-sheets";
 import { TodayHero } from "@/components/daily/today-hero";
 import { VorsorgeDashboardCard } from "@/components/measurement-reminders/vorsorge-dashboard-card";
 import { EpisodeDocumentsCard } from "@/components/documents/episode-documents-card";
-import { LedgerRowItem } from "@/components/medications/dose-history/ledger-row-item";
+import {
+  LedgerDayMenu,
+  LedgerDoseCell,
+} from "@/components/medications/dose-history/ledger-row-item";
 import { VaccinationsView } from "@/components/vaccinations/vaccinations-view";
 import { VisitsSection } from "@/components/encounters/visits-section";
 import type { EncounterDTO } from "@/lib/encounters/dto";
@@ -656,35 +659,40 @@ describe("the capture picker's kinds", () => {
 /* -------------------------------------------------------------------------- */
 
 describe("marking a dose from the dose history", () => {
+  const row = {
+    kind: "slot" as const,
+    at: "2026-08-04T07:00:00.000Z",
+    timeOfDay: "07:00",
+    status: "upcoming" as const,
+    intake: null,
+  };
   const node = (
-    <ul>
-      <LedgerRowItem
-        row={{
-          kind: "slot",
-          at: "2026-08-04T07:00:00.000Z",
-          timeOfDay: "07:00",
-          status: "upcoming",
-          intake: null,
-        }}
-        marking={null}
+    <div>
+      <LedgerDoseCell row={row} marking={null} isToday onMark={() => {}} />
+      <LedgerDayMenu
+        dayLabel="Tue, 4 Aug"
+        rows={[row]}
         isToday
-        onMark={() => {}}
-        onToggleSkipped={() => {}}
-        onEdit={() => {}}
-        onDelete={() => {}}
-        onPin={() => {}}
-        onUnpin={() => {}}
+        onOpenDay={() => {}}
+        handlers={{
+          onMark: () => {},
+          onToggleSkipped: () => {},
+          onEdit: () => {},
+          onDelete: () => {},
+          onPin: () => {},
+          onUnpin: () => {},
+        }}
       />
-    </ul>
+    </div>
   );
 
-  it("offers the owner take beside the kebab that holds the rest", () => {
+  it("offers the owner take beside the day menu that holds the rest", () => {
     const html = render(OWN_RECORD, node);
     expect(html).toContain('data-slot="ledger-mark-taken"');
     expect(html).toContain('data-slot="ledger-row-menu"');
   });
 
-  it("offers a write delegate BOTH markings, and no row menu", () => {
+  it("offers a write delegate BOTH markings, and no day menu", () => {
     // Taken and skipped are one admitted verb, not two — the medication card
     // has always offered the pair. This surface offered a delegate only the
     // first, because skip lives in the kebab and the kebab also holds edit,

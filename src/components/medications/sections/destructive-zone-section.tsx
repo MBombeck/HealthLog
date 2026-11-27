@@ -55,41 +55,30 @@ import { apiDelete, apiPost, apiPut } from "@/lib/api/api-fetch";
 const PAUSE_SWITCH_ID = "medication-detail-pause-switch";
 
 /**
- * v1.7.0 — reversible lifecycle controls: pause/resume + end course.
- * Bare (no section / card chrome); the caller supplies its own grouping.
+ * Pause and resume: `PUT { active }`, optimistic, with the toast and the
+ * reads refreshed. Shared by the settings row and the header menu, so both
+ * say and do the same.
  */
-export function LifecycleManageBody({
-  medication,
+export function usePauseToggle({
+  medicationId,
+  active,
   onAfterAction,
 }: {
-  medication: {
-    id: string;
-    name: string;
-    active: boolean;
-    /**
-     * Whether a course is running that End may end now (server-resolved).
-     * Ending writes today as the course's last day, so on an ended course it
-     * would reopen it and on one not yet started invent a one-day course.
-     */
-    canEndCourse?: boolean;
-  };
+  medicationId: string;
+  active: boolean;
   onAfterAction?: () => void;
 }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
-  const medicationId = medication.id;
+  const [paused, setPaused] = useState(!active);
+  const [busy, setBusy] = useState(false);
 
-  const [paused, setPaused] = useState(!medication.active);
-  const [tier1Busy, setTier1Busy] = useState(false);
-
-  async function tier1Toggle(pauseNext: boolean) {
-    if (tier1Busy) return;
-    setTier1Busy(true);
+  async function toggle(pauseNext: boolean) {
+    if (busy) return;
+    setBusy(true);
     const previous = paused;
     setPaused(pauseNext);
     try {
-      // v1.5.5 — body carries `{ active }` only; server derives
-      // pausedAt. No client-side pausedAt literal.
       await apiPut(`/api/medications/${medicationId}`, { active: !pauseNext });
       await invalidateMedicationReads(queryClient);
       toast.success(
@@ -104,29 +93,150 @@ export function LifecycleManageBody({
         cause: failure,
       });
     } finally {
-      setTier1Busy(false);
+      setBusy(false);
     }
   }
 
+  return { paused, busy, toggle };
+}
+
+/**
+ * v1.7.0 — reversible lifecycle controls: pause/resume + end course.
+ * Bare (no section / card chrome); the caller supplies its own grouping.
+ * `compact` drops the helper lines: the settings tab shows one line per
+ * control.
+ */
+export function LifecycleManageBody({
+  medication,
+  onAfterAction,
+  compact = false,
+}: {
+  medication: {
+    id: string;
+    name: string;
+    active: boolean;
+    /**
+     * Whether a course is running that End may end now (server-resolved).
+     * Ending writes today as the course's last day, so on an ended course it
+     * would reopen it and on one not yet started invent a one-day course.
+     */
+    canEndCourse?: boolean;
+  };
+  onAfterAction?: () => void;
+  compact?: boolean;
+}) {
+  const { t } = useTranslations();
+  const { paused, busy, toggle } = usePauseToggle({
+    medicationId: medication.id,
+    active: medication.active,
+    onAfterAction,
+  });
+
   return (
-    <div className="space-y-4" data-slot="destructive-zone-card-a">
+    <div
+      className={compact ? "divide-border/60 divide-y" : "space-y-4"}
+      data-slot="destructive-zone-card-a"
+    >
       <SwitchRow
         label={t("medications.detail.zone.pause.title")}
-        description={t("medications.detail.zone.pause.helper")}
+        description={
+          compact ? undefined : t("medications.detail.zone.pause.helper")
+        }
         id={PAUSE_SWITCH_ID}
         checked={paused}
-        disabled={tier1Busy}
-        onCheckedChange={(checked) => void tier1Toggle(checked)}
+        disabled={busy}
+        onCheckedChange={(checked) => void toggle(checked)}
+        className={compact ? "py-3" : undefined}
       />
 
       {medication.canEndCourse === true && (
         <EndCourseControl
-          medicationId={medicationId}
+          medicationId={medication.id}
           medicationName={medication.name}
           onAfterAction={onAfterAction}
+          compact={compact}
         />
       )}
     </div>
+  );
+}
+
+/**
+ * The end-course confirmation, controlled by its caller: the settings row
+ * and the header menu open the same dialog.
+ */
+export function EndCourseDialog({
+  medicationId,
+  medicationName,
+  open,
+  onOpenChange,
+  onAfterAction,
+}: {
+  medicationId: string;
+  medicationName: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onAfterAction?: () => void;
+}) {
+  const { t } = useTranslations();
+  const queryClient = useQueryClient();
+  const [busy, setBusy] = useState(false);
+
+  async function end() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await apiPost(`/api/medications/${medicationId}/courses/end`);
+      await invalidateMedicationReads(queryClient);
+      toast.success(t("medications.detail.zone.end.toast"));
+      onOpenChange(false);
+      onAfterAction?.();
+    } catch (failure) {
+      showErrorToast(t("medications.detail.zone.end.failed"), {
+        cause: failure,
+      });
+      void invalidateMedicationReads(queryClient);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {t("medications.detail.zone.end.dialogTitle", {
+              name: medicationName,
+            })}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {t("medications.detail.zone.end.dialogBody")}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+          <AlertDialogAction
+            variant="destructive"
+            onClick={(e) => {
+              e.preventDefault();
+              void end();
+            }}
+            disabled={busy}
+            aria-busy={busy || undefined}
+            className="font-semibold"
+          >
+            {busy && (
+              <Loader2
+                aria-hidden="true"
+                className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none"
+              />
+            )}
+            {t("medications.detail.zone.end.button")}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
@@ -139,99 +249,56 @@ function EndCourseControl({
   medicationId,
   medicationName,
   onAfterAction,
+  compact,
 }: {
   medicationId: string;
   medicationName: string;
   onAfterAction?: () => void;
+  compact: boolean;
 }) {
   const { t } = useTranslations();
-  const queryClient = useQueryClient();
-
   const [endDialogOpen, setEndDialogOpen] = useState(false);
-  const [tier2Busy, setTier2Busy] = useState(false);
-
-  async function tier2End() {
-    if (tier2Busy) return;
-    setTier2Busy(true);
-    try {
-      await apiPost(`/api/medications/${medicationId}/courses/end`);
-      await invalidateMedicationReads(queryClient);
-      toast.success(t("medications.detail.zone.end.toast"));
-      setEndDialogOpen(false);
-      onAfterAction?.();
-    } catch (failure) {
-      showErrorToast(t("medications.detail.zone.end.failed"), {
-        cause: failure,
-      });
-      // A 409 means the course is no longer running (ended in another tab):
-      // refetch, so the served `canEndCourse` takes the button away.
-      void invalidateMedicationReads(queryClient);
-    } finally {
-      setTier2Busy(false);
-    }
-  }
 
   return (
     <>
-      <Separator />
+      {!compact && <Separator />}
 
-      <div className="flex items-center justify-between gap-3">
+      <div
+        className={
+          compact
+            ? "flex items-center justify-between gap-3 py-3"
+            : "flex items-center justify-between gap-3"
+        }
+      >
         <div className="space-y-1">
           <p className="text-foreground text-sm font-medium">
             {t("medications.detail.zone.end.title")}
           </p>
-          <p className="text-muted-foreground text-xs">
-            {t("medications.detail.zone.end.helper")}
-          </p>
+          {!compact && (
+            <p className="text-muted-foreground text-xs">
+              {t("medications.detail.zone.end.helper")}
+            </p>
+          )}
         </div>
         <Button
-          variant="destructive"
+          variant={compact ? "outline" : "destructive"}
           size="sm"
           onClick={() => setEndDialogOpen(true)}
           className="min-h-11 font-semibold sm:min-h-9"
           data-slot="destructive-zone-end"
         >
-          <Archive aria-hidden="true" className="h-4 w-4" />
+          {!compact && <Archive aria-hidden="true" className="h-4 w-4" />}
           {t("medications.detail.zone.end.button")}
         </Button>
       </div>
 
-      {/* Tier 2 — Beenden confirm */}
-      <AlertDialog open={endDialogOpen} onOpenChange={setEndDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("medications.detail.zone.end.dialogTitle", {
-                name: medicationName,
-              })}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("medications.detail.zone.end.dialogBody")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              onClick={(e) => {
-                e.preventDefault();
-                void tier2End();
-              }}
-              disabled={tier2Busy}
-              aria-busy={tier2Busy || undefined}
-              className="font-semibold"
-            >
-              {tier2Busy && (
-                <Loader2
-                  aria-hidden="true"
-                  className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none"
-                />
-              )}
-              {t("medications.detail.zone.end.button")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <EndCourseDialog
+        medicationId={medicationId}
+        medicationName={medicationName}
+        open={endDialogOpen}
+        onOpenChange={setEndDialogOpen}
+        onAfterAction={onAfterAction}
+      />
     </>
   );
 }
@@ -248,11 +315,14 @@ export function DangerZoneBody({
   medicationName,
   intakeCount,
   onAfterAction,
+  compact = false,
 }: {
   medicationId: string;
   medicationName: string;
   intakeCount: number;
   onAfterAction?: () => void;
+  /** One line per row: a short name, a count, the button. */
+  compact?: boolean;
 }) {
   const { t } = useTranslations();
   const router = useRouter();
@@ -322,14 +392,29 @@ export function DangerZoneBody({
       {/* Tier 3a — Verlauf löschen. Matched pair with the delete row
           below: identical `py-3` spacing, identical destructive button. */}
       <div className="flex items-center justify-between gap-3 py-3">
-        <div className="space-y-1">
-          <p className="text-foreground text-sm font-medium">
-            {t("medications.detail.zone.purge.title")}
-          </p>
-          <p className="text-muted-foreground text-xs">
-            {t("medications.detail.zone.purge.helper", { count: intakeCount })}
-          </p>
-        </div>
+        {compact ? (
+          <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
+            <p className="text-foreground text-sm font-medium">
+              {t("medications.detail.settingsTab.rows.history")}
+            </p>
+            <p className="text-muted-foreground text-sm tabular-nums">
+              {t("medications.detail.settingsTab.intakeCount", {
+                count: intakeCount,
+              })}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <p className="text-foreground text-sm font-medium">
+              {t("medications.detail.zone.purge.title")}
+            </p>
+            <p className="text-muted-foreground text-xs">
+              {t("medications.detail.zone.purge.helper", {
+                count: intakeCount,
+              })}
+            </p>
+          </div>
+        )}
         <Button
           variant="destructive"
           size="sm"
@@ -338,21 +423,34 @@ export function DangerZoneBody({
           className="min-h-11 font-semibold sm:min-h-9"
           data-slot="destructive-zone-purge"
         >
-          <Trash2 aria-hidden="true" className="h-4 w-4" />
-          {t("medications.detail.zone.purge.button")}
+          {!compact && <Trash2 aria-hidden="true" className="h-4 w-4" />}
+          {compact
+            ? t("common.delete")
+            : t("medications.detail.zone.purge.button")}
         </Button>
       </div>
 
       {/* Tier 3b — Medikament löschen */}
       <div className="flex items-center justify-between gap-3 py-3">
-        <div className="space-y-1">
-          <p className="text-foreground text-sm font-medium">
-            {t("medications.detail.zone.delete.title")}
-          </p>
-          <p className="text-muted-foreground text-xs">
-            {t("medications.detail.zone.delete.helper")}
-          </p>
-        </div>
+        {compact ? (
+          <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
+            <p className="text-foreground text-sm font-medium">
+              {t("medications.detail.settingsTab.rows.medication")}
+            </p>
+            <p className="text-muted-foreground text-sm">
+              {t("medications.detail.settingsTab.withAllData")}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <p className="text-foreground text-sm font-medium">
+              {t("medications.detail.zone.delete.title")}
+            </p>
+            <p className="text-muted-foreground text-xs">
+              {t("medications.detail.zone.delete.helper")}
+            </p>
+          </div>
+        )}
         <Button
           variant="destructive"
           size="sm"
@@ -360,7 +458,7 @@ export function DangerZoneBody({
           className="min-h-11 font-semibold sm:min-h-9"
           data-slot="destructive-zone-delete"
         >
-          <Trash2 aria-hidden="true" className="h-4 w-4" />
+          {!compact && <Trash2 aria-hidden="true" className="h-4 w-4" />}
           {t("medications.detail.zone.delete.button")}
         </Button>
       </div>

@@ -49923,6 +49923,7 @@ components:
               - medication.side-effect-headache
               - medication.low-stock-trigger
               - insights.score-origin
+              - medication.efficacy-result
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices; since
@@ -50059,7 +50060,9 @@ components:
             RECOVERY_SCORE, STRESS_SCORE and STRAIN_SCORE values on GET /api/insights/derived carry origin (estimate |
             device | computed) and deviceSource (the measurement source of a device value, else null); the health score
             composite carries weights (one { id, weight } per counted pillar, summing to 1) and each snapshot
-            healthScore.pillars row its weight (null when it did not count)."
+            healthScore.pillars row its weight (null when it did not count). `medication.efficacy-result`: GET
+            /api/medications/{id}/efficacy carries targets[].result: { direction (lower | higher | unchanged | null),
+            text }, the before/after comparison in one sentence in the reader's language."
       required:
         - version
         - buildSha
@@ -69996,6 +69999,29 @@ components:
                       - confounders
                     additionalProperties: false
                   - type: "null"
+              result:
+                type: object
+                properties:
+                  direction:
+                    anyOf:
+                      - type: string
+                        enum:
+                          - lower
+                          - higher
+                          - unchanged
+                      - type: "null"
+                    description: The before/after comparison's direction; null while either side lacks the readings for a comparison. A
+                      change under 2 % of the before-mean reads `unchanged`.
+                  text:
+                    type: string
+                    description: The comparison in one sentence, worded in the reader's language; when `direction` is null it says which
+                      side is short of readings. Clients show it verbatim.
+                required:
+                  - direction
+                  - text
+                additionalProperties: false
+                description: "v1.50 — the result sentence the effect view leads with. Descriptive only: no verdict on whether the
+                  medication works."
             required:
               - kind
               - key
@@ -70007,6 +70033,7 @@ components:
               - beforeAfter
               - levelShift
               - segmented
+              - result
             additionalProperties: false
         adherence:
           type: array

@@ -1,48 +1,35 @@
 "use client";
 
 /**
- * The Verlauf tab's dose-history ledger.
+ * The Verlauf tab's dose history: one table row per day.
  *
  * Renders the server-minted ledger (`GET /api/medications/[id]/dose-history`):
- * EVERY expected slot with its status (pünktlich / verspätet / übersprungen /
- * verpasst / ausstehend) even when never taken, plus every off-schedule intake
- * as a tagged ad-hoc row at its real time. Rows are grouped by day, most-recent
- * day first, chronological inside the day.
+ * every expected slot with its status (on time / late / skipped / missed /
+ * open) even when never taken, plus every off-schedule intake. A day is one
+ * row: the date, a column per dose time, a column for off-schedule takes, and
+ * the day's menu. Most recent day first.
  *
- * Three interactions land here:
- *   - an actionable slot (upcoming, or missed today) exposes ONE visible
- *     [Genommen] button that marks the dose with INSTANT feedback — the
- *     cached ledger + the headline % are mutated optimistically (the engines
- *     are pure, so the client mirrors their accounting) before the server
- *     write fires and the authoritative refetch reconciles. The success
- *     toast carries an Undo. Übersprungen and the backfill of older missed
- *     slots live in the row's overflow kebab;
- *   - settled rows (taken / skipped / a past missed day) carry ONLY the
- *     kebab: Bearbeiten, the Übersprungen↔Genommen toggle, Löschen — so the
- *     ledger reads as a calm record, not a button wall;
- *   - a header "+ Eintrag" opens an add dialog scoped to this medication
- *     (incl. backdated / off-schedule); an off-window take surfaces the
- *     "diesem Slot zuordnen?" nudge, pinning it onto a chosen slot via
- *     `forceSlotInstant` rather than orphaning it to an ad-hoc row;
- *   - an ad-hoc row shows WHEN the dose would have been due
- *     (`nearestSlot` subline) and — when that slot is still unserved — a
- *     kebab "Slot … zuordnen" action that pins the take onto it after a
- *     confirm that names the consequence ("zählt als verspätet"). A pinned
- *     slot row carries a quiet "zugeordnet" badge and the inverse
- *     "Zuordnung lösen" kebab action (`forceSlotInstant: null`). The
- *     released row keeps USER_PIN provenance server-side (the dedup
- *     leaves it standalone) and reads as a plain ad-hoc row here — no
- *     badge, since it is no longer bound to a slot.
+ * Interactions:
+ *   - a slot still in play (open, or missed today) keeps a visible take
+ *     button in its cell; the mark is optimistic (the cached ledger and the
+ *     headline rate move before the server write) with an undo toast;
+ *   - everything else sits in the day's menu: open the day, backfill a past
+ *     missed slot, skip, pin an off-schedule take onto its slot (behind a
+ *     confirm that names the consequence) or release it, edit, the
+ *     skipped/taken toggle, delete;
+ *   - "Nachtragen" opens the add dialog for this medication (backdated or
+ *     off-schedule, with the "assign to slot?" nudge).
  *
- * A compact took / skipped history chart sits at the top — the ledger already
- * carries the counts. The card body never tints by status (removed earlier);
- * the ledger uses the semantic feedback vocabulary on the row, not the card.
+ * The summary above the table (rate, bar, counts) reads the same rows.
  */
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Loader2, Plus } from "lucide-react";
 
-import { DayLink } from "@/components/day/day-link";
+import { openDay } from "@/components/day/day-layer-controller";
+import type { DateKey } from "@/lib/day/contract";
+import { isOpenableDay } from "@/components/day/day-url";
+import { useTodayKey } from "@/components/day/use-today-key";
 import { LedgerAddDialog } from "@/components/medications/dose-history-add-dialog";
 import { IntakeEditDialog } from "@/components/medications/intake-edit-dialog";
 import { Button } from "@/components/ui/button";
@@ -57,9 +44,14 @@ import {
 } from "@/lib/i18n/context";
 
 import { PinConfirm } from "./dose-history/ledger-confirms";
-import { LedgerRowItem } from "./dose-history/ledger-row-item";
+import {
+  LedgerDayMenu,
+  LedgerDoseCell,
+  type LedgerRowHandlers,
+} from "./dose-history/ledger-row-item";
 import { LedgerSummaryChart } from "./dose-history/ledger-summary-chart";
 import { useDoseHistoryLedger } from "./dose-history/use-dose-history-ledger";
+import type { LedgerDayGroup, LedgerRow } from "./dose-history-ledger-compute";
 
 /** A schedule slot the add dialog offers for pinning. */
 export interface LedgerSchedule {
@@ -79,6 +71,17 @@ export interface DoseHistoryLedgerProps {
   windowDays?: number;
 }
 
+/** The dose times the window holds, as columns: "08:00" before "20:00". */
+export function ledgerColumns(groups: LedgerDayGroup[]): string[] {
+  const times = new Set<string>();
+  for (const group of groups) {
+    for (const row of group.rows) {
+      if (row.kind === "slot" && row.timeOfDay) times.add(row.timeOfDay);
+    }
+  }
+  return [...times].sort();
+}
+
 export function DoseHistoryLedger({
   medicationId,
   medicationName,
@@ -89,11 +92,12 @@ export function DoseHistoryLedger({
   const { t, locale } = useTranslations();
   const fmt = useFormatters();
   const dateFormatPref = useDateFormatPreference();
-  // A delegate may record a dose, which is what "add" and the inline "mark
-  // taken" do. Editing, deleting, pinning and un-skipping an existing event
-  // are the owner's, so the row menu is absent for them.
+  // A delegate may record a dose, which is what "add" and the visible take
+  // do. Editing, deleting, pinning and un-skipping an existing event are the
+  // owner's, so the day menu is absent for them.
   const { canWriteDomain } = useRecordCapabilities();
   const canAddIntake = canWriteDomain("medications");
+  const today = useTodayKey();
   const [addOpen, setAddOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<{
     id: string;
@@ -120,10 +124,23 @@ export function DoseHistoryLedger({
     setPendingPin,
   } = useDoseHistoryLedger({ medicationId, medicationName, windowDays });
 
+  const columns = useMemo(() => ledgerColumns(groups), [groups]);
+  const hasOffSchedule = groups.some((g) =>
+    g.rows.some((row) => row.kind === "ad_hoc"),
+  );
+
+  const handlers: LedgerRowHandlers = {
+    onMark: markSlot,
+    onToggleSkipped: toggleIntakeSkipped,
+    onEdit: (ev) => setEditingEvent(ev),
+    onDelete: (intake) => void deleteRow(intake),
+    onPin: (eventId, slotAt) => setPendingPin({ eventId, slotAt }),
+    onUnpin: (eventId) => void setAttribution(eventId, null),
+  };
+
   return (
     <div className="space-y-4" data-slot="dose-history-ledger">
-      {/* Header: the took/skipped summary chart + the add affordance. */}
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-end justify-between gap-3">
         {compliance && compliance.denominator > 0 ? (
           <LedgerSummaryChart compliance={compliance} windowDays={windowDays} />
         ) : (
@@ -139,8 +156,8 @@ export function DoseHistoryLedger({
             className="min-h-11 shrink-0 sm:min-h-9"
             data-slot="ledger-add"
           >
-            <Plus aria-hidden="true" className="h-4 w-4" />
-            {t("medications.detail.verlauf.add")}
+            <Plus aria-hidden="true" className="size-4" />
+            {t("medications.detail.verlauf.backfill")}
           </Button>
         )}
       </div>
@@ -178,51 +195,115 @@ export function DoseHistoryLedger({
         />
       )}
 
-      {data &&
-        groups.map((group) => (
-          <section
-            key={group.dayKey}
-            className="space-y-1"
-            data-slot="ledger-day"
-            data-day={group.dayKey}
-          >
-            <h3 className="text-muted-foreground px-1 text-xs font-medium">
-              {/* Issue #490 — `dayKey` is a profile-timezone calendar day.
-                  The old browser-local-midnight parse re-interpreted it in
-                  the DEVICE zone and could shift the heading a day when
-                  browser ≠ profile zone; the day-key label renders
-                  UTC-pinned instead (zone-independent, weekday included). */}
-              {/* The day heading opens the whole day: did I take
-                  it, and how was that day otherwise. Rows keep their own
-                  actions. A planned future slot gets no link. */}
-              <DayLink date={group.dayKey}>
-                {formatDateWithWeekdaySmart(
-                  group.dayKey,
-                  dateFormatPref,
-                  locale,
-                )}
-              </DayLink>
-            </h3>
-            <ul className="border-border/60 divide-border/60 divide-y rounded-md border">
-              {group.rows.map((row, i) => (
-                <LedgerRowItem
-                  key={`${row.kind}:${row.at}:${row.intake?.id ?? i}`}
-                  row={row}
-                  marking={marking}
-                  isToday={group.dayKey === todayKey}
-                  onMark={markSlot}
-                  onToggleSkipped={toggleIntakeSkipped}
-                  onEdit={(ev) => setEditingEvent(ev)}
-                  onDelete={(intake) => void deleteRow(intake)}
-                  onPin={(eventId, slotAt) =>
-                    setPendingPin({ eventId, slotAt })
-                  }
-                  onUnpin={(eventId) => void setAttribution(eventId, null)}
-                />
+      {data && groups.length > 0 && (
+        <table className="w-full table-fixed text-sm" data-slot="ledger-table">
+          <caption className="sr-only">
+            {t("medications.detail.intake.title")}
+          </caption>
+          <thead>
+            <tr className="border-border/60 text-muted-foreground border-b text-left text-xs">
+              <th scope="col" className="w-[34%] py-2 pr-2 font-medium">
+                {t("medications.detail.verlauf.dayColumn")}
+              </th>
+              {columns.map((time) => (
+                <th
+                  key={time}
+                  scope="col"
+                  className="px-2 py-2 font-medium tabular-nums"
+                >
+                  {fmt.wallTime(time)}
+                </th>
               ))}
-            </ul>
-          </section>
-        ))}
+              {(hasOffSchedule || columns.length === 0) && (
+                <th scope="col" className="px-2 py-2 font-medium">
+                  {columns.length === 0
+                    ? t("medications.detail.verlauf.takenColumn")
+                    : t("medications.detail.verlauf.extraColumn")}
+                </th>
+              )}
+              <th scope="col" className="w-11 py-2">
+                <span className="sr-only">
+                  {t("medications.detail.verlauf.actionsColumn")}
+                </span>
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-border/60 divide-y">
+            {groups.map((group) => {
+              const dayLabel = formatDateWithWeekdaySmart(
+                group.dayKey,
+                dateFormatPref,
+                locale,
+              );
+              const isToday = group.dayKey === todayKey;
+              const dayKey = group.dayKey;
+              const openable = isOpenableDay(dayKey, today);
+              const offSchedule = group.rows.filter(
+                (row) => row.kind === "ad_hoc",
+              );
+              return (
+                <tr
+                  key={group.dayKey}
+                  className="h-11 align-middle"
+                  data-slot="ledger-day"
+                  data-day={group.dayKey}
+                >
+                  <th
+                    scope="row"
+                    className="text-muted-foreground py-1.5 pr-2 text-left font-normal tabular-nums"
+                  >
+                    {dayLabel}
+                  </th>
+                  {columns.map((time) => (
+                    <td key={time} className="px-2 py-1.5">
+                      {group.rows
+                        .filter(
+                          (row) =>
+                            row.kind === "slot" && row.timeOfDay === time,
+                        )
+                        .map((row, i) => (
+                          <LedgerDoseCell
+                            key={`${row.at}:${row.intake?.id ?? i}`}
+                            row={row}
+                            marking={marking}
+                            isToday={isToday}
+                            onMark={markSlot}
+                          />
+                        ))}
+                    </td>
+                  ))}
+                  {(hasOffSchedule || columns.length === 0) && (
+                    <td className="px-2 py-1.5">
+                      <div className="flex flex-wrap gap-x-3 gap-y-1">
+                        {offSchedule.map((row: LedgerRow, i) => (
+                          <LedgerDoseCell
+                            key={`${row.at}:${row.intake?.id ?? i}`}
+                            row={row}
+                            marking={marking}
+                            isToday={isToday}
+                            onMark={markSlot}
+                          />
+                        ))}
+                      </div>
+                    </td>
+                  )}
+                  <td className="py-1 text-right">
+                    <LedgerDayMenu
+                      dayLabel={dayLabel}
+                      rows={group.rows}
+                      isToday={isToday}
+                      onOpenDay={
+                        openable ? () => openDay(dayKey as DateKey) : undefined
+                      }
+                      handlers={handlers}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
 
       <IntakeEditDialog
         medicationId={medicationId}

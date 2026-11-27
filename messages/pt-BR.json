@@ -2206,9 +2206,9 @@
         "deleteRow": {
           "failed": "Não foi possível excluir a tomada."
         },
-        "viewRecent90": "Últimos 90 dias",
-        "viewAll": "Histórico completo",
-        "viewToggleLabel": "Faixa do histórico"
+        "viewToggleLabel": "Faixa do histórico",
+        "viewRecentShort": "90 dias",
+        "viewAllShort": "Tudo"
       },
       "verlauf": {
         "loading": "Carregando histórico…",
@@ -2220,24 +2220,23 @@
         "rowActionsLabel": "Ações para {time}",
         "markAsTaken": "Marcar como tomada",
         "markAsSkipped": "Marcar como pulada",
-        "adHocTag": "fora do cronograma",
-        "takenDetail": "prevista {planned}, tomada {taken}",
         "doseTaken": "Dose: {dose}",
-        "status": {
-          "ad_hoc": "Fora do cronograma"
-        },
         "pin": {
           "action": "Atribuir ao horário {time}",
           "release": "Liberar atribuição",
           "pinnedTag": "atribuída",
           "pinnedToast": "Tomada atribuída ao horário",
           "unpinnedToast": "Atribuição liberada",
-          "dueContext": "estava prevista: {time} ({delta})",
           "confirmTitle": "Atribuir ao horário {time}?",
           "confirmBody": "A tomada conta para este horário exatamente como contaria se tivesse sido registrada nele: no horário ou atrasada, dependendo de quando foi tomada, então a taxa nunca é inflada. Você pode desfazer a atribuição a qualquer momento.",
           "confirmCancel": "Cancelar",
           "confirmAction": "Atribuir"
-        }
+        },
+        "backfill": "Registrar depois",
+        "dayColumn": "Dia",
+        "takenColumn": "Tomadas",
+        "extraColumn": "Adicional",
+        "actionsColumn": "Ações"
       },
       "notifications": {
         "title": "Notificações",
@@ -2350,33 +2349,25 @@
       },
       "tabs": {
         "uebersicht": "Visão geral",
-        "zeitplan": "Cronograma",
-        "bestand": "Estoque",
         "verlauf": "Histórico",
         "injektion": "Injeção",
-        "erweitert": "Avançado",
-        "wirkung": "Efeito"
+        "wirkung": "Efeito",
+        "einstellungen": "Configurações"
       },
       "shell": {
         "loadFailed": "Este medicamento não pôde ser carregado.",
         "tablistLabel": "Seções de detalhes do medicamento"
       },
       "uebersicht": {
-        "statusTitle": "Status",
         "nextDoseLabel": "Próxima dose",
-        "nextDoseNone": "Nenhuma dose prevista.",
         "nextDoseAsNeeded": "Conforme necessário, sem dose planejada.",
         "nextDoseNotTracked": "Não acompanhado, mantido como registro.",
         "pausedHint": "Pausado: sem lembretes.",
         "reminderLabel": "Lembrete",
-        "reminderOn": "Ligado",
         "reminderOff": "Desligado",
         "supplyLabel": "Estoque",
         "supplyRunway": "Dura cerca de {days, plural, one {# dia} other {# dias}} a mais",
-        "jumpToZeitplan": "Abrir cronograma",
-        "jumpToBestand": "Abrir estoque",
-        "complianceTitle": "Adesão",
-        "complianceEmpty": "Nenhum dado de adesão ainda."
+        "complianceTitle": "Adesão"
       },
       "bestand": {
         "title": "Estoque",
@@ -2458,15 +2449,7 @@
       },
       "erweitert": {
         "group": {
-          "lifecycle": "Ciclo de vida",
-          "externalApi": "API externa",
-          "data": "Dados",
-          "danger": "Zona de perigo"
-        },
-        "editor": {
-          "title": "Editar medicamento no editor",
-          "helper": "Altere nome, classe de tratamento, frequência e cronogramas no editor passo a passo.",
-          "button": "Abrir editor"
+          "data": "Dados"
         }
       },
       "zeitplan": {
@@ -2476,7 +2459,6 @@
         "scheduleLabel": "Cronograma {index}",
         "fullEditNote": "Frequência, classe de tratamento e período do tratamento são editadas no editor em Avançado > Ciclo de vida.",
         "graceEcho": "Duração dos lembretes: {minutes, plural, one {# minuto} other {# minutos}}",
-        "reminderTitle": "Lembrete",
         "manageChannels": "Gerenciar canais de notificação",
         "history": {
           "title": "Histórico do plano",
@@ -2528,6 +2510,62 @@
           "orderError": "O início deve ser antes do fim.",
           "noTimes": "Nenhum horário de dose definido ainda."
         }
+      },
+      "menu": {
+        "label": "Ações do medicamento",
+        "resume": "Retomar"
+      },
+      "settingsTab": {
+        "groups": {
+          "period": "Período"
+        },
+        "rows": {
+          "history": "Histórico",
+          "medication": "Medicamento",
+          "export": "Exportar",
+          "import": "Importar",
+          "api": "Acesso à API",
+          "codes": "Códigos clínicos",
+          "channels": "Canais de notificação"
+        },
+        "intakeCount": "{count, plural, one {# tomada} other {# tomadas}}",
+        "withAllData": "com todos os dados",
+        "courseCount": "{count, plural, one {# curso} other {# cursos}}"
+      },
+      "overview": {
+        "changeMetric": "Alterar medição",
+        "metricField": "Medição",
+        "details": "Detalhes",
+        "since": "desde então",
+        "daysChip": "{days, plural, one {# dia} other {# dias}}",
+        "today": {
+          "progress": "{taken} de {total}",
+          "dueAt": "A dose das {time} é agora.",
+          "overdueAt": "A dose das {time} está atrasada.",
+          "nextAt": "A próxima dose é às {time}.",
+          "nothingOpen": "Hoje não resta nenhuma dose pendente.",
+          "noneToday": "Nenhuma dose prevista para hoje.",
+          "asNeededTaken": "{count, plural, =0 {Não tomada hoje.} one {Tomada uma vez hoje.} other {Tomada # vezes hoje.}}"
+        },
+        "intake": {
+          "title": "Tomada",
+          "missedNone": "Nenhuma dose perdida em {days, plural, one {# dia} other {# dias}}.",
+          "missedSome": "{count, plural, =0 {Nenhuma dose perdida} one {Uma dose perdida} other {# doses perdidas}} em {days, plural, one {# dia} other {# dias}}.",
+          "asNeededCount": "{count, plural, =0 {Não tomada em {days} dias.} one {Tomada uma vez em {days} dias.} other {Tomada # vezes em {days} dias.}}"
+        },
+        "legend": {
+          "taken": "{count, plural, one {# tomada} other {# tomadas}}",
+          "late": "{count, plural, one {# com atraso} other {# com atraso}}",
+          "missed": "{count, plural, one {# perdida} other {# perdidas}}",
+          "skipped": "{count, plural, one {# pulada} other {# puladas}}"
+        },
+        "plan": {
+          "title": "Plano",
+          "since": "desde {date}",
+          "range": "{start} a {end}",
+          "autoRecorded": "registrada automaticamente",
+          "reminderOn": "ativados, {minutes, plural, one {# minuto} other {# minutos}}"
+        }
       }
     },
     "logInjectionSiteTitle": "Registrar local de injeção",
@@ -2568,7 +2606,6 @@
       "intro": "Como as medições que este medicamento deve influenciar se moveram por volta do momento em que você começou. Mostra o que se alinha no tempo e nunca conselho sobre seu tratamento ou dose.",
       "notEligible": "Não há resultado para relacionar este medicamento.",
       "startFallback": "Nenhuma data de início definida, então a comparação usa sua primeira leitura registrada como ponto de referência.",
-      "noStart": "Defina uma data de início para este medicamento para comparar as leituras antes e depois de começar.",
       "primaryBadge": "Alvo principal",
       "noSeries": "Nenhuma leitura registrada para este alvo ainda.",
       "startMarker": "Início",
@@ -2587,12 +2624,7 @@
         "error": "Não foi possível salvar essa alteração. Tente novamente."
       },
       "beforeAfter": {
-        "summary": "Ø {before} antes, Ø {after} desde, uma mudança de {delta}.",
-        "counts": "Baseado em {beforeCount, plural, one {# leitura} other {# leituras}} antes e {afterCount} desde.",
-        "needBefore": "Leituras insuficientes antes do início ainda. Cerca de {weeks, plural, one {# semana é necessária} other {# semanas são necessárias}} antes e depois para comparar.",
-        "needAfter": "Leituras insuficientes desde o início ainda. Cerca de {weeks, plural, one {# semana é necessária} other {# semanas são necessárias}} antes e depois para comparar.",
-        "needStart": "Defina uma data de início para comparar as leituras antes e depois de começar.",
-        "needData": "Leituras insuficientes ainda. Cerca de {weeks, plural, one {# semana é necessária} other {# semanas são necessárias}} antes e depois do início para comparar."
+        "counts": "Baseado em {beforeCount, plural, one {# leitura} other {# leituras}} antes e {afterCount} desde."
       },
       "insights": {
         "title": "Efeito do medicamento",
@@ -2626,7 +2658,8 @@
         "needAfter": "A mudança no início precisa de medições em pelo menos {days, plural, one {# dia} other {# dias}}, distribuídas ao longo de {span, plural, one {# dia} other {# dias}} desde o início, em dias em que as doses foram tomadas.",
         "fitFailed": "Não foi possível ajustar estas medições, então nenhuma mudança no início é exibida.",
         "autocorrelation": "Os valores diários se arrastam fortemente de um dia para o outro, então até estas faixas podem estar estreitas demais."
-      }
+      },
+      "method": "Como é calculado"
     },
     "import": {
       "resultSuccess": "{imported, plural, one {# tomada importada} other {# tomadas importadas}}",
@@ -2841,7 +2874,6 @@
     "leaflet": {
       "title": "Bula",
       "find": "Encontrar bula",
-      "open": "Abrir",
       "saved": "Bula oficial",
       "newTab": "(abre em uma nova aba)",
       "opensIn": "Abre a busca de {authority} com este medicamento.",
@@ -2858,7 +2890,8 @@
       "urlInvalid": "Digite um link que comece com https://",
       "savedToast": "Link da bula salvo",
       "removedToast": "Link da bula removido",
-      "saveError": "Não foi possível salvar o link da bula."
+      "saveError": "Não foi possível salvar o link da bula.",
+      "searchShort": "Buscar"
     }
   },
   "charts": {
@@ -16593,6 +16626,15 @@
     "metricLabels": {
       "systolicBloodPressure": "Pressão arterial sistólica",
       "diastolicBloodPressure": "Pressão arterial diastólica"
+    },
+    "efficacyResult": {
+      "lower": "Desde o início, a média está {amount} mais baixa.",
+      "higher": "Desde o início, a média está {amount} mais alta.",
+      "unchanged": "Desde o início, a média ficou praticamente igual.",
+      "needBefore": "Ainda faltam valores de antes do início para comparar.",
+      "needAfter": "Ainda faltam valores desde o início para comparar.",
+      "needStart": "Adicione uma data de início para comparar antes e depois.",
+      "needData": "Ainda faltam valores para comparar."
     }
   }
 }

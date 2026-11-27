@@ -2206,9 +2206,9 @@
         "deleteRow": {
           "failed": "De inname kon niet worden verwijderd."
         },
-        "viewRecent90": "Afgelopen 90 dagen",
-        "viewAll": "Volledige geschiedenis",
-        "viewToggleLabel": "Periode van de geschiedenis"
+        "viewToggleLabel": "Periode van de geschiedenis",
+        "viewRecentShort": "90 dagen",
+        "viewAllShort": "Alles"
       },
       "verlauf": {
         "loading": "Geschiedenis laden…",
@@ -2220,24 +2220,23 @@
         "rowActionsLabel": "Acties voor {time}",
         "markAsTaken": "Markeren als ingenomen",
         "markAsSkipped": "Markeren als overgeslagen",
-        "adHocTag": "buiten schema",
-        "takenDetail": "gepland {planned}, ingenomen {taken}",
         "doseTaken": "Dosis: {dose}",
-        "status": {
-          "ad_hoc": "Buiten schema"
-        },
         "pin": {
           "action": "Toewijzen aan tijdstip {time}",
           "release": "Toewijzing opheffen",
           "pinnedTag": "toegewezen",
           "pinnedToast": "Inname toegewezen aan tijdstip",
           "unpinnedToast": "Toewijzing opgeheven",
-          "dueContext": "gepland om: {time} ({delta})",
           "confirmTitle": "Toewijzen aan tijdstip {time}?",
           "confirmBody": "De inname telt voor dit tijdstip precies zoals wanneer hij daar was vastgelegd: op tijd of te laat, afhankelijk van wanneer hij is ingenomen, zodat het percentage nooit mooier wordt voorgesteld. Je kunt de toewijzing op elk moment opheffen.",
           "confirmCancel": "Annuleren",
           "confirmAction": "Toewijzen"
-        }
+        },
+        "backfill": "Achteraf invoeren",
+        "dayColumn": "Dag",
+        "takenColumn": "Ingenomen",
+        "extraColumn": "Extra",
+        "actionsColumn": "Acties"
       },
       "notifications": {
         "title": "Meldingen",
@@ -2350,33 +2349,25 @@
       },
       "tabs": {
         "uebersicht": "Overzicht",
-        "zeitplan": "Schema",
-        "bestand": "Voorraad",
         "verlauf": "Geschiedenis",
         "injektion": "Injectie",
-        "erweitert": "Geavanceerd",
-        "wirkung": "Effect"
+        "wirkung": "Effect",
+        "einstellungen": "Instellingen"
       },
       "shell": {
         "loadFailed": "Dit medicijn kon niet worden geladen.",
         "tablistLabel": "Onderdelen van de medicijndetails"
       },
       "uebersicht": {
-        "statusTitle": "Status",
         "nextDoseLabel": "Volgende dosis",
-        "nextDoseNone": "Geen geplande dosis.",
         "nextDoseAsNeeded": "Zo nodig, geen geplande dosis.",
         "nextDoseNotTracked": "Niet bijgehouden, alleen ter registratie.",
         "pausedHint": "Gepauzeerd: geen herinneringen.",
         "reminderLabel": "Herinnering",
-        "reminderOn": "Aan",
         "reminderOff": "Uit",
         "supplyLabel": "Voorraad",
         "supplyRunway": "Nog genoeg voor ongeveer {days, plural, one {# dag} other {# dagen}}",
-        "jumpToZeitplan": "Schema openen",
-        "jumpToBestand": "Voorraad openen",
-        "complianceTitle": "Therapietrouw",
-        "complianceEmpty": "Nog geen gegevens over therapietrouw."
+        "complianceTitle": "Therapietrouw"
       },
       "bestand": {
         "title": "Voorraad",
@@ -2458,15 +2449,7 @@
       },
       "erweitert": {
         "group": {
-          "lifecycle": "Levenscyclus",
-          "externalApi": "Externe API",
-          "data": "Gegevens",
-          "danger": "Gevarenzone"
-        },
-        "editor": {
-          "title": "Medicijn bewerken in de editor",
-          "helper": "Wijzig naam, behandelklasse, frequentie en schema's in de stapsgewijze editor.",
-          "button": "Editor openen"
+          "data": "Gegevens"
         }
       },
       "zeitplan": {
@@ -2476,7 +2459,6 @@
         "scheduleLabel": "Schema {index}",
         "fullEditNote": "Frequentie, behandelklasse en kuurperiode bewerk je in de editor onder Geavanceerd > Levenscyclus.",
         "graceEcho": "Herinneringsduur: {minutes, plural, one {# minuut} other {# minuten}}",
-        "reminderTitle": "Herinnering",
         "manageChannels": "Meldingskanalen beheren",
         "history": {
           "title": "Schemageschiedenis",
@@ -2528,6 +2510,62 @@
           "orderError": "Het begin moet vóór het einde liggen.",
           "noTimes": "Nog geen innametijden ingesteld."
         }
+      },
+      "menu": {
+        "label": "Acties voor het medicijn",
+        "resume": "Hervatten"
+      },
+      "settingsTab": {
+        "groups": {
+          "period": "Periode"
+        },
+        "rows": {
+          "history": "Geschiedenis",
+          "medication": "Medicijn",
+          "export": "Exporteren",
+          "import": "Importeren",
+          "api": "API-toegang",
+          "codes": "Klinische codes",
+          "channels": "Meldingskanalen"
+        },
+        "intakeCount": "{count, plural, one {# inname} other {# innames}}",
+        "withAllData": "met alle gegevens",
+        "courseCount": "{count, plural, one {# kuur} other {# kuren}}"
+      },
+      "overview": {
+        "changeMetric": "Meting wijzigen",
+        "metricField": "Meting",
+        "details": "Details",
+        "since": "sindsdien",
+        "daysChip": "{days, plural, one {# dag} other {# dagen}}",
+        "today": {
+          "progress": "{taken} van {total}",
+          "dueAt": "De dosis van {time} is nu aan de beurt.",
+          "overdueAt": "De dosis van {time} is te laat.",
+          "nextAt": "De volgende dosis is om {time}.",
+          "nothingOpen": "Vandaag staat er geen dosis meer open.",
+          "noneToday": "Vandaag is er geen dosis gepland.",
+          "asNeededTaken": "Vandaag {count, plural, one {één keer} other {# keer}} ingenomen."
+        },
+        "intake": {
+          "title": "Inname",
+          "missedNone": "In {days, plural, one {# dag} other {# dagen}} heb je geen dosis gemist.",
+          "missedSome": "In {days, plural, one {# dag} other {# dagen}} heb je {count, plural, one {één dosis} other {# doses}} gemist.",
+          "asNeededCount": "{count, plural, =0 {In {days} dagen niet ingenomen.} one {In {days} dagen één keer ingenomen.} other {In {days} dagen # keer ingenomen.}}"
+        },
+        "legend": {
+          "taken": "{count, plural, one {# ingenomen} other {# ingenomen}}",
+          "late": "{count, plural, one {# te laat} other {# te laat}}",
+          "missed": "{count, plural, one {# gemist} other {# gemist}}",
+          "skipped": "{count, plural, one {# overgeslagen} other {# overgeslagen}}"
+        },
+        "plan": {
+          "title": "Plan",
+          "since": "sinds {date}",
+          "range": "{start} tot {end}",
+          "autoRecorded": "wordt automatisch vastgelegd",
+          "reminderOn": "aan, {minutes, plural, one {# minuut} other {# minuten}}"
+        }
       }
     },
     "logInjectionSiteTitle": "Injectieplaats vastleggen",
@@ -2568,7 +2606,6 @@
       "intro": "Hoe de metingen die dit medicijn zou moeten beïnvloeden zich hebben ontwikkeld rond het moment dat je ermee begon. Het laat zien wat in de tijd samenvalt en is nooit een advies over je behandeling of dosis.",
       "notEligible": "Er is geen uitkomst waaraan dit medicijn kan worden gerelateerd.",
       "startFallback": "Er is geen startdatum ingesteld, dus de vergelijking gebruikt je eerste vastgelegde meting als referentiepunt.",
-      "noStart": "Stel een startdatum in voor dit medicijn om de metingen van vóór en na de start te vergelijken.",
       "primaryBadge": "Hoofddoel",
       "noSeries": "Nog geen metingen vastgelegd voor dit doel.",
       "startMarker": "Start",
@@ -2587,12 +2624,7 @@
         "error": "Die wijziging kan niet worden opgeslagen. Probeer het opnieuw."
       },
       "beforeAfter": {
-        "summary": "Ø {before} ervoor, Ø {after} sindsdien, een verandering van {delta}.",
-        "counts": "Op basis van {beforeCount, plural, one {# meting} other {# metingen}} ervoor en {afterCount} sindsdien.",
-        "needBefore": "Nog niet genoeg metingen van vóór de start. Om te vergelijken zijn ongeveer {weeks, plural, one {# week} other {# weken}} ervoor en erna nodig.",
-        "needAfter": "Nog niet genoeg metingen sinds de start. Om te vergelijken zijn ongeveer {weeks, plural, one {# week} other {# weken}} ervoor en erna nodig.",
-        "needStart": "Stel een startdatum in om de metingen van vóór en na de start te vergelijken.",
-        "needData": "Nog niet genoeg metingen. Om te vergelijken zijn ongeveer {weeks, plural, one {# week} other {# weken}} vóór en na de start nodig."
+        "counts": "Op basis van {beforeCount, plural, one {# meting} other {# metingen}} ervoor en {afterCount} sindsdien."
       },
       "insights": {
         "title": "Effect van medicatie",
@@ -2626,7 +2658,8 @@
         "needAfter": "Voor de verandering bij de start zijn waarden op minstens {days, plural, one {# dag} other {# dagen}} nodig, verspreid over {span, plural, one {# dag} other {# dagen}} sinds de start en op dagen waarop de doses zijn ingenomen.",
         "fitFailed": "Deze waarden konden niet worden verwerkt, dus er wordt geen verandering bij de start getoond.",
         "autocorrelation": "De dagwaarden hangen sterk af van de vorige dag, dus zelfs deze bereiken kunnen te smal zijn."
-      }
+      },
+      "method": "Zo wordt het berekend"
     },
     "import": {
       "resultSuccess": "{imported, plural, one {# inname} other {# innames}} geïmporteerd",
@@ -2841,7 +2874,6 @@
     "leaflet": {
       "title": "Bijsluiter",
       "find": "Bijsluiter zoeken",
-      "open": "Openen",
       "saved": "Officiële bijsluiter",
       "newTab": "(opent in een nieuw tabblad)",
       "opensIn": "Opent de zoekfunctie van {authority} met dit geneesmiddel.",
@@ -2858,7 +2890,8 @@
       "urlInvalid": "Voer een link in die begint met https://",
       "savedToast": "Link naar bijsluiter opgeslagen",
       "removedToast": "Link naar bijsluiter verwijderd",
-      "saveError": "De link naar de bijsluiter kon niet worden opgeslagen."
+      "saveError": "De link naar de bijsluiter kon niet worden opgeslagen.",
+      "searchShort": "Zoeken"
     }
   },
   "charts": {
@@ -16593,6 +16626,15 @@
     "metricLabels": {
       "systolicBloodPressure": "Systolische bloeddruk",
       "diastolicBloodPressure": "Diastolische bloeddruk"
+    },
+    "efficacyResult": {
+      "lower": "Sinds de start ligt het gemiddelde {amount} lager.",
+      "higher": "Sinds de start ligt het gemiddelde {amount} hoger.",
+      "unchanged": "Sinds de start is het gemiddelde ongeveer gelijk gebleven.",
+      "needBefore": "Er zijn nog te weinig waarden van vóór de start om te vergelijken.",
+      "needAfter": "Er zijn nog te weinig waarden sinds de start om te vergelijken.",
+      "needStart": "Voeg een startdatum toe om voor en na te vergelijken.",
+      "needData": "Er zijn nog te weinig waarden om te vergelijken."
     }
   }
 }

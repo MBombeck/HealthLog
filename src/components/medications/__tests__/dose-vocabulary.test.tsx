@@ -23,7 +23,7 @@ vi.mock("@/hooks/use-record-capabilities", () => ({
 }));
 
 import { I18nProvider } from "@/lib/i18n/context";
-import { LedgerRowItem } from "@/components/medications/dose-history/ledger-row-item";
+import { LedgerDoseCell } from "@/components/medications/dose-history/ledger-row-item";
 import { DoseStateLabel } from "@/components/medications/dose-state-label";
 import type { LedgerRow } from "@/components/medications/dose-history-ledger-compute";
 import {
@@ -48,19 +48,7 @@ function slotRow(overrides: Partial<LedgerRow>): LedgerRow {
 function renderRow(row: LedgerRow) {
   return renderToStaticMarkup(
     <I18nProvider initialLocale="en">
-      <ul>
-        <LedgerRowItem
-          row={row}
-          marking={null}
-          isToday
-          onMark={() => {}}
-          onToggleSkipped={() => {}}
-          onEdit={() => {}}
-          onDelete={() => {}}
-          onPin={() => {}}
-          onUnpin={() => {}}
-        />
-      </ul>
+      <LedgerDoseCell row={row} marking={null} isToday onMark={() => {}} />
     </I18nProvider>,
   );
 }

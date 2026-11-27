@@ -103,11 +103,19 @@ describe("medication detail compliance applicability", () => {
     "utf8",
   );
 
+  const cards = readFileSync(
+    join(
+      process.cwd(),
+      "src/components/medications/detail/overview/overview-cards.tsx",
+    ),
+    "utf8",
+  );
+
   it("renders the settled not-applicable state instead of a percentage or loading fallback", () => {
-    expect(source).toContain(
-      "const complianceNotApplicable = compliance?.applicable === false",
+    expect(cards).toContain(
+      "const notApplicable = compliance?.applicable === false",
     );
-    expect(source).toContain("<MedicationComplianceNotApplicable />");
+    expect(cards).toContain('t("medications.complianceNotApplicable")');
   });
 
   it("keeps PRN compliance disabled at the query boundary", () => {
