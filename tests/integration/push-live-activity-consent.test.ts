@@ -11,7 +11,7 @@
  *   only when the state changed, and every content state is the closed
  *   six-key template with nothing else.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 process.env.ENCRYPTION_KEY ??=
   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
@@ -498,6 +498,101 @@ describe("start and update", () => {
         "content-state"
       ],
     ).toMatchObject({ status: "snoozed" });
+  });
+});
+
+describe("a running Activity ends when the consent or the switch goes", () => {
+  // A fixed noon: the dose, its band and every statement sit on one day
+  // whatever the hour the suite runs at.
+  const ANCHOR = new Date("2026-11-25T12:00:00Z");
+  const APP_LA_TOKEN = "9e".repeat(32);
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"], now: ANCHOR });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /** A relay-started Activity and an app-started one, both running. */
+  async function running() {
+    const t = await setUp();
+    await t.reg({ liveActivityConsent: t.consent() });
+    const relayDose = await dueDose(t.session.userId, 30);
+    const appDose = await dueDose(t.session.userId, 45);
+    await t.reg({
+      liveActivityTokens: [
+        t.activityEntry({
+          relayStart: true,
+          medicationId: relayDose.medication.id,
+          slotInstant: relayDose.slot.toISOString(),
+        }),
+        t.activityEntry(
+          {
+            medicationId: appDose.medication.id,
+            slotInstant: appDose.slot.toISOString(),
+          },
+          APP_LA_TOKEN,
+        ),
+      ],
+    });
+    return t;
+  }
+
+  const ends = () =>
+    laPushes()
+      .filter((p) => (p.payload.aps as { event: string }).event === "end")
+      .map((p) => p.token);
+  const tokensLeft = async () =>
+    (
+      await getPrismaClient().liveActivityToken.findMany({
+        select: { pushToken: true },
+      })
+    ).map((r) => r.pushToken);
+
+  it("ends the relay-started one at once when the device withdraws its Live Activity consent", async () => {
+    const t = await running();
+    const withdrawn = await t.reg({ liveActivityWithdraw: t.withdraw() });
+    expect(withdrawn.data.push.liveActivityConsent).toBe(false);
+    expect(ends()).toEqual([LA_TOKEN]);
+    // The app's own Activity is the app's: it stays.
+    expect(await tokensLeft()).toEqual([APP_LA_TOKEN]);
+  });
+
+  it("ends the relay-started one at once when the device withdraws its relay consent", async () => {
+    const t = await running();
+    await t.reg({
+      relayConsent: { granted: false, textVersion: "2026-11-21" },
+    });
+    expect(ends()).toEqual([LA_TOKEN]);
+    expect(await tokensLeft()).toEqual([APP_LA_TOKEN]);
+  });
+
+  it("ends the relay-started one on the next pass once the operator's switch is off", async () => {
+    await running();
+    vi.stubEnv("PUSH_RELAY_LIVE_ACTIVITY", "off");
+    expect(await runLiveActivityRelayPass()).toMatchObject({
+      started: 0,
+      updated: 0,
+    });
+    expect(ends()).toEqual([LA_TOKEN]);
+    expect(await tokensLeft()).toEqual([APP_LA_TOKEN]);
+  });
+
+  it("still ends a missed dose's Activity after the consent is gone", async () => {
+    const t = await setUp();
+    // Past the daily band's late tail (four hours after the slot): missed.
+    const { medication, slot } = await dueDose(t.session.userId, -(4 * 60 + 5));
+    await t.reg({
+      liveActivityTokens: [
+        t.activityEntry(
+          { medicationId: medication.id, slotInstant: slot.toISOString() },
+          APP_LA_TOKEN,
+        ),
+      ],
+    });
+    await runLiveActivityRelayPass();
+    expect(ends()).toEqual([APP_LA_TOKEN]);
+    expect(await tokensLeft()).toEqual([]);
   });
 });
 

@@ -12,7 +12,7 @@ vi.mock("@/lib/db", () => ({ prisma: {} }));
 
 import {
   laRelayBlock,
-  laRelayEligible,
+  laVerdict,
   liveActivityStartState,
 } from "../live-activity-eligibility";
 import { relayReachable, routeOf, type PushContext } from "../route-device";
@@ -54,8 +54,9 @@ describe("Live Activity eligibility", () => {
     // Ordinary pushes take the key; the relay still reaches the device.
     expect(routeOf(device, ctx(true))).toBe("direct");
     expect(relayReachable(device, ctx(true))).toBe(true);
-    expect(laRelayEligible(device, ctx(true))).toBe(true);
-    expect(laRelayEligible(device, ctx(false))).toBe(true);
+    const all = { start: true, update: true, end: true };
+    expect(laVerdict(device, ctx(true), NOW)).toEqual(all);
+    expect(laVerdict(device, ctx(false), NOW)).toEqual(all);
     expect(liveActivityStartState(device, ctx(true), NOW)).toBe("ready");
   });
 
@@ -88,5 +89,29 @@ describe("Live Activity eligibility", () => {
         NOW,
       ),
     ).toBe("no_start_token");
+  });
+
+  it("still ends what runs once the switch, the consent or the start token is gone", () => {
+    const endOnly = { start: false, update: false, end: true };
+    vi.stubEnv("PUSH_RELAY_LIVE_ACTIVITY", "");
+    expect(laVerdict(device, ctx(true), NOW)).toEqual(endOnly);
+    vi.stubEnv("PUSH_RELAY_LIVE_ACTIVITY", "on");
+    expect(
+      laVerdict({ ...device, liveActivityConsentAt: null }, ctx(true), NOW),
+    ).toEqual(endOnly);
+    expect(
+      laVerdict({ ...device, laStartToken: null }, ctx(true), NOW),
+    ).toEqual({ start: false, update: true, end: true });
+  });
+
+  it("ends nothing the relay no longer reaches", () => {
+    vi.stubEnv("PUSH_RELAY_LIVE_ACTIVITY", "on");
+    const none = { start: false, update: false, end: false };
+    expect(
+      laVerdict({ ...device, relayState: "rebind_needed" }, ctx(true), NOW),
+    ).toEqual(none);
+    expect(
+      laVerdict({ ...device, relayBindingKey: "short" }, ctx(true), NOW),
+    ).toEqual(none);
   });
 });

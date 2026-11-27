@@ -242,11 +242,15 @@ missed, taken or skipped never gets a start, also not on the first run after
 the consent, so nothing that is already behind turns up on the lock screen.
 When several doses qualify, the earliest one starts. Turning a medication's
 switch off, pausing or ending the medication ends an Activity the server
-started for it.
+started for it. Withdrawing the Live Activity consent or the relay consent ends
+every Activity the server started on that device, before the relay forgets the
+consent or the binding; a missed dose's Activity still ends after that.
 
 On the server it is held back by `PUSH_RELAY_LIVE_ACTIVITY` until the app's
 device test has passed; while that is off only the end of a Live Activity goes
-over the relay. A server with its own APNs key is not affected.
+over the relay, and the next pass ends every Activity the server started. A
+server with its own APNs key is not affected, except that an Activity the
+relay started also ends over the relay there.
 
 ### How often
 

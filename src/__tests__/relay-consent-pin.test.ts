@@ -106,6 +106,13 @@ const PINS: ReadonlyArray<{
     covered:
       "A Live Activity start's outbox row keeps the dose it was for (`dose` on the item in `relay-send.ts`), stored on this server and never sent. No new kind, no new occasion, nothing more on the wire: the start the texts already name (`seesWhen`, a Live Activity start or update) now goes at most once per dose, where a start for another dose could make an earlier dose start twice.",
   },
+  {
+    version: "2026-11-22",
+    fingerprint:
+      "a9451a6d0506e0a49c9d9f7e3dc70c68d882b80a66d958cec72a90232ecc321d",
+    covered:
+      "Two new occasions for the Live Activity end, and no new kind, class or lifetime: withdrawing the Live Activity or the relay consent ends the Activities the relay started on that device, and the pass ends them once the operator's switch is off (`live-activity.ts`). Before, they stayed on the lock screen. It is the end the texts already name (`seesWhen`, the end of a Live Activity), sent with the statement the device signed when the Activity started, to the person's own device at the moment the consent or the switch changed. The docs list both occasions.",
+  },
 ];
 
 /**
