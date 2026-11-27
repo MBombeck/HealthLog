@@ -2389,6 +2389,12 @@
         },
         "modulesDerivedAt": "2026-07-01T08:00:00.000Z",
         "completedAt": "2026-07-01T08:00:00.000Z",
+        "planJson": [
+          "you",
+          "sources",
+          "reminders"
+        ],
+        "cardDismissedAt": "2026-06-30T12:34:56.789Z",
         "createdAt": "<now>",
         "updatedAt": "<now>"
       }
@@ -3854,7 +3860,13 @@
         "completedAt": "2026-07-01T08:30:00.000Z"
       },
       "modulesDerivedAt": "2026-07-01T08:00:00.000Z",
-      "completedAt": "2026-07-01T08:00:00.000Z"
+      "completedAt": "2026-07-01T08:00:00.000Z",
+      "plan": [
+        "you",
+        "sources",
+        "reminders"
+      ],
+      "cardDismissedAt": "2026-06-30T12:34:56.789Z"
     },
     "practitioners": [
       {
