@@ -4,9 +4,16 @@
  * zxcvbn's work grows with the square of the length times the number of l33t
  * substitutions it tries: unbounded, a long crafted password cost seconds per
  * call and one address could hold the event loop. These tests pin the bound
- * (`passwordEstimateInput`), measure the worst shapes found, freeze the
- * server's zxcvbn call to the one file that applies the bound, and pin the
- * length cap on new passwords without capping sign-in.
+ * (`passwordEstimateInput`), prove the cost it leaves is small by counting
+ * what zxcvbn would enumerate, keep a coarse wall-time check for
+ * order-of-magnitude regressions, freeze the server's zxcvbn call to the one
+ * file that applies the bound, and pin the length cap on new passwords
+ * without capping sign-in.
+ *
+ * The guard is structural on purpose. A wall-clock budget close to the real
+ * cost (it was 50 ms against a measured 30 to 50 ms) fails on a busy runner
+ * without any change to the code; the length and the substitution count are
+ * what make the cost small, and they do not depend on the machine.
  */
 import { describe, it, expect, vi } from "vitest";
 
@@ -23,6 +30,50 @@ import {
 } from "@/lib/validations/auth";
 import { PASSWORD_STRENGTH_MAX_LENGTH } from "@/lib/zxcvbn-i18n";
 import { readSourceFolder } from "@/__tests__/helpers/source-files";
+import {
+  enumerate_l33t_subs,
+  relevant_l33t_subtable,
+} from "zxcvbn-typescript/lib/matching/dictionary_match";
+
+/**
+ * zxcvbn's l33t table (`L33T_TABLE` in the matcher, not exported). The
+ * matcher tries every combination of the substitutions present in the
+ * password; `enumerate_l33t_subs` over the pruned table is that list.
+ */
+const ZXCVBN_L33T_TABLE: Record<string, string[]> = {
+  a: ["4", "@"],
+  b: ["8"],
+  c: ["(", "{", "[", "<"],
+  e: ["3"],
+  g: ["6", "9"],
+  i: ["1", "!", "|"],
+  l: ["1", "|", "7"],
+  o: ["0"],
+  s: ["$", "5"],
+  t: ["+", "7"],
+  x: ["%"],
+  z: ["2"],
+};
+const L33T_CHARACTERS = [
+  ...new Set(Object.values(ZXCVBN_L33T_TABLE).flat()),
+].sort();
+
+/** The l33t combinations zxcvbn's matcher would try for this input. */
+const l33tCombinations = (input: string) =>
+  enumerate_l33t_subs(relevant_l33t_subtable(input, ZXCVBN_L33T_TABLE)).length;
+
+/** Six distinct l33t characters allow at most this many combinations. */
+const MAX_L33T_COMBINATIONS = 36;
+
+function* subsets<T>(items: T[], size: number, from = 0): Generator<T[]> {
+  if (size === 0) {
+    yield [];
+    return;
+  }
+  for (let i = from; i <= items.length - size; i++)
+    for (const rest of subsets(items, size - 1, i + 1))
+      yield [items[i], ...rest];
+}
 
 const LONG = 1024;
 const fill = (unit: string) =>
@@ -87,16 +138,54 @@ describe("passwordEstimateInput", () => {
 });
 
 describe("estimator cost on hostile input", () => {
-  it("scores the worst shapes within 50 ms a call", () => {
-    // Warm the dictionaries and the JIT so the first shape is not charged
-    // for loading.
+  it("counts every character of zxcvbn's l33t table toward the bound", () => {
+    // The bound only holds if it sees every substitution zxcvbn tries: each
+    // table character, added after six others, is the seventh and is cut.
+    for (const ch of L33T_CHARACTERS) {
+      const six = L33T_CHARACTERS.filter((c) => c !== ch)
+        .slice(0, 6)
+        .join("");
+      expect(passwordEstimateInput(six + ch)).toBe(six);
+    }
+  });
+
+  it("leaves at most 36 l33t combinations for any six distinct l33t characters", () => {
+    let worst = 0;
+    for (const six of subsets(L33T_CHARACTERS, 6))
+      worst = Math.max(worst, l33tCombinations(six.join("")));
+    expect(worst).toBe(MAX_L33T_COMBINATIONS);
+    // Without the bound the same matcher would try hundreds.
+    expect(l33tCombinations(L33T_CHARACTERS.join(""))).toBeGreaterThan(500);
+  });
+
+  it("bounds the worst shapes structurally: length, distinct l33t, combinations", () => {
+    for (const shape of WORST_SHAPES) {
+      const input = passwordEstimateInput(shape);
+      const label = JSON.stringify(shape.slice(0, 12));
+      expect(input.length, label).toBeLessThanOrEqual(
+        PASSWORD_STRENGTH_MAX_LENGTH,
+      );
+      expect(PASSWORD_STRENGTH_MAX_LENGTH).toBe(32);
+      const distinct = new Set(
+        [...input].filter((c) => L33T_CHARACTERS.includes(c)),
+      );
+      expect(distinct.size, label).toBeLessThanOrEqual(6);
+      expect(l33tCombinations(input), label).toBeLessThanOrEqual(
+        MAX_L33T_COMBINATIONS,
+      );
+    }
+  });
+
+  it("scores the worst shapes well under 250 ms a call", () => {
+    // A coarse sanity check against an order-of-magnitude regression (an
+    // unbounded call costs seconds), not a budget: the bound is proven above.
     checkPasswordStrength("warm up the estimator");
     const slow: string[] = [];
     for (const shape of WORST_SHAPES) {
       const worst = cheapestRunMs(() =>
         checkPasswordStrength(shape, ["someusername", "someone@example.com"]),
       );
-      if (worst >= 50)
+      if (worst >= 250)
         slow.push(
           `${JSON.stringify(shape.slice(0, 12))}…: ${worst.toFixed(1)} ms`,
         );
