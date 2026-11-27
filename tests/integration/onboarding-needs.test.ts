@@ -732,7 +732,13 @@ describe("POST /api/onboarding/restart", () => {
     const res = await postRestart();
     expect(res.status).toBe(200);
     const state = await readState(res);
-    expect(state.steps.every((step) => step.status === "pending")).toBe(true);
+    // Every step owed again; the AI follow-up reads as passed while no
+    // provider can serve the Coach on this server (1.50).
+    expect(
+      state.steps
+        .filter((step) => step.id !== "ai")
+        .every((step) => step.status === "pending"),
+    ).toBe(true);
     expect(state.completedAt).toBeNull();
     // The answers survive as the prefill for the re-run.
     expect(state.needs.medication).toBe("yes");
