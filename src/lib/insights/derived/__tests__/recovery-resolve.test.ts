@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
+  describeRecoveryDivergence,
+  recoveryLadder,
   resolveCanonicalRecovery,
   type RecoveryRow,
 } from "../recovery-resolve";
@@ -25,7 +27,11 @@ describe("resolveCanonicalRecovery", () => {
       row("2026-06-01T12:00:00Z", 50, "COMPUTED"), // day-that-ended stamp
       row("2026-06-02T06:00:00Z", 80, "WHOOP"), // wake-morning stamp
     ];
-    const resolved = resolveCanonicalRecovery(rows);
+    const resolved = resolveCanonicalRecovery(
+      rows,
+      null,
+      DEFAULT_SOURCE_PRIORITY.recovery,
+    );
     expect(resolved).toHaveLength(1);
     expect(resolved[0].source).toBe("WHOOP");
     expect(resolved[0].value).toBe(80);
@@ -33,7 +39,11 @@ describe("resolveCanonicalRecovery", () => {
 
   it("falls back to COMPUTED when no WHOOP row exists for the night", () => {
     const rows = [row("2026-06-01T12:00:00Z", 55, "COMPUTED")];
-    const resolved = resolveCanonicalRecovery(rows);
+    const resolved = resolveCanonicalRecovery(
+      rows,
+      null,
+      DEFAULT_SOURCE_PRIORITY.recovery,
+    );
     expect(resolved).toHaveLength(1);
     expect(resolved[0].source).toBe("COMPUTED");
     expect(resolved[0].value).toBe(55);
@@ -47,7 +57,11 @@ describe("resolveCanonicalRecovery", () => {
       row("2026-06-02T12:00:00Z", 51, "COMPUTED"), // night Jun02→03, wake Jun03
       row("2026-06-02T06:00:00Z", 70, "WHOOP"), // night Jun01→02, wake Jun02
     ];
-    const resolved = resolveCanonicalRecovery(rows);
+    const resolved = resolveCanonicalRecovery(
+      rows,
+      null,
+      DEFAULT_SOURCE_PRIORITY.recovery,
+    );
     expect(resolved).toHaveLength(2);
     // Sorted desc by measuredAt: the Jun02-noon COMPUTED first, then the
     // Jun02-06:00 WHOOP. Both survive — no night was merged away.
@@ -60,7 +74,11 @@ describe("resolveCanonicalRecovery", () => {
       row("2026-06-02T06:00:00Z", 60, "WHOOP"),
       row("2026-06-02T08:00:00Z", 75, "WHOOP"), // a morning re-score
     ];
-    const resolved = resolveCanonicalRecovery(rows);
+    const resolved = resolveCanonicalRecovery(
+      rows,
+      null,
+      DEFAULT_SOURCE_PRIORITY.recovery,
+    );
     expect(resolved).toHaveLength(1);
     expect(resolved[0].value).toBe(75);
   });
@@ -76,7 +94,11 @@ describe("resolveCanonicalRecovery", () => {
       // which is Jun 03 00:00 local → shifted forward to Jun 03 local wake day.
       row("2026-06-02T00:00:00Z", 40, "COMPUTED"),
     ];
-    const resolved = resolveCanonicalRecovery(rows, "Pacific/Auckland");
+    const resolved = resolveCanonicalRecovery(
+      rows,
+      "Pacific/Auckland",
+      DEFAULT_SOURCE_PRIORITY.recovery,
+    );
     expect(resolved).toHaveLength(1);
     expect(resolved[0].source).toBe("WHOOP");
     expect(resolved[0].value).toBe(82);
@@ -91,7 +113,11 @@ describe("resolveCanonicalRecovery", () => {
       row("2026-06-02T00:00:00Z", 84, "OURA"),
       row("2026-06-01T12:00:00Z", 50, "COMPUTED"),
     ];
-    const resolvedOura = resolveCanonicalRecovery(oura);
+    const resolvedOura = resolveCanonicalRecovery(
+      oura,
+      null,
+      DEFAULT_SOURCE_PRIORITY.recovery,
+    );
     expect(resolvedOura).toHaveLength(1);
     expect(resolvedOura[0].source).toBe("OURA");
     expect(resolvedOura[0].value).toBe(84);
@@ -101,7 +127,11 @@ describe("resolveCanonicalRecovery", () => {
       row("2026-06-02T00:00:00Z", 60, "POLAR"),
       row("2026-06-01T12:00:00Z", 50, "COMPUTED"),
     ];
-    const resolvedBoth = resolveCanonicalRecovery(ouraVsPolar);
+    const resolvedBoth = resolveCanonicalRecovery(
+      ouraVsPolar,
+      null,
+      DEFAULT_SOURCE_PRIORITY.recovery,
+    );
     expect(resolvedBoth).toHaveLength(1);
     expect(resolvedBoth[0].source).toBe("OURA");
 
@@ -109,13 +139,19 @@ describe("resolveCanonicalRecovery", () => {
       row("2026-06-02T00:00:00Z", 60, "POLAR"),
       row("2026-06-01T12:00:00Z", 50, "COMPUTED"),
     ];
-    const resolvedPolar = resolveCanonicalRecovery(polarOnly);
+    const resolvedPolar = resolveCanonicalRecovery(
+      polarOnly,
+      null,
+      DEFAULT_SOURCE_PRIORITY.recovery,
+    );
     expect(resolvedPolar).toHaveLength(1);
     expect(resolvedPolar[0].source).toBe("POLAR");
   });
 
   it("returns an empty list for no rows", () => {
-    expect(resolveCanonicalRecovery([])).toEqual([]);
+    expect(
+      resolveCanonicalRecovery([], null, DEFAULT_SOURCE_PRIORITY.recovery),
+    ).toEqual([]);
   });
 
   // The per-source authority is derived from `DEFAULT_SOURCE_PRIORITY.recovery`
@@ -131,12 +167,47 @@ describe("resolveCanonicalRecovery", () => {
       // wake morning. Stamp both for the SAME wake day so they collide.
       const stampFor = (src: string) =>
         src === "COMPUTED" ? "2026-06-01T12:00:00Z" : "2026-06-02T06:00:00Z";
-      const resolved = resolveCanonicalRecovery([
-        row(stampFor(lower), 10, lower),
-        row(stampFor(higher), 90, higher),
-      ]);
+      const resolved = resolveCanonicalRecovery(
+        [row(stampFor(lower), 10, lower), row(stampFor(higher), 90, higher)],
+        null,
+        ladder,
+      );
       expect(resolved).toHaveLength(1);
       expect(resolved[0].source).toBe(higher);
     }
+  });
+});
+
+// The person's order in the settings is the order every recovery read
+// resolves by: someone who puts Oura above WHOOP sees Oura in the ring, the
+// Coach, the briefing and the doctor report, as the charts already did.
+describe("the person's recovery order", () => {
+  const ouraFirst = recoveryLadder({
+    metricPriority: { recovery: ["OURA", "WHOOP", "POLAR", "COMPUTED"] },
+  });
+  const night = [
+    row("2026-06-02T06:00:00Z", 80, "WHOOP"),
+    row("2026-06-02T05:30:00Z", 55, "OURA"),
+  ];
+
+  it("is read from the stored priority, the default when none is stored", () => {
+    expect(ouraFirst[0]).toBe("OURA");
+    expect(recoveryLadder(null)).toEqual(DEFAULT_SOURCE_PRIORITY.recovery);
+  });
+
+  it("picks the night's row", () => {
+    expect(
+      resolveCanonicalRecovery(night, "Europe/Berlin", ouraFirst)[0].source,
+    ).toBe("OURA");
+    expect(
+      resolveCanonicalRecovery(night, "Europe/Berlin", recoveryLadder(null))[0]
+        .source,
+    ).toBe("WHOOP");
+  });
+
+  it("decides which source the divergence narration calls chosen", () => {
+    expect(
+      describeRecoveryDivergence(night, "Europe/Berlin", ouraFirst),
+    ).toMatchObject({ chosenSource: "OURA", alternativeSource: "WHOOP" });
   });
 });

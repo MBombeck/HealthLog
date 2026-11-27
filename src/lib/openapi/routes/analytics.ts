@@ -31,6 +31,7 @@ import {
   HEALTH_SCORE_BAND_SETTER_DESCRIPTION,
   HEALTH_SCORE_NUMBER_BAND_DESCRIPTION,
   healthScoreBasis,
+  healthScoreWeights,
 } from "./insights/schemas";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
 import { isoDateTime } from "@/lib/validations/datetime";
@@ -341,6 +342,7 @@ const compositeValue = z.object({
     .describe(
       "What the number rests on. Since v1.38 a score is produced from one or two areas of health as well as three, with identical arithmetic at each, so this block is the only thing on the wire that distinguishes them. Optional so a composite cached before v1.38 stays valid; the live scorer always sets it.",
     ),
+  weights: healthScoreWeights.optional(),
   noiseFloor: z.number(),
   scoreVersion: z.number().int(),
 });

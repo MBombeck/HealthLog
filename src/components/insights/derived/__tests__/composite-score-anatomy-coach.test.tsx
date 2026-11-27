@@ -119,7 +119,7 @@ describe("derived-score sheets — every sheet has an outbound coach edge", () =
       "insights.coach.assessmentPrompt",
     );
     expect(String(props.coachQuestion)).toContain(
-      "insights.deviceScores.strain",
+      "insights.derived.scores.strain",
     );
   });
 

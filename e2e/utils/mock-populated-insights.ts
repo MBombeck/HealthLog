@@ -167,9 +167,18 @@ const HEALTH_SCORE = {
     value: {
       score: 74,
       band: "green" as const,
+      numberBand: "green" as const,
       bandSetter: "SLEEP",
       composition: ["BLOOD_PRESSURE", "ACTIVITY", "SLEEP", "ADIPOSITY"],
       configured: false,
+      // Each counted pillar's share, as the scorer publishes it: the score is
+      // the plain mean, so four pillars weigh a quarter each.
+      weights: [
+        { id: "BLOOD_PRESSURE", weight: 0.25 },
+        { id: "ACTIVITY", weight: 0.25 },
+        { id: "SLEEP", weight: 0.25 },
+        { id: "ADIPOSITY", weight: 0.25 },
+      ],
       // v1.38 — four pillars across four areas of health, so this is a
       // full-breadth score and the panel adds no basis line. It rides
       // anyway, because the wire carries the block on every ok composite
@@ -245,6 +254,10 @@ function wellnessScore(
       daysInWindow: 28,
       asOf: NOW,
       series: series(score, 6),
+      // Whose number it is, as the server resolves it: the recovery proxy is
+      // HealthLog's blend, stress and strain are estimates.
+      origin: metric === "RECOVERY_SCORE" ? "computed" : "estimate",
+      deviceSource: null,
     },
     coverage: coverage(),
     confidence: confidence(),

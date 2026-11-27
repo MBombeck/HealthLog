@@ -49922,6 +49922,7 @@ components:
               - insights.briefing-glucose
               - medication.side-effect-headache
               - medication.low-stock-trigger
+              - insights.score-origin
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices; since
@@ -50054,7 +50055,11 @@ components:
             it. `medication.low-stock-trigger`: GET /api/medications and GET /api/medications/{id} (and the create and
             edit answers) carry lowStockTriggerDays: max(lowStockRunwayDays, reorderLeadDays + one dose-interval) with
             the medication's own lead over the account default, null when the alert is off or nothing is consumed on a
-            cadence; a row is low on stock when runwayDays <= lowStockTriggerDays."
+            cadence; a row is low on stock when runwayDays <= lowStockTriggerDays. `insights.score-origin`:
+            RECOVERY_SCORE, STRESS_SCORE and STRAIN_SCORE values on GET /api/insights/derived carry origin (estimate |
+            device | computed) and deviceSource (the measurement source of a device value, else null); the health score
+            composite carries weights (one { id, weight } per counted pillar, summing to 1) and each snapshot
+            healthScore.pillars row its weight (null when it did not count)."
       required:
         - version
         - buildSha
@@ -79813,21 +79818,25 @@ components:
                       value: 82
                       reason: null
                       reasonCode: null
+                      weight: 0.5
                     - id: ACTIVITY
                       label: Activity
                       value: 64
                       reason: null
                       reasonCode: null
+                      weight: 0.5
                     - id: SLEEP
                       label: Sleep
                       value: null
                       reason: Not tracked
                       reasonCode: not_tracked
+                      weight: null
                     - id: WELLBEING
                       label: Wellbeing
                       value: null
                       reason: Safety guidance is shown instead of a score
                       reasonCode: crisis_signposting
+                      weight: null
                 tension:
                   description: "Locale-agnostic tension verdict: present only when the readiness composite's contributors disagree.
                     `positive`/`negative` carry readiness contributor keys the client maps to localised labels. Null on
@@ -80275,6 +80284,15 @@ components:
           type:
             - string
             - "null"
+        weight:
+          description: "1.50 (feature `insights.score-origin`) — the pillar's share of the health score, 0..1, the weight the
+            scorer used (every counted pillar weighs the same: the score is their plain mean). Null when the pillar did
+            not count. Optional so older cached snapshots stay valid."
+          anyOf:
+            - type: number
+              minimum: 0
+              maximum: 1
+            - type: "null"
       required:
         - id
         - label
@@ -81677,6 +81695,8 @@ components:
                     with identical arithmetic at each, so this block is the only thing on the wire that distinguishes
                     them. Optional so a composite cached before v1.38 stays valid; the live scorer always sets it.
                   $ref: "#/components/schemas/HealthScoreBasis"
+                weights:
+                  $ref: "#/components/schemas/HealthScoreWeights"
                 noiseFloor:
                   type: number
                 scoreVersion:
@@ -81722,6 +81742,34 @@ components:
             - provenance
             - reason
           additionalProperties: false
+    HealthScoreWeights:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            enum:
+              - BLOOD_PRESSURE
+              - GLYCAEMIA
+              - ACTIVITY
+              - SLEEP
+              - ADIPOSITY
+              - WELLBEING
+              - LIPIDS
+          weight:
+            type: number
+            minimum: 0
+            maximum: 1
+            description: Share of the number, 0..1; the shares sum to 1.
+        required:
+          - id
+          - weight
+        additionalProperties: false
+      description: 1.50 (feature `insights.score-origin`) — one entry per counted pillar, in `composition` order, with the
+        weight the scorer gave it. The score is the plain mean of the counted pillars, so every weight is 1 / the number
+        counted; a pillar that did not count has no entry. Optional so a composite cached before 1.50 stays valid; the
+        live scorer always sets it.
     DerivedCoverage:
       type: object
       properties:
@@ -113474,6 +113522,23 @@ components:
                 - scaleMax
               additionalProperties: false
             - type: "null"
+        origin:
+          type: string
+          enum:
+            - estimate
+            - device
+            - computed
+          description: "1.50 (feature `insights.score-origin`) — whose number this is, resolved on the server: `estimate` for a
+            value HealthLog works out from heart data alone (stress, the computed strain), `computed` for a score
+            HealthLog blends from several inputs (the recovery proxy, whose parts are `components`), `device` for a
+            vendor's own number (a WHOOP, Oura or Polar recovery, a device's day strain). Label the tile from it; do not
+            infer it from `components`, `device` or `provenance`."
+        deviceSource:
+          description: The measurement source of a `device` value (`WHOOP`, `OURA`, `POLAR`, `GARMIN`, …, the spelling of
+            `Measurement.source`); null for `estimate` and `computed`.
+          type:
+            - string
+            - "null"
       required:
         - score
         - band
@@ -113481,6 +113546,8 @@ components:
         - daysInWindow
         - asOf
         - series
+        - origin
+        - deviceSource
       additionalProperties: false
     SleepScoreValue:
       type: object

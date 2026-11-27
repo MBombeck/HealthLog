@@ -20,7 +20,7 @@ import {
   COACH_CHECKIN_REVIEW_DAYS,
 } from "@/lib/daily/coach-checkin-intents";
 import type { Milestone } from "@/lib/daily/milestones";
-import { resolveLastNight } from "@/lib/daily/morning";
+import { resolveLastNight } from "@/lib/sleep/last-night";
 import {
   PRIORITY_ITEM_KINDS,
   type PriorityItem,
@@ -223,11 +223,10 @@ function lastNightFor(
     sleepOn,
     sleepExpected: sleepOn && isSleepExpected(daysAgo),
     morningRefreshedToday: opts.refreshed ?? false,
-    sleepScore: null,
-    latestSleep:
+    night:
       daysAgo === null
         ? null
-        : { wakeDay: addDays("2026-07-16", -daysAgo), minutes: 420 },
+        : { night: addDays("2026-07-16", -daysAgo), asleepMinutes: 420 },
     usualMinutes: null,
   });
 }

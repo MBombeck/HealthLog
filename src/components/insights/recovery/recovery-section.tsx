@@ -29,7 +29,6 @@ import type { MetricStatusMetricId } from "@/lib/insights/metric-status-registry
 import { RecoveryMetricBlock } from "@/components/insights/recovery/recovery-metric-block";
 import { ResilienceTile } from "@/components/insights/recovery/resilience-tile";
 import { DeviceRecoveryBlock } from "@/components/insights/recovery/device-recovery-block";
-import { EstimatesSection } from "@/components/insights/recovery/estimates-section";
 import {
   deviceRecoveryOf,
   useScoreRows,
@@ -217,8 +216,9 @@ function recoveryBlockGroups(
  * short explanatory line, the max / median / mean stat strip, the same
  * `<HealthChartDynamic>` chart with the identical 7 / 30 / 90 / All toggle,
  * and a per-chart AI assessment (`<MetricStatusCard>`). Since 1.50 the
- * device's own recovery leads the page under its source's name, and the two
- * HealthLog estimates (stress, strain) close it in a section of their own.
+ * device's own recovery leads the page under its source's name. HealthLog's
+ * stress and strain live at the head of Insights beside the other scores,
+ * labelled as estimates there.
  *
  * B3 — the redundant "Recovery score" link block that used to lead the
  * page is gone: this surface is reached from the overview already, so the
@@ -335,7 +335,6 @@ export function RecoverySection() {
           fractionDigits={block.fractionDigits}
         />
       ))}
-      <EstimatesSection />
     </div>
   );
 }

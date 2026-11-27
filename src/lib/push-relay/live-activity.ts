@@ -72,16 +72,20 @@ import {
   activityShowsDose,
   STARTABLE_MEDICATION_WHERE,
 } from "@/lib/push-relay/activity-slot";
-import { liveActivityRelayEnabled } from "@/lib/push-relay/config";
 import {
-  laRelayEligible,
+  LA_PASS_DEVICE_WHERE,
+  laVerdict,
   liveActivityStartState,
 } from "@/lib/push-relay/live-activity-eligibility";
 import {
   laStartTokenUsable,
   statementIat,
 } from "@/lib/push-relay/live-activity-start-token";
-import { endActivitiesOverRelay } from "@/lib/push-relay/medication-pushes";
+import {
+  endAndForget,
+  LA_ACTIVITY_SELECT,
+  relayStartedOf,
+} from "@/lib/push-relay/live-activity-relay-end";
 import { newUlid } from "@/lib/push-relay/plaintext";
 import { passPageOffset } from "@/lib/push-relay/pass-window";
 import { relayRoutes } from "@/lib/push-relay/relay-state";
@@ -154,18 +158,7 @@ const DEVICE_SELECT = {
   laStartStatement: true,
   laStartSignature: true,
   laStartIdsAt: true,
-  liveActivities: {
-    select: {
-      id: true,
-      pushToken: true,
-      medicationId: true,
-      slotInstant: true,
-      activityStatement: true,
-      activitySignature: true,
-      lastRelayState: true,
-      relayStarted: true,
-    },
-  },
+  liveActivities: { select: LA_ACTIVITY_SELECT },
 } as const;
 
 type LaDevice = Prisma.DeviceGetPayload<{ select: typeof DEVICE_SELECT }>;
@@ -359,41 +352,6 @@ async function doseStartItem(
 }
 
 type LaActivity = LaDevice["liveActivities"][number];
-
-/**
- * End the relay-started Activities of a device that an app-started one of the
- * same dose made redundant ({@link supersededRelayActivities}), and forget
- * their tokens once the relay took the end or reported the Activity gone.
- * Run when the device registers its Activities, so the second one goes at
- * once; the pass ends one whose end the relay did not take. Returns how many
- * ended. Nothing is sent when none is redundant, so a repeat is a no-op.
- */
-export async function endSupersededRelayActivities(
-  deviceId: string,
-): Promise<number> {
-  const device = await prisma.device.findUnique({
-    where: { id: deviceId },
-    select: {
-      ...ROUTABLE_DEVICE_SELECT,
-      relayBindingKey: true,
-      liveActivities: { select: DEVICE_SELECT.liveActivities.select },
-    },
-  });
-  if (!device) return 0;
-  const superseded = supersededRelayActivities(device.liveActivities);
-  if (superseded.length === 0) return 0;
-  const spent = await endActivitiesOverRelay(
-    device,
-    superseded,
-    await loadPushContext(),
-  );
-  if (spent.length > 0) {
-    await prisma.liveActivityToken.deleteMany({
-      where: { id: { in: spent } },
-    });
-  }
-  return spent.length;
-}
 
 /**
  * The relay update item that shows `state` on `activity`, or null when the
@@ -638,13 +596,26 @@ export async function runDeviceLiveActivities(
   ctx: PushContext,
   now: Date,
 ): Promise<{ started: number; updated: number }> {
-  if (!laRelayEligible(device, ctx)) return { started: 0, updated: 0 };
+  const verdict = laVerdict(device, ctx, now);
+  if (!verdict.end) return { started: 0, updated: 0 };
   if (await pendingDeletionOf(device.userId)) return { started: 0, updated: 0 };
   const user = await prisma.user.findUnique({
     where: { id: device.userId },
     select: { timeFormat: true },
   });
   const timeFormat = user?.timeFormat ?? null;
+  // The switch off or the consent gone: no start and no update, and what
+  // runs ends: every relay-started Activity, which nothing updates any more,
+  // and what the pass ends anyway (a missed dose, whoever started it).
+  if (!verdict.update) {
+    const { ending } = await updateItems(device, timeFormat, now);
+    await endAndForget(
+      device,
+      [...new Set([...relayStartedOf(device.liveActivities), ...ending])],
+      ctx,
+    );
+    return { started: 0, updated: 0 };
+  }
   // An app that echoes the start id names each relay-started Activity by
   // its start (`POST /api/devices`), so the device may run one per dose, up
   // to MAX_DEVICE_ACTIVITIES with its own, and a new start ends nothing.
@@ -680,24 +651,10 @@ export async function runDeviceLiveActivities(
             relayEndable(a, now),
         )
       : [];
-  const spent = new Set<string>();
-  if (ending.length > 0 || making.length > 0) {
-    // A missed dose has nothing left to show, and a medication without the
-    // opt-in gets no server-started Activity: end it, and forget the token
-    // once the relay took the end or reported the Activity gone.
-    for (const id of await endActivitiesOverRelay(
-      device,
-      [...ending, ...making],
-      ctx,
-    )) {
-      spent.add(id);
-    }
-    if (spent.size > 0) {
-      await prisma.liveActivityToken.deleteMany({
-        where: { id: { in: [...spent] } },
-      });
-    }
-  }
+  // A missed dose has nothing left to show, and a medication without the
+  // opt-in gets no server-started Activity: end it, and forget the token
+  // once the relay took the end or reported the Activity gone.
+  const spent = await endAndForget(device, [...ending, ...making], ctx);
   // An Activity ended to make room for another dose's start was not ended
   // because its dose was done: give the dose back, so it starts again once
   // the other one is over. Its start row would hold it for good otherwise.
@@ -736,21 +693,17 @@ export async function runDeviceLiveActivities(
 export const PASS_LIMIT = 500;
 const PASS_PERIOD_MS = 5 * 60_000;
 
-/** The pass over every device that may get a relay start or update. */
+/**
+ * The pass over every device the relay may start, update or end an Activity
+ * on ({@link LA_PASS_DEVICE_WHERE}).
+ */
 export async function runLiveActivityRelayPass(
   now: Date = new Date(),
 ): Promise<LaPassFacts> {
   const facts: LaPassFacts = { devices: 0, started: 0, updated: 0, failed: 0 };
-  if (!liveActivityRelayEnabled()) return facts;
   const ctx = await loadPushContext();
   if (!relayRoutes(ctx.registration)) return facts;
-  const where = {
-    relayState: "bound",
-    relayConsentAt: { not: null },
-    liveActivityConsentAt: { not: null },
-    apnsToken: { not: null },
-    pushKeyPublic: { not: null },
-  } as const;
+  const where = LA_PASS_DEVICE_WHERE;
   // Capped per tick; the page rotates with the tick, so a device past the
   // first page is reached within a bounded number of passes.
   const devices = await prisma.device.findMany({

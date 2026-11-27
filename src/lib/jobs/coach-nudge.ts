@@ -102,7 +102,10 @@ import {
   type ComposeNudgeWithAI,
   type NudgeAiTickBudget,
 } from "@/lib/jobs/coach-nudge-ai";
-import { resolveCanonicalRecovery } from "@/lib/insights/derived/recovery-resolve";
+import {
+  recoveryLadder,
+  resolveCanonicalRecovery,
+} from "@/lib/insights/derived/recovery-resolve";
 import { resolveRestMode } from "@/lib/illness/rest-mode";
 import { reconstructSleepNights } from "@/lib/analytics/sleep-night";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
@@ -592,7 +595,11 @@ export async function findTriggerForUser(
       },
       select: { value: true, measuredAt: true, source: true },
     });
-    const scores = resolveCanonicalRecovery(scoreRows, user.timezone ?? null);
+    const scores = resolveCanonicalRecovery(
+      scoreRows,
+      user.timezone ?? null,
+      recoveryLadder(await loadUserSourcePriority(user.id)),
+    );
     const recent = scores
       .filter((m) => m.measuredAt >= sevenDaysAgo)
       .map((m) => m.value);

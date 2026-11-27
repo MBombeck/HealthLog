@@ -61,6 +61,14 @@ export function DeviceRecoveryBlock({
             {fmt.dateShortSmart(latest.measuredAt)}
           </span>
         </div>
+        {/* The sentence every score without parts shows (the score pages
+            too), so a vendor number never reads as a missing breakdown. */}
+        <p
+          data-slot="device-recovery-no-factors"
+          className="text-muted-foreground text-xs"
+        >
+          {t("insights.scores.deviceNoFactors")}
+        </p>
       </Card>
       <ScoreHistoryChart
         type="RECOVERY_SCORE"

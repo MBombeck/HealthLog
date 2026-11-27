@@ -244,6 +244,17 @@ export const wellnessScoreValue = z
       .describe(
         "STRAIN only — present when no computed strain score exists in the window and the score is served from the device's own DAY_STRAIN instead. `score` is then `value` as a 0–100 share of `scaleMax`. Absent when the computed proxy is the source.",
       ),
+    origin: z
+      .enum(["estimate", "device", "computed"])
+      .describe(
+        "1.50 (feature `insights.score-origin`) — whose number this is, resolved on the server: `estimate` for a value HealthLog works out from heart data alone (stress, the computed strain), `computed` for a score HealthLog blends from several inputs (the recovery proxy, whose parts are `components`), `device` for a vendor's own number (a WHOOP, Oura or Polar recovery, a device's day strain). Label the tile from it; do not infer it from `components`, `device` or `provenance`.",
+      ),
+    deviceSource: z
+      .string()
+      .nullable()
+      .describe(
+        "The measurement source of a `device` value (`WHOOP`, `OURA`, `POLAR`, `GARMIN`, …, the spelling of `Measurement.source`); null for `estimate` and `computed`.",
+      ),
   })
   .meta({ id: "WellnessScoreValue" });
 
@@ -422,6 +433,15 @@ export const dashboardScorePillar = z
       .describe(
         "The machine reason behind `reason` (`not_tracked`, `stale`, `crisis_signposting`, ...); null when it counted. For branching only, never for display.",
       ),
+    weight: z
+      .number()
+      .min(0)
+      .max(1)
+      .nullable()
+      .optional()
+      .describe(
+        "1.50 (feature `insights.score-origin`) — the pillar's share of the health score, 0..1, the weight the scorer used (every counted pillar weighs the same: the score is their plain mean). Null when the pillar did not count. Optional so older cached snapshots stay valid.",
+      ),
   })
   .meta({ id: "DashboardScorePillar" });
 
@@ -505,6 +525,32 @@ export const HEALTH_SCORE_NUMBER_BAND_DESCRIPTION =
   "1.50 — the band of the number alone (green from 70, yellow from 50), the rule every other HealthLog score follows. Draw the ring and its word with this, and show `bandSetterLine` beside it when a pillar sits in a worse band. It differs from `band` exactly when `bandSetter` is non-null. Optional: a payload cached before 1.50 lacks it; fall back to `band`.";
 export const HEALTH_SCORE_BAND_SETTER_DESCRIPTION =
   "The worst counted pillar when its band is worse than the number's own band (`numberBand`), null otherwise. It is the pillar that makes `band` worse than `numberBand`.";
+
+/** 1.50 — how much each counted pillar weighs in the number. */
+export const healthScoreWeights = z
+  .array(
+    z.object({
+      id: z.enum([
+        "BLOOD_PRESSURE",
+        "GLYCAEMIA",
+        "ACTIVITY",
+        "SLEEP",
+        "ADIPOSITY",
+        "WELLBEING",
+        "LIPIDS",
+      ]),
+      weight: z
+        .number()
+        .min(0)
+        .max(1)
+        .describe("Share of the number, 0..1; the shares sum to 1."),
+    }),
+  )
+  .meta({
+    id: "HealthScoreWeights",
+    description:
+      "1.50 (feature `insights.score-origin`) — one entry per counted pillar, in `composition` order, with the weight the scorer gave it. The score is the plain mean of the counted pillars, so every weight is 1 / the number counted; a pillar that did not count has no entry. Optional so a composite cached before 1.50 stays valid; the live scorer always sets it.",
+  });
 
 export const healthScoreBasis = z
   .object({
@@ -2529,6 +2575,7 @@ const healthScoreComposite = z
           .describe(
             "What the number rests on — how many distinct areas of health were counted against how many the method recommends, and whether any of them was a physiological measurement. Optional so a composite cached before v1.38 stays valid; the live scorer always sets it.",
           ),
+        weights: healthScoreWeights.optional(),
         noiseFloor: z.number(),
         scoreVersion: z.number().int(),
       }),

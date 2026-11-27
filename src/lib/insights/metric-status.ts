@@ -69,7 +69,7 @@ import {
   textStatusCodec,
   type StatusCardContext,
 } from "@/lib/insights/status-pipeline";
-import { readSleepNights } from "@/lib/measurements/list/sleep-nights";
+import { readSleepNightPoints } from "@/lib/measurements/list/sleep-nights";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { annotate } from "@/lib/logging/context";
 import { binaryReferenceSex } from "@/lib/profile/sex";
@@ -500,18 +500,14 @@ async function readMetricPoints(
     // The latest 365 nights, the sleep twin of the 365 latest readings the
     // other types read (`readRecentReadings`). A cut on stage rows instead (2190 of them) reached
     // back a few weeks on a stage-rich watch and began mid-night.
-    const nights = (
-      await readSleepNights(
+    points.push(
+      ...(await readSleepNightPoints(
         userId,
         userTz,
         await loadUserSourcePriority(userId),
-        { maxNights: 365, newest: true },
-      )
-    ).filter((n) => n.asleepMinutes > 0);
-    for (const n of nights) {
-      points.push({ measuredAt: n.measuredAt, value: n.asleepMinutes });
-    }
-    measurements = nights.map((n) => ({ measuredAt: n.measuredAt }));
+      )),
+    );
+    measurements = points.map((p) => ({ measuredAt: p.measuredAt }));
   } else {
     // The latest 365 readings, never less than the last 30 days.
     const rows = await readRecentReadings(userId, meta.measurementType, userTz);

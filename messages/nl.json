@@ -5416,16 +5416,18 @@
         "green": "laag",
         "yellow": "gemiddeld",
         "red": "hoog"
-      }
+      },
+      "origin": {
+        "estimate": "Schatting",
+        "device": "Apparaatwaarde"
+      },
+      "estimateNoFactors": "Berekend uit je hartgegevens, niet door een apparaat gemeld.",
+      "deviceNoFactors": "Deze waarde komt kant-en-klaar van je apparaat. Losse factoren levert het niet mee."
     },
     "deviceScores": {
       "title": "Apparaatscores",
       "description": "Wat je wearable meldt, onder zijn eigen namen.",
-      "valueOfScale": "{value} van {max}",
-      "estimatesTitle": "Schattingen van HealthLog",
-      "estimatesSubtitle": "Berekend uit je hartgegevens, niet door een apparaat gemeld.",
-      "stress": "Stress (schatting)",
-      "strain": "Belasting (schatting)"
+      "valueOfScale": "{value} van {max}"
     }
   },
   "thresholds": {

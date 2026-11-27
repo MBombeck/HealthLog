@@ -5416,16 +5416,18 @@
         "green": "faible",
         "yellow": "modéré",
         "red": "élevé"
-      }
+      },
+      "origin": {
+        "estimate": "Estimation",
+        "device": "Valeur de l’appareil"
+      },
+      "estimateNoFactors": "Calculé à partir de vos données cardiaques, pas transmis par un appareil.",
+      "deviceNoFactors": "Cette valeur arrive toute prête de votre appareil. Il ne fournit pas de facteurs détaillés."
     },
     "deviceScores": {
       "title": "Scores des appareils",
       "description": "Ce que votre appareil connecté rapporte, sous ses propres noms.",
-      "valueOfScale": "{value} sur {max}",
-      "estimatesTitle": "Estimations de HealthLog",
-      "estimatesSubtitle": "Calculées à partir de vos données cardiaques, pas transmises par un appareil.",
-      "stress": "Stress (estimation)",
-      "strain": "Effort (estimation)"
+      "valueOfScale": "{value} sur {max}"
     }
   },
   "thresholds": {

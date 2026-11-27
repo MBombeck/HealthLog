@@ -127,6 +127,13 @@ const PINS: ReadonlyArray<{
     covered:
       "A new alert kind, `EMERGENCY_CARD_WALLET_READY`: the person's own iPhone is told once per Wallet pass (at most twice per person) that the emergency card can be added to Wallet, sealed like every other alert with no data beyond its kind. No new class, lifetime, sender file or occasion: it goes through the dispatcher's alert path the texts already name (`seesWhen`, an alert, when and of which kind), and its timing says no more than that the server sent an alert at that moment.",
   },
+  {
+    version: "2026-11-22",
+    fingerprint:
+      "c24cb56ef73ec32d3179a4799a126468b7c023d2f77c2b9c0c895405c9b79e0d",
+    covered:
+      "Two new occasions for the Live Activity end, and no new kind, class or lifetime: withdrawing the Live Activity or the relay consent ends the Activities the relay started on that device, and the pass ends them once the operator's switch is off (`live-activity-relay-end.ts`). Before, they stayed on the lock screen. It is the end the texts already name (`seesWhen`, the end of a Live Activity), sent with the statement the device signed when the Activity started, to the person's own device at the moment the consent or the switch changed. The docs list both occasions.",
+  },
 ];
 
 /**
@@ -142,6 +149,7 @@ const OCCASION_MODULES = [
   "@/lib/notifications/live-activity-end",
   "@/lib/push-relay/medication-pushes",
   "@/lib/push-relay/live-activity",
+  "@/lib/push-relay/live-activity-relay-end",
   "@/lib/push-relay/data-changed",
   "@/lib/push-relay/healthkit-catch-up",
   "@/lib/push-relay/wakes",

@@ -11,6 +11,7 @@ import type {
   DerivedProvenance,
 } from "@/lib/insights/derived/types";
 import { TileHeader } from "@/components/insights/tile-header";
+import { TagChip } from "@/components/ui/tag-chip";
 import { ScoreRing } from "./score-ring";
 import { CoverageMeter } from "./coverage-meter";
 import {
@@ -105,6 +106,13 @@ export interface ScoreAnatomyViewProps {
   staleLabel?: string;
   /** Heading over the contributor rows; "Contributors" when omitted. */
   contributorsHeading?: ReactNode;
+  /**
+   * The one sentence a score without parts shows under the same heading,
+   * in the place of the rows (an estimate, a device's number).
+   */
+  noFactorsNote?: ReactNode;
+  /** Whose number it is ("Estimate", "Device value"), beside the title. */
+  originLabel?: ReactNode;
   className?: string;
 }
 
@@ -126,6 +134,8 @@ export function ScoreAnatomyView({
   showProvisionalRing = true,
   staleLabel,
   contributorsHeading,
+  noFactorsNote,
+  originLabel,
   className,
 }: ScoreAnatomyViewProps) {
   const { t } = useTranslations();
@@ -156,7 +166,14 @@ export function ScoreAnatomyView({
           the sibling assessment card that stacks beneath it on a score
           sub-page, instead of the old centred uppercase title that floated
           toward the middle and shared no left line with any card. */}
-      <TileHeader title={title} />
+      <TileHeader
+        title={title}
+        right={
+          originLabel ? (
+            <TagChip data-slot="score-anatomy-origin">{originLabel}</TagChip>
+          ) : undefined
+        }
+      />
       {/* Hero: ring + caption — a centred identity block below the header. */}
       <div className="flex flex-col items-center gap-3 text-center">
         {/* v1.15.12 — vertical breathing room so the ring's bloom/glow is
@@ -199,17 +216,26 @@ export function ScoreAnatomyView({
           }
         />
       ) : null}
-      {contributors.length > 0 ? (
+      {contributors.length > 0 || (noFactorsNote && !insufficient) ? (
         <div data-slot="score-anatomy-contributors" className="space-y-3">
           <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
             {contributorsHeading ??
               t("insights.derived.anatomy.contributorsLabel")}
           </p>
-          <ul className="space-y-2.5">
-            {contributors.map((c) => (
-              <ContributorRow key={c.key} contributor={c} />
-            ))}
-          </ul>
+          {contributors.length > 0 ? (
+            <ul className="space-y-2.5">
+              {contributors.map((c) => (
+                <ContributorRow key={c.key} contributor={c} />
+              ))}
+            </ul>
+          ) : (
+            <p
+              data-slot="score-anatomy-no-factors"
+              className="text-foreground text-sm"
+            >
+              {noFactorsNote}
+            </p>
+          )}
         </div>
       ) : null}
 

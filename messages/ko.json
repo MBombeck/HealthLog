@@ -5416,16 +5416,18 @@
         "green": "낮음",
         "yellow": "보통",
         "red": "높음"
-      }
+      },
+      "origin": {
+        "estimate": "추정치",
+        "device": "기기 값"
+      },
+      "estimateNoFactors": "기기가 보고한 값이 아니라 심장 데이터로 계산했어요.",
+      "deviceNoFactors": "이 값은 기기에서 계산된 그대로 들어와요. 개별 요인은 제공되지 않아요."
     },
     "deviceScores": {
       "title": "기기 점수",
       "description": "웨어러블이 자체 이름으로 보고하는 값이에요.",
-      "valueOfScale": "{max} 중 {value}",
-      "estimatesTitle": "HealthLog 추정치",
-      "estimatesSubtitle": "기기가 보고한 값이 아니라 심장 데이터로 계산했어요.",
-      "stress": "스트레스(추정치)",
-      "strain": "부하(추정치)"
+      "valueOfScale": "{max} 중 {value}"
     }
   },
   "thresholds": {

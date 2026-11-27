@@ -389,9 +389,42 @@ describe("<HealthScoreCard> pillars", () => {
     const rest = atRest(html);
     expect(rest).toContain('data-pillar="BLOOD_PRESSURE" data-status="ok"');
     expect(rest).not.toContain('data-pillar="ACTIVITY" data-status="ok"');
-    // One line per row: a truncating label column, a thin bar, the score.
-    expect(rest).toContain("grid-cols-[minmax(0,7rem)_1fr_2rem_auto]");
+    // One line per row: a wrapping label column, a thin bar, the score
+    // with its weight.
+    expect(rest).toContain("grid-cols-[minmax(0,7rem)_1fr_auto_auto]");
     expect(rest).toContain("width:82%");
+  });
+
+  it("heads the pillars like every score page and shows the published weight", () => {
+    const base = scoredReport();
+    if (base.composite.status !== "ok") throw new Error("fixture");
+    const html = render(
+      <HealthScoreCard
+        report={{
+          ...base,
+          composite: {
+            ...base.composite,
+            value: {
+              ...base.composite.value,
+              weights: [{ id: "BLOOD_PRESSURE", weight: 1 }],
+            },
+          },
+        }}
+      />,
+    );
+    const rest = atRest(html);
+    expect(rest).toContain('data-slot="health-score-contributors"');
+    expect(rest).toContain("Contributors");
+    // The lines that explain the number stand above the pillars.
+    expect(rest.indexOf('data-slot="health-score-band"')).toBeLessThan(
+      rest.indexOf('data-slot="health-score-contributors"'),
+    );
+    expect(rest).toContain("82, weighted 100%");
+  });
+
+  it("shows the score alone when the payload carries no weights", () => {
+    const rest = atRest(render(<HealthScoreCard report={scoredReport()} />));
+    expect(rest).not.toContain("weighted");
   });
 
   it("tints each row with its OWN band, not the composite's", () => {

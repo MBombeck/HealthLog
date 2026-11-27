@@ -90,6 +90,8 @@ const recovery: WellnessScoreValue = {
   daysInWindow: 12,
   asOf: NOW.toISOString(),
   series: [60, 58, 55],
+  origin: "computed",
+  deviceSource: null,
 };
 
 describe("assessable derived scores", () => {

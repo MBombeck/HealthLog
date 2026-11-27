@@ -363,6 +363,7 @@ export const dashboardScorePillarsExample = [
     value: 82,
     reason: null,
     reasonCode: null,
+    weight: 0.5,
   },
   {
     id: "ACTIVITY",
@@ -370,6 +371,7 @@ export const dashboardScorePillarsExample = [
     value: 64,
     reason: null,
     reasonCode: null,
+    weight: 0.5,
   },
   {
     id: "SLEEP",
@@ -377,6 +379,7 @@ export const dashboardScorePillarsExample = [
     value: null,
     reason: "Not tracked",
     reasonCode: "not_tracked",
+    weight: null,
   },
   {
     id: "WELLBEING",
@@ -384,5 +387,6 @@ export const dashboardScorePillarsExample = [
     value: null,
     reason: "Safety guidance is shown instead of a score",
     reasonCode: "crisis_signposting",
+    weight: null,
   },
 ];

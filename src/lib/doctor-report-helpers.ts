@@ -20,8 +20,11 @@ import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
 import { metricKeyForType } from "@/lib/measurements/cumulative-day-sum";
 import { userDayKey } from "@/lib/tz/resolver";
 import { wallClockInTz, zonedWallClockToUtc } from "@/lib/tz/wall-clock";
-import { resolveCanonicalRecovery } from "@/lib/insights/derived/recovery-resolve";
-import { DEFAULT_SOURCE_PRIORITY } from "@/lib/validations/source-priority";
+import {
+  recoveryRank,
+  resolveCanonicalRecovery,
+  type RecoveryLadder,
+} from "@/lib/insights/derived/recovery-resolve";
 import { vendorScoreScale } from "@/lib/scores/registry";
 import {
   buildComplianceMedicationContext,
@@ -173,12 +176,13 @@ export function minMaxOf(values: readonly number[]): {
  * proxy nights gives two rows, "WHOOP Recovery" and HealthLog's readiness,
  * and no row ever averages a device's number with the proxy. Values are on
  * the source's own scale (Polar's Nightly Recharge back on 1 to 6). Rows are
- * ordered by the recovery ladder, devices first. Empty when no recovery row
+ * ordered by the person's recovery ladder. Empty when no recovery row
  * exists. Exported for unit tests.
  */
 export function summariseRecoveryBySource(
   measurements: readonly RecoveryMeasurementRow[],
-  timezone?: string | null,
+  timezone: string | null | undefined,
+  ladder: RecoveryLadder,
 ): WellnessScoreSummary[] {
   const recovery = measurements.filter((m) => m.type === "RECOVERY_SCORE");
   if (recovery.length === 0) return [];
@@ -189,6 +193,7 @@ export function summariseRecoveryBySource(
       source: m.source,
     })),
     timezone,
+    ladder,
   );
   // Newest-first from the resolver, so the first row of a source is its latest.
   const bySource = new Map<string, typeof canonical>();
@@ -197,11 +202,7 @@ export function summariseRecoveryBySource(
     if (rows) rows.push(row);
     else bySource.set(row.source, [row]);
   }
-  const ladder: readonly string[] = DEFAULT_SOURCE_PRIORITY.recovery;
-  const rank = (source: string) => {
-    const i = ladder.indexOf(source);
-    return i === -1 ? ladder.length : i;
-  };
+  const rank = (source: string) => recoveryRank(ladder, source);
   return [...bySource.entries()]
     .sort(([a], [b]) => rank(a) - rank(b) || a.localeCompare(b))
     .map(([source, rows]) => {
@@ -252,12 +253,18 @@ export function summariseWellnessScores(input: {
   byType: Readonly<Record<string, ReadonlyArray<{ measuredAt: string }>>>;
   measurements: readonly RecoveryMeasurementRow[];
   timezone: string;
+  /** The person's recovery order (`recoveryLadder`). */
+  recoveryLadder: RecoveryLadder;
 }): WellnessScoreSummary[] | null {
   const { admits, stats, byType, measurements, timezone } = input;
   const summaries = WELLNESS_SCORE_REPORT_TYPES.flatMap((type) => {
     if (!admits(type)) return [];
     if (type === "RECOVERY_SCORE") {
-      return summariseRecoveryBySource(measurements, timezone);
+      return summariseRecoveryBySource(
+        measurements,
+        timezone,
+        input.recoveryLadder,
+      );
     }
     const s = stats[type];
     const rows = byType[type];

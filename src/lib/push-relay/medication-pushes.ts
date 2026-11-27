@@ -22,12 +22,10 @@ import { prisma } from "@/lib/db";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import { recordPushAttempt } from "@/lib/notifications/senders/push-attempt-record";
 import { EVENT_DEFAULT_ENABLED } from "@/lib/notifications/types";
-import { fromBase64Url } from "@/lib/push-relay/encoding";
 import type { EnvelopeMessage } from "@/lib/push-relay/envelope";
 import {
   attemptResultOf,
   loadPushContext,
-  relayReachable,
   routeOf,
   sealedOutcome,
   sendSealed,
@@ -47,6 +45,7 @@ import {
   oweIntakeSync,
 } from "@/lib/push-relay/owed-silent";
 import { sendRelayItems } from "@/lib/push-relay/relay-send";
+import { laRelayCanEnd } from "@/lib/push-relay/live-activity-eligibility";
 
 const RECORDED_LIFETIME_S = 2 * 3600;
 const SYNC_LIFETIME_S = 3600;
@@ -348,8 +347,7 @@ export async function endActivitiesOverRelay(
   activities: RelayActivityRow[],
   ctx: PushContext,
 ): Promise<string[]> {
-  if (!relayReachable(device, ctx) || !device.relayBindingKey) return [];
-  if (!fromBase64Url(device.relayBindingKey, 32)) return [];
+  if (!laRelayCanEnd(device, ctx)) return [];
   const nowS = Math.floor(Date.now() / 1000);
   const items = activities.flatMap((activity) => {
     const statement = activity.activityStatement as { iat?: unknown } | null;

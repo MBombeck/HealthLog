@@ -19,7 +19,12 @@ import {
   type AnatomyContributor,
 } from "./score-anatomy-view";
 import { RING_GRADIENT, type RingHue } from "./ring-hues";
-import { scoreBandWordKey, type ScoreBand } from "./band-tokens";
+import {
+  scoreBandWordKey,
+  scoreNoFactorsKey,
+  scoreOriginLabelKey,
+  type ScoreBand,
+} from "./band-tokens";
 import type { CoachLaunchScope } from "@/lib/insights/coach-launch-context";
 import { METRIC_PROVENANCE } from "./standards";
 import { ScoreHistoryChart, ScoreTrendChartDynamic } from "./score-history";
@@ -168,12 +173,8 @@ export function CompositeScoreAnatomy({
     }
   }
 
-  // v1.42 — the per-score "descriptive proxy, not clinical" line that sat
-  // above the method in warning colour is gone: it repeated on every score
-  // page what the method and the page explainer already say, and read as an
-  // alarm. The method copy closes the card on its own.
-  // Served from the device, the proxy's method does not describe the number
-  // on the card; the device line does, on its own.
+  // The method closes the card (v1.42 dropped the warning-coloured caveat).
+  // Served from the device, the device line replaces the proxy's method.
   const method = methodNode(
     metric,
     deviceStrain ? null : t(meta.methodKey),
@@ -294,22 +295,21 @@ export function CompositeScoreAnatomy({
       }
     }
   }
+  // Whose number it is, and the sentence where a score has no rows: both from
+  // the server's `origin` (readiness and the sleep score carry none).
+  const origin = (data.value as Partial<WellnessScoreValue> | null)?.origin;
+  const originKey = scoreOriginLabelKey(origin);
+  const noFactorsKey = contributors.length ? null : scoreNoFactorsKey(origin);
 
-  // v1.15.12 — the per-score AI assessment ("why is this score what it is")
-  // already rides the single `/api/insights/derived` route as `data.assessment`
-  // (shipped to iOS in v1.13.2); the web simply discarded it. Render it BELOW
-  // the anatomy card, reusing the same `<InsightStatusCard>` the metric
-  // sub-pages mount so it reads identically. The route always populates a
-  // non-empty assessment when the score `status === "ok"` (the deterministic
-  // template at minimum, warmer AI prose when a provider is configured), so a
-  // present `assessment` implies a real text — `hasProvider` is held true and
-  // the card always renders its prose rather than the no-provider fallback.
+  // The per-score assessment rides the derived route as `data.assessment`
+  // and leads the page in the metric pages' `<InsightStatusCard>`. The route
+  // always fills it for an ok score (a template at minimum), so
+  // `hasProvider` is held true and the card renders its prose.
   const assessment = data.assessment;
 
-  // v1.42 — the score's course under its card, with the range tabs. A stored
-  // nightly score charts its readings; readiness and the sleep score chart
-  // the score-history route's daily history. Only beside a score: an account
-  // without one gets the insufficient card, not an empty chart.
+  // v1.42 — the score's course with the range tabs: a stored score charts its
+  // readings, readiness and the sleep score the score-history route. Only
+  // beside a score, never an empty chart.
   const history =
     data.status !== "ok" ? null : metric === "RECOVERY_SCORE" ||
       metric === "STRESS_SCORE" ||
@@ -328,27 +328,9 @@ export function CompositeScoreAnatomy({
       />
     );
 
+  // 1.50 — the app's order: assessment, what counts, then the course.
   return (
     <div className="space-y-3">
-      <ScoreAnatomyView
-        title={title}
-        score={score}
-        band={staleLabel ? undefined : serverBand(data)}
-        load={metric === "STRESS_SCORE" || metric === "STRAIN_SCORE"}
-        hue={METRIC_HUE[metric]}
-        caption={caption}
-        contributors={contributors}
-        coverage={data.coverage}
-        confidence={data.confidence}
-        provenance={data.provenance}
-        method={method}
-        standard={standard}
-        insufficient={insufficient}
-        staleLabel={staleLabel}
-        contributorsHeading={contributorsHeading}
-        className={className}
-      />
-      {history}
       {assessment ? (
         <InsightStatusCard
           title={t("insights.assessmentTitle")}
@@ -369,6 +351,27 @@ export function CompositeScoreAnatomy({
           coachAutoSend
         />
       ) : null}
+      <ScoreAnatomyView
+        title={title}
+        score={score}
+        band={staleLabel ? undefined : serverBand(data)}
+        load={metric === "STRESS_SCORE" || metric === "STRAIN_SCORE"}
+        hue={METRIC_HUE[metric]}
+        caption={caption}
+        contributors={contributors}
+        noFactorsNote={noFactorsKey ? t(noFactorsKey) : undefined}
+        originLabel={originKey ? t(originKey) : undefined}
+        coverage={data.coverage}
+        confidence={data.confidence}
+        provenance={data.provenance}
+        method={method}
+        standard={standard}
+        insufficient={insufficient}
+        staleLabel={staleLabel}
+        contributorsHeading={contributorsHeading}
+        className={className}
+      />
+      {history}
     </div>
   );
 }
@@ -383,9 +386,9 @@ function titleFor(metric: AnatomyMetricId, t: (key: string) => string): string {
     case "RECOVERY_SCORE":
       return t("insights.derived.scores.recovery");
     case "STRESS_SCORE":
-      return t("insights.deviceScores.stress");
+      return t("insights.derived.scores.stress");
     case "STRAIN_SCORE":
-      return t("insights.deviceScores.strain");
+      return t("insights.derived.scores.strain");
   }
 }
 

@@ -89,3 +89,33 @@ export function bandWordKey(band: ScoreBand, load = false): string {
     ? `insights.scores.loadBand.${band}`
     : `insights.derived.scoreRing.band.${band}`;
 }
+
+/** Whose number a score is, as the server publishes it (`value.origin`). */
+type ScoreOrigin = "estimate" | "device" | "computed";
+
+/**
+ * The label a score tile and its page carry for the server's `origin`:
+ * "Estimate", "Device value", or nothing for a score HealthLog blends from
+ * several inputs. Read from the wire, never inferred on the client.
+ */
+export function scoreOriginLabelKey(
+  origin: ScoreOrigin | undefined,
+): string | null {
+  if (origin === "estimate") return "insights.scores.origin.estimate";
+  if (origin === "device") return "insights.scores.origin.device";
+  return null;
+}
+
+/**
+ * The one sentence a score without factors shows where the factor rows would
+ * stand, by origin: an estimate is worked out from heart data, a device's
+ * number comes without its parts. Null for a blended score (its factors are
+ * the rows).
+ */
+export function scoreNoFactorsKey(
+  origin: ScoreOrigin | undefined,
+): string | null {
+  if (origin === "estimate") return "insights.scores.estimateNoFactors";
+  if (origin === "device") return "insights.scores.deviceNoFactors";
+  return null;
+}

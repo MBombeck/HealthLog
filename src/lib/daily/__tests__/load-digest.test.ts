@@ -22,6 +22,9 @@ vi.mock("@/lib/db", () => ({
     arrivalReaction: { findMany: vi.fn().mockResolvedValue([]) },
     encounter: { findMany: vi.fn().mockResolvedValue([]) },
     healthScoreRecord: { findMany: vi.fn().mockResolvedValue([]) },
+    // Last night's read (`readLastNight`): no sleep on record.
+    measurement: { findMany: vi.fn().mockResolvedValue([]) },
+    user: { findUnique: vi.fn().mockResolvedValue(null) },
   },
 }));
 

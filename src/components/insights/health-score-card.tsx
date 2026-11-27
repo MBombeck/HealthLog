@@ -5,24 +5,18 @@ import Link from "next/link";
 import { AlertTriangle, ChevronDown, History, RotateCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { InfoPopover } from "@/components/ui/info-popover";
 import { LearningGate } from "@/components/ui/learning-gate";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   BAND_BORDER_CLASS,
   BAND_NUMBER_CLASS,
   BAND_PROGRESS_CLASS,
-  bandForScore,
   clampScore,
 } from "@/components/insights/derived/band-tokens";
 import { CoverageMeter } from "@/components/insights/derived/coverage-meter";
 import { ProvenanceExplainer } from "@/components/insights/derived/provenance-explainer";
 import { HEALTH_SCORE_PROVENANCE } from "@/components/insights/derived/health-score-provenance";
-import {
-  pillarDetailLines,
-  pillarObservedText,
-  type PillarDetailContext,
-} from "@/components/insights/health-score-pillar-detail";
+import type { PillarDetailContext } from "@/components/insights/health-score-pillar-detail";
 import { useAuth } from "@/hooks/use-auth";
 import {
   DAY_LINK_SLOT,
@@ -47,6 +41,7 @@ import {
 import { cn } from "@/lib/utils";
 import { InlineAction } from "@/components/ui/inline-action";
 import { ScorePill } from "@/components/ui/score-pill";
+import { HealthScorePillars } from "@/components/insights/health-score-pillars";
 
 /**
  * The Health Score panel: the hero band's right-hand column.
@@ -587,18 +582,15 @@ export function HealthScoreCard({
         ) : null}
       </div>
 
-      {/* 5 — the contributing factors, always visible, directly under the
-          number. Server registry order; no re-ranking. */}
-      {scored.length > 0 ? (
-        <ul
-          data-slot="health-score-pillars"
-          className="border-border/60 space-y-2 border-t pt-3"
-        >
-          {scored.map((pillar) => (
-            <PillarRow key={pillar.id} pillar={pillar} detail={detail} />
-          ))}
-        </ul>
-      ) : null}
+      {/* 5 — what counts, under the lines that explain the number and above
+          the method, the order every score page follows. */}
+      <HealthScorePillars
+        scored={scored}
+        weights={
+          composite.status === "ok" ? composite.value.weights : undefined
+        }
+        detail={detail}
+      />
 
       {/* 6 — what is not contributing. One weight class, two faces: the
           failure carries the glyph and the only retry on the surface, the
@@ -812,88 +804,6 @@ export function HealthScoreCard({
         </div>
       </div>
     </div>
-  );
-}
-
-/**
- * One scored pillar, one line: a truncating name, a thin fill bar, the score,
- * and the (i) that opens everything else. The bar takes the pillar's OWN band
- * colour — a pillar at 92 reads green even when the composite is red, which
- * is the point of showing the contributors at all.
- *
- * The observed value, the reference band, the personal target, the source and
- * the per-pillar confidence all live in the popover. That is one tap more
- * than the pinned card charged for the observed line, and it is what buys the
- * column back.
- */
-function PillarRow({
-  pillar,
-  detail,
-}: {
-  pillar: ScorePillarResult;
-  detail: PillarDetailContext;
-}) {
-  const { t } = useTranslations();
-  if (pillar.result.status !== "ok") return null;
-  const score = clampScore(pillar.result.value.score);
-  const band = bandForScore(score);
-  const observed = pillarObservedText(pillar, detail);
-  const lines = pillarDetailLines(pillar, detail);
-
-  return (
-    <li
-      data-pillar={pillar.id}
-      data-status="ok"
-      className="grid grid-cols-[minmax(0,7rem)_1fr_2rem_auto] items-center gap-2 text-xs"
-    >
-      {/* The label wraps inside a fixed track; the row grows a line rather
-          than cutting the name. `minmax(0,…)` plus `min-w-0` keeps the track
-          from growing to the longest word, and `hyphens-auto` splits a
-          compound ("Körperfett-verteilung") at a syllable instead of ending
-          it in an ellipsis. Widening the column does not rescue the long
-          names: the longest label in most locales overruns any column this
-          panel can afford, and the width would come off the fill bar. */}
-      <span className="text-muted-foreground min-w-0 break-words hyphens-auto">
-        {t(PILLAR_LABEL_KEY[pillar.id])}
-      </span>
-      <div
-        className="bg-muted/50 h-1.5 min-w-0 overflow-hidden rounded-full"
-        aria-hidden="true"
-      >
-        <div
-          data-slot="health-score-pillar-bar"
-          className={cn("h-full rounded-full", BAND_PROGRESS_CLASS[band])}
-          style={{ width: `${score}%` }}
-        />
-      </div>
-      <span className="text-foreground text-right tabular-nums">
-        {Math.round(score)}
-      </span>
-      <InfoPopover
-        content={
-          <>
-            {observed ? (
-              <span className="block">
-                {t("insights.healthScore.observed", { value: observed })}
-              </span>
-            ) : null}
-            {lines.map((line) => (
-              <span key={line} className="block">
-                {line}
-              </span>
-            ))}
-            <span className="mt-1.5 block">
-              <CoverageMeter
-                coverage={pillar.result.coverage}
-                confidence={pillar.result.confidence}
-                size="sm"
-              />
-            </span>
-          </>
-        }
-        bodyDataSlot="health-score-pillar-detail"
-      />
-    </li>
   );
 }
 

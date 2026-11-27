@@ -114,7 +114,7 @@ describe("<WellnessScores> (the Insights head)", () => {
     expect(html).toContain('data-slot="wellness-score-tile-skeleton"');
   });
 
-  it("shows readiness, sleep score and Health score, in that order, and nothing else", () => {
+  it("shows readiness, sleep score, Health score, stress and strain, in that order, and nothing else", () => {
     const html = render(
       <WellnessScores
         read={readFrom({
@@ -132,7 +132,15 @@ describe("<WellnessScores> (the Insights head)", () => {
     const order = [...html.matchAll(/data-metric="([A-Z_]+)"/g)].map(
       (m) => m[1],
     );
-    expect(order).toEqual(["READINESS", "SLEEP_SCORE", "HEALTH_SCORE"]);
+    // Recovery has no ring on the web: the device's own recovery lives on
+    // Device scores, HealthLog's blend is the readiness.
+    expect(order).toEqual([
+      "READINESS",
+      "SLEEP_SCORE",
+      "HEALTH_SCORE",
+      "STRESS_SCORE",
+      "STRAIN_SCORE",
+    ]);
     expect(html).toContain("wellness-tile");
     expect(html).toContain('data-band="green"');
     expect(html).toContain('href="/insights/scores/health"');
@@ -226,5 +234,59 @@ describe("<WellnessScores> (the Insights head)", () => {
     expect(readiness).toContain("30-day history");
     const sleep = html.slice(html.indexOf('data-metric="SLEEP_SCORE"'));
     expect(sleep).not.toContain('data-slot="wellness-score-history"');
+  });
+
+  it("labels a load by the server's origin, the same tile for each", () => {
+    const html = render(
+      <WellnessScores
+        read={readFrom({
+          STRESS_SCORE: ok({
+            score: 71,
+            band: "red",
+            origin: "estimate",
+            deviceSource: null,
+          }),
+          STRAIN_SCORE: ok({
+            score: 59,
+            band: "yellow",
+            device: { value: 12.4, scaleMax: 21 },
+            origin: "device",
+            deviceSource: "WHOOP",
+          }),
+        })}
+        isLoading={false}
+        {...none}
+      />,
+    );
+    const stress = html.slice(
+      html.indexOf('data-metric="STRESS_SCORE"'),
+      html.indexOf('data-metric="STRAIN_SCORE"'),
+    );
+    expect(stress).toContain('data-slot="wellness-score-origin"');
+    expect(stress).toContain(">Estimate<");
+    expect(stress).toContain(">high<");
+    expect(stress).toContain('href="/insights/scores/stress"');
+    const strain = html.slice(html.indexOf('data-metric="STRAIN_SCORE"'));
+    expect(strain).toContain(">Device value<");
+    // The device's own reading stands in for a band word.
+    expect(strain).toContain("12.4 of 21");
+    expect(strain).not.toContain('data-slot="wellness-score-band-word"');
+    // No section of their own any more.
+    expect(html).not.toContain("Estimates from HealthLog");
+  });
+
+  it("gives a score HealthLog blends no origin label", () => {
+    const html = render(
+      <WellnessScores
+        read={readFrom({
+          READINESS: ok({ score: 70, band: "green", fresh: true }),
+          STRESS_SCORE: ok({ score: 30, band: "green" }),
+        })}
+        isLoading={false}
+        {...none}
+      />,
+    );
+    // An older payload without `origin` gets no label rather than a guess.
+    expect(html).not.toContain('data-slot="wellness-score-origin"');
   });
 });
