@@ -9,13 +9,11 @@ function render(node: React.ReactNode) {
 }
 
 describe("<SwitchRow>", () => {
-  it("binds the name to the switch and gives it no colon", () => {
+  it("binds the name to the switch", () => {
     const html = render(
       <SwitchRow id="predictions" label="Predictions" checked={false} />,
     );
-    expect(html).toMatch(
-      /<label[^>]*data-no-colon="true"[^>]*for="predictions"|<label[^>]*for="predictions"[^>]*data-no-colon="true"/,
-    );
+    expect(html).toMatch(/<label[^>]*for="predictions"/);
     expect(html).toMatch(/<button[^>]*role="switch"[^>]*id="predictions"/);
   });
 

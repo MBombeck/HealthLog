@@ -336,16 +336,12 @@ export function MoodForm({
           and reveals the annotate panel below. */}
       <div className="space-y-2" data-slot="mood-face-hero">
         {/* v1.12 — the sheet title ("Add") is the single primary heading;
-            the hero question stays as the face row's field label rather
-            than a second heading-weight line, so the sheet header isn't a
-            doubled heading. */}
-        <Label
-          id="mood-level-label"
-          noColon
-          className="text-muted-foreground text-sm font-normal"
-        >
+            the hero question names the face row (a radiogroup, which a
+            `<label>` cannot name) rather than a second heading-weight line,
+            so the sheet header isn't a doubled heading. */}
+        <p id="mood-level-label" className="text-muted-foreground text-sm">
           {t("mood.heroQuestion")}
-        </Label>
+        </p>
         <div
           role="radiogroup"
           aria-labelledby="mood-level-label"

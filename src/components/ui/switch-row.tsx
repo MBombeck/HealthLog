@@ -72,7 +72,7 @@ export function SwitchRow({
           />
         ) : null}
         <div className="min-w-0 space-y-0.5">
-          <Label htmlFor={switchId} noColon className="leading-snug">
+          <Label htmlFor={switchId} className="leading-snug">
             {label}
           </Label>
           {description ? (

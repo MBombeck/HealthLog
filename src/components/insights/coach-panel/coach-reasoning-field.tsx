@@ -146,11 +146,7 @@ export function CoachReasoningSelect({
       data-slot="coach-reasoning-field"
       className={cn(card && "flex flex-col gap-2")}
     >
-      <Label
-        htmlFor={id}
-        noColon={!card}
-        className={cn(card && "text-xs font-medium")}
-      >
+      <Label htmlFor={id} className={cn(card && "text-xs font-medium")}>
         {t(REASONING_SETTING_KEYS.label)}
       </Label>
       <NativeSelect

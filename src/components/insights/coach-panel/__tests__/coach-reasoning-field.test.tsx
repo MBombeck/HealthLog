@@ -134,7 +134,6 @@ describe("the two homes of the field", () => {
 
   it("stacks as wide as the quick settings sheet", () => {
     const html = render(OPEN);
-    expect(html).toContain('data-no-colon="true"');
     expect(selectClass(html)).toMatch(/\bw-full\b/);
     expect(selectClass(html)).toMatch(/\bmt-1\b/);
   });
@@ -149,10 +148,9 @@ describe("the two homes of the field", () => {
         onChange={() => {}}
       />,
     );
-    // Their small label with its colon, a content-wide select, the card's
+    // Their small label, a content-wide select, the card's
     // own gap instead of margins.
     expect(html).toMatch(/data-slot="coach-reasoning-field" class="[^"]*gap-2/);
-    expect(html).toContain('data-no-colon="false"');
     expect(html).toMatch(/<label[^>]*class="[^"]*\btext-xs\b/);
     expect(selectClass(html)).toMatch(/\bw-fit\b/);
     expect(selectClass(html)).not.toMatch(/\bw-full\b|\bmt-1\b/);
