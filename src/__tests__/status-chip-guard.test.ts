@@ -53,11 +53,13 @@ function findStatusBadges(files: { path: string; source: string }[]): string[] {
 }
 
 describe("status in Settings goes through StatusChip", () => {
-  const files = readSourceFolder("src", {
-    floor: 2500,
-    include: (p) =>
-      p.startsWith("components/settings/") && !p.includes("__tests__/"),
-  }).map(([path, source]) => ({ path, source }));
+  const files = readSourceFolder("src/components/settings", {
+    floor: 150,
+    include: (p) => !p.includes("__tests__/"),
+  }).map(([path, source]) => ({
+    path: `components/settings/${path}`,
+    source,
+  }));
 
   it("walks the Settings tree", () => {
     expect(files.length).toBeGreaterThan(150);
