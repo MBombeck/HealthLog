@@ -8,6 +8,7 @@
  */
 import { describe, expect, it } from "vitest";
 
+import { clientServerMismatch } from "@/lib/database-backup/dump-core.mjs";
 import type { DatabaseBackupHealth } from "@/lib/recovery/database-dump-health";
 import {
   DUMP_FAILING_AFTER_HOURS,
@@ -165,6 +166,47 @@ describe("database dump", () => {
       reason: "last_failed",
       detail: "pg_dump exited 1",
     });
+  });
+
+  // #1431: a server newer than the image's pg_dump fails every run until the
+  // client or the server changes. That is not "the last one failed, the one
+  // before is recent": it is failing from the first run, with both majors.
+  it("fails at once, naming both majors, when the server is newer than the client", () => {
+    const tooOld = clientServerMismatch({
+      tool: "pg_dump",
+      clientMajor: 19,
+      serverMajor: 20,
+    });
+    expect(
+      evalDump(
+        dump({ lastFailureAt: ago(HOUR), lastFailureReason: tooOld ?? "" }),
+      ),
+    ).toMatchObject({
+      state: "failing",
+      reason: "client_too_old",
+      params: { client: 19, server: 20 },
+      detail: tooOld,
+    });
+    expect(
+      evalDump(
+        dump({
+          lastGoodAt: null,
+          lastFailureAt: ago(HOUR),
+          lastFailureReason: tooOld ?? "",
+        }),
+      ),
+    ).toMatchObject({ state: "failing", reason: "client_too_old" });
+    // A dump that worked after it (the image or the server was changed) is
+    // no longer this problem.
+    expect(
+      evalDump(
+        dump({
+          lastGoodAt: ago(HOUR),
+          lastFailureAt: ago(2 * HOUR),
+          lastFailureReason: tooOld ?? "",
+        }),
+      ),
+    ).toMatchObject({ state: "ok", reason: "fresh" });
   });
 
   // The run that kept its dump here and failed its upload is the newest good

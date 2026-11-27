@@ -7,20 +7,47 @@ on the first start after the update. Nothing needs doing by hand on a stack
 that runs the project's `docker-compose.yml`.
 
 Installs that bring their own Postgres (Unraid, an existing database server)
-are not touched: HealthLog runs on 16, 18 and 19 alike, and the move there is
-yours to schedule with the steps under [By hand](#by-hand).
+are not touched, and the move there is yours to schedule with the steps under
+[By hand](#by-hand), within one ceiling.
 
-One limit holds in the other direction, though. The image carries `pg_dump`
-and `pg_restore` of major 19, and a PostgreSQL client reads servers of its own
-major and older but refuses a newer one. A server above the client's major
-fails the dump the app takes before every migration, and the app then stops
-rather than migrate without one — by which time its nightly dumps have been
-failing for as long as the server has been newer. So keep your own server at
-or below the major the image carries; this names it for the release you run:
+## The highest server major this image supports
+
+The image carries `pg_dump` and `pg_restore` of one major, and a PostgreSQL
+client works with servers of its own major and older, never a newer one. So
+**the highest server major HealthLog supports is the client major in the
+image you run**: 19 for the current releases, with 16, 18 and 19 all
+supported. Check it for the release you run:
 
 ```bash
 docker run --rm --entrypoint pg_dump ghcr.io/mbombeck/healthlog:latest --version
 ```
+
+and the server's major with `SHOW server_version;` in `psql`. Keep the server
+at or below the client's major; move it past only once a HealthLog release
+ships the newer client.
+
+Every path that runs one of the tools checks the pair first: the dump before
+migrating, the nightly dump, and `db-restore`. A server newer than the client
+is refused before anything is written, with one line that names both majors:
+
+```
+HealthLog: ERROR — This image's PostgreSQL client (pg_dump) is 19; your server is 20. ...
+```
+
+- **At boot, with migrations pending**, the app does not migrate without the
+  dump. It says why once, waits ten minutes and then exits, so a restart
+  policy does not restart it into the same error every few seconds;
+  `docker stop` ends the wait. Bring the server back to the client's major
+  (restore a dump into a server of that major), or migrate this once without
+  a dump with `DB_BACKUP_BEFORE_MIGRATE=false`, knowing the nightly dumps
+  keep failing until the two match.
+- **At boot, with nothing to migrate**, the app starts and logs the same line
+  as a warning.
+- **The nightly dump** fails the run with that line. The recovery readiness
+  check under Admin, Backups calls it failing from the first run, and every
+  admin gets it as a backup alert on the channels they enabled.
+- **`db-restore`** refuses before `pg_restore` runs. Restore into a server of
+  the client's major or older.
 
 ## What happens on the first start
 

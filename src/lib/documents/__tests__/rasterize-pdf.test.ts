@@ -116,6 +116,11 @@ function sizedPdf(mediaBox: string): Buffer {
   );
 }
 
+// Every test here renders real pages through pdf.js and Skia: CPU work that
+// takes well under a second alone and several on a loaded machine. The
+// budget is sized for that work rather than for a unit test.
+vi.setConfig({ testTimeout: 30_000 });
+
 describe("page resolution", () => {
   // The provider bound the edge cap answers to: OpenAI fits every image into
   // 2048 x 2048 before it reads it.

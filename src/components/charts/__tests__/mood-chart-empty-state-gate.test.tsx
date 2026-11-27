@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 // vi.doMock below invalidates the module registry, so the re-imported
 // provider gets a fresh (unprimed) locale cache — pass the DE bundle
@@ -31,6 +31,13 @@ vi.mock("@/hooks/use-auth", () => ({
 function dayKeyAgo(agoDays: number): string {
   return new Date(Date.now() - agoDays * 86_400_000).toISOString().slice(0, 10);
 }
+
+// The chart pulls in Recharts and the chart kit. Transforming that graph cold
+// takes seconds on a loaded machine, so it happens once here, on a hook's
+// budget, instead of inside whichever test happens to run first.
+beforeAll(async () => {
+  await import("../mood-chart");
+}, 60_000);
 
 describe("<MoodChart> — empty-state gate by raw count", () => {
   beforeEach(() => {

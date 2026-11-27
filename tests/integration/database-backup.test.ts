@@ -15,6 +15,7 @@ import { execFileSync } from "node:child_process";
 import {
   chmodSync,
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
@@ -46,7 +47,44 @@ const OFFHOST_KEY = "e".repeat(64);
 const work = mkdtempSync(join(tmpdir(), "hl-db-backup-"));
 const backups = join(work, "backups");
 const shims = join(work, "bin");
+const tooOldBin = join(work, "too-old-bin");
+const tooOldRan = join(work, "too-old-ran");
 const originalPath = process.env.PATH;
+
+/** The test server's major, from `server_version_num`. */
+async function testServerMajor(): Promise<number> {
+  const client = await connect(process.env.DATABASE_URL ?? "");
+  try {
+    const { rows } = await client.query(
+      "SELECT current_setting('server_version_num')::int AS n",
+    );
+    return Math.floor(Number(rows[0].n) / 10000);
+  } finally {
+    await client.end();
+  }
+}
+
+/**
+ * `pg_dump` / `pg_restore` one major older than the test server (#1431).
+ * They answer `--version` and nothing else: any other call is written to
+ * `tooOldRan` and fails, so a case can prove the tool was never run.
+ */
+function writeTooOldClient(major: number): void {
+  mkdirSync(tooOldBin, { recursive: true });
+  for (const tool of ["pg_dump", "pg_restore"]) {
+    const path = join(tooOldBin, tool);
+    writeFileSync(
+      path,
+      `#!/bin/sh
+if [ "$1" = "--version" ]; then echo "${tool} (PostgreSQL) ${major}.4"; exit 0; fi
+echo "${tool} $*" >> ${JSON.stringify(tooOldRan)}
+echo "${tool}: error: aborting because of server version mismatch" >&2
+exit 1
+`,
+    );
+    chmodSync(path, 0o755);
+  }
+}
 
 /** The id of the container that serves DATABASE_URL. */
 function containerId(): string {
@@ -170,6 +208,7 @@ beforeAll(async () => {
   mkdirSync(shims, { recursive: true });
   mkdirSync(backups, { recursive: true });
   writeShims(containerId());
+  writeTooOldClient((await testServerMajor()) - 1);
   process.env.PATH = `${shims}:${originalPath}`;
   for (const name of ["dump-a", "dump-b", "dump-c"]) {
     await prisma.user.create({
@@ -716,6 +755,22 @@ describe("the dump before migrating", () => {
     );
     expect(readdirSync(preDir).sort()).toEqual(before);
   });
+
+  it("stops the boot with its own code and both majors when the server is newer than the client", async () => {
+    await new Promise((r) => setTimeout(r, 1100));
+    const before = readdirSync(preDir).sort();
+    const major = await testServerMajor();
+    process.env.PATH = `${tooOldBin}:${originalPath}`;
+    const { code, errors } = await preMigration({ DB_BACKUP_DIR: preDir });
+    process.env.PATH = `${shims}:${originalPath}`;
+    expect(code, errors).toBe(3);
+    expect(errors).toContain(
+      `This image's PostgreSQL client (pg_dump) is ${major - 1}; your server is ${major}.`,
+    );
+    expect(errors).not.toContain("version mismatch");
+    expect(existsSync(tooOldRan)).toBe(false);
+    expect(readdirSync(preDir).sort()).toEqual(before);
+  });
 });
 
 describe("two dumps in the same second", () => {
@@ -742,5 +797,128 @@ describe("two dumps in the same second", () => {
         .sort()
         .map((n) => [n, readFileSync(join(dir, n)).length]),
     ).toEqual(before);
+  });
+});
+
+// #1431: the image's client major caps the server major. Against a real
+// server, with a client one major older that answers only `--version`.
+describe("a server newer than this image's client", () => {
+  const dir = join(work, "too-old");
+  const target = `too_old_${process.pid}_${Date.now()}`;
+  let targetUrl = "";
+
+  beforeAll(async () => {
+    const { mkdirSync } = await import("node:fs");
+    mkdirSync(dir, { recursive: true });
+    // A good dump to restore, written with the real client first.
+    const { createDatabaseDump } =
+      await import("@/lib/database-backup/dump-core.mjs");
+    await createDatabaseDump({
+      databaseUrl: process.env.DATABASE_URL ?? "",
+      dir,
+      kind: "daily",
+      now: new Date("2026-12-30T01:30:00Z"),
+    });
+    const admin = await connect(process.env.DATABASE_URL ?? "");
+    await admin.query(`CREATE DATABASE ${target}`);
+    await admin.end();
+    const url = new URL(process.env.DATABASE_URL ?? "");
+    url.pathname = `/${target}`;
+    targetUrl = url.toString();
+    process.env.PATH = `${tooOldBin}:${originalPath}`;
+  });
+
+  afterAll(async () => {
+    process.env.PATH = `${shims}:${originalPath}`;
+    const admin = await connect(process.env.DATABASE_URL ?? "");
+    await admin.query(`DROP DATABASE IF EXISTS ${target} WITH (FORCE)`);
+    await admin.end();
+  });
+
+  it("fails the nightly dump with both majors, writes nothing, and the readiness signal fails at once", async () => {
+    const major = await testServerMajor();
+    const before = readdirSync(dir).sort();
+    const now = new Date("2027-01-01T01:30:00Z");
+    const report = await runDatabaseBackup(prisma, {
+      now,
+      env: { ...process.env, DB_BACKUP_DIR: dir },
+    });
+    expect(report.status).toBe("failed");
+    expect(report.error).toMatch(
+      new RegExp(
+        `^This image's PostgreSQL client \\(pg_dump\\) is ${major - 1}; your server is ${major}\\.`,
+      ),
+    );
+    expect(existsSync(tooOldRan)).toBe(false);
+    expect(readdirSync(dir).sort()).toEqual(before);
+
+    const health = await getDatabaseBackupHealth(
+      new Date("2027-01-01T02:00:00Z"),
+      { ...process.env, DB_BACKUP_DIR: dir },
+    );
+    expect(
+      evaluateDatabaseDump({
+        now: new Date("2027-01-01T02:00:00Z"),
+        dump: health,
+        dumpWatchedSince: null,
+      }),
+    ).toMatchObject({
+      state: "failing",
+      reason: "client_too_old",
+      params: { client: major - 1, server: major },
+    });
+  });
+
+  it("refuses the restore into an empty database before pg_restore runs", async () => {
+    const major = await testServerMajor();
+    const errors: string[] = [];
+    const spyErr = vi
+      .spyOn(console, "error")
+      .mockImplementation((l: string) => void errors.push(String(l)));
+    const spyLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      const code = await restoreMain(["latest"], {
+        ...process.env,
+        DB_BACKUP_DIR: dir,
+        DATABASE_URL: targetUrl,
+      });
+      expect(code, errors.join("\n")).toBe(1);
+    } finally {
+      spyErr.mockRestore();
+      spyLog.mockRestore();
+    }
+    expect(errors.join("\n")).toContain(
+      `This image's PostgreSQL client (pg_restore) is ${major - 1}; your server is ${major}.`,
+    );
+    expect(existsSync(tooOldRan)).toBe(false);
+    const client = await connect(targetUrl);
+    try {
+      const { rows } = await client.query(
+        "SELECT count(*)::int AS n FROM pg_tables WHERE schemaname = 'public'",
+      );
+      expect(rows[0].n).toBe(0);
+    } finally {
+      await client.end();
+    }
+  });
+
+  it("warns at a boot with nothing to migrate, and lets it go on", async () => {
+    const { preMigrationDump } = await import("../../scripts/db-dump.mjs");
+    const errors: string[] = [];
+    const spyErr = vi
+      .spyOn(console, "error")
+      .mockImplementation((l: string) => void errors.push(String(l)));
+    const spyLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      expect(
+        await preMigrationDump({ ...process.env, DB_BACKUP_DIR: dir }),
+      ).toBe(0);
+    } finally {
+      spyErr.mockRestore();
+      spyLog.mockRestore();
+    }
+    expect(errors.join("\n")).toMatch(
+      /WARNING .*client \(pg_dump\) is \d+; your server is \d+\..*nightly database dump fails/,
+    );
   });
 });

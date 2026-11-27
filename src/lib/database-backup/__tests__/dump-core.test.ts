@@ -804,7 +804,11 @@ describe("an off-host copy read back by the restore", () => {
         ),
         keys: [key],
       }),
-    ).rejects.toThrow(/does not open/);
+    ).rejects.toMatchObject({
+      name: "OffhostTagRefusedError",
+      code: "OFFHOST_TAG_REFUSED",
+      message: expect.stringMatching(/does not open/),
+    });
     expect(await readdir(dir)).toEqual([name]);
 
     // Altered.

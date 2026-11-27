@@ -191,6 +191,17 @@ describe("resolveMfaEnrollment", () => {
 });
 
 describe("syncMfaEnrollCookie", () => {
+  // `syncMfaEnrollCookie` judges against the wall clock. Pin it to `NOW`, or
+  // the grace period the policy fixture grants runs out for real and the
+  // first test fails from that date on.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("sets the hint cookie only when enrolment is required", async () => {
     await syncMfaEnrollCookie("u1", ADMIN);
     expect(cookieStore.delete).toHaveBeenCalled();
