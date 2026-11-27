@@ -48,6 +48,7 @@ import {
   type BindingRefusal,
 } from "@/lib/push-relay/binding";
 import { loadRegistration } from "@/lib/push-relay/registration";
+import { endRelayStartedActivities } from "@/lib/push-relay/live-activity";
 import {
   devicePushBlock,
   type DevicePushBlock,
@@ -281,6 +282,9 @@ export async function applyPushFields(
     input.pushKey === null || input.relayConsent?.granted === false;
   if (withdraw) {
     if (before?.relayState && before.relayState !== "none") {
+      // The relay-started Activities end while the binding that carries
+      // their end still exists.
+      await endRelayStartedActivities(deviceId);
       await unbindToken(before.apnsToken);
     }
     await prisma.device.update({
