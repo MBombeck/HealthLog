@@ -128,7 +128,7 @@ const MAX_DISTINCT_L33T_CHARACTERS = 6;
  * The part of a password the estimator scores: at most
  * `PASSWORD_STRENGTH_MAX_LENGTH` characters, cut before the seventh distinct
  * l33t character. Both bounds keep one call in the low milliseconds on any
- * input (`password-estimate-cost.test.ts` measures the worst shapes found).
+ * input (`password-estimate-cost.test.ts` counts the combinations left).
  * A password that reaches either bound with a strong prefix is strong; one
  * that is cut early reads weaker than it is, which errs on the safe side.
  */
