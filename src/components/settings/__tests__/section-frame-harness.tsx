@@ -49,9 +49,6 @@ export function SettingsSectionFrame({
   const titleKey = isLayoutChild
     ? `settings.sections.layout.${slug}.title`
     : `settings.sections.${slug}.title`;
-  const subtitleKey = isLayoutChild
-    ? `settings.sections.layout.${slug}.description`
-    : `settings.sections.${slug}.subtitle`;
 
   return (
     <section aria-labelledby={titleId} className="space-y-6">
@@ -60,7 +57,6 @@ export function SettingsSectionFrame({
           <h1 id={titleId} className="text-2xl font-bold tracking-tight">
             {t(titleKey)}
           </h1>
-          <p className="text-muted-foreground text-sm">{t(subtitleKey)}</p>
         </div>
       </div>
       {children}

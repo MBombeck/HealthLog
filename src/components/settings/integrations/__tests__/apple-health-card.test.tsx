@@ -96,7 +96,7 @@ describe("<AppleHealthCard>", () => {
     expect(html).toContain("not from a web or OAuth connection");
     expect(html).toContain("Settings &gt; Apple Health");
     expect(html).toContain("when iOS grants background time");
-    expect(html).toContain("Not connected.");
+    expect(html).toMatch(/data-slot="status-chip"[^>]*data-tone="off"/);
     expect(html).not.toContain('data-slot="integration-health-badge"');
   });
 
@@ -119,7 +119,7 @@ describe("<AppleHealthCard>", () => {
     expect(html).toMatch(
       /data-slot="integration-health-badge"[^>]*data-state="degraded"/,
     );
-    expect(html).toContain("Delayed");
+    expect(html).toContain(">Error</span>");
     // Apple Health's own variant: the iPhone app is what moves the data.
     expect(html).toContain("Open HealthLog on your iPhone once.");
   });

@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Badge } from "@/components/ui/badge";
+import { StatusChip } from "@/components/ui/status-chip";
 import { Disclosure } from "@/components/ui/disclosure";
 import { Button } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
@@ -108,7 +109,6 @@ function MeasurementTokensCard() {
       copy={{
         title: t("settings.measurementsToken.title"),
         description: t("settings.measurementsToken.description"),
-        detail: t("settings.measurementsToken.detail"),
         scopeNote: t("settings.measurementsToken.scopeNote"),
         namePlaceholder: t("settings.measurementsToken.namePlaceholder"),
         createFailed: t("settings.measurementsToken.createFailed"),
@@ -133,7 +133,6 @@ function WorkoutTokensCard() {
       copy={{
         title: t("settings.workoutsToken.title"),
         description: t("settings.workoutsToken.description"),
-        detail: t("settings.workoutsToken.detail"),
         scopeNote: t("settings.workoutsToken.scopeNote"),
         namePlaceholder: t("settings.workoutsToken.namePlaceholder"),
         createFailed: t("settings.workoutsToken.createFailed"),
@@ -158,7 +157,6 @@ function DocumentTokensCard() {
       copy={{
         title: t("settings.documentsToken.title"),
         description: t("settings.documentsToken.description"),
-        detail: t("settings.documentsToken.detail"),
         scopeNote: t("settings.documentsToken.scopeNote"),
         namePlaceholder: t("settings.documentsToken.namePlaceholder"),
         createFailed: t("settings.documentsToken.createFailed"),
@@ -198,7 +196,6 @@ function IngestTokenCard({
   copy: {
     title: string;
     description: string;
-    detail: string;
     scopeNote: string;
     namePlaceholder: string;
     createFailed: string;
@@ -276,13 +273,13 @@ function IngestTokenCard({
         anchor={anchor}
         icon={icon}
         title={copy.title}
-        description={copy.description}
+        info={copy.description}
       />
 
       <div className="space-y-3">
-        {/* "Shown once" leads; what the token can and cannot do opens under
-            "Learn more", so three token cards do not stack three paragraphs. */}
-        <p className="text-sm">{copy.detail}</p>
+        {/* What the token can and cannot do opens under "Learn more", so
+            three token cards do not stack three paragraphs. That it is shown
+            once is said where it is shown. */}
         <Disclosure data-fold summary={t("common.learnMore")}>
           <p className="text-sm leading-relaxed">{copy.scopeNote}</p>
         </Disclosure>
@@ -403,14 +400,9 @@ function ApiTokensCard() {
         anchor="api-tokens"
         icon={Key}
         title={t("settings.apiTokens")}
-        description={t("settings.apiTokensDescription")}
         status={
           <>
-            {activeTokens.length > 0 && (
-              <Badge className="border-success/30 bg-success/15 text-success">
-                {t("settings.configured")}
-              </Badge>
-            )}
+            <StatusChip tone={activeTokens.length > 0 ? "active" : "off"} />
             {latestActiveUse && (
               <Badge variant="outline" className="text-xs">
                 {t("settings.tokenTableLastUsed")}:{" "}
@@ -428,7 +420,6 @@ function ApiTokensCard() {
             authenticated route accepted. The per-medication API-endpoint
             toggle issues the pair that actually works, scoped to one
             medication. This card lists and revokes. */}
-        <p className="text-sm">{t("settings.tokenMintMovedDescription")}</p>
 
         {isError ? (
           // A read failure must not read as "no active tokens" on this

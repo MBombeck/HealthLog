@@ -375,11 +375,10 @@ const PINNED_AFFORDANCES: Record<
   },
   "src/components/settings/account-section/index.tsx": { "text-success": 1 },
   "src/components/settings/advanced-section.tsx": { "text-success": 2 },
-  "src/components/settings/ai/ai-insights-card.tsx": { "text-success": 1 },
   "src/components/settings/ai/anthropic-provider-form.tsx": {
     "text-success": 1,
   },
-  "src/components/settings/ai/codex-provider-form.tsx": { "text-success": 2 },
+  "src/components/settings/ai/codex-provider-form.tsx": { "text-success": 1 },
   "src/components/settings/ai/compat-provider-form.tsx": { "text-success": 1 },
   "src/components/settings/ai/fallback-chain-card.tsx": { "text-success": 1 },
   "src/components/settings/ai/local-provider-form.tsx": { "text-success": 1 },
@@ -391,7 +390,7 @@ const PINNED_AFFORDANCES: Record<
   // exists; the toast fires only after the clipboard write resolves. Same
   // shape as the MCP connector card two files over.
   "src/components/settings/api-section.tsx": {
-    "text-success": 5,
+    "text-success": 4,
     "toast.success": 1,
   },
   // The delete-with-undo toast, the same one the conversation list and the
@@ -425,9 +424,9 @@ const PINNED_AFFORDANCES: Record<
     CheckCircle2: 2,
     "text-success": 1,
   },
-  // The "Working" badge tone, and "Copied" beside the diagnostics copy button.
+  // "Copied" beside the diagnostics copy button.
   "src/components/settings/integrations/integration-card.tsx": {
-    "text-success": 2,
+    "text-success": 1,
   },
   "src/components/settings/integrations/nightscout-card.tsx": {
     "text-success": 1,
@@ -441,12 +440,8 @@ const PINNED_AFFORDANCES: Record<
     "text-success": 1,
   },
   "src/components/settings/mcp-section.tsx": {
-    "text-success": 4,
+    "text-success": 3,
     "toast.success": 1,
-  },
-  "src/components/settings/notification-status-card.tsx": {
-    CheckCircle2: 2,
-    "text-success": 1,
   },
   // The one that used to sit inside `account-section/index.tsx` — the card
   // moved to Settings → Security, the line moved with it.
@@ -463,7 +458,6 @@ const PINNED_AFFORDANCES: Record<
     "toast.success": 2,
   },
   "src/components/settings/trusted-devices-card.tsx": { "text-success": 1 },
-  "src/components/settings/web-push-card.tsx": { "text-success": 1 },
   "src/components/targets/target-edit-sheet.tsx": { "toast.success": 2 },
   "src/components/ui/password-strength.tsx": { "text-success": 2 },
   // The success tone of the grade chip (a high confidence, a score that went
@@ -471,6 +465,10 @@ const PINNED_AFFORDANCES: Record<
   // the crosstab, confidence and score chips that each carried their own copy
   // of this class now render through it.
   "src/components/ui/score-pill.tsx": { "text-success": 1 },
+  // The "Active" tone of the status chip: a connection's state, never that a
+  // write succeeded. Every integration, channel and module badge that carried
+  // its own copy of this class now renders through it.
+  "src/components/ui/status-chip.tsx": { "text-success": 1 },
 };
 
 /**
