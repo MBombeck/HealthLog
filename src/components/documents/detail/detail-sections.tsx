@@ -178,6 +178,13 @@ export function useDocumentDetailMenuItems({
 }
 
 /**
+ * A control standing as a row's value: no frame, the value in the row's
+ * value weight, its chevron or calendar the only sign it opens.
+ */
+const ROW_CONTROL =
+  "h-9 w-auto border-transparent bg-transparent font-normal shadow-none";
+
+/**
  * Title, kind and filing date as three rows of one card, each saving on
  * commit. A tap on the title row turns it into the field; kind and date
  * carry their control on the right.
@@ -260,7 +267,7 @@ export function DocumentDetailFields({
             id="document-kind-select"
             value={doc.kind}
             disabled={!canManageDocuments}
-            className="font-normal"
+            className={ROW_CONTROL}
             onChange={(e) =>
               patch.mutate({
                 kind: e.target.value as InboundDocumentKindValue,
@@ -284,7 +291,7 @@ export function DocumentDetailFields({
         trailing={
           <DateField
             id="document-date-field"
-            className="w-40 font-normal"
+            className={cn(ROW_CONTROL, "w-36")}
             disabled={!canManageDocuments}
             value={doc.documentDate ?? ""}
             onChange={(value) =>

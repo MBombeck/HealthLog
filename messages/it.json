@@ -13260,7 +13260,6 @@
       "titleRecord": "L'archivio documenti di {name} è vuoto"
     },
     "detail": {
-      "title": "Dettagli del documento",
       "summary": {
         "title": "Riepilogo",
         "pending": "Il riepilogo è in preparazione.",

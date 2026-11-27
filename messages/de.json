@@ -13260,7 +13260,6 @@
       "titleRecord": "Der Dokumenten-Tresor von {name} ist leer"
     },
     "detail": {
-      "title": "Dokumentdetails",
       "summary": {
         "title": "Zusammenfassung",
         "pending": "Die Zusammenfassung wird erstellt.",

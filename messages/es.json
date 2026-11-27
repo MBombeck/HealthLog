@@ -13260,7 +13260,6 @@
       "titleRecord": "El archivo de documentos de {name} está vacío"
     },
     "detail": {
-      "title": "Detalles del documento",
       "summary": {
         "title": "Resumen",
         "pending": "Se está preparando el resumen.",

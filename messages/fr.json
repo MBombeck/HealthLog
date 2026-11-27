@@ -13260,7 +13260,6 @@
       "titleRecord": "Le coffre à documents de {name} est vide"
     },
     "detail": {
-      "title": "Détails du document",
       "summary": {
         "title": "Résumé",
         "pending": "Le résumé est en cours de préparation.",

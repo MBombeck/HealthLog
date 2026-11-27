@@ -13260,7 +13260,6 @@
       "titleRecord": "{name}'s document vault is empty"
     },
     "detail": {
-      "title": "Document details",
       "summary": {
         "title": "Summary",
         "pending": "The summary is being prepared.",

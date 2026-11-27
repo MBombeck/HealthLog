@@ -80,7 +80,8 @@ export function CardFieldRows({
             <NativeSelect
               id={`${idPrefix}-expiry`}
               value={expiry}
-              className="font-normal"
+              // No frame: the choice reads as the row's value.
+              className="h-9 w-auto border-transparent bg-transparent font-normal shadow-none"
               onChange={(e) => onExpiryChange(e.target.value as ExpiryChoice)}
             >
               {EXPIRY_CHOICES.map((c) => (

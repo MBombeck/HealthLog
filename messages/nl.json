@@ -13260,7 +13260,6 @@
       "titleRecord": "De documentenkluis van {name} is leeg"
     },
     "detail": {
-      "title": "Documentdetails",
       "summary": {
         "title": "Samenvatting",
         "pending": "De samenvatting wordt voorbereid.",

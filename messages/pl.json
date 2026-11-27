@@ -13260,7 +13260,6 @@
       "titleRecord": "Sejf dokumentów {name} jest pusty"
     },
     "detail": {
-      "title": "Szczegóły dokumentu",
       "summary": {
         "title": "Podsumowanie",
         "pending": "Podsumowanie jest przygotowywane.",

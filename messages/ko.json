@@ -13260,7 +13260,6 @@
       "titleRecord": "{name}님의 문서 보관함이 비어 있어요"
     },
     "detail": {
-      "title": "문서 상세",
       "summary": {
         "title": "요약",
         "pending": "요약을 준비하고 있어요.",

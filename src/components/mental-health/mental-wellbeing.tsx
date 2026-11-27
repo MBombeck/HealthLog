@@ -40,6 +40,7 @@ import {
   refetchInactiveDailyReads,
 } from "@/lib/query-keys";
 import { INSTRUMENTS, INSTRUMENT_ORDER } from "@/lib/mental-health/instruments";
+import { InfoPopover } from "@/components/ui/info-popover";
 import { PageHeader } from "@/components/ui/page-header";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
@@ -175,20 +176,18 @@ export function MentalWellbeing() {
     <div className="flex flex-col gap-6">
       {phase === "choose" && (
         <>
-          {/* v1.26 — visible page header, consistent with every other module
-              (the title was previously sr-only; the description stays). */}
-          <PageHeader title={t("mentalHealth.pageTitle")} />
-
-          {/* What happens to the answers. The Modules hub used to carry this
-              as the second sentence of the module's one-line description,
-              which was the only place in the app that said it — so it moved
-              to the screen where somebody is about to answer. */}
-          <p
-            data-slot="mental-health-privacy-note"
-            className="text-muted-foreground -mt-3 text-sm"
-          >
-            {t("mentalHealth.privacyNote")}
-          </p>
+          {/* What happens to the answers, one tap away beside the title:
+              a promise the person can read before answering, not two
+              sentences above every visit (ui-standards §17). */}
+          <PageHeader
+            title={t("mentalHealth.pageTitle")}
+            titleAccessory={
+              <InfoPopover
+                triggerDataSlot="mental-health-privacy-note"
+                content={t("mentalHealth.privacyNote")}
+              />
+            }
+          />
 
           <section aria-label={t("mentalHealth.choosePrompt")}>
             <h2 className="sr-only">{t("mentalHealth.choosePrompt")}</h2>

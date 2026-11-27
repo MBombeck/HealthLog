@@ -153,7 +153,6 @@ export function DocumentDetailSheet({
         open={open}
         onOpenChange={onOpenChange}
         title={title}
-        description={t("documents.detail.title")}
         contentWidth="3xl"
         footer={footer}
       >
