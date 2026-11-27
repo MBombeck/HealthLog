@@ -331,7 +331,7 @@ export function SubPageShell({
     // state + renders the sheet, so the gear and the card don't have to
     // share a parent beyond this shell.
     <TargetAdjustProvider>
-      <div data-slot="insights-subpage" className="space-y-3 md:space-y-4">
+      <div data-slot="insights-subpage" className="space-y-4">
         {/* v1.8.7.1 — back-nav leads the page, above the heading. */}
         {backLink}
         {/* The heading + explainer indent to the cards' inner text edge so
