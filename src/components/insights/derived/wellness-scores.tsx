@@ -108,7 +108,10 @@ function useCycleTile(enabled: boolean): {
   const verdict = calendar.data.verdict;
   const phase = verdict?.phase ?? null;
   const day = verdict?.dayOfCycle ?? null;
-  const phaseName = phase ? t(`cycle.phase.${phase}`) : null;
+  // Only a cycle the record tracks has a tile: without a current phase and
+  // day the module is on but nothing is tracked, and the row stays scores.
+  if (!phase || day === null) return { tile: null, pending: false };
+  const phaseName = t(`cycle.phase.${phase}`);
   const title = t("cycle.title");
   return {
     pending: false,
@@ -122,7 +125,7 @@ function useCycleTile(enabled: boolean): {
       band: undefined,
       stale: false,
       bandWord: null,
-      line: phaseName ?? t("cycle.insightsSummary.noActiveCycle"),
+      line: phaseName,
       ring: (
         <CycleRing
           dayOfCycle={day}
