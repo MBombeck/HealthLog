@@ -6194,7 +6194,7 @@
             "import": "Importa",
             "empty": "Prima incolla l'esportazione o scegli un file.",
             "readFailed": "Non è stato possibile leggere quel file.",
-            "rateLimited": "Massimo 5 importazioni all'ora. Riprova più tardi.",
+            "rateLimited": "Hai raggiunto il limite orario di importazioni. Riprova più tardi.",
             "tooLarge": "Quel file supera il limite di 16 MB.",
             "inProgress": "Un'importazione dello storico è già in corso. Attendi che finisca.",
             "workerUnavailable": "Il processo in background non è disponibile, quindi non è stato importato nulla.",

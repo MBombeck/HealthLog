@@ -2793,6 +2793,9 @@
       ],
       "walletRelayHintDismissed": true,
       "walletReadyPushDismissed": true,
+      "dismissedHints": [
+        "rt-User-dismissedHints"
+      ],
       "fullName": "rt-User-fullName",
       "insurerName": "rt-User-insurerName",
       "insuranceNumberEncrypted": "<sealed:v1:rt-User-insuranceNumberEncrypted>",

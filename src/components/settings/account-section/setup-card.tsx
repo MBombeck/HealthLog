@@ -24,7 +24,9 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
-import { resetChecklistDismissals } from "@/lib/onboarding/checklist-storage";
+import { useDismissedHints } from "@/hooks/use-dismissed-hints";
+import { hintId } from "@/lib/hints/dismissible-hints";
+import { markChecklistExpanded } from "@/lib/onboarding/checklist-storage";
 
 /**
  * Settings › Account › Setup.
@@ -44,6 +46,7 @@ export function SetupCard() {
   const setup = useSetupState();
   const dismissal = useSetupCardDismissal();
   const person = setup.data?.person;
+  const hints = useDismissedHints();
 
   async function setUpAgain() {
     if (restart.isPending) return;
@@ -58,12 +61,25 @@ export function SetupCard() {
   }
 
   async function showOnDashboard() {
-    const checklistBack = resetChecklistDismissals();
-    let cardBack = false;
+    // The older checklist's hide lives with the dismissed hints; the new
+    // card's on the setup state. Bring back whichever is hidden.
+    const family = hintId("getting-started");
+    const checklistHidden = hints.ids.some(
+      (id) => id === family || id.startsWith(`${family}.`),
+    );
+    markChecklistExpanded();
+    let back = false;
+    if (checklistHidden) {
+      if (!(await hints.restore(family))) {
+        showErrorToast(t("settings.savingError"));
+        return;
+      }
+      back = true;
+    }
     if (person?.planned && person.cardDismissed) {
       try {
         await dismissal.mutateAsync(false);
-        cardBack = true;
+        back = true;
       } catch (err) {
         showErrorToast(localizedApiError(err, t, "onboarding.errorGeneric"), {
           cause: err,
@@ -73,11 +89,14 @@ export function SetupCard() {
     }
     // Something was hidden and is back: a written outcome. Nothing was
     // hidden: an empty one, there was nothing to bring back.
-    if (checklistBack || cardBack) {
-      toastWrittenOutcome("success", t("settings.setup.checklistShown"));
-    } else {
-      toastWrittenOutcome("empty", t("settings.setup.checklistNothingHidden"));
-    }
+    toastWrittenOutcome(
+      back ? "success" : "empty",
+      t(
+        back
+          ? "settings.setup.checklistShown"
+          : "settings.setup.checklistNothingHidden",
+      ),
+    );
   }
 
   return (
