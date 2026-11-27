@@ -600,7 +600,7 @@
     "admin": "Konsola administratora",
     "logout": "Wyloguj",
     "login": "Zaloguj",
-    "notifications": "Powiadomienia wg kanału",
+    "notifications": "Powiadomienia",
     "theme": "Motyw",
     "themeSystem": "Systemowy",
     "themeDark": "Ciemny",
@@ -1238,7 +1238,7 @@
   },
   "mood": {
     "title": "Nastrój",
-    "subtitle": "Trend i wpisy nastroju",
+    "subtitle": "Jak się czułeś, dzień po dniu.",
     "mentalWellbeingLink": "Wykonaj sprawdzian dobrostanu psychicznego",
     "addEntry": "Dodaj",
     "editEntry": "Edytuj wpis",
@@ -1581,7 +1581,7 @@
   },
   "medications": {
     "title": "Leki",
-    "subtitle": "Leki, harmonogramy i przyjęcia",
+    "subtitle": "Twoje leki, ich harmonogramy i każde przyjęcie.",
     "loginRequired": "Zaloguj się, aby zarządzać lekami.",
     "addMedication": "Dodaj",
     "firstMedication": "Dodaj pierwszy lek",
@@ -2565,11 +2565,10 @@
     "customize": "Dostosuj leki",
     "efficacy": {
       "title": "Działanie",
-      "intro": "Jak zmieniały się pomiary, na które ma wpływać ten lek, w okolicach rozpoczęcia jego przyjmowania. Pokazuje to, co zbiega się w czasie (powiązanie, nie przyczynę), i nigdy porady dotyczącej leczenia ani dawki.",
+      "intro": "Jak zmieniały się pomiary, na które ma wpływać ten lek, w okolicach rozpoczęcia jego przyjmowania. Pokazuje to, co zbiega się w czasie, i nigdy porady dotyczącej leczenia ani dawki.",
       "notEligible": "Brak pomiaru, który można powiązać z tym lekiem.",
       "startFallback": "Nie ustawiono daty rozpoczęcia, więc porównanie używa pierwszego zapisanego pomiaru jako punktu odniesienia.",
       "noStart": "Ustaw datę rozpoczęcia, aby porównać pomiary sprzed i po rozpoczęciu.",
-      "disclaimer": "Tylko powiązanie: te liczby pokazują, co zmieniło się w tym samym okresie, a nie że lek spowodował tę zmianę. Wszelkie decyzje dotyczące leczenia omów z lekarzem.",
       "primaryBadge": "Główny cel",
       "noSeries": "Brak zapisanych pomiarów dla tego celu.",
       "startMarker": "Początek",
@@ -2597,7 +2596,7 @@
       },
       "insights": {
         "title": "Działanie leków",
-        "subtitle": "Co zbiega się w czasie z pomiarami, na które celują Twoje leki: tylko powiązanie, nigdy werdykt.",
+        "subtitle": "Co zbiega się w czasie z pomiarami, na które celują Twoje leki.",
         "link": "Otwórz widok działania",
         "empty": "Za mało danych, aby powiązać Twoje leki z docelowymi pomiarami."
       },
@@ -3345,7 +3344,7 @@
       "errorUnreachable": "Nie udało się połączyć z dostawcą AI, więc Coach nie ma odpowiedzi. Sprawdź, czy działa i jest osiągalny; zadanie przypisane do jednego dostawcy nie próbuje innego.",
       "errorEmptyReply": "Dostawca AI odpowiedział pustą treścią, więc Coach nie ma odpowiedzi. Spróbuj ponownie albo wybierz inny model w ustawieniach AI.",
       "errorDemo": "W wersji demo Coach nie odpowiada.",
-      "errorNoProvider": "Coach czyta Twoje zapisane dane zdrowotne i odpowiada na pytania o nie (to nie porada medyczna). HealthLog potrzebuje do tego dostawcy AI: połącz własny klucz lub model lokalny.",
+      "errorNoProvider": "Coach czyta Twoje zapisane dane zdrowotne i odpowiada na pytania o nie. HealthLog potrzebuje do tego dostawcy AI: połącz własny klucz lub model lokalny.",
       "errorNoProviderAction": "Połącz dostawcę AI",
       "errorNetwork": "Brak połączenia z Internetem. Spróbuj ponownie, gdy wrócisz online.",
       "prefsSaveError": "Nie udało się zapisać ustawień Coacha. Spróbuj ponownie.",
@@ -3897,7 +3896,7 @@
         "bloodPressureBody": "Ciśnienie krwi to siła, z jaką krew napiera na ściany tętnic, zapisywana jako skurczowe do rozkurczowego (szczyt podczas uderzenia serca do wartości spoczynkowej między uderzeniami). Stale wysokie wartości z czasem obciążają serce i naczynia.",
         "pulseBody": "Tętno to liczba uderzeń serca na minutę. Pojedynczy pomiar odzwierciedla to, co robiłeś w danej chwili. W spoczynku wynosi zwykle 60–100 uderzeń na minutę i naturalnie rośnie przy ruchu, stresie lub kofeinie.",
         "weightBody": "Masa ciała to jeden z najprostszych sygnałów długoterminowego bilansu energetycznego i ogólnego zdrowia. Trend na przestrzeni tygodni liczy się znacznie bardziej niż pojedynczy odczyt, który zmienia się wraz z nawodnieniem, jedzeniem i porą dnia.",
-        "bmiBody": "BMI to waga podzielona przez wzrost do kwadratu: jedna liczba przypisująca Cię do szerokiej kategorii wagowej. To badanie przesiewowe dla populacji, a nie diagnoza, i nie odróżnia mięśni od tłuszczu.",
+        "bmiBody": "BMI to waga podzielona przez wzrost do kwadratu: jedna liczba przypisująca Cię do szerokiej kategorii wagowej. To badanie przesiewowe dla populacji i nie odróżnia mięśni od tłuszczu.",
         "sleepBody": "Długość snu to czas, który faktycznie przespałeś w nocy, podzielony na fazy lekką, głęboką i REM. Większość dorosłych potrzebuje około siedmiu do dziewięciu godzin; stała ilość i jakość wspierają regenerację, nastrój i metabolizm.",
         "moodBody": "Śledzenie nastroju rejestruje Twoje samopoczucie w czasie na prostej skali. Regularne zapisywanie ujawnia wzorce (jak sen, aktywność czy leki łączą się z samopoczuciem), których pojedynczy dzień nigdy nie pokaże.",
         "medicationsBody": "Przestrzeganie zaleceń to rzetelność przyjmowania leków zgodnie z zaleceniami, pokazana tu jako odsetek oczekiwanych dawek, które zarejestrowałeś. Regularne przyjmowanie często decyduje o tym, czy terapia działa zgodnie z zamierzeniem.",
@@ -3947,15 +3946,14 @@
         "strainBody": "Obciążenie ujmuje, ile wysiłku sercowo-naczyniowego i fizycznego nałożyłeś na swoje ciało, od treningów po aktywny dzień na nogach. Gdy zbierze się wystarczająco danych, jest oceniane względem Twojego własnego typowego wysiłku, a nie cudzej miary.",
         "stressBody": "Stres jest tu szacunkiem fizjologicznego obciążenia Twojego układu nerwowego, odczytywanym głównie ze wzorców zmienności rytmu serca, a nie z tego, jak się świadomie czujesz. Niższy wynik wskazuje na spokojny, dobrze regulowany stan; wyższy to zachęta, by wpleść regenerację.",
         "recoveryPageBody": "To, co zgłasza Twoje urządzenie, pod jego własnymi nazwami.",
-        "pulsePressureBody": "Ciśnienie tętna to różnica między wartością skurczową a rozkurczową (skurczowe minus rozkurczowe). Jako ogólna wskazówka, około 40 mmHg jest typowe w spoczynku; szeroka różnica powyżej około 60 mmHg w średnim wieku może odzwierciedlać usztywnienie tętnic, a wąska różnica poniżej około 25 mmHg może towarzyszyć niskiej objętości wyrzutowej (StatPearls/NIH 2023). To powód do rozmowy, nie diagnoza.",
+        "pulsePressureBody": "Ciśnienie tętna to różnica między wartością skurczową a rozkurczową (skurczowe minus rozkurczowe). Jako ogólna wskazówka, około 40 mmHg jest typowe w spoczynku; szeroka różnica powyżej około 60 mmHg w średnim wieku może odzwierciedlać usztywnienie tętnic, a wąska różnica poniżej około 25 mmHg może towarzyszyć niskiej objętości wyrzutowej (StatPearls/NIH 2023).",
         "meanArterialPressureBody": "Średnie ciśnienie tętnicze to przeciętne ciśnienie, jakie widzą Twoje narządy w trakcie uderzenia serca, w przybliżeniu rozkurczowe plus jedna trzecia różnicy do skurczowego. Jako ogólna wskazówka, wartość spoczynkowa mieści się w okolicy 70–100 mmHg (StatPearls/NIH 2023). Często przywoływany próg ~60 mmHg to pojęcie z medycyny ostrej, nie alarm do samodzielnego pomiaru.",
         "cycleEducationBody": "Twój cykl przebiega przez cztery fazy sterowane hormonami, a jego długość i regularność to dostępne okno na ogólny stan zdrowia. Jako ogólna wskazówka, u osób dorosłych cykle trwają zwykle 21–35 dni (źródła kliniczne podają 24–38), z krwawieniem około pięciu dni (ACOG 2015). Faza lutealna jest stałą kotwicą, dlatego owulację najlepiej szacować, licząc wstecz od następnej spodziewanej miesiączki, nigdy według stałego „14. dnia”. Przewidziane okno płodne to oszacowanie, które wymaga kilku zarejestrowanych cykli i pozostaje przybliżone, a podstawowa temperatura ciała potwierdza owulację po fakcie, a nie ją przewiduje. To nie jest metoda antykoncepcji.",
         "sleepHygieneBody": "Kilka opartych na dowodach nawyków wspiera sen: stałe pory kładzenia się i wstawania także w weekendy, jasne światło rano i przyciemnione wieczory, chłodna, ciemna i cicha sypialnia oraz unikanie kofeiny po południu, alkoholu późnym wieczorem i obfitych posiłków przed snem (CDC 2024). Regularność przewiduje zdrowie co najmniej tak silnie jak długość snu, a całkowity czas snu z urządzenia jest znacznie bardziej wiarygodny niż jego podział na sen głęboki, lekki i REM."
       },
       "bpDerived": {
         "pulsePressure": "Ciśnienie tętna (różnica między Twoimi wartościami) wynosi około {value} mmHg; około 40 jest typowe w spoczynku.",
-        "meanArterialPressure": "Średnie ciśnienie tętnicze (średnia, jaką widzą Twoje narządy) wynosi około {value} mmHg, zwykle w okolicy 70–100.",
-        "caveat": "Te wartości są wyliczone z ostatniego pomiaru jako ogólna wskazówka, nie jako diagnoza."
+        "meanArterialPressure": "Średnie ciśnienie tętnicze (średnia, jaką widzą Twoje narządy) wynosi około {value} mmHg, zwykle w okolicy 70–100."
       },
       "stats": {
         "label": "Statystyki podsumowujące",
@@ -4736,7 +4734,6 @@
         "title": "Co się wyróżnia",
         "subheading": "Wykryte relacje",
         "footer": "Wyłonione z {tested, plural, one {# pary} few {# par} many {# par} other {# pary}} dzień po dniu testowanych na wszystkich Twoich wskaźnikach, po korekcie fałszywych odkryć.",
-        "disclaimer": "Przefiltrowane statystycznie, ale wciąż obserwacyjne: wzorzec warty uwagi, nie przyczyna.",
         "moodUp": "Wyższy {factor} zwykle wiąże się z lepszym nastrojem następnego dnia w Twoich danych.",
         "moodDown": "Wyższy {factor} zwykle wiąże się z gorszym nastrojem następnego dnia w Twoich danych.",
         "outcomeUp": "Lepszy nastrój zwykle wiąże się z wyższym {factor} następnego dnia w Twoich danych.",
@@ -4765,8 +4762,7 @@
         "lower": "niższy",
         "higher": "wyższy",
         "statement": "W dniach z „{label}” nastrój był średnio {direction}: {withAvg} wobec {withoutAvg}.",
-        "counts": "{withDays, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}} z, {withoutDays, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}} bez",
-        "caveat": "To pokazuje związek, nie przyczynę."
+        "counts": "{withDays, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}} z, {withoutDays, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}} bez"
       },
       "prognosis": {
         "title": "Twoja samoocena",
@@ -4782,7 +4778,6 @@
         "weightedTitle": "Co najbardziej zaważyło w porównaniu tego dnia",
         "weightedUp": "{label}: liczyło się w stronę wyższej oczekiwanej wartości",
         "weightedDown": "{label}: liczyło się w stronę niższej oczekiwanej wartości",
-        "caveat": "To porównanie z twoimi wcześniejszymi dniami, nie stwierdzenie, jak doszło do takiego przebiegu dnia.",
         "learning": "Faza uczenia: zapisano {entries} z {threshold, plural, one {# dnia} few {# dni} many {# dni} other {# dnia}}. Porównanie pojawi się, gdy będzie ich dość.",
         "noPattern": "W {entries, plural, one {# zapisanym dotąd dniu} few {# zapisanych dotąd dniach} many {# zapisanych dotąd dniach} other {# zapisanego dotąd dnia}} nic nie jest na tyle regularne, by porównać z tym dzień. Gdy zapisujesz też kontekst dnia, więcej da się porównać.",
         "featureValue": "{field}: {value}",
@@ -4790,7 +4785,7 @@
       },
       "patterns": {
         "title": "Wzorce w twoim nastroju",
-        "basedOn": "Na podstawie {subject} i {comparison} dni. Wzorzec, nie przyczyna.",
+        "basedOn": "Na podstawie {subject} i {comparison} dni.",
         "previousDayHigher": "Po dniu poniżej twojej normy następny dzień jest zwykle lepszy ({subject} wobec {comparison} po dniu powyżej normy).",
         "previousDayLower": "Dzień poniżej twojej normy zwykle przenosi się na następny ({subject} wobec {comparison} po dniu powyżej normy).",
         "weekendHigher": "W weekendy twój nastrój jest zwykle lepszy ({subject} wobec {comparison} w dni robocze).",
@@ -4917,12 +4912,10 @@
         },
         "VASCULAR_AGE_DELTA": {
           "method": "Szacunek wieku naczyniowego / prędkości fali tętna z Twojego urządzenia porównany z Twoim wiekiem metrykalnym, wyrażony jako różnica w latach. Szacunek pochodzi z urządzenia; HealthLog jedynie go przedstawia.",
-          "caveat": "Własny szacunek Twojego urządzenia, jedynie przedstawiony: opisowy, nie kliniczna ocena naczyniowa.",
           "description": "Jak szacunek wieku naczyniowego Twojego urządzenia wypada na tle Twojego wieku metrykalnego."
         },
         "COINCIDENT_DEVIATION": {
-          "method": "Sygnał pojawiający się, gdy co najmniej dwa Twoje parametry życiowe wykraczają tego samego dnia poza swój osobisty typowy zakres. Każde pasmo to odporna mediana ± k·MAD Twojej historii, więc dostosowuje się do Ciebie, a nie do progu populacyjnego.",
-          "caveat": "Sygnał z Twoich własnych linii bazowych: opisowy, nie diagnoza ani alarm kliniczny."
+          "method": "Sygnał pojawiający się, gdy co najmniej dwa Twoje parametry życiowe wykraczają tego samego dnia poza swój osobisty typowy zakres. Każde pasmo to odporna mediana ± k·MAD Twojej historii, więc dostosowuje się do Ciebie, a nie do progu populacyjnego."
         },
         "RECOVERY_SCORE": {
           "method": "Nocny wskaźnik regeneracji 0–100 łączący Twoje HRV, tętno spoczynkowe i sen względem Twojej linii bazowej. Wyższy oznacza lepszą regenerację. Liczony raz na noc i tu tylko odczytywany, nigdy nieprzeliczany na bieżąco.",
@@ -4941,28 +4934,22 @@
           "deviceSource": "Dopóki HealthLog nie obliczy w nocy własnej wartości, karta pokazuje dzienne obciążenie z Twojego urządzenia, przeliczone na 0–100."
         },
         "WRIST_TEMPERATURE_BASELINE": {
-          "method": "Twoja typowa nocna temperatura nadgarstka to mediana Twoich nocnych odczytów w danym okresie, ± solidny rozrzut (przeskalowane medianowe odchylenie bezwzględne). Śledzi TWOJE odczyty: ostatnia noc jest pokazana jako odchylenie od Twojej własnej bazy, a nie od normy populacyjnej.",
-          "caveat": "Tylko osobiste pasmo odchylenia: opisowe, nie sygnał choroby, gorączki ani fazy cyklu. Interpretujesz je samodzielnie."
+          "method": "Twoja typowa nocna temperatura nadgarstka to mediana Twoich nocnych odczytów w danym okresie, ± solidny rozrzut (przeskalowane medianowe odchylenie bezwzględne). Śledzi TWOJE odczyty: ostatnia noc jest pokazana jako odchylenie od Twojej własnej bazy, a nie od normy populacyjnej."
         },
         "STAIR_ASCENT_SPEED_BASELINE": {
-          "method": "Twoje typowe tempo wchodzenia po schodach to mediana Twoich dziennych wartości w danym okresie, ± solidny rozrzut (przeskalowane medianowe odchylenie bezwzględne). Pasmo jest budowane z Twoich danych. Nie ma populacyjnego progu prędkości na schodach, bo tempo zależy od geometrii schodów i długości nóg.",
-          "caveat": "Osobiste pasmo trendu mobilności: opisowe, nie ocena kruchości ani ryzyka upadku."
+          "method": "Twoje typowe tempo wchodzenia po schodach to mediana Twoich dziennych wartości w danym okresie, ± solidny rozrzut (przeskalowane medianowe odchylenie bezwzględne). Pasmo jest budowane z Twoich danych. Nie ma populacyjnego progu prędkości na schodach, bo tempo zależy od geometrii schodów i długości nóg."
         },
         "STAIR_DESCENT_SPEED_BASELINE": {
-          "method": "Twoje typowe tempo schodzenia po schodach to mediana Twoich dziennych wartości w danym okresie, ± solidny rozrzut (przeskalowane medianowe odchylenie bezwzględne). Pasmo jest budowane z Twoich danych. Nie ma populacyjnego progu prędkości na schodach, bo tempo zależy od geometrii schodów i długości nóg.",
-          "caveat": "Osobiste pasmo trendu mobilności: opisowe, nie ocena kruchości ani ryzyka upadku."
+          "method": "Twoje typowe tempo schodzenia po schodach to mediana Twoich dziennych wartości w danym okresie, ± solidny rozrzut (przeskalowane medianowe odchylenie bezwzględne). Pasmo jest budowane z Twoich danych. Nie ma populacyjnego progu prędkości na schodach, bo tempo zależy od geometrii schodów i długości nóg."
         },
         "SIX_MINUTE_WALK_BAND": {
-          "method": "SZACOWANY przez Twoje urządzenie dystans sześciominutowego marszu odniesiony do wzorca Enrighta i Sherrilla dla Twojego wieku, wzrostu, wagi i płci, jako procent wartości przewidywanej. Dystans to szacunek urządzenia i nigdy nie jest tu przeliczany. Bez Twojego wieku, wzrostu, wagi i płci procent jest ukryty i pokazywane są tylko dystans i trend.",
-          "caveat": "Szacunek odniesiony do opublikowanego wzorca: sygnał wydolności funkcjonalnej, nie kliniczny test sześciominutowego marszu ani diagnoza. Wzorzec opracowano dla wieku 40–80 lat; poza tym zakresem wartość przewidywana jest ekstrapolacją."
+          "method": "SZACOWANY przez Twoje urządzenie dystans sześciominutowego marszu odniesiony do wzorca Enrighta i Sherrilla dla Twojego wieku, wzrostu, wagi i płci, jako procent wartości przewidywanej. Dystans to szacunek urządzenia i nigdy nie jest tu przeliczany. Bez Twojego wieku, wzrostu, wagi i płci procent jest ukryty i pokazywane są tylko dystans i trend."
         },
         "TRAJECTORY": {
-          "method": "Prosta dopasowana metodą najmniejszych kwadratów do Twoich ostatnich wartości dziennych i rzutowana w przód na krótki horyzont, z klasycznym przedziałem predykcji, który poszerza się tym bardziej, im dalej sięga. Obliczana tylko wtedy, gdy ostatni trend jest dość wyraźny, a Twoja historia wystarczająco długa i aktualna; w przeciwnym razie linia nie jest rysowana.",
-          "caveat": "Rzut Twojego własnego ostatniego trendu, nie prognoza, cel ani kliniczne przewidywanie. Sprawdza się tylko, jeśli ostatni wzorzec się utrzyma; zacieniony pas pokazuje, jak szybko ta pewność maleje."
+          "method": "Prosta dopasowana metodą najmniejszych kwadratów do Twoich ostatnich wartości dziennych i rzutowana w przód na krótki horyzont, z klasycznym przedziałem predykcji, który poszerza się tym bardziej, im dalej sięga. Obliczana tylko wtedy, gdy ostatni trend jest dość wyraźny, a Twoja historia wystarczająco długa i aktualna; w przeciwnym razie linia nie jest rysowana."
         },
         "SAME_TIME_BASELINE": {
           "method": "Twoja dzisiejsza suma narastająca zestawiona z medianą tej samej godziny lokalnej z ostatnich czterech tygodni, z odpornym pasmem mediana ± MAD wokół niej. Liczą się tylko dni z wystarczającą liczbą zapisów, a porównanie nie pojawia się, dopóki nie ma ich co najmniej czternastu.",
-          "caveat": "Porównanie z twoją własną niedawną historią, a nie cel. Mówi, gdzie dziś jesteś względem swojego zwykłego wzorca o tej godzinie, i nic o tym, czy ten wzorzec jest dla ciebie właściwy.",
           "methodDailyTotal": "Twoje źródło podaje każdy dzień jako jedną sumę, więc nie ma godziny, z którą można porównać. Dzisiejsza suma narastająca, tak jak źródło ostatnio ją podało, jest zestawiona z twoimi sumami dziennymi z ostatnich 14 pełnych dni: kreska oznacza ich medianę, zacieniowany pas ich środkową połowę. Zakres pojawia się, gdy 7 z tych dni ma sumę."
         }
       },
@@ -4988,7 +4975,7 @@
         "watch": "Dziś jeden parametr jest poza swoim zwykłym zakresem.",
         "watchVital": "Poza zakresem: {vital}. Często to jednorazowy odczyt, warto obserwować przez kilka dni.",
         "firedHeadline": "Dziś {count, plural, one {# Twój parametr życiowy jest} few {# Twoje parametry życiowe są} many {# Twoich parametrów życiowych jest} other {# Twojego parametru życiowego jest}} poza osobistym zakresem.",
-        "factors": "Możliwe czynniki (nigdy przyczyna): intensywny trening, słaby sen, alkohol, wysokość, stres lub choroba. To wskazówka z Twoich własnych baz, nie diagnoza.",
+        "factors": "Możliwe czynniki (nigdy przyczyna): intensywny trening, słaby sen, alkohol, wysokość, stres lub choroba.",
         "building": "Budujemy Twoje osobiste bazy. Zarejestruj jeszcze kilka dni, a to się pojawi.",
         "illnessExplained": "Te odchylenia prawdopodobnie wynikają z zapisanego schorzenia."
       },
@@ -4996,7 +4983,6 @@
         "cardTitle": "Krótkoterminowy rzut",
         "headline": "Jeśli ten wzorzec się utrzyma: {days, plural, one {następny # dzień} few {następne # dni} many {następne # dni} other {następne # dnia}}",
         "range": "Prognoza: około {low} do {high} {unit} za {days, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}}.",
-        "caveat": "Rzut Twojego własnego ostatniego trendu, nie prognoza. Zacieniony pas poszerza się, pokazując, jak szybko rośnie niepewność.",
         "insufficient": "Jeszcze brak wystarczająco wyraźnego trendu do rzutowania. Rejestruj dalej, a rzut pojawi się, gdy ostatni wzorzec będzie dość wyraźny.",
         "daysNeeded": "Potrzeba jeszcze około {count, plural, one {# dnia} few {# dni} many {# dni} other {# dnia}} rejestrowania, zanim pojawi się prognoza."
       },
@@ -5097,7 +5083,7 @@
       "sectionTitle": "Powiadomienia zdrowotne urządzenia",
       "sectionIntro": "Powiadomienia, które zegarek wysłał samodzielnie. HealthLog jedynie je wyświetla: nie wykrywa ich, nie potwierdza ani nie interpretuje.",
       "loadError": "Nie udało się wczytać powiadomień urządzenia.",
-      "disclaimer": "To alerty wygenerowane przez Twoje urządzenie za pomocą jego wbudowanego wykrywania. Są tu pokazywane wyłącznie dla Twojej informacji. To nie jest ocena medyczna wykonana przez HealthLog, a HealthLog nie diagnozuje żadnych schorzeń. Jeśli powiadomienie Cię niepokoi, skontaktuj się z lekarzem.",
+      "disclaimer": "To alerty Twojego urządzenia, a nie ocena HealthLog; jeśli któryś Cię niepokoi, porozmawiaj z lekarzem.",
       "event": {
         "irregularRhythm": "Powiadomienie o nieregularnym rytmie",
         "highHeartRate": "Powiadomienie o wysokim tętnie",
@@ -6104,9 +6090,8 @@
         },
         "alerts": {
           "heading": "Alerty",
-          "noChannel": "Nie skonfigurowano jeszcze żadnego kanału dostarczania, więc nic nie może zostać wysłane. Gdy pojawi się kanał, ten przełącznik decyduje za wszystkie naraz.",
+          "noChannel": "Nie skonfigurowano jeszcze żadnego kanału dostarczania, więc nic nie może zostać wysłane.",
           "setUpChannel": "Skonfiguruj kanał dostarczania",
-          "perChannel": "Wybierz dla każdego kanału",
           "saveError": "Nie udało się zapisać ustawienia powiadomienia. Spróbuj ponownie."
         }
       },
@@ -6281,18 +6266,17 @@
           "fullBackup": {
             "title": "Pełna kopia zapasowa",
             "description": "Cała dokumentacja w jednym pliku JSON.",
-            "scopeNote": "Metadane dokumentów oraz podsumowanie AI, jeśli istnieje, są uwzględnione jako czysty tekst; oryginalne pliki dokumentów oraz dane tras GPS/próbek treningów nie są uwzględnione. Pobierz je osobno z archiwum dokumentów lub eksportu treningów.",
+            "scopeNote": "Metadane dokumentów oraz podsumowanie AI, jeśli istnieje, są uwzględnione jako czysty tekst; oryginalne pliki dokumentów oraz dane tras GPS/próbek treningów nie są uwzględnione.",
             "encryptToggle": "Zaszyfruj hasłem-frazą",
             "passphrasePlaceholder": "Hasło-fraza (min. 12 znaków)",
             "passphraseHelp": "Wyprowadza klucz archiwum za pomocą Argon2id i pieczętuje je AES-256-GCM. Zapisz plik z rozszerzeniem .hlx.",
             "noRecoveryWarning": "Nie ma odzyskiwania: jeśli zgubisz tę frazę, archiwum nie da się otworzyć. Przechowuj ją bezpiecznie.",
-            "detail": "Przenośna kopia twojej dokumentacji do przechowywania i czytania: wartości w zwykłym JSON, dokumenty tylko jako metadane. To nie jest cotygodniowa kopia konta, którą ten serwer trzyma do przywracania konta, i nie odtworzy konta na innym serwerze. Niektóre rodzaje danych nie są jeszcze uwzględnione; manifest pliku wymienia, co zawiera.",
-            "contents": "Twoje pomiary, leki, nastrój, cykl, wyniki badań, epizody chorobowe, alergie, wywiad rodzinny, składniki odżywcze, treningi, Twój profil zdrowia i własne wskaźniki w jednym pliku JSON."
+            "detail": "Przenośna kopia twojej dokumentacji do przechowywania i czytania: wartości w zwykłym JSON, dokumenty tylko jako metadane."
           }
         },
         "import": {
           "heading": "Import",
-          "description": "Zaimportuj dane do HealthLog z Apple Health, Health Connect, pliku aktywności z zegarka, pliku JSON lub CSV. Import pomija wiersze, które już istnieją, więc ponowne uruchomienie jest bezpieczne.",
+          "description": "Przesłane pliki są usuwane z serwera zaraz po zakończeniu importu, a ponowny import tego samego pliku niczego nie dodaje podwójnie.",
           "charCount": "{used} / {max, plural, one {# znak} few {# znaki} many {# znaków} other {# znaku}}",
           "appleHealth": {
             "title": "Apple Health",
@@ -6301,7 +6285,7 @@
             "dropHint": "lub kliknij, aby wybrać plik",
             "fileInputLabel": "Wybierz plik export.zip z Apple Health",
             "choose": "Wybierz plik",
-            "idempotencyNote": "Ponowne przesłanie tego samego archiwum scala dane i nie tworzy duplikatów. Duże archiwa są przetwarzane w tle.",
+            "idempotencyNote": "Duże archiwa są przetwarzane w tle.",
             "uploading": "Przesyłanie…",
             "uploadFailed": "Przesyłanie nie powiodło się. Spróbuj ponownie.",
             "rateLimited": "Zbyt wiele przesłań. Poczekaj chwilę i spróbuj ponownie.",
@@ -6386,7 +6370,7 @@
             "keptLabels": "To konto ma już tagi lub grupy z tymi kluczami pod własną nazwą, więc zostały zachowane: {keys}",
             "resultNothing": "Nic nie zaimportowano. Pominięto {skipped, plural, one {# wpis} few {wszystkie # wpisy} many {wszystkie # wpisów} other {# wpisu}}.",
             "resultEmpty": "Ten plik nie zawierał pomiarów ani wpisów nastroju.",
-            "limitsHint": "Do {mb} MB i do {rows, plural, one {# wpisu} few {# wpisów} many {# wpisów} other {# wpisu}} na listę. Dodaje wpisy do twojej dokumentacji; nie przywraca pełnej kopii zapasowej."
+            "limitsHint": "Do {mb} MB i do {rows, plural, one {# wpisu} few {# wpisów} many {# wpisów} other {# wpisu}} na listę."
           },
           "csv": {
             "title": "Plik CSV",
@@ -6508,13 +6492,13 @@
             },
             "steps": {
               "export": "Na telefonie z Androidem otwórz Health Connect, przejdź do Zarządzaj danymi, potem Eksport i import, i rozpocznij eksport.",
-              "cloud": "Health Connect zapisuje eksport tylko w aplikacji chmurowej, takiej jak Google Drive, Dropbox czy Nextcloud, nigdy w samym telefonie. Wybierz tam jedną z nich.",
+              "cloud": "Health Connect zapisuje eksport tylko w aplikacji chmurowej, takiej jak Google Drive, Dropbox czy Nextcloud, nigdy w samym telefonie.",
               "upload": "Pobierz plik ZIP z tej chmury na to urządzenie i prześlij go tutaj."
             },
             "dropLabel": "Upuść tutaj plik ZIP z Health Connect",
             "dropHint": "lub kliknij, aby go wybrać. Do 1 GB.",
             "fileInputLabel": "Plik ZIP eksportu Health Connect",
-            "privacyNote": "Plik jest usuwany z serwera zaraz po zakończeniu importu. Dane z aplikacji, które łączysz już bezpośrednio, np. Withings lub Fitbit, są pomijane, żeby nic nie trafiło podwójnie. Ponowne przesłanie tego samego pliku niczego nie zmienia.",
+            "privacyNote": "Dane z aplikacji, które łączysz już bezpośrednio, np. Withings, są pomijane, żeby nic nie trafiło podwójnie.",
             "rateLimited": "Za dużo przesyłań w krótkim czasie. Odczekaj minutę i spróbuj ponownie.",
             "busy": "Dla Twojego konta trwa już import. Poczekaj, aż się zakończy.",
             "rowsSoFar": "Do tej pory zapisano {count, plural, one {# wartość} few {# wartości} many {# wartości} other {# wartości}}",
@@ -6547,7 +6531,7 @@
             "dropLabel": "Upuść tutaj plik aktywności",
             "dropHint": "lub kliknij, aby go wybrać: plik .fit, .fit.gz lub .zip do 10 MB.",
             "fileInputLabel": "Plik aktywności",
-            "privacyNote": "Plik jest usuwany z serwera, gdy tylko import się zakończy. Trening, który już tu jest z Garmina, Apple Zdrowie lub innej aplikacji, nie zostanie dodany drugi raz: dostanie krzywą tętna z pliku, jeśli jeszcze jej nie miał. Ślad GPS jest zapisywany tylko wtedy, gdy włączone są Trasy treningów. Ponowne przesłanie tego samego pliku niczego nie zmienia.",
+            "privacyNote": "Ślad GPS jest zapisywany tylko wtedy, gdy włączone są Trasy treningów.",
             "steps": {
               "garmin": "Garmin Connect: otwórz aktywność na stronie, wybierz menu z kołem zębatym, a potem Eksportuj oryginał. Prześlij plik ZIP bez zmian.",
               "other": "Inne aplikacje i urządzenia: wyeksportuj aktywność jako plik FIT (.fit lub .fit.gz) i prześlij go tutaj."
@@ -6607,7 +6591,6 @@
             "rateLimited": "Za dużo przesyłań w krótkim czasie. Odczekaj minutę i spróbuj ponownie.",
             "tooLarge": "Plik jest większy niż limit tego importu.",
             "busy": "Dla twojego konta trwa już import. Poczekaj, aż się zakończy.",
-            "privacyNote": "Plik jest usuwany z serwera zaraz po zakończeniu importu. Wszystko jest przypisane do rekordu, z którego pochodzi, więc ponowne przesłanie tego samego pliku niczego nie doda podwójnie.",
             "fileInputLabel": "Plik do zaimportowania",
             "lineCounts": "{imported} nowych, {duplicates} już było",
             "failure": {
@@ -6654,7 +6637,7 @@
             "password": "Hasło lub hasło aplikacji",
             "passwordKept": "Zostaw puste, aby zachować zapisane hasło",
             "enabled": "Pobieraj mniej więcej co sześć godzin",
-            "privacyNote": "Hasło jest zapisywane w postaci zaszyfrowanej i nigdy więcej nie jest pokazywane. Każdy plik jest importowany raz: pliku, który HealthLog już ma, nie czyta ponownie. Folder w sieci domowej działa tylko wtedy, gdy osoba zarządzająca serwerem zezwoli na jego adres.",
+            "privacyNote": "Hasło jest zapisywane w postaci zaszyfrowanej i nigdy więcej nie jest pokazywane. Folder w sieci domowej działa tylko wtedy, gdy osoba zarządzająca serwerem zezwoli na jego adres.",
             "lastAttempt": "Ostatnia próba {when}: {outcome}",
             "fetchNow": "Pobierz teraz",
             "fetchStarted": "Pobieranie rozpoczęte. Wynik pojawi się na tej karcie.",
@@ -7489,8 +7472,8 @@
     },
     "fitbitRemoval": {
       "title": "Fitbit nie synchronizuje się już",
-      "body": "Google wyłączył Fitbit Web API 30 października 2026 r., więc HealthLog nie może już łączyć się z Fitbit, a integracja Fitbit została usunięta. Wszystko, co już zaimportowano, zostaje: wykresy, eksporty, kopie zapasowe i raporty dla lekarza nadal to zawierają, oznaczone jako Fitbit.",
-      "ways": "Aby dane z Fitbit lub Pixel Watch nadal napływały, połącz poniżej Google Health. Odczytuje te same urządzenia i raz poprosi o zgodę w Google. Na Androidzie możesz też zaimportować eksport z Health Connect.",
+      "body": "Google wyłączył Fitbit Web API, więc połączenie z Fitbit zostało usunięte; wszystko, co już zaimportowano, zostaje, oznaczone jako Fitbit.",
+      "ways": "Aby dane z Fitbit lub Pixel Watch nadal napływały, połącz poniżej Google Health.",
       "toGoogleHealth": "Przejdź do Google Health",
       "toHealthConnect": "Import z Health Connect",
       "dismiss": "Rozumiem",
@@ -7499,7 +7482,7 @@
     "googleHealth": "Google Health",
     "googleHealthTag": "Fitbit i Pixel",
     "googleHealthBetaBadge": "Beta",
-    "googleHealthDescription": "Połącz Fitbit, Pixel Watch i Fitbit Air przez konto Google: waga, tętno, sen i aktywność. Zastępuje to klasyczne połączenie Fitbit, które Google wyłącza we wrześniu 2026.",
+    "googleHealthDescription": "Połącz Fitbit, Pixel Watch i Fitbit Air przez konto Google: waga, tętno, sen i aktywność.",
     "googleHealthCredentials": "Dane API",
     "googleHealthClientId": "Identyfikator klienta",
     "googleHealthClientSecret": "Sekret klienta",
@@ -7750,7 +7733,6 @@
     "notificationStatus": {
       "title": "Niezawodność kanałów",
       "description": "Stan każdego kanału; „Automatycznie wyłączone” oznacza zatrzymanie po trwałych błędach.",
-      "emptyDescription": "Dodaj kanał w Ustawienia › Integracje › Kanały dostarczania.",
       "stateActive": "Aktywne",
       "stateAutoDisabled": "Automatycznie wyłączone",
       "stateSendingPaused": "Wysyłanie wstrzymane",
@@ -7893,7 +7875,6 @@
     "polarCredentialsSaved": "Dane zapisane",
     "polarCredentialsSavedPlaceholder": "Zapisano. Wpisz nowe, aby zastąpić",
     "polarSaveCredentials": "Zapisz",
-    "polarUnavailable": "Polar nie jest skonfigurowany na tym serwerze. Dodaj powyżej własne dane OAuth Polar lub poproś administratora o skonfigurowanie współdzielonej aplikacji.",
     "polarConnect": "Połącz Polar",
     "polarSync": "Synchronizuj teraz",
     "polarSyncResult": "Zsynchronizowano {count, plural, one {# pomiar} few {# pomiary} many {# pomiarów} other {# pomiaru}}",
@@ -7923,7 +7904,6 @@
     "ouraCredentialsSaved": "Dane zapisane",
     "ouraCredentialsSavedPlaceholder": "Zapisano. Wpisz nowe, aby zastąpić",
     "ouraSaveCredentials": "Zapisz",
-    "ouraUnavailable": "Oura nie jest skonfigurowana na tym serwerze. Dodaj powyżej własne dane OAuth Oura lub poproś administratora o skonfigurowanie współdzielonej aplikacji.",
     "ouraConnect": "Połącz Oura",
     "ouraSync": "Synchronizuj teraz",
     "ouraSyncResult": "Zsynchronizowano {count, plural, one {# pomiar} few {# pomiary} many {# pomiarów} other {# pomiaru}}",
@@ -7962,7 +7942,7 @@
       "openNudges": "Otwórz w Powiadomieniach"
     },
     "integrationRedirectGuide": {
-      "intro": "To połączenie działa przez Twoją własną aplikację deweloperską {provider}, około 5 minut konfiguracji:",
+      "intro": "Skonfiguruj własną aplikację deweloperską {provider} (około 5 minut)",
       "step1": "Utwórz aplikację w portalu deweloperskim {provider}.",
       "step2": "Ustaw jej URL przekierowania/callback na:",
       "step3": "Wklej powyżej otrzymany identyfikator klienta i sekret klienta."
@@ -8207,7 +8187,6 @@
     "stravaCredentialsSaved": "Dane zapisane",
     "stravaCredentialsSavedPlaceholder": "Zapisane. Wpisz nowe, aby zastąpić",
     "stravaSaveCredentials": "Zapisz",
-    "stravaUnavailable": "Strava nie jest skonfigurowana na tym serwerze. Dodaj powyżej własne dane API Strava lub poproś administratora o skonfigurowanie wspólnej aplikacji.",
     "stravaConnect": "Połącz Strava",
     "stravaSync": "Synchronizuj teraz",
     "stravaSyncResult": "Zsynchronizowano {count, plural, one {# pomiar} few {# pomiary} many {# pomiarów} other {# pomiaru}}",
@@ -8244,7 +8223,7 @@
         "receivedLabel": "Odebrane rekordy",
         "oldestLabel": "Najstarszy osiągnięty pomiar",
         "flowing": "W ciągu ostatniej godziny dotarły dane. Aplikacja na iPhonie nadal je przesyła.",
-        "waiting": "Oczekiwanie na kolejne dane z aplikacji na iPhonie. Przesyłanie trwa dalej, gdy aplikacja jest otwarta lub gdy iOS przydzieli jej czas w tle. Cisza podczas pierwszego dużego uzupełniania historii jest normalna, to nie błąd."
+        "waiting": "Oczekiwanie na kolejne dane z aplikacji na iPhonie. Cisza podczas pierwszego dużego uzupełniania historii jest normalna, to nie błąd."
       },
       "delivery": {
         "title": "Dostarczanie",
@@ -8278,7 +8257,7 @@
       "description": "Do jakiego zakresu porównywane są twoje wyniki glikemii.",
       "enable": "Użyj zakresu docelowego dla cukrzycy",
       "explainer": "Wyłączone: wyniki są oceniane względem ogólnego zakresu referencyjnego dla osób bez cukrzycy. Włączone: są oceniane względem węższego zakresu docelowego glikemii z ADA Standards of Care, a Coach opiera na nim swoje uwagi o glukozie. Twoje własne wartości docelowe poniżej nadal mają pierwszeństwo.",
-      "disclaimer": "To wybiera zakres referencyjny. Nie jest to diagnoza, nigdy nie jest wywnioskowane z pomiaru, a aplikacja nie podejmuje na tej podstawie działań klinicznych. O to, jakie cele dotyczą ciebie, zapytaj swojego lekarza.",
+      "disclaimer": "To tylko wybiera zakres referencyjny: nie jest diagnozą i nigdy nie wynika z pomiaru; jakie cele dotyczą Ciebie, ustal z lekarzem.",
       "error": "Nie udało się zapisać ustawienia."
     },
     "dangerZoneDetail": "Konto i dane logowania zostają zachowane.",
@@ -8295,7 +8274,7 @@
     "documentSources": {
       "title": "Archiwa dokumentów",
       "description": "Przeszukuj Paperless-ngx lub Papra z poziomu HealthLog i importuj wybrane dokumenty.",
-      "explainer": "Przycisk importu pojawia się wszędzie tam, gdzie wiążesz dokumenty: przy wizytach, szczepieniach i schorzeniach oraz w Dokumentach. HealthLog przechowuje własną zaszyfrowaną kopię każdego zaimportowanego dokumentu i pyta archiwum tylko wtedy, gdy szukasz lub importujesz.",
+      "explainer": "Przycisk importu pojawia się wszędzie tam, gdzie wiążesz dokumenty: przy wizytach, szczepieniach i schorzeniach oraz w Dokumentach.",
       "systemLabel": "Archiwum",
       "statusConnected": "Połączono",
       "statusNotConnected": "Nie połączono",
@@ -8408,7 +8387,8 @@
       "historyEnds": {
         "horizon": "{type}: zaimportowano wstecz do {date}. Starsze odczyty wykraczają poza limit importu.",
         "noProgress": "{type}: zaimportowano wstecz do {date}. Google przestał zwracać starsze odczyty, więc import kończy się w tym miejscu."
-      }
+      },
+      "notConfigured": "{provider} nie jest skonfigurowany na tym serwerze: dodaj powyżej własne dane logowania lub zapytaj administratora."
     },
     "dawarich": "Dawarich",
     "dawarichTag": "Ruch",
@@ -8980,7 +8960,7 @@
         "subtitle": "Tworzenie, śledzenie i unieważnianie linków z zaproszeniem."
       },
       "api-tokens": {
-        "title": "Tokeny API",
+        "title": "API i tokeny",
         "subtitle": "Aktywne tokeny bearer wydane klientom natywnym i integracjom."
       },
       "login-overview": {
@@ -9048,7 +9028,7 @@
       "backups": {
         "title": "Kopie zapasowe",
         "subtitle": "Kopie kont w bazie danych tego serwera, do przywrócenia jednego konta na tym serwerze.",
-        "description": "Każde konto ma jedną cotygodniową kopię, zastępowaną w każdą niedzielę, a do tego kopie przesłane tutaj i kopię wykonaną przed „Usuń wszystkie dane”. Kopia przywraca istniejące konto na tym serwerze. Nie odtworzy utraconego serwera: do tego potrzebny jest zrzut bazy danych i klucze szyfrowania. Rozmiary dotyczą zaszyfrowanej kopii. Pobieranie odszyfrowuje ją dla administratora, który o nią prosi; szyfrogram zostaje w bazie danych.",
+        "description": "Każde konto ma jedną cotygodniową kopię, zastępowaną w każdą niedzielę, a do tego kopie przesłane tutaj i kopię wykonaną przed „Usuń wszystkie dane”.",
         "runNow": "Utwórz kopię teraz",
         "runEnqueued": "Zadanie kopii zapasowej dodano do kolejki",
         "runFailed": "Nie udało się dodać kopii do kolejki",
@@ -10338,7 +10318,7 @@
       "daysAria": "Wybierz próg zapasu w dniach",
       "leadLabel": "Czas na ponowne zamówienie (dni)",
       "leadAria": "Czas na ponowne zamówienie w dniach",
-      "leadHelp": "Alert pojawia się o tyle dni plus jeden interwał dawki wcześniej, aby nowy zapas dotarł przed Twoją ostatnią dawką. Pojedynczy lek może nadpisać tę wartość na swojej karcie zapasu.",
+      "leadHelp": "Alert pojawia się o tyle dni plus jeden interwał dawki wcześniej, aby nowy zapas dotarł przed Twoją ostatnią dawką.",
       "leadSavedToast": "Czas na ponowne zamówienie zapisany",
       "savedToast": "Próg zapasu zapisany",
       "enabledToast": "Alerty niskiego zapasu włączone.",
@@ -10439,7 +10419,7 @@
     "content": {
       "title": "Wartości zdrowotne w powiadomieniach",
       "description": "Czy powiadomienie może pokazywać wartości, takie jak poranny wynik.",
-      "detail": "Wyłączone: powiadomienie mówi tylko, czego dotyczy, więc ekran blokady nie pokazuje wartości zdrowotnych. Włączone: dodaje wartości, na przykład poranny wynik w podsumowaniu. Dotknięcie powiadomienia w obu przypadkach otwiera właściwe miejsce w aplikacji.",
+      "detail": "Wyłączone: powiadomienie mówi tylko, czego dotyczy, więc ekran blokady nie pokazuje wartości zdrowotnych. Włączone: dodaje wartości, na przykład poranny wynik w podsumowaniu.",
       "toggleAria": "Pokazuj wartości zdrowotne w powiadomieniach",
       "statusDetailed": "Z wartościami",
       "statusGeneric": "Bez wartości",
@@ -11402,7 +11382,7 @@
   },
   "labs": {
     "title": "Wyniki badań",
-    "subtitle": "Badania krwi i biomarkery",
+    "subtitle": "Twoje badania krwi i biomarkery.",
     "addResult": "Dodaj wynik",
     "addDescription": "Zapisz biomarker z wyniku badania.",
     "addFirst": "Dodaj pierwszy wynik",
@@ -12691,10 +12671,10 @@
     "noResultYet": "Brak check-inów",
     "backToList": "Przegląd",
     "followUpHint": {
-      "phq9": "Twój wynik mieści się w zakresie, w którym rozmowa ze specjalistą może pomóc. To życzliwa sugestia, a nie diagnoza.",
-      "gad7": "Twój wynik mieści się w zakresie, w którym rozmowa ze specjalistą może pomóc. To życzliwa sugestia, a nie diagnoza.",
-      "who5": "Wynik samopoczucia 50 lub niższy może być wart bliższego spojrzenia. Jeśli chcesz, PHQ-9 na tej stronie przygląda się nastrojowi dokładniej. To życzliwa sugestia, a nie diagnoza.",
-      "sci": "W badaniu tego kwestionariusza wyniki 16 lub niższe wiązały się z prawdopodobną bezsennością. Jeśli zły sen nadal Ci doskwiera, rozmowa ze specjalistą może pomóc. To nie jest diagnoza."
+      "phq9": "Twój wynik mieści się w zakresie, w którym rozmowa ze specjalistą może pomóc.",
+      "gad7": "Twój wynik mieści się w zakresie, w którym rozmowa ze specjalistą może pomóc.",
+      "who5": "Wynik samopoczucia 50 lub niższy może być wart bliższego spojrzenia. Jeśli chcesz, PHQ-9 na tej stronie przygląda się nastrojowi dokładniej.",
+      "sci": "W badaniu tego kwestionariusza wyniki 16 lub niższe wiązały się z prawdopodobną bezsennością. Jeśli zły sen nadal Ci doskwiera, rozmowa ze specjalistą może pomóc."
     },
     "openDetail": "Pokaż szczegóły",
     "historyLoadError": "Nie udało się wczytać historii testów",
@@ -12797,7 +12777,6 @@
         }
       }
     },
-    "disclaimer": "To Twoje własne wpisy, a nie diagnoza lekarska. HealthLog nie diagnozuje, nie leczy i ich nie interpretuje.",
     "allergies": {
       "cardTitle": "Alergie i nietolerancje",
       "cardDescription": "Substancje, na które reagujesz, wraz z reakcją i jej nasileniem.",
@@ -13110,7 +13089,7 @@
         "freeDaysDefault": "Bez odpowiedzi sobota i niedziela liczą się jako dni wolne."
       },
       "auditC": {
-        "intro": "Trzy pytania o alkohol z testu AUDIT WHO. Badanie przesiewowe, nie diagnoza.",
+        "intro": "Trzy pytania o alkohol z testu AUDIT WHO.",
         "start": "Odpowiedz na pytania",
         "again": "Odpowiedz ponownie",
         "offerDue": "Wystarczy zajrzeć raz w roku.",
@@ -13631,7 +13610,9 @@
     }
   },
   "selfDescription": {
-    "dataPosture": "HealthLog jest hostowany samodzielnie: Twoje dane zdrowotne znajdują się w bazie danych Twojej instancji. Notatki i inne teksty swobodne, dokumenty, odpowiedzi w kwestionariuszach, teksty napisane przez AI i tokeny dostępu są zaszyfrowane w spoczynku; wartości pomiarów, wyniki badań laboratoryjnych, nazwy leków i oceny nastroju są przechowywane bez szyfrowania i zależą od bezpieczeństwa Twojego serwera. Funkcje AI wysyłają dane tylko do dostawcy AI skonfigurowanego dla Twojego konta i nie ma analityki firm trzecich na Twoich danych zdrowotnych."
+    "dataPosture": "HealthLog jest hostowany samodzielnie: Twoje dane zdrowotne znajdują się w bazie danych Twojej instancji. Notatki i inne teksty swobodne, dokumenty, odpowiedzi w kwestionariuszach, teksty napisane przez AI i tokeny dostępu są zaszyfrowane w spoczynku; wartości pomiarów, wyniki badań laboratoryjnych, nazwy leków i oceny nastroju są przechowywane bez szyfrowania i zależą od bezpieczeństwa Twojego serwera. Funkcje AI wysyłają dane tylko do dostawcy AI skonfigurowanego dla Twojego konta i nie ma analityki firm trzecich na Twoich danych zdrowotnych.",
+    "notDiagnosis": "HealthLog opisuje twoje własne dane; nie stawia diagnozy.",
+    "notCause": "To wzorce w twoich danych, a nie przyczyny."
   },
   "customMetrics": {
     "sectionTitle": "Metryki własne",
@@ -14189,10 +14170,10 @@
     "leafCycle": "Cykl menstruacyjny",
     "templateStandard": "Standardowy raport dla lekarza",
     "applyStandard": "Zastosuj {template}",
-    "standardHint": "Jedno kliknięcie wypełnia to, czego zwykle wymaga wizyta u lekarza rodzinnego. Każdą pozycję można potem zmienić.",
+    "standardHint": "Jedno kliknięcie wypełnia to, czego zwykle wymaga wizyta u lekarza rodzinnego.",
     "groupCount": "{on}/{total}",
     "groupDisclosure": "Pokaż pozycje w {group}",
-    "sensitiveHint": "Nic tu nie jest wstępnie wybrane. Wybierz każdą pozycję samodzielnie.",
+    "sensitiveHint": "Nic tu nie jest wstępnie wybrane.",
     "scopeNone": "Nic jeszcze nie wybrano. Wybierz, co ma się znaleźć w dokumencie, albo zastosuj raport standardowy.",
     "scopeCount": "{count, plural, one {# pozycja} few {# pozycje} many {# pozycji} other {# pozycji}} z {groups, plural, one {# obszaru} few {# obszarów} many {# obszarów} other {# obszaru}}",
     "scopeSensitive": "w tym {names}",
@@ -15728,7 +15709,7 @@
   "recordImport": {
     "title": "Wyniki badań i leki z arkusza kalkulacyjnego",
     "description": "Zaimportuj wyniki badań z wielu lat lub listę leków z pliku CSV.",
-    "detail": "Ty wybierasz, która kolumna zawiera co; HealthLog najpierw sprawdza każdy wiersz i niczego nie importuje bez twojego potwierdzenia. Wiersze, które już są, zostaną pominięte.",
+    "detail": "Ty wybierasz, która kolumna zawiera co; HealthLog najpierw sprawdza każdy wiersz i niczego nie importuje bez twojego potwierdzenia.",
     "kind": {
       "labs": "Wyniki badań",
       "medications": "Leki"

@@ -98,7 +98,6 @@ function useCopy(kind: CardKind) {
     rateLimited: t(`${k}.rateLimited`),
     tooLargeUpload: t(`${k}.tooLarge`),
     busy: t(`${k}.busy`),
-    privacy: t(`${k}.privacyNote`),
     fileInputLabel: t(`${k}.fileInputLabel`),
     lineCounts: (imported: number, duplicates: number) =>
       t(`${k}.lineCounts`, { imported, duplicates }),
@@ -177,7 +176,6 @@ export function RecordFileImportCard({ kind }: { kind: CardKind }) {
           <li key={step}>{step}</li>
         ))}
       </ol>
-      <p className="text-muted-foreground text-xs">{copy.privacy}</p>
 
       <ImportStatusRegion query={statusQuery}>
         {(uploading || running) && (

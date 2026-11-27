@@ -153,6 +153,7 @@ const CHILD_PAGES: Readonly<Record<string, string>> = {
   "/coach/plans": "/coach",
   "/documents/deleted": "/documents",
   "/medications/new": "/medications",
+  "/notifications": "/settings/notifications",
   "/insights/health-score": "/insights",
   "/insights/sources": "/insights",
 };

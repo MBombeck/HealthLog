@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
+import { RAIL_ICONS } from "@/components/layout/destination-icons/rail";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -8,6 +8,8 @@ import { useTranslations } from "@/lib/i18n/context";
 import type { CoachLaunchScope } from "@/lib/insights/coach-launch-context";
 import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
 import { useAiCapability } from "@/hooks/use-ai-capability";
+
+const CoachIcon = RAIL_ICONS.coach;
 
 /**
  * Inline desktop Coach launch button.
@@ -107,7 +109,7 @@ export function CoachLaunchButton({
         }
         className={cn("text-muted-foreground hover:text-foreground", className)}
       >
-        <Sparkles className="size-4" aria-hidden="true" />
+        <CoachIcon className="size-4" aria-hidden="true" />
       </Button>
     );
   }
@@ -127,7 +129,7 @@ export function CoachLaunchButton({
       }
       className={cn("inline-flex h-10 gap-2 self-end", className)}
     >
-      <Sparkles className="size-4" aria-hidden="true" />
+      <CoachIcon className="size-4" aria-hidden="true" />
       <span>{accessibleLabel}</span>
     </Button>
   );

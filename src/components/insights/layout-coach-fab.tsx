@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Sparkles } from "lucide-react";
+import { RAIL_ICONS } from "@/components/layout/destination-icons/rail";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,8 @@ import { useAiCapability } from "@/hooks/use-ai-capability";
 import { queryKeys } from "@/lib/query-keys";
 
 import { apiGet, apiPost } from "@/lib/api/api-fetch";
+
+const CoachIcon = RAIL_ICONS.coach;
 
 /**
  * v1.16.8 — the Coach FAB is a permanent launcher again, now on EVERY
@@ -282,7 +284,7 @@ export function LayoutCoachFab() {
           "[body:has([data-testid=onboarding-tour])_&]:invisible",
         )}
       >
-        <Sparkles className="text-background size-6" aria-hidden="true" />
+        <CoachIcon className="text-background size-6" aria-hidden="true" />
         {showDot ? (
           // v1.18.6 — discreet "the Coach said something" dot.
           // Deliberately NOT an alarming red (the medication-card rule:

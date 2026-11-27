@@ -210,11 +210,11 @@ describe("<SidebarNav> shared utility tail (v1.17.1 N-1 parity guard)", () => {
   // The footer renders the shared utility tail EXCEPT Notifications, which
   // lives in the avatar dropdown (a Radix menu that is collapsed — and so
   // not in the SSR markup — until opened). The footer-visible utilities are
-  // therefore the shared list minus `/notifications`. Asserting they all
+  // therefore the shared list minus Notifications. Asserting they all
   // render straight from the shared list is the parity net that keeps the
   // sidebar footer from drifting away from the mobile More-hub tail.
   const footerUtilities = () =>
-    visibleUtilityDestinations().filter((d) => d.href !== "/notifications");
+    visibleUtilityDestinations().filter((d) => d.id !== "notifications");
 
   it("renders every footer utility destination straight from the shared list", () => {
     const html = render();
@@ -370,7 +370,7 @@ describe("<SidebarNav> inside somebody else's record (#939)", () => {
     expect(html).not.toContain(
       `<span class="sr-only">${accountSettingsLabel}</span>`,
     );
-    expect(html).not.toContain('href="/notifications"');
+    expect(html).not.toContain('href="/settings/notifications"');
   });
 
   it("lands an adult MANAGE share on the one Settings page it opens", () => {

@@ -193,7 +193,9 @@ test.describe.serial("a guardian's controls inside a managed profile", () => {
     const settings = sidebar.locator('[data-slot="nav-settings-link"]');
     await expect(settings).toHaveCount(1);
     await expect(settings).toHaveAttribute("href", "/settings/account");
-    await expect(sidebar.locator('a[href="/notifications"]')).toHaveCount(0);
+    await expect(
+      sidebar.locator('a[href="/settings/notifications"]'),
+    ).toHaveCount(0);
 
     // The guardian holds the profile's emergency card, and the page opens for
     // them exactly as far as its routes admit (`RECORD_PAGE_SURFACES`). It
@@ -256,7 +258,9 @@ test.describe.serial("a guardian's controls inside a managed profile", () => {
     const menuSettings = menu.locator('[data-slot="nav-settings-link"]');
     await expect(menuSettings).toHaveAttribute("href", "/settings/account");
     // The menu is open and populated, so this absence is the menu's answer.
-    await expect(menu.locator('a[href="/notifications"]')).toHaveCount(0);
+    await expect(menu.locator('a[href="/settings/notifications"]')).toHaveCount(
+      0,
+    );
     await menuSettings.click();
     await expect(page).toHaveURL(/\/settings\/account$/);
     await expect(

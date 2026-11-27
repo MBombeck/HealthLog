@@ -62,7 +62,7 @@ describe("the empty metric page's Coach question", () => {
       "Viszeralfett: Ich habe hier noch nichts erfasst. Was sagt dieser Wert über meine Gesundheit aus, und wie verbessere ich ihn?",
     );
     expect(emptyStatePrefill(<InsightsViszeralfettPage />, "en")).toBe(
-      "Visceral Fat: I haven't logged anything here yet. What does this metric tell me about my health, and how do I improve it?",
+      "Visceral fat: I haven't logged anything here yet. What does this metric tell me about my health, and how do I improve it?",
     );
   });
 

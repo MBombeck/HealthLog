@@ -18,6 +18,7 @@
  * record where it belongs.
  */
 
+import { MedicalDisclaimer } from "@/components/common/medical-disclaimer";
 import {
   ClipboardList,
   EyeOff,
@@ -154,7 +155,7 @@ export function AnamnesisSection() {
         <EmergencyProfileManager />
       </SettingsCard>
 
-      <p className="text-muted-foreground text-xs">{t("records.disclaimer")}</p>
+      <MedicalDisclaimer variant="notDiagnosis" />
     </div>
   );
 }

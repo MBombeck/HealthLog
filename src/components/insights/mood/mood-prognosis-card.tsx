@@ -207,10 +207,6 @@ export function MoodPrognosisView({ reading }: { reading: PrognosisReading }) {
             ) : null}
 
             <PrognosisExplanation contributions={data.contributions} />
-
-            <p className="text-muted-foreground text-xs">
-              {t("insights.mood.prognosis.caveat")}
-            </p>
           </>
         )}
       </CardContent>

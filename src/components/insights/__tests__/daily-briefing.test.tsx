@@ -68,7 +68,7 @@ describe("<DailyBriefing>", () => {
   it("renders the title in English", () => {
     const html = render(<DailyBriefing briefing={baseBriefing} />);
     expect(html).toMatch(/data-slot="daily-briefing"/);
-    expect(html).toContain("Daily Briefing");
+    expect(html).toContain("Daily briefing");
   });
 
   it("renders the title in German", () => {

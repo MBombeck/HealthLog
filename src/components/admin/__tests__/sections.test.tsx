@@ -146,9 +146,9 @@ describe("admin sections — SSR smoke", () => {
   it("<AiQualitySection> renders the empty-state when no summary exists", () => {
     const html = render(<AiQualitySection />);
     // v1.4.33 — section renamed from "AI Quality" to
-    // "Insights Quality" per the project-voice rule (no "KI"/"AI" prefix
+    // "Insights quality" per the project-voice rule (no "KI"/"AI" prefix
     // in user-facing copy).
-    expect(html).toContain("Insights Quality");
+    expect(html).toContain("Insights quality");
     expect(html).toContain("No feedback yet");
   });
 

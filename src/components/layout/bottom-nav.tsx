@@ -1,13 +1,7 @@
 "use client";
 
-import {
-  Home,
-  Lightbulb,
-  MoreHorizontal,
-  Pill,
-  Plus,
-  type LucideIcon,
-} from "lucide-react";
+import { MoreHorizontal, Plus, type LucideIcon } from "lucide-react";
+import { RAIL_ICONS as ICON } from "@/components/layout/destination-icons/rail";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -67,15 +61,15 @@ interface NavLink {
 // (`nav:/medications`): a pinned tab over a module that is off would be a
 // visible control over a notice.
 const PRIMARY_LEFT: ReadonlyArray<NavLink> = [
-  { href: "/", tKey: "nav.dashboard", icon: Home },
-  { href: "/medications", tKey: "nav.medications", icon: Pill },
+  { href: "/", tKey: "nav.dashboard", icon: ICON.dashboard },
+  { href: "/medications", tKey: "nav.medications", icon: ICON.medications },
 ];
 
 // The Insights slot belongs to no module (the `insights` key is AI analysis,
 // not the area), so it stays whatever the module map says; it still drops
 // inside a shared record, like any destination sharing does not cover.
 const PRIMARY_RIGHT: ReadonlyArray<NavLink> = [
-  { href: "/insights", tKey: "nav.insights", icon: Lightbulb },
+  { href: "/insights", tKey: "nav.insights", icon: ICON.insights },
 ];
 
 export function BottomNav() {

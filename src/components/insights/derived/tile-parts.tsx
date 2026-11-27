@@ -59,16 +59,7 @@ export function MetricProvenance({
 }) {
   const { t } = useTranslations();
   const meta = metaOverride ?? METRIC_PROVENANCE[metric];
-  const method = (
-    <>
-      {meta.caveatKey ? (
-        <span className="text-warning block font-medium">
-          {t(meta.caveatKey)}
-        </span>
-      ) : null}
-      {t(meta.methodKey)}
-    </>
-  );
+  const method = t(meta.methodKey);
   return (
     <InfoPopover
       content={method}

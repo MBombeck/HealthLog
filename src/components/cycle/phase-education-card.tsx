@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Sparkles } from "lucide-react";
+import { BookOpen } from "lucide-react";
 
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
@@ -126,7 +126,7 @@ export function PhaseEducationCard({
       >
         {/* Zone 1 — eyebrow + phase name with a hue dot (never colour-only). */}
         <div className="flex items-center gap-2">
-          <Sparkles
+          <BookOpen
             className="text-foreground h-4 w-4 shrink-0"
             aria-hidden="true"
           />

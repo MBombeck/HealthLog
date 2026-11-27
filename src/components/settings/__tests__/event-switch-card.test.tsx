@@ -12,7 +12,7 @@ import { Activity } from "lucide-react";
 import { I18nProvider } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 
-import { EventSwitchCard } from "../event-switch-card";
+import { AlertsNoChannelNote, EventSwitchCard } from "../event-switch-card";
 
 function render(payload: unknown): string {
   const client = new QueryClient();
@@ -26,6 +26,7 @@ function render(payload: unknown): string {
           icon={Activity}
           isAuthenticated
         />
+        <AlertsNoChannelNote isAuthenticated />
       </I18nProvider>
     </QueryClientProvider>,
   );
@@ -34,12 +35,14 @@ function render(payload: unknown): string {
 const KINDS = ["MEASUREMENT_ANOMALY", "SECURITY_ALERT"];
 
 describe("EventSwitchCard", () => {
-  it("names the kind and says where channels are set up when there is none", () => {
+  it("names the kind and says once where channels are set up when there is none", () => {
     const html = render({ channels: [], preferences: [], eventTypes: KINDS });
     expect(html).toContain("Lasting change in a vital");
     expect(html).toContain('id="lasting-change"');
     expect(html).toContain('data-slot="event-switch-no-channel"');
     expect(html).toContain('href="/settings/integrations#channels"');
+    // Once for the group, never once per card.
+    expect(html.split('data-slot="event-switch-no-channel"')).toHaveLength(2);
     // The switch waits: nothing could deliver it.
     expect(html).toMatch(/role="switch"[^>]*disabled/);
   });
@@ -66,6 +69,6 @@ describe("EventSwitchCard", () => {
       preferences: [],
       eventTypes: ["SECURITY_ALERT"],
     });
-    expect(html).toBe("");
+    expect(html).not.toContain("event-switch-lasting-change");
   });
 });

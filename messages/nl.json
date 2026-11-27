@@ -600,7 +600,7 @@
     "admin": "Beheeromgeving",
     "logout": "Uitloggen",
     "login": "Inloggen",
-    "notifications": "Meldingen per kanaal",
+    "notifications": "Meldingen",
     "theme": "Thema",
     "themeSystem": "Systeem",
     "themeDark": "Donker",
@@ -1238,7 +1238,7 @@
   },
   "mood": {
     "title": "Stemming",
-    "subtitle": "Stemmingstracker en registraties",
+    "subtitle": "Hoe je je voelde, dag na dag.",
     "mentalWellbeingLink": "Doe een check-in voor mentaal welzijn",
     "addEntry": "Toevoegen",
     "editEntry": "Registratie bewerken",
@@ -1581,7 +1581,7 @@
   },
   "medications": {
     "title": "Medicatie",
-    "subtitle": "Medicatie, schema's en inname",
+    "subtitle": "Je medicatie, de schema's en elke inname.",
     "loginRequired": "Log in om je medicatie te beheren.",
     "addMedication": "Toevoegen",
     "firstMedication": "Eerste medicijn toevoegen",
@@ -2565,11 +2565,10 @@
     "customize": "Medicatie aanpassen",
     "efficacy": {
       "title": "Effect",
-      "intro": "Hoe de metingen die dit medicijn zou moeten beïnvloeden zich hebben ontwikkeld rond het moment dat je ermee begon. Het laat zien wat in de tijd samenvalt (een verband, geen oorzaak) en is nooit een advies over je behandeling of dosis.",
+      "intro": "Hoe de metingen die dit medicijn zou moeten beïnvloeden zich hebben ontwikkeld rond het moment dat je ermee begon. Het laat zien wat in de tijd samenvalt en is nooit een advies over je behandeling of dosis.",
       "notEligible": "Er is geen uitkomst waaraan dit medicijn kan worden gerelateerd.",
       "startFallback": "Er is geen startdatum ingesteld, dus de vergelijking gebruikt je eerste vastgelegde meting als referentiepunt.",
       "noStart": "Stel een startdatum in voor dit medicijn om de metingen van vóór en na de start te vergelijken.",
-      "disclaimer": "Alleen een verband: deze cijfers laten zien wat er in dezelfde periode is veranderd, niet dat het medicijn de verandering heeft veroorzaakt. Bespreek elke beslissing over je behandeling met je arts.",
       "primaryBadge": "Hoofddoel",
       "noSeries": "Nog geen metingen vastgelegd voor dit doel.",
       "startMarker": "Start",
@@ -2597,7 +2596,7 @@
       },
       "insights": {
         "title": "Effect van medicatie",
-        "subtitle": "Wat samenvalt met de metingen waarop je medicatie is gericht: alleen een verband, nooit een oordeel.",
+        "subtitle": "Wat samenvalt met de metingen waarop je medicatie is gericht.",
         "link": "Effectweergave openen",
         "empty": "Nog niet genoeg gegevens om je medicatie te relateren aan de metingen waarop ze is gericht."
       },
@@ -3345,7 +3344,7 @@
       "errorUnreachable": "De AI-aanbieder was niet bereikbaar, dus de Coach heeft geen antwoord. Controleer of hij draait en bereikbaar is; een taak die aan één aanbieder is gebonden, probeert geen andere.",
       "errorEmptyReply": "De AI-aanbieder antwoordde zonder inhoud, dus de Coach heeft geen antwoord. Probeer het opnieuw of kies een ander model in de AI-instellingen.",
       "errorDemo": "De Coach geeft in de demo geen antwoord.",
-      "errorNoProvider": "De Coach leest je vastgelegde gezondheidsgegevens en beantwoordt vragen daarover (geen medisch advies). Daarvoor heeft HealthLog een AI-provider nodig. Koppel je eigen sleutel of een lokaal model.",
+      "errorNoProvider": "De Coach leest je vastgelegde gezondheidsgegevens en beantwoordt vragen daarover. Daarvoor heeft HealthLog een AI-provider nodig. Koppel je eigen sleutel of een lokaal model.",
       "errorNoProviderAction": "AI-provider koppelen",
       "errorNetwork": "Geen internetverbinding. Probeer het opnieuw zodra je weer online bent.",
       "prefsSaveError": "Je voorkeuren voor de Coach kunnen niet worden opgeslagen. Probeer het opnieuw.",
@@ -3897,7 +3896,7 @@
         "bloodPressureBody": "Bloeddruk is de kracht die je bloed uitoefent op de wanden van de slagaders, genoteerd als systolisch over diastolisch (de piek tijdens een hartslag over de rustwaarde tussen de slagen). Aanhoudend hoge waarden belasten op den duur je hart en bloedvaten.",
         "pulseBody": "Je hartslag is het aantal keren dat je hart per minuut klopt. Een losse meting weerspiegelt wat je op dat moment aan het doen was. In rust ligt die meestal tussen 60–100 slagen per minuut, en hij stijgt vanzelf door beweging, stress of cafeïne.",
         "weightBody": "Lichaamsgewicht is een van de eenvoudigste signalen van je energiebalans op lange termijn en je algehele gezondheid. De trend over weken is veel belangrijker dan een losse meting, die schommelt door vochtbalans, eten en tijdstip van de dag.",
-        "bmiBody": "BMI is je gewicht gedeeld door je lengte in het kwadraat. Dat levert één getal op dat je in een brede gewichtscategorie plaatst. Het is een screeningsmaat op bevolkingsniveau, geen diagnose, en maakt geen onderscheid tussen spieren en vet.",
+        "bmiBody": "BMI is je gewicht gedeeld door je lengte in het kwadraat. Dat levert één getal op dat je in een brede gewichtscategorie plaatst. Het is een screeningsmaat op bevolkingsniveau en maakt geen onderscheid tussen spieren en vet.",
         "sleepBody": "Slaapduur is hoe lang je 's nachts daadwerkelijk hebt geslapen, verdeeld over lichte slaap, diepe slaap en REM-slaap. De meeste volwassenen hebben ongeveer zeven tot negen uur nodig; zowel een vaste hoeveelheid als goede kwaliteit ondersteunen herstel, stemming en stofwisseling.",
         "moodBody": "Bij het bijhouden van je stemming leg je op een eenvoudige schaal vast hoe je je voelt. Door dit regelmatig te doen, zie je patronen (hoe slaap, activiteit of medicatie samenhangen met hoe je je voelt) die één dag nooit laat zien.",
         "medicationsBody": "Therapietrouw is hoe consequent je je medicatie inneemt zoals voorgeschreven, hier weergegeven als het aandeel verwachte doses dat je daadwerkelijk hebt vastgelegd. Een regelmatige inname is vaak wat ervoor zorgt dat een behandeling werkt zoals bedoeld.",
@@ -3947,15 +3946,14 @@
         "strainBody": "Belasting geeft aan hoeveel cardiovasculaire en lichamelijke belasting je je lichaam hebt opgelegd, van trainingen tot een actieve dag op de been. Het is een door een apparaat afgeleide index, beoordeeld ten opzichte van je eigen gebruikelijke inspanning, geen klinische maat, en het hoofdgetal is niet vergelijkbaar tussen apparaten.",
         "stressBody": "Stress is hier een heuristiek van je apparaat, afgeleid van patronen in de hartslagvariabiliteit. Het is geen cortisolmeting, geen weergave van hoe je je bewust voelt en geen klinische stressscore. Vergelijk het met je eigen basislijn; het is niet vergelijkbaar tussen apparaten. Een lagere score wijst op een kalme, goed gereguleerde toestand; een hogere is een uitnodiging om herstel in te bouwen.",
         "recoveryPageBody": "Wat je wearable meldt, onder zijn eigen namen.",
-        "pulsePressureBody": "De polsdruk is het verschil tussen je systolische en diastolische meting (systolisch min diastolisch). Als algemene richtlijn is ongeveer 40 mmHg gebruikelijk in rust; een groot verschil van meer dan ongeveer 60 mmHg op middelbare leeftijd kan wijzen op stijver wordende slagaders, terwijl een klein verschil van minder dan ongeveer 25 mmHg kan samengaan met een laag slagvolume (StatPearls/NIH 2023). Het is een aanleiding voor een gesprek, geen diagnose.",
+        "pulsePressureBody": "De polsdruk is het verschil tussen je systolische en diastolische meting (systolisch min diastolisch). Als algemene richtlijn is ongeveer 40 mmHg gebruikelijk in rust; een groot verschil van meer dan ongeveer 60 mmHg op middelbare leeftijd kan wijzen op stijver wordende slagaders, terwijl een klein verschil van minder dan ongeveer 25 mmHg kan samengaan met een laag slagvolume (StatPearls/NIH 2023).",
         "meanArterialPressureBody": "De gemiddelde arteriële druk is de gemiddelde druk die je organen tijdens een hartslag ervaren, ongeveer de diastolische druk plus een derde van het verschil met de systolische. Als algemene richtlijn ligt een waarde in rust rond 70–100 mmHg (StatPearls/NIH 2023). De vaak genoemde ondergrens van ~60 mmHg is een begrip uit de acute zorg, geen alarmgrens voor zelfmeting.",
         "cycleEducationBody": "Je cyclus doorloopt vier fasen die worden aangestuurd door wisselende hormonen, en de lengte en regelmaat ervan geven een toegankelijk beeld van je algehele gezondheid. Als algemene richtlijn duurt een cyclus bij volwassenen doorgaans 21–35 dagen (klinische bronnen noemen 24–38), met ongeveer vijf dagen bloedverlies (ACOG 2015). De luteale fase is het stabiele ankerpunt, dus de ovulatie schat je het best door terug te tellen vanaf je volgende verwachte menstruatie, nooit als een vaste 'dag 14'. Een voorspelde vruchtbare periode is een schatting die meerdere geregistreerde cycli nodig heeft en altijd bij benadering blijft, en de basale lichaamstemperatuur bevestigt de ovulatie achteraf in plaats van die te voorspellen. Dit is geen anticonceptiemethode.",
         "sleepHygieneBody": "Een paar wetenschappelijk onderbouwde gewoonten ondersteunen je slaap: ga op vaste tijden naar bed en sta op vaste tijden op, ook in het weekend, zorg 's ochtends voor fel daglicht en dim 's avonds het licht, houd de slaapkamer koel, donker en stil, en vermijd cafeïne in de middag, alcohol laat op de avond en grote late maaltijden (CDC 2024). Regelmaat voorspelt je gezondheid minstens zo sterk als slaapduur, en de totale slaaptijd van een wearable is veel betrouwbaarder dan de verdeling in diepe, lichte en REM-slaap."
       },
       "bpDerived": {
         "pulsePressure": "De polsdruk (het verschil tussen je meetwaarden) is ongeveer {value} mmHg; in rust is ongeveer 40 gebruikelijk.",
-        "meanArterialPressure": "De gemiddelde arteriële druk (het gemiddelde dat je organen ervaren) is ongeveer {value} mmHg, normaal rond 70–100.",
-        "caveat": "Deze waarden zijn afgeleid van je laatste meting en dienen als algemene richtlijn, niet als diagnose."
+        "meanArterialPressure": "De gemiddelde arteriële druk (het gemiddelde dat je organen ervaren) is ongeveer {value} mmHg, normaal rond 70–100."
       },
       "stats": {
         "label": "Samenvattende statistieken",
@@ -4736,7 +4734,6 @@
         "title": "Wat opvalt",
         "subheading": "Ontdekte verbanden",
         "footer": "Naar voren gekomen uit {tested, plural, one {# geteste paar} other {# geteste paren}} van dag op dag over al je waarden, na correctie voor fout-positieve ontdekkingen.",
-        "disclaimer": "Statistisch gefilterd, maar nog steeds observationeel: een patroon om in de gaten te houden, geen oorzaak.",
         "moodUp": "Hogere waarden voor {factor} gaan in je gegevens vaak samen met een hogere stemming de volgende dag.",
         "moodDown": "Hogere waarden voor {factor} gaan in je gegevens vaak samen met een lagere stemming de volgende dag.",
         "outcomeUp": "Een hogere stemming gaat in je gegevens vaak samen met hogere waarden voor {factor} de volgende dag.",
@@ -4765,8 +4762,7 @@
         "lower": "lager",
         "higher": "hoger",
         "statement": "Op dagen met “{label}” lag de stemming gemiddeld {direction}: {withAvg} tegenover {withoutAvg}.",
-        "counts": "{withDays, plural, one {# dag} other {# dagen}} met, {withoutDays, plural, one {# dag} other {# dagen}} zonder",
-        "caveat": "Dat toont een verband, geen oorzaak."
+        "counts": "{withDays, plural, one {# dag} other {# dagen}} met, {withoutDays, plural, one {# dag} other {# dagen}} zonder"
       },
       "prognosis": {
         "title": "Je zelfbeoordeling",
@@ -4782,7 +4778,6 @@
         "weightedTitle": "Wat het zwaarst woog in de vergelijking van deze dag",
         "weightedUp": "{label}: telde mee voor een hogere verwachte waarde",
         "weightedDown": "{label}: telde mee voor een lagere verwachte waarde",
-        "caveat": "Dit is een vergelijking met je eigen eerdere dagen, geen uitspraak over waarom een dag verliep zoals hij verliep.",
         "learning": "Leerfase: {entries} van {threshold, plural, one {# dag} other {# dagen}} vastgelegd. Een vergelijking verschijnt zodra er genoeg zijn.",
         "noPattern": "Niets in de {entries, plural, one {# tot nu toe vastgelegde dag} other {# tot nu toe vastgelegde dagen}} is stabiel genoeg om een dag mee te vergelijken. Als je ook de context van een dag vastlegt, wordt meer ervan vergelijkbaar.",
         "featureValue": "{field}: {value}",
@@ -4790,7 +4785,7 @@
       },
       "patterns": {
         "title": "Patronen in je stemming",
-        "basedOn": "Gebaseerd op {subject} en {comparison} dagen. Een patroon, geen oorzaak.",
+        "basedOn": "Gebaseerd op {subject} en {comparison} dagen.",
         "previousDayHigher": "Na een dag onder je gebruikelijke niveau is de volgende dag meestal beter ({subject} tegenover {comparison} na een dag boven je gebruikelijke niveau).",
         "previousDayLower": "Een dag onder je gebruikelijke niveau werkt meestal door in de volgende dag ({subject} tegenover {comparison} na een dag boven je gebruikelijke niveau).",
         "weekendHigher": "Je stemming is in het weekend meestal hoger ({subject} tegenover {comparison} op doordeweekse dagen).",
@@ -4917,12 +4912,10 @@
         },
         "VASCULAR_AGE_DELTA": {
           "method": "De schatting van je apparaat voor vaatleeftijd / polsgolfsnelheid, vergeleken met je kalenderleeftijd en uitgedrukt als verschil in jaren. De schatting komt van het apparaat; HealthLog plaatst die alleen in een ander kader.",
-          "caveat": "De eigen schatting van je apparaat, anders weergegeven: beschrijvend, geen klinische beoordeling van je bloedvaten.",
           "description": "Hoe de vaatleeftijdsschatting van je apparaat zich verhoudt tot je kalenderleeftijd."
         },
         "COINCIDENT_DEVIATION": {
-          "method": "Een signaal dat verschijnt wanneer twee of meer van je vitale waarden op dezelfde dag buiten hun persoonlijke typische bereik liggen. Elke band is de robuuste mediaan ± k·MAD van je eigen geschiedenis, zodat die zich aan jou aanpast in plaats van aan een grenswaarde voor de bevolking.",
-          "caveat": "Een attentiesignaal op basis van je eigen basislijnen: beschrijvend, geen diagnose of klinische waarschuwing."
+          "method": "Een signaal dat verschijnt wanneer twee of meer van je vitale waarden op dezelfde dag buiten hun persoonlijke typische bereik liggen. Elke band is de robuuste mediaan ± k·MAD van je eigen geschiedenis, zodat die zich aan jou aanpast in plaats van aan een grenswaarde voor de bevolking."
         },
         "RECOVERY_SCORE": {
           "method": "Een nachtelijke herstelindicatie van 0–100, samengesteld uit je HRV, rusthartslag en slaap ten opzichte van je eigen basislijn. Hoger betekent beter hersteld. Wordt elke nacht één keer berekend en hier uitgelezen, nooit ter plekke opnieuw berekend.",
@@ -4941,28 +4934,22 @@
           "deviceSource": "Totdat HealthLog 's nachts een eigen waarde heeft berekend, toont de kaart de dagbelasting van je apparaat, omgerekend naar 0–100."
         },
         "WRIST_TEMPERATURE_BASELINE": {
-          "method": "Je typische nachtelijke polstemperatuur is de mediaan van je nachtelijke metingen over de periode, ± een robuuste spreiding (mediane absolute afwijking, geschaald). Het volgt JOUW metingen: afgelopen nacht wordt getoond als afwijking van je eigen basislijn, niet van een populatienorm.",
-          "caveat": "Alleen een band voor persoonlijke afwijking: beschrijvend, geen signaal voor ziekte, koorts of cyclusfase. Interpreteer het zelf."
+          "method": "Je typische nachtelijke polstemperatuur is de mediaan van je nachtelijke metingen over de periode, ± een robuuste spreiding (mediane absolute afwijking, geschaald). Het volgt JOUW metingen: afgelopen nacht wordt getoond als afwijking van je eigen basislijn, niet van een populatienorm."
         },
         "STAIR_ASCENT_SPEED_BASELINE": {
-          "method": "Je typische tempo bij het traplopen omhoog is de mediaan van je dagwaarden over de periode, ± een robuuste spreiding (mediane absolute afwijking, geschaald). De band wordt opgebouwd uit jouw gegevens. Er bestaat geen grenswaarde voor traploopsnelheid voor de bevolking, omdat het tempo afhangt van de vorm van de trap en de lengte van je benen.",
-          "caveat": "Een band voor je persoonlijke mobiliteitstrend: beschrijvend, geen beoordeling van kwetsbaarheid of valrisico."
+          "method": "Je typische tempo bij het traplopen omhoog is de mediaan van je dagwaarden over de periode, ± een robuuste spreiding (mediane absolute afwijking, geschaald). De band wordt opgebouwd uit jouw gegevens. Er bestaat geen grenswaarde voor traploopsnelheid voor de bevolking, omdat het tempo afhangt van de vorm van de trap en de lengte van je benen."
         },
         "STAIR_DESCENT_SPEED_BASELINE": {
-          "method": "Je typische tempo bij het traplopen omlaag is de mediaan van je dagwaarden over de periode, ± een robuuste spreiding (mediane absolute afwijking, geschaald). De band wordt opgebouwd uit jouw gegevens. Er bestaat geen grenswaarde voor traploopsnelheid voor de bevolking, omdat het tempo afhangt van de vorm van de trap en de lengte van je benen.",
-          "caveat": "Een band voor je persoonlijke mobiliteitstrend: beschrijvend, geen beoordeling van kwetsbaarheid of valrisico."
+          "method": "Je typische tempo bij het traplopen omlaag is de mediaan van je dagwaarden over de periode, ± een robuuste spreiding (mediane absolute afwijking, geschaald). De band wordt opgebouwd uit jouw gegevens. Er bestaat geen grenswaarde voor traploopsnelheid voor de bevolking, omdat het tempo afhangt van de vorm van de trap en de lengte van je benen."
         },
         "SIX_MINUTE_WALK_BAND": {
-          "method": "De GESCHATTE zesminutenwandelafstand van je apparaat, afgezet tegen de referentie van Enright & Sherrill voor je leeftijd, lengte, gewicht en geslacht, als percentage van de voorspelde waarde. De afstand is de schatting van het apparaat en wordt hier nooit opnieuw berekend. Zonder je leeftijd, lengte, gewicht en geslacht wordt het percentage verborgen en worden alleen de afstand en de trend getoond.",
-          "caveat": "Een schatting afgezet tegen een gepubliceerde referentie: een attentiesignaal voor je functionele capaciteit, geen klinische zesminutenwandeltest en geen diagnose. De referentie is opgesteld voor leeftijden van 40–80 jaar; daarbuiten is de voorspelde waarde een extrapolatie."
+          "method": "De GESCHATTE zesminutenwandelafstand van je apparaat, afgezet tegen de referentie van Enright & Sherrill voor je leeftijd, lengte, gewicht en geslacht, als percentage van de voorspelde waarde. De afstand is de schatting van het apparaat en wordt hier nooit opnieuw berekend. Zonder je leeftijd, lengte, gewicht en geslacht wordt het percentage verborgen en worden alleen de afstand en de trend getoond."
         },
         "TRAJECTORY": {
-          "method": "Een kleinstekwadratenlijn door je recente dagwaarden, over een korte periode vooruit doorgetrokken, met het gangbare voorspellingsinterval dat breder wordt naarmate het verder vooruit reikt. Wordt alleen berekend als de recente trend sterk genoeg is en je geschiedenis lang en actueel genoeg is; anders wordt er geen lijn getekend.",
-          "caveat": "Een projectie van je eigen recente trend, geen voorspelling, doel of klinische prognose. Die geldt alleen als het recente patroon aanhoudt; de gearceerde band laat zien hoe snel die zekerheid afneemt."
+          "method": "Een kleinstekwadratenlijn door je recente dagwaarden, over een korte periode vooruit doorgetrokken, met het gangbare voorspellingsinterval dat breder wordt naarmate het verder vooruit reikt. Wordt alleen berekend als de recente trend sterk genoeg is en je geschiedenis lang en actueel genoeg is; anders wordt er geen lijn getekend."
         },
         "SAME_TIME_BASELINE": {
           "method": "Je lopende totaal voor vandaag, afgezet tegen de mediaan van hetzelfde lokale uur over je afgelopen vier weken, met een robuuste band van mediaan ± MAD eromheen. Alleen dagen met voldoende vastgelegde details tellen mee, en er wordt geen vergelijking getoond totdat er minstens veertien van zijn.",
-          "caveat": "Een vergelijking met je eigen recente geschiedenis, geen doel. Het laat zien waar vandaag staat ten opzichte van je gebruikelijke patroon op dit uur en zegt niets over de vraag of dat patroon goed voor je is.",
           "methodDailyTotal": "Je bron meldt elke dag als één totaal, dus er is geen uur om mee te vergelijken. Het lopende totaal van vandaag, zoals de bron het het laatst meldde, staat tegenover je dagtotalen van de laatste 14 volledige dagen: het streepje markeert hun mediaan, de gearceerde band hun middelste helft. Het bereik verschijnt zodra 7 van die dagen een totaal hebben."
         }
       },
@@ -4988,7 +4975,7 @@
         "watch": "Eén vitale waarde ligt vandaag buiten het gebruikelijke bereik.",
         "watchVital": "Buiten het bereik: {vital}. Vaak eenmalig, maar het is goed om er de komende dagen even op te letten.",
         "firedHeadline": "{count} van je vitale waarden liggen vandaag buiten hun persoonlijke bereik.",
-        "factors": "Mogelijke factoren (nooit een oorzaak): een zware training, slecht slapen, alcohol, hoogte, stress of ziekte. Dit is een attentiesignaal op basis van je eigen basislijnen, geen diagnose.",
+        "factors": "Mogelijke factoren (nooit een oorzaak): een zware training, slecht slapen, alcohol, hoogte, stress of ziekte.",
         "building": "Je persoonlijke basislijnen worden opgebouwd. Houd nog een paar dagen bij, dan verschijnt dit.",
         "illnessExplained": "Deze verschuivingen hangen waarschijnlijk samen met de aandoening die je hebt vastgelegd."
       },
@@ -4996,7 +4983,6 @@
         "cardTitle": "Projectie op korte termijn",
         "headline": "Als dit patroon aanhoudt: de komende {days, plural, one {# dag} other {# dagen}}",
         "range": "Verwacht rond {low}–{high} {unit} over {days, plural, one {# dag} other {# dagen}}.",
-        "caveat": "Een projectie van je eigen recente trend, geen voorspelling. De gearceerde band wordt breder om te laten zien hoe snel de onzekerheid toeneemt.",
         "insufficient": "Nog geen duidelijke trend om door te trekken. Blijf bijhouden, dan verschijnt er een projectie zodra het recente patroon sterk genoeg is.",
         "daysNeeded": "Nog ongeveer {count, plural, one {# dag} other {# dagen}} bijhouden voordat er een projectie kan verschijnen."
       },
@@ -5097,7 +5083,7 @@
       "sectionTitle": "Gezondheidsmeldingen van je apparaat",
       "sectionIntro": "Meldingen die je horloge zelf heeft verstuurd. HealthLog toont deze alleen. Het detecteert, bevestigt of interpreteert ze niet.",
       "loadError": "Je apparaatmeldingen kunnen niet worden geladen.",
-      "disclaimer": "Dit zijn waarschuwingen die je apparaat heeft gegeven op basis van zijn eigen ingebouwde detectie. Ze worden hier alleen ter informatie getoond. Dit is geen medische beoordeling door HealthLog, en HealthLog stelt geen enkele diagnose. Als een melding je zorgen baart, praat dan met je arts.",
+      "disclaimer": "Dit zijn meldingen van je eigen apparaat, geen beoordeling door HealthLog; maak je je zorgen over een melding, praat dan met je arts.",
       "event": {
         "irregularRhythm": "Melding onregelmatig ritme",
         "highHeartRate": "Melding hoge hartslag",
@@ -6104,9 +6090,8 @@
         },
         "alerts": {
           "heading": "Waarschuwingen",
-          "noChannel": "Er is nog geen bezorgkanaal ingesteld, dus er kan niets worden verstuurd. Zodra er een is, geldt deze schakelaar voor alle kanalen tegelijk.",
+          "noChannel": "Er is nog geen bezorgkanaal ingesteld, dus er kan niets worden verstuurd.",
           "setUpChannel": "Bezorgkanaal instellen",
-          "perChannel": "Per kanaal kiezen",
           "saveError": "De meldingsinstelling kon niet worden opgeslagen. Probeer het opnieuw."
         }
       },
@@ -6281,18 +6266,17 @@
           "fullBackup": {
             "title": "Volledige back-up",
             "description": "Je hele dossier in één JSON-bestand.",
-            "scopeNote": "Metadata van documenten en de door AI gegenereerde samenvatting, als die er is, worden als platte tekst meegenomen; originele documentbestanden en GPS- en sensorgegevens van trainingen niet. Download die apart uit de kluis of via de trainingsexport.",
+            "scopeNote": "Metadata van documenten en de door AI gegenereerde samenvatting, als die er is, worden als platte tekst meegenomen; originele documentbestanden en GPS- en sensorgegevens van trainingen niet.",
             "encryptToggle": "Versleutelen met een wachtzin",
             "passphrasePlaceholder": "Wachtzin (min. 12 tekens)",
             "passphraseHelp": "Leidt de archiefsleutel af met Argon2id en versleutelt het archief met AES-256-GCM. Sla het bestand op met de extensie .hlx.",
             "noRecoveryWarning": "Herstellen is niet mogelijk. Als je deze wachtzin kwijtraakt, kan het archief niet worden geopend. Bewaar hem op een veilige plek.",
-            "detail": "Een draagbare kopie van je dossier om te bewaren en te lezen: waarden als gewone JSON, documenten alleen als metadata. Het is niet de wekelijkse accountkopie die deze server bewaart om een account terug te zetten, en het kan geen account op een andere server opnieuw aanmaken. Sommige soorten gegevens zitten er nog niet in; het manifest van het bestand noemt wat erin staat.",
-            "contents": "Je metingen, medicatie, stemming, cyclus, labuitslagen, ziekte-episodes, allergieën, familiegeschiedenis, voedingsstoffen, trainingen, gezondheidsprofiel en eigen meetwaarden in één JSON-bestand."
+            "detail": "Een draagbare kopie van je dossier om te bewaren en te lezen: waarden als gewone JSON, documenten alleen als metadata."
           }
         },
         "import": {
           "heading": "Importeren",
-          "description": "Breng gegevens naar HealthLog vanuit Apple Health, Health Connect, het activiteitsbestand van een horloge, een JSON-bestand of een CSV. Bij het importeren worden rijen die al bestaan overgeslagen, dus een import opnieuw uitvoeren is veilig.",
+          "description": "Geüploade bestanden worden van de server verwijderd zodra de import klaar is, en hetzelfde bestand opnieuw importeren voegt niets dubbel toe.",
           "charCount": "{used} / {max, plural, one {# teken} other {# tekens}}",
           "appleHealth": {
             "title": "Apple Health",
@@ -6301,7 +6285,7 @@
             "dropHint": "of klik om een bestand te kiezen",
             "fileInputLabel": "Kies een export.zip-bestand van Apple Health",
             "choose": "Bestand kiezen",
-            "idempotencyNote": "Als je hetzelfde archief opnieuw uploadt, wordt het samengevoegd zonder dubbele gegevens. Grote archieven worden op de achtergrond verwerkt.",
+            "idempotencyNote": "Grote archieven worden op de achtergrond verwerkt.",
             "uploading": "Uploaden…",
             "uploadFailed": "Uploaden mislukt. Probeer het opnieuw.",
             "rateLimited": "Te veel uploads. Wacht even en probeer het opnieuw.",
@@ -6386,7 +6370,7 @@
             "keptLabels": "Dit account heeft al tags of groepen met deze sleutels onder een eigen naam, die zijn behouden: {keys}",
             "resultNothing": "Er is niets geïmporteerd. {skipped, plural, one {De # registratie is overgeslagen} other {Alle # registraties zijn overgeslagen}}.",
             "resultEmpty": "Dat bestand bevatte geen metingen en geen stemmingsregistraties.",
-            "limitsHint": "Tot {mb} MB en tot {rows, plural, one {# item} other {# items}} per lijst. Het voegt items toe aan je dossier; het zet geen volledige back-up terug."
+            "limitsHint": "Tot {mb} MB en tot {rows, plural, one {# item} other {# items}} per lijst."
           },
           "csv": {
             "title": "CSV-bestand",
@@ -6508,13 +6492,13 @@
             },
             "steps": {
               "export": "Open op je Android-telefoon Health Connect, ga naar Gegevens beheren en daarna naar Exporteren en importeren, en start een export.",
-              "cloud": "Health Connect slaat de export alleen op in een cloudopslag-app zoals Google Drive, Dropbox of Nextcloud, nooit op de telefoon zelf. Kies daar een app.",
+              "cloud": "Health Connect slaat de export alleen op in een cloudopslag-app zoals Google Drive, Dropbox of Nextcloud, nooit op de telefoon zelf.",
               "upload": "Download het ZIP-bestand uit die cloud naar dit apparaat en upload het hier."
             },
             "dropLabel": "Sleep het Health Connect-ZIP-bestand hierheen",
             "dropHint": "of klik om het te kiezen. Maximaal 1 GB.",
             "fileInputLabel": "ZIP-bestand van Health Connect-export",
-            "privacyNote": "Het bestand wordt van de server verwijderd zodra de import klaar is. Gegevens van apps die je al rechtstreeks koppelt, zoals Withings of Fitbit, worden overgeslagen, zodat niets dubbel binnenkomt. Hetzelfde bestand opnieuw uploaden verandert niets.",
+            "privacyNote": "Gegevens van apps die je al rechtstreeks koppelt, zoals Withings, worden overgeslagen, zodat niets dubbel binnenkomt.",
             "rateLimited": "Te veel uploads in korte tijd. Wacht een minuut en probeer het opnieuw.",
             "busy": "Er loopt al een import voor je account. Wacht tot die klaar is.",
             "rowsSoFar": "Tot nu toe {count, plural, one {# waarde} other {# waarden}} opgeslagen",
@@ -6547,7 +6531,7 @@
             "dropLabel": "Zet het activiteitsbestand hier neer",
             "dropHint": "of klik om het te kiezen: een .fit-, .fit.gz- of .zip-bestand tot 10 MB.",
             "fileInputLabel": "Activiteitsbestand",
-            "privacyNote": "Het bestand wordt van de server verwijderd zodra de import klaar is. Een training die hier al is via Garmin, Apple Gezondheid of een andere app wordt niet dubbel toegevoegd: die krijgt de hartslagcurve uit het bestand als hij er nog geen had. Het GPS-spoor wordt alleen bewaard als Trainingsroutes aan staat. Hetzelfde bestand opnieuw uploaden verandert niets.",
+            "privacyNote": "Het GPS-spoor wordt alleen bewaard als Trainingsroutes aan staat.",
             "steps": {
               "garmin": "Garmin Connect: open de activiteit op de website, kies het tandwielmenu en daarna Origineel exporteren. Upload het ZIP-bestand zoals het is.",
               "other": "Andere apps en apparaten: exporteer de activiteit als FIT-bestand (.fit of .fit.gz) en upload het hier."
@@ -6607,7 +6591,6 @@
             "rateLimited": "Te veel uploads in korte tijd. Wacht een minuut en probeer het opnieuw.",
             "tooLarge": "Het bestand is groter dan de limiet voor deze import.",
             "busy": "Er loopt al een import voor je account. Wacht tot die klaar is.",
-            "privacyNote": "Het bestand wordt van de server verwijderd zodra de import klaar is. Alles wordt gekoppeld aan het record waar het vandaan komt, dus hetzelfde bestand opnieuw uploaden voegt niets dubbel toe.",
             "fileInputLabel": "Bestand om te importeren",
             "lineCounts": "{imported} nieuw, {duplicates} al aanwezig",
             "failure": {
@@ -6654,7 +6637,7 @@
             "password": "Wachtwoord of app-wachtwoord",
             "passwordKept": "Leeg laten om het opgeslagen wachtwoord te houden",
             "enabled": "Ongeveer elke zes uur ophalen",
-            "privacyNote": "Het wachtwoord wordt versleuteld opgeslagen en nooit meer getoond. Elk bestand wordt één keer geïmporteerd: een bestand dat HealthLog al heeft wordt niet opnieuw gelezen. Een map op je thuisnetwerk werkt alleen als wie de server beheert het adres toestaat.",
+            "privacyNote": "Het wachtwoord wordt versleuteld opgeslagen en nooit meer getoond. Een map op je thuisnetwerk werkt alleen als wie de server beheert het adres toestaat.",
             "lastAttempt": "Laatste poging {when}: {outcome}",
             "fetchNow": "Nu ophalen",
             "fetchStarted": "Wordt nu opgehaald. Het resultaat verschijnt op deze kaart.",
@@ -7489,8 +7472,8 @@
     },
     "fitbitRemoval": {
       "title": "Fitbit synchroniseert niet meer",
-      "body": "Google heeft de Fitbit Web API op 30 oktober 2026 uitgeschakeld. HealthLog kan daardoor geen verbinding meer maken met Fitbit en de Fitbit-koppeling is verwijderd. Alles wat al is geïmporteerd blijft: je grafieken, exports, back-ups en artsenrapporten bevatten het nog steeds, gemarkeerd als Fitbit.",
-      "ways": "Koppel hieronder Google Health om gegevens van een Fitbit of Pixel Watch te blijven ontvangen. Het leest dezelfde apparaten en vraagt één keer om je toestemming bij Google. Op Android kun je ook een Health Connect-export importeren.",
+      "body": "Google heeft de Fitbit Web API uitgeschakeld, dus de Fitbit-koppeling is weg; alles wat al is geïmporteerd blijft, gemarkeerd als Fitbit.",
+      "ways": "Koppel hieronder Google Health om gegevens van een Fitbit of Pixel Watch te blijven ontvangen.",
       "toGoogleHealth": "Naar Google Health",
       "toHealthConnect": "Health Connect-import",
       "dismiss": "Begrepen",
@@ -7499,7 +7482,7 @@
     "googleHealth": "Google Health",
     "googleHealthTag": "Fitbit & Pixel",
     "googleHealthBetaBadge": "Bèta",
-    "googleHealthDescription": "Koppel Fitbit, Pixel Watch en Fitbit Air via je Google-account: gewicht, hartslag, slaap en activiteit. Dit vervangt de klassieke Fitbit-koppeling, die Google in september 2026 stopzet.",
+    "googleHealthDescription": "Koppel Fitbit, Pixel Watch en Fitbit Air via je Google-account: gewicht, hartslag, slaap en activiteit.",
     "googleHealthCredentials": "API-inloggegevens",
     "googleHealthClientId": "Client-ID",
     "googleHealthClientSecret": "Clientgeheim",
@@ -7750,7 +7733,6 @@
     "notificationStatus": {
       "title": "Bezorgstatus",
       "description": "Status per kanaal; “Automatisch uitgeschakeld” betekent dat nieuwe pogingen na permanente fouten zijn gestopt.",
-      "emptyDescription": "Stel een kanaal in onder Instellingen › Koppelingen › Bezorgkanalen.",
       "stateActive": "Actief",
       "stateAutoDisabled": "Automatisch uitgeschakeld",
       "stateSendingPaused": "Verzenden gepauzeerd",
@@ -7893,7 +7875,6 @@
     "polarCredentialsSaved": "Inloggegevens opgeslagen",
     "polarCredentialsSavedPlaceholder": "Opgeslagen. Voer een nieuwe waarde in om te vervangen",
     "polarSaveCredentials": "Opslaan",
-    "polarUnavailable": "Polar is niet geconfigureerd op deze server. Voeg hierboven je eigen Polar-OAuth-inloggegevens toe of vraag je beheerder om de gedeelde app te configureren.",
     "polarConnect": "Polar koppelen",
     "polarSync": "Nu synchroniseren",
     "polarSyncResult": "{count, plural, one {# meting gesynchroniseerd} other {# metingen gesynchroniseerd}}",
@@ -7923,7 +7904,6 @@
     "ouraCredentialsSaved": "Inloggegevens opgeslagen",
     "ouraCredentialsSavedPlaceholder": "Opgeslagen. Voer een nieuwe waarde in om te vervangen",
     "ouraSaveCredentials": "Opslaan",
-    "ouraUnavailable": "Oura is niet geconfigureerd op deze server. Voeg hierboven je eigen Oura-OAuth-inloggegevens toe of vraag je beheerder om de gedeelde app te configureren.",
     "ouraConnect": "Oura koppelen",
     "ouraSync": "Nu synchroniseren",
     "ouraSyncResult": "{count, plural, one {# meting gesynchroniseerd} other {# metingen gesynchroniseerd}}",
@@ -7962,7 +7942,7 @@
       "openNudges": "Openen in Meldingen"
     },
     "integrationRedirectGuide": {
-      "intro": "Dit koppelt via je eigen {provider}-ontwikkelaarsapp; het instellen duurt ongeveer 5 minuten:",
+      "intro": "Je eigen {provider}-ontwikkelaarsapp instellen (ongeveer 5 minuten)",
       "step1": "Maak een app aan in het ontwikkelaarsportaal van {provider}.",
       "step2": "Stel de redirect-/callback-URL in op:",
       "step3": "Plak de client-ID en het clientgeheim die je krijgt hierboven."
@@ -8207,7 +8187,6 @@
     "stravaCredentialsSaved": "Inloggegevens opgeslagen",
     "stravaCredentialsSavedPlaceholder": "Opgeslagen. Voer nieuwe in om te vervangen",
     "stravaSaveCredentials": "Opslaan",
-    "stravaUnavailable": "Strava is niet geconfigureerd op deze server. Voeg hierboven je eigen Strava-API-inloggegevens toe, of vraag je beheerder om de gedeelde app te configureren.",
     "stravaConnect": "Strava koppelen",
     "stravaSync": "Nu synchroniseren",
     "stravaSyncResult": "{count, plural, one {# meting gesynchroniseerd} other {# metingen gesynchroniseerd}}",
@@ -8244,7 +8223,7 @@
         "receivedLabel": "Ontvangen gegevensrecords",
         "oldestLabel": "Oudste bereikte meting",
         "flowing": "Er zijn in het afgelopen uur gegevens binnengekomen. De iPhone-app levert nog steeds.",
-        "waiting": "Wachten tot de iPhone-app meer gegevens stuurt. De levering gaat verder wanneer de app open is of wanneer iOS de app achtergrondtijd geeft. Een stille periode tijdens de eerste grote inhaalslag is normaal en geen fout."
+        "waiting": "Wachten tot de iPhone-app meer gegevens stuurt. Een stille periode tijdens de eerste grote inhaalslag is normaal en geen fout."
       },
       "delivery": {
         "title": "Levering",
@@ -8278,7 +8257,7 @@
       "description": "Aan welk bereik je bloedglucosemetingen worden getoetst.",
       "enable": "Het streefbereik voor diabetes gebruiken",
       "explainer": "Uit: metingen worden getoetst aan het algemene referentiebereik voor mensen zonder diabetes. Aan: ze worden getoetst aan het strengere glykemische streefbereik uit de ADA Standards of Care, en de Coach baseert zijn opmerkingen over glucose dan op dat bereik. Je eigen streefwaarden hieronder gaan nog steeds voor.",
-      "disclaimer": "Hiermee kies je een referentiebereik. Het is geen diagnose, het wordt nooit afgeleid uit een meting en de app onderneemt op basis hiervan geen klinische actie. Welke streefwaarden voor jou gelden, is een vraag voor je zorgverlener.",
+      "disclaimer": "Dit kiest alleen een referentiebereik: geen diagnose, nooit afgeleid uit een meting; welke streefwaarden voor jou gelden, bespreek je met je arts.",
       "error": "De instelling kon niet worden opgeslagen."
     },
     "dangerZoneDetail": "Je account en de inloggegevens waarmee je inlogt, blijven behouden.",
@@ -8295,7 +8274,7 @@
     "documentSources": {
       "title": "Documentarchieven",
       "description": "Doorzoek Paperless-ngx of Papra vanuit HealthLog en importeer de documenten die je kiest.",
-      "explainer": "Overal waar je documenten koppelt, verschijnt een importknop: bij een bezoek, een vaccinatie en een aandoening, en in Documenten. HealthLog bewaart een eigen versleutelde kopie van elk document dat je importeert, en benadert je archief alleen wanneer je zoekt of importeert.",
+      "explainer": "Overal waar je documenten koppelt, verschijnt een importknop: bij een bezoek, een vaccinatie en een aandoening, en in Documenten.",
       "systemLabel": "Archief",
       "statusConnected": "Gekoppeld",
       "statusNotConnected": "Niet gekoppeld",
@@ -8408,7 +8387,8 @@
       "historyEnds": {
         "horizon": "{type}: geïmporteerd tot {date}. Oudere metingen liggen voorbij de importgrens.",
         "noProgress": "{type}: geïmporteerd tot {date}. Google gaf geen oudere metingen meer terug, dus de import stopt daar."
-      }
+      },
+      "notConfigured": "{provider} is niet ingesteld op deze server: voeg hierboven je eigen inloggegevens toe of vraag je beheerder."
     },
     "dawarich": "Dawarich",
     "dawarichTag": "Beweging",
@@ -8980,7 +8960,7 @@
         "subtitle": "Registratie-uitnodigingslinks aanmaken, volgen en intrekken."
       },
       "api-tokens": {
-        "title": "API-tokens",
+        "title": "API en tokens",
         "subtitle": "Actieve bearertokens die zijn uitgegeven aan native clients en koppelingen."
       },
       "login-overview": {
@@ -9048,7 +9028,7 @@
       "backups": {
         "title": "Back-ups",
         "subtitle": "Accountkopieën in de database van deze server, om één account hier terug te zetten.",
-        "description": "Elk account heeft één wekelijkse kopie, die elke zondag wordt vervangen, plus kopieën die hier zijn geüpload en de kopie die vóór 'Alle gegevens verwijderen' wordt gemaakt. Een kopie zet een bestaand account op deze server terug. Een verloren server kan ze niet herbouwen: daarvoor zijn een databasedump en de encryptiesleutels nodig. De groottes gelden voor de versleutelde kopie. Downloaden ontsleutelt die voor de beheerder die erom vraagt; de versleutelde tekst blijft in de database.",
+        "description": "Elk account heeft één wekelijkse kopie, die elke zondag wordt vervangen, plus kopieën die hier zijn geüpload en de kopie die vóór 'Alle gegevens verwijderen' wordt gemaakt.",
         "runNow": "Nu back-up maken",
         "runEnqueued": "Back-uptaak in de wachtrij gezet",
         "runFailed": "Back-up in de wachtrij zetten mislukt",
@@ -10338,7 +10318,7 @@
       "daysAria": "Kies de drempelwaarde voor lage voorraad in dagen",
       "leadLabel": "Levertijd bij nabestellen (dagen)",
       "leadAria": "Levertijd bij nabestellen in dagen",
-      "leadHelp": "De melding komt zoveel dagen plus één doseringsinterval eerder, zodat een nieuwe voorraad binnen is vóór je laatste dosis. Per medicijn kun je dit aanpassen op het tabblad Voorraad.",
+      "leadHelp": "De melding komt zoveel dagen plus één doseringsinterval eerder, zodat een nieuwe voorraad binnen is vóór je laatste dosis.",
       "leadSavedToast": "Levertijd bij nabestellen opgeslagen",
       "savedToast": "Drempelwaarde voor lage voorraad opgeslagen",
       "enabledToast": "Meldingen bij lage voorraad ingeschakeld.",
@@ -10439,7 +10419,7 @@
     "content": {
       "title": "Gezondheidscijfers in meldingen",
       "description": "Of een melding waarden mag tonen, zoals je ochtendscore.",
-      "detail": "Uit: een melding zegt alleen waar het over gaat, zodat er op een vergrendelscherm geen gezondheidscijfers te zien zijn. Aan: de melding toont ook de cijfers, bijvoorbeeld de ochtendscore in de briefing. Als je op een melding tikt, kom je in beide gevallen op de juiste plek in de app.",
+      "detail": "Uit: een melding zegt alleen waar het over gaat, zodat er op een vergrendelscherm geen gezondheidscijfers te zien zijn. Aan: de melding toont ook de cijfers, bijvoorbeeld de ochtendscore in de briefing.",
       "toggleAria": "Gezondheidscijfers tonen in meldingen",
       "statusDetailed": "Cijfers zichtbaar",
       "statusGeneric": "Zonder cijfers",
@@ -11402,7 +11382,7 @@
   },
   "labs": {
     "title": "Labuitslagen",
-    "subtitle": "Bloedonderzoek en biomarkerwaarden",
+    "subtitle": "Je bloedonderzoek en biomarkerwaarden.",
     "addResult": "Waarde toevoegen",
     "addDescription": "Leg een biomarkerwaarde uit een labrapport vast.",
     "addFirst": "Je eerste uitslag toevoegen",
@@ -12691,10 +12671,10 @@
     "noResultYet": "Nog geen check-in",
     "backToList": "Overzicht",
     "followUpHint": {
-      "phq9": "Je score valt in een bereik waarbij een gesprek met een zorgverlener kan helpen. Dit is een voorzichtige suggestie, geen diagnose.",
-      "gad7": "Je score valt in een bereik waarbij een gesprek met een zorgverlener kan helpen. Dit is een voorzichtige suggestie, geen diagnose.",
-      "who5": "Een welzijnsscore van 50 of lager kan het waard zijn om beter naar te kijken. Als je wilt, gaat de PHQ-9-check-in op deze pagina dieper in op je stemming. Dit is een voorzichtige suggestie, geen diagnose.",
-      "sci": "In het onderzoek achter deze vragenlijst hingen scores van 16 of lager samen met waarschijnlijke slapeloosheid. Blijf je last houden van slecht slapen, dan kan een gesprek met een zorgverlener helpen. Dit is geen diagnose."
+      "phq9": "Je score valt in een bereik waarbij een gesprek met een zorgverlener kan helpen.",
+      "gad7": "Je score valt in een bereik waarbij een gesprek met een zorgverlener kan helpen.",
+      "who5": "Een welzijnsscore van 50 of lager kan het waard zijn om beter naar te kijken. Als je wilt, gaat de PHQ-9-check-in op deze pagina dieper in op je stemming.",
+      "sci": "In het onderzoek achter deze vragenlijst hingen scores van 16 of lager samen met waarschijnlijke slapeloosheid. Blijf je last houden van slecht slapen, dan kan een gesprek met een zorgverlener helpen."
     },
     "openDetail": "Details tonen",
     "historyLoadError": "Je testgeschiedenis kon niet worden geladen",
@@ -12797,7 +12777,6 @@
         }
       }
     },
-    "disclaimer": "Dit zijn je eigen gegevens, geen medische diagnose. HealthLog stelt geen diagnose, geeft geen behandeling en interpreteert deze gegevens niet.",
     "allergies": {
       "cardTitle": "Allergieën en intoleranties",
       "cardDescription": "Stoffen waarop je reageert, met de reactie en hoe ernstig die is.",
@@ -13110,7 +13089,7 @@
         "freeDaysDefault": "Zonder antwoord gelden zaterdag en zondag als vrije dagen."
       },
       "auditC": {
-        "intro": "Drie vragen over alcohol uit de AUDIT van de WHO. Een screening, geen diagnose.",
+        "intro": "Drie vragen over alcohol uit de AUDIT van de WHO.",
         "start": "Vragen beantwoorden",
         "again": "Opnieuw beantwoorden",
         "offerDue": "Eén keer per jaar even kijken is genoeg.",
@@ -13631,7 +13610,9 @@
     }
   },
   "selfDescription": {
-    "dataPosture": "HealthLog is zelf gehost: je gezondheidsgegevens staan in de database van je eigen instantie. Notities en andere vrije tekst, documenten, antwoorden op vragenlijsten, door AI geschreven tekst en toegangstokens worden versleuteld opgeslagen; meetwaarden, labuitslagen, medicijnnamen en stemmingsscores worden onversleuteld opgeslagen en zijn afhankelijk van de beveiliging van je server. AI-functies sturen alleen gegevens naar de AI-provider die voor je account is ingesteld, en er is geen analyse door derden van je gezondheidsgegevens."
+    "dataPosture": "HealthLog is zelf gehost: je gezondheidsgegevens staan in de database van je eigen instantie. Notities en andere vrije tekst, documenten, antwoorden op vragenlijsten, door AI geschreven tekst en toegangstokens worden versleuteld opgeslagen; meetwaarden, labuitslagen, medicijnnamen en stemmingsscores worden onversleuteld opgeslagen en zijn afhankelijk van de beveiliging van je server. AI-functies sturen alleen gegevens naar de AI-provider die voor je account is ingesteld, en er is geen analyse door derden van je gezondheidsgegevens.",
+    "notDiagnosis": "HealthLog beschrijft je eigen gegevens; het stelt geen diagnose.",
+    "notCause": "Dit zijn patronen in je gegevens, geen oorzaken."
   },
   "customMetrics": {
     "sectionTitle": "Eigen metingen",
@@ -14189,10 +14170,10 @@
     "leafCycle": "Menstruatiecyclus",
     "templateStandard": "Standaard artsenrapport",
     "applyStandard": "{template} toepassen",
-    "standardHint": "Met één klik vul je in wat een algemeen consult meestal nodig heeft. Elk onderdeel blijft aanpasbaar.",
+    "standardHint": "Met één klik vul je in wat een algemeen consult meestal nodig heeft.",
     "groupCount": "{on}/{total}",
     "groupDisclosure": "Onderdelen in {group} tonen",
-    "sensitiveHint": "Hier wordt nooit iets vooraf geselecteerd. Kies elk onderdeel zelf.",
+    "sensitiveHint": "Hier wordt nooit iets vooraf geselecteerd.",
     "scopeNone": "Nog niets geselecteerd. Kies wat je wilt opnemen of pas het standaardrapport toe.",
     "scopeCount": "{count, plural, one {# onderdeel} other {# onderdelen}} uit {groups, plural, one {# rubriek} other {# rubrieken}}",
     "scopeSensitive": "incl. {names}",
@@ -15728,7 +15709,7 @@
   "recordImport": {
     "title": "Labuitslagen en medicijnen uit een spreadsheet",
     "description": "Haal jaren aan labuitslagen of een medicijnlijst binnen uit een CSV-bestand.",
-    "detail": "Jij kiest welke kolom wat bevat; HealthLog controleert eerst elke rij en importeert pas als je bevestigt. Rijen die er al zijn worden overgeslagen.",
+    "detail": "Jij kiest welke kolom wat bevat; HealthLog controleert eerst elke rij en importeert pas als je bevestigt.",
     "kind": {
       "labs": "Labuitslagen",
       "medications": "Medicijnen"

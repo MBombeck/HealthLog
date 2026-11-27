@@ -231,7 +231,7 @@ test.describe("signing in and out", () => {
       await test.step("sign in with it", async () => {
         await clearLoginBuckets();
         await page
-          .getByRole("button", { name: "Sign in with Passkey" })
+          .getByRole("button", { name: "Sign in with passkey" })
           .click();
         await page.waitForURL((url) => url.pathname === "/", {
           timeout: 30_000,

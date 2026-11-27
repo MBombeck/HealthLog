@@ -9,6 +9,7 @@
  * "working / not working" language, no dose advice: the copy is numbers +
  * neutral connective phrasing only, mirroring the adherence-storyline posture.
  */
+import { MedicalDisclaimer } from "@/components/common/medical-disclaimer";
 import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { Activity, TrendingUp } from "lucide-react";
@@ -222,12 +223,7 @@ export function EfficacyTab({
         </div>
       ) : null}
 
-      <p
-        className="text-muted-foreground text-xs"
-        data-slot="medication-wirkung-disclaimer"
-      >
-        {t("medications.efficacy.disclaimer")}
-      </p>
+      <MedicalDisclaimer variant="notCause" />
     </div>
   );
 }

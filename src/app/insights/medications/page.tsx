@@ -166,6 +166,7 @@ export default function InsightsMedikamentePage() {
   if (isComprehensiveLoading) {
     return (
       <SubPageShell
+        disclaimer="notCause"
         title={t("insights.medicationCompliance")}
         explainerMetric="medications"
       >
@@ -184,6 +185,7 @@ export default function InsightsMedikamentePage() {
   if (isComprehensiveError) {
     return (
       <SubPageShell
+        disclaimer="notCause"
         title={t("insights.medicationCompliance")}
         explainerMetric="medications"
       >
@@ -202,6 +204,7 @@ export default function InsightsMedikamentePage() {
     // (the dedicated medication-management surface).
     return (
       <SubPageShell
+        disclaimer="notCause"
         title={t("insights.medicationCompliance")}
         explainerMetric="medications"
       >
@@ -226,6 +229,7 @@ export default function InsightsMedikamentePage() {
 
   return (
     <SubPageShell
+      disclaimer="notCause"
       title={t("insights.medicationCompliance")}
       description={t("insights.subPage.medikamenteDescription")}
       explainerMetric="medications"
@@ -241,14 +245,9 @@ export default function InsightsMedikamentePage() {
       >
         {medications.map((med) => {
           const medicationSummary = medicationSummaryById.get(med.id);
-          // v1.12.6 — the per-medication compliance card harmonises with
-          // the rest of the Insights tiles: its header runs through the
-          // canonical `<TileHeader>` (Pill glyph + med name as the white
-          // heading), and the dose + category + streak fold into one
-          // compact muted line below it. Every datum the previous, taller
-          // card carried (7d/30d bars, taken/skipped/missed, heatmap,
-          // per-med assistant sentence) stays — only the vertical rhythm
-          // tightens.
+          // The per-medication card runs its header through `<TileHeader>`
+          // (Pill glyph + name), with dose, category and streak in one
+          // muted line below; every datum of the older, taller card stays.
           const categoryLabel = getMedicationCategoryLabel(
             med.category,
             t,

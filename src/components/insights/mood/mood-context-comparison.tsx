@@ -67,9 +67,6 @@ export function MoodContextComparison({
           );
         })}
       </ul>
-      <p className="text-muted-foreground text-xs">
-        {t("insights.mood.contextComparison.caveat")}
-      </p>
     </div>
   );
 }

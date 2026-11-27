@@ -2,13 +2,11 @@
 
 import { useMemo, useRef, useState } from "react";
 import {
-  Bell,
   Keyboard,
   LogOut,
   MoreVertical,
   PanelLeftClose,
   PanelLeftOpen,
-  Settings,
   Shield,
 } from "lucide-react";
 import Link from "next/link";
@@ -27,6 +25,7 @@ import {
 import { useNavCounts } from "@/hooks/use-nav-counts";
 import {
   isSettingsUtilityDestination,
+  type NavUtilityDestination,
   visibleNavDestinations,
   visibleUtilityDestinations,
 } from "@/components/layout/nav-model";
@@ -150,6 +149,11 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
   // them. It still names the person at the keyboard, which is exactly what a
   // switched session needs it to do.
   const sharedRecord = user?.accountAccess?.active != null;
+  const menuUtilityItems = sharedRecord
+    ? []
+    : visibleUtilityDestinations().filter(
+        (d) => !isSettingsUtilityDestination(d),
+      );
 
   if (!user) return null;
   const name = accountName(user);
@@ -195,14 +199,20 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
         </DropdownMenuItem>
       )}
       <DropdownMenuSeparator />
-      {!sharedRecord && (
-        <DropdownMenuItem asChild>
-          <Link href="/notifications" className="cursor-pointer">
-            <Bell className="mr-2 h-4 w-4" />
-            {t("nav.notifications")}
-          </Link>
-        </DropdownMenuItem>
-      )}
+      {/* The non-Settings utilities, from the list the phone's menu reads
+          (Settings sits in the footer, the identity row above opens it).
+          Empty inside somebody else's record. */}
+      {menuUtilityItems.map((item) => {
+        const Icon = item.icon;
+        return (
+          <DropdownMenuItem key={item.id} asChild>
+            <Link href={item.href} className="cursor-pointer">
+              <Icon className="mr-2 h-4 w-4" />
+              {t(item.tKey)}
+            </Link>
+          </DropdownMenuItem>
+        );
+      })}
       {/* The emergency card: set up once, then out of the way, so it opens
           from here rather than from the rail. Inside a shared record it
           follows its routes' rule (a guardian yes, an adult's delegate no). */}
@@ -440,7 +450,7 @@ export function SidebarNav() {
   // the SAME shared list the mobile user menu consumes, so the two surfaces
   // can no longer drift into two hand-curated utility lists. Notifications is
   // surfaced in the avatar menu (not the footer), so the footer takes every
-  // utility entry except `/notifications`; Admin is the role-gated,
+  // utility entry except Notifications; Admin is the role-gated,
   // sidebar-only surface and is inserted separately below.
   //
   // Under a switch the list answers for the record on screen: a Settings
@@ -452,24 +462,20 @@ export function SidebarNav() {
         record: sharedRecord
           ? { recordKind, level, manageableDomains: manageableDomains ?? [] }
           : null,
-      }).filter((d) => d.href !== "/notifications"),
+      }).filter((d) => d.id !== "notifications"),
     [sharedRecord, recordKind, level, manageableDomains],
   );
 
-  function isUtilityActive(href: string) {
+  function isUtilityActive(item: NavUtilityDestination) {
     // Settings matches the whole `/settings/*` shell; the rest match exact.
-    return isSettingsUtilityDestination({ href })
+    return isSettingsUtilityDestination(item)
       ? pathname.startsWith("/settings")
-      : pathname === href;
+      : pathname === item.href;
   }
 
-  function renderUtilityLink(item: {
-    href: string;
-    tKey: string;
-    icon: typeof Settings;
-  }) {
+  function renderUtilityLink(item: NavUtilityDestination) {
     const Icon = item.icon;
-    const isActive = isUtilityActive(item.href);
+    const isActive = isUtilityActive(item);
     const isSettings = isSettingsUtilityDestination(item);
     const tourId = isSettingsUtilityDestination(item)
       ? "nav-settings"

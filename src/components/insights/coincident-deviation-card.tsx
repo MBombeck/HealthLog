@@ -61,16 +61,7 @@ function CoincidentProvenance({
 }) {
   const { t } = useTranslations();
   const meta = METRIC_PROVENANCE.COINCIDENT_DEVIATION;
-  const method = (
-    <>
-      {meta.caveatKey ? (
-        <span className="text-warning block font-medium">
-          {t(meta.caveatKey)}
-        </span>
-      ) : null}
-      {t(meta.methodKey)}
-    </>
-  );
+  const method = t(meta.methodKey);
   return (
     <ProvenanceExplainer
       provenance={provenance}

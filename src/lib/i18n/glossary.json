@@ -2094,7 +2094,7 @@
     },
     {
       "id": "notifications",
-      "description": "The per-channel notification inbox page.",
+      "description": "The per-channel notification matrix, a page inside Settings > Notifications.",
       "terms": {
         "de": {
           "name": "Benachrichtigungen je Kanal"
@@ -2129,12 +2129,67 @@
       },
       "anchors": [
         {
+          "key": "notifications.title",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "notificationSettings",
+      "description": "The one Notifications destination: Settings > Notifications, opened from the account menu under the same name.",
+      "terms": {
+        "de": {
+          "name": "Benachrichtigungen"
+        },
+        "en": {
+          "name": "Notifications"
+        },
+        "fr": {
+          "name": "Notifications"
+        },
+        "es": {
+          "name": "Notificaciones"
+        },
+        "it": {
+          "name": "Notifiche"
+        },
+        "pl": {
+          "name": "Powiadomienia"
+        },
+        "ko": {
+          "name": "알림"
+        },
+        "nl": {
+          "name": "Meldingen"
+        },
+        "pt-BR": {
+          "name": "Notificações"
+        },
+        "ru": {
+          "name": "Уведомления"
+        }
+      },
+      "anchors": [
+        {
           "key": "nav.notifications",
           "form": "name",
           "match": "exact"
         },
         {
-          "key": "notifications.title",
+          "key": "settings.sections.notifications.title",
           "form": "name",
           "match": "exact"
         }

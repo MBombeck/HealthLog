@@ -32,7 +32,7 @@ export const PALETTE_SYNONYMS: Readonly<Record<string, ReadonlyArray<string>>> =
     "nav:/vaccinations": ["vaccine", "impfung", "impfpass", "shots"],
     "nav:/mood": ["stimmung", "feelings", "gefühle", "journal"],
     "nav:/cycle": ["period", "menstruation", "periode", "zyklus"],
-    "nav:/notifications": ["alerts", "benachrichtigungen", "inbox"],
+    "settings:notifications": ["alerts", "benachrichtigungen", "inbox"],
 
     // ── Insights ──
     "insights:weight": ["weight", "gewicht", "kg", "scale", "waage"],
@@ -144,7 +144,7 @@ export const PALETTE_TASK_BOOST: Readonly<Record<string, number>> = {
  */
 export const PALETTE_KEYWORD_KEYS: Readonly<Record<string, string>> = {
   "nav:/emergency-card": "palette.keywords.emergencyCard",
-  "nav:/notifications": "palette.keywords.notificationsPerChannel",
+  "settings:notifications": "palette.keywords.notificationsPerChannel",
   "settings:modules/medications#medicine-registry":
     "palette.keywords.medicineRegistry",
   "settings:notifications#dose-snooze": "palette.keywords.snooze",

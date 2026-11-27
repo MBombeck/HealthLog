@@ -600,7 +600,7 @@
     "admin": "Console d’administration",
     "logout": "Se déconnecter",
     "login": "Se connecter",
-    "notifications": "Notifications par canal",
+    "notifications": "Notifications",
     "theme": "Thème",
     "themeSystem": "Système",
     "themeDark": "Sombre",
@@ -1238,7 +1238,7 @@
   },
   "mood": {
     "title": "Humeur",
-    "subtitle": "Tendance et entrées d’humeur",
+    "subtitle": "Comment vous vous êtes senti, jour après jour.",
     "mentalWellbeingLink": "Faire un bilan de bien-être mental",
     "addEntry": "Ajouter",
     "editEntry": "Modifier l’entrée",
@@ -1581,7 +1581,7 @@
   },
   "medications": {
     "title": "Médicaments",
-    "subtitle": "Médication, horaires et prises",
+    "subtitle": "Votre médication, ses horaires et chaque prise.",
     "loginRequired": "Connectez-vous pour gérer vos médicaments.",
     "addMedication": "Ajouter",
     "firstMedication": "Ajouter le premier médicament",
@@ -2565,11 +2565,10 @@
     "customize": "Personnaliser les médicaments",
     "efficacy": {
       "title": "Effet",
-      "intro": "Comment les mesures que ce médicament vise ont évolué autour du moment où vous avez commencé à le prendre. Cela montre ce qui coïncide dans le temps : une association, pas une cause, et jamais un conseil sur votre traitement ou votre dose.",
+      "intro": "Comment les mesures que ce médicament vise ont évolué autour du moment où vous avez commencé à le prendre. Cela montre ce qui coïncide dans le temps, jamais un conseil sur votre traitement ou votre dose.",
       "notEligible": "Aucune mesure à relier à ce médicament.",
       "startFallback": "Aucune date de début n'est renseignée ; la comparaison utilise donc votre première mesure enregistrée comme référence.",
       "noStart": "Renseignez une date de début pour comparer les mesures avant et après le début.",
-      "disclaimer": "Association seulement : ces chiffres montrent ce qui a changé sur la même période, pas que le médicament a causé ce changement. Discutez de toute décision concernant votre traitement avec votre médecin.",
       "primaryBadge": "Cible principale",
       "noSeries": "Aucune mesure enregistrée pour cette cible pour le moment.",
       "startMarker": "Début",
@@ -2597,7 +2596,7 @@
       },
       "insights": {
         "title": "Effet des médicaments",
-        "subtitle": "Ce qui coïncide avec les mesures visées par vos médicaments : association seulement, jamais un verdict.",
+        "subtitle": "Ce qui coïncide avec les mesures visées par vos médicaments.",
         "link": "Ouvrir la vue Effet",
         "empty": "Pas encore assez de données pour relier vos médicaments à leurs mesures cibles."
       },
@@ -3345,7 +3344,7 @@
       "errorUnreachable": "Le fournisseur d'IA est injoignable, le Coach n'a donc pas de réponse. Vérifiez qu'il fonctionne et qu'il est accessible ; une tâche liée à un seul fournisseur n'en essaie pas d'autre.",
       "errorEmptyReply": "Le fournisseur d'IA a répondu sans contenu, le Coach n'a donc pas de réponse. Réessayez ou choisissez un autre modèle dans les réglages d'IA.",
       "errorDemo": "Dans la démo, le Coach ne répond pas.",
-      "errorNoProvider": "Le coach lit vos données de santé enregistrées et répond aux questions à leur sujet (pas un avis médical). HealthLog a besoin d'un fournisseur d'IA pour cela : connectez votre propre clé ou un modèle local.",
+      "errorNoProvider": "Le coach lit vos données de santé enregistrées et répond aux questions à leur sujet. HealthLog a besoin d'un fournisseur d'IA pour cela : connectez votre propre clé ou un modèle local.",
       "errorNoProviderAction": "Connecter un fournisseur d'IA",
       "errorNetwork": "Pas de connexion Internet. Réessayez une fois reconnecté.",
       "prefsSaveError": "Impossible d’enregistrer vos préférences du Coach. Réessayez.",
@@ -3897,7 +3896,7 @@
         "bloodPressureBody": "La tension artérielle est la force exercée par le sang sur les parois des artères, exprimée en systolique sur diastolique (le pic lors d'un battement sur la valeur de repos entre les battements). Des valeurs durablement élevées sollicitent le cœur et les vaisseaux à la longue.",
         "pulseBody": "Le pouls correspond au nombre de battements du cœur par minute. Une mesure ponctuelle reflète ce que vous faisiez à l'instant : au repos, il est généralement de 60 à 100 battements par minute et augmente naturellement avec le mouvement, le stress ou la caféine.",
         "weightBody": "Le poids corporel est l'un des signaux les plus simples de l'équilibre énergétique à long terme et de la santé globale. La tendance sur plusieurs semaines compte bien plus qu'une mesure isolée, qui varie avec l'hydratation, l'alimentation et l'heure de la journée.",
-        "bmiBody": "L'IMC correspond à votre poids divisé par votre taille au carré, un seul chiffre qui vous situe dans une large catégorie de poids. C'est un dépistage de population, pas un diagnostic, et il ne distingue pas le muscle de la graisse.",
+        "bmiBody": "L'IMC correspond à votre poids divisé par votre taille au carré, un seul chiffre qui vous situe dans une large catégorie de poids. C'est un dépistage de population et il ne distingue pas le muscle de la graisse.",
         "sleepBody": "La durée du sommeil est le temps réellement dormi au cours de la nuit, réparti entre sommeil léger, profond et paradoxal. La plupart des adultes ont besoin d'environ sept à neuf heures ; une quantité et une qualité régulières soutiennent la récupération, l'humeur et le métabolisme.",
         "moodBody": "Le suivi de l'humeur consigne ce que vous ressentez au fil du temps sur une échelle simple. Le noter régulièrement révèle des tendances (comment le sommeil, l'activité ou les médicaments s'alignent sur votre ressenti) qu'une seule journée ne montre jamais.",
         "medicationsBody": "L'observance mesure la fiabilité avec laquelle vous prenez votre traitement comme prescrit, ici sous forme de la part des doses attendues que vous avez enregistrées. Une prise régulière est souvent ce qui permet à un traitement d'agir comme prévu.",
@@ -3947,15 +3946,14 @@
         "strainBody": "La charge mesure l'effort cardiovasculaire et physique que vous avez imposé à votre corps, des entraînements à une journée active debout. Dès qu'il y a assez d'historique, elle est évaluée par rapport à votre propre effort habituel, pas à un standard extérieur.",
         "stressBody": "Le stress est ici une estimation de la charge physiologique sur votre système nerveux, lue surtout à partir des schémas de variabilité de la fréquence cardiaque et non de ce que vous ressentez consciemment. Un score plus bas indique un état calme et bien régulé ; un score plus élevé invite à prévoir de la récupération.",
         "recoveryPageBody": "Ce que votre appareil connecté rapporte, sous ses propres noms.",
-        "pulsePressureBody": "La pression pulsée est l'écart entre votre valeur systolique et diastolique (systolique moins diastolique). À titre indicatif général, environ 40 mmHg est typique au repos ; un écart large au-dessus d'environ 60 mmHg à l'âge moyen peut refléter des artères rigidifiées, tandis qu'un écart étroit en dessous d'environ 25 mmHg peut accompagner un faible volume d'éjection (StatPearls/NIH 2023). C'est un sujet de discussion, pas un diagnostic.",
+        "pulsePressureBody": "La pression pulsée est l'écart entre votre valeur systolique et diastolique (systolique moins diastolique). À titre indicatif général, environ 40 mmHg est typique au repos ; un écart large au-dessus d'environ 60 mmHg à l'âge moyen peut refléter des artères rigidifiées, tandis qu'un écart étroit en dessous d'environ 25 mmHg peut accompagner un faible volume d'éjection (StatPearls/NIH 2023).",
         "meanArterialPressureBody": "La pression artérielle moyenne est la pression moyenne que voient vos organes sur un battement, soit grosso modo la diastolique plus un tiers de l'écart avec la systolique. À titre indicatif général, une valeur au repos se situe autour de 70–100 mmHg (StatPearls/NIH 2023). Le seuil de ~60 mmHg souvent cité est un concept de soins aigus, pas une alarme pour l'autosurveillance.",
         "cycleEducationBody": "Votre cycle traverse quatre phases pilotées par les hormones, et sa durée et sa régularité sont une fenêtre accessible sur la santé globale. À titre indicatif général, les cycles chez l'adulte durent typiquement 21–35 jours (les références cliniques citent 24–38), avec des règles d'environ cinq jours (ACOG 2015). La phase lutéale est l'ancrage stable, donc l'ovulation s'estime au mieux en comptant à rebours depuis vos prochaines règles prévues, jamais à un « jour 14 » fixe. Une fenêtre fertile prédite est une estimation qui demande plusieurs cycles enregistrés et reste approximative, et la température basale confirme l'ovulation après coup plutôt qu'elle ne la prédit. Ce n'est pas une méthode de contraception.",
         "sleepHygieneBody": "Quelques habitudes fondées sur les preuves favorisent le sommeil : des heures de coucher et de lever régulières, week-ends compris, une lumière vive le matin et des soirées tamisées, une chambre fraîche, sombre et calme, et éviter la caféine l'après-midi, l'alcool tardif et les repas copieux tard le soir (CDC 2024). La régularité prédit la santé au moins autant que la durée, et le temps de sommeil total d'un wearable est bien plus fiable que sa répartition entre sommeil profond, léger et paradoxal."
       },
       "bpDerived": {
         "pulsePressure": "La pression pulsée (l'écart entre vos valeurs) est d'environ {value} mmHg ; environ 40 est typique au repos.",
-        "meanArterialPressure": "La pression artérielle moyenne (la moyenne que voient vos organes) est d'environ {value} mmHg, normalement autour de 70–100.",
-        "caveat": "Ces valeurs sont dérivées de votre dernière mesure à titre indicatif général, pas comme un diagnostic."
+        "meanArterialPressure": "La pression artérielle moyenne (la moyenne que voient vos organes) est d'environ {value} mmHg, normalement autour de 70–100."
       },
       "stats": {
         "label": "Statistiques récapitulatives",
@@ -4736,7 +4734,6 @@
         "title": "Ce qui ressort",
         "subheading": "Relations découvertes",
         "footer": "Issues de {tested, plural, one {# paire d'un jour à l'autre testée} other {# paires d'un jour à l'autre testées}} sur l'ensemble de vos mesures, après correction des fausses découvertes.",
-        "disclaimer": "Filtré statistiquement, mais toujours observationnel : une tendance à surveiller, pas une cause.",
         "moodUp": "Un {factor} plus élevé tend à coïncider avec une meilleure humeur le lendemain dans vos données.",
         "moodDown": "Un {factor} plus élevé tend à coïncider avec une moins bonne humeur le lendemain dans vos données.",
         "outcomeUp": "Une meilleure humeur tend à coïncider avec un {factor} plus élevé le lendemain dans vos données.",
@@ -4765,8 +4762,7 @@
         "lower": "plus bas",
         "higher": "plus haut",
         "statement": "Les jours avec « {label} », l'humeur était en moyenne {direction} : {withAvg} contre {withoutAvg}.",
-        "counts": "{withDays, plural, one {# jour} other {# jours}} avec, {withoutDays, plural, one {# jour} other {# jours}} sans",
-        "caveat": "Cela montre un lien, pas une cause."
+        "counts": "{withDays, plural, one {# jour} other {# jours}} avec, {withoutDays, plural, one {# jour} other {# jours}} sans"
       },
       "prognosis": {
         "title": "Votre auto-évaluation",
@@ -4782,7 +4778,6 @@
         "weightedTitle": "Ce qui a le plus pesé dans la comparaison de cette journée",
         "weightedUp": "{label} : comptait vers une valeur attendue plus élevée",
         "weightedDown": "{label} : comptait vers une valeur attendue plus basse",
-        "caveat": "C'est une comparaison avec vos propres journées passées, pas une affirmation sur la manière dont une journée s'est déroulée.",
         "learning": "Phase d'apprentissage : {entries} journées sur {threshold, plural, other {#}} enregistrées. La comparaison apparaît une fois qu'il y en a assez.",
         "noPattern": "{entries, plural, =1 {Dans la seule journée enregistrée} other {Dans les # journées enregistrées}} jusqu'ici, rien n'est assez régulier pour comparer une journée. Quand vous notez aussi le contexte d'une journée, vous en rendez davantage comparable.",
         "featureValue": "{field} : {value}",
@@ -4790,7 +4785,7 @@
       },
       "patterns": {
         "title": "Tendances de votre humeur",
-        "basedOn": "Sur la base de {subject} et {comparison} jours. Une tendance, pas une cause.",
+        "basedOn": "Sur la base de {subject} et {comparison} jours.",
         "previousDayHigher": "Après une journée en dessous de l’habitude, le lendemain est souvent meilleur ({subject} contre {comparison} après une journée au-dessus).",
         "previousDayLower": "Une journée en dessous de l’habitude a tendance à se prolonger le lendemain ({subject} contre {comparison} après une journée au-dessus).",
         "weekendHigher": "Votre humeur a tendance à être meilleure le week-end ({subject} contre {comparison} en semaine).",
@@ -4917,12 +4912,10 @@
         },
         "VASCULAR_AGE_DELTA": {
           "method": "L’estimation d’âge vasculaire / vitesse de l’onde de pouls de votre appareil comparée à votre âge chronologique, exprimée comme un écart en années. L’estimation vient de l’appareil ; HealthLog ne fait que la reformuler.",
-          "caveat": "La propre estimation de votre appareil, simplement reformulée : descriptive, pas une évaluation vasculaire clinique.",
           "description": "Comment l’estimation d’âge vasculaire de votre appareil se situe par rapport à votre âge chronologique."
         },
         "COINCIDENT_DEVIATION": {
-          "method": "Un indicateur qui se déclenche lorsque deux de vos constantes ou plus sortent de leur plage typique personnelle le même jour. Chaque bande est la médiane robuste ± k·MAD de votre propre historique : elle s’adapte à vous et non à un seuil de population.",
-          "caveat": "Un indicateur issu de vos propres références : descriptif, ni un diagnostic ni une alerte clinique."
+          "method": "Un indicateur qui se déclenche lorsque deux de vos constantes ou plus sortent de leur plage typique personnelle le même jour. Chaque bande est la médiane robuste ± k·MAD de votre propre historique : elle s’adapte à vous et non à un seuil de population."
         },
         "RECOVERY_SCORE": {
           "method": "Un indice de récupération nocturne de 0 à 100 combinant votre VFC, votre fréquence cardiaque au repos et votre sommeil par rapport à votre référence. Plus élevé signifie mieux récupéré. Calculé une fois par nuit et seulement relu ici, jamais recalculé à la volée.",
@@ -4941,28 +4934,22 @@
           "deviceSource": "Tant que HealthLog n’a pas calculé sa propre valeur pendant la nuit, la carte affiche l’effort du jour de votre appareil, ramené sur 0–100."
         },
         "WRIST_TEMPERATURE_BASELINE": {
-          "method": "Votre température nocturne typique au poignet est la médiane de vos relevés nocturnes sur la période, ± une dispersion robuste (écart absolu médian, mis à l’échelle). Elle suit VOS relevés : la nuit dernière est affichée comme un écart par rapport à votre propre référence, pas à une norme de population.",
-          "caveat": "Une simple bande d’écart personnel, descriptive, ni un signe de maladie, de fièvre ou de phase du cycle. À vous de l’interpréter."
+          "method": "Votre température nocturne typique au poignet est la médiane de vos relevés nocturnes sur la période, ± une dispersion robuste (écart absolu médian, mis à l’échelle). Elle suit VOS relevés : la nuit dernière est affichée comme un écart par rapport à votre propre référence, pas à une norme de population."
         },
         "STAIR_ASCENT_SPEED_BASELINE": {
-          "method": "Votre allure typique en montant les escaliers est la médiane de vos valeurs quotidiennes sur la période, ± une dispersion robuste (écart absolu médian, mis à l’échelle). La bande est construite à partir de vos données : il n’existe pas de seuil de population pour l’allure dans les escaliers, car elle dépend de la géométrie des marches et de la longueur des jambes.",
-          "caveat": "Une bande personnelle de tendance de mobilité, descriptive, ni une évaluation de fragilité ni de risque de chute."
+          "method": "Votre allure typique en montant les escaliers est la médiane de vos valeurs quotidiennes sur la période, ± une dispersion robuste (écart absolu médian, mis à l’échelle). La bande est construite à partir de vos données : il n’existe pas de seuil de population pour l’allure dans les escaliers, car elle dépend de la géométrie des marches et de la longueur des jambes."
         },
         "STAIR_DESCENT_SPEED_BASELINE": {
-          "method": "Votre allure typique en descendant les escaliers est la médiane de vos valeurs quotidiennes sur la période, ± une dispersion robuste (écart absolu médian, mis à l’échelle). La bande est construite à partir de vos données : il n’existe pas de seuil de population pour l’allure dans les escaliers, car elle dépend de la géométrie des marches et de la longueur des jambes.",
-          "caveat": "Une bande personnelle de tendance de mobilité, descriptive, ni une évaluation de fragilité ni de risque de chute."
+          "method": "Votre allure typique en descendant les escaliers est la médiane de vos valeurs quotidiennes sur la période, ± une dispersion robuste (écart absolu médian, mis à l’échelle). La bande est construite à partir de vos données : il n’existe pas de seuil de population pour l’allure dans les escaliers, car elle dépend de la géométrie des marches et de la longueur des jambes."
         },
         "SIX_MINUTE_WALK_BAND": {
-          "method": "La distance de marche de six minutes ESTIMÉE par votre appareil, située par rapport à la référence d’Enright et Sherrill pour votre âge, votre taille, votre poids et votre sexe, en pourcentage de la valeur prédite. La distance est l’estimation de l’appareil, jamais recalculée ici. Sans votre âge, taille, poids et sexe, le pourcentage est masqué et seules la distance et la tendance sont affichées.",
-          "caveat": "Une estimation reformulée par rapport à une référence publiée : un indicateur de capacité fonctionnelle, ni un test de marche de six minutes clinique ni un diagnostic. La référence a été établie pour les âges de 40 à 80 ans ; en dehors de cette plage, la valeur prédite est une extrapolation."
+          "method": "La distance de marche de six minutes ESTIMÉE par votre appareil, située par rapport à la référence d’Enright et Sherrill pour votre âge, votre taille, votre poids et votre sexe, en pourcentage de la valeur prédite. La distance est l’estimation de l’appareil, jamais recalculée ici. Sans votre âge, taille, poids et sexe, le pourcentage est masqué et seules la distance et la tendance sont affichées."
         },
         "TRAJECTORY": {
-          "method": "Une droite des moindres carrés ajustée à vos valeurs journalières récentes et projetée sur un court horizon, avec l’intervalle de prédiction classique qui s’élargit à mesure qu’il s’éloigne. Calculée uniquement lorsque la tendance récente est suffisamment marquée et que votre historique est assez long et récent ; sinon aucune ligne n’est tracée.",
-          "caveat": "Une projection de votre propre tendance récente, ni une prédiction, ni un objectif, ni un pronostic clinique. Elle ne tient que si le schéma récent se poursuit ; la bande ombrée montre la vitesse à laquelle cette certitude s’estompe."
+          "method": "Une droite des moindres carrés ajustée à vos valeurs journalières récentes et projetée sur un court horizon, avec l’intervalle de prédiction classique qui s’élargit à mesure qu’il s’éloigne. Calculée uniquement lorsque la tendance récente est suffisamment marquée et que votre historique est assez long et récent ; sinon aucune ligne n’est tracée."
         },
         "SAME_TIME_BASELINE": {
           "method": "Votre total cumulé du jour comparé à la médiane de cette même heure locale sur vos quatre dernières semaines, avec une bande robuste médiane ± MAD autour. Seuls les jours suffisamment détaillés comptent, et aucune comparaison n'apparaît avant d'en avoir au moins quatorze.",
-          "caveat": "Une comparaison avec votre propre historique récent, pas un objectif. Elle dit où se situe aujourd'hui par rapport à votre habitude à cette heure, et rien sur le fait que cette habitude vous convienne.",
           "methodDailyTotal": "Votre source transmet chaque journée comme un seul total : il n'y a donc pas d'heure à laquelle comparer. Le total cumulé d'aujourd'hui, tel que la source l'a transmis en dernier, est placé face à vos totaux journaliers des 14 derniers jours complets : le trait marque leur médiane, la bande ombrée leur moitié centrale. La plage s'affiche dès que 7 de ces jours ont un total."
         }
       },
@@ -4988,7 +4975,7 @@
         "watch": "Aujourd’hui, une constante est hors de sa plage habituelle.",
         "watchVital": "Hors plage : {vital}. Souvent ponctuel, à surveiller ces prochains jours.",
         "firedHeadline": "Aujourd’hui, {count} de vos constantes sont hors de leur plage personnelle.",
-        "factors": "Facteurs possibles, jamais une cause : un entraînement intense, un mauvais sommeil, l’alcool, l’altitude, le stress ou une maladie. C’est un repère issu de vos propres références, pas un diagnostic.",
+        "factors": "Facteurs possibles, jamais une cause : un entraînement intense, un mauvais sommeil, l’alcool, l’altitude, le stress ou une maladie.",
         "building": "Construction de vos références personnelles. Enregistrez quelques jours de plus et cela apparaîtra.",
         "illnessExplained": "Ces écarts reflètent probablement l’affection que vous avez consignée."
       },
@@ -4996,7 +4983,6 @@
         "cardTitle": "Projection à court terme",
         "headline": "Si ce schéma se poursuit : {days, plural, =1 {le jour suivant} other {les # prochains jours}}",
         "range": "Projeté entre {low} et {high} {unit} dans {days, plural, one {# jour} other {# jours}}.",
-        "caveat": "Une projection de votre propre tendance récente, pas une prédiction. La bande ombrée s’élargit pour montrer la vitesse à laquelle l’incertitude augmente.",
         "insufficient": "Pas encore de tendance assez nette pour projeter. Continuez à enregistrer et une projection apparaîtra dès que le schéma récent sera suffisamment marqué.",
         "daysNeeded": "{count, plural, one {Encore environ # jour d’enregistrement nécessaire avant qu’une projection puisse apparaître.} other {Encore environ # jours d’enregistrement nécessaires avant qu’une projection puisse apparaître.}}"
       },
@@ -5097,7 +5083,7 @@
       "sectionTitle": "Notifications de santé de l’appareil",
       "sectionIntro": "Notifications que votre montre a envoyées d’elle-même. HealthLog se contente de les afficher : il ne les détecte, ne les confirme ni ne les interprète.",
       "loadError": "Impossible de charger les notifications de votre appareil.",
-      "disclaimer": "Ce sont des alertes que votre appareil a produites avec sa propre détection intégrée. Elles sont affichées ici uniquement à titre informatif. Il ne s’agit pas d’une évaluation médicale de HealthLog, et HealthLog ne pose aucun diagnostic. Si une notification vous inquiète, parlez-en à votre médecin.",
+      "disclaimer": "Ce sont les alertes de votre appareil, pas une évaluation par HealthLog ; si l'une d'elles vous inquiète, parlez-en à votre médecin.",
       "event": {
         "irregularRhythm": "Notification de rythme irrégulier",
         "highHeartRate": "Notification de fréquence cardiaque élevée",
@@ -6104,9 +6090,8 @@
         },
         "alerts": {
           "heading": "Alertes",
-          "noChannel": "Aucun canal de diffusion n'est encore configuré, rien ne peut donc être envoyé. Dès qu'il y en a un, cet interrupteur décide pour tous à la fois.",
+          "noChannel": "Aucun canal de diffusion n'est encore configuré, rien ne peut donc être envoyé.",
           "setUpChannel": "Configurer un canal de diffusion",
-          "perChannel": "Choisir par canal",
           "saveError": "Le réglage de notification n'a pas pu être enregistré. Veuillez réessayer."
         }
       },
@@ -6281,18 +6266,17 @@
           "fullBackup": {
             "title": "Sauvegarde complète",
             "description": "L'ensemble de votre dossier dans un fichier JSON.",
-            "scopeNote": "Les métadonnées des documents et le résumé IA, s'il existe, sont inclus en texte clair ; les fichiers originaux des documents ainsi que les tracés GPS/données d'échantillons des entraînements ne le sont pas. Téléchargez-les séparément depuis le coffre de documents ou l'export des entraînements.",
+            "scopeNote": "Les métadonnées des documents et le résumé IA, s'il existe, sont inclus en texte clair ; les fichiers originaux des documents ainsi que les tracés GPS/données d'échantillons des entraînements ne le sont pas.",
             "encryptToggle": "Chiffrer avec une phrase secrète",
             "passphrasePlaceholder": "Phrase secrète (12 caractères min.)",
             "passphraseHelp": "Dérive la clé de l'archive avec Argon2id et la scelle avec AES-256-GCM. Enregistrez le fichier avec l'extension .hlx.",
             "noRecoveryWarning": "Aucune récupération possible : si vous perdez cette phrase secrète, l'archive ne pourra pas être ouverte. Conservez-la en lieu sûr.",
-            "detail": "Une copie portable de votre dossier, à conserver et à lire : valeurs en JSON simple, documents limités à leurs métadonnées. Ce n’est pas la copie hebdomadaire du compte que ce serveur garde pour restaurer un compte, et elle ne peut pas recréer un compte sur un autre serveur. Certains types de données ne sont pas encore inclus ; le manifeste du fichier indique ce qu’il contient.",
-            "contents": "Vos mesures, médicaments, humeur, cycle, résultats de laboratoire, épisodes de maladie, allergies, antécédents familiaux, nutriments, séances, votre profil de santé et vos mesures personnalisées dans un seul fichier JSON."
+            "detail": "Une copie portable de votre dossier, à conserver et à lire : valeurs en JSON simple, documents limités à leurs métadonnées."
           }
         },
         "import": {
           "heading": "Import",
-          "description": "Importez des données dans HealthLog depuis Apple Santé, Health Connect, le fichier d’activité d’une montre, un fichier JSON ou un CSV. L'import ignore les lignes déjà présentes : le relancer est sans risque.",
+          "description": "Les fichiers envoyés sont supprimés du serveur dès la fin de l’importation, et importer à nouveau le même fichier n’ajoute rien en double.",
           "charCount": "{used} / {max, plural, one {# caractère} other {# caractères}}",
           "appleHealth": {
             "title": "Apple Santé",
@@ -6301,7 +6285,7 @@
             "dropHint": "ou cliquez pour choisir un fichier",
             "fileInputLabel": "Choisir un fichier export.zip d'Apple Santé",
             "choose": "Choisir un fichier",
-            "idempotencyNote": "Réimporter la même archive fusionne les données ; aucun doublon n'est créé. Les grandes archives sont traitées en arrière-plan.",
+            "idempotencyNote": "Les grandes archives sont traitées en arrière-plan.",
             "uploading": "Envoi…",
             "uploadFailed": "Échec de l'envoi. Veuillez réessayer.",
             "rateLimited": "Trop d'envois. Patientez un instant et réessayez.",
@@ -6386,7 +6370,7 @@
             "keptLabels": "Ce compte a déjà des étiquettes ou des groupes avec ces clés sous son propre nom, ils ont été conservés : {keys}",
             "resultNothing": "Rien n'a été importé. {skipped, plural, =1 {La seule entrée a été ignorée} other {Les # entrées ont toutes été ignorées}}.",
             "resultEmpty": "Ce fichier ne contenait ni mesures ni entrées d'humeur.",
-            "limitsHint": "Jusqu’à {mb} Mo et jusqu’à {rows, plural, one {# entrée} other {# entrées}} par liste. Cela ajoute des entrées à votre dossier ; cela ne restaure pas une sauvegarde complète."
+            "limitsHint": "Jusqu’à {mb} Mo et jusqu’à {rows, plural, one {# entrée} other {# entrées}} par liste."
           },
           "csv": {
             "title": "Fichier CSV",
@@ -6508,13 +6492,13 @@
             },
             "steps": {
               "export": "Sur votre téléphone Android, ouvrez Health Connect, allez dans Gérer les données, puis Exporter et importer, et lancez une exportation.",
-              "cloud": "Health Connect enregistre l’exportation uniquement dans une app de stockage cloud comme Google Drive, Dropbox ou Nextcloud, jamais sur le téléphone lui-même. Choisissez-en une.",
+              "cloud": "Health Connect enregistre l’exportation uniquement dans une app de stockage cloud comme Google Drive, Dropbox ou Nextcloud, jamais sur le téléphone lui-même.",
               "upload": "Téléchargez le fichier ZIP de ce cloud sur cet appareil et importez-le ici."
             },
             "dropLabel": "Déposez ici le ZIP de Health Connect",
             "dropHint": "ou cliquez pour le choisir. Jusqu’à 1 Go.",
             "fileInputLabel": "Fichier ZIP de l’exportation Health Connect",
-            "privacyNote": "Le fichier est supprimé du serveur dès la fin de l’importation. Les enregistrements des apps que vous connectez déjà directement, comme Withings ou Fitbit, sont ignorés pour que rien n’arrive en double. Importer à nouveau le même fichier ne change rien.",
+            "privacyNote": "Les enregistrements des apps que vous connectez déjà directement, comme Withings, sont ignorés pour que rien n’arrive en double.",
             "rateLimited": "Trop d’envois en peu de temps. Attendez une minute et réessayez.",
             "busy": "Une importation est déjà en cours pour votre compte. Attendez qu’elle soit terminée.",
             "rowsSoFar": "{count, plural, one {# valeur enregistrée} other {# valeurs enregistrées}} jusqu’ici",
@@ -6547,7 +6531,7 @@
             "dropLabel": "Déposez le fichier d’activité ici",
             "dropHint": "ou cliquez pour le choisir : un fichier .fit, .fit.gz ou .zip jusqu’à 10 Mo.",
             "fileInputLabel": "Fichier d’activité",
-            "privacyNote": "Le fichier est supprimé du serveur dès la fin de l’importation. Un entraînement déjà présent via Garmin, Apple Santé ou une autre app n’est pas ajouté deux fois : il reçoit la courbe de fréquence cardiaque du fichier s’il n’en avait pas. Le tracé GPS n’est conservé que si Parcours d’entraînement est activé. Renvoyer le même fichier ne change rien.",
+            "privacyNote": "Le tracé GPS n’est conservé que si Parcours d’entraînement est activé.",
             "steps": {
               "garmin": "Garmin Connect : ouvrez l’activité sur le site, choisissez le menu en forme de roue dentée, puis Exporter l’original. Envoyez le fichier ZIP tel quel.",
               "other": "Autres apps et appareils : exportez l’activité au format FIT (.fit ou .fit.gz) et envoyez-la ici."
@@ -6607,7 +6591,6 @@
             "rateLimited": "Trop de téléversements en peu de temps. Attendez une minute et réessayez.",
             "tooLarge": "Le fichier dépasse la limite de cet import.",
             "busy": "Un import est déjà en cours pour votre compte. Attendez qu'il soit terminé.",
-            "privacyNote": "Le fichier est supprimé du serveur dès la fin de l'import. Tout est rattaché à l'enregistrement d'origine, donc téléverser à nouveau le même fichier n'ajoute rien en double.",
             "fileInputLabel": "Fichier à importer",
             "lineCounts": "{imported} nouveaux, {duplicates} déjà présents",
             "failure": {
@@ -6654,7 +6637,7 @@
             "password": "Mot de passe ou mot de passe d'application",
             "passwordKept": "Laisser vide pour garder le mot de passe enregistré",
             "enabled": "Récupérer environ toutes les six heures",
-            "privacyNote": "Le mot de passe est stocké chiffré et n'est plus jamais affiché. Chaque fichier est importé une fois : un fichier que HealthLog a déjà n'est pas lu deux fois. Un dossier sur votre réseau domestique ne fonctionne que si la personne qui gère le serveur autorise son adresse.",
+            "privacyNote": "Le mot de passe est stocké chiffré et n'est plus jamais affiché. Un dossier sur votre réseau domestique ne fonctionne que si la personne qui gère le serveur autorise son adresse.",
             "lastAttempt": "Dernière tentative {when} : {outcome}",
             "fetchNow": "Récupérer maintenant",
             "fetchStarted": "Récupération en cours. Le résultat s’affichera sur cette carte.",
@@ -7489,8 +7472,8 @@
     },
     "fitbitRemoval": {
       "title": "Fitbit ne se synchronise plus",
-      "body": "Google a arrêté la Fitbit Web API le 30 octobre 2026 : HealthLog ne peut donc plus se connecter à Fitbit et l'intégration Fitbit a été retirée. Tout ce qui a déjà été importé reste : vos graphiques, exports, sauvegardes et rapports médicaux le conservent, toujours marqué Fitbit.",
-      "ways": "Pour continuer à recevoir les données d'une Fitbit ou d'une Pixel Watch, connectez Google Health ci-dessous. Il lit les mêmes appareils et vous demande une fois votre consentement chez Google. Sur Android, vous pouvez aussi importer un export Health Connect.",
+      "body": "Google a arrêté la Fitbit Web API, la connexion Fitbit a donc été retirée ; tout ce qui a été importé reste, marqué Fitbit.",
+      "ways": "Pour continuer à recevoir les données d'une Fitbit ou d'une Pixel Watch, connectez Google Health ci-dessous.",
       "toGoogleHealth": "Aller à Google Health",
       "toHealthConnect": "Import Health Connect",
       "dismiss": "Compris",
@@ -7499,7 +7482,7 @@
     "googleHealth": "Google Health",
     "googleHealthTag": "Fitbit et Pixel",
     "googleHealthBetaBadge": "Bêta",
-    "googleHealthDescription": "Connectez Fitbit, Pixel Watch et Fitbit Air via votre compte Google : poids, fréquence cardiaque, sommeil et activité. Cela remplace la connexion Fitbit classique, que Google arrête en septembre 2026.",
+    "googleHealthDescription": "Connectez Fitbit, Pixel Watch et Fitbit Air via votre compte Google : poids, fréquence cardiaque, sommeil et activité.",
     "googleHealthCredentials": "Identifiants d'API",
     "googleHealthClientId": "ID client",
     "googleHealthClientSecret": "Secret client",
@@ -7750,7 +7733,6 @@
     "notificationStatus": {
       "title": "Fiabilité des canaux",
       "description": "État de chaque canal ; « Désactivé automatiquement » signifie arrêté après des erreurs permanentes.",
-      "emptyDescription": "Ajoutez un canal dans Paramètres › Intégrations › Canaux de diffusion.",
       "stateActive": "Actif",
       "stateAutoDisabled": "Désactivé automatiquement",
       "stateSendingPaused": "Envoi en pause",
@@ -7893,7 +7875,6 @@
     "polarCredentialsSaved": "Identifiants enregistrés",
     "polarCredentialsSavedPlaceholder": "Enregistré. Saisir de nouveaux pour remplacer",
     "polarSaveCredentials": "Enregistrer",
-    "polarUnavailable": "Polar n'est pas configuré sur ce serveur. Ajoutez vos propres identifiants OAuth Polar ci-dessus, ou demandez à votre administrateur de configurer l'application partagée.",
     "polarConnect": "Connecter Polar",
     "polarSync": "Synchroniser",
     "polarSyncResult": "{count, plural, one {# mesure synchronisée} other {# mesures synchronisées}}",
@@ -7923,7 +7904,6 @@
     "ouraCredentialsSaved": "Identifiants enregistrés",
     "ouraCredentialsSavedPlaceholder": "Enregistré. Saisir de nouveaux pour remplacer",
     "ouraSaveCredentials": "Enregistrer",
-    "ouraUnavailable": "Oura n'est pas configuré sur ce serveur. Ajoutez vos propres identifiants OAuth Oura ci-dessus, ou demandez à votre administrateur de configurer l'application partagée.",
     "ouraConnect": "Connecter Oura",
     "ouraSync": "Synchroniser",
     "ouraSyncResult": "{count, plural, one {# mesure synchronisée} other {# mesures synchronisées}}",
@@ -7962,7 +7942,7 @@
       "openNudges": "Ouvrir dans Notifications"
     },
     "integrationRedirectGuide": {
-      "intro": "Cette connexion passe par votre propre application développeur {provider}, environ 5 minutes de configuration :",
+      "intro": "Configurer votre application développeur {provider} (environ 5 minutes)",
       "step1": "Créez une application dans le portail développeur {provider}.",
       "step2": "Réglez son URL de redirection/callback sur :",
       "step3": "Collez ci-dessus l'ID client et le secret client fournis."
@@ -8207,7 +8187,6 @@
     "stravaCredentialsSaved": "Identifiants enregistrés",
     "stravaCredentialsSavedPlaceholder": "Enregistrés. Saisissez-en de nouveaux pour remplacer",
     "stravaSaveCredentials": "Enregistrer",
-    "stravaUnavailable": "Strava n'est pas configuré sur ce serveur. Ajoutez vos propres identifiants API Strava ci-dessus ou demandez à votre administrateur de configurer l'application partagée.",
     "stravaConnect": "Connecter Strava",
     "stravaSync": "Synchroniser",
     "stravaSyncResult": "{count, plural, one {# mesure synchronisée} other {# mesures synchronisées}}",
@@ -8244,7 +8223,7 @@
         "receivedLabel": "Enregistrements reçus",
         "oldestLabel": "Mesure la plus ancienne atteinte",
         "flowing": "Des données sont arrivées au cours de la dernière heure. L'app iPhone continue d'envoyer.",
-        "waiting": "En attente de nouvelles données de l'app iPhone. Le transfert reprend quand l'app est ouverte ou quand iOS lui accorde du temps en arrière-plan. Une accalmie pendant le premier grand rattrapage est normale, pas une erreur."
+        "waiting": "En attente de nouvelles données de l'app iPhone. Une accalmie pendant le premier grand rattrapage est normale, pas une erreur."
       },
       "delivery": {
         "title": "Livraison",
@@ -8278,7 +8257,7 @@
       "description": "La plage à laquelle vos glycémies sont comparées.",
       "enable": "Utiliser la plage cible diabète",
       "explainer": "Désactivé, les valeurs sont comparées à la plage de référence générale non diabétique. Activé, elles sont comparées à la plage cible glycémique plus stricte des ADA Standards of Care, et le Coach fonde ses remarques sur le glucose sur cette plage. Vos propres valeurs cibles personnalisées ci-dessous restent prioritaires.",
-      "disclaimer": "Ceci sélectionne une plage de référence. Ce n'est pas un diagnostic, ce n'est jamais déduit d'une mesure, et l'application n'en tire aucune conséquence clinique. Les cibles qui s'appliquent à vous relèvent de votre médecin.",
+      "disclaimer": "Ceci choisit seulement une plage de référence : ce n'est pas un diagnostic et ce n'est jamais déduit d'une mesure ; les cibles qui vous conviennent sont à voir avec votre médecin.",
       "error": "Le réglage n'a pas pu être enregistré."
     },
     "dangerZoneDetail": "Votre compte et vos identifiants de connexion sont conservés.",
@@ -8295,7 +8274,7 @@
     "documentSources": {
       "title": "Archives de documents",
       "description": "Cherchez dans Paperless-ngx ou Papra depuis HealthLog et importez les documents choisis.",
-      "explainer": "Un bouton d'import apparaît partout où vous liez des documents : rendez-vous, vaccinations, affections et Documents. HealthLog garde sa propre copie chiffrée de chaque document importé et n'interroge votre archive que lorsque vous cherchez ou importez.",
+      "explainer": "Un bouton d'import apparaît partout où vous liez des documents : rendez-vous, vaccinations, affections et Documents.",
       "systemLabel": "Archive",
       "statusConnected": "Connecté",
       "statusNotConnected": "Non connecté",
@@ -8408,7 +8387,8 @@
       "historyEnds": {
         "horizon": "{type} : importé jusqu'au {date}. Les mesures plus anciennes dépassent la limite d'import.",
         "noProgress": "{type} : importé jusqu'au {date}. Google ne renvoyait plus de mesures plus anciennes, l'import s'arrête donc là."
-      }
+      },
+      "notConfigured": "{provider} n'est pas configuré sur ce serveur : ajoutez vos propres identifiants ci-dessus ou demandez à votre administrateur."
     },
     "dawarich": "Dawarich",
     "dawarichTag": "Déplacements",
@@ -8980,7 +8960,7 @@
         "subtitle": "Créer, suivre et révoquer les liens d'invitation."
       },
       "api-tokens": {
-        "title": "Jetons d'API",
+        "title": "API et jetons",
         "subtitle": "Jetons bearer actifs émis aux clients natifs et aux intégrations."
       },
       "login-overview": {
@@ -9048,7 +9028,7 @@
       "backups": {
         "title": "Sauvegardes",
         "subtitle": "Copies de comptes dans la base de données de ce serveur, pour restaurer un compte ici.",
-        "description": "Chaque compte dispose d’une copie hebdomadaire, remplacée chaque dimanche, ainsi que des copies téléversées ici et de la copie prise avant « Supprimer toutes les données ». Une copie restaure un compte existant sur ce serveur. Elle ne peut pas reconstruire un serveur perdu : il faut pour cela une sauvegarde de la base de données et les clés de chiffrement. Les tailles indiquent la copie chiffrée. Le téléchargement la déchiffre pour l’administrateur qui la demande ; le texte chiffré reste dans la base de données.",
+        "description": "Chaque compte dispose d’une copie hebdomadaire, remplacée chaque dimanche, ainsi que des copies téléversées ici et de la copie prise avant « Supprimer toutes les données ».",
         "runNow": "Sauvegarder maintenant",
         "runEnqueued": "Tâche de sauvegarde mise en file d'attente",
         "runFailed": "Échec de la mise en file d'attente de la sauvegarde",
@@ -10338,7 +10318,7 @@
       "daysAria": "Choisir le seuil de stock en jours",
       "leadLabel": "Délai de réapprovisionnement (jours)",
       "leadAria": "Délai de réapprovisionnement en jours",
-      "leadHelp": "L’alerte est envoyée ce nombre de jours plus un intervalle de dose plus tôt, pour qu’un réapprovisionnement arrive avant votre dernière dose. Un médicament donné peut remplacer cette valeur dans son onglet stock.",
+      "leadHelp": "L’alerte est envoyée ce nombre de jours plus un intervalle de dose plus tôt, pour qu’un réapprovisionnement arrive avant votre dernière dose.",
       "leadSavedToast": "Délai de réapprovisionnement enregistré",
       "savedToast": "Seuil de stock enregistré",
       "enabledToast": "Alertes de stock faible activées.",
@@ -10439,7 +10419,7 @@
     "content": {
       "title": "Valeurs de santé dans les notifications",
       "description": "Si une notification peut afficher des valeurs comme votre score du matin.",
-      "detail": "Désactivé, une notification dit seulement de quoi il s'agit, l'écran verrouillé n'affiche donc aucune valeur de santé. Activé, elle ajoute les valeurs, par exemple le score du matin dans le récapitulatif. Toucher une notification ouvre le bon endroit de l'app dans les deux cas.",
+      "detail": "Désactivé, une notification dit seulement de quoi il s'agit, l'écran verrouillé n'affiche donc aucune valeur de santé. Activé, elle ajoute les valeurs, par exemple le score du matin dans le récapitulatif.",
       "toggleAria": "Afficher les valeurs de santé dans les notifications",
       "statusDetailed": "Avec valeurs",
       "statusGeneric": "Sans valeurs",
@@ -11402,7 +11382,7 @@
   },
   "labs": {
     "title": "Résultats de laboratoire",
-    "subtitle": "Analyses sanguines et biomarqueurs",
+    "subtitle": "Vos analyses sanguines et biomarqueurs.",
     "addResult": "Ajouter une valeur",
     "addDescription": "Enregistrez un biomarqueur à partir d'un compte rendu de laboratoire.",
     "addFirst": "Ajouter votre premier résultat",
@@ -12691,10 +12671,10 @@
     "noResultYet": "Pas encore de check-in",
     "backToList": "Vue d'ensemble",
     "followUpHint": {
-      "phq9": "Votre score se situe dans une plage où parler à un professionnel de santé peut aider. C'est une suggestion bienveillante, pas un diagnostic.",
-      "gad7": "Votre score se situe dans une plage où parler à un professionnel de santé peut aider. C'est une suggestion bienveillante, pas un diagnostic.",
-      "who5": "Un score de bien-être de 50 ou moins peut mériter un regard plus attentif. Si vous le souhaitez, le PHQ-9 sur cette page explore l'humeur plus en détail. C'est une suggestion bienveillante, pas un diagnostic.",
-      "sci": "Dans l'étude de ce questionnaire, des scores de 16 ou moins étaient associés à une insomnie probable. Si un mauvais sommeil continue de vous peser, parler à un professionnel de santé peut aider. Ce n'est pas un diagnostic."
+      "phq9": "Votre score se situe dans une plage où parler à un professionnel de santé peut aider.",
+      "gad7": "Votre score se situe dans une plage où parler à un professionnel de santé peut aider.",
+      "who5": "Un score de bien-être de 50 ou moins peut mériter un regard plus attentif. Si vous le souhaitez, le PHQ-9 sur cette page explore l'humeur plus en détail.",
+      "sci": "Dans l'étude de ce questionnaire, des scores de 16 ou moins étaient associés à une insomnie probable. Si un mauvais sommeil continue de vous peser, parler à un professionnel de santé peut aider."
     },
     "openDetail": "Voir les détails",
     "historyLoadError": "Votre historique d'évaluations n'a pas pu être chargé",
@@ -12797,7 +12777,6 @@
         }
       }
     },
-    "disclaimer": "Ce sont vos propres informations, pas un diagnostic médical. HealthLog ne diagnostique pas, ne traite pas et ne les interprète pas.",
     "allergies": {
       "cardTitle": "Allergies & intolérances",
       "cardDescription": "Substances auxquelles vous réagissez, avec la réaction et sa gravité.",
@@ -13110,7 +13089,7 @@
         "freeDaysDefault": "Sans réponse, le samedi et le dimanche comptent comme jours libres."
       },
       "auditC": {
-        "intro": "Trois questions sur l'alcool tirées de l'AUDIT de l'OMS. Un dépistage, pas un diagnostic.",
+        "intro": "Trois questions sur l'alcool tirées de l'AUDIT de l'OMS.",
         "start": "Répondre aux questions",
         "again": "Répondre à nouveau",
         "offerDue": "Un rapide coup d'œil une fois par an suffit.",
@@ -13631,7 +13610,9 @@
     }
   },
   "selfDescription": {
-    "dataPosture": "HealthLog est auto-hébergé : vos données de santé se trouvent dans la base de données de votre propre instance. Les notes et autres textes libres, les documents, les réponses aux questionnaires, les textes rédigés par l'IA et les jetons d'accès sont chiffrés au repos ; les valeurs de mesure, les résultats de laboratoire, les noms de médicaments et les scores d'humeur sont stockés en clair et dépendent de la sécurité de votre serveur. Les fonctions d'IA n'envoient des données qu'au fournisseur d'IA configuré pour votre compte, et il n'y a aucune analyse tierce de vos données de santé."
+    "dataPosture": "HealthLog est auto-hébergé : vos données de santé se trouvent dans la base de données de votre propre instance. Les notes et autres textes libres, les documents, les réponses aux questionnaires, les textes rédigés par l'IA et les jetons d'accès sont chiffrés au repos ; les valeurs de mesure, les résultats de laboratoire, les noms de médicaments et les scores d'humeur sont stockés en clair et dépendent de la sécurité de votre serveur. Les fonctions d'IA n'envoient des données qu'au fournisseur d'IA configuré pour votre compte, et il n'y a aucune analyse tierce de vos données de santé.",
+    "notDiagnosis": "HealthLog décrit vos propres données ; il ne pose aucun diagnostic.",
+    "notCause": "Ce sont des tendances dans vos données, pas des causes."
   },
   "customMetrics": {
     "sectionTitle": "Mesures personnalisées",
@@ -14189,10 +14170,10 @@
     "leafCycle": "Cycle menstruel",
     "templateStandard": "Rapport médical standard",
     "applyStandard": "Appliquer {template}",
-    "standardHint": "Un clic remplit ce dont un rendez-vous de médecine générale a généralement besoin. Chaque élément reste modifiable.",
+    "standardHint": "Un clic remplit ce dont un rendez-vous de médecine générale a généralement besoin.",
     "groupCount": "{on}/{total}",
     "groupDisclosure": "Afficher les éléments de {group}",
-    "sensitiveHint": "Rien n'est jamais présélectionné ici. Choisissez chaque élément vous-même.",
+    "sensitiveHint": "Rien n'est jamais présélectionné ici.",
     "scopeNone": "Rien de sélectionné pour l'instant. Choisissez ce qui doit figurer, ou appliquez le rapport standard.",
     "scopeCount": "{count, plural, one {# élément issu} other {# éléments issus}} de {groups, plural, one {# domaine} other {# domaines}}",
     "scopeSensitive": "dont {names}",
@@ -15728,7 +15709,7 @@
   "recordImport": {
     "title": "Résultats de laboratoire et médicaments depuis un tableur",
     "description": "Importez des années de résultats ou une liste de médicaments depuis un fichier CSV.",
-    "detail": "Vous choisissez quelle colonne contient quoi ; HealthLog vérifie chaque ligne d'abord et n'importe rien avant votre confirmation. Les lignes déjà présentes sont ignorées.",
+    "detail": "Vous choisissez quelle colonne contient quoi ; HealthLog vérifie chaque ligne d'abord et n'importe rien avant votre confirmation.",
     "kind": {
       "labs": "Résultats de laboratoire",
       "medications": "Médicaments"

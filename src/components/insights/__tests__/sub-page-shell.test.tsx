@@ -59,8 +59,21 @@ describe("<SubPageShell>", () => {
       </SubPageShell>,
     );
     // The shell uses a `<p>` for the description; no `<p>` appears when
-    // neither a description nor an explainer metric is supplied.
-    expect(html).not.toMatch(/<p[^>]*class="text-muted-foreground/);
+    // neither a description nor an explainer metric is supplied. The one
+    // paragraph left is the page's closing self-description note.
+    expect(html).not.toMatch(
+      /<p(?![^>]*data-slot="medical-disclaimer")[^>]*class="text-muted-foreground/,
+    );
+  });
+
+  it("closes the page with one self-description note", () => {
+    const html = render(
+      <SubPageShell title="Pulse">
+        <span />
+      </SubPageShell>,
+    );
+    expect(html.split('data-slot="medical-disclaimer"')).toHaveLength(2);
+    expect(html).toContain('data-variant="notDiagnosis"');
   });
 
   it("renders the explainer body inline beneath the heading", () => {

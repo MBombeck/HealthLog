@@ -122,6 +122,7 @@ export default function InsightsMoodPageClient() {
   if (isAuthenticated && comprehensive && moodCount === 0) {
     return (
       <SubPageShell
+        disclaimer="notCause"
         title={t("insights.moodSectionTitle")}
         description={t("insights.subPage.stimmungDescription")}
         explainerMetric="mood"
@@ -143,6 +144,7 @@ export default function InsightsMoodPageClient() {
 
   return (
     <SubPageShell
+      disclaimer="notCause"
       title={t("insights.moodSectionTitle")}
       description={t("insights.subPage.stimmungDescription")}
       explainerMetric="mood"

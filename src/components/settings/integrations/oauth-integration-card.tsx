@@ -251,6 +251,7 @@ export function OAuthIntegrationCardView({
   const [editingCredentials, setEditingCredentials] = useState(false);
 
   const providerName = t(i18nPrefix);
+  const providerArg = { provider: providerName };
   const connected = viewModel?.connected ?? false;
   const configured =
     config.credentials === "required"
@@ -281,16 +282,14 @@ export function OAuthIntegrationCardView({
       invalidateStatus();
       toastWrittenOutcome(
         "success",
-        t("settings.integrationDisconnected", { provider: providerName }),
+        t("settings.integrationDisconnected", providerArg),
       );
     },
-    // The confirmation dialog has closed by now; without this a refused
-    // disconnect left the card connected and said nothing.
+    // The dialog has closed; a refused disconnect must still say so.
     onError: (failure) =>
-      showErrorToast(
-        t("settings.integrationDisconnectFailed", { provider: providerName }),
-        { cause: failure },
-      ),
+      showErrorToast(t("settings.integrationDisconnectFailed", providerArg), {
+        cause: failure,
+      }),
   });
 
   const resume = useMutation({
@@ -352,7 +351,7 @@ export function OAuthIntegrationCardView({
               >
                 {config.credentials === "required"
                   ? t(`${i18nPrefix}NoCredentials`)
-                  : t(`${i18nPrefix}Unavailable`)}
+                  : t("settings.integrationCard.notConfigured", providerArg)}
               </p>
             ) : null}
             <CallbackMismatchNotice

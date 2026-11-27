@@ -1,26 +1,6 @@
-import {
-  Activity,
-  Bell,
-  Brain,
-  BrainCircuit,
-  ClipboardList,
-  Droplets,
-  HeartPulse,
-  FileScan,
-  FlaskConical,
-  History,
-  Home,
-  Lightbulb,
-  MessagesSquare,
-  Pill,
-  Settings,
-  Stethoscope,
-  Syringe,
-  Thermometer,
-  Trophy,
-  Waves,
-  type LucideIcon,
-} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
+import { RAIL_ICONS as ICON } from "@/components/layout/destination-icons/rail";
 
 import type { ModuleKey } from "@/lib/modules/registry";
 import { isSurfaceVisible, surfaceModule } from "@/lib/modules/surface";
@@ -135,7 +115,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
     group: "home",
     sharedRecord: true,
     tKey: "nav.dashboard",
-    icon: Home,
+    icon: ICON.dashboard,
     tourId: "nav-dashboard",
   },
   {
@@ -143,7 +123,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
     group: "tracking",
     sharedRecord: true,
     tKey: "nav.measurements",
-    icon: Activity,
+    icon: ICON.measurements,
     tourId: "nav-measurements",
   },
   {
@@ -151,7 +131,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
     group: "tracking",
     sharedRecord: true,
     tKey: "nav.medications",
-    icon: Pill,
+    icon: ICON.medications,
     tourId: "nav-medications",
     // v1.18.1 — medications graduated from a CORE domain to a toggleable
     // module; the nav entry now drops when the account turns the module off.
@@ -161,7 +141,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
     group: "tracking",
     sharedRecord: true,
     tKey: "nav.mood",
-    icon: Waves,
+    icon: ICON.mood,
     tourId: "nav-mood",
   },
   // v1.25.0 — opt-in mental-health screeners (PHQ-9 / GAD-7), beside mood.
@@ -173,7 +153,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
     group: "tracking",
     sharedRecord: true,
     tKey: "nav.mentalWellbeing",
-    icon: Brain,
+    icon: ICON.mentalWellbeing,
     tourId: "nav-mental-wellbeing",
   },
   {
@@ -181,7 +161,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
     group: "tracking",
     sharedRecord: true,
     tKey: "nav.cycle",
-    icon: Droplets,
+    icon: ICON.cycle,
     tourId: "nav-cycle",
   },
   // v1.17.1 — Vorsorge (preventive-care) gets a top-level nav home in the
@@ -194,7 +174,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
     group: "record",
     sharedRecord: true,
     tKey: "nav.vorsorge",
-    icon: Stethoscope,
+    icon: ICON.care,
     tourId: "nav-vorsorge",
     // v1.18.1 — deliberately owned by no module (absent from the surface
     // map). Unlike
@@ -210,7 +190,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
     group: "record",
     sharedRecord: true,
     tKey: "nav.labs",
-    icon: FlaskConical,
+    icon: ICON.labs,
     tourId: "nav-labs",
   },
   {
@@ -219,7 +199,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
     sharedRecord: true,
     sharedRecordOnly: true,
     tKey: "nav.profile",
-    icon: ClipboardList,
+    icon: ICON.medicalHistory,
     tourId: "nav-profile",
   },
   // v1.18.1 — the illness/condition journal sits in the clinical spine
@@ -229,7 +209,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
     group: "record",
     sharedRecord: true,
     tKey: "nav.illness",
-    icon: Thermometer,
+    icon: ICON.illness,
     tourId: "nav-illness",
   },
   // The seizure diary, beside the illness journal. Owned by
@@ -240,7 +220,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
     group: "record",
     sharedRecord: true,
     tKey: "nav.seizures",
-    icon: BrainCircuit,
+    icon: ICON.seizures,
     tourId: "nav-seizures",
   },
   // v1.37.3: the immunization log sits in the clinical spine beside Illness.
@@ -253,7 +233,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
     group: "record",
     sharedRecord: true,
     tKey: "nav.vaccinations",
-    icon: Syringe,
+    icon: ICON.vaccinations,
     tourId: "nav-vaccinations",
   },
   // v1.18.0 — Workouts and Recovery both left the left-nav: each already
@@ -267,7 +247,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
     group: "record",
     sharedRecord: true,
     tKey: "nav.documents",
-    icon: FileScan,
+    icon: ICON.documents,
     tourId: "nav-documents",
   },
   // The emergency card is not a destination here: it is set up once and then
@@ -283,7 +263,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
     group: "analysis",
     sharedRecord: true,
     tKey: "nav.timeline",
-    icon: History,
+    icon: ICON.timeline,
     tourId: "nav-timeline",
   },
   // Insights belongs to no module: the `insights` key means AI analysis, and
@@ -315,7 +295,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
     href: "/insights",
     group: "analysis",
     tKey: "nav.insights",
-    icon: Lightbulb,
+    icon: ICON.insights,
     tourId: "nav-insights",
   },
   // v1.17.1 — the Coach finally gets a single labeled nav home. It
@@ -326,7 +306,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
     href: "/coach",
     group: "analysis",
     tKey: "nav.coach",
-    icon: MessagesSquare,
+    icon: ICON.coach,
     tourId: "nav-coach",
   },
   {
@@ -334,7 +314,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
     group: "analysis",
     sharedRecord: true,
     tKey: "nav.achievements",
-    icon: Trophy,
+    icon: ICON.achievements,
     tourId: "nav-achievements",
   },
 ];
@@ -352,10 +332,15 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
  *
  * Order is the footer/menu order: Settings → Notifications.
  *
+ * Notifications is one place: Settings > Notifications, under the same name
+ * and bell as its Settings row. The per-channel matrix (`/notifications`) is a
+ * page inside it, linked from there, not a second door with its own name.
+ *
  * Admin is intentionally NOT here: it is a role-gated surface that never
  * appears under a switch, so it stays local to each bar.
  */
 export interface NavUtilityDestination {
+  id: "settings" | "notifications";
   href: string;
   /** i18n key under the `nav.*` namespace. */
   tKey: string;
@@ -363,15 +348,25 @@ export interface NavUtilityDestination {
 }
 
 export const NAV_UTILITY_DESTINATIONS: ReadonlyArray<NavUtilityDestination> = [
-  { href: "/settings/account", tKey: "nav.settings", icon: Settings },
-  { href: "/notifications", tKey: "nav.notifications", icon: Bell },
+  {
+    id: "settings",
+    href: "/settings/account",
+    tKey: "nav.settings",
+    icon: ICON.settings,
+  },
+  {
+    id: "notifications",
+    href: "/settings/notifications",
+    tKey: "nav.notifications",
+    icon: ICON.notifications,
+  },
 ];
 
 /** Is this utility entry the Settings door, wherever it lands. */
 export function isSettingsUtilityDestination(
-  d: Pick<NavUtilityDestination, "href">,
+  d: Pick<NavUtilityDestination, "id">,
 ): boolean {
-  return d.href.startsWith("/settings/");
+  return d.id === "settings";
 }
 
 /**
@@ -428,7 +423,13 @@ export interface NavAccountMenuDestination {
 }
 
 export const NAV_ACCOUNT_MENU_DESTINATIONS: ReadonlyArray<NavAccountMenuDestination> =
-  [{ href: "/emergency-card", tKey: "nav.emergencyCard", icon: HeartPulse }];
+  [
+    {
+      href: "/emergency-card",
+      tKey: "nav.emergencyCard",
+      icon: ICON.emergencyCard,
+    },
+  ];
 
 /**
  * The account-menu record pages visible to this session. Both account menus

@@ -91,7 +91,7 @@ describe("<LayoutCoachFab>", () => {
     // shares the button's own on-accent token (text-background) rather than a
     // harsh pure white, so it reads as a softer mark on the gradient.
     expect(html).not.toContain("text-white");
-    expect(html).toMatch(/lucide-sparkles[^"]*text-background/);
+    expect(html).toMatch(/lucide-messages-square[^"]*text-background/);
     // The offset ring draws a visible halo around the gradient circle and
     // provides the non-text UI-component contrast against the page.
     expect(html).toContain("focus-visible:ring-offset-2");
