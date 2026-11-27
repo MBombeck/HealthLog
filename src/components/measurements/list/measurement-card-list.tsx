@@ -165,7 +165,7 @@ function MeasurementRow({
           )}
           {isGrouped && !isSleep ? (
             <>
-              {" · "}
+              {", "}
               {t("measurements.dailyTotalCaption", {
                 count: fmt.integer(m.sampleCount as number),
               })}
@@ -185,8 +185,7 @@ function MeasurementRow({
             // User data is never muted; the table renders the same note in
             // the foreground colour.
             <span className="text-foreground">
-              {" "}
-              · {truncateComment(m.notes)}
+              , {truncateComment(m.notes)}
             </span>
           ) : null}
         </>

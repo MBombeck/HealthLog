@@ -209,7 +209,7 @@ function DoseRow({
         meta.length > 0
           ? meta.map((part, index) => (
               <span key={part.key} data-slot={part.slot}>
-                {index > 0 ? " · " : null}
+                {index > 0 ? ", " : null}
                 <span>{part.text}</span>
               </span>
             ))
