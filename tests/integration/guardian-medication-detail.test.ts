@@ -389,6 +389,127 @@ describe("a guardian removing a mistaken medication", () => {
   });
 });
 
+/** POST, PATCH or DELETE one of the two vocabularies the guardian adds to. */
+async function vocabulary() {
+  const categories = await import("@/app/api/medications/categories/route");
+  const category = await import("@/app/api/medications/categories/[key]/route");
+  const symptoms = await import("@/app/api/cycle/symptoms/custom/route");
+  const symptom = await import("@/app/api/cycle/symptoms/custom/[key]/route");
+  const cast = (h: unknown) => h as Handler;
+  return {
+    addCategory: (label: string) =>
+      cast(categories.POST)(
+        jsonRequest("/api/medications/categories", "POST", { label }),
+        ctx({}),
+      ),
+    renameCategory: (key: string, label: string) =>
+      cast(category.PATCH)(
+        jsonRequest(`/api/medications/categories/${key}`, "PATCH", { label }),
+        ctx({ key }),
+      ),
+    deleteCategory: (key: string) =>
+      cast(category.DELETE)(
+        jsonRequest(`/api/medications/categories/${key}`, "DELETE"),
+        ctx({ key }),
+      ),
+    addSymptom: (label: string) =>
+      cast(symptoms.POST)(
+        jsonRequest("/api/cycle/symptoms/custom", "POST", { label }),
+        ctx({}),
+      ),
+    renameSymptom: (key: string, label: string) =>
+      cast(symptom.PATCH)(
+        jsonRequest(`/api/cycle/symptoms/custom/${key}`, "PATCH", { label }),
+        ctx({ key }),
+      ),
+    deleteSymptom: (key: string) =>
+      cast(symptom.DELETE)(
+        // The delete reads `request.nextUrl` for `?purge=true`.
+        new NextRequest(`http://localhost/api/cycle/symptoms/custom/${key}`, {
+          method: "DELETE",
+        }),
+        ctx({ key }),
+      ),
+  };
+}
+
+async function enableCycle(userId: string) {
+  await getPrismaClient().user.update({
+    where: { id: userId },
+    data: { gender: "FEMALE" },
+  });
+}
+
+describe("a guardian undoing what they added (#1615)", () => {
+  it("renames and deletes a custom medication category they added", async () => {
+    const { guardian, profile } = await guardianInside();
+    const v = await vocabulary();
+
+    const added = await v.addCategory("Travel kit");
+    expect(added.status).toBe(201);
+    const key = (await added.json()).data.key as string;
+
+    const renamed = await v.renameCategory(key, "Holiday kit");
+    expect(renamed.status, await renamed.clone().text()).toBe(200);
+    const removed = await v.deleteCategory(key);
+    expect(removed.status, await removed.clone().text()).toBe(200);
+    expect(
+      await getPrismaClient().medicationCategoryLabel.count({
+        where: { userId: profile.id, key },
+      }),
+    ).toBe(0);
+    for (const action of [
+      "medication.category.custom.update",
+      "medication.category.custom.delete",
+    ]) {
+      expect(await auditRows(action)).toEqual([
+        { userId: profile.id, actorUserId: guardian.id },
+      ]);
+    }
+  });
+
+  it("renames and removes a custom cycle symptom they added", async () => {
+    const { guardian, profile } = await guardianInside();
+    await enableCycle(profile.id);
+    const v = await vocabulary();
+
+    const added = await v.addSymptom("Pelvic pressure");
+    expect(added.status, await added.clone().text()).toBe(201);
+    const key = (await added.json()).data.key as string;
+
+    const renamed = await v.renameSymptom(key, "Lower back pressure");
+    expect(renamed.status, await renamed.clone().text()).toBe(200);
+    const removed = await v.deleteSymptom(key);
+    expect(removed.status, await removed.clone().text()).toBe(200);
+    for (const action of [
+      "cycle.symptom.custom.update",
+      "cycle.symptom.custom.delete",
+    ]) {
+      expect(await auditRows(action)).toEqual([
+        { userId: profile.id, actorUserId: guardian.id },
+      ]);
+    }
+  });
+
+  it("an adult's delegate at MANAGE still cannot rename or remove either", async () => {
+    const { owner } = await adultInside("MANAGE");
+    await enableCycle(owner.id);
+    const { encryptCategoryLabel, mintCustomMedicationCategoryKey } =
+      await import("@/lib/medication-category");
+    const category = await getPrismaClient().medicationCategoryLabel.create({
+      data: {
+        userId: owner.id,
+        key: mintCustomMedicationCategoryKey(),
+        labelEncrypted: encryptCategoryLabel("Travel kit"),
+      },
+    });
+    const v = await vocabulary();
+    expect((await v.renameCategory(category.key, "Renamed")).status).toBe(403);
+    expect((await v.deleteCategory(category.key)).status).toBe(403);
+    expect((await v.deleteSymptom("custom-symptom")).status).toBe(403);
+  });
+});
+
 describe("an adult's share", () => {
   it("at MANAGE cannot delete the owner's medication", async () => {
     const { owner } = await adultInside("MANAGE");

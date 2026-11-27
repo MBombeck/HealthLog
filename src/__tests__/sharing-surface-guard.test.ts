@@ -1255,7 +1255,17 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
   },
   "app/api/medications/categories/route.ts": {
     domain: "medications",
-    why: "The record's own medication category vocabulary, read and added to from the wizard. The labels and the per-category counts are scoped to the resolved id; renaming and deleting live in the owner-only `[key]` sibling.",
+    why: "The record's own medication category vocabulary, read and added to from the wizard. The labels and the per-category counts are scoped to the resolved id; renaming and deleting live in the `[key]` sibling, the owner's and a managed profile's guardian's.",
+  },
+  // #1615 -- a guardian could add a category or a custom symptom and then
+  // neither rename nor remove it.
+  "app/api/medications/categories/[key]/route.ts": {
+    domain: "medications",
+    why: "Renaming, hiding or deleting one custom medication category of the resolved record. Declares `\"guardian\"`: the owner or a managed profile's guardian, never an adult's delegate.",
+  },
+  "app/api/cycle/symptoms/custom/[key]/route.ts": {
+    domain: "cycle",
+    why: "Renaming, recolouring or removing one custom symptom of the resolved record. Declares `\"guardian\"`: the owner or a managed profile's guardian, never an adult's delegate.",
   },
   "app/api/medications/[id]/route.ts": {
     domain: "medications",
@@ -2424,6 +2434,10 @@ const DELEGABLE_GUARDIAN_ROUTES: Record<string, string> = {
   // who could remove it.
   "app/api/medications/[id]/route.ts":
     "Deleting a medication of the resolved record, with its dose history and its ingest tokens. Owner or managed-profile guardian only; an adult's delegate at MANAGE stays refused. Audited; the row names the guardian.",
+  "app/api/medications/categories/[key]/route.ts":
+    "Renaming, hiding or deleting a custom medication category the guardian may add. Audited on both arms; the row names the guardian. The rate bucket is the actor's.",
+  "app/api/cycle/symptoms/custom/[key]/route.ts":
+    "Renaming or removing a custom symptom the guardian may add. Audited on both arms; the row names the guardian. The rate bucket is the actor's.",
 };
 
 /**
@@ -2614,9 +2628,11 @@ const ACTOR_ROUTES: Record<string, string> = {
  * 1.49: the getting-started checklist's optional-row presence read joins the
  * guardian list. 342 -> 343.
  *
- * #1615: the medication DELETE joins the guardian-need list. 344 -> 345.
+ * #1615: the medication DELETE joins the guardian-need list, and the custom
+ * medication category and custom cycle symptom edits join both lists.
+ * 344 -> 349.
  */
-const FROZEN_ENTRY_COUNT = 345;
+const FROZEN_ENTRY_COUNT = 349;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —
