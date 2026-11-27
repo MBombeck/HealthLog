@@ -6,7 +6,6 @@ import { ArrowRight, Droplets } from "lucide-react";
 import { useTranslations } from "@/lib/i18n/context";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { CyclePhaseHeadline } from "./cycle-phase-crosstab";
-import { CycleRing } from "./cycle-ring";
 import { PHASE_HUE } from "./phase-tokens";
 import {
   useCycleCalendar,
@@ -113,9 +112,9 @@ export function CycleInsightSummaryCard() {
           style={{ "--tile-hue": hue } as React.CSSProperties}
           className="wellness-tile wellness-tile-rise rounded-xl p-4 md:p-6"
         >
-          {/* Zone 1 — the current phase / cycle-day read, with the cycle
-              dial beside it (it left the score rings at the head of the page
-              in 1.50: the cycle is not a score). */}
+          {/* Zone 1 — the current phase / cycle-day read. The dial stands
+              in the score row at the head of the page, so it is not drawn a
+              second time here. */}
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
               <h3
@@ -139,16 +138,6 @@ export function CycleInsightSummaryCard() {
                   : t("cycle.insightsSummary.noActiveCycle")}
               </p>
             </div>
-            {phase && dayOfCycle != null ? (
-              <CycleRing
-                dayOfCycle={dayOfCycle}
-                cycleLength={verdict?.cycleLength ?? null}
-                phase={phase}
-                spans={verdict?.spans}
-                size={88}
-                className="shrink-0"
-              />
-            ) : null}
           </div>
 
           {/* Zone 2 — the one headline phase finding (shared component owns the

@@ -3592,8 +3592,11 @@
         "steadyLatestBelow": "Suas leituras costumam ficar em {low} {unit}; sua última leitura, {date}, foi {value}, abaixo disso.",
         "componentLine": "{component}: {line}",
         "insufficient": "Ainda aprendendo sua faixa habitual. Continue registrando por mais alguns dias.",
-        "driver": "{note}",
-        "loadError": "Não foi possível carregar a sua faixa habitual."
+        "loadError": "Não foi possível carregar a sua faixa habitual.",
+        "range": "Faixa",
+        "todayValue": "hoje {value}",
+        "latestValue": "{date}: {value}",
+        "soFarValue": "hoje até agora {value}"
       },
       "scope": {
         "prefix": "O Coach já está em {metric}"
@@ -3955,7 +3958,9 @@
       },
       "bpDerived": {
         "pulsePressure": "A pressão de pulso (a diferença entre suas leituras) é cerca de {value} mmHg; aproximadamente 40 é típico em repouso.",
-        "meanArterialPressure": "A pressão arterial média (a média que seus órgãos veem) é cerca de {value} mmHg, normalmente em torno de 70–100."
+        "meanArterialPressure": "A pressão arterial média (a média que seus órgãos veem) é cerca de {value} mmHg, normalmente em torno de 70–100.",
+        "pulsePressureLabel": "Pressão de pulso",
+        "meanArterialPressureLabel": "Pressão média"
       },
       "stats": {
         "label": "Estatísticas resumidas",
@@ -5363,7 +5368,6 @@
     },
     "bpTimeOfDay": {
       "title": "Por período do dia",
-      "description": "Sua pressão arterial média em cada período do dia, no intervalo do gráfico.",
       "part": {
         "morning": "Manhã",
         "midday": "Tarde",
@@ -5371,14 +5375,7 @@
       },
       "filterAll": "Dia todo",
       "filterLabel": "Mostrar no gráfico",
-      "readingsOne": "{count} medição",
-      "readingsFew": "{count} medições",
-      "readingsOther": "{count} medições",
       "notEnough": "Poucas medições",
-      "pulse": "Pulso {value} bpm",
-      "difference": "Manhã menos noite: {systolic}/{diastolic} mmHg.",
-      "differencePending": "Manhã e noite são comparadas quando cada uma tiver pelo menos {min, plural, one {# medição} other {# medições}}.",
-      "hours": "Manhã {morning}, tarde {midday}, noite {evening}, no seu fuso horário.",
       "hourRange": "{start}–{end}",
       "emptyTitle": "Nenhuma medição completa neste intervalo",
       "emptyDescription": "Medições com valor sistólico e diastólico aparecem aqui.",
@@ -5396,7 +5393,6 @@
       }
     },
     "scores": {
-      "historyWindow": "Histórico de {days} dias",
       "staleLast": "Último: {score} em {date}",
       "valuesFrom": "Valores de {date}",
       "loadError": "Não foi possível carregar suas pontuações agora.",
@@ -16493,7 +16489,6 @@
     "expiryPushBody": "{title}: válida até {date}, {count, plural, one {resta # sessão} other {restam # sessões}}."
   },
   "chartContext": {
-    "listLabel": "Medicamentos e doenças neste período",
     "start": "{name}: início",
     "startDose": "{name}: início com {dose}",
     "startEstimated": "{name}: primeira dose registrada",
