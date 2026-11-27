@@ -6266,10 +6266,7 @@
           "appleHealth": {
             "title": "Apple Health",
             "description": "De export.zip uit de Gezondheid-app op de iPhone.",
-            "dropLabel": "Sleep export.zip hierheen",
-            "dropHint": "of klik om een bestand te kiezen",
             "fileInputLabel": "Kies een export.zip-bestand van Apple Health",
-            "choose": "Bestand kiezen",
             "idempotencyNote": "Grote archieven worden op de achtergrond verwerkt.",
             "uploading": "Uploaden…",
             "uploadFailed": "Uploaden mislukt. Probeer het opnieuw.",
@@ -6465,7 +6462,6 @@
           "healthConnect": {
             "title": "Health Connect-export",
             "description": "De ZIP die Health Connect op Android schrijft.",
-            "choose": "Bestand kiezen",
             "uploading": "Uploaden…",
             "uploadFailed": "Het uploaden is mislukt. Probeer het opnieuw.",
             "tooLarge": "Het bestand is groter dan deze server accepteert.",
@@ -6484,8 +6480,6 @@
               "cloud": "Health Connect slaat de export alleen op in een cloudopslag-app zoals Google Drive, Dropbox of Nextcloud, nooit op de telefoon zelf.",
               "upload": "Download het ZIP-bestand uit die cloud naar dit apparaat en upload het hier."
             },
-            "dropLabel": "Sleep het Health Connect-ZIP-bestand hierheen",
-            "dropHint": "of klik om het te kiezen. Maximaal 1 GB.",
             "fileInputLabel": "ZIP-bestand van Health Connect-export",
             "privacyNote": "Gegevens van apps die je al rechtstreeks koppelt, zoals Withings, worden overgeslagen, zodat niets dubbel binnenkomt.",
             "rateLimited": "Te veel uploads in korte tijd. Wacht een minuut en probeer het opnieuw.",
@@ -6505,23 +6499,18 @@
               "interrupted": "De import is onderbroken doordat de server opnieuw is gestart. Upload het bestand opnieuw."
             },
             "folderRow": "Automatisch uit een map",
-            "folderMeta": "WebDAV of Nextcloud, onder Integraties"
+            "folderMeta": "WebDAV of Nextcloud, onder Integraties",
+            "fileHint": "ZIP, tot 1 GB"
           },
           "fit": {
             "title": "Activiteitsbestand (FIT)",
-            "description": "Een training van een horloge of fietscomputer.",
-            "choose": "Bestand kiezen",
+            "description": "Trainingen van een horloge of fietscomputer.",
             "uploading": "Uploaden…",
             "uploadFailed": "Het uploaden is mislukt. Probeer het opnieuw.",
-            "tooLarge": "Het bestand is groter dan 10 MB.",
-            "rateLimited": "Te veel uploads in korte tijd. Wacht een minuut en probeer het opnieuw.",
-            "busy": "Er loopt al een import voor je account. Wacht tot die klaar is.",
             "failed": "De import is mislukt. Probeer het opnieuw.",
             "doneSummary": "Het activiteitsbestand is geïmporteerd.",
             "doneNothing": "De import is klaar, maar er was niets nieuws toe te voegen.",
-            "dropLabel": "Zet het activiteitsbestand hier neer",
-            "dropHint": "of klik om het te kiezen: een .fit-, .fit.gz- of .zip-bestand tot 10 MB.",
-            "fileInputLabel": "Activiteitsbestand",
+            "fileInputLabel": "Activiteitsbestanden",
             "privacyNote": "Het GPS-spoor wordt alleen bewaard als Trainingsroutes aan staat.",
             "steps": {
               "garmin": "Garmin Connect: open de activiteit op de website, kies het tandwielmenu en daarna Origineel exporteren.",
@@ -6552,7 +6541,24 @@
               "noSession": "Het bestand bevat geen leesbare training.",
               "stagingMissing": "Het geüploade bestand stond niet meer op de server. Upload het opnieuw.",
               "interrupted": "De import werd onderbroken door een herstart van de server. Upload het bestand opnieuw."
-            }
+            },
+            "batch": {
+              "waiting": "Wacht",
+              "imported": "Geïmporteerd",
+              "duplicate": "Al geïmporteerd",
+              "progress": "{done} van {total}",
+              "capped": "Alleen de eerste 100 bestanden worden geïmporteerd.",
+              "reason": {
+                "tooLarge": "Groter dan 10 MB",
+                "unsupported": "Geen FIT-bestand",
+                "damaged": "Bestand beschadigd",
+                "notActivity": "Geen activiteit",
+                "noWorkout": "Geen training gevonden",
+                "busy": "Er loopt al een andere import",
+                "retry": "Mislukt, probeer opnieuw"
+              }
+            },
+            "fileHint": ".fit, .fit.gz of .zip, elk tot 10 MB"
           },
           "recordFile": {
             "gadgetbridge": {
@@ -6561,7 +6567,8 @@
               "steps": {
                 "export": "Open in Gadgetbridge Instellingen, dan Gegevensbeheer, dan Database exporteren.",
                 "upload": "Upload hier het bestand met de naam Gadgetbridge. Tot 512 MB."
-              }
+              },
+              "fileHint": "Het bestand ‘Gadgetbridge’, tot 512 MB"
             },
             "fhirBundle": {
               "title": "Patiëntendossier (FHIR)",
@@ -6569,9 +6576,9 @@
               "steps": {
                 "export": "Exporteer in je patiëntenportaal je dossier als FHIR R4 (JSON).",
                 "upload": "Upload hier het .json-bestand. Tot 32 MB."
-              }
+              },
+              "fileHint": ".json, tot 32 MB"
             },
-            "choose": "Bestand kiezen",
             "uploading": "Uploaden…",
             "running": "Importeren op de achtergrond…",
             "doneSummary": "Het bestand is geïmporteerd.",
@@ -6642,7 +6649,10 @@
             "failed": "{date}, niet geïmporteerd"
           },
           "pasteOr": "Of plakken",
-          "guideTitle": "Voorbeeld en kolommen"
+          "guideTitle": "Voorbeeld en kolommen",
+          "pickerFile": "Bestand",
+          "pickerFiles": "Bestanden",
+          "pickerChoose": "Kiezen"
         },
         "exportHeading": "Exporteren"
       },
@@ -15714,7 +15724,7 @@
     },
     "unitlessHint": "Een verhouding of index zonder eenheid (INR, cholesterol/HDL): vul 1 in de eenheidskolom in. Een lege eenheid blijft een fout.",
     "row": {
-      "labs": "Labwaarden (CSV)",
+      "labs": "Labuitslagen (CSV)",
       "medications": "Medicijnen (CSV)"
     },
     "rowMeta": "Je wijst de kolommen zelf toe"

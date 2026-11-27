@@ -310,9 +310,8 @@ export function FitImportSource() {
         })
       : isRunning
         ? (labels.phases[job?.status ?? "queued"] ?? labels.phases.queued)
-        : (finishedMeta(
-            job ? { ...job, written: summary.written } : null,
-          ) ?? t("settings.sections.export.import.fit.fileHint"));
+        : (finishedMeta(job ? { ...job, written: summary.written } : null) ??
+          t("settings.sections.export.import.fit.fileHint"));
 
   return (
     <ImportSource
@@ -342,8 +341,8 @@ export function FitImportSource() {
       onOpenChange={setOpen}
       query={statusQuery}
       chooseTestId="import-choose-fit"
+      fileInputRef={fileInputRef}
       file={{
-        inputRef: fileInputRef,
         multiple: true,
         accept:
           ".fit,.gz,.zip,application/zip,application/gzip,application/octet-stream",
@@ -358,6 +357,7 @@ export function FitImportSource() {
           inputRef={fileInputRef}
           meta={pickerMeta ?? t("settings.sections.export.import.fit.fileHint")}
           actionTestId="import-action-fit"
+          onFiles={(files) => void start(files)}
         />
         {!showJob &&
           batch.map((row) => (

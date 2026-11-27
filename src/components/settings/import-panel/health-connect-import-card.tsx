@@ -282,8 +282,8 @@ export function HealthConnectImportSource() {
       onOpenChange={setOpen}
       query={statusQuery}
       chooseTestId="import-choose-health-connect"
+      fileInputRef={fileInputRef}
       file={{
-        inputRef: fileInputRef,
         accept: ".zip,application/zip",
         inputLabel: t(
           "settings.sections.export.import.healthConnect.fileInputLabel",
@@ -297,6 +297,7 @@ export function HealthConnectImportSource() {
           inputRef={fileInputRef}
           meta={pickerMeta}
           actionTestId="import-action-health-connect"
+          onFiles={([file]) => void upload(file!)}
         />
         {isDone &&
           summary.types.map(({ type, written }) => (

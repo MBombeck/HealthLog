@@ -6266,10 +6266,7 @@
           "appleHealth": {
             "title": "Apple Health",
             "description": "Plik export.zip z aplikacji Zdrowie na iPhonie.",
-            "dropLabel": "Upuść tutaj export.zip",
-            "dropHint": "lub kliknij, aby wybrać plik",
             "fileInputLabel": "Wybierz plik export.zip z Apple Health",
-            "choose": "Wybierz plik",
             "idempotencyNote": "Duże archiwa są przetwarzane w tle.",
             "uploading": "Przesyłanie…",
             "uploadFailed": "Przesyłanie nie powiodło się. Spróbuj ponownie.",
@@ -6465,7 +6462,6 @@
           "healthConnect": {
             "title": "Eksport z Health Connect",
             "description": "Plik ZIP zapisany przez Health Connect na Androidzie.",
-            "choose": "Wybierz plik",
             "uploading": "Przesyłanie…",
             "uploadFailed": "Przesyłanie nie powiodło się. Spróbuj ponownie.",
             "tooLarge": "Plik jest większy, niż przyjmuje ten serwer.",
@@ -6484,8 +6480,6 @@
               "cloud": "Health Connect zapisuje eksport tylko w aplikacji chmurowej, takiej jak Google Drive, Dropbox czy Nextcloud, nigdy w samym telefonie.",
               "upload": "Pobierz plik ZIP z tej chmury na to urządzenie i prześlij go tutaj."
             },
-            "dropLabel": "Upuść tutaj plik ZIP z Health Connect",
-            "dropHint": "lub kliknij, aby go wybrać. Do 1 GB.",
             "fileInputLabel": "Plik ZIP eksportu Health Connect",
             "privacyNote": "Dane z aplikacji, które łączysz już bezpośrednio, np. Withings, są pomijane, żeby nic nie trafiło podwójnie.",
             "rateLimited": "Za dużo przesyłań w krótkim czasie. Odczekaj minutę i spróbuj ponownie.",
@@ -6505,23 +6499,18 @@
               "interrupted": "Import został przerwany przez ponowne uruchomienie serwera. Prześlij plik ponownie."
             },
             "folderRow": "Automatycznie z folderu",
-            "folderMeta": "WebDAV lub Nextcloud, w Integracjach"
+            "folderMeta": "WebDAV lub Nextcloud, w Integracjach",
+            "fileHint": "ZIP, do 1 GB"
           },
           "fit": {
             "title": "Plik aktywności (FIT)",
-            "description": "Trening z zegarka lub licznika rowerowego.",
-            "choose": "Wybierz plik",
+            "description": "Treningi z zegarka lub licznika rowerowego.",
             "uploading": "Przesyłanie…",
             "uploadFailed": "Przesyłanie nie powiodło się. Spróbuj ponownie.",
-            "tooLarge": "Plik jest większy niż 10 MB.",
-            "rateLimited": "Zbyt wiele przesłań w krótkim czasie. Odczekaj minutę i spróbuj ponownie.",
-            "busy": "Dla Twojego konta trwa już import. Poczekaj, aż się zakończy.",
             "failed": "Import nie powiódł się. Spróbuj ponownie.",
             "doneSummary": "Plik aktywności został zaimportowany.",
             "doneNothing": "Import się zakończył, ale nie było nic nowego do dodania.",
-            "dropLabel": "Upuść tutaj plik aktywności",
-            "dropHint": "lub kliknij, aby go wybrać: plik .fit, .fit.gz lub .zip do 10 MB.",
-            "fileInputLabel": "Plik aktywności",
+            "fileInputLabel": "Pliki aktywności",
             "privacyNote": "Ślad GPS jest zapisywany tylko wtedy, gdy włączone są Trasy treningów.",
             "steps": {
               "garmin": "Garmin Connect: otwórz aktywność na stronie, wybierz menu z kołem zębatym, a potem Eksportuj oryginał.",
@@ -6552,7 +6541,24 @@
               "noSession": "Plik nie zawiera żadnego treningu, który dałoby się odczytać.",
               "stagingMissing": "Przesłanego pliku nie było już na serwerze. Prześlij go ponownie.",
               "interrupted": "Import przerwał restart serwera. Prześlij plik ponownie."
-            }
+            },
+            "batch": {
+              "waiting": "Oczekuje",
+              "imported": "Zaimportowano",
+              "duplicate": "Już zaimportowano",
+              "progress": "{done} z {total}",
+              "capped": "Importowanych jest tylko pierwszych 100 plików.",
+              "reason": {
+                "tooLarge": "Większy niż 10 MB",
+                "unsupported": "To nie jest plik FIT",
+                "damaged": "Plik uszkodzony",
+                "notActivity": "To nie jest aktywność",
+                "noWorkout": "Nie znaleziono treningu",
+                "busy": "Trwa inny import",
+                "retry": "Błąd, spróbuj ponownie"
+              }
+            },
+            "fileHint": ".fit, .fit.gz lub .zip, do 10 MB każdy"
           },
           "recordFile": {
             "gadgetbridge": {
@@ -6561,7 +6567,8 @@
               "steps": {
                 "export": "W Gadgetbridge otwórz Ustawienia, potem Zarządzanie danymi, potem Eksportuj bazę danych.",
                 "upload": "Prześlij tutaj plik o nazwie Gadgetbridge. Do 512 MB."
-              }
+              },
+              "fileHint": "Plik „Gadgetbridge”, do 512 MB"
             },
             "fhirBundle": {
               "title": "Dokumentacja pacjenta (FHIR)",
@@ -6569,9 +6576,9 @@
               "steps": {
                 "export": "W portalu pacjenta wyeksportuj dokumentację jako FHIR R4 (JSON).",
                 "upload": "Prześlij tutaj plik .json. Do 32 MB."
-              }
+              },
+              "fileHint": ".json, do 32 MB"
             },
-            "choose": "Wybierz plik",
             "uploading": "Przesyłanie…",
             "running": "Import w tle…",
             "doneSummary": "Plik został zaimportowany.",
@@ -6642,7 +6649,10 @@
             "failed": "{date}, nie zaimportowano"
           },
           "pasteOr": "Lub wklej",
-          "guideTitle": "Przykład i kolumny"
+          "guideTitle": "Przykład i kolumny",
+          "pickerFile": "Plik",
+          "pickerFiles": "Pliki",
+          "pickerChoose": "Wybierz"
         },
         "exportHeading": "Eksport"
       },

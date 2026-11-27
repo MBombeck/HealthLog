@@ -6255,7 +6255,7 @@
             "description": "Everything in one file, encrypted if you like"
           },
           "doctorReport": {
-            "title": "Doctor's report",
+            "title": "Doctor report",
             "description": "PDF, FHIR or ZIP"
           }
         },
@@ -6266,10 +6266,7 @@
           "appleHealth": {
             "title": "Apple Health",
             "description": "The export.zip from the Health app on iPhone.",
-            "dropLabel": "Drop export.zip here",
-            "dropHint": "or click to choose a file",
             "fileInputLabel": "Choose an Apple Health export.zip file",
-            "choose": "Choose file",
             "idempotencyNote": "Large archives are processed in the background.",
             "uploading": "Uploading…",
             "uploadFailed": "Upload failed. Please try again.",
@@ -6465,7 +6462,6 @@
           "healthConnect": {
             "title": "Health Connect export",
             "description": "The ZIP that Health Connect writes on Android.",
-            "choose": "Choose file",
             "uploading": "Uploading…",
             "uploadFailed": "The upload failed. Please try again.",
             "tooLarge": "The file is larger than this server accepts.",
@@ -6484,8 +6480,6 @@
               "cloud": "Health Connect only saves the export to a cloud storage app such as Google Drive, Dropbox or Nextcloud, never to the phone itself.",
               "upload": "Download the ZIP file from that cloud to this device and upload it here."
             },
-            "dropLabel": "Drop the Health Connect ZIP here",
-            "dropHint": "or click to choose it. Up to 1 GB.",
             "fileInputLabel": "Health Connect export ZIP file",
             "privacyNote": "Records from apps you already connect directly, such as Withings, are left out so nothing arrives twice.",
             "rateLimited": "Too many uploads in a short time. Wait a minute and try again.",
@@ -6505,23 +6499,18 @@
               "interrupted": "The import was interrupted by a server restart. Upload the file again."
             },
             "folderRow": "Automatically from a folder",
-            "folderMeta": "WebDAV or Nextcloud, under Integrations"
+            "folderMeta": "WebDAV or Nextcloud, under Integrations",
+            "fileHint": "ZIP, up to 1 GB"
           },
           "fit": {
             "title": "Activity file (FIT)",
-            "description": "A workout from a watch or bike computer.",
-            "choose": "Choose file",
+            "description": "Workouts from a watch or bike computer.",
             "uploading": "Uploading…",
             "uploadFailed": "The upload failed. Please try again.",
-            "tooLarge": "The file is larger than 10 MB.",
-            "rateLimited": "Too many uploads in a short time. Wait a minute and try again.",
-            "busy": "An import is already running for your account. Wait until it has finished.",
             "failed": "The import failed. Please try again.",
             "doneSummary": "The activity file was imported.",
             "doneNothing": "The import finished, but there was nothing new to add.",
-            "dropLabel": "Drop the activity file here",
-            "dropHint": "or click to choose it: a .fit, .fit.gz or .zip file up to 10 MB.",
-            "fileInputLabel": "Activity file",
+            "fileInputLabel": "Activity files",
             "privacyNote": "The GPS track is only kept when Workout routes is switched on.",
             "steps": {
               "garmin": "Garmin Connect: open the activity on the website, choose the gear menu, then Export original.",
@@ -6552,7 +6541,24 @@
               "noSession": "The file contains no workout that could be read.",
               "stagingMissing": "The uploaded file was no longer on the server. Upload it again.",
               "interrupted": "The import was interrupted by a server restart. Upload the file again."
-            }
+            },
+            "batch": {
+              "waiting": "Waiting",
+              "imported": "Imported",
+              "duplicate": "Already imported",
+              "progress": "{done} of {total}",
+              "capped": "Only the first 100 files are imported.",
+              "reason": {
+                "tooLarge": "Larger than 10 MB",
+                "unsupported": "Not a FIT file",
+                "damaged": "File is damaged",
+                "notActivity": "Not an activity",
+                "noWorkout": "No workout found",
+                "busy": "Another import is running",
+                "retry": "Failed, try again"
+              }
+            },
+            "fileHint": ".fit, .fit.gz or .zip, up to 10 MB each"
           },
           "recordFile": {
             "gadgetbridge": {
@@ -6561,7 +6567,8 @@
               "steps": {
                 "export": "In Gadgetbridge open Settings, then Data management, then Export database.",
                 "upload": "Upload the file called Gadgetbridge here. Up to 512 MB."
-              }
+              },
+              "fileHint": "The file “Gadgetbridge”, up to 512 MB"
             },
             "fhirBundle": {
               "title": "Patient record (FHIR)",
@@ -6569,9 +6576,9 @@
               "steps": {
                 "export": "In your patient portal, export your record as FHIR R4 (JSON).",
                 "upload": "Upload the .json file here. Up to 32 MB."
-              }
+              },
+              "fileHint": ".json, up to 32 MB"
             },
-            "choose": "Choose file",
             "uploading": "Uploading…",
             "running": "Importing in the background…",
             "doneSummary": "The file was imported.",
@@ -6642,7 +6649,10 @@
             "failed": "{date}, not imported"
           },
           "pasteOr": "Or paste",
-          "guideTitle": "Example and columns"
+          "guideTitle": "Example and columns",
+          "pickerFile": "File",
+          "pickerFiles": "Files",
+          "pickerChoose": "Choose"
         },
         "exportHeading": "Export"
       },

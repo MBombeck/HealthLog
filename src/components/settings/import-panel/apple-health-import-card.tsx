@@ -541,8 +541,8 @@ export function AppleHealthImportSource() {
       onOpenChange={setOpen}
       query={statusQuery}
       chooseTestId="import-choose-apple-health"
+      fileInputRef={fileInputRef}
       file={{
-        inputRef: fileInputRef,
         accept: ".zip,application/zip",
         inputLabel: t(
           "settings.sections.export.import.appleHealth.fileInputLabel",
@@ -556,6 +556,7 @@ export function AppleHealthImportSource() {
           inputRef={fileInputRef}
           meta={pickerMeta}
           actionTestId="import-action-apple-health"
+          onFiles={([file]) => void upload(file!)}
         />
       </ListGroup>
       {isDone && (

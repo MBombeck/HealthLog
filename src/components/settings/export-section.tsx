@@ -115,6 +115,7 @@ export function ExportSection() {
           <FullBackupExport />
           <CsvExport
             kind="measurements"
+            anchor="measurements-csv"
             icon={Activity}
             endpoint="/api/export/measurements"
             filenamePrefix="healthlog-measurements"
@@ -122,6 +123,7 @@ export function ExportSection() {
           <MedicationsCsvExport />
           <CsvExport
             kind="mood"
+            anchor="mood-csv"
             icon={Waves}
             endpoint="/api/export/mood"
             filenamePrefix="healthlog-mood"
@@ -189,6 +191,7 @@ function ExportRow({
       <ResponsiveSheet
         open={open}
         onOpenChange={onOpenChange}
+        contentWidth="lg"
         title={title}
         footer={
           <>
@@ -309,11 +312,14 @@ function useDownload() {
 
 function CsvExport({
   kind,
+  anchor,
   icon,
   endpoint,
   filenamePrefix,
 }: {
   kind: "measurements" | "mood";
+  /** Written out at the call site so the search palette's check finds it. */
+  anchor: string;
   icon: LucideIcon;
   endpoint: string;
   filenamePrefix: string;
@@ -337,7 +343,7 @@ function CsvExport({
   return (
     <ExportRow
       testId={`export-card-${kind}-csv`}
-      anchor={`${kind}-csv`}
+      anchor={anchor}
       icon={icon}
       title={copy.title}
       meta={copy.meta}

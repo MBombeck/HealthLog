@@ -6255,7 +6255,7 @@
             "description": "Tutto in un file, cifrato se vuoi"
           },
           "doctorReport": {
-            "title": "Referto per il medico",
+            "title": "Referto medico",
             "description": "PDF, FHIR o ZIP"
           }
         },
@@ -6266,10 +6266,7 @@
           "appleHealth": {
             "title": "Apple Salute",
             "description": "Il file export.zip dell’app Salute dell’iPhone.",
-            "dropLabel": "Trascina qui export.zip",
-            "dropHint": "o fai clic per scegliere un file",
             "fileInputLabel": "Scegli un file export.zip di Apple Salute",
-            "choose": "Scegli file",
             "idempotencyNote": "Gli archivi grandi vengono elaborati in background.",
             "uploading": "Caricamento…",
             "uploadFailed": "Caricamento non riuscito. Riprova.",
@@ -6465,7 +6462,6 @@
           "healthConnect": {
             "title": "Esportazione di Health Connect",
             "description": "Lo ZIP che Health Connect crea su Android.",
-            "choose": "Scegli file",
             "uploading": "Caricamento…",
             "uploadFailed": "Il caricamento non è riuscito. Riprova.",
             "tooLarge": "Il file supera la dimensione accettata da questo server.",
@@ -6484,8 +6480,6 @@
               "cloud": "Health Connect salva l'esportazione solo in un'app di archiviazione cloud come Google Drive, Dropbox o Nextcloud, mai sul telefono stesso.",
               "upload": "Scarica il file ZIP da quel cloud su questo dispositivo e caricalo qui."
             },
-            "dropLabel": "Trascina qui lo ZIP di Health Connect",
-            "dropHint": "oppure fai clic per sceglierlo. Fino a 1 GB.",
             "fileInputLabel": "File ZIP dell'esportazione di Health Connect",
             "privacyNote": "I dati delle app che colleghi già direttamente, come Withings, vengono esclusi perché nulla arrivi due volte.",
             "rateLimited": "Troppi caricamenti in poco tempo. Attendi un minuto e riprova.",
@@ -6505,22 +6499,17 @@
               "interrupted": "Un riavvio del server ha interrotto l'importazione. Carica di nuovo il file."
             },
             "folderRow": "Automaticamente da una cartella",
-            "folderMeta": "WebDAV o Nextcloud, in Integrazioni"
+            "folderMeta": "WebDAV o Nextcloud, in Integrazioni",
+            "fileHint": "ZIP, fino a 1 GB"
           },
           "fit": {
             "title": "File di attività (FIT)",
-            "description": "Un allenamento da un orologio o ciclocomputer.",
-            "choose": "Scegli file",
+            "description": "Allenamenti da un orologio o ciclocomputer.",
             "uploading": "Caricamento…",
             "uploadFailed": "Il caricamento non è riuscito. Riprova.",
-            "tooLarge": "Il file supera i 10 MB.",
-            "rateLimited": "Troppi caricamenti in poco tempo. Attendi un minuto e riprova.",
-            "busy": "Per il tuo account è già in corso un’importazione. Attendi che finisca.",
             "failed": "L’importazione non è riuscita. Riprova.",
             "doneSummary": "Il file di attività è stato importato.",
             "doneNothing": "L’importazione è terminata, ma non c’era nulla di nuovo da aggiungere.",
-            "dropLabel": "Trascina qui il file di attività",
-            "dropHint": "oppure fai clic per sceglierlo: un file .fit, .fit.gz o .zip fino a 10 MB.",
             "fileInputLabel": "File di attività",
             "privacyNote": "Il tracciato GPS viene conservato solo se Percorsi degli allenamenti è attivo.",
             "steps": {
@@ -6552,7 +6541,24 @@
               "noSession": "Il file non contiene alcun allenamento leggibile.",
               "stagingMissing": "Il file caricato non era più sul server. Caricalo di nuovo.",
               "interrupted": "L’importazione è stata interrotta da un riavvio del server. Carica di nuovo il file."
-            }
+            },
+            "batch": {
+              "waiting": "In attesa",
+              "imported": "Importato",
+              "duplicate": "Già importato",
+              "progress": "{done} di {total}",
+              "capped": "Vengono importati solo i primi 100 file.",
+              "reason": {
+                "tooLarge": "Oltre 10 MB",
+                "unsupported": "Non è un file FIT",
+                "damaged": "File danneggiato",
+                "notActivity": "Non è un’attività",
+                "noWorkout": "Nessun allenamento trovato",
+                "busy": "Un’altra importazione è in corso",
+                "retry": "Non riuscito, riprova"
+              }
+            },
+            "fileHint": ".fit, .fit.gz o .zip, fino a 10 MB ciascuno"
           },
           "recordFile": {
             "gadgetbridge": {
@@ -6561,7 +6567,8 @@
               "steps": {
                 "export": "In Gadgetbridge apri Impostazioni, poi Gestione dati, poi Esporta database.",
                 "upload": "Carica qui il file chiamato Gadgetbridge. Fino a 512 MB."
-              }
+              },
+              "fileHint": "Il file «Gadgetbridge», fino a 512 MB"
             },
             "fhirBundle": {
               "title": "Cartella sanitaria (FHIR)",
@@ -6569,9 +6576,9 @@
               "steps": {
                 "export": "Nel portale del paziente esporta la tua cartella come FHIR R4 (JSON).",
                 "upload": "Carica qui il file .json. Fino a 32 MB."
-              }
+              },
+              "fileHint": ".json, fino a 32 MB"
             },
-            "choose": "Scegli file",
             "uploading": "Caricamento…",
             "running": "Importazione in background…",
             "doneSummary": "Il file è stato importato.",
@@ -6642,7 +6649,10 @@
             "failed": "{date}, non importato"
           },
           "pasteOr": "Oppure incolla",
-          "guideTitle": "Esempio e colonne"
+          "guideTitle": "Esempio e colonne",
+          "pickerFile": "File",
+          "pickerFiles": "File",
+          "pickerChoose": "Scegli"
         },
         "exportHeading": "Esporta"
       },

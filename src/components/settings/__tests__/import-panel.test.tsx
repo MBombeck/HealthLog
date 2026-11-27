@@ -46,6 +46,9 @@ import {
 } from "../import-panel";
 
 import { parseCsvMeasurements } from "@/lib/import/csv-measurements";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("de");
 
 function render(node: React.ReactElement, locale: Locale = "en") {
   const queryClient = new QueryClient({
@@ -303,10 +306,8 @@ describe("EXAMPLE_IMPORT payload", () => {
     const encoded = EXAMPLE_IMPORT_DOWNLOAD_HREF.split(",", 2)[1];
     expect(encoded).toBeTruthy();
     expect(JSON.parse(decodeURIComponent(encoded!))).toEqual(EXAMPLE_IMPORT);
-
-    const html = render(<ImportPanel />);
-    expect(html).toContain('download="healthlog-import-example.json"');
-    expect(html).toContain('href="data:application/json;charset=utf-8,');
+    // The link itself sits in the JSON sheet's guide row; the e2e suite
+    // opens it and downloads the file.
   });
 });
 

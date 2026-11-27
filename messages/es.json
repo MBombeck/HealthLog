@@ -6266,10 +6266,7 @@
           "appleHealth": {
             "title": "Apple Health",
             "description": "El export.zip de la app Salud del iPhone.",
-            "dropLabel": "Suelta export.zip aquí",
-            "dropHint": "o haz clic para elegir un archivo",
             "fileInputLabel": "Elegir un archivo export.zip de Apple Health",
-            "choose": "Elegir archivo",
             "idempotencyNote": "Los archivos grandes se procesan en segundo plano.",
             "uploading": "Subiendo…",
             "uploadFailed": "Error al subir. Inténtalo de nuevo.",
@@ -6465,7 +6462,6 @@
           "healthConnect": {
             "title": "Exportación de Health Connect",
             "description": "El ZIP que Health Connect genera en Android.",
-            "choose": "Elegir archivo",
             "uploading": "Subiendo…",
             "uploadFailed": "La subida ha fallado. Inténtalo de nuevo.",
             "tooLarge": "El archivo supera el tamaño que acepta este servidor.",
@@ -6484,8 +6480,6 @@
               "cloud": "Health Connect solo guarda la exportación en una app de almacenamiento en la nube como Google Drive, Dropbox o Nextcloud, nunca en el propio teléfono.",
               "upload": "Descarga el archivo ZIP de esa nube a este dispositivo y súbelo aquí."
             },
-            "dropLabel": "Suelta aquí el ZIP de Health Connect",
-            "dropHint": "o haz clic para elegirlo. Hasta 1 GB.",
             "fileInputLabel": "Archivo ZIP de la exportación de Health Connect",
             "privacyNote": "Los registros de apps que ya conectas directamente, como Withings, se omiten para que nada llegue dos veces.",
             "rateLimited": "Demasiadas subidas en poco tiempo. Espera un minuto y vuelve a intentarlo.",
@@ -6505,23 +6499,18 @@
               "interrupted": "Un reinicio del servidor interrumpió la importación. Sube el archivo de nuevo."
             },
             "folderRow": "Automáticamente desde una carpeta",
-            "folderMeta": "WebDAV o Nextcloud, en Integraciones"
+            "folderMeta": "WebDAV o Nextcloud, en Integraciones",
+            "fileHint": "ZIP, hasta 1 GB"
           },
           "fit": {
             "title": "Archivo de actividad (FIT)",
-            "description": "Un entrenamiento de un reloj o ciclocomputador.",
-            "choose": "Elegir archivo",
+            "description": "Entrenamientos de un reloj o ciclocomputador.",
             "uploading": "Subiendo…",
             "uploadFailed": "No se pudo subir el archivo. Inténtalo de nuevo.",
-            "tooLarge": "El archivo ocupa más de 10 MB.",
-            "rateLimited": "Demasiadas subidas en poco tiempo. Espera un minuto y vuelve a intentarlo.",
-            "busy": "Ya hay una importación en curso para tu cuenta. Espera a que termine.",
             "failed": "La importación ha fallado. Inténtalo de nuevo.",
             "doneSummary": "El archivo de actividad se ha importado.",
             "doneNothing": "La importación ha terminado, pero no había nada nuevo que añadir.",
-            "dropLabel": "Suelta aquí el archivo de actividad",
-            "dropHint": "o haz clic para elegirlo: un archivo .fit, .fit.gz o .zip de hasta 10 MB.",
-            "fileInputLabel": "Archivo de actividad",
+            "fileInputLabel": "Archivos de actividad",
             "privacyNote": "El recorrido GPS solo se guarda si Rutas de entrenamiento está activado.",
             "steps": {
               "garmin": "Garmin Connect: abre la actividad en la web, elige el menú del engranaje y después Exportar original.",
@@ -6552,7 +6541,24 @@
               "noSession": "El archivo no contiene ningún entrenamiento legible.",
               "stagingMissing": "El archivo subido ya no estaba en el servidor. Súbelo de nuevo.",
               "interrupted": "Un reinicio del servidor interrumpió la importación. Sube el archivo de nuevo."
-            }
+            },
+            "batch": {
+              "waiting": "En espera",
+              "imported": "Importado",
+              "duplicate": "Ya importado",
+              "progress": "{done} de {total}",
+              "capped": "Solo se importan los primeros 100 archivos.",
+              "reason": {
+                "tooLarge": "Más de 10 MB",
+                "unsupported": "No es un archivo FIT",
+                "damaged": "Archivo dañado",
+                "notActivity": "No es una actividad",
+                "noWorkout": "Ningún entrenamiento encontrado",
+                "busy": "Otra importación en curso",
+                "retry": "Error, inténtalo de nuevo"
+              }
+            },
+            "fileHint": ".fit, .fit.gz o .zip, hasta 10 MB cada uno"
           },
           "recordFile": {
             "gadgetbridge": {
@@ -6561,7 +6567,8 @@
               "steps": {
                 "export": "En Gadgetbridge abre Ajustes, luego Gestión de datos, luego Exportar base de datos.",
                 "upload": "Sube aquí el archivo llamado Gadgetbridge. Hasta 512 MB."
-              }
+              },
+              "fileHint": "El archivo «Gadgetbridge», hasta 512 MB"
             },
             "fhirBundle": {
               "title": "Historia clínica (FHIR)",
@@ -6569,9 +6576,9 @@
               "steps": {
                 "export": "En el portal del paciente, exporta tu historia como FHIR R4 (JSON).",
                 "upload": "Sube aquí el archivo .json. Hasta 32 MB."
-              }
+              },
+              "fileHint": ".json, hasta 32 MB"
             },
-            "choose": "Elegir archivo",
             "uploading": "Subiendo…",
             "running": "Importando en segundo plano…",
             "doneSummary": "El archivo se importó.",
@@ -6642,7 +6649,10 @@
             "failed": "{date}, no importado"
           },
           "pasteOr": "O pegar",
-          "guideTitle": "Ejemplo y columnas"
+          "guideTitle": "Ejemplo y columnas",
+          "pickerFile": "Archivo",
+          "pickerFiles": "Archivos",
+          "pickerChoose": "Elegir"
         },
         "exportHeading": "Exportar"
       },

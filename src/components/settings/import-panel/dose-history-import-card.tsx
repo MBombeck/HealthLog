@@ -257,7 +257,9 @@ export function DoseHistoryImportSource() {
         onReadFailed={() =>
           setError(t("settings.sections.export.import.doseHistory.readFailed"))
         }
-        guideTitle={t("settings.sections.export.import.doseHistory.columnsHeading")}
+        guideTitle={t(
+          "settings.sections.export.import.doseHistory.columnsHeading",
+        )}
         guide={<DoseHistoryColumnRulings />}
         status={
           <>

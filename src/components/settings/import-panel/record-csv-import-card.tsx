@@ -57,7 +57,6 @@ function downloadTemplate(kind: RecordImportKind) {
  * imports it.
  */
 export function RecordCsvImportSources() {
-  const { t } = useTranslations();
   const [open, setOpen] = useState<RecordImportKind | null>(null);
   const [session, setSession] = useState(0);
   const start = (kind: RecordImportKind) => {
@@ -80,6 +79,15 @@ export function RecordCsvImportSources() {
   );
 }
 
+/**
+ * Each row's anchor, written out so the search palette's anchor check
+ * (`settings-cards.test.ts`) can find it.
+ */
+const RECORD_CSV_ANCHORS: Record<RecordImportKind, { anchor: string }> = {
+  labs: { anchor: "import-labs-csv" },
+  medications: { anchor: "import-medications-csv" },
+};
+
 function RecordCsvRow({
   kind,
   onOpen,
@@ -88,7 +96,7 @@ function RecordCsvRow({
   onOpen: () => void;
 }) {
   const { t } = useTranslations();
-  const anchor = `import-${kind}-csv`;
+  const anchor = RECORD_CSV_ANCHORS[kind].anchor;
   useOpenOnAnchor(anchor, onOpen);
   return (
     <ListItem

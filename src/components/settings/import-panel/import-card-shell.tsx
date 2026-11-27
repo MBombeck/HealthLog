@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type RefObject } from "react";
+import { useEffect, useState, type RefObject } from "react";
 import { Loader2, type LucideIcon } from "lucide-react";
 
 import { SettingsCard } from "@/components/settings/settings-card";
@@ -14,13 +14,17 @@ import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { StatusChip } from "@/components/ui/status-chip";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { cn } from "@/lib/utils";
 
 /** What a source row shows on its right instead of "Choose". */
 export type SourceRowStatus = "running" | "failed" | null;
 
-/** A file source: the row's "Choose" opens the file dialog straight away. */
+/**
+ * A file source: the row's "Choose" opens the file dialog straight away.
+ * The input's ref travels beside this as `fileInputRef`, not inside it, so
+ * reading these fields during render never reads a ref.
+ */
 export interface SourceFileInput {
-  inputRef: RefObject<HTMLInputElement | null>;
   accept: string;
   multiple?: boolean;
   /** Accessible name of the file input. */
@@ -37,6 +41,35 @@ export function SourceIcon({ icon: Icon }: { icon: LucideIcon }) {
   );
 }
 
+/**
+ * A row that takes a dropped file: the drag highlight and the drop. A drop
+ * while something runs is ignored, as "Choose" is disabled then.
+ */
+function useFileDrop(
+  onFiles: ((files: File[]) => void) | undefined,
+  { multiple = false, busy = false }: { multiple?: boolean; busy?: boolean },
+) {
+  const [active, setActive] = useState(false);
+  if (!onFiles) return { active: false, handlers: {} };
+  return {
+    active,
+    handlers: {
+      onDragOver: (e: React.DragEvent) => {
+        e.preventDefault();
+        if (!busy) setActive(true);
+      },
+      onDragLeave: () => setActive(false),
+      onDrop: (e: React.DragEvent) => {
+        e.preventDefault();
+        setActive(false);
+        const files = Array.from(e.dataTransfer.files ?? []);
+        if (files.length > 0 && !busy)
+          onFiles(multiple ? files : files.slice(0, 1));
+      },
+    },
+  };
+}
+
 /** Open the sheet when the page is reached through the row's own anchor. */
 export function useOpenOnAnchor(anchor: string, open: () => void): void {
   useEffect(() => {
@@ -51,9 +84,10 @@ export function useOpenOnAnchor(anchor: string, open: () => void): void {
  * line, "Choose" or a status chip on the right) and the sheet that holds the
  * source's step. The row is the whole tap target and opens the sheet; "Choose"
  * on a file source opens the file dialog first and the sheet once files are
- * picked. The file input lives in the row, so it stays mounted while the sheet
- * is closed, and the source's state lives in its component, so an upload
- * keeps running with the sheet closed. UI standards §20.
+ * picked, and a file dropped on the row does the same. The file input lives
+ * in the row, so it stays mounted while the sheet is closed, and the
+ * source's state lives in its component, so an upload keeps running with the
+ * sheet closed. UI standards §20.
  */
 export function ImportSource({
   testId,
@@ -66,6 +100,7 @@ export function ImportSource({
   open,
   onOpenChange,
   file,
+  fileInputRef,
   query,
   chooseTestId,
   footer,
@@ -84,6 +119,8 @@ export function ImportSource({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   file?: SourceFileInput;
+  /** The file input of a file source, which "Choose" clicks. */
+  fileInputRef?: RefObject<HTMLInputElement | null>;
   /**
    * The source's status read. When it fails the row says so with the Error
    * chip, and the sheet opens on the failure with Retry; choosing a file
@@ -99,13 +136,23 @@ export function ImportSource({
   useOpenOnAnchor(anchor, () => onOpenChange(true));
   const readFailed = query?.isError === true;
   const rowStatus = status ?? (readFailed ? "failed" : null);
+  const drop = useFileDrop(
+    file
+      ? (files) => {
+          file.onFiles(files);
+          onOpenChange(true);
+        }
+      : undefined,
+    { multiple: file?.multiple, busy: status === "running" },
+  );
   return (
     <>
       <ListItem
         id={anchor}
         data-testid={testId}
         data-status={rowStatus ?? "idle"}
-        className="scroll-mt-28"
+        className={cn("scroll-mt-28", drop.active && "bg-primary/5")}
+        {...drop.handlers}
         icon={<SourceIcon icon={icon} />}
         title={title}
         meta={readFailed && status === null ? t("common.loadFailed") : meta}
@@ -124,7 +171,7 @@ export function ImportSource({
                 className="relative z-10"
                 data-testid={chooseTestId}
                 onClick={() =>
-                  file ? file.inputRef.current?.click() : onOpenChange(true)
+                  file ? fileInputRef?.current?.click() : onOpenChange(true)
                 }
               >
                 {t("settings.sections.export.import.pickerChoose")}
@@ -132,7 +179,7 @@ export function ImportSource({
             )}
             {file ? (
               <FileInput
-                ref={file.inputRef}
+                ref={fileInputRef}
                 accept={file.accept}
                 multiple={file.multiple}
                 className="sr-only"
@@ -154,6 +201,7 @@ export function ImportSource({
       <ResponsiveSheet
         open={open}
         onOpenChange={onOpenChange}
+        contentWidth="lg"
         title={
           info && info.length > 0 ? (
             <>
@@ -267,7 +315,8 @@ export function ImportInfo({ lines }: { lines: readonly string[] }) {
 /**
  * The picker as the first row of a sheet's list: "File" or "Files" left,
  * "Choose" right, and a meta line that says what the row takes or, while
- * something runs, where it stands. It clicks the input the source row holds.
+ * something runs, where it stands. It clicks the input the source row holds,
+ * and takes a dropped file like the source row does.
  */
 export function ImportPickerRow({
   multiple = false,
@@ -275,17 +324,23 @@ export function ImportPickerRow({
   inputRef,
   meta,
   actionTestId,
+  onFiles,
 }: {
   multiple?: boolean;
   busy: boolean;
   inputRef: RefObject<HTMLInputElement | null>;
   meta: React.ReactNode;
   actionTestId: string;
+  /** What a file dropped on the row does; the same as choosing it. */
+  onFiles: (files: File[]) => void;
 }) {
   const { t } = useTranslations();
+  const drop = useFileDrop(onFiles, { multiple, busy });
   return (
     <ListItem
       data-import-picker=""
+      className={cn(drop.active && "bg-primary/5")}
+      {...drop.handlers}
       title={
         multiple
           ? t("settings.sections.export.import.pickerFiles")
@@ -347,11 +402,13 @@ export function ImportQueryErrorRow({
  * or the day and that it failed. `null` when there is no finished job, so
  * the caller falls back to what the source takes.
  */
-export function useFinishedJobMeta(): (job: {
-  status: string;
-  completedAt?: string | null;
-  written: number;
-} | null) => string | null {
+export function useFinishedJobMeta(): (
+  job: {
+    status: string;
+    completedAt?: string | null;
+    written: number;
+  } | null,
+) => string | null {
   const { t } = useTranslations();
   const fmt = useFormatters();
   return (job) => {

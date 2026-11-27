@@ -100,11 +100,14 @@ const sources: Array<[string, () => React.ReactNode]> = [
 ];
 
 describe("import sources — a failed status read is said on the row", () => {
-  it.each(sources)("%s shows the Error chip and the load failure", (_n, node) => {
-    const html = renderCard(<ul>{node()}</ul>);
-    expect(html).toContain('data-status="failed"');
-    expect(html).toContain('data-slot="status-chip"');
-    expect(html).toContain("Could not load");
-    expect(html).not.toContain('<p role="alert" class="text-destructive');
-  });
+  it.each(sources)(
+    "%s shows the Error chip and the load failure",
+    (_n, node) => {
+      const html = renderCard(<ul>{node()}</ul>);
+      expect(html).toContain('data-status="failed"');
+      expect(html).toContain('data-slot="status-chip"');
+      expect(html).toContain("Could not load");
+      expect(html).not.toContain('<p role="alert" class="text-destructive');
+    },
+  );
 });

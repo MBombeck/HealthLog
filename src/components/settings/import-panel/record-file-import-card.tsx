@@ -217,15 +217,13 @@ export function RecordFileImportSource({ kind }: { kind: CardKind }) {
       title={copy.title}
       info={[copy.description, ...copy.steps]}
       meta={rowMeta}
-      status={
-        busy ? "running" : failure || uploadError ? "failed" : null
-      }
+      status={busy ? "running" : failure || uploadError ? "failed" : null}
       open={open}
       onOpenChange={setOpen}
       query={statusQuery}
       chooseTestId={`${testId}-open`}
+      fileInputRef={inputRef}
       file={{
-        inputRef,
         accept: copy.accept,
         inputLabel: copy.fileInputLabel,
         onFiles: ([file]) => void upload(file!),
@@ -237,6 +235,7 @@ export function RecordFileImportSource({ kind }: { kind: CardKind }) {
           inputRef={inputRef}
           meta={pickerMeta}
           actionTestId={`${testId}-choose`}
+          onFiles={([file]) => void upload(file!)}
         />
         {lines.map((line) => (
           <ListItem

@@ -6255,7 +6255,7 @@
             "description": "모든 것을 한 파일에, 원하면 암호화"
           },
           "doctorReport": {
-            "title": "진료용 보고서",
+            "title": "진료용 리포트",
             "description": "PDF, FHIR 또는 ZIP"
           }
         },
@@ -6266,10 +6266,7 @@
           "appleHealth": {
             "title": "Apple Health",
             "description": "iPhone 건강 앱의 export.zip.",
-            "dropLabel": "여기에 export.zip을 놓으세요",
-            "dropHint": "또는 눌러서 파일 선택",
             "fileInputLabel": "Apple Health export.zip 파일 선택",
-            "choose": "파일 선택",
             "idempotencyNote": "큰 파일은 백그라운드에서 처리해요.",
             "uploading": "올리는 중…",
             "uploadFailed": "올리지 못했어요. 다시 시도해 주세요.",
@@ -6358,7 +6355,7 @@
             "rowMeta": "측정값과 기분",
             "fileMeta": ".json, 최대 {mb}MB",
             "partial": "가져오기가 중간에 멈췄습니다. 다시 가져와도 안전하며 중복으로 추가되지 않습니다.",
-            "partialCounts": "이미 저장됨: 측정값 {measurements}개, 기분 기록 {moods}개."
+            "partialCounts": "이미 저장됨: 측정값 {measurements, plural, other {#개}}, 기분 기록 {moods, plural, other {#개}}."
           },
           "csv": {
             "title": "CSV 파일",
@@ -6465,7 +6462,6 @@
           "healthConnect": {
             "title": "Health Connect 내보내기",
             "description": "Android의 Health Connect가 만든 ZIP.",
-            "choose": "파일 선택",
             "uploading": "업로드 중…",
             "uploadFailed": "업로드에 실패했습니다. 다시 시도해 주세요.",
             "tooLarge": "파일이 이 서버에서 허용하는 크기보다 큽니다.",
@@ -6484,8 +6480,6 @@
               "cloud": "Health Connect는 내보내기를 Google Drive, Dropbox, Nextcloud 같은 클라우드 저장소 앱에만 저장하고 휴대폰 자체에는 저장하지 않습니다.",
               "upload": "그 클라우드에서 ZIP 파일을 이 기기로 내려받아 여기에 업로드하세요."
             },
-            "dropLabel": "Health Connect ZIP 파일을 여기에 놓으세요",
-            "dropHint": "또는 클릭해서 선택하세요. 최대 1GB.",
             "fileInputLabel": "Health Connect 내보내기 ZIP 파일",
             "privacyNote": "Withings처럼 이미 직접 연결한 앱의 기록은 중복되지 않도록 제외됩니다.",
             "rateLimited": "짧은 시간에 업로드가 너무 많습니다. 1분 후 다시 시도하세요.",
@@ -6505,22 +6499,17 @@
               "interrupted": "서버 재시작으로 가져오기가 중단되었습니다. 파일을 다시 업로드하세요."
             },
             "folderRow": "폴더에서 자동으로",
-            "folderMeta": "WebDAV 또는 Nextcloud, 연동에서"
+            "folderMeta": "WebDAV 또는 Nextcloud, 연동에서",
+            "fileHint": "ZIP, 최대 1GB"
           },
           "fit": {
             "title": "활동 파일(FIT)",
             "description": "시계나 자전거 컴퓨터의 운동 기록.",
-            "choose": "파일 선택",
             "uploading": "업로드 중…",
             "uploadFailed": "업로드에 실패했습니다. 다시 시도해 주세요.",
-            "tooLarge": "파일이 10MB보다 큽니다.",
-            "rateLimited": "짧은 시간에 업로드가 너무 많습니다. 1분 후에 다시 시도해 주세요.",
-            "busy": "계정에서 이미 가져오기가 진행 중입니다. 끝날 때까지 기다려 주세요.",
             "failed": "가져오기에 실패했습니다. 다시 시도해 주세요.",
             "doneSummary": "활동 파일을 가져왔습니다.",
             "doneNothing": "가져오기가 끝났지만 새로 추가할 항목이 없었습니다.",
-            "dropLabel": "활동 파일을 여기에 놓으세요",
-            "dropHint": "또는 클릭해서 선택하세요: 최대 10MB의 .fit, .fit.gz 또는 .zip 파일.",
             "fileInputLabel": "활동 파일",
             "privacyNote": "GPS 경로는 운동 경로가 켜져 있을 때만 저장됩니다.",
             "steps": {
@@ -6552,7 +6541,24 @@
               "noSession": "파일에 읽을 수 있는 운동이 없습니다.",
               "stagingMissing": "업로드한 파일이 서버에 더 이상 없습니다. 다시 업로드하세요.",
               "interrupted": "서버 재시작으로 가져오기가 중단되었습니다. 파일을 다시 업로드하세요."
-            }
+            },
+            "batch": {
+              "waiting": "대기 중",
+              "imported": "가져옴",
+              "duplicate": "이미 가져옴",
+              "progress": "{done}/{total}",
+              "capped": "처음 100개 파일만 가져옵니다.",
+              "reason": {
+                "tooLarge": "10MB 초과",
+                "unsupported": "FIT 파일이 아님",
+                "damaged": "손상된 파일",
+                "notActivity": "활동이 아님",
+                "noWorkout": "운동을 찾을 수 없음",
+                "busy": "다른 가져오기가 진행 중",
+                "retry": "실패, 다시 시도하세요"
+              }
+            },
+            "fileHint": ".fit, .fit.gz 또는 .zip, 파일당 최대 10MB"
           },
           "recordFile": {
             "gadgetbridge": {
@@ -6561,7 +6567,8 @@
               "steps": {
                 "export": "Gadgetbridge에서 설정, 데이터 관리, 데이터베이스 내보내기를 차례로 열어요.",
                 "upload": "Gadgetbridge라는 파일을 여기에 올려요. 최대 512MB."
-              }
+              },
+              "fileHint": "Gadgetbridge 파일, 최대 512MB"
             },
             "fhirBundle": {
               "title": "진료 기록 (FHIR)",
@@ -6569,9 +6576,9 @@
               "steps": {
                 "export": "환자 포털에서 기록을 FHIR R4(JSON)로 내보내요.",
                 "upload": ".json 파일을 여기에 올려요. 최대 32MB."
-              }
+              },
+              "fileHint": ".json, 최대 32MB"
             },
-            "choose": "파일 선택",
             "uploading": "업로드 중…",
             "running": "백그라운드에서 가져오는 중…",
             "doneSummary": "파일을 가져왔어요.",
@@ -6638,11 +6645,14 @@
             "removeBody": "HealthLog가 더 이상 이 폴더에서 가져오지 않고 비밀번호를 잊어요. 이미 가져온 항목은 그대로 남아요."
           },
           "row": {
-            "done": "{date}, {count}개 항목",
+            "done": "{date}, {count, plural, other {#개}} 항목",
             "failed": "{date}, 가져오지 못함"
           },
           "pasteOr": "또는 붙여넣기",
-          "guideTitle": "예시와 열"
+          "guideTitle": "예시와 열",
+          "pickerFile": "파일",
+          "pickerFiles": "파일",
+          "pickerChoose": "선택"
         },
         "exportHeading": "내보내기"
       },

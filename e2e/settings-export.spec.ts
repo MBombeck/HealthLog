@@ -255,7 +255,9 @@ test.describe("Settings → Export & Import", () => {
     const folder = page.getByTestId("import-health-connect-folder");
     await expect(folder).toBeVisible({ timeout: 10_000 });
     await folder.getByRole("link").click();
-    await expect(page).toHaveURL(/\/settings\/integrations#import-health-connect-remote/);
+    await expect(page).toHaveURL(
+      /\/settings\/integrations#import-health-connect-remote/,
+    );
     await expect(
       page.getByTestId("import-card-health-connect-remote"),
     ).toBeVisible({ timeout: 10_000 });
