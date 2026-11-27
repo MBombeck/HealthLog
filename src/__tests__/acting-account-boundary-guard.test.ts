@@ -221,8 +221,9 @@ describe("the cookie-only helpers cannot see the acting account", () => {
     expect(guardian).toContain("managedProfileAt");
 
     // `readActingCarrier` is what turns a request into "acting as somebody
-    // else". Three callers: the bare path, which refuses on it, and the two
-    // record paths, which act on it. A fourth would be a mode nobody declared.
+    // else". Four callers: the self path, which refuses on it, and the three
+    // record paths, which act on it (#1615 added the owner rule). A fifth
+    // would be a mode nobody declared.
     // Counted over the whole auth layer, the wrapper included, because the
     // bare path lives in another guard module than the record paths.
     const callers = (
@@ -231,7 +232,7 @@ describe("the cookie-only helpers cannot see the acting account", () => {
         .join("\n")
         .match(/await readActingCarrier\(/g) ?? []
     ).length;
-    expect(callers).toBe(3);
+    expect(callers).toBe(4);
     expect(
       (
         functionBody(guardSourceOf("requireAuth"), "requireAuth").match(
@@ -246,9 +247,11 @@ describe("grant management is not delegable by construction", () => {
   /**
    * A delegate must never grant, widen, or transfer access. The way that is
    * true here is not a re-delegation check inside the handlers — a check is a
-   * line somebody can move — but the mode the handlers resolve in: bare
-   * `requireAuth()` refuses outright while a switch is active, so there is no
-   * code path through these routes that runs as somebody else at all.
+   * line somebody can move — but the mode the handlers resolve in:
+   * `requireSelfAuth()` refuses outright while a switch is active, so there is
+   * no code path through these routes that runs as somebody else at all. Not
+   * even a managed profile's guardian, whose owner rule (`requireAuth()`) these
+   * routes deliberately do not use (#1615).
    *
    * The switch endpoint is the deliberate exception and lives elsewhere: it is
    * an actor surface because it is the way back out of a switch, and it grants
@@ -264,7 +267,7 @@ describe("grant management is not delegable by construction", () => {
     "app/api/account/handover-decision/route.ts",
   ];
 
-  it("every grant route exists and resolves through bare requireAuth", () => {
+  it("every grant route exists and resolves through requireSelfAuth", () => {
     // Non-zero proof: a renamed or moved route must fail here rather than
     // leave the loop below with nothing to check.
     const found = sourceFiles().filter((p) => GRANT_ROUTES.includes(p));
@@ -272,9 +275,14 @@ describe("grant management is not delegable by construction", () => {
 
     for (const rel of GRANT_ROUTES) {
       const src = read(rel);
-      expect(src, `${rel} must resolve auth`).toMatch(/await requireAuth\(\)/);
+      expect(src, `${rel} must resolve auth`).toMatch(
+        /await requireSelfAuth\(\)/,
+      );
       expect(src, `${rel} must not honour a switch`).not.toContain(
         "requireRecordAuth",
+      );
+      expect(src, `${rel} must not take the owner rule`).not.toMatch(
+        /\brequireAuth\s*\(/,
       );
       expect(src, `${rel} must not declare an actor surface`).not.toContain(
         "requireActorAuth",

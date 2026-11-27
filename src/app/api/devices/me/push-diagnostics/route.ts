@@ -14,7 +14,7 @@
  */
 import type { NextRequest } from "next/server";
 
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireSelfAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { devicePushDiagnostics } from "@/lib/push-relay/diagnostics";
@@ -26,7 +26,7 @@ const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_WINDOW_MS = 60_000;
 
 export const GET = apiHandler(async (request: NextRequest) => {
-  const { user } = await requireAuth();
+  const { user } = await requireSelfAuth();
   annotate({ action: { name: "devices.push_diagnostics.read" } });
 
   const rl = await checkRateLimit(

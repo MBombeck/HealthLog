@@ -29,7 +29,10 @@ vi.mock("@/lib/insights/target-adjust-context", () => ({
 }));
 
 const capabilities = { inSharedRecord: false };
-vi.mock("@/hooks/use-record-capabilities", () => ({
+vi.mock("@/hooks/use-record-capabilities", async (importOriginal) => ({
+  holdsOwnerRights: (
+    await importOriginal<typeof import("@/hooks/use-record-capabilities")>()
+  ).holdsOwnerRights,
   useRecordCapabilities: () => capabilities,
 }));
 

@@ -138,7 +138,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   }
   const proof =
     body.password !== undefined
-      ? await requireRecentProof({ bearer: "elevation" })
+      ? await requireRecentProof({ bearer: "elevation", record: "owner" })
       : null;
   const moved =
     !existing ||

@@ -6,14 +6,14 @@ import {
   safeJson,
 } from "@/lib/api-response";
 import { NextRequest } from "next/server";
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireSelfAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { applyProfileUpdate } from "@/lib/auth/profile-update";
 import { authorizeSensitiveChange } from "@/lib/auth/existing-factor-proof";
 import { enqueueWalletRefresh } from "@/lib/emergency-card/wallet-pass/queues";
 
 export const PUT = apiHandler(async (request: NextRequest) => {
-  const auth = await requireAuth();
+  const auth = await requireSelfAuth();
   const { user } = auth;
 
   const { data: body, error: jsonError } = await safeJson(request, {

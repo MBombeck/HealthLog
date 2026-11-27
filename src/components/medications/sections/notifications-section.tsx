@@ -30,7 +30,10 @@ import { Badge } from "@/components/ui/badge";
 import { SwitchRow } from "@/components/ui/switch-row";
 import { MedicationDetailSection } from "@/components/medications/medication-detail-section";
 import { useAuth } from "@/hooks/use-auth";
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import {
+  useRecordCapabilities,
+  holdsOwnerRights,
+} from "@/hooks/use-record-capabilities";
 import { useTranslations } from "@/lib/i18n/context";
 import {
   invalidateKeys,
@@ -109,8 +112,10 @@ export function NotificationsBody({
   // delivery channels and their own iPhone opt-in. Inside somebody else's
   // record they are not this medication's facts, and the status route refuses
   // a switched session, so neither is asked there.
-  const { inSharedRecord } = useRecordCapabilities();
-  const readsCallerPrefs = isAuthenticated && !inSharedRecord;
+  // #1615 — the profile's guardian holds the owner's rights, so the two
+  // reads answer for the profile there.
+  const ownerRights = holdsOwnerRights(useRecordCapabilities());
+  const readsCallerPrefs = isAuthenticated && ownerRights;
   const queryClient = useQueryClient();
   const [localEnabled, setLocalEnabled] = useState(notificationsEnabled);
   const [submitting, setSubmitting] = useState(false);

@@ -31,8 +31,14 @@ import {
 
 /** The guard a part's routes resolve the caller with. */
 export type RecordRouteRule =
-  /** `requireAuth()`: one's own account only, never inside another record. */
+  /**
+   * `requireAuth()`: the owner rule (#1615). One's own account, or the
+   * guardian of a managed profile holding a MANAGE grant over the whole
+   * record, who holds the owner's rights there.
+   */
   | { readonly guard: "owner" }
+  /** `requireSelfAuth()`: one's own account only, never inside another record. */
+  | { readonly guard: "self" }
   /**
    * `requireGuardianAuth()`: the owner, or the guardian of a managed profile
    * (a MANAGE grant on a record carrying the managed-profile marker).
@@ -78,6 +84,12 @@ export function recordRuleAdmits(
   if (!viewer.inSharedRecord) return true;
   switch (rule.guard) {
     case "owner":
+      return (
+        viewer.recordKind === "managed" &&
+        viewer.level === "manage" &&
+        viewer.sections === null
+      );
+    case "self":
       return false;
     case "guardian":
       return viewer.recordKind === "managed" && viewer.level === "manage";

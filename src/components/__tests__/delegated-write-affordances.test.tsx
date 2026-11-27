@@ -307,18 +307,18 @@ describe("row delete inside a managed profile", () => {
     expect(render(GUARDING, vault)).toContain("<button");
     // The same grant level on an adult's record still withholds it.
     expect(render(MANAGING, vault)).toBe("");
-    // And the route that resolves the caller is still nobody's to offer.
-    expect(
-      render(
-        GUARDING,
-        <DeleteButton
-          domain={null}
-          onConfirm={() => {}}
-          title="Delete?"
-          description="Gone."
-        />,
-      ),
-    ).toBe("");
+    // A delete outside every section takes the owner rule (#1615): the
+    // guardian holds the owner's rights, an adult's MANAGE delegate does not.
+    const outsideSections = (
+      <DeleteButton
+        domain={null}
+        onConfirm={() => {}}
+        title="Delete?"
+        description="Gone."
+      />
+    );
+    expect(render(GUARDING, outsideSections)).toContain("<button");
+    expect(render(MANAGING, outsideSections)).toBe("");
   });
 });
 

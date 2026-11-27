@@ -37,6 +37,7 @@ const SRC = join(process.cwd(), "src");
  */
 const METERING_RESOLVERS = [
   "requireAuth",
+  "requireSelfAuth",
   "requireRecordAuth",
   "requireActorAuth",
   "requireGuardianAuth",
@@ -213,6 +214,7 @@ describe("every mutating route meets a rate limit", () => {
     };
     for (const name of [
       "requireAuth",
+      "requireSelfAuth",
       "requireActorAuth",
       "requireRecordAuth",
       "requireGuardianAuth",
@@ -223,13 +225,14 @@ describe("every mutating route meets a rate limit", () => {
     ]) {
       expect(resolverBody(name), name).toMatch(/\bmeterAccountWrite\s*\(/);
     }
-    // The three that only delegate reach the meter through `requireAuth`.
+    // The three that only delegate reach the meter through `requireSelfAuth`
+    // or, for a proof route on the owner rule, `requireAuth`.
     for (const name of [
       "requireFreshMfaIfEnrolled",
       "requireFreshMfaOrElevationIfEnrolled",
       "requireRecentProof",
     ]) {
-      expect(resolverBody(name), name).toMatch(/\brequireAuth\s*\(/);
+      expect(resolverBody(name), name).toMatch(/\brequire(?:Self)?Auth\s*\(/);
     }
   });
 });

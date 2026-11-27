@@ -1,6 +1,10 @@
 import { sendSecurityAlert } from "@/lib/auth/security-alert";
 import { prisma } from "@/lib/db";
-import { apiHandler, requireAuth, requireCookieAuth } from "@/lib/api-handler";
+import {
+  apiHandler,
+  requireSelfAuth,
+  requireCookieAuth,
+} from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { isApiGloballyEnabled } from "@/lib/app-settings";
@@ -21,7 +25,7 @@ type RouteParams = { params: Promise<{ id: string }> };
  */
 export const DELETE = apiHandler(
   async (_request: Request, { params }: RouteParams) => {
-    const { user } = await requireAuth();
+    const { user } = await requireSelfAuth();
     annotate({ action: { name: "tokens.revoke" } });
 
     if (!(await isApiGloballyEnabled())) {
