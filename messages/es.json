@@ -6515,19 +6515,16 @@
           },
           "fit": {
             "title": "Archivo de actividad (FIT)",
-            "description": "Un entrenamiento de un reloj o ciclocomputador.",
-            "choose": "Elegir archivo",
+            "description": "Entrenamientos de un reloj o ciclocomputador.",
+            "choose": "Elegir archivos",
             "uploading": "Subiendo…",
             "uploadFailed": "No se pudo subir el archivo. Inténtalo de nuevo.",
-            "tooLarge": "El archivo ocupa más de 10 MB.",
-            "rateLimited": "Demasiadas subidas en poco tiempo. Espera un minuto y vuelve a intentarlo.",
-            "busy": "Ya hay una importación en curso para tu cuenta. Espera a que termine.",
             "failed": "La importación ha fallado. Inténtalo de nuevo.",
             "doneSummary": "El archivo de actividad se ha importado.",
             "doneNothing": "La importación ha terminado, pero no había nada nuevo que añadir.",
-            "dropLabel": "Suelta aquí el archivo de actividad",
-            "dropHint": "o haz clic para elegirlo: un archivo .fit, .fit.gz o .zip de hasta 10 MB.",
-            "fileInputLabel": "Archivo de actividad",
+            "dropLabel": "Suelta aquí los archivos de actividad",
+            "dropHint": "o haz clic para elegirlos: archivos .fit, .fit.gz o .zip de hasta 10 MB cada uno.",
+            "fileInputLabel": "Archivos de actividad",
             "privacyNote": "El recorrido GPS solo se guarda si Rutas de entrenamiento está activado.",
             "steps": {
               "garmin": "Garmin Connect: abre la actividad en la web, elige el menú del engranaje y después Exportar original.",
@@ -6558,6 +6555,22 @@
               "noSession": "El archivo no contiene ningún entrenamiento legible.",
               "stagingMissing": "El archivo subido ya no estaba en el servidor. Súbelo de nuevo.",
               "interrupted": "Un reinicio del servidor interrumpió la importación. Sube el archivo de nuevo."
+            },
+            "batch": {
+              "waiting": "En espera",
+              "imported": "Importado",
+              "duplicate": "Ya importado",
+              "progress": "{done} de {total}",
+              "capped": "Solo se importan los primeros 100 archivos.",
+              "reason": {
+                "tooLarge": "Más de 10 MB",
+                "unsupported": "No es un archivo FIT",
+                "damaged": "Archivo dañado",
+                "notActivity": "No es una actividad",
+                "noWorkout": "Ningún entrenamiento encontrado",
+                "busy": "Otra importación en curso",
+                "retry": "Error, inténtalo de nuevo"
+              }
             }
           },
           "recordFile": {

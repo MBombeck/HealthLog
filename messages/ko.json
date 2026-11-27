@@ -6519,14 +6519,11 @@
             "choose": "파일 선택",
             "uploading": "업로드 중…",
             "uploadFailed": "업로드에 실패했습니다. 다시 시도해 주세요.",
-            "tooLarge": "파일이 10MB보다 큽니다.",
-            "rateLimited": "짧은 시간에 업로드가 너무 많습니다. 1분 후에 다시 시도해 주세요.",
-            "busy": "계정에서 이미 가져오기가 진행 중입니다. 끝날 때까지 기다려 주세요.",
             "failed": "가져오기에 실패했습니다. 다시 시도해 주세요.",
             "doneSummary": "활동 파일을 가져왔습니다.",
             "doneNothing": "가져오기가 끝났지만 새로 추가할 항목이 없었습니다.",
             "dropLabel": "활동 파일을 여기에 놓으세요",
-            "dropHint": "또는 클릭해서 선택하세요: 최대 10MB의 .fit, .fit.gz 또는 .zip 파일.",
+            "dropHint": "또는 클릭해서 선택하세요: 파일당 최대 10MB의 .fit, .fit.gz 또는 .zip 파일.",
             "fileInputLabel": "활동 파일",
             "privacyNote": "GPS 경로는 운동 경로가 켜져 있을 때만 저장됩니다.",
             "steps": {
@@ -6558,6 +6555,22 @@
               "noSession": "파일에 읽을 수 있는 운동이 없습니다.",
               "stagingMissing": "업로드한 파일이 서버에 더 이상 없습니다. 다시 업로드하세요.",
               "interrupted": "서버 재시작으로 가져오기가 중단되었습니다. 파일을 다시 업로드하세요."
+            },
+            "batch": {
+              "waiting": "대기 중",
+              "imported": "가져옴",
+              "duplicate": "이미 가져옴",
+              "progress": "{done}/{total}",
+              "capped": "처음 100개 파일만 가져옵니다.",
+              "reason": {
+                "tooLarge": "10MB 초과",
+                "unsupported": "FIT 파일이 아님",
+                "damaged": "손상된 파일",
+                "notActivity": "활동이 아님",
+                "noWorkout": "운동을 찾을 수 없음",
+                "busy": "다른 가져오기가 진행 중",
+                "retry": "실패, 다시 시도하세요"
+              }
             }
           },
           "recordFile": {

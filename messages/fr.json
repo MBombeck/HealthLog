@@ -6515,19 +6515,16 @@
           },
           "fit": {
             "title": "Fichier d’activité (FIT)",
-            "description": "Un entraînement d’une montre ou d’un compteur vélo.",
-            "choose": "Choisir un fichier",
+            "description": "Des entraînements d’une montre ou d’un compteur vélo.",
+            "choose": "Choisir des fichiers",
             "uploading": "Envoi en cours…",
             "uploadFailed": "L’envoi a échoué. Veuillez réessayer.",
-            "tooLarge": "Le fichier dépasse 10 Mo.",
-            "rateLimited": "Trop d’envois en peu de temps. Attendez une minute et réessayez.",
-            "busy": "Une importation est déjà en cours pour votre compte. Attendez qu’elle soit terminée.",
             "failed": "L’importation a échoué. Veuillez réessayer.",
             "doneSummary": "Le fichier d’activité a été importé.",
             "doneNothing": "L’importation est terminée, mais il n’y avait rien de nouveau à ajouter.",
-            "dropLabel": "Déposez le fichier d’activité ici",
-            "dropHint": "ou cliquez pour le choisir : un fichier .fit, .fit.gz ou .zip jusqu’à 10 Mo.",
-            "fileInputLabel": "Fichier d’activité",
+            "dropLabel": "Déposez les fichiers d’activité ici",
+            "dropHint": "ou cliquez pour les choisir : fichiers .fit, .fit.gz ou .zip jusqu’à 10 Mo chacun.",
+            "fileInputLabel": "Fichiers d’activité",
             "privacyNote": "Le tracé GPS n’est conservé que si Parcours d’entraînement est activé.",
             "steps": {
               "garmin": "Garmin Connect : ouvrez l’activité sur le site, choisissez le menu en forme de roue dentée, puis Exporter l’original.",
@@ -6558,6 +6555,22 @@
               "noSession": "Le fichier ne contient aucun entraînement lisible.",
               "stagingMissing": "Le fichier envoyé n’était plus sur le serveur. Envoyez-le à nouveau.",
               "interrupted": "L’importation a été interrompue par un redémarrage du serveur. Envoyez le fichier à nouveau."
+            },
+            "batch": {
+              "waiting": "En attente",
+              "imported": "Importé",
+              "duplicate": "Déjà importé",
+              "progress": "{done} sur {total}",
+              "capped": "Seuls les 100 premiers fichiers sont importés.",
+              "reason": {
+                "tooLarge": "Plus de 10 Mo",
+                "unsupported": "Pas un fichier FIT",
+                "damaged": "Fichier endommagé",
+                "notActivity": "Pas une activité",
+                "noWorkout": "Aucun entraînement trouvé",
+                "busy": "Une autre importation est en cours",
+                "retry": "Échec, réessayez"
+              }
             }
           },
           "recordFile": {

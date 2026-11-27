@@ -6515,19 +6515,16 @@
           },
           "fit": {
             "title": "Activiteitsbestand (FIT)",
-            "description": "Een training van een horloge of fietscomputer.",
-            "choose": "Bestand kiezen",
+            "description": "Trainingen van een horloge of fietscomputer.",
+            "choose": "Bestanden kiezen",
             "uploading": "Uploaden…",
             "uploadFailed": "Het uploaden is mislukt. Probeer het opnieuw.",
-            "tooLarge": "Het bestand is groter dan 10 MB.",
-            "rateLimited": "Te veel uploads in korte tijd. Wacht een minuut en probeer het opnieuw.",
-            "busy": "Er loopt al een import voor je account. Wacht tot die klaar is.",
             "failed": "De import is mislukt. Probeer het opnieuw.",
             "doneSummary": "Het activiteitsbestand is geïmporteerd.",
             "doneNothing": "De import is klaar, maar er was niets nieuws toe te voegen.",
-            "dropLabel": "Zet het activiteitsbestand hier neer",
-            "dropHint": "of klik om het te kiezen: een .fit-, .fit.gz- of .zip-bestand tot 10 MB.",
-            "fileInputLabel": "Activiteitsbestand",
+            "dropLabel": "Zet de activiteitsbestanden hier neer",
+            "dropHint": "of klik om ze te kiezen: .fit-, .fit.gz- of .zip-bestanden tot 10 MB per stuk.",
+            "fileInputLabel": "Activiteitsbestanden",
             "privacyNote": "Het GPS-spoor wordt alleen bewaard als Trainingsroutes aan staat.",
             "steps": {
               "garmin": "Garmin Connect: open de activiteit op de website, kies het tandwielmenu en daarna Origineel exporteren.",
@@ -6558,6 +6555,22 @@
               "noSession": "Het bestand bevat geen leesbare training.",
               "stagingMissing": "Het geüploade bestand stond niet meer op de server. Upload het opnieuw.",
               "interrupted": "De import werd onderbroken door een herstart van de server. Upload het bestand opnieuw."
+            },
+            "batch": {
+              "waiting": "Wacht",
+              "imported": "Geïmporteerd",
+              "duplicate": "Al geïmporteerd",
+              "progress": "{done} van {total}",
+              "capped": "Alleen de eerste 100 bestanden worden geïmporteerd.",
+              "reason": {
+                "tooLarge": "Groter dan 10 MB",
+                "unsupported": "Geen FIT-bestand",
+                "damaged": "Bestand beschadigd",
+                "notActivity": "Geen activiteit",
+                "noWorkout": "Geen training gevonden",
+                "busy": "Er loopt al een andere import",
+                "retry": "Mislukt, probeer opnieuw"
+              }
             }
           },
           "recordFile": {

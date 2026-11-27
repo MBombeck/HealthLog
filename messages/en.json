@@ -6515,19 +6515,16 @@
           },
           "fit": {
             "title": "Activity file (FIT)",
-            "description": "A workout from a watch or bike computer.",
-            "choose": "Choose file",
+            "description": "Workouts from a watch or bike computer.",
+            "choose": "Choose files",
             "uploading": "Uploading…",
             "uploadFailed": "The upload failed. Please try again.",
-            "tooLarge": "The file is larger than 10 MB.",
-            "rateLimited": "Too many uploads in a short time. Wait a minute and try again.",
-            "busy": "An import is already running for your account. Wait until it has finished.",
             "failed": "The import failed. Please try again.",
             "doneSummary": "The activity file was imported.",
             "doneNothing": "The import finished, but there was nothing new to add.",
-            "dropLabel": "Drop the activity file here",
-            "dropHint": "or click to choose it: a .fit, .fit.gz or .zip file up to 10 MB.",
-            "fileInputLabel": "Activity file",
+            "dropLabel": "Drop activity files here",
+            "dropHint": "or click to choose them: .fit, .fit.gz or .zip files up to 10 MB each.",
+            "fileInputLabel": "Activity files",
             "privacyNote": "The GPS track is only kept when Workout routes is switched on.",
             "steps": {
               "garmin": "Garmin Connect: open the activity on the website, choose the gear menu, then Export original.",
@@ -6558,6 +6555,22 @@
               "noSession": "The file contains no workout that could be read.",
               "stagingMissing": "The uploaded file was no longer on the server. Upload it again.",
               "interrupted": "The import was interrupted by a server restart. Upload the file again."
+            },
+            "batch": {
+              "waiting": "Waiting",
+              "imported": "Imported",
+              "duplicate": "Already imported",
+              "progress": "{done} of {total}",
+              "capped": "Only the first 100 files are imported.",
+              "reason": {
+                "tooLarge": "Larger than 10 MB",
+                "unsupported": "Not a FIT file",
+                "damaged": "File is damaged",
+                "notActivity": "Not an activity",
+                "noWorkout": "No workout found",
+                "busy": "Another import is running",
+                "retry": "Failed, try again"
+              }
             }
           },
           "recordFile": {

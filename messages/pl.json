@@ -6515,19 +6515,16 @@
           },
           "fit": {
             "title": "Plik aktywności (FIT)",
-            "description": "Trening z zegarka lub licznika rowerowego.",
-            "choose": "Wybierz plik",
+            "description": "Treningi z zegarka lub licznika rowerowego.",
+            "choose": "Wybierz pliki",
             "uploading": "Przesyłanie…",
             "uploadFailed": "Przesyłanie nie powiodło się. Spróbuj ponownie.",
-            "tooLarge": "Plik jest większy niż 10 MB.",
-            "rateLimited": "Zbyt wiele przesłań w krótkim czasie. Odczekaj minutę i spróbuj ponownie.",
-            "busy": "Dla Twojego konta trwa już import. Poczekaj, aż się zakończy.",
             "failed": "Import nie powiódł się. Spróbuj ponownie.",
             "doneSummary": "Plik aktywności został zaimportowany.",
             "doneNothing": "Import się zakończył, ale nie było nic nowego do dodania.",
-            "dropLabel": "Upuść tutaj plik aktywności",
-            "dropHint": "lub kliknij, aby go wybrać: plik .fit, .fit.gz lub .zip do 10 MB.",
-            "fileInputLabel": "Plik aktywności",
+            "dropLabel": "Upuść tutaj pliki aktywności",
+            "dropHint": "lub kliknij, aby je wybrać: pliki .fit, .fit.gz lub .zip do 10 MB każdy.",
+            "fileInputLabel": "Pliki aktywności",
             "privacyNote": "Ślad GPS jest zapisywany tylko wtedy, gdy włączone są Trasy treningów.",
             "steps": {
               "garmin": "Garmin Connect: otwórz aktywność na stronie, wybierz menu z kołem zębatym, a potem Eksportuj oryginał.",
@@ -6558,6 +6555,22 @@
               "noSession": "Plik nie zawiera żadnego treningu, który dałoby się odczytać.",
               "stagingMissing": "Przesłanego pliku nie było już na serwerze. Prześlij go ponownie.",
               "interrupted": "Import przerwał restart serwera. Prześlij plik ponownie."
+            },
+            "batch": {
+              "waiting": "Oczekuje",
+              "imported": "Zaimportowano",
+              "duplicate": "Już zaimportowano",
+              "progress": "{done} z {total}",
+              "capped": "Importowanych jest tylko pierwszych 100 plików.",
+              "reason": {
+                "tooLarge": "Większy niż 10 MB",
+                "unsupported": "To nie jest plik FIT",
+                "damaged": "Plik uszkodzony",
+                "notActivity": "To nie jest aktywność",
+                "noWorkout": "Nie znaleziono treningu",
+                "busy": "Trwa inny import",
+                "retry": "Błąd, spróbuj ponownie"
+              }
             }
           },
           "recordFile": {
