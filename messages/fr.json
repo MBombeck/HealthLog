@@ -6240,7 +6240,6 @@
       },
       "export": {
         "title": "Export et import",
-        "otherOptionsHeading": "Autres options d'export",
         "downloadFailed": "Échec du téléchargement de l'export. Veuillez réessayer.",
         "actions": {
           "download": "Télécharger"
@@ -6251,27 +6250,31 @@
         },
         "cards": {
           "measurementsCsv": {
-            "title": "Mesures",
-            "description": "Toutes les mesures en tableur."
+            "title": "Mesures (CSV)",
+            "description": "Période au choix"
           },
           "medicationsCsv": {
-            "title": "Médicaments",
-            "description": "Votre médication, au besoin avec chaque prise.",
+            "title": "Médicaments (CSV)",
+            "description": "Au besoin avec chaque prise",
             "includeIntake": "Inclure l’historique des prises"
           },
           "moodCsv": {
-            "title": "Humeur",
-            "description": "Chaque entrée d’humeur avec ses tags."
+            "title": "Humeur (CSV)",
+            "description": "Période au choix"
           },
           "fullBackup": {
             "title": "Sauvegarde complète",
-            "description": "L'ensemble de votre dossier dans un fichier JSON.",
+            "description": "Tout dans un fichier, chiffré si vous voulez",
             "scopeNote": "Les métadonnées des documents et le résumé IA, s'il existe, sont inclus en texte clair ; les fichiers originaux des documents ainsi que les tracés GPS/données d'échantillons des entraînements ne le sont pas.",
             "encryptToggle": "Chiffrer avec une phrase secrète",
             "passphrasePlaceholder": "Phrase secrète (12 caractères min.)",
             "passphraseHelp": "Dérive la clé de l'archive avec Argon2id et la scelle avec AES-256-GCM. Enregistrez le fichier avec l'extension .hlx.",
             "noRecoveryWarning": "Aucune récupération possible : si vous perdez cette phrase secrète, l'archive ne pourra pas être ouverte. Conservez-la en lieu sûr.",
             "detail": "Une copie portable de votre dossier, à conserver et à lire : valeurs en JSON simple, documents limités à leurs métadonnées."
+          },
+          "doctorReport": {
+            "title": "Rapport médical",
+            "description": "PDF, FHIR ou ZIP"
           }
         },
         "import": {
@@ -6345,16 +6348,14 @@
             "cycleSummary": "{samples, plural, one {# échantillon de cycle fusionné} other {# échantillons de cycle fusionnés}} en {days, plural, one {# journal quotidien} other {# journaux quotidiens}}.",
             "cycleModuleOff": "{count, plural, one {# échantillon de cycle ignoré} other {# échantillons de cycle ignorés}}, car le suivi du cycle est désactivé pour ce compte.",
             "cycleDaysFailed": "{count, plural, one {# jour de cycle n'a pas pu être écrit} other {# jours de cycle n'ont pas pu être écrits}} : {reason}",
-            "fileHint": "export.zip de l’app Santé"
+            "fileHint": "export.zip, jusqu’à 1,5 Go"
           },
           "json": {
-            "title": "Mesures et humeur (JSON)",
+            "title": "Fichier JSON",
             "description": "Mesures et entrées d’humeur en JSON.",
-            "pasteLabel": "Coller du JSON",
             "fileInputLabel": "Choisir un fichier JSON à importer",
             "schemaHint": "Deux tableaux : measurements et moodEntries.",
             "docsLink": "Voir le schéma et un exemple.",
-            "uploadFile": "Choisir un fichier",
             "downloadExample": "Télécharger l'exemple",
             "import": "Importer",
             "invalidJson": "Ce n'est pas du JSON valide. Vérifiez la syntaxe et réessayez.",
@@ -6368,16 +6369,18 @@
             "keptLabels": "Ce compte a déjà des étiquettes ou des groupes avec ces clés sous son propre nom, ils ont été conservés : {keys}",
             "resultNothing": "Rien n'a été importé. {skipped, plural, =1 {La seule entrée a été ignorée} other {Les # entrées ont toutes été ignorées}}.",
             "resultEmpty": "Ce fichier ne contenait ni mesures ni entrées d'humeur.",
-            "limitsHint": "Jusqu’à {mb} Mo et jusqu’à {rows, plural, one {# entrée} other {# entrées}} par liste."
+            "limitsHint": "Jusqu’à {mb} Mo et jusqu’à {rows, plural, one {# entrée} other {# entrées}} par liste.",
+            "rowMeta": "Mesures et humeur",
+            "fileMeta": ".json, jusqu’à {mb} Mo",
+            "partial": "L’importation s’est arrêtée en cours. Réimporter est sans risque, rien n’est ajouté en double.",
+            "partialCounts": "Déjà enregistré : {measurements, plural, one {# mesure} other {# mesures}} et {moods, plural, one {# entrée d’humeur} other {# entrées d’humeur}}."
           },
           "csv": {
             "title": "Fichier CSV",
             "description": "Mesures d’un tableur ou d’un export d’appareil.",
-            "pasteLabel": "Coller le CSV",
             "fileInputLabel": "Choisir un fichier CSV à importer",
             "schemaHint": "Colonnes : type, value, unit, measuredAt (avec décalage horaire) et, en option, glucoseContext, notes, externalId.",
             "docsLink": "Voir le schéma des colonnes et un exemple.",
-            "uploadFile": "Choisir un fichier",
             "downloadExample": "Télécharger un exemple",
             "preview": "Aperçu",
             "import": "Importer",
@@ -6413,14 +6416,15 @@
             "reasonUnstableExternalId": "l'identifiant externe n'est pas stable d'un export à l'autre",
             "reasonDuplicate": "déjà importée",
             "reasonUnknown": "ignorée",
-            "detail": "Une ligne par relevé."
+            "detail": "Une ligne par relevé.",
+            "rowMeta": "Mesures d’un tableur",
+            "fileMeta": ".csv, jusqu’à 16 Mo",
+            "guideMeta": "type, value, unit, measuredAt avec décalage"
           },
           "doseHistory": {
             "title": "Historique des prises",
             "description": "Un historique de prises d’une autre app de suivi.",
-            "pasteLabel": "Coller l'export",
             "fileInputLabel": "Choisir un fichier d'historique des prises",
-            "uploadFile": "Choisir un fichier",
             "preview": "Aperçu",
             "import": "Importer",
             "empty": "Collez d'abord l'export ou choisissez un fichier.",
@@ -6469,7 +6473,9 @@
               "jsonNoIntakeTime": "L'export JSON consigne le moment où une dose était due, pas celui où elle a été prise, et une heure prévue ne sera pas écrite comme si c'était la prise. Exportez le CSV, qui porte les deux.",
               "tooManyRows": "Ce fichier contient plus de lignes qu'un import peut en prendre. Découpez-le et importez les parties."
             },
-            "detail": "Un fichier couvre tous les médicaments qu'il contient."
+            "detail": "Un fichier couvre tous les médicaments qu'il contient.",
+            "rowMeta": "Depuis une appli de médicaments",
+            "fileMeta": ".csv ou .json, jusqu’à 16 Mo"
           },
           "healthConnect": {
             "title": "Export Health Connect",
@@ -6510,7 +6516,9 @@
               "stagingMissing": "Le fichier envoyé n’était plus sur le serveur. Envoyez-le à nouveau.",
               "interrupted": "Un redémarrage du serveur a interrompu l’importation. Envoyez le fichier à nouveau."
             },
-            "fileHint": "ZIP, 1 Go maximum"
+            "fileHint": "ZIP, 1 Go maximum",
+            "folderRow": "Automatiquement depuis un dossier",
+            "folderMeta": "WebDAV ou Nextcloud, dans Intégrations"
           },
           "fit": {
             "title": "Fichier d’activité (FIT)",
@@ -6656,9 +6664,16 @@
           },
           "pickerFile": "Fichier",
           "pickerFiles": "Fichiers",
-          "pickerChoose": "Choisir"
+          "pickerChoose": "Choisir",
+          "row": {
+            "done": "{date}, {count, plural, one {# entrée} other {# entrées}}",
+            "failed": "{date}, non importé"
+          },
+          "pasteOr": "Ou coller",
+          "guideTitle": "Exemple et colonnes"
         },
-        "subtitle": "Exportez vos données, ou importez mesures et entrées d’autres applis et fichiers."
+        "subtitle": "Exportez vos données, ou importez mesures et entrées d’autres applis et fichiers.",
+        "exportHeading": "Exporter"
       },
       "about": {
         "title": "À propos de cette app",
@@ -15696,13 +15711,6 @@
     "metricLink": "D'où viennent ces valeurs"
   },
   "recordImport": {
-    "title": "Résultats de laboratoire et médicaments depuis un tableur",
-    "description": "Importez des années de résultats ou une liste de médicaments depuis un fichier CSV.",
-    "detail": "Vous choisissez quelle colonne contient quoi ; HealthLog vérifie chaque ligne d'abord et n'importe rien avant votre confirmation.",
-    "kind": {
-      "labs": "Résultats de laboratoire",
-      "medications": "Médicaments"
-    },
     "sheetTitle": {
       "labs": "Importer des résultats",
       "medications": "Importer des médicaments"
@@ -15794,7 +15802,12 @@
       "startsOn": "Début",
       "endsOn": "Fin"
     },
-    "unitlessHint": "Un rapport ou un indice sans unité (INR, cholestérol/HDL) : inscrivez 1 dans la colonne de l'unité. Une unité vide reste une erreur."
+    "unitlessHint": "Un rapport ou un indice sans unité (INR, cholestérol/HDL) : inscrivez 1 dans la colonne de l'unité. Une unité vide reste une erreur.",
+    "row": {
+      "labs": "Résultats d’analyses (CSV)",
+      "medications": "Médicaments (CSV)"
+    },
+    "rowMeta": "Vous associez les colonnes"
   },
   "seizures": {
     "ilae": {

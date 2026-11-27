@@ -22,13 +22,13 @@ import {
   type AppleHealthEcgCounts,
   type AppleHealthLabCounts,
 } from "./apple-health-auxiliary-lines";
+import { ListGroup } from "@/components/ui/list-row";
 import {
-  ImportCardShell,
   ImportDetails,
-  ImportInfo,
   ImportPickerRow,
   ImportQueryErrorRow,
-  ImportRows,
+  ImportSource,
+  useFinishedJobMeta,
 } from "./import-card-shell";
 
 /** Terminal states the status poll stops on. */
@@ -69,6 +69,7 @@ interface JobStatus {
     labs?: AppleHealthLabCounts;
   } | null;
   failureReason: string | null;
+  completedAt?: string | null;
 }
 
 /** One skip line for the result breakdown. */
@@ -350,8 +351,10 @@ function useRefreshReadsAfterImport(finishedJobId: string | null): void {
   }, [finishedJobId, queryClient]);
 }
 
-export function AppleHealthImportCard() {
+export function AppleHealthImportSource() {
   const { t } = useTranslations();
+  const finishedMeta = useFinishedJobMeta();
+  const [open, setOpen] = useState(false);
   const fmt = useFormatters();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [jobId, setJobId] = useState<string | null>(null);
@@ -513,36 +516,49 @@ export function AppleHealthImportCard() {
     );
   const estimateDays = status?.result?.cumulativeEstimates?.days ?? 0;
 
+  const rowMeta = uploading
+    ? t("settings.sections.export.import.appleHealth.uploading")
+    : isRunning
+      ? t(
+          `settings.sections.export.import.appleHealth.phase.${status?.status ?? "queued"}`,
+        )
+      : (finishedMeta(
+          status ? { ...status, written: rowsWritten + auxWritten } : null,
+        ) ?? t("settings.sections.export.import.appleHealth.fileHint"));
+
   return (
-    <ImportCardShell
+    <ImportSource
       testId="import-card-apple-health"
       anchor="import-apple-health"
       icon={Upload}
       title={t("settings.sections.export.import.appleHealth.title")}
-      titleAccessory={
-        <ImportInfo
-          lines={[
-            t("settings.sections.export.import.appleHealth.description"),
-            t("settings.sections.export.import.appleHealth.idempotencyNote"),
-          ]}
-        />
-      }
-      rows
+      info={[
+        t("settings.sections.export.import.appleHealth.description"),
+        t("settings.sections.export.import.appleHealth.idempotencyNote"),
+      ]}
+      meta={rowMeta}
+      status={busy ? "running" : uploadError || isFailed ? "failed" : null}
+      open={open}
+      onOpenChange={setOpen}
+      chooseTestId="import-choose-apple-health"
+      file={{
+        inputRef: fileInputRef,
+        accept: ".zip,application/zip",
+        inputLabel: t(
+          "settings.sections.export.import.appleHealth.fileInputLabel",
+        ),
+        onFiles: ([file]) => void upload(file!),
+      }}
     >
       <ImportQueryErrorRow query={statusQuery} />
-      <ImportRows aria-live="polite">
+      <ListGroup aria-live="polite">
         <ImportPickerRow
           busy={busy}
           inputRef={fileInputRef}
-          accept=".zip,application/zip"
-          inputLabel={t(
-            "settings.sections.export.import.appleHealth.fileInputLabel",
-          )}
           meta={pickerMeta}
           actionTestId="import-action-apple-health"
-          onFiles={([file]) => void upload(file!)}
         />
-      </ImportRows>
+      </ListGroup>
       {isDone && (
         <AppleHealthDetails
           skips={skips}
@@ -553,7 +569,7 @@ export function AppleHealthImportCard() {
           estimateDays={estimateDays}
         />
       )}
-    </ImportCardShell>
+    </ImportSource>
   );
 }
 

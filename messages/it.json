@@ -6240,7 +6240,6 @@
       },
       "export": {
         "title": "Esporta e importa",
-        "otherOptionsHeading": "Altre opzioni di esportazione",
         "downloadFailed": "Impossibile scaricare l'esportazione. Riprova.",
         "actions": {
           "download": "Scarica"
@@ -6251,27 +6250,31 @@
         },
         "cards": {
           "measurementsCsv": {
-            "title": "Misurazioni",
-            "description": "Tutte le misurazioni come foglio di calcolo."
+            "title": "Misurazioni (CSV)",
+            "description": "Periodo a scelta"
           },
           "medicationsCsv": {
-            "title": "Farmaci",
-            "description": "I tuoi farmaci, se vuoi con ogni assunzione.",
+            "title": "Farmaci (CSV)",
+            "description": "Se vuoi, con ogni assunzione",
             "includeIntake": "Includi lo storico delle assunzioni"
           },
           "moodCsv": {
-            "title": "Umore",
-            "description": "Ogni voce dell’umore con i suoi tag."
+            "title": "Umore (CSV)",
+            "description": "Periodo a scelta"
           },
           "fullBackup": {
             "title": "Backup completo",
-            "description": "L'intera cartella in un unico file JSON.",
+            "description": "Tutto in un file, cifrato se vuoi",
             "scopeNote": "I metadati dei documenti e il riepilogo IA, se presente, sono inclusi in chiaro; i file originali dei documenti e i dati di percorso GPS/campionamento degli allenamenti non lo sono.",
             "encryptToggle": "Cifra con una passphrase",
             "passphrasePlaceholder": "Passphrase (min. 12 caratteri)",
             "passphraseHelp": "Deriva la chiave dell'archivio con Argon2id e lo sigilla con AES-256-GCM. Salva il file con estensione .hlx.",
             "noRecoveryWarning": "Non c'è recupero: se perdi questa passphrase, l'archivio non potrà essere aperto. Conservala in un luogo sicuro.",
             "detail": "Una copia portabile della tua cartella da conservare e leggere: valori in JSON semplice, documenti solo con i metadati."
+          },
+          "doctorReport": {
+            "title": "Referto per il medico",
+            "description": "PDF, FHIR o ZIP"
           }
         },
         "import": {
@@ -6345,16 +6348,14 @@
             "cycleSummary": "{samples, plural, one {# campione del ciclo unito} other {# campioni del ciclo uniti}} in {days, plural, one {# registro giornaliero} other {# registri giornalieri}}.",
             "cycleModuleOff": "{count, plural, one {# campione del ciclo saltato} other {# campioni del ciclo saltati}} perché il monitoraggio del ciclo è disattivato per questo account.",
             "cycleDaysFailed": "{count, plural, one {# giorno del ciclo non è stato scritto} other {# giorni del ciclo non sono stati scritti}}: {reason}",
-            "fileHint": "export.zip dall’app Salute"
+            "fileHint": "export.zip, fino a 1,5 GB"
           },
           "json": {
-            "title": "Misurazioni e umore (JSON)",
+            "title": "File JSON",
             "description": "Misurazioni e voci dell’umore in JSON.",
-            "pasteLabel": "Incolla JSON",
             "fileInputLabel": "Scegli un file JSON da importare",
             "schemaHint": "Due array: measurements e moodEntries.",
             "docsLink": "Vedi lo schema e un esempio.",
-            "uploadFile": "Scegli file",
             "downloadExample": "Scarica esempio",
             "import": "Importa",
             "invalidJson": "Questo non è JSON valido. Controlla la sintassi e riprova.",
@@ -6368,16 +6369,18 @@
             "keptLabels": "Questo account ha già tag o gruppi con queste chiavi e con il proprio nome, quindi sono stati mantenuti: {keys}",
             "resultNothing": "Non è stato importato nulla. {skipped, plural, one {# voce è stata saltata} other {Tutte le # voci sono state saltate}}.",
             "resultEmpty": "Questo file non conteneva né misurazioni né voci dell'umore.",
-            "limitsHint": "Fino a {mb} MB e fino a {rows, plural, one {# voce} other {# voci}} per elenco."
+            "limitsHint": "Fino a {mb} MB e fino a {rows, plural, one {# voce} other {# voci}} per elenco.",
+            "rowMeta": "Misurazioni e umore",
+            "fileMeta": ".json, fino a {mb} MB",
+            "partial": "L’importazione si è interrotta a metà. Importare di nuovo è sicuro, nulla viene aggiunto due volte.",
+            "partialCounts": "Già salvato: {measurements, plural, one {# misurazione} other {# misurazioni}} e {moods, plural, one {# voce dell’umore} other {# voci dell’umore}}."
           },
           "csv": {
             "title": "File CSV",
             "description": "Misurazioni da un foglio di calcolo o da un misuratore.",
-            "pasteLabel": "Incolla CSV",
             "fileInputLabel": "Scegli un file CSV da importare",
             "schemaHint": "Colonne: type, value, unit, measuredAt (con offset del fuso orario) e, facoltative, glucoseContext, notes, externalId.",
             "docsLink": "Vedi lo schema delle colonne e un esempio.",
-            "uploadFile": "Scegli file",
             "downloadExample": "Scarica esempio",
             "preview": "Anteprima",
             "import": "Importa",
@@ -6413,14 +6416,15 @@
             "reasonUnstableExternalId": "l'ID esterno non è stabile tra un export e l'altro",
             "reasonDuplicate": "già importata",
             "reasonUnknown": "saltata",
-            "detail": "Una riga per lettura."
+            "detail": "Una riga per lettura.",
+            "rowMeta": "Misurazioni da un foglio di calcolo",
+            "fileMeta": ".csv, fino a 16 MB",
+            "guideMeta": "type, value, unit, measuredAt con offset"
           },
           "doseHistory": {
             "title": "Storico delle assunzioni",
             "description": "Uno storico delle assunzioni da un’altra app.",
-            "pasteLabel": "Incolla l'esportazione",
             "fileInputLabel": "Scegli un file con lo storico delle assunzioni",
-            "uploadFile": "Scegli file",
             "preview": "Anteprima",
             "import": "Importa",
             "empty": "Prima incolla l'esportazione o scegli un file.",
@@ -6469,7 +6473,9 @@
               "jsonNoIntakeTime": "L'esportazione JSON registra quando una dose era prevista, non quando è stata assunta, e un orario previsto non verrà scritto come se fosse l'assunzione. Esporta il CSV, che porta entrambi.",
               "tooManyRows": "Quel file contiene più righe di quante un'importazione possa accoglierne. Dividilo e importa le parti."
             },
-            "detail": "Un file copre tutti i farmaci che contiene."
+            "detail": "Un file copre tutti i farmaci che contiene.",
+            "rowMeta": "Da un’app per i farmaci",
+            "fileMeta": ".csv o .json, fino a 16 MB"
           },
           "healthConnect": {
             "title": "Esportazione di Health Connect",
@@ -6510,7 +6516,9 @@
               "stagingMissing": "Il file caricato non era più sul server. Caricalo di nuovo.",
               "interrupted": "Un riavvio del server ha interrotto l'importazione. Carica di nuovo il file."
             },
-            "fileHint": "ZIP, fino a 1 GB"
+            "fileHint": "ZIP, fino a 1 GB",
+            "folderRow": "Automaticamente da una cartella",
+            "folderMeta": "WebDAV o Nextcloud, in Integrazioni"
           },
           "fit": {
             "title": "File di attività (FIT)",
@@ -6656,9 +6664,16 @@
           },
           "pickerFile": "File",
           "pickerFiles": "File",
-          "pickerChoose": "Scegli"
+          "pickerChoose": "Scegli",
+          "row": {
+            "done": "{date}, {count, plural, one {# voce} other {# voci}}",
+            "failed": "{date}, non importato"
+          },
+          "pasteOr": "Oppure incolla",
+          "guideTitle": "Esempio e colonne"
         },
-        "subtitle": "Esporta i tuoi dati o importa misurazioni e voci da altre app e file."
+        "subtitle": "Esporta i tuoi dati o importa misurazioni e voci da altre app e file.",
+        "exportHeading": "Esporta"
       },
       "about": {
         "title": "Informazioni su questa app",
@@ -15696,13 +15711,6 @@
     "metricLink": "Da dove vengono questi valori"
   },
   "recordImport": {
-    "title": "Esami di laboratorio e farmaci da un foglio di calcolo",
-    "description": "Porta dentro anni di esami o un elenco di farmaci da un file CSV.",
-    "detail": "Scegli tu quale colonna contiene cosa; HealthLog controlla ogni riga prima e non importa nulla finché non confermi.",
-    "kind": {
-      "labs": "Esami di laboratorio",
-      "medications": "Farmaci"
-    },
     "sheetTitle": {
       "labs": "Importa esami",
       "medications": "Importa farmaci"
@@ -15794,7 +15802,12 @@
       "startsOn": "Inizio",
       "endsOn": "Fine"
     },
-    "unitlessHint": "Un rapporto o un indice senza unità (INR, colesterolo/HDL): scrivi 1 nella colonna dell'unità. Un'unità vuota resta un errore."
+    "unitlessHint": "Un rapporto o un indice senza unità (INR, colesterolo/HDL): scrivi 1 nella colonna dell'unità. Un'unità vuota resta un errore.",
+    "row": {
+      "labs": "Esami di laboratorio (CSV)",
+      "medications": "Farmaci (CSV)"
+    },
+    "rowMeta": "Assegni tu le colonne"
   },
   "seizures": {
     "ilae": {

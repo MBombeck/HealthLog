@@ -6240,7 +6240,6 @@
       },
       "export": {
         "title": "Exporteren en importeren",
-        "otherOptionsHeading": "Andere exportopties",
         "downloadFailed": "De export kon niet worden gedownload. Probeer het opnieuw.",
         "actions": {
           "download": "Downloaden"
@@ -6251,27 +6250,31 @@
         },
         "cards": {
           "measurementsCsv": {
-            "title": "Metingen",
-            "description": "Alle metingen als spreadsheet."
+            "title": "Metingen (CSV)",
+            "description": "Periode naar keuze"
           },
           "medicationsCsv": {
-            "title": "Medicatie",
-            "description": "Je medicatie, desgewenst met elke inname.",
+            "title": "Medicatie (CSV)",
+            "description": "Desgewenst met elke inname",
             "includeIntake": "Innamegeschiedenis meenemen"
           },
           "moodCsv": {
-            "title": "Stemming",
-            "description": "Elke stemmingsregistratie met tags."
+            "title": "Stemming (CSV)",
+            "description": "Periode naar keuze"
           },
           "fullBackup": {
             "title": "Volledige back-up",
-            "description": "Je hele dossier in één JSON-bestand.",
+            "description": "Alles in één bestand, desgewenst versleuteld",
             "scopeNote": "Metadata van documenten en de door AI gegenereerde samenvatting, als die er is, worden als platte tekst meegenomen; originele documentbestanden en GPS- en sensorgegevens van trainingen niet.",
             "encryptToggle": "Versleutelen met een wachtzin",
             "passphrasePlaceholder": "Wachtzin (min. 12 tekens)",
             "passphraseHelp": "Leidt de archiefsleutel af met Argon2id en versleutelt het archief met AES-256-GCM. Sla het bestand op met de extensie .hlx.",
             "noRecoveryWarning": "Herstellen is niet mogelijk. Als je deze wachtzin kwijtraakt, kan het archief niet worden geopend. Bewaar hem op een veilige plek.",
             "detail": "Een draagbare kopie van je dossier om te bewaren en te lezen: waarden als gewone JSON, documenten alleen als metadata."
+          },
+          "doctorReport": {
+            "title": "Artsenrapport",
+            "description": "PDF, FHIR of ZIP"
           }
         },
         "import": {
@@ -6345,16 +6348,14 @@
             "cycleSummary": "{samples, plural, one {# cyclussample} other {# cyclussamples}} samengevoegd in {days, plural, one {# dagregistratie} other {# dagregistraties}}.",
             "cycleModuleOff": "{count, plural, one {# cyclussample overgeslagen} other {# cyclussamples overgeslagen}} omdat cyclusregistratie voor dit account uitstaat.",
             "cycleDaysFailed": "{count, plural, one {# cyclusdag kon niet worden opgeslagen} other {# cyclusdagen konden niet worden opgeslagen}}: {reason}",
-            "fileHint": "export.zip uit de Gezondheid-app"
+            "fileHint": "export.zip, tot 1,5 GB"
           },
           "json": {
-            "title": "Metingen en stemming (JSON)",
+            "title": "JSON-bestand",
             "description": "Metingen en stemmingsregistraties als JSON.",
-            "pasteLabel": "JSON plakken",
             "fileInputLabel": "Kies een JSON-bestand om te importeren",
             "schemaHint": "Twee arrays: measurements en moodEntries.",
             "docsLink": "Bekijk het schema en een voorbeeld.",
-            "uploadFile": "Bestand kiezen",
             "downloadExample": "Voorbeeld downloaden",
             "import": "Importeren",
             "invalidJson": "Dat is geen geldige JSON. Controleer de syntaxis en probeer het opnieuw.",
@@ -6368,16 +6369,18 @@
             "keptLabels": "Dit account heeft al tags of groepen met deze sleutels onder een eigen naam, die zijn behouden: {keys}",
             "resultNothing": "Er is niets geïmporteerd. {skipped, plural, one {De # registratie is overgeslagen} other {Alle # registraties zijn overgeslagen}}.",
             "resultEmpty": "Dat bestand bevatte geen metingen en geen stemmingsregistraties.",
-            "limitsHint": "Tot {mb} MB en tot {rows, plural, one {# item} other {# items}} per lijst."
+            "limitsHint": "Tot {mb} MB en tot {rows, plural, one {# item} other {# items}} per lijst.",
+            "rowMeta": "Metingen en stemming",
+            "fileMeta": ".json, tot {mb} MB",
+            "partial": "De import stopte halverwege. Opnieuw importeren is veilig, er komt niets dubbel bij.",
+            "partialCounts": "Al opgeslagen: {measurements, plural, one {# meting} other {# metingen}} en {moods, plural, one {# stemmingsitem} other {# stemmingsitems}}."
           },
           "csv": {
             "title": "CSV-bestand",
             "description": "Metingen uit een spreadsheet of meterexport.",
-            "pasteLabel": "CSV plakken",
             "fileInputLabel": "Kies een CSV-bestand om te importeren",
             "schemaHint": "Kolommen: type, value, unit, measuredAt (met tijdzoneverschil), en optioneel glucoseContext, notes, externalId.",
             "docsLink": "Bekijk het kolomschema en een voorbeeld.",
-            "uploadFile": "Bestand kiezen",
             "downloadExample": "Voorbeeld downloaden",
             "preview": "Voorbeeld",
             "import": "Importeren",
@@ -6413,14 +6416,15 @@
             "reasonUnstableExternalId": "externe ID is niet stabiel tussen exports",
             "reasonDuplicate": "al geïmporteerd",
             "reasonUnknown": "overgeslagen",
-            "detail": "Eén rij per meting."
+            "detail": "Eén rij per meting.",
+            "rowMeta": "Metingen uit een spreadsheet",
+            "fileMeta": ".csv, tot 16 MB",
+            "guideMeta": "type, value, unit, measuredAt met offset"
           },
           "doseHistory": {
             "title": "Doseringsgeschiedenis medicatie",
             "description": "Een innamegeschiedenis uit een andere medicatie-app.",
-            "pasteLabel": "Export plakken",
             "fileInputLabel": "Kies een exportbestand met doseringsgeschiedenis",
-            "uploadFile": "Bestand kiezen",
             "preview": "Voorbeeld",
             "import": "Importeren",
             "empty": "Plak eerst de export of kies een bestand.",
@@ -6469,7 +6473,9 @@
               "jsonNoIntakeTime": "De JSON-export legt vast wanneer een dosis gepland was, maar niet wanneer die is ingenomen, en een gepland tijdstip wordt niet opgeslagen alsof het de inname was. Exporteer in plaats daarvan de CSV, die beide bevat.",
               "tooManyRows": "Dat bestand bevat meer rijen dan één import aankan. Splits het en importeer de delen."
             },
-            "detail": "Eén bestand omvat alle medicatie die erin staat."
+            "detail": "Eén bestand omvat alle medicatie die erin staat.",
+            "rowMeta": "Uit een medicatie-app",
+            "fileMeta": ".csv of .json, tot 16 MB"
           },
           "healthConnect": {
             "title": "Health Connect-export",
@@ -6510,7 +6516,9 @@
               "stagingMissing": "Het geüploade bestand stond niet meer op de server. Upload het opnieuw.",
               "interrupted": "De import is onderbroken doordat de server opnieuw is gestart. Upload het bestand opnieuw."
             },
-            "fileHint": "ZIP, tot 1 GB"
+            "fileHint": "ZIP, tot 1 GB",
+            "folderRow": "Automatisch uit een map",
+            "folderMeta": "WebDAV of Nextcloud, onder Integraties"
           },
           "fit": {
             "title": "Activiteitsbestand (FIT)",
@@ -6656,9 +6664,16 @@
           },
           "pickerFile": "Bestand",
           "pickerFiles": "Bestanden",
-          "pickerChoose": "Kiezen"
+          "pickerChoose": "Kiezen",
+          "row": {
+            "done": "{date}, {count, plural, one {# item} other {# items}}",
+            "failed": "{date}, niet geïmporteerd"
+          },
+          "pasteOr": "Of plakken",
+          "guideTitle": "Voorbeeld en kolommen"
         },
-        "subtitle": "Exporteer je gegevens, of importeer metingen en gegevens uit andere apps en bestanden."
+        "subtitle": "Exporteer je gegevens, of importeer metingen en gegevens uit andere apps en bestanden.",
+        "exportHeading": "Exporteren"
       },
       "about": {
         "title": "Over deze app",
@@ -15696,13 +15711,6 @@
     "metricLink": "Waar deze waarden vandaan komen"
   },
   "recordImport": {
-    "title": "Labuitslagen en medicijnen uit een spreadsheet",
-    "description": "Haal jaren aan labuitslagen of een medicijnlijst binnen uit een CSV-bestand.",
-    "detail": "Jij kiest welke kolom wat bevat; HealthLog controleert eerst elke rij en importeert pas als je bevestigt.",
-    "kind": {
-      "labs": "Labuitslagen",
-      "medications": "Medicijnen"
-    },
     "sheetTitle": {
       "labs": "Labuitslagen importeren",
       "medications": "Medicijnen importeren"
@@ -15794,7 +15802,12 @@
       "startsOn": "Begin",
       "endsOn": "Einde"
     },
-    "unitlessHint": "Een verhouding of index zonder eenheid (INR, cholesterol/HDL): vul 1 in de eenheidskolom in. Een lege eenheid blijft een fout."
+    "unitlessHint": "Een verhouding of index zonder eenheid (INR, cholesterol/HDL): vul 1 in de eenheidskolom in. Een lege eenheid blijft een fout.",
+    "row": {
+      "labs": "Labwaarden (CSV)",
+      "medications": "Medicijnen (CSV)"
+    },
+    "rowMeta": "Je wijst de kolommen zelf toe"
   },
   "seizures": {
     "ilae": {

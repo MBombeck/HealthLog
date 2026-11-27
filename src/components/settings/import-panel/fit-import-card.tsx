@@ -6,17 +6,17 @@
  * Uploads activity files (`.fit`, `.fit.gz`, or the ZIP Garmin Connect's
  * "Export original" writes), up to 100 in one selection, one after the
  * other through the same route and job as a single file (`fit-batch.ts`).
- * While a selection runs, one row per file shows its state. Without one, the
- * card shows the account's latest job from `GET /api/import/fit/status`, so
- * the outcome is still there after a reload. The card is a title, one
- * sentence and one picker row; where the files come from and what happens to
- * a GPS track sit behind the (i).
+ * While a selection runs, the sheet lists one row per file with its state.
+ * Without one, it shows the account's latest job from
+ * `GET /api/import/fit/status`, so the outcome is still there after a reload,
+ * and the page row says the day and the count. Where the files come from and
+ * what happens to a GPS track sit behind the (i).
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Activity, AlertCircle, Check, Loader2 } from "lucide-react";
 
-import { ListItem } from "@/components/ui/list-row";
+import { ListGroup, ListItem } from "@/components/ui/list-row";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
 import { fitFailureCodeOf, type FitFailureCode } from "@/lib/fit/errors";
 import { WrittenOutcomeLine } from "@/components/outcome/written-outcome-line";
@@ -24,11 +24,10 @@ import { classifyWrittenOutcome } from "@/lib/outcome/written-outcome";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import {
-  ImportCardShell,
-  ImportInfo,
   ImportPickerRow,
   ImportQueryErrorRow,
-  ImportRows,
+  ImportSource,
+  useFinishedJobMeta,
 } from "./import-card-shell";
 import {
   FIT_BATCH_MAX_FILES,
@@ -59,6 +58,7 @@ export interface FitImportJob {
     withRoute?: number;
   } | null;
   failureReason: string | null;
+  completedAt?: string | null;
 }
 
 /** The result rows the card lists, in order, without the zero ones. */
@@ -162,9 +162,11 @@ function useFitLabels() {
   return { rows, failures, phases, fileStatus, fileFailures };
 }
 
-export function FitImportCard() {
+export function FitImportSource() {
   const { t } = useTranslations();
   const labels = useFitLabels();
+  const finishedMeta = useFinishedJobMeta();
+  const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [batch, setBatch] = useState<FitBatchRow[]>([]);
@@ -299,35 +301,64 @@ export function FitImportCard() {
     </span>
   ) : null;
 
+  // The page row: progress while a selection or a job runs, the last
+  // finished job with its day, or what the source takes.
+  const rowMeta =
+    !showJob && batchRunning
+      ? t("settings.sections.export.import.fit.batch.progress", {
+          done: finished,
+          total: batch.length,
+        })
+      : isRunning
+        ? (labels.phases[job?.status ?? "queued"] ?? labels.phases.queued)
+        : (finishedMeta(
+            job ? { ...job, written: summary.written } : null,
+          ) ?? t("settings.sections.export.import.fit.fileHint"));
+
   return (
-    <ImportCardShell
+    <ImportSource
       testId="import-card-fit"
       anchor="import-fit"
       icon={Activity}
       title={t("settings.sections.export.import.fit.title")}
-      titleAccessory={
-        <ImportInfo
-          lines={[
-            t("settings.sections.export.import.fit.description"),
-            t("settings.sections.export.import.fit.steps.garmin"),
-            t("settings.sections.export.import.fit.steps.other"),
-            t("settings.sections.export.import.fit.privacyNote"),
-          ]}
-        />
+      info={[
+        t("settings.sections.export.import.fit.description"),
+        t("settings.sections.export.import.fit.steps.garmin"),
+        t("settings.sections.export.import.fit.steps.other"),
+        t("settings.sections.export.import.fit.privacyNote"),
+      ]}
+      meta={rowMeta}
+      status={
+        busy
+          ? "running"
+          : (
+                showJob
+                  ? isFailed
+                  : batch.some((row) => row.state.status === "failed")
+              )
+            ? "failed"
+            : null
       }
-      rows
+      open={open}
+      onOpenChange={setOpen}
+      chooseTestId="import-choose-fit"
+      file={{
+        inputRef: fileInputRef,
+        multiple: true,
+        accept:
+          ".fit,.gz,.zip,application/zip,application/gzip,application/octet-stream",
+        inputLabel: t("settings.sections.export.import.fit.fileInputLabel"),
+        onFiles: (files) => void start(files),
+      }}
     >
       <ImportQueryErrorRow query={statusQuery} />
-      <ImportRows aria-live="polite" data-testid="import-fit-rows">
+      <ListGroup aria-live="polite" data-testid="import-fit-rows">
         <ImportPickerRow
           multiple
           busy={busy}
           inputRef={fileInputRef}
-          accept=".fit,.gz,.zip,application/zip,application/gzip,application/octet-stream"
-          inputLabel={t("settings.sections.export.import.fit.fileInputLabel")}
           meta={pickerMeta ?? t("settings.sections.export.import.fit.fileHint")}
           actionTestId="import-action-fit"
-          onFiles={(files) => void start(files)}
         />
         {!showJob &&
           batch.map((row) => (
@@ -349,8 +380,8 @@ export function FitImportCard() {
               trailing={count}
             />
           ))}
-      </ImportRows>
-    </ImportCardShell>
+      </ListGroup>
+    </ImportSource>
   );
 }
 

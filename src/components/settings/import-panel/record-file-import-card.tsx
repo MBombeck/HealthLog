@@ -3,10 +3,10 @@
 /**
  * Settings → Export & Import → Gadgetbridge database, FHIR Bundle.
  *
- * One card per kind, built like the FIT card: upload the file, follow the
- * background job through its status route, show what was imported per kind
- * of row and what the file held that was not, by table or resource type and
- * a closed reason. Nothing from inside the file is ever shown.
+ * One source row and sheet per kind, built like the FIT source: upload the
+ * file, follow the background job through its status route, show what was
+ * imported per kind of row and what the file held that was not, by table or
+ * resource type and a closed reason. Nothing from inside the file is ever shown.
  */
 import { useCallback, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -21,14 +21,13 @@ import {
   type RecordFileImportResult,
 } from "@/lib/import/file-import/kinds";
 import { queryKeys } from "@/lib/query-keys";
-import { ListItem } from "@/components/ui/list-row";
+import { ListGroup, ListItem } from "@/components/ui/list-row";
 import {
-  ImportCardShell,
   ImportDetails,
-  ImportInfo,
   ImportPickerRow,
   ImportQueryErrorRow,
-  ImportRows,
+  ImportSource,
+  useFinishedJobMeta,
 } from "./import-card-shell";
 
 const TERMINAL_STATES: readonly string[] = ["done", "failed"];
@@ -45,6 +44,7 @@ export interface RecordFileImportJob {
   status: string;
   result: RecordFileImportResult | null;
   failureReason: string | null;
+  completedAt?: string | null;
 }
 
 /**
@@ -110,8 +110,10 @@ function useCopy(kind: CardKind) {
   };
 }
 
-export function RecordFileImportCard({ kind }: { kind: CardKind }) {
+export function RecordFileImportSource({ kind }: { kind: CardKind }) {
   const copy = useCopy(kind);
+  const finishedMeta = useFinishedJobMeta();
+  const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -200,25 +202,42 @@ export function RecordFileImportCard({ kind }: { kind: CardKind }) {
       : [];
   const skips = result && !running ? result.skips : [];
 
+  const rowMeta = uploading
+    ? copy.uploading
+    : running
+      ? copy.running
+      : (finishedMeta(
+          job ? { ...job, written: result?.imported ?? 0 } : null,
+        ) ?? copy.fileHint);
+
   return (
-    <ImportCardShell
+    <ImportSource
       testId={testId}
       anchor={RECORD_FILE_IMPORT_ANCHORS[kind].anchor}
       icon={kind === "gadgetbridge" ? Watch : FileHeart}
       title={copy.title}
-      titleAccessory={<ImportInfo lines={[copy.description, ...copy.steps]} />}
-      rows
+      info={[copy.description, ...copy.steps]}
+      meta={rowMeta}
+      status={
+        busy ? "running" : failure || uploadError ? "failed" : null
+      }
+      open={open}
+      onOpenChange={setOpen}
+      chooseTestId={`${testId}-open`}
+      file={{
+        inputRef,
+        accept: copy.accept,
+        inputLabel: copy.fileInputLabel,
+        onFiles: ([file]) => void upload(file!),
+      }}
     >
       <ImportQueryErrorRow query={statusQuery} />
-      <ImportRows aria-live="polite">
+      <ListGroup aria-live="polite">
         <ImportPickerRow
           busy={busy}
           inputRef={inputRef}
-          accept={copy.accept}
-          inputLabel={copy.fileInputLabel}
           meta={pickerMeta}
           actionTestId={`${testId}-choose`}
-          onFiles={([file]) => void upload(file!)}
         />
         {lines.map((line) => (
           <ListItem
@@ -227,7 +246,7 @@ export function RecordFileImportCard({ kind }: { kind: CardKind }) {
             meta={copy.lineCounts(line.imported, line.duplicates)}
           />
         ))}
-      </ImportRows>
+      </ListGroup>
       {skips.length > 0 && (
         <ImportDetails>
           <p>{copy.skippedHeading}</p>
@@ -238,6 +257,6 @@ export function RecordFileImportCard({ kind }: { kind: CardKind }) {
           ))}
         </ImportDetails>
       )}
-    </ImportCardShell>
+    </ImportSource>
   );
 }

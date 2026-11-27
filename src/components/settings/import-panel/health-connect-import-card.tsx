@@ -7,8 +7,9 @@
  * background import through `GET /api/import/health-connect-export/status`,
  * which answers the account's latest job, so the outcome is still there
  * after a reload. Health Connect only exports to a cloud storage app, never
- * to the phone's own storage; the card says so up front, because that is
- * where people get stuck.
+ * to the phone's own storage; the (i) says so, because that is
+ * where people get stuck. Fetching the same export from a WebDAV folder is
+ * a connection under Settings › Integrations; the sheet has a row to it.
  */
 import { useCallback, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -21,14 +22,14 @@ import { useTranslations } from "@/lib/i18n/context";
 import { MEASUREMENT_TYPE_LABEL_KEYS } from "@/lib/measurements/type-label-keys";
 import { queryKeys } from "@/lib/query-keys";
 import type { MeasurementType } from "@/generated/prisma/client";
-import { ListItem } from "@/components/ui/list-row";
+import { ListGroup, ListItem } from "@/components/ui/list-row";
+import { HEALTH_CONNECT_FOLDER_HREF } from "@/components/settings/integrations/health-connect-folder-card";
 import {
-  ImportCardShell,
   ImportDetails,
-  ImportInfo,
   ImportPickerRow,
   ImportQueryErrorRow,
-  ImportRows,
+  ImportSource,
+  useFinishedJobMeta,
 } from "./import-card-shell";
 
 const TERMINAL_STATES: readonly string[] = ["done", "failed"];
@@ -55,6 +56,7 @@ export interface HealthConnectJob {
     skipped?: Record<string, number>;
   } | null;
   failureReason: string | null;
+  completedAt?: string | null;
 }
 
 /** The failure code at the front of a worker reason, when there is one. */
@@ -112,8 +114,10 @@ export function summarizeHealthConnectResult(
   };
 }
 
-export function HealthConnectImportCard() {
+export function HealthConnectImportSource() {
   const { t } = useTranslations();
+  const finishedMeta = useFinishedJobMeta();
+  const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -251,37 +255,49 @@ export function HealthConnectImportCard() {
       ].filter((note): note is string => typeof note === "string")
     : [];
 
+  const rowMeta = uploading
+    ? t("settings.sections.export.import.healthConnect.uploading")
+    : isRunning
+      ? t(
+          `settings.sections.export.import.healthConnect.phase.${job?.status ?? "queued"}`,
+        )
+      : (finishedMeta(job ? { ...job, written: summary.written } : null) ??
+        t("settings.sections.export.import.healthConnect.fileHint"));
+
   return (
-    <ImportCardShell
+    <ImportSource
       testId="import-card-health-connect"
       anchor="import-health-connect"
       icon={Smartphone}
       title={t("settings.sections.export.import.healthConnect.title")}
-      titleAccessory={
-        <ImportInfo
-          lines={[
-            t("settings.sections.export.import.healthConnect.description"),
-            t("settings.sections.export.import.healthConnect.steps.export"),
-            t("settings.sections.export.import.healthConnect.steps.cloud"),
-            t("settings.sections.export.import.healthConnect.steps.upload"),
-            t("settings.sections.export.import.healthConnect.privacyNote"),
-          ]}
-        />
-      }
-      rows
+      info={[
+        t("settings.sections.export.import.healthConnect.description"),
+        t("settings.sections.export.import.healthConnect.steps.export"),
+        t("settings.sections.export.import.healthConnect.steps.cloud"),
+        t("settings.sections.export.import.healthConnect.steps.upload"),
+        t("settings.sections.export.import.healthConnect.privacyNote"),
+      ]}
+      meta={rowMeta}
+      status={busy ? "running" : uploadError || isFailed ? "failed" : null}
+      open={open}
+      onOpenChange={setOpen}
+      chooseTestId="import-choose-health-connect"
+      file={{
+        inputRef: fileInputRef,
+        accept: ".zip,application/zip",
+        inputLabel: t(
+          "settings.sections.export.import.healthConnect.fileInputLabel",
+        ),
+        onFiles: ([file]) => void upload(file!),
+      }}
     >
       <ImportQueryErrorRow query={statusQuery} />
-      <ImportRows aria-live="polite">
+      <ListGroup aria-live="polite">
         <ImportPickerRow
           busy={busy}
           inputRef={fileInputRef}
-          accept=".zip,application/zip"
-          inputLabel={t(
-            "settings.sections.export.import.healthConnect.fileInputLabel",
-          )}
           meta={pickerMeta}
           actionTestId="import-action-health-connect"
-          onFiles={([file]) => void upload(file!)}
         />
         {isDone &&
           summary.types.map(({ type, written }) => (
@@ -302,7 +318,7 @@ export function HealthConnectImportCard() {
             trailing={workouts}
           />
         )}
-      </ImportRows>
+      </ListGroup>
       {notes.length > 0 && (
         <ImportDetails>
           {notes.map((note) => (
@@ -310,6 +326,16 @@ export function HealthConnectImportCard() {
           ))}
         </ImportDetails>
       )}
-    </ImportCardShell>
+      {/* The same export fetched from a WebDAV folder on a schedule is a
+          connection, set up under Integrations; this row leads there. */}
+      <ListGroup>
+        <ListItem
+          data-testid="import-health-connect-folder"
+          href={HEALTH_CONNECT_FOLDER_HREF}
+          title={t("settings.sections.export.import.healthConnect.folderRow")}
+          meta={t("settings.sections.export.import.healthConnect.folderMeta")}
+        />
+      </ListGroup>
+    </ImportSource>
   );
 }
