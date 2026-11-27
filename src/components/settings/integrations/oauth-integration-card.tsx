@@ -61,6 +61,7 @@ import { MetricFreshnessList } from "./metric-freshness-list";
 import {
   CallbackMismatchNotice,
   IntegrationCardDescription,
+  IntegrationSetupGuideLink,
   IntegrationRedirectGuide,
   integrationDocsHref,
   type IntegrationDocsProvider,
@@ -312,12 +313,7 @@ export function OAuthIntegrationCardView({
     />
   );
 
-  const description = (
-    <IntegrationCardDescription
-      i18nPrefix={i18nPrefix}
-      provider={config.docs}
-    />
-  );
+  const description = <IntegrationCardDescription i18nPrefix={i18nPrefix} />;
 
   if (!connected) {
     return (
@@ -332,6 +328,7 @@ export function OAuthIntegrationCardView({
         health={null}
         setup={
           <div className="space-y-3">
+            <IntegrationSetupGuideLink provider={config.docs} />
             {config.redirectGuide && !ownCredentials ? (
               <IntegrationRedirectGuide
                 provider={config.docs}

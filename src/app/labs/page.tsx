@@ -37,7 +37,10 @@ import {
 } from "@/components/ui/responsive-sheet";
 import { useAuth } from "@/hooks/use-auth";
 import { useMounted } from "@/hooks/use-mounted";
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import {
+  useRecordCapabilities,
+  holdsOwnerRights,
+} from "@/hooks/use-record-capabilities";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { useTranslations } from "@/lib/i18n/context";
 import { invalidateKeys, labDependentKeys, queryKeys } from "@/lib/query-keys";
@@ -54,7 +57,8 @@ export default function LabsPage() {
   // Scanning a report is not: it files a document and commits through the OCR
   // route, and neither is delegated. So a WRITE delegate keeps the manual add
   // and loses the choice menu around it.
-  const { canWriteDomain, inSharedRecord } = useRecordCapabilities();
+  const caps = useRecordCapabilities();
+  const { canWriteDomain, inSharedRecord } = caps;
   const canAddLab = canWriteDomain("labs");
   const mounted = useMounted();
   const router = useRouter();
@@ -85,7 +89,7 @@ export default function LabsPage() {
       isLoading,
       labsEnabled: enabled,
       mounted,
-      ownRecord: !inSharedRecord,
+      ownRecord: holdsOwnerRights(caps), // #1615
       labsOcr,
     }),
   );
@@ -170,7 +174,7 @@ export default function LabsPage() {
                 mode (vision, or local OCR opted-in for text-only providers), so
                 the surface stays simple for everyone else. When scanning is
                 unavailable, Add opens the manual form directly. */}
-            {ocrCapability.data?.available && !inSharedRecord ? (
+            {ocrCapability.data?.available && holdsOwnerRights(caps) ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button className="min-h-11 sm:min-h-9">

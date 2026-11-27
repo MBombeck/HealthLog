@@ -17,7 +17,7 @@
  * transaction: every session of theirs sitting inside that record leaves with
  * the grant, including the ones on other devices.
  *
- * Not delegable: bare `requireAuth()`, so this cannot be done while acting as
+ * Not delegable: `requireSelfAuth()`, so this cannot be done while acting as
  * somebody else, and the delegate is the session user rather than a body field.
  * That costs a browser already inside the record one extra request — switch
  * out, then renounce — and the exchange is worth it. Grant management is the
@@ -29,7 +29,7 @@
  */
 import { NextRequest } from "next/server";
 
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireSelfAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
@@ -42,7 +42,7 @@ type RouteParams = { params: Promise<{ id: string }> };
 
 export const POST = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireAuth();
+    const { user } = await requireSelfAuth();
     const { id } = await params;
 
     try {

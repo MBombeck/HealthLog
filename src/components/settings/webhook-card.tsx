@@ -25,6 +25,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiFetchRaw, apiGet, throwApiError } from "@/lib/api/api-fetch";
 import type { WebhookPayloadFormat } from "@/lib/notifications/types";
+import { Disclosure } from "@/components/ui/disclosure";
 
 interface WebhookSettings {
   enabled: boolean;
@@ -116,102 +117,110 @@ export function WebhookCard({ isAuthenticated }: { isAuthenticated: boolean }) {
           disabled={!settings || save.isPending || toggle.isPending}
         />
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            save.mutate();
-          }}
-          className="space-y-4"
+        <Disclosure
+          data-fold
+          framed
+          summary={t("settings.integrationCard.setUp")}
         >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="webhook-url">{t("settings.webhookUrl")}</Label>
-              <Input
-                id="webhook-url"
-                placeholder="https://gotify.example.com/message?token=..."
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-              />
-              <p className="text-muted-foreground text-xs">
-                {t("settings.webhookUrlHint")}
-              </p>
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="webhook-format">
-                {t("settings.webhookFormat")}
-              </Label>
-              <NativeSelect
-                id="webhook-format"
-                value={format}
-                onChange={(e) =>
-                  setFormat(e.target.value === "gotify" ? "gotify" : "generic")
-                }
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              save.mutate();
+            }}
+            className="space-y-4"
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="webhook-url">{t("settings.webhookUrl")}</Label>
+                <Input
+                  id="webhook-url"
+                  placeholder="https://gotify.example.com/message?token=..."
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                />
+                <p className="text-muted-foreground text-xs">
+                  {t("settings.webhookUrlHint")}
+                </p>
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="webhook-format">
+                  {t("settings.webhookFormat")}
+                </Label>
+                <NativeSelect
+                  id="webhook-format"
+                  value={format}
+                  onChange={(e) =>
+                    setFormat(
+                      e.target.value === "gotify" ? "gotify" : "generic",
+                    )
+                  }
+                >
+                  <option value="generic">
+                    {t("settings.webhookFormatGeneric")}
+                  </option>
+                  <option value="gotify">
+                    {t("settings.webhookFormatGotify")}
+                  </option>
+                </NativeSelect>
+                <p className="text-muted-foreground text-xs">
+                  {format === "gotify"
+                    ? t("settings.webhookFormatGotifyHint")
+                    : t("settings.webhookFormatGenericHint")}
+                </p>
+              </div>
+              <FieldGroup
+                htmlFor="webhook-header-name"
+                label={t("settings.webhookHeaderName")}
               >
-                <option value="generic">
-                  {t("settings.webhookFormatGeneric")}
-                </option>
-                <option value="gotify">
-                  {t("settings.webhookFormatGotify")}
-                </option>
-              </NativeSelect>
-              <p className="text-muted-foreground text-xs">
-                {format === "gotify"
-                  ? t("settings.webhookFormatGotifyHint")
-                  : t("settings.webhookFormatGenericHint")}
-              </p>
+                <Input
+                  id="webhook-header-name"
+                  placeholder="Authorization"
+                  value={headerName}
+                  onChange={(e) => setHeaderName(e.target.value)}
+                />
+              </FieldGroup>
+              <FieldGroup
+                htmlFor="webhook-header-value"
+                label={t("settings.webhookHeaderValue")}
+              >
+                <PasswordInput
+                  id="webhook-header-value"
+                  placeholder={
+                    settings?.hasHeaderValue
+                      ? t("settings.withingsCredentialsSavedPlaceholder")
+                      : t("common.optional")
+                  }
+                  value={headerValue}
+                  onChange={(e) => setHeaderValue(e.target.value)}
+                />
+              </FieldGroup>
             </div>
-            <FieldGroup
-              htmlFor="webhook-header-name"
-              label={t("settings.webhookHeaderName")}
-            >
-              <Input
-                id="webhook-header-name"
-                placeholder="Authorization"
-                value={headerName}
-                onChange={(e) => setHeaderName(e.target.value)}
-              />
-            </FieldGroup>
-            <FieldGroup
-              htmlFor="webhook-header-value"
-              label={t("settings.webhookHeaderValue")}
-            >
-              <PasswordInput
-                id="webhook-header-value"
-                placeholder={
-                  settings?.hasHeaderValue
-                    ? t("settings.withingsCredentialsSavedPlaceholder")
-                    : t("common.optional")
-                }
-                value={headerValue}
-                onChange={(e) => setHeaderValue(e.target.value)}
-              />
-            </FieldGroup>
-          </div>
 
-          {saveError && (
-            <p role="alert" className="text-destructive text-sm">
-              {saveError}
-            </p>
-          )}
+            {saveError && (
+              <p role="alert" className="text-destructive text-sm">
+                {saveError}
+              </p>
+            )}
 
-          <SettingsCardActions>
-            <TestConnectionButton
-              endpoint="/api/settings/webhook/test"
-              disabled={!settings?.enabled}
-              unsavedChanges={dirty}
-            />
-            <Button
-              size="sm"
-              type="submit"
-              disabled={save.isPending || toggle.isPending}
-            >
-              {save.isPending && (
-                <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-              )}
-              {t("common.save")}
-            </Button>
-          </SettingsCardActions>
-        </form>
+            <SettingsCardActions>
+              <TestConnectionButton
+                endpoint="/api/settings/webhook/test"
+                disabled={!settings?.enabled}
+                unsavedChanges={dirty}
+              />
+              <Button
+                size="sm"
+                type="submit"
+                disabled={save.isPending || toggle.isPending}
+              >
+                {save.isPending && (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+                )}
+                {t("common.save")}
+              </Button>
+            </SettingsCardActions>
+          </form>
+        </Disclosure>
       </div>
     </SettingsCard>
   );

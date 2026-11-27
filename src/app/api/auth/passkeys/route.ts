@@ -1,12 +1,12 @@
 import { prisma } from "@/lib/db";
 import { apiSuccess } from "@/lib/api-response";
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireSelfAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 
 export const dynamic = "force-dynamic";
 
 export const GET = apiHandler(async () => {
-  const { user } = await requireAuth();
+  const { user } = await requireSelfAuth();
 
   const passkeys = await prisma.passkey.findMany({
     where: { userId: user.id },

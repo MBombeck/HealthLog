@@ -62,19 +62,10 @@ const GROUP_FIELDS = [
 ] as const;
 type GroupField = (typeof GROUP_FIELDS)[number];
 
-const GROUP_I18N: Record<GroupField, { label: string; desc: string }> = {
-  nudgeMedication: {
-    label: "notifications.coachNudge.groupMedication",
-    desc: "notifications.coachNudge.groupMedicationDesc",
-  },
-  nudgeVitals: {
-    label: "notifications.coachNudge.groupVitals",
-    desc: "notifications.coachNudge.groupVitalsDesc",
-  },
-  nudgeRoutine: {
-    label: "notifications.coachNudge.groupRoutine",
-    desc: "notifications.coachNudge.groupRoutineDesc",
-  },
+const GROUP_I18N: Record<GroupField, { label: string }> = {
+  nudgeMedication: { label: "notifications.coachNudge.groupMedication" },
+  nudgeVitals: { label: "notifications.coachNudge.groupVitals" },
+  nudgeRoutine: { label: "notifications.coachNudge.groupRoutine" },
 };
 
 export function CoachNudgeCard({
@@ -240,7 +231,6 @@ export function CoachNudgeCard({
               key={field}
               className="min-h-11"
               label={t(GROUP_I18N[field].label)}
-              description={t(GROUP_I18N[field].desc)}
               data-testid={`coach-nudge-group-${field}`}
               checked={resolved[field]}
               onCheckedChange={(next) => patchCoach({ [field]: next }, null)}
@@ -283,7 +273,6 @@ export function CoachNudgeCard({
               provider is healthy. */}
           <SwitchRow
             label={t("notifications.coachNudge.aiComposedLabel")}
-            description={t("notifications.coachNudge.aiComposedDesc")}
             checked={resolved.nudgeAiComposed}
             onCheckedChange={(next) =>
               patchCoach({ nudgeAiComposed: next }, null)

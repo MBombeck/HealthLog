@@ -40,7 +40,10 @@ import { useDoseSnooze } from "@/components/medications/card-parts/use-dose-snoo
 import { AskActions, type AskAction } from "@/components/dashboard/ask-actions";
 import { Card } from "@/components/ui/card";
 import { InlineAction } from "@/components/ui/inline-action";
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import {
+  useRecordCapabilities,
+  holdsOwnerRights,
+} from "@/hooks/use-record-capabilities";
 import { ASK_INTENT } from "@/lib/daily/ask-intents";
 import type { DailyAsk, DailyAskKind } from "@/lib/daily/asks";
 import { apiPost } from "@/lib/api/api-fetch";
@@ -91,8 +94,10 @@ export function TodayAsks({
 function AskRow({ ask, onLogDose }: { ask: DailyAsk; onLogDose?: () => void }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
-  const { inSharedRecord, canWriteDomain } = useRecordCapabilities();
-  const ownRecord = !inSharedRecord;
+  const caps = useRecordCapabilities();
+  const { canWriteDomain } = caps;
+  // #1615 — or a managed profile's guardian, who holds the owner's rights.
+  const ownRecord = holdsOwnerRights(caps);
   const refreshAsks = () =>
     void queryClient.invalidateQueries({ queryKey: queryKeys.dailyDigest() });
   // "Later" on a reminder without a snooze of its own: the ask set aside for

@@ -13,7 +13,10 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import {
+  useRecordCapabilities,
+  holdsOwnerRights,
+} from "@/hooks/use-record-capabilities";
 import { useTranslations } from "@/lib/i18n/context";
 import {
   COMPARISON_BASELINES,
@@ -100,8 +103,10 @@ export function ChartOverlayControls({
   // reasoning that keeps the mood tag layout off the delegable list. So a
   // delegate reads the owner's chart in its stored shape and is not offered a
   // dial that would silently fail.
-  const { inSharedRecord } = useRecordCapabilities();
-  if (inSharedRecord) return null;
+  // #1615 — a managed profile's guardian holds the owner's rights, and the
+  // route serves them the profile's preference.
+  const ownerRights = holdsOwnerRights(useRecordCapabilities());
+  if (!ownerRights) return null;
 
   return (
     <DropdownMenu>

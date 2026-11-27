@@ -18,6 +18,7 @@ import { ManagedProfileGuardians } from "@/components/settings/access/managed-pr
 import { ManagedProfileHandover } from "@/components/settings/access/managed-profile-handover";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
+import { Disclosure } from "@/components/ui/disclosure";
 import { Button } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
@@ -93,12 +94,6 @@ export function ManagedProfileCard() {
         description={t("recordSharing.managed.description")}
       />
       <div className="space-y-4">
-        {/* Content, not meta: this is what somebody is consenting to take on,
-            and ui-standards.md §3 reserves muted for the incidental. */}
-        <p data-slot="managed-profile-explainer" className="text-sm">
-          {t("recordSharing.managed.explainer")}
-        </p>
-
         {profiles.length > 0 && (
           <ul data-slot="managed-profile-list" className="divide-y">
             {profiles.map((profile) => (
@@ -111,7 +106,19 @@ export function ManagedProfileCard() {
           </ul>
         )}
 
-        <ManagedProfileCreateForm />
+        {/* The form and what creating a profile means, folded until somebody
+            sets out to create one. The explainer is content, not meta: it is
+            what somebody is consenting to take on (ui-standards.md §3). */}
+        <Disclosure
+          data-fold
+          framed
+          summary={t("recordSharing.managed.create")}
+        >
+          <p data-slot="managed-profile-explainer" className="text-sm">
+            {t("recordSharing.managed.explainer")}
+          </p>
+          <ManagedProfileCreateForm />
+        </Disclosure>
       </div>
     </SettingsCard>
   );

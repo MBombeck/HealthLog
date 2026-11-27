@@ -26,6 +26,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import {
   useRecordCapabilities,
   type RecordCapabilities,
+  holdsOwnerRights,
 } from "@/hooks/use-record-capabilities";
 import type { ShareDomain } from "@/lib/sharing/scope";
 
@@ -71,12 +72,14 @@ const QUICK_ENTRY_DOMAIN: Readonly<
  */
 export function admittedQuickEntry(
   open: QuickEntryDialog,
-  caps: Pick<RecordCapabilities, "canWriteDomain" | "inSharedRecord">,
+  caps: Pick<RecordCapabilities, "canWriteDomain" | "inSharedRecord"> &
+    Parameters<typeof holdsOwnerRights>[0],
 ): QuickEntryDialog {
   if (open === null) return open;
   const domain = QUICK_ENTRY_DOMAIN[open];
+  // A sheet outside every section takes the owner rule (#1615).
   const admitted =
-    domain === null ? !caps.inSharedRecord : caps.canWriteDomain(domain);
+    domain === null ? holdsOwnerRights(caps) : caps.canWriteDomain(domain);
   return admitted ? open : null;
 }
 

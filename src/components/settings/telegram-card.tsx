@@ -20,6 +20,7 @@ import { useChannelEnabledToggle } from "@/components/settings/notification-chan
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
+import { Disclosure } from "@/components/ui/disclosure";
 
 interface TelegramSettings {
   enabled: boolean;
@@ -115,74 +116,80 @@ export function TelegramCard({
           disabled={!settings || saving || toggle.isPending}
         />
 
-        <form onSubmit={handleSave} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FieldGroup htmlFor="tg-token" label={t("settings.botToken")}>
-              <PasswordInput
-                id="tg-token"
-                value={botToken}
-                onChange={(e) => setBotToken(e.target.value)}
-                placeholder={
-                  settings?.hasBotToken
-                    ? t("settings.withingsCredentialsSavedPlaceholder")
-                    : "123456:ABC-DEF..."
-                }
-                maxLength={100}
-                autoComplete="off"
-                inputMode="text"
-                spellCheck={false}
-                autoCapitalize="none"
-                enterKeyHint="next"
+        <Disclosure
+          data-fold
+          framed
+          summary={t("settings.integrationCard.setUp")}
+        >
+          <form onSubmit={handleSave} className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FieldGroup htmlFor="tg-token" label={t("settings.botToken")}>
+                <PasswordInput
+                  id="tg-token"
+                  value={botToken}
+                  onChange={(e) => setBotToken(e.target.value)}
+                  placeholder={
+                    settings?.hasBotToken
+                      ? t("settings.withingsCredentialsSavedPlaceholder")
+                      : "123456:ABC-DEF..."
+                  }
+                  maxLength={100}
+                  autoComplete="off"
+                  inputMode="text"
+                  spellCheck={false}
+                  autoCapitalize="none"
+                  enterKeyHint="next"
+                />
+              </FieldGroup>
+              <FieldGroup htmlFor="tg-chatid" label={t("settings.chatId")}>
+                <Input
+                  id="tg-chatid"
+                  value={chatId}
+                  onChange={(e) => setChatId(e.target.value)}
+                  placeholder="123456789"
+                  maxLength={50}
+                  autoComplete="off"
+                  inputMode="text"
+                  spellCheck={false}
+                  autoCapitalize="none"
+                  enterKeyHint="done"
+                />
+              </FieldGroup>
+            </div>
+
+            <SettingsInfoTile icon={Info} tone="neutral">
+              <ol className="list-decimal space-y-1 pl-4">
+                <li>{t("settings.telegramStep1")}</li>
+                <li>{t("settings.telegramStep2")}</li>
+                <li>{t("settings.telegramStep3")}</li>
+              </ol>
+            </SettingsInfoTile>
+
+            {error && (
+              <p role="alert" className="text-destructive text-sm">
+                {error}
+              </p>
+            )}
+
+            <SettingsCardActions>
+              <TestConnectionButton
+                endpoint="/api/settings/telegram/test"
+                disabled={!settings?.hasBotToken}
+                unsavedChanges={dirty}
               />
-            </FieldGroup>
-            <FieldGroup htmlFor="tg-chatid" label={t("settings.chatId")}>
-              <Input
-                id="tg-chatid"
-                value={chatId}
-                onChange={(e) => setChatId(e.target.value)}
-                placeholder="123456789"
-                maxLength={50}
-                autoComplete="off"
-                inputMode="text"
-                spellCheck={false}
-                autoCapitalize="none"
-                enterKeyHint="done"
-              />
-            </FieldGroup>
-          </div>
-
-          <SettingsInfoTile icon={Info} tone="neutral">
-            <ol className="list-decimal space-y-1 pl-4">
-              <li>{t("settings.telegramStep1")}</li>
-              <li>{t("settings.telegramStep2")}</li>
-              <li>{t("settings.telegramStep3")}</li>
-            </ol>
-          </SettingsInfoTile>
-
-          {error && (
-            <p role="alert" className="text-destructive text-sm">
-              {error}
-            </p>
-          )}
-
-          <SettingsCardActions>
-            <TestConnectionButton
-              endpoint="/api/settings/telegram/test"
-              disabled={!settings?.hasBotToken}
-              unsavedChanges={dirty}
-            />
-            <Button
-              size="sm"
-              type="submit"
-              disabled={saving || toggle.isPending}
-            >
-              {saving ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-              ) : null}
-              {t("common.save")}
-            </Button>
-          </SettingsCardActions>
-        </form>
+              <Button
+                size="sm"
+                type="submit"
+                disabled={saving || toggle.isPending}
+              >
+                {saving ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+                ) : null}
+                {t("common.save")}
+              </Button>
+            </SettingsCardActions>
+          </form>
+        </Disclosure>
       </div>
     </SettingsCard>
   );

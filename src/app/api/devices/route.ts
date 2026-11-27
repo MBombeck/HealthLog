@@ -41,7 +41,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { isoDateTime } from "@/lib/validations/datetime";
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireSelfAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess, sanitiseZodIssues } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { annotate, getEvent } from "@/lib/logging/context";
@@ -390,7 +390,7 @@ function parseRegistration(
 }
 
 export const POST = apiHandler(async (request: NextRequest) => {
-  const { user } = await requireAuth();
+  const { user } = await requireSelfAuth();
 
   const limited = await registrationRateLimited(user.id);
   if (limited) return limited;

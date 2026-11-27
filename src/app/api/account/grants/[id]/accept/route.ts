@@ -15,7 +15,7 @@
  * for the life of both accounts answers nothing further. The audit row below
  * still carries it, under `audit_logs`' own retention.
  *
- * Not delegable: bare `requireAuth()` refuses under a switch, so nobody can
+ * Not delegable: `requireSelfAuth()` refuses under a switch, so nobody can
  * accept an invitation while acting as somebody else. The delegate is the
  * session user, never a body field, and `acceptGrant` puts that id in the
  * `where` of a conditional update — so an invitation addressed to another
@@ -24,7 +24,7 @@
  */
 import { NextRequest } from "next/server";
 
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireSelfAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
@@ -45,7 +45,7 @@ const ACCEPT_WINDOW_MS = 60 * 1000;
 
 export const POST = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireAuth();
+    const { user } = await requireSelfAuth();
 
     const rl = await checkRateLimit(
       `sharing:accept:${user.id}`,

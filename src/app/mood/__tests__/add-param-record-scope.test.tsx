@@ -19,7 +19,10 @@ const caps = {
 };
 const params = { current: new URLSearchParams("add=1") };
 
-vi.mock("@/hooks/use-record-capabilities", () => ({
+vi.mock("@/hooks/use-record-capabilities", async (importOriginal) => ({
+  holdsOwnerRights: (
+    await importOriginal<typeof import("@/hooks/use-record-capabilities")>()
+  ).holdsOwnerRights,
   useRecordCapabilities: () => caps.current,
 }));
 vi.mock("@/hooks/use-auth", () => ({

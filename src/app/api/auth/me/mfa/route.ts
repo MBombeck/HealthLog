@@ -3,7 +3,7 @@
  *
  * Second-factor status for the security settings hub: whether TOTP is active,
  * how many recovery codes remain, and the registered WebAuthn security keys.
- * Plain `requireAuth()` — a cookie session or a cookie-equivalent token. This
+ * Plain `requireSelfAuth()` — a cookie session or a cookie-equivalent token. This
  * read is NOT elevation-gated, and deliberately so: it returns metadata only
  * (whether TOTP is on, how many recovery codes remain, and each key's name and
  * dates) and no credential material at all — no secret, no code, no public key,
@@ -12,12 +12,12 @@
  * would only force a factor re-proof to render a screen and buy nothing.
  *
  * Every MUTATION on this surface stays behind `requireMfaManagementAuth`. The
- * argument-less `requireAuth()` keeps the fail-closed scope default, so a
+ * argument-less `requireSelfAuth()` keeps the fail-closed scope default, so a
  * narrow-scope token gains no reach here.
  *
  * Returns only metadata: no secret, no recovery-code plaintext, no public key.
  */
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireSelfAuth } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
@@ -27,7 +27,7 @@ import { recentProofMethods } from "@/lib/auth/second-factor";
 export const dynamic = "force-dynamic";
 
 export const GET = apiHandler(async () => {
-  const { user, authMethod } = await requireAuth();
+  const { user, authMethod } = await requireSelfAuth();
 
   const [recoveryCodesRemaining, webauthn, proofMethods] = await Promise.all([
     countRemainingRecoveryCodes(user.id),

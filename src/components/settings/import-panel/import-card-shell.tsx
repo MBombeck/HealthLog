@@ -1,8 +1,12 @@
+"use client";
+
 import type { LucideIcon } from "lucide-react";
 
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
+import { Disclosure } from "@/components/ui/disclosure";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
+import { useTranslations } from "@/lib/i18n/context";
 
 export interface ImportCardShellProps {
   testId: string;
@@ -11,6 +15,8 @@ export interface ImportCardShellProps {
   icon: LucideIcon;
   title: string;
   description: string;
+  /** The label the folded body opens under; "Import" by default. */
+  foldLabel?: string;
   children: React.ReactNode;
 }
 
@@ -20,8 +26,10 @@ export function ImportCardShell({
   icon: Icon,
   title,
   description,
+  foldLabel,
   children,
 }: ImportCardShellProps) {
+  const { t } = useTranslations();
   return (
     <SettingsCard data-testid={testId} className="flex h-full flex-col">
       <SettingsCardHeader
@@ -30,7 +38,11 @@ export function ImportCardShell({
         title={title}
         description={description}
       />
-      <div className="flex flex-1 flex-col gap-3">{children}</div>
+      {/* The steps, the drop zone and the result stay folded until the card
+          is opened: a list of a dozen sources read as a dozen manuals. */}
+      <Disclosure data-fold framed summary={foldLabel ?? t("common.import")}>
+        <div className="flex flex-1 flex-col gap-3">{children}</div>
+      </Disclosure>
     </SettingsCard>
   );
 }

@@ -134,7 +134,6 @@ export function NotificationContentCard({
           </label>
         }
       />
-      <p className="text-sm">{t("notifications.content.detail")}</p>
       {msg && (
         <p
           role="status"

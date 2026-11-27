@@ -15,7 +15,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/api-handler", () => ({
   apiHandler: (fn: unknown) => fn,
-  requireAuth: vi.fn(),
+  requireSelfAuth: vi.fn(),
   requireMfaManagementAuth: vi.fn(),
 }));
 
@@ -39,7 +39,7 @@ vi.mock("@/lib/auth/audit", () => ({
 }));
 
 import { DELETE, PATCH } from "../route";
-import { requireAuth, requireMfaManagementAuth } from "@/lib/api-handler";
+import { requireSelfAuth, requireMfaManagementAuth } from "@/lib/api-handler";
 import { prisma } from "@/lib/db";
 import { sendSecurityAlert } from "@/lib/auth/security-alert";
 
@@ -81,7 +81,7 @@ const commitElevation = vi.fn().mockResolvedValue(undefined);
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(prisma.user.findUnique).mockResolvedValue(STORED as never);
-  vi.mocked(requireAuth).mockResolvedValue({ user: USER } as never);
+  vi.mocked(requireSelfAuth).mockResolvedValue({ user: USER } as never);
   commitElevation.mockClear().mockResolvedValue(undefined);
   vi.mocked(requireMfaManagementAuth).mockResolvedValue({
     transport: "cookie",

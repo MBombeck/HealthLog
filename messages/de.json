@@ -3900,7 +3900,7 @@
         "weightBody": "Das Körpergewicht ist eines der einfachsten Signale für die langfristige Energiebilanz und die allgemeine Gesundheit. Der Trend über Wochen zählt weit mehr als ein einzelner Wert, der mit Flüssigkeit, Ernährung und Tageszeit schwankt.",
         "bmiBody": "Der BMI ist dein Gewicht geteilt durch deine Körpergröße zum Quadrat und ordnet dich einer groben Gewichtskategorie zu. Er ist ein Orientierungswert und unterscheidet nicht zwischen Muskeln und Fett.",
         "sleepBody": "Die Schlafdauer ist die tatsächlich geschlafene Zeit pro Nacht, aufgeteilt in Leicht-, Tief- und REM-Schlaf. Die meisten Erwachsenen brauchen etwa sieben bis neun Stunden; gleichmäßige Menge und Qualität unterstützen Erholung, Stimmung und Stoffwechsel.",
-        "moodBody": "Die Stimmungserfassung hält auf einer einfachen Skala fest, wie du dich fühlst. Regelmäßiges Protokollieren zeigt Muster (wie Schlaf, Aktivität oder Medikamente mit dem Befinden zusammenhängen), die ein einzelner Tag nie offenbart.",
+        "moodBody": "Die Stimmungserfassung hält auf einer einfachen Skala fest, wie du dich fühlst.",
         "medicationsBody": "Die Therapietreue zeigt, wie zuverlässig du deine Medikamente wie verordnet einnimmst, hier als Anteil der erwarteten Dosen, die du erfasst hast. Eine gleichmäßige Einnahme entscheidet oft darüber, ob eine Therapie wie beabsichtigt wirkt.",
         "restingHrBody": "Der Ruhepuls ist die Herzfrequenz in völliger Ruhe, meist über Nacht gemessen. Ein niedriger Ruhepuls deutet in der Regel auf eine bessere Herz-Kreislauf-Fitness hin, ein steigender Trend kann ein frühes Zeichen für Stress oder Krankheit sein.",
         "hrvBody": "Die HRV ist die kleine Schwankung der Zeit zwischen aufeinanderfolgenden Herzschlägen. Eine höhere Variabilität spiegelt meist ein gut erholtes, anpassungsfähiges Nervensystem wider, ein anhaltender Rückgang kann auf Erschöpfung, Stress oder mangelnde Erholung hinweisen.",
@@ -6071,21 +6071,18 @@
         "displayHeading": "Auf dem Handy",
         "elsewhere": {
           "title": "Dort eingestellt, wo sie hingehören",
-          "description": "Diese Erinnerungen stellst du direkt bei dem ein, worum es geht.",
           "doses": {
             "title": "Medikamenten-Einnahmen",
-            "description": "Einnahmezeiten und Erinnerungen stellst du beim jeweiligen Medikament ein.",
             "link": "Medikamente öffnen"
           },
           "cycle": {
             "title": "Zyklus",
-            "description": "Perioden- und Fruchtbarkeits-Erinnerungen schaltest du je Kanal in der Benachrichtigungsübersicht.",
             "link": "Benachrichtigungsübersicht öffnen"
           }
         },
         "snooze": {
           "title": "Später erinnern",
-          "description": "Wie lange eine Dosis-Erinnerung verschoben wird, auf der Medikamentenkarte, in Telegram und in der App.",
+          "description": "Wie lange eine Dosis-Erinnerung verschoben wird.",
           "label": "Verschieben um",
           "option": "{minutes} Min.",
           "saveError": "Konnte nicht gespeichert werden. Bitte erneut versuchen"
@@ -6254,16 +6251,16 @@
         "cards": {
           "measurementsCsv": {
             "title": "Messwerte",
-            "description": "Gewicht, Blutdruck, Puls, Glukose und alle weiteren Messungen als CSV-Datei."
+            "description": "Alle Messwerte als Tabelle."
           },
           "medicationsCsv": {
             "title": "Medikamente",
-            "description": "Deine Medikamentenliste mit Dosierung, Zeitplan und (optional) der vollständigen Einnahmehistorie.",
+            "description": "Deine Medikamente, auf Wunsch mit jeder Einnahme.",
             "includeIntake": "Einnahmehistorie einschließen"
           },
           "moodCsv": {
             "title": "Stimmung",
-            "description": "Tägliche Stimmungs-Einträge mit Score, Tags und Zeitstempeln."
+            "description": "Alle Stimmungseinträge mit ihren Tags."
           },
           "fullBackup": {
             "title": "Voll-Backup",
@@ -6282,7 +6279,7 @@
           "charCount": "{used} / {max, plural, one {# Zeichen} other {# Zeichen}}",
           "appleHealth": {
             "title": "Apple Health",
-            "description": "Lade die export.zip aus der Health-App auf dem iPhone hoch (Profil > Alle Gesundheitsdaten exportieren).",
+            "description": "Die export.zip aus der Health-App auf dem iPhone.",
             "dropLabel": "export.zip hier ablegen",
             "dropHint": "oder zum Auswählen klicken",
             "fileInputLabel": "Eine Apple-Health-export.zip-Datei auswählen",
@@ -6353,7 +6350,7 @@
           },
           "json": {
             "title": "Messwerte und Stimmung (JSON)",
-            "description": "JSON einfügen oder eine .json-Datei mit Messwerten und Stimmungseinträgen hochladen.",
+            "description": "Messwerte und Stimmungseinträge als JSON.",
             "pasteLabel": "JSON einfügen",
             "fileInputLabel": "Eine JSON-Datei zum Import auswählen",
             "schemaHint": "Zwei Arrays: measurements und moodEntries.",
@@ -6376,7 +6373,7 @@
           },
           "csv": {
             "title": "CSV-Datei",
-            "description": "Messwerte aus einer Tabelle oder einem Messgerät-Export importieren.",
+            "description": "Messwerte aus einer Tabelle oder einem Geräteexport.",
             "pasteLabel": "CSV einfügen",
             "fileInputLabel": "CSV-Datei zum Importieren auswählen",
             "schemaHint": "Spalten: type, value, unit, measuredAt (mit Zeitzonen-Offset) sowie optional glucoseContext, notes, externalId.",
@@ -6421,7 +6418,7 @@
           },
           "doseHistory": {
             "title": "Einnahmeverlauf",
-            "description": "Ein Einnahmeverlauf, wie ihn ein anderer Medikamenten-Tracker exportiert, direkt gelesen.",
+            "description": "Ein Einnahmeverlauf aus einer anderen Medikamenten-App.",
             "pasteLabel": "Export einfügen",
             "fileInputLabel": "Datei mit Einnahmeverlauf wählen",
             "uploadFile": "Datei auswählen",
@@ -6477,7 +6474,7 @@
           },
           "healthConnect": {
             "title": "Health-Connect-Export",
-            "description": "Importiere die ZIP-Datei, die die Health-Connect-App auf Android beim Export deiner Daten schreibt.",
+            "description": "Die ZIP, die Health Connect auf Android schreibt.",
             "choose": "Datei auswählen",
             "uploading": "Wird hochgeladen …",
             "uploadFailed": "Das Hochladen ist fehlgeschlagen. Bitte versuch es noch einmal.",
@@ -6520,7 +6517,7 @@
           },
           "fit": {
             "title": "Aktivitätsdatei (FIT)",
-            "description": "Ein Training aus der FIT-Datei einer Uhr oder eines Radcomputers importieren, etwa von Garmin, Wahoo oder Coros.",
+            "description": "Ein Training von einer Uhr oder einem Radcomputer.",
             "choose": "Datei auswählen",
             "uploading": "Wird hochgeladen…",
             "uploadFailed": "Das Hochladen ist fehlgeschlagen. Bitte versuche es erneut.",
@@ -6535,7 +6532,7 @@
             "fileInputLabel": "Aktivitätsdatei",
             "privacyNote": "Der GPS-Verlauf wird nur gespeichert, wenn Trainingsrouten eingeschaltet sind.",
             "steps": {
-              "garmin": "Garmin Connect: Öffne die Aktivität auf der Website, wähle das Zahnradmenü und dann „Original exportieren“. Lade die ZIP-Datei so hoch, wie sie ist.",
+              "garmin": "Garmin Connect: Öffne die Aktivität auf der Website, wähle das Zahnradmenü und dann „Original exportieren“.",
               "other": "Andere Apps und Geräte: Exportiere die Aktivität als FIT-Datei (.fit oder .fit.gz) und lade sie hier hoch."
             },
             "phase": {
@@ -6568,7 +6565,7 @@
           "recordFile": {
             "gadgetbridge": {
               "title": "Gadgetbridge-Datenbank",
-              "description": "Schritte, Puls, SpO2, Schlaf und Gewicht aus der Datenbank übernehmen, die Gadgetbridge auf Android exportiert.",
+              "description": "Die Datenbank, die Gadgetbridge auf Android exportiert.",
               "steps": {
                 "export": "In Gadgetbridge Einstellungen öffnen, dann Datenverwaltung, dann Datenbank exportieren.",
                 "upload": "Die Datei namens Gadgetbridge hier hochladen. Bis 512 MB."
@@ -6576,9 +6573,9 @@
             },
             "fhirBundle": {
               "title": "Patientenakte (FHIR)",
-              "description": "Laborwerte, Vitalwerte, Erkrankungen, Impfungen, Medikamente und Termine aus einem FHIR-R4-Bundle übernehmen, das ein Patientenportal exportiert.",
+              "description": "Eine FHIR-R4-Akte aus einem Patientenportal.",
               "steps": {
-                "export": "Im Patientenportal die Akte als FHIR R4 (JSON) exportieren. C-CDA-Dateien werden nicht gelesen.",
+                "export": "Im Patientenportal die Akte als FHIR R4 (JSON) exportieren.",
                 "upload": "Die .json-Datei hier hochladen. Bis 32 MB."
               }
             },
@@ -6632,14 +6629,14 @@
               "removeFailed": "Der Ordner konnte nicht entfernt werden. Versuche es noch einmal."
             },
             "title": "Health Connect aus einem Ordner",
-            "description": "HealthLog holt den Export, den Health Connect nach Zeitplan speichert, aus einem WebDAV- oder Nextcloud-Ordner und übernimmt, was neu ist.",
+            "description": "Neue Health-Connect-Exporte aus einem WebDAV-Ordner.",
             "folderUrl": "Ordneradresse (WebDAV)",
             "fileName": "Dateiname im Ordner",
             "username": "Benutzername",
             "password": "Passwort oder App-Passwort",
             "passwordKept": "Leer lassen, um das gespeicherte Passwort zu behalten",
             "enabled": "Etwa alle sechs Stunden abholen",
-            "privacyNote": "Das Passwort wird verschlüsselt gespeichert und nie wieder angezeigt. Ein Ordner im Heimnetz funktioniert nur, wenn wer den Server betreibt seine Adresse freigibt.",
+            "privacyNote": "Das Passwort wird verschlüsselt gespeichert und nie wieder angezeigt.",
             "lastAttempt": "Letzter Versuch {when}: {outcome}",
             "fetchNow": "Jetzt abholen",
             "fetchStarted": "Wird jetzt abgerufen. Das Ergebnis erscheint auf dieser Karte.",
@@ -6895,7 +6892,7 @@
     "genderFemale": "Weiblich",
     "genderHint": "Wird für geschlechtsspezifische Zielwerte verwendet.",
     "timezone": "Zeitzone",
-    "timezoneHint": "Wird für Diagrammachsen, Erinnerungszeiten, Export-Zeitstempel und den Coach-Kontext verwendet. Gespeicherte Daten bleiben unverändert.",
+    "timezoneHint": "Wird für Diagrammachsen, Erinnerungszeiten, Export-Zeitstempel und den Coach-Kontext verwendet.",
     "timezoneInvalid": "Keine gültige IANA-Zeitzone.",
     "profileSaved": "Profil gespeichert",
     "profilePartiallySaved": "Profil gespeichert, aber {field} konnte nicht aktualisiert werden.",
@@ -6914,7 +6911,7 @@
     },
     "avatar": {
       "title": "Profilfoto",
-      "description": "Lade ein Foto hoch, das auf deinem eigenen Server gespeichert wird. Es erscheint überall in der App anstelle eines externen Avatar-Dienstes.",
+      "description": "Lade ein Foto hoch, das auf deinem eigenen Server gespeichert wird.",
       "upload": "Foto hochladen",
       "replace": "Foto ersetzen",
       "remove": "Entfernen",
@@ -6981,22 +6978,22 @@
     "telegramStep2": "Sende /start an deinen Bot, um den Chat zu aktivieren.",
     "telegramStep3": "Finde deine Chat-ID über @userinfobot oder die Bot-API.",
     "ntfy": "ntfy",
-    "ntfyDescription": "Benachrichtigungen über ntfy (self-hosted oder ntfy.sh).",
+    "ntfyDescription": "Benachrichtigungen über ntfy.",
     "ntfyEnable": "ntfy aktivieren",
     "ntfyServer": "Server-URL",
     "ntfyTopic": "Topic",
     "ntfyAuthToken": "Auth-Token (optional)",
     "ntfyAuthTokenHint": "Nur nötig bei privaten Topics mit Zugangsschutz.",
     "webhook": "Webhook",
-    "webhookDescription": "Benachrichtigungen per POST an eine URL: Discord, Slack, Gotify, Home Assistant, n8n oder jedes Relay, das JSON annimmt.",
+    "webhookDescription": "Benachrichtigungen an jede URL, die JSON annimmt.",
     "webhookEnable": "Webhook aktivieren",
     "webhookUrl": "Webhook-URL",
-    "webhookUrlHint": "Die vollständige URL für den POST. Eine Adresse im privaten Netz muss der Betreiber des Servers freigeben.",
+    "webhookUrlHint": "Die vollständige URL für den POST.",
     "webhookHeaderName": "Header-Name (optional)",
     "webhookHeaderValue": "Header-Wert (optional)",
     "webhookFormat": "Nachrichtenformat",
     "webhookFormatGeneric": "Generisches JSON",
-    "webhookFormatGenericHint": "Eine Discord- oder Slack-Webhook-URL einfach so einfügen. Home Assistant und n8n lesen die Felder title, message, eventType und priority.",
+    "webhookFormatGenericHint": "Eine Discord- oder Slack-Webhook-URL einfach so einfügen.",
     "webhookFormatGotify": "Gotify",
     "webhookFormatGotifyHint": "Nutze die URL, die auf /message endet, und trage das App-Token als Header X-Gotify-Key ein.",
     "email": "E-Mail",
@@ -7004,7 +7001,7 @@
     "emailEnable": "E-Mail aktivieren",
     "emailRecipient": "Empfängeradresse",
     "webPush": "Browser-Push",
-    "webPushDescription": "Erhalte Benachrichtigungen direkt im Browser, auch wenn HealthLog nicht geöffnet ist.",
+    "webPushDescription": "Benachrichtigungen in diesem Browser.",
     "webPushNotSupported": "Dein Browser unterstützt keine Push-Benachrichtigungen.",
     "webPushInstallFirst": "Auf iPhone und iPad funktionieren Push-Benachrichtigungen nur in der installierten App. Tippe in Safari auf Teilen und dann auf „Zum Home-Bildschirm“, öffne HealthLog vom Home-Bildschirm aus und tippe hier auf „Push aktivieren“.",
     "webPushDenied": "Push-Benachrichtigungen wurden blockiert. Erlaube sie in den Browser-Einstellungen.",
@@ -7102,7 +7099,7 @@
         "defaultChainLabel": "Standardkette",
         "defaultChainHint": "Aufgaben auf „Standard“ folgen dieser Kette. Ihre gewohnten Regeln gelten weiter: Dokumente versuchen zuerst ein lokales Modell.",
         "tasksHeading": "Aufgaben",
-        "tasksHint": "Wähle die Kette für jede Aufgabe. Unter einer Aufgabe mit eigener Kette stehen die Anbieter, die sie versucht, in Reihenfolge.",
+        "tasksHint": "Wähle die Kette für jede Aufgabe.",
         "taskDefault": "Standard",
         "save": "Ketten speichern",
         "saved": "Ketten gespeichert",
@@ -7120,7 +7117,7 @@
           "workoutInsights": "Trainingshinweise",
           "reactionLines": "Reaktionen auf neue Messwerte"
         },
-        "tasksNeedChain": "Lege oben eine Kette an, um einer Aufgabe eigene Anbieter zu geben. Bis dahin folgt jede Aufgabe dem Standard."
+        "tasksNeedChain": "Lege oben eine Kette an, um einer Aufgabe eigene Anbieter zu geben."
       },
       "activeProviderHeading": "Aktiver Anbieter",
       "activeProviderLabel": "Anbieter einrichten",
@@ -7369,7 +7366,7 @@
         "failed": "Der API-Schlüssel konnte nicht entfernt werden."
       },
       "coachBudgetHeading": "Coach-Budget für selbst betriebene Modelle",
-      "coachBudgetBody": "Wie viel deiner Daten der Coach in den Prompt legt und wie lange eine Antwort arbeiten darf, für das lokale Modell und das Gateway. Verkleinere den Snapshot für ein Modell mit kleinem Kontextfenster; vergrößere ihn und die Grenzen pro Antwort für ein großes Modell auf eigener Hardware. Leere Felder behalten die angezeigten Standardwerte. Eine Antwort über den gemeinsamen Anbieter des Servers behält immer die Standardgrenzen.",
+      "coachBudgetBody": "Wie viel deiner Daten der Coach in den Prompt legt und wie lange eine Antwort arbeiten darf, für das lokale Modell und das Gateway.",
       "coachBudgetProvider": "Anbieter",
       "coachBudgetLocal": "Lokales Modell",
       "coachBudgetCompat": "Gateway",
@@ -7391,13 +7388,13 @@
       },
       "glucoseUnit": {
         "title": "Blutzucker",
-        "description": "In welcher Einheit Blutzuckerwerte angezeigt werden. Gespeichert werden sie so oder so gleich.",
+        "description": "In welcher Einheit Blutzuckerwerte angezeigt werden.",
         "saved": "Blutzucker-Einheit gespeichert",
         "saveError": "Die Blutzucker-Einheit konnte nicht gespeichert werden."
       }
     },
     "withings": "Withings",
-    "withingsDescription": "Verbinde deine Withings-Waage und dein Blutdruckmessgerät, um Gewicht, Körperzusammensetzung und Blutdruck automatisch zu synchronisieren.",
+    "withingsDescription": "Gewicht, Körperzusammensetzung und Blutdruck.",
     "withingsCredentials": "API-Zugangsdaten",
     "withingsClientId": "Client-ID",
     "withingsClientSecret": "Client-Secret",
@@ -7439,7 +7436,7 @@
     "withingsConnect": "Mit Withings verbinden",
     "withingsNoCredentials": "Bitte zuerst die API-Zugangsdaten oben eingeben, um Withings zu verbinden.",
     "whoop": "WHOOP",
-    "whoopDescription": "Verbinde dein WHOOP-Band, um Erholung, Schlaf, Belastung und Trainings direkt in HealthLog zu synchronisieren.",
+    "whoopDescription": "Erholung, Schlaf, Belastung und Trainings.",
     "whoopCredentials": "API-Zugangsdaten",
     "whoopClientId": "Client-ID",
     "whoopClientSecret": "Client-Secret",
@@ -7484,7 +7481,7 @@
     "googleHealth": "Google Health",
     "googleHealthTag": "Fitbit & Pixel",
     "googleHealthBetaBadge": "Beta",
-    "googleHealthDescription": "Verbinde Fitbit, Pixel Watch und Fitbit Air über dein Google-Konto: Gewicht, Herzfrequenz, Schlaf und Aktivität.",
+    "googleHealthDescription": "Fitbit und Pixel Watch über dein Google-Konto.",
     "googleHealthCredentials": "API-Zugangsdaten",
     "googleHealthClientId": "Client-ID",
     "googleHealthClientSecret": "Client-Secret",
@@ -7618,7 +7615,7 @@
       "namePlaceholder": "Name, z. B. Home Assistant",
       "appleHealth": {
         "label": "Messwerte in Apple Health schreiben",
-        "createHint": "Die HealthLog-App auf deinem iPhone trägt die Werte dieses Tokens dann in Apple Health ein. Du kannst das später in der Token-Liste unten ändern.",
+        "createHint": "Die HealthLog-App auf deinem iPhone trägt die Werte dieses Tokens dann in Apple Health ein.",
         "toggleAria": "Werte von {name} in Apple Health schreiben",
         "updateFailed": "Die Apple-Health-Einstellung konnte nicht geändert werden. Bitte versuche es erneut.",
         "unattributed": "Werte, die vor dieser Einstellung gesendet wurden, lassen sich keinem Token zuordnen und bleiben deshalb außerhalb von Apple Health."
@@ -7745,11 +7742,10 @@
       "disabledReason": "Grund",
       "nextRetry": "Nächster Versuch",
       "reEnable": "Wieder aktivieren",
-      "sendTest": "Test senden",
-      "emptyTitle": "Noch keine Kanäle konfiguriert"
+      "sendTest": "Test senden"
     },
     "identity": {
-      "description": "Optionale Angaben für die Gesundheitsakte (PDF-Deckblatt + FHIR-Export). Alle Felder sind freiwillig.",
+      "description": "Optionale Angaben für die Gesundheitsakte (PDF-Deckblatt + FHIR-Export).",
       "fullName": "Vollständiger Name",
       "fullNamePlaceholder": "z. B. Erika Mustermann",
       "insurer": "Krankenkasse",
@@ -7848,14 +7844,14 @@
     "genderOther": "Divers",
     "nightscout": "Nightscout",
     "nightscoutTag": "CGM",
-    "nightscoutDescription": "Verbinde deine eigene Nightscout-Seite, um kontinuierliche Glukosewerte ins Glukose-Panel zu synchronisieren.",
+    "nightscoutDescription": "Kontinuierliche Glukose von deiner Nightscout-Seite.",
     "nightscoutViewData": "Glukose ansehen",
     "nightscoutUrl": "Nightscout-URL",
     "nightscoutUrlSavedPlaceholder": "Gespeichert. Neue URL eingeben zum Ersetzen",
     "nightscoutToken": "API-Token",
     "nightscoutTokenOptional": "Optional bei einer öffentlichen Seite",
     "nightscoutTokenSavedPlaceholder": "Gespeichert. Neuen Token eingeben zum Ersetzen",
-    "nightscoutTokenHelp": "Füge einen Zugriffstoken aus deinen Nightscout-Admin-Tools ein. Leer lassen, wenn deine Seite öffentlich lesbar ist.",
+    "nightscoutTokenHelp": "Füge einen Zugriffstoken aus deinen Nightscout-Admin-Tools ein.",
     "nightscoutPrivateOperatorTitle": "Der Zugriff auf ein privates Nightscout benötigt die Freigabe der Serveradministration.",
     "nightscoutPrivateOperatorDescription": "Bitte die Serveradministration, genau diesen Nightscout-Ursprung freizugeben.",
     "nightscoutConnect": "Verbinden",
@@ -7869,7 +7865,7 @@
     "nightscoutDisconnectTitle": "Nightscout trennen?",
     "nightscoutDisconnectDescription": "Künftige Synchronisierungen stoppen. Bereits importierte Glukosewerte bleiben in deinem Verlauf.",
     "polar": "Polar",
-    "polarDescription": "Verbinde dein Polar-Konto, um Nightly-Recharge-Erholung, Schlafphasen, tägliche Aktivität und Trainingseinheiten zu synchronisieren.",
+    "polarDescription": "Erholung, Schlaf, Aktivität und Training.",
     "polarViewData": "Schlaf & Erholung ansehen",
     "polarCredentials": "API-Zugangsdaten",
     "polarClientId": "Client-ID",
@@ -7898,7 +7894,7 @@
       "already_linked": "Dieses Polar-Konto ist schon mit einem anderen HealthLog-Profil verbunden. Melde dich bei Polar mit dem Konto an, das zu diesem Profil gehört, oder trenne es zuerst vom anderen Profil."
     },
     "oura": "Oura",
-    "ouraDescription": "Verbinde dein Oura-Konto, um Readiness, Schlafphasen, Herzfrequenzvariabilität und tägliche Aktivität zu synchronisieren.",
+    "ouraDescription": "Bereitschaft, Schlaf, HRV und Aktivität.",
     "ouraViewData": "Schlaf & Erholung ansehen",
     "ouraCredentials": "API-Zugangsdaten",
     "ouraClientId": "Client-ID",
@@ -8125,7 +8121,7 @@
           },
           "emergencyCard": {
             "title": "Link der Notfallkarte",
-            "description": "Der QR-Link auf deiner Notfallkarte. Wer ihn scannt, kann die Karte lesen, bis du ihn widerrufst.",
+            "description": "Der QR-Link auf deiner Notfallkarte.",
             "link": "Notfallkarte öffnen"
           },
           "careCalendar": {
@@ -8181,7 +8177,7 @@
       "offKeepsTokens": "Ausschalten pausiert den Endpunkt. Deine Tokens und Verbindungen bleiben und funktionieren wieder, sobald er an ist."
     },
     "strava": "Strava",
-    "stravaDescription": "Verbinde dein Strava-Konto, um deine Aktivitäten in deinen Trainingsverlauf zu übernehmen.",
+    "stravaDescription": "Deine Aktivitäten als Trainings.",
     "stravaViewData": "Trainings ansehen",
     "stravaCredentials": "API-Zugangsdaten",
     "stravaClientId": "Client-ID",
@@ -8316,7 +8312,7 @@
     "displayCard": {
       "title": "Darstellung",
       "description": "Sprache, Einheiten und Formate, gespeichert, sobald du sie änderst.",
-      "themeDescription": "System folgt deinem Gerät zwischen hell und dunkel. Die Wahl gilt auf diesem Gerät.",
+      "themeDescription": "System folgt deinem Gerät zwischen hell und dunkel.",
       "navCountsLabel": "Zahlen in der Navigation",
       "navCountsDescription": "Zeigt in der Seitenleiste und im Menü „Mehr“ neben den Einträgen, wie viele Einnahmen und Vorsorgetermine fällig sind."
     },
@@ -8390,14 +8386,15 @@
         "horizon": "{type}: übernommen bis zurück zum {date}. Ältere Werte liegen jenseits der Importgrenze.",
         "noProgress": "{type}: übernommen bis zurück zum {date}. Google lieferte keine älteren Werte mehr, deshalb endet der Import dort."
       },
-      "notConfigured": "{provider} ist auf diesem Server nicht eingerichtet: Füge oben eigene Zugangsdaten hinzu oder frag deinen Administrator."
+      "notConfigured": "{provider} ist auf diesem Server nicht eingerichtet: Füge oben eigene Zugangsdaten hinzu oder frag deinen Administrator.",
+      "setUp": "Einrichten"
     },
     "dawarich": "Dawarich",
     "dawarichTag": "Bewegung",
-    "dawarichDescription": "Verbinde deine Dawarich-Instanz, um Tagesstrecke, Zeit außer Haus und Reisetage zu übernehmen.",
+    "dawarichDescription": "Tägliche Strecke, Zeit unterwegs und Reisetage.",
     "dawarichUrl": "Dawarich-Adresse",
     "dawarichApiKey": "API-Schlüssel",
-    "dawarichApiKeyHelp": "Du findest ihn in Dawarich unter Konto. HealthLog liest damit nur Tageswerte, nie Koordinaten oder Ortsnamen.",
+    "dawarichApiKeyHelp": "Du findest ihn in Dawarich unter Konto.",
     "dawarichConnect": "Verbinden",
     "dawarichUpdate": "Änderungen speichern",
     "dawarichConnected": "Dawarich verbunden. Die letzten 30 Tage werden gerade geladen.",
@@ -8451,7 +8448,7 @@
     "dangerZoneRestoreLimits": "Auch Zugriffe enden: was du mit anderen teilst, was andere mit dir teilen, und jede Rolle als betreuende Person. Eine Wiederherstellung bringt die Akte so zurück, wie sie jetzt ist. Was nach dem Löschen hinzukommt, wird dabei ersetzt, und Integrationsverbindungen, Freigaben, Betreuungsrollen und Freigabelinks kommen nicht zurück; sie müssen neu eingerichtet werden.",
     "garmin": "Garmin",
     "garminTag": "Personal API",
-    "garminDescription": "Füge einen Garmin-Personal-API-Schlüssel ein, um Schlaf, HRV, Body Battery, Stress, Schritte, Gewicht und Aktivitäten aus Garmin Connect zu synchronisieren.",
+    "garminDescription": "Schlaf, HRV, Stress, Schritte, Gewicht und Aktivitäten.",
     "garminSync": "Jetzt synchronisieren",
     "garminSyncResult": "{count, plural, one {# Eintrag} other {# Einträge}} synchronisiert",
     "garminSyncFailed": "Synchronisierung fehlgeschlagen",
@@ -8466,7 +8463,7 @@
     "garminKeyExpiring": "Dein Garmin-Schlüssel läuft am {date} ab. Erstelle vorher in Garmin Connect einen neuen Schlüssel und füge ihn hier ein.",
     "garminKeyExpiryUnknown": "Garmin verrät nicht, wann dieser Schlüssel abläuft. Ersetze den Schlüssel und wähle die Gültigkeit, die du in Garmin Connect eingestellt hast, dann warnt dich diese Karte eine Woche vorher.",
     "garminConnected": "Garmin verbunden. Die erste Synchronisierung läuft an.",
-    "garminKeyHowTo": "Öffne in Garmin Connect die Einstellungen, dann Personal API, und erstelle einen Schlüssel. Garmin zeigt ihn nur einmal an, kopiere ihn also sofort.",
+    "garminKeyHowTo": "Öffne in Garmin Connect die Einstellungen, dann Personal API, und erstelle einen Schlüssel.",
     "garminKeySettingsLink": "Garmin Connect öffnen",
     "garminApiKey": "Personal-API-Schlüssel",
     "garminApiKeyPlaceholder": "Schlüssel einfügen",
@@ -8474,7 +8471,7 @@
     "garminKeyValidity": "Gewählte Gültigkeit",
     "garminKeyValidityUnknown": "Weiß ich nicht",
     "garminKeyValidityDays": "{count, plural, one {# Tag} other {# Tage}}",
-    "garminKeyValidityHelp": "Garmin meldet nicht, wann ein Schlüssel abläuft. Mit der Gültigkeit warnt dich diese Karte eine Woche, bevor der Schlüssel nicht mehr funktioniert.",
+    "garminKeyValidityHelp": "Garmin meldet nicht, wann ein Schlüssel abläuft.",
     "garminConnect": "Verbinden",
     "garminUpdate": "Änderungen speichern",
     "garminRegion": "Garmin-Dienst",
@@ -9062,7 +9059,7 @@
         "downloadFailed": "Download fehlgeschlagen",
         "downloadStarted": "Download gestartet",
         "uploadTitle": "Backup hochladen",
-        "uploadDescription": "Prüft eine Kontokopie und speichert sie neben den Kopien dieses Servers. Eine Kopie, deren Konto es auf diesem Server nicht mehr gibt, kann in ein anderes Konto gehen. Das Wiederherstellen ist ein eigener Schritt.",
+        "uploadDescription": "Prüft eine Kontokopie und speichert sie neben den Kopien dieses Servers.",
         "uploadButton": "Datei hochladen",
         "uploadHelp": "HealthLog-Backup als .json oder .json.gz. Die Datei wird vor dem Hochladen komprimiert; komprimiert darf sie bis zu 512 MB groß sein.",
         "uploadSuccess": "Backup hochgeladen ({count, plural, one {# Datensatz} other {# Datensätze}})",
@@ -9404,7 +9401,7 @@
     },
     "carrier": "Netzbetreiber",
     "mfaRequired": "Zweiten Faktor verlangen",
-    "mfaRequiredDescription": "Dasselbe für jedes Konto: Eines ohne Authenticator-App, Sicherheitsschlüssel oder Passkey wird gebeten, einen hinzuzufügen, und lässt sich nach der Schonfrist nur noch dafür nutzen. Die iPhone-App weist seine Anmeldung bis dahin ab.",
+    "mfaRequiredDescription": "Dasselbe für jedes Konto: Eines ohne Authenticator-App, Sicherheitsschlüssel oder Passkey wird gebeten, einen hinzuzufügen, und lässt sich nach der Schonfrist nur noch dafür nutzen.",
     "mfaEnforcedOn": "MFA an",
     "mfaEnforcedOff": "MFA aus",
     "mfaEnforcedOnHint": "Für diesen Nutzer ist ein zweiter Faktor erforderlich. Klicken, um die Anforderung aufzuheben.",
@@ -9946,9 +9943,9 @@
       "loadError": "Der Stand der Migrationen konnte nicht geladen werden."
     },
     "mfaRequiredForAdmins": "Zweiten Faktor für Admins verlangen",
-    "mfaRequiredForAdminsDescription": "Ein Admin-Konto ohne Authenticator-App, Sicherheitsschlüssel oder Passkey wird gebeten, einen hinzuzufügen, und lässt sich nach der Schonfrist nur noch dafür nutzen. Die iPhone-App weist seine Anmeldung bis dahin ab.",
+    "mfaRequiredForAdminsDescription": "Ein Admin-Konto ohne Authenticator-App, Sicherheitsschlüssel oder Passkey wird gebeten, einen hinzuzufügen, und lässt sich nach der Schonfrist nur noch dafür nutzen.",
     "mfaGraceDays": "Schonfrist",
-    "mfaGraceDaysDescription": "Wie lange ein Konto, das eine Regel neu erfasst, Zeit hat, einen zweiten Faktor hinzuzufügen. Sie beginnt, wenn du eine Regel einschaltest.",
+    "mfaGraceDaysDescription": "Wie lange ein Konto, das eine Regel neu erfasst, Zeit hat, einen zweiten Faktor hinzuzufügen.",
     "mfaGraceDaysNone": "Keine",
     "mfaGraceDaysOption": "{count, plural, one {# Tag} other {# Tage}}"
   },
@@ -10284,8 +10281,7 @@
       "saveError": "Speichern fehlgeschlagen. Bitte später erneut versuchen.",
       "hourLabel": "Erinnerungszeit",
       "hourAria": "Stunde der Stimmungs-Erinnerung",
-      "hourSavedToast": "Erinnerungszeit aktualisiert",
-      "detail": "Greift nur auf bereits eingerichtete Kanäle (Telegram, ntfy, Web Push, Apple Push) zurück und schweigt, sobald du heute geloggt hast."
+      "hourSavedToast": "Erinnerungszeit aktualisiert"
     },
     "coachNudge": {
       "title": "Proaktiver Coach",
@@ -10295,11 +10291,8 @@
       "statusOff": "Aus",
       "groupsLabel": "Themen",
       "groupMedication": "Medikation",
-      "groupMedicationDesc": "Lückenhafte Einnahmen der letzten Woche.",
       "groupVitals": "Vitalwerte",
-      "groupVitalsDesc": "Blutdruck, Erholung, Gewichtstrend, Schlaf.",
       "groupRoutine": "Routine",
-      "groupRoutineDesc": "Abrupte Mess-Pausen und Fragen zu dir selbst.",
       "frequencyLabel": "Häufigkeit",
       "frequencyWeekly": "Höchstens einmal pro Woche",
       "frequencyBiweekly": "Höchstens alle zwei Wochen",
@@ -10308,7 +10301,6 @@
       "disabledToast": "Proaktive Coach-Hinweise deaktiviert.",
       "saveError": "Speichern fehlgeschlagen. Bitte später erneut versuchen.",
       "aiComposedLabel": "Den Coach den Anstoß formulieren lassen",
-      "aiComposedDesc": "Wenn ein Anbieter verfügbar ist, formuliert das Modell den proaktiven Anstoß statt der festen Vorlage. Standardmäßig aus.",
       "aiComposedAria": "KI-formulierten proaktiven Anstoß umschalten"
     },
     "lowStock": {
@@ -10321,14 +10313,12 @@
       "daysAria": "Vorratsschwelle in Tagen wählen",
       "leadLabel": "Vorlaufzeit zum Nachbestellen (Tage)",
       "leadAria": "Vorlaufzeit zum Nachbestellen in Tagen",
-      "leadHelp": "Die Warnung kommt um so viele Tage plus ein Dosisintervall früher, damit der Nachschub vor deiner letzten Dosis eintrifft.",
       "leadSavedToast": "Vorlaufzeit gespeichert",
       "savedToast": "Vorratsschwelle gespeichert",
       "enabledToast": "Vorratswarnungen aktiviert.",
       "disabledToast": "Vorratswarnungen deaktiviert.",
       "saveError": "Speichern fehlgeschlagen. Bitte später erneut versuchen.",
-      "medicationsLink": "Zu deinen Medikamenten",
-      "detail": "Eine Benachrichtigung pro Engpass; nach dem Auffüllen meldet sie sich wieder."
+      "medicationsLink": "Zu deinen Medikamenten"
     },
     "eventMedicationReminder": "Medikamenten-Erinnerung",
     "eventMedicationReminderDesc": "Wird zu jeder geplanten Einnahmezeit gesendet.",
@@ -10353,7 +10343,7 @@
     "eventDailyBriefing": "Täglicher Überblick",
     "eventDailyBriefingDesc": "Eine ruhige Morgenzusammenfassung deines Tages. Standardmäßig aus, bis du sie aktivierst.",
     "eventSecurityAlert": "Hinweise zur Kontosicherheit",
-    "eventSecurityAlertDesc": "Bei einer Anmeldung von einem unbekannten Gerät oder Ort, wenn ein Passkey hinzugefügt oder entfernt wird, wenn ein Zugriffstoken widerrufen wird und wenn ein Gerät abgemeldet wird, weil sein Anmeldetoken zweimal verwendet wurde.",
+    "eventSecurityAlertDesc": "Eine neue Anmeldung, eine Änderung an Passkey oder Token oder eine erzwungene Abmeldung.",
     "eventSharedRecordIntake": "Jemand mit Zugriff markiert eine Dosis",
     "eventSharedRecordIntakeDesc": "Wird nur gesendet, wenn eine andere Person es tut, nie bei deinen eigenen Einträgen.",
     "eventMedicationIntakeRecorded": "Einnahmen von anderen Geräten bestätigen",
@@ -10422,7 +10412,6 @@
     "content": {
       "title": "Gesundheitswerte in Benachrichtigungen",
       "description": "Ob eine Benachrichtigung Werte wie deinen Morgenscore zeigen darf.",
-      "detail": "Aus: Eine Benachrichtigung sagt nur, worum es geht, der Sperrbildschirm zeigt keine Gesundheitswerte. An: Sie nennt auch die Werte, etwa den Morgenscore im Überblick.",
       "toggleAria": "Gesundheitswerte in Benachrichtigungen zeigen",
       "statusDetailed": "Mit Werten",
       "statusGeneric": "Ohne Werte",
@@ -10456,14 +10445,14 @@
       "body": "{count, plural, one {# Anfall} other {# Anfälle}} innerhalb von {hours} h, eingetragen von {name}. Der Notfallplan steht im Anfallskalender."
     },
     "eventMeasurementAnomaly": "Anhaltende Veränderung eines Vitalwerts",
-    "eventMeasurementAnomalyDesc": "Wenn ein Vitalwert wie Ruhepuls oder Blutdruck seit mindestens zehn Tagen auf einem neuen Niveau bleibt. Höchstens einmal pro Woche, morgens, nie während einer offenen Erkrankung.",
+    "eventMeasurementAnomalyDesc": "Ein Vitalwert, der seit zehn Tagen auf einem neuen Niveau liegt.",
     "measurementAnomaly": {
       "title": "Eine anhaltende Veränderung",
       "bodyUp": "Dein Wert {metric} liegt seit {date} höher. Insights zeigt vorher und nachher.",
       "bodyDown": "Dein Wert {metric} liegt seit {date} niedriger. Insights zeigt vorher und nachher."
     },
     "eventSyncStalled": "Eine Quelle synchronisiert nicht mehr",
-    "eventSyncStalledDesc": "Wenn ein iPhone, Ring, eine Uhr oder Waage, die sonst täglich liefert, verstummt. Einmal je Pause, tagsüber, höchstens einmal am Tag.",
+    "eventSyncStalledDesc": "Ein Gerät, das täglich liefert, ist verstummt.",
     "syncStalled": {
       "title": "{provider} ist verstummt",
       "appleYesterday": "{provider} hat seit gestern nichts gesendet. Einmal HealthLog öffnen genügt.",
@@ -14261,7 +14250,7 @@
       "scopeEmptyHint": "Wähle mindestens einen Bereich aus oder teile wieder die gesamte Akte.",
       "scopeChooseHint": "Wähle, ob die gesamte Akte oder nur einzelne Bereiche geteilt werden.",
       "expiresLabel": "Zugriff endet am (optional)",
-      "expiresHint": "Leer lassen für Zugriff, der gilt, bis ihn jemand beendet. Ein Datum wird bei jeder Anfrage geprüft, der Zugriff endet also am Ende dieses Tages von selbst.",
+      "expiresHint": "Leer lassen für Zugriff, der gilt, bis ihn jemand beendet.",
       "submit": "Einladung senden",
       "submitting": "Wird gesendet…",
       "sent": "Einladung an {name} gesendet.",
@@ -14346,11 +14335,11 @@
       "nameRequired": "Gib der Akte einen Namen.",
       "nameTooLong": "Dieser Name ist länger als 80 Zeichen.",
       "dobLabel": "Geburtsdatum (optional)",
-      "dobHint": "Lass das Feld leer, wenn du keines hinterlegen willst. Aus einem Jahrgang wird nichts abgeleitet.",
+      "dobHint": "Lass das Feld leer, wenn du keines hinterlegen willst.",
       "localeLabel": "Sprache dieser Akte",
-      "localeHint": "Die Sprache für Texte, die in diese Akte geschrieben werden. Deine eigenen Ansichten bleiben in deiner Sprache.",
+      "localeHint": "Die Sprache für Texte, die in diese Akte geschrieben werden.",
       "genderLabel": "Geschlecht (optional)",
-      "genderHint": "Entscheidet, ob die Zyklus-Funktion für diese Akte zunächst an ist. Jederzeit änderbar.",
+      "genderHint": "Entscheidet, ob die Zyklus-Funktion für diese Akte zunächst an ist.",
       "genderNone": "Keine Angabe",
       "genderMale": "Männlich",
       "genderFemale": "Weiblich",
@@ -16283,7 +16272,7 @@
       "LAST_90_DAYS": "Die letzten 90 Tage",
       "LAST_365_DAYS": "Die letzten 12 Monate"
     },
-    "usesSelection": "Jeder Bericht enthält, was du oben für den Export ausgewählt hast. Änderst du die Auswahl dort, folgt ihr der nächste Bericht. Es gibt keine Benachrichtigung: Der Bericht ist einfach da.",
+    "usesSelection": "Jeder Bericht enthält, was du oben für den Export ausgewählt hast.",
     "turnOn": "Einschalten",
     "turnOff": "Ausschalten",
     "turnOffTitle": "Geplanten Bericht ausschalten?",

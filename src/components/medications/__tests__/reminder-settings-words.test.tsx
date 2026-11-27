@@ -9,7 +9,10 @@ import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-vi.mock("@/hooks/use-record-capabilities", () => ({
+vi.mock("@/hooks/use-record-capabilities", async (importOriginal) => ({
+  holdsOwnerRights: (
+    await importOriginal<typeof import("@/hooks/use-record-capabilities")>()
+  ).holdsOwnerRights,
   useRecordCapabilities: () => ({
     canWriteDomain: () => true,
     canManageDomain: () => true,
