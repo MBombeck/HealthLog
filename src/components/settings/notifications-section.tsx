@@ -112,20 +112,12 @@ export function NotificationsSection() {
               anchor="other-reminders"
               icon={BellRing}
               title={t("settings.sections.notifications.elsewhere.title")}
-              description={t(
-                "settings.sections.notifications.elsewhere.description",
-              )}
             />
             <ul className="divide-border divide-y">
               {medsEnabled ? (
                 <li className="space-y-1 py-3 first:pt-0">
                   <p className="text-sm font-medium">
                     {t("settings.sections.notifications.elsewhere.doses.title")}
-                  </p>
-                  <p className="text-muted-foreground text-xs">
-                    {t(
-                      "settings.sections.notifications.elsewhere.doses.description",
-                    )}
                   </p>
                   <InlineAction asChild tone="muted">
                     <Link href="/medications">
@@ -144,11 +136,6 @@ export function NotificationsSection() {
                 >
                   <p className="text-sm font-medium">
                     {t("settings.sections.notifications.elsewhere.cycle.title")}
-                  </p>
-                  <p className="text-muted-foreground text-xs">
-                    {t(
-                      "settings.sections.notifications.elsewhere.cycle.description",
-                    )}
                   </p>
                   <InlineAction asChild tone="muted">
                     <Link href="/notifications">

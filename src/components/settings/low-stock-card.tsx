@@ -252,7 +252,6 @@ export function LowStockCard({
           </label>
         }
       />
-      <p className="text-sm">{t("notifications.lowStock.detail")}</p>
       {enabled && (
         <div className="flex min-h-11 items-center justify-between gap-3">
           <Label htmlFor="low-stock-days">
@@ -309,9 +308,6 @@ export function LowStockCard({
               data-1p-ignore="true"
             />
           </div>
-          <p className="text-muted-foreground mt-1.5 max-w-prose text-xs">
-            {t("notifications.lowStock.leadHelp")}
-          </p>
         </div>
       )}
       {msg && (

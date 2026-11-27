@@ -3898,7 +3898,7 @@
         "weightBody": "Lichaamsgewicht is een van de eenvoudigste signalen van je energiebalans op lange termijn en je algehele gezondheid. De trend over weken is veel belangrijker dan een losse meting, die schommelt door vochtbalans, eten en tijdstip van de dag.",
         "bmiBody": "BMI is je gewicht gedeeld door je lengte in het kwadraat. Dat levert één getal op dat je in een brede gewichtscategorie plaatst. Het is een screeningsmaat op bevolkingsniveau en maakt geen onderscheid tussen spieren en vet.",
         "sleepBody": "Slaapduur is hoe lang je 's nachts daadwerkelijk hebt geslapen, verdeeld over lichte slaap, diepe slaap en REM-slaap. De meeste volwassenen hebben ongeveer zeven tot negen uur nodig; zowel een vaste hoeveelheid als goede kwaliteit ondersteunen herstel, stemming en stofwisseling.",
-        "moodBody": "Bij het bijhouden van je stemming leg je op een eenvoudige schaal vast hoe je je voelt. Door dit regelmatig te doen, zie je patronen (hoe slaap, activiteit of medicatie samenhangen met hoe je je voelt) die één dag nooit laat zien.",
+        "moodBody": "Bij het bijhouden van je stemming leg je op een eenvoudige schaal vast hoe je je voelt.",
         "medicationsBody": "Therapietrouw is hoe consequent je je medicatie inneemt zoals voorgeschreven, hier weergegeven als het aandeel verwachte doses dat je daadwerkelijk hebt vastgelegd. Een regelmatige inname is vaak wat ervoor zorgt dat een behandeling werkt zoals bedoeld.",
         "restingHrBody": "Rusthartslag is je hartslag wanneer je volledig in rust bent, meestal 's nachts gemeten, en verschilt van je hartslag tijdens activiteit. Een lagere rusthartslag wijst over het algemeen op een betere cardiovasculaire conditie, en een stijgende trend kan een vroeg teken zijn van stress of ziekte. Als algemene richtlijn ligt een normale rusthartslag bij volwassenen tussen 60–100 slagen per minuut (AHA 2024); een getraind hart kan zonder problemen op 40–60 liggen.",
         "hrvBody": "HRV is de kleine variatie in tijd tussen opeenvolgende hartslagen. Een hogere variabiliteit weerspiegelt meestal een goed hersteld, flexibel zenuwstelsel, terwijl een aanhoudende daling kan wijzen op vermoeidheid, stress of onvoldoende herstel.",
@@ -6069,21 +6069,18 @@
         "displayHeading": "Op je telefoon",
         "elsewhere": {
           "title": "Ingesteld waar ze thuishoren",
-          "description": "Deze herinneringen stel je in bij waar ze over gaan.",
           "doses": {
             "title": "Medicatie-innames",
-            "description": "Innametijden en herinneringen stel je per medicijn in.",
             "link": "Medicatie openen"
           },
           "cycle": {
             "title": "Cyclus",
-            "description": "Herinneringen voor menstruatie en vruchtbare dagen zet je per kanaal aan in het meldingenoverzicht.",
             "link": "Meldingenoverzicht openen"
           }
         },
         "snooze": {
           "title": "Later herinneren",
-          "description": "Hoe lang een dosisherinnering wordt uitgesteld, op de medicijnkaart, in Telegram en in de app.",
+          "description": "Hoe lang een dosisherinnering wordt uitgesteld.",
           "label": "Uitstellen met",
           "option": "{minutes} min",
           "saveError": "Opslaan mislukt. Probeer het opnieuw"
@@ -6252,16 +6249,16 @@
         "cards": {
           "measurementsCsv": {
             "title": "Metingen",
-            "description": "Gewicht, bloeddruk, hartslag, glucose en alle andere metingen als kommagescheiden waarden."
+            "description": "Alle metingen als spreadsheet."
           },
           "medicationsCsv": {
             "title": "Medicatie",
-            "description": "Je medicatielijst met dosering, schema's en (optioneel) de volledige innamegeschiedenis.",
+            "description": "Je medicatie, desgewenst met elke inname.",
             "includeIntake": "Innamegeschiedenis meenemen"
           },
           "moodCsv": {
             "title": "Stemming",
-            "description": "Dagelijkse stemmingsregistraties met score, tags en tijdstempels."
+            "description": "Elke stemmingsregistratie met tags."
           },
           "fullBackup": {
             "title": "Volledige back-up",
@@ -6280,7 +6277,7 @@
           "charCount": "{used} / {max, plural, one {# teken} other {# tekens}}",
           "appleHealth": {
             "title": "Apple Health",
-            "description": "Upload het bestand export.zip uit de Gezondheid-app op je iPhone (Profiel > Exporteer alle gezondheidsgegevens).",
+            "description": "De export.zip uit de Gezondheid-app op de iPhone.",
             "dropLabel": "Sleep export.zip hierheen",
             "dropHint": "of klik om een bestand te kiezen",
             "fileInputLabel": "Kies een export.zip-bestand van Apple Health",
@@ -6351,7 +6348,7 @@
           },
           "json": {
             "title": "Metingen en stemming (JSON)",
-            "description": "Plak JSON of upload een .json-bestand met metingen en stemmingsregistraties.",
+            "description": "Metingen en stemmingsregistraties als JSON.",
             "pasteLabel": "JSON plakken",
             "fileInputLabel": "Kies een JSON-bestand om te importeren",
             "schemaHint": "Twee arrays: measurements en moodEntries.",
@@ -6374,7 +6371,7 @@
           },
           "csv": {
             "title": "CSV-bestand",
-            "description": "Importeer metingen uit een spreadsheet of een export van een meetapparaat.",
+            "description": "Metingen uit een spreadsheet of meterexport.",
             "pasteLabel": "CSV plakken",
             "fileInputLabel": "Kies een CSV-bestand om te importeren",
             "schemaHint": "Kolommen: type, value, unit, measuredAt (met tijdzoneverschil), en optioneel glucoseContext, notes, externalId.",
@@ -6419,7 +6416,7 @@
           },
           "doseHistory": {
             "title": "Doseringsgeschiedenis medicatie",
-            "description": "Een doseringsgeschiedenis die uit een andere medicatie-app is geëxporteerd, ingelezen zoals die is.",
+            "description": "Een innamegeschiedenis uit een andere medicatie-app.",
             "pasteLabel": "Export plakken",
             "fileInputLabel": "Kies een exportbestand met doseringsgeschiedenis",
             "uploadFile": "Bestand kiezen",
@@ -6475,7 +6472,7 @@
           },
           "healthConnect": {
             "title": "Health Connect-export",
-            "description": "Importeer het ZIP-bestand dat de Health Connect-app op Android aanmaakt wanneer je je gegevens exporteert.",
+            "description": "De ZIP die Health Connect op Android schrijft.",
             "choose": "Bestand kiezen",
             "uploading": "Uploaden…",
             "uploadFailed": "Het uploaden is mislukt. Probeer het opnieuw.",
@@ -6518,7 +6515,7 @@
           },
           "fit": {
             "title": "Activiteitsbestand (FIT)",
-            "description": "Importeer een training uit het FIT-bestand van een horloge of fietscomputer, zoals Garmin, Wahoo, Coros of Polar.",
+            "description": "Een training van een horloge of fietscomputer.",
             "choose": "Bestand kiezen",
             "uploading": "Uploaden…",
             "uploadFailed": "Het uploaden is mislukt. Probeer het opnieuw.",
@@ -6533,7 +6530,7 @@
             "fileInputLabel": "Activiteitsbestand",
             "privacyNote": "Het GPS-spoor wordt alleen bewaard als Trainingsroutes aan staat.",
             "steps": {
-              "garmin": "Garmin Connect: open de activiteit op de website, kies het tandwielmenu en daarna Origineel exporteren. Upload het ZIP-bestand zoals het is.",
+              "garmin": "Garmin Connect: open de activiteit op de website, kies het tandwielmenu en daarna Origineel exporteren.",
               "other": "Andere apps en apparaten: exporteer de activiteit als FIT-bestand (.fit of .fit.gz) en upload het hier."
             },
             "phase": {
@@ -6566,7 +6563,7 @@
           "recordFile": {
             "gadgetbridge": {
               "title": "Gadgetbridge-database",
-              "description": "Stappen, hartslag, SpO2, slaap en gewicht importeren uit de database die Gadgetbridge op Android exporteert.",
+              "description": "De database die Gadgetbridge op Android exporteert.",
               "steps": {
                 "export": "Open in Gadgetbridge Instellingen, dan Gegevensbeheer, dan Database exporteren.",
                 "upload": "Upload hier het bestand met de naam Gadgetbridge. Tot 512 MB."
@@ -6574,9 +6571,9 @@
             },
             "fhirBundle": {
               "title": "Patiëntendossier (FHIR)",
-              "description": "Labuitslagen, vitale functies, aandoeningen, vaccinaties, medicijnen en bezoeken importeren uit een FHIR R4-bundle die een patiëntenportaal exporteert.",
+              "description": "Een FHIR R4-dossier uit een patiëntenportaal.",
               "steps": {
-                "export": "Exporteer in je patiëntenportaal je dossier als FHIR R4 (JSON). C-CDA-bestanden worden niet gelezen.",
+                "export": "Exporteer in je patiëntenportaal je dossier als FHIR R4 (JSON).",
                 "upload": "Upload hier het .json-bestand. Tot 32 MB."
               }
             },
@@ -6630,14 +6627,14 @@
               "removeFailed": "De map kon niet worden verwijderd. Probeer het opnieuw."
             },
             "title": "Health Connect uit een map",
-            "description": "HealthLog haalt de export die Health Connect volgens schema opslaat uit een WebDAV- of Nextcloud-map en importeert wat nieuw is.",
+            "description": "Nieuwe Health Connect-exports uit een WebDAV-map.",
             "folderUrl": "Mapadres (WebDAV)",
             "fileName": "Bestandsnaam in de map",
             "username": "Gebruikersnaam",
             "password": "Wachtwoord of app-wachtwoord",
             "passwordKept": "Leeg laten om het opgeslagen wachtwoord te houden",
             "enabled": "Ongeveer elke zes uur ophalen",
-            "privacyNote": "Het wachtwoord wordt versleuteld opgeslagen en nooit meer getoond. Een map op je thuisnetwerk werkt alleen als wie de server beheert het adres toestaat.",
+            "privacyNote": "Het wachtwoord wordt versleuteld opgeslagen en nooit meer getoond.",
             "lastAttempt": "Laatste poging {when}: {outcome}",
             "fetchNow": "Nu ophalen",
             "fetchStarted": "Wordt nu opgehaald. Het resultaat verschijnt op deze kaart.",
@@ -6893,7 +6890,7 @@
     "genderFemale": "Vrouw",
     "genderHint": "Wordt gebruikt voor geslachtsspecifieke streefwaarden.",
     "timezone": "Tijdzone",
-    "timezoneHint": "Wordt gebruikt voor aslabels in grafieken, herinneringstijden, tijdstempels in exports en de context van de Coach. Opgeslagen gegevens blijven ongewijzigd.",
+    "timezoneHint": "Wordt gebruikt voor aslabels in grafieken, herinneringstijden, tijdstempels in exports en de context van de Coach.",
     "timezoneInvalid": "Geen geldige IANA-tijdzone.",
     "profileSaved": "Profiel opgeslagen",
     "profilePartiallySaved": "Profiel opgeslagen, maar {field} kon niet worden bijgewerkt.",
@@ -6912,7 +6909,7 @@
     },
     "avatar": {
       "title": "Profielfoto",
-      "description": "Upload een foto die op je eigen server wordt opgeslagen. Die verschijnt in de hele app in plaats van een externe avatardienst.",
+      "description": "Upload een foto die op je eigen server wordt opgeslagen.",
       "upload": "Foto uploaden",
       "replace": "Foto vervangen",
       "remove": "Verwijderen",
@@ -6986,15 +6983,15 @@
     "ntfyAuthToken": "Authenticatietoken (optioneel)",
     "ntfyAuthTokenHint": "Alleen nodig voor privé-topics met toegangsbeheer.",
     "webhook": "Webhook",
-    "webhookDescription": "Stuur meldingen via POST naar elke URL: Discord, Slack, Gotify, Home Assistant, n8n of elke relay die JSON accepteert.",
+    "webhookDescription": "Meldingen naar elke URL die JSON aanneemt.",
     "webhookEnable": "Webhook inschakelen",
     "webhookUrl": "Webhook-URL",
-    "webhookUrlHint": "De volledige URL waarnaar de POST gaat. Een adres op een privénetwerk heeft goedkeuring van de serverbeheerder nodig.",
+    "webhookUrlHint": "De volledige URL waarnaar de POST gaat.",
     "webhookHeaderName": "Headernaam (optioneel)",
     "webhookHeaderValue": "Headerwaarde (optioneel)",
     "webhookFormat": "Payloadformaat",
     "webhookFormatGeneric": "Generieke JSON",
-    "webhookFormatGenericHint": "Plak een Discord- of Slack-webhook-URL zoals die is. Home Assistant en n8n lezen de velden title, message, eventType en priority.",
+    "webhookFormatGenericHint": "Plak een Discord- of Slack-webhook-URL zoals die is.",
     "webhookFormatGotify": "Gotify",
     "webhookFormatGotifyHint": "Gebruik de URL die eindigt op /message en zet de applicatietoken in de header X-Gotify-Key.",
     "email": "E-mail",
@@ -7002,7 +6999,7 @@
     "emailEnable": "E-mail inschakelen",
     "emailRecipient": "Adres van ontvanger",
     "webPush": "Browserpush",
-    "webPushDescription": "Ontvang meldingen rechtstreeks in je browser, ook als HealthLog niet geopend is.",
+    "webPushDescription": "Meldingen in deze browser.",
     "webPushNotSupported": "Je browser ondersteunt geen pushmeldingen.",
     "webPushInstallFirst": "Op iPhone en iPad werken pushmeldingen alleen in de geïnstalleerde app. Tik in Safari op Deel en daarna op 'Zet op beginscherm', open HealthLog vanaf het beginscherm en tik hier op 'Push inschakelen'.",
     "webPushDenied": "Pushmeldingen zijn geblokkeerd. Sta ze toe in de instellingen van je browser.",
@@ -7100,7 +7097,7 @@
         "defaultChainLabel": "Standaardketen",
         "defaultChainHint": "Taken op Standaard volgen deze keten. Hun gebruikelijke regels blijven gelden: documenten proberen eerst een lokaal model.",
         "tasksHeading": "Taken",
-        "tasksHint": "Kies de keten voor elke taak. Onder een taak met een eigen keten staan de aanbieders die ze probeert, op volgorde.",
+        "tasksHint": "Kies de keten voor elke taak.",
         "taskDefault": "Standaard",
         "save": "Ketens opslaan",
         "saved": "Ketens opgeslagen",
@@ -7118,7 +7115,7 @@
           "workoutInsights": "Trainingsnotities",
           "reactionLines": "Reacties op nieuwe metingen"
         },
-        "tasksNeedChain": "Maak hierboven een keten om een taak eigen aanbieders te geven. Tot dan volgt elke taak de standaard."
+        "tasksNeedChain": "Maak hierboven een keten om een taak eigen aanbieders te geven."
       },
       "activeProviderHeading": "Actieve provider",
       "activeProviderLabel": "Provider instellen",
@@ -7367,7 +7364,7 @@
         "failed": "De API-sleutel kon niet worden verwijderd."
       },
       "coachBudgetHeading": "Coachbudget voor zelf gehoste modellen",
-      "coachBudgetBody": "Hoeveel van je gegevens de Coach in de prompt zet en hoe lang één antwoord mag werken, voor het lokale model en de gateway. Verklein de snapshot voor een model met een klein contextvenster; vergroot hem en de grenzen per antwoord voor een groot model op je eigen hardware. Lege velden houden de getoonde standaardwaarden. Een antwoord via de gedeelde provider van de server houdt altijd de standaardgrenzen.",
+      "coachBudgetBody": "Hoeveel van je gegevens de Coach in de prompt zet en hoe lang één antwoord mag werken, voor het lokale model en de gateway.",
       "coachBudgetProvider": "Provider",
       "coachBudgetLocal": "Lokaal model",
       "coachBudgetCompat": "Gateway",
@@ -7389,13 +7386,13 @@
       },
       "glucoseUnit": {
         "title": "Bloedglucose",
-        "description": "In welke eenheid bloedglucosemetingen worden weergegeven. De metingen worden in beide gevallen op dezelfde manier opgeslagen.",
+        "description": "In welke eenheid bloedglucosemetingen worden weergegeven.",
         "saved": "Glucose-eenheid opgeslagen",
         "saveError": "Je glucose-eenheid kon niet worden opgeslagen."
       }
     },
     "withings": "Withings",
-    "withingsDescription": "Koppel je Withings-weegschaal en -bloeddrukmeter om gewicht, lichaamssamenstelling en bloeddruk automatisch te synchroniseren.",
+    "withingsDescription": "Gewicht, lichaamssamenstelling en bloeddruk.",
     "withingsCredentials": "API-inloggegevens",
     "withingsClientId": "Client-ID",
     "withingsClientSecret": "Clientgeheim",
@@ -7437,7 +7434,7 @@
     "withingsConnect": "Koppelen met Withings",
     "withingsNoCredentials": "Voer hierboven je API-inloggegevens in om Withings te koppelen.",
     "whoop": "WHOOP",
-    "whoopDescription": "Koppel je WHOOP-band om herstel, slaap, belasting en trainingen rechtstreeks naar HealthLog te synchroniseren.",
+    "whoopDescription": "Herstel, slaap, belasting en trainingen.",
     "whoopCredentials": "API-inloggegevens",
     "whoopClientId": "Client-ID",
     "whoopClientSecret": "Clientgeheim",
@@ -7482,7 +7479,7 @@
     "googleHealth": "Google Health",
     "googleHealthTag": "Fitbit & Pixel",
     "googleHealthBetaBadge": "Bèta",
-    "googleHealthDescription": "Koppel Fitbit, Pixel Watch en Fitbit Air via je Google-account: gewicht, hartslag, slaap en activiteit.",
+    "googleHealthDescription": "Fitbit en Pixel Watch via je Google-account.",
     "googleHealthCredentials": "API-inloggegevens",
     "googleHealthClientId": "Client-ID",
     "googleHealthClientSecret": "Clientgeheim",
@@ -7616,7 +7613,7 @@
       "namePlaceholder": "Naam, bijv. Home Assistant",
       "appleHealth": {
         "label": "Metingen naar Apple Health schrijven",
-        "createHint": "De HealthLog-app op je iPhone zet de metingen van dit token dan in Apple Health. Je kunt dit later wijzigen in de tokenlijst hieronder.",
+        "createHint": "De HealthLog-app op je iPhone zet de metingen van dit token dan in Apple Health.",
         "toggleAria": "Metingen van {name} naar Apple Health schrijven",
         "updateFailed": "De Apple Health-instelling kon niet worden gewijzigd. Probeer het opnieuw.",
         "unattributed": "Metingen die zijn verstuurd voordat deze instelling bestond, kunnen niet aan een token worden gekoppeld en blijven daarom buiten Apple Health."
@@ -7747,7 +7744,7 @@
       "emptyTitle": "Nog geen kanalen ingesteld"
     },
     "identity": {
-      "description": "Optionele gegevens voor de export van je gezondheidsdossier (PDF-voorblad + FHIR-export). Alle velden zijn optioneel.",
+      "description": "Optionele gegevens voor de export van je gezondheidsdossier (PDF-voorblad + FHIR-export).",
       "fullName": "Volledige naam",
       "fullNamePlaceholder": "bijv. Jan Jansen",
       "insurer": "Zorgverzekeraar",
@@ -7846,14 +7843,14 @@
     "genderOther": "Anders",
     "nightscout": "Nightscout",
     "nightscoutTag": "CGM",
-    "nightscoutDescription": "Koppel je eigen Nightscout-site om continue glucosemetingen naar het glucosepaneel te synchroniseren.",
+    "nightscoutDescription": "Continue glucose van je Nightscout-site.",
     "nightscoutViewData": "Je glucose bekijken",
     "nightscoutUrl": "Nightscout-URL",
     "nightscoutUrlSavedPlaceholder": "Opgeslagen. Voer een nieuwe URL in om deze te vervangen",
     "nightscoutToken": "API-token",
     "nightscoutTokenOptional": "Optioneel voor een openbare site",
     "nightscoutTokenSavedPlaceholder": "Opgeslagen. Voer een nieuw token in om dit te vervangen",
-    "nightscoutTokenHelp": "Plak een toegangstoken uit de beheertools van je Nightscout. Laat dit leeg als je site openbaar leesbaar is.",
+    "nightscoutTokenHelp": "Plak een toegangstoken uit de beheertools van je Nightscout.",
     "nightscoutPrivateOperatorTitle": "Toegang tot een privé-Nightscout vereist goedkeuring van de serverbeheerder.",
     "nightscoutPrivateOperatorDescription": "Vraag je serverbeheerder om precies deze Nightscout-origin goed te keuren.",
     "nightscoutConnect": "Koppelen",
@@ -7867,7 +7864,7 @@
     "nightscoutDisconnectTitle": "Nightscout ontkoppelen?",
     "nightscoutDisconnectDescription": "Toekomstige synchronisaties stoppen. Glucosemetingen die al zijn geïmporteerd, blijven in je geschiedenis staan.",
     "polar": "Polar",
-    "polarDescription": "Koppel je Polar-account om Nightly Recharge-herstel, slaapfasen, dagelijkse activiteit en trainingssessies te synchroniseren.",
+    "polarDescription": "Herstel, slaap, activiteit en training.",
     "polarViewData": "Je slaap en herstel bekijken",
     "polarCredentials": "API-inloggegevens",
     "polarClientId": "Client-ID",
@@ -7896,7 +7893,7 @@
       "already_linked": "Dit Polar-account is al gekoppeld aan een ander HealthLog-profiel. Log bij Polar in met het account van dit profiel, of ontkoppel het eerst van het andere profiel."
     },
     "oura": "Oura",
-    "ouraDescription": "Koppel je Oura-account om paraatheid, slaapfasen, hartslagvariabiliteit en dagelijkse activiteit te synchroniseren.",
+    "ouraDescription": "Paraatheid, slaap, HRV en activiteit.",
     "ouraViewData": "Je slaap en herstel bekijken",
     "ouraCredentials": "API-inloggegevens",
     "ouraClientId": "Client-ID",
@@ -8123,7 +8120,7 @@
           },
           "emergencyCard": {
             "title": "Link van de noodkaart",
-            "description": "De QR-link op je noodkaart. Wie hem scant, kan de kaart lezen tot je hem intrekt.",
+            "description": "De QR-link op je noodkaart.",
             "link": "Noodkaart openen"
           },
           "careCalendar": {
@@ -8179,7 +8176,7 @@
       "offKeepsTokens": "Uitzetten pauzeert het eindpunt. Je tokens en verbindingen blijven en werken weer zodra het aan staat."
     },
     "strava": "Strava",
-    "stravaDescription": "Koppel je Strava-account om je activiteiten naar je trainingsgeschiedenis te synchroniseren.",
+    "stravaDescription": "Je activiteiten als trainingen.",
     "stravaViewData": "Je trainingen bekijken",
     "stravaCredentials": "API-inloggegevens",
     "stravaClientId": "Client-ID",
@@ -8314,7 +8311,7 @@
     "displayCard": {
       "title": "Weergave",
       "description": "Taal, eenheden en notaties, opgeslagen zodra je ze wijzigt.",
-      "themeDescription": "Systeem volgt je apparaat tussen licht en donker. De keuze blijft op dit apparaat.",
+      "themeDescription": "Systeem volgt je apparaat tussen licht en donker.",
       "navCountsLabel": "Aantallen in de navigatie",
       "navCountsDescription": "Toont naast de items in de zijbalk en het menu Meer hoeveel innames en controles er openstaan."
     },
@@ -8388,14 +8385,15 @@
         "horizon": "{type}: geïmporteerd tot {date}. Oudere metingen liggen voorbij de importgrens.",
         "noProgress": "{type}: geïmporteerd tot {date}. Google gaf geen oudere metingen meer terug, dus de import stopt daar."
       },
-      "notConfigured": "{provider} is niet ingesteld op deze server: voeg hierboven je eigen inloggegevens toe of vraag je beheerder."
+      "notConfigured": "{provider} is niet ingesteld op deze server: voeg hierboven je eigen inloggegevens toe of vraag je beheerder.",
+      "setUp": "Instellen"
     },
     "dawarich": "Dawarich",
     "dawarichTag": "Beweging",
-    "dawarichDescription": "Koppel je Dawarich-instantie om dagelijkse afstand, tijd buitenshuis en reisdagen binnen te halen.",
+    "dawarichDescription": "Dagelijkse afstand, tijd van huis en reisdagen.",
     "dawarichUrl": "Dawarich-adres",
     "dawarichApiKey": "API-sleutel",
-    "dawarichApiKeyHelp": "Je vindt hem in Dawarich onder Account. HealthLog gebruikt hem alleen om dagwaarden te lezen, nooit coördinaten of plaatsnamen.",
+    "dawarichApiKeyHelp": "Je vindt hem in Dawarich onder Account.",
     "dawarichConnect": "Koppelen",
     "dawarichUpdate": "Wijzigingen opslaan",
     "dawarichConnected": "Dawarich gekoppeld. De afgelopen 30 dagen worden nu geladen.",
@@ -8449,7 +8447,7 @@
     "dangerZoneRestoreLimits": "Ook toegang eindigt: wat je met anderen deelt, wat anderen met jou delen en elke rol als verzorger. Terugzetten brengt het dossier terug zoals het nu is. Wat na het verwijderen is toegevoegd, wordt vervangen, en koppelingen, delen, verzorgersrollen en deellinks komen niet terug; die moeten opnieuw worden ingesteld.",
     "garmin": "Garmin",
     "garminTag": "Personal API",
-    "garminDescription": "Plak een Garmin Personal API-sleutel om slaap, HRV, Body Battery, stress, stappen, gewicht en activiteiten uit Garmin Connect te synchroniseren.",
+    "garminDescription": "Slaap, HRV, stress, stappen, gewicht en activiteiten.",
     "garminSync": "Nu synchroniseren",
     "garminSyncResult": "{count, plural, one {# item gesynchroniseerd} other {# items gesynchroniseerd}}",
     "garminSyncFailed": "Synchronisatie mislukt",
@@ -8464,7 +8462,7 @@
     "garminKeyExpiring": "Je Garmin-sleutel verloopt op {date}. Maak vóór die datum in Garmin Connect een nieuwe sleutel en plak die hier.",
     "garminKeyExpiryUnknown": "Garmin vertelt niet wanneer deze sleutel verloopt. Vervang de sleutel en kies de geldigheid die je in Garmin Connect hebt gekozen, dan waarschuwt deze kaart je een week van tevoren.",
     "garminConnected": "Garmin gekoppeld. De eerste synchronisatie is onderweg.",
-    "garminKeyHowTo": "Open in Garmin Connect de instellingen, dan Personal API, en maak een sleutel. Garmin toont hem maar één keer, dus kopieer hem meteen.",
+    "garminKeyHowTo": "Open in Garmin Connect de instellingen, dan Personal API, en maak een sleutel.",
     "garminKeySettingsLink": "Garmin Connect openen",
     "garminApiKey": "Personal API-sleutel",
     "garminApiKeyPlaceholder": "Plak de sleutel",
@@ -8472,7 +8470,7 @@
     "garminKeyValidity": "Gekozen geldigheid",
     "garminKeyValidityUnknown": "Weet ik niet",
     "garminKeyValidityDays": "{count, plural, one {# dag} other {# dagen}}",
-    "garminKeyValidityHelp": "Garmin meldt niet wanneer een sleutel verloopt. Met de geldigheid waarschuwt deze kaart je een week voordat de sleutel stopt met werken.",
+    "garminKeyValidityHelp": "Garmin meldt niet wanneer een sleutel verloopt.",
     "garminConnect": "Koppelen",
     "garminUpdate": "Wijzigingen opslaan",
     "garminRegion": "Garmin-dienst",
@@ -9060,7 +9058,7 @@
         "downloadFailed": "Downloaden mislukt",
         "downloadStarted": "Download gestart",
         "uploadTitle": "Back-up uploaden",
-        "uploadDescription": "Controleert een accountkopie en bewaart die naast de kopieën van deze server. Een kopie waarvan het account niet meer op deze server staat, kan naar een ander account. Terugzetten is een aparte stap.",
+        "uploadDescription": "Controleert een accountkopie en bewaart die naast de kopieën van deze server.",
         "uploadButton": "Bestand uploaden",
         "uploadHelp": "Een HealthLog-back-up als .json of .json.gz. Het bestand wordt vóór het uploaden gecomprimeerd; gecomprimeerd mag het maximaal 512 MB zijn.",
         "uploadSuccess": "Back-up geüpload ({count, plural, one {# record} other {# records}})",
@@ -9402,7 +9400,7 @@
     },
     "carrier": "Netwerkprovider",
     "mfaRequired": "Tweede factor verplichten",
-    "mfaRequiredDescription": "Hetzelfde voor elk account: een account zonder authenticator-app, beveiligingssleutel of passkey wordt gevraagd er een toe te voegen en kan na de respijtperiode alleen nog worden gebruikt om die in te stellen. De iPhone-app weigert de aanmelding tot dan.",
+    "mfaRequiredDescription": "Hetzelfde voor elk account: een account zonder authenticator-app, beveiligingssleutel of passkey wordt gevraagd er een toe te voegen en kan na de respijtperiode alleen nog worden gebruikt om die in te stellen.",
     "mfaEnforcedOn": "MFA aan",
     "mfaEnforcedOff": "MFA uit",
     "mfaEnforcedOnHint": "Voor deze gebruiker is een tweede factor verplicht. Klik om dit niet langer te verplichten.",
@@ -9943,9 +9941,9 @@
       "loadError": "De status van de migraties kon niet worden geladen."
     },
     "mfaRequiredForAdmins": "Tweede factor verplicht voor beheerders",
-    "mfaRequiredForAdminsDescription": "Een beheerdersaccount zonder authenticator-app, beveiligingssleutel of passkey wordt gevraagd er een toe te voegen en kan na de respijtperiode alleen nog worden gebruikt om die in te stellen. De iPhone-app weigert de aanmelding tot dan.",
+    "mfaRequiredForAdminsDescription": "Een beheerdersaccount zonder authenticator-app, beveiligingssleutel of passkey wordt gevraagd er een toe te voegen en kan na de respijtperiode alleen nog worden gebruikt om die in te stellen.",
     "mfaGraceDays": "Respijtperiode",
-    "mfaGraceDaysDescription": "Hoe lang een account dat een regel nieuw dekt de tijd heeft om een tweede factor toe te voegen. De periode begint wanneer je een regel inschakelt.",
+    "mfaGraceDaysDescription": "Hoe lang een account dat een regel nieuw dekt de tijd heeft om een tweede factor toe te voegen.",
     "mfaGraceDaysNone": "Geen",
     "mfaGraceDaysOption": "{count, plural, one {# dag} other {# dagen}}"
   },
@@ -10281,8 +10279,7 @@
       "saveError": "Opslaan mislukt. Probeer het opnieuw.",
       "hourLabel": "Tijdstip van herinnering",
       "hourAria": "Uur van de stemmingsherinnering",
-      "hourSavedToast": "Tijdstip van herinnering bijgewerkt",
-      "detail": "Loopt alleen via kanalen die je al hebt ingesteld (Telegram, ntfy, Web Push, Apple Push) en blijft stil zodra je vandaag iets hebt vastgelegd."
+      "hourSavedToast": "Tijdstip van herinnering bijgewerkt"
     },
     "coachNudge": {
       "title": "Proactieve Coach",
@@ -10292,11 +10289,8 @@
       "statusOff": "Uit",
       "groupsLabel": "Onderwerpen",
       "groupMedication": "Medicatie",
-      "groupMedicationDesc": "Onregelmatige inname in de afgelopen week.",
       "groupVitals": "Vitale waarden",
-      "groupVitalsDesc": "Bloeddruk, herstel, gewichtstrend, slaap.",
       "groupRoutine": "Routine",
-      "groupRoutineDesc": "Plotseling stoppen met bijhouden en controles van je zelfbeschrijving.",
       "frequencyLabel": "Frequentie",
       "frequencyWeekly": "Hoogstens één keer per week",
       "frequencyBiweekly": "Hoogstens eens per twee weken",
@@ -10305,7 +10299,6 @@
       "disabledToast": "Proactieve seintjes van de Coach uitgeschakeld.",
       "saveError": "Opslaan mislukt. Probeer het later opnieuw.",
       "aiComposedLabel": "Laat de Coach het seintje formuleren",
-      "aiComposedDesc": "Als er een provider beschikbaar is, schrijft het model het proactieve seintje in plaats van de vaste sjabloon. Standaard uit.",
       "aiComposedAria": "Door AI geschreven proactief seintje in- of uitschakelen"
     },
     "lowStock": {
@@ -10318,14 +10311,12 @@
       "daysAria": "Kies de drempelwaarde voor lage voorraad in dagen",
       "leadLabel": "Levertijd bij nabestellen (dagen)",
       "leadAria": "Levertijd bij nabestellen in dagen",
-      "leadHelp": "De melding komt zoveel dagen plus één doseringsinterval eerder, zodat een nieuwe voorraad binnen is vóór je laatste dosis.",
       "leadSavedToast": "Levertijd bij nabestellen opgeslagen",
       "savedToast": "Drempelwaarde voor lage voorraad opgeslagen",
       "enabledToast": "Meldingen bij lage voorraad ingeschakeld.",
       "disabledToast": "Meldingen bij lage voorraad uitgeschakeld.",
       "saveError": "Opslaan mislukt. Probeer het opnieuw.",
-      "medicationsLink": "Naar je medicatie",
-      "detail": "Eén melding per tekort; na het bijvullen wordt de melding opnieuw geactiveerd."
+      "medicationsLink": "Naar je medicatie"
     },
     "eventMedicationReminder": "Medicatieherinnering",
     "eventMedicationReminderDesc": "Wordt verstuurd op elk gepland innamemoment.",
@@ -10350,7 +10341,7 @@
     "eventDailyBriefing": "Dagelijkse briefing",
     "eventDailyBriefingDesc": "Eén rustige ochtendsamenvatting van hoe je dag ervoor staat. Staat uit totdat je hem inschakelt.",
     "eventSecurityAlert": "Waarschuwingen over accountbeveiliging",
-    "eventSecurityAlertDesc": "Wordt verstuurd bij een inlog vanaf een onbekend apparaat of een onbekende plek, als een passkey wordt toegevoegd of verwijderd, als een toegangstoken wordt ingetrokken en als een apparaat wordt afgemeld omdat zijn inlogtoken twee keer is gebruikt.",
+    "eventSecurityAlertDesc": "Een nieuwe aanmelding, een passkey- of tokenwijziging of een geforceerde afmelding.",
     "eventSharedRecordIntake": "Iemand met wie je je dossier deelt, registreert een dosis",
     "eventSharedRecordIntakeDesc": "Alleen als iemand anders dat doet, nooit voor je eigen registraties.",
     "eventMedicationIntakeRecorded": "Doses van andere apparaten bevestigen",
@@ -10419,7 +10410,6 @@
     "content": {
       "title": "Gezondheidscijfers in meldingen",
       "description": "Of een melding waarden mag tonen, zoals je ochtendscore.",
-      "detail": "Uit: een melding zegt alleen waar het over gaat, zodat er op een vergrendelscherm geen gezondheidscijfers te zien zijn. Aan: de melding toont ook de cijfers, bijvoorbeeld de ochtendscore in de briefing.",
       "toggleAria": "Gezondheidscijfers tonen in meldingen",
       "statusDetailed": "Cijfers zichtbaar",
       "statusGeneric": "Zonder cijfers",
@@ -10453,14 +10443,14 @@
       "body": "{count, plural, one {# aanval} other {# aanvallen}} binnen {hours} u, vastgelegd door {name}. Het noodplan staat in het aanvalsdagboek."
     },
     "eventMeasurementAnomaly": "Blijvende verandering in een vitale waarde",
-    "eventMeasurementAnomalyDesc": "Wanneer een vitale waarde zoals rusthartslag of bloeddruk al minstens tien dagen op een nieuw niveau blijft. Hooguit één keer per week, 's ochtends, nooit tijdens een lopende ziekte.",
+    "eventMeasurementAnomalyDesc": "Een vitale waarde die al tien dagen op een nieuw niveau ligt.",
     "measurementAnomaly": {
       "title": "Een blijvende verandering",
       "bodyUp": "Je {metric} is sinds {date} hoger gebleven. Inzichten toont het voor en na.",
       "bodyDown": "Je {metric} is sinds {date} lager gebleven. Inzichten toont het voor en na."
     },
     "eventSyncStalled": "Een bron synchroniseert niet meer",
-    "eventSyncStalledDesc": "Wanneer een iPhone, ring, horloge of weegschaal die elke dag levert stil valt. Eén keer per onderbreking, overdag, hooguit één keer per dag.",
+    "eventSyncStalledDesc": "Een apparaat dat elke dag levert, is stil geworden.",
     "syncStalled": {
       "title": "{provider} is stil",
       "appleYesterday": "{provider} heeft sinds gisteren niets gestuurd. HealthLog één keer openen is genoeg.",
@@ -14258,7 +14248,7 @@
       "scopeEmptyHint": "Kies minstens één onderdeel of ga terug naar het delen van het hele dossier.",
       "scopeChooseHint": "Kies of je het hele dossier deelt of alleen geselecteerde onderdelen.",
       "expiresLabel": "Toegang eindigt op (optioneel)",
-      "expiresHint": "Laat dit leeg voor toegang die blijft bestaan totdat iemand die beëindigt. Een datum hier wordt bij elk verzoek gecontroleerd, dus de toegang stopt vanzelf aan het einde van die dag.",
+      "expiresHint": "Laat dit leeg voor toegang die blijft bestaan totdat iemand die beëindigt.",
       "submit": "Uitnodiging versturen",
       "submitting": "Versturen…",
       "sent": "Uitnodiging verstuurd naar {name}.",
@@ -14343,11 +14333,11 @@
       "nameRequired": "Geef het dossier een naam.",
       "nameTooLong": "Die naam is langer dan 80 tekens.",
       "dobLabel": "Geboortedatum (optioneel)",
-      "dobHint": "Laat dit leeg als je liever geen geboortedatum vastlegt. Er wordt niets afgeleid uit alleen een jaartal.",
+      "dobHint": "Laat dit leeg als je liever geen geboortedatum vastlegt.",
       "localeLabel": "Taal van dit dossier",
-      "localeHint": "De taal voor tekst die in dit dossier wordt geschreven. Je eigen schermen blijven in jouw taal.",
+      "localeHint": "De taal voor tekst die in dit dossier wordt geschreven.",
       "genderLabel": "Geslacht (optioneel)",
-      "genderHint": "Bepaalt of cyclustracking voor dit dossier standaard aan staat. Je kunt dit altijd wijzigen.",
+      "genderHint": "Bepaalt of cyclustracking voor dit dossier standaard aan staat.",
       "genderNone": "Niet opgegeven",
       "genderMale": "Man",
       "genderFemale": "Vrouw",
@@ -16280,7 +16270,7 @@
       "LAST_90_DAYS": "De laatste 90 dagen",
       "LAST_365_DAYS": "De laatste 12 maanden"
     },
-    "usesSelection": "Elk rapport bevat wat je hierboven voor de export hebt geselecteerd. Pas je de selectie daar aan, dan volgt het volgende rapport die. Er wordt geen melding verstuurd: het rapport staat er gewoon.",
+    "usesSelection": "Elk rapport bevat wat je hierboven voor de export hebt geselecteerd.",
     "turnOn": "Inschakelen",
     "turnOff": "Uitschakelen",
     "turnOffTitle": "Gepland rapport uitschakelen?",

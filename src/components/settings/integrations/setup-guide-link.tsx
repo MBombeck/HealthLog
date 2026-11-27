@@ -14,7 +14,6 @@
 import { useSyncExternalStore } from "react";
 import { ExternalLink } from "lucide-react";
 
-import { Disclosure } from "@/components/ui/disclosure";
 import { useTranslations } from "@/lib/i18n/context";
 
 /**
@@ -98,9 +97,7 @@ export function CallbackMismatchNotice({
  * for and the app already knows — the callback URL — so it doesn't have to
  * be reconstructed by hand from the docs. Shown only while the user hasn't
  * saved their own credentials yet; it steps out of the way once configured.
- * Folded behind a disclosure: five cards each opened with the same three
- * steps, which made the page read as instructions rather than a list of
- * connections.
+ * It sits inside the card's folded "Set up" section with the form.
  */
 export function IntegrationRedirectGuide({
   provider,
@@ -119,14 +116,16 @@ export function IntegrationRedirectGuide({
   const { t } = useTranslations();
   const shownCallbackUrl = callbackUrl ?? `/api/${provider}/callback`;
   return (
-    <Disclosure
-      framed
+    <div
+      className="space-y-1.5 text-xs"
       data-testid={`${provider}-redirect-guide`}
-      summary={t("settings.integrationRedirectGuide.intro", {
-        provider: providerLabel,
-      })}
     >
-      <ol className="text-muted-foreground list-decimal space-y-1 pl-4 text-xs">
+      <p className="text-muted-foreground">
+        {t("settings.integrationRedirectGuide.intro", {
+          provider: providerLabel,
+        })}
+      </p>
+      <ol className="text-muted-foreground list-decimal space-y-1 pl-4">
         <li>
           {t("settings.integrationRedirectGuide.step1", {
             provider: providerLabel,
@@ -143,7 +142,7 @@ export function IntegrationRedirectGuide({
         </li>
         <li>{t("settings.integrationRedirectGuide.step3")}</li>
       </ol>
-    </Disclosure>
+    </div>
   );
 }
 

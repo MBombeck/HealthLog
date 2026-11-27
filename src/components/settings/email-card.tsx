@@ -21,6 +21,7 @@ import {
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiFetchRaw, apiGet, throwApiError } from "@/lib/api/api-fetch";
+import { Disclosure } from "@/components/ui/disclosure";
 
 interface EmailSettings {
   enabled: boolean;
@@ -101,52 +102,58 @@ export function EmailCard({ isAuthenticated }: { isAuthenticated: boolean }) {
           disabled={!settings || save.isPending || toggle.isPending}
         />
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            save.mutate();
-          }}
-          className="space-y-4"
+        <Disclosure
+          data-fold
+          framed
+          summary={t("settings.integrationCard.setUp")}
         >
-          <div className="space-y-2">
-            <Label htmlFor="email-recipient">
-              {t("settings.emailRecipient")}
-            </Label>
-            <Input
-              id="email-recipient"
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              placeholder="you@example.com"
-              value={recipient}
-              onChange={(e) => setRecipient(e.target.value)}
-            />
-          </div>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              save.mutate();
+            }}
+            className="space-y-4"
+          >
+            <div className="space-y-2">
+              <Label htmlFor="email-recipient">
+                {t("settings.emailRecipient")}
+              </Label>
+              <Input
+                id="email-recipient"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                value={recipient}
+                onChange={(e) => setRecipient(e.target.value)}
+              />
+            </div>
 
-          {saveError && (
-            <p role="alert" className="text-destructive text-sm">
-              {saveError}
-            </p>
-          )}
+            {saveError && (
+              <p role="alert" className="text-destructive text-sm">
+                {saveError}
+              </p>
+            )}
 
-          <SettingsCardActions>
-            <TestConnectionButton
-              endpoint="/api/settings/email/test"
-              disabled={!settings?.enabled}
-              unsavedChanges={dirty}
-            />
-            <Button
-              size="sm"
-              type="submit"
-              disabled={save.isPending || toggle.isPending}
-            >
-              {save.isPending && (
-                <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-              )}
-              {t("common.save")}
-            </Button>
-          </SettingsCardActions>
-        </form>
+            <SettingsCardActions>
+              <TestConnectionButton
+                endpoint="/api/settings/email/test"
+                disabled={!settings?.enabled}
+                unsavedChanges={dirty}
+              />
+              <Button
+                size="sm"
+                type="submit"
+                disabled={save.isPending || toggle.isPending}
+              >
+                {save.isPending && (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+                )}
+                {t("common.save")}
+              </Button>
+            </SettingsCardActions>
+          </form>
+        </Disclosure>
       </div>
     </SettingsCard>
   );

@@ -23,6 +23,7 @@ import {
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiFetchRaw, apiGet, throwApiError } from "@/lib/api/api-fetch";
+import { Disclosure } from "@/components/ui/disclosure";
 
 interface NtfySettings {
   enabled: boolean;
@@ -107,72 +108,81 @@ export function NtfyCard({ isAuthenticated }: { isAuthenticated: boolean }) {
           disabled={!settings || save.isPending || toggle.isPending}
         />
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            save.mutate();
-          }}
-          className="space-y-4"
+        <Disclosure
+          data-fold
+          framed
+          summary={t("settings.integrationCard.setUp")}
         >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FieldGroup htmlFor="ntfy-server" label={t("settings.ntfyServer")}>
-              <Input
-                id="ntfy-server"
-                placeholder="https://ntfy.sh"
-                value={serverUrl}
-                onChange={(e) => setServerUrl(e.target.value)}
-              />
-            </FieldGroup>
-            <FieldGroup htmlFor="ntfy-topic" label={t("settings.ntfyTopic")}>
-              <Input
-                id="ntfy-topic"
-                placeholder="healthlog-mein-topic"
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-              />
-            </FieldGroup>
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="ntfy-auth">{t("settings.ntfyAuthToken")}</Label>
-              <PasswordInput
-                id="ntfy-auth"
-                placeholder={
-                  settings?.hasAuthToken
-                    ? t("settings.withingsCredentialsSavedPlaceholder")
-                    : t("common.optional")
-                }
-                value={authToken}
-                onChange={(e) => setAuthToken(e.target.value)}
-              />
-              <p className="text-muted-foreground text-xs">
-                {t("settings.ntfyAuthTokenHint")}
-              </p>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              save.mutate();
+            }}
+            className="space-y-4"
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FieldGroup
+                htmlFor="ntfy-server"
+                label={t("settings.ntfyServer")}
+              >
+                <Input
+                  id="ntfy-server"
+                  placeholder="https://ntfy.sh"
+                  value={serverUrl}
+                  onChange={(e) => setServerUrl(e.target.value)}
+                />
+              </FieldGroup>
+              <FieldGroup htmlFor="ntfy-topic" label={t("settings.ntfyTopic")}>
+                <Input
+                  id="ntfy-topic"
+                  placeholder="healthlog-mein-topic"
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                />
+              </FieldGroup>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="ntfy-auth">{t("settings.ntfyAuthToken")}</Label>
+                <PasswordInput
+                  id="ntfy-auth"
+                  placeholder={
+                    settings?.hasAuthToken
+                      ? t("settings.withingsCredentialsSavedPlaceholder")
+                      : t("common.optional")
+                  }
+                  value={authToken}
+                  onChange={(e) => setAuthToken(e.target.value)}
+                />
+                <p className="text-muted-foreground text-xs">
+                  {t("settings.ntfyAuthTokenHint")}
+                </p>
+              </div>
             </div>
-          </div>
 
-          {saveError && (
-            <p role="alert" className="text-destructive text-sm">
-              {saveError}
-            </p>
-          )}
+            {saveError && (
+              <p role="alert" className="text-destructive text-sm">
+                {saveError}
+              </p>
+            )}
 
-          <SettingsCardActions>
-            <TestConnectionButton
-              endpoint="/api/settings/ntfy/test"
-              disabled={!settings?.enabled}
-              unsavedChanges={dirty}
-            />
-            <Button
-              size="sm"
-              type="submit"
-              disabled={save.isPending || toggle.isPending}
-            >
-              {save.isPending && (
-                <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-              )}
-              {t("common.save")}
-            </Button>
-          </SettingsCardActions>
-        </form>
+            <SettingsCardActions>
+              <TestConnectionButton
+                endpoint="/api/settings/ntfy/test"
+                disabled={!settings?.enabled}
+                unsavedChanges={dirty}
+              />
+              <Button
+                size="sm"
+                type="submit"
+                disabled={save.isPending || toggle.isPending}
+              >
+                {save.isPending && (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+                )}
+                {t("common.save")}
+              </Button>
+            </SettingsCardActions>
+          </form>
+        </Disclosure>
       </div>
     </SettingsCard>
   );
