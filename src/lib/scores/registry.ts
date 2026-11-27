@@ -1,6 +1,5 @@
 /**
- * The score register: every 0..100 score HealthLog shows, where it is drawn
- * as a ring, and how a device's own score is named and scaled.
+ * How a score is named and scaled: HealthLog's own scores against a device's.
  *
  * Two kinds of number share the screen and must never be mistaken for each
  * other:
@@ -13,119 +12,14 @@
  *     Recharge, a vendor sleep score). It is named after the row's source,
  *     shown on the vendor's scale and never gets a HealthLog band.
  *
- * `src/lib/scores/__tests__/score-registry.test.ts` holds the code to this
- * file: every `<ScoreRing>` call site and every anatomy slug must be listed
- * here, so a new ring or a new score page cannot appear without a decision
- * about which score it shows.
+ * `src/lib/scores/__tests__/score-registry.test.ts` holds the register of
+ * every `<ScoreRing>` call site and every score slug, so a new ring or a new
+ * score page cannot appear without a decision about which score it shows.
  */
-import type { HealthLogScoreKind } from "@/lib/analytics/score/shared";
 import { translateOrNull } from "@/lib/i18n/translate-code";
 
-/** HealthLog's own scores. */
-export const HEALTHLOG_SCORE_IDS = [
-  "HEALTH_SCORE",
-  "READINESS",
-  "SLEEP_SCORE",
-  "RECOVERY_SCORE",
-  "STRESS_SCORE",
-  "STRAIN_SCORE",
-] as const;
-
-export type HealthLogScoreId = (typeof HEALTHLOG_SCORE_IDS)[number];
-
-export interface HealthLogScoreEntry {
-  /** The band rule's kind (direction included). */
-  bandKind: HealthLogScoreKind;
-  /** The slug of its page under `/insights/scores/`. */
-  slug: string;
-  /** The message key of its display name. */
-  titleKey: string;
-}
-
-export const HEALTHLOG_SCORES: Readonly<
-  Record<HealthLogScoreId, HealthLogScoreEntry>
-> = {
-  HEALTH_SCORE: {
-    bandKind: "health",
-    slug: "health",
-    titleKey: "insights.healthScore.label",
-  },
-  READINESS: {
-    bandKind: "readiness",
-    slug: "readiness",
-    titleKey: "insights.derived.composite.READINESS.title",
-  },
-  SLEEP_SCORE: {
-    bandKind: "sleep",
-    slug: "sleep",
-    titleKey: "insights.derived.composite.SLEEP_SCORE.title",
-  },
-  // The computed proxy. Its page redirects (readiness for a proxy account,
-  // device scores for a device account); the slug stays reachable for links
-  // already out there.
-  RECOVERY_SCORE: {
-    bandKind: "recovery",
-    slug: "recovery",
-    titleKey: "insights.derived.scores.recovery",
-  },
-  STRESS_SCORE: {
-    bandKind: "stress",
-    slug: "stress",
-    titleKey: "insights.derived.scores.stress",
-  },
-  STRAIN_SCORE: {
-    bandKind: "strain",
-    slug: "strain",
-    titleKey: "insights.derived.scores.strain",
-  },
-};
-
-/** Every slug `/insights/scores/<slug>` may answer to. */
-export const SCORE_SLUGS: readonly string[] = HEALTHLOG_SCORE_IDS.map(
-  (id) => HEALTHLOG_SCORES[id].slug,
-);
-
-/**
- * Every file that draws a `<ScoreRing>`, with the scores it may draw.
- * `planned` marks a site a 1.50 package is still building; the register
- * test accepts its absence and holds it like any other once it exists.
- */
-export const SCORE_RING_SITES: Readonly<
-  Record<string, { scores: readonly HealthLogScoreId[]; planned?: true }>
-> = {
-  "src/components/daily/today-hero.tsx": { scores: ["HEALTH_SCORE"] },
-  "src/components/insights/derived/score-anatomy-view.tsx": {
-    scores: [
-      "READINESS",
-      "SLEEP_SCORE",
-      "RECOVERY_SCORE",
-      "STRESS_SCORE",
-      "STRAIN_SCORE",
-    ],
-  },
-  "src/components/insights/derived/wellness-scores.tsx": {
-    scores: [
-      "READINESS",
-      "SLEEP_SCORE",
-      "HEALTH_SCORE",
-      "RECOVERY_SCORE",
-      "STRESS_SCORE",
-      "STRAIN_SCORE",
-    ],
-  },
-  "src/components/insights/derived/hero-strip.tsx": {
-    scores: ["READINESS", "SLEEP_SCORE", "HEALTH_SCORE"],
-    planned: true,
-  },
-  "src/components/daily/morning-block.tsx": {
-    scores: ["HEALTH_SCORE", "READINESS", "SLEEP_SCORE"],
-    planned: true,
-  },
-  "src/components/daily/morning-card.tsx": {
-    scores: ["READINESS", "SLEEP_SCORE"],
-    planned: true,
-  },
-};
+/** The message key of HealthLog's readiness, the proxy recovery's name. */
+const READINESS_TITLE_KEY = "insights.derived.composite.READINESS.title";
 
 /**
  * The one proxy rule. A `RECOVERY_SCORE` row from `COMPUTED` is HealthLog's
@@ -188,7 +82,7 @@ const HEALTHLOG_SUFFIX = "(HealthLog)";
  */
 export function recoverySourceLabel(source: string, t: Translate): string {
   if (isProxyRecovery({ source })) {
-    return `${t(HEALTHLOG_SCORES.READINESS.titleKey)} ${HEALTHLOG_SUFFIX}`;
+    return `${t(READINESS_TITLE_KEY)} ${HEALTHLOG_SUFFIX}`;
   }
   return (
     translateOrNull(t, `daily.morningCard.source.recovery.${source}`) ??

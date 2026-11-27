@@ -11,8 +11,6 @@ import { describe, expect, it } from "vitest";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { locales } from "@/lib/i18n/config";
 import {
-  HEALTHLOG_SCORES,
-  HEALTHLOG_SCORE_IDS,
   isProxyRecovery,
   recoverySourceLabel,
   recoverySourceLabelEn,
@@ -114,15 +112,5 @@ describe("Polar is shown on its own scale", () => {
       expect(morning.scaleMax).toBe(scale.scaleMax);
     }
     expect(vendorScoreScale("RECOVERY_SCORE", "WHOOP").scaleMax).toBe(100);
-  });
-});
-
-describe("register titles", () => {
-  it("every score's title key resolves in English and German", () => {
-    for (const id of HEALTHLOG_SCORE_IDS) {
-      const key = HEALTHLOG_SCORES[id].titleKey;
-      expect(en(key)).not.toBe(key);
-      expect(de(key)).not.toBe(key);
-    }
   });
 });
