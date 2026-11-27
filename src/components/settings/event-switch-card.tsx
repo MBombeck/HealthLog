@@ -10,7 +10,8 @@
  * cannot disagree. It exists so a kind that matters on its own (a new sign-in,
  * a lasting change in a vital) can be found and switched where people look for
  * notifications, and so it is visible before any channel is set up: then the
- * switch waits and the card says where channels are added.
+ * switch waits, and the one note above the group (`AlertsNoChannelNote`) says
+ * where channels are added, once for every card rather than on each.
  */
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -50,6 +51,46 @@ interface PreferencesPayload {
 /** Where delivery channels are set up. */
 export const CHANNELS_HREF = "/settings/integrations#channels";
 
+function usePreferences(isAuthenticated: boolean) {
+  return useQuery({
+    queryKey: queryKeys.notificationsPreferences(),
+    queryFn: () => apiGet<PreferencesPayload>("/api/notifications/preferences"),
+    enabled: isAuthenticated,
+  });
+}
+
+function activeChannels(data: PreferencesPayload | undefined) {
+  // A channel the person switched off, or the operator turned off for the
+  // server, takes no write: the matrix shows its cell disabled too.
+  return (data?.channels ?? []).filter(
+    (ch) => ch.enabled && ch.globallyEnabled,
+  );
+}
+
+/**
+ * The one line an alerts group shows while no delivery channel exists: why
+ * its switches wait, and where a channel is added.
+ */
+export function AlertsNoChannelNote({
+  isAuthenticated,
+}: {
+  isAuthenticated: boolean;
+}) {
+  const { t } = useTranslations();
+  const prefs = usePreferences(isAuthenticated);
+  if (!prefs.isSuccess || activeChannels(prefs.data).length > 0) return null;
+  return (
+    <p className="text-sm" data-slot="event-switch-no-channel">
+      {t("settings.sections.notifications.alerts.noChannel")}{" "}
+      <InlineAction size="sm" asChild>
+        <Link href={CHANNELS_HREF}>
+          {t("settings.sections.notifications.alerts.setUpChannel")}
+        </Link>
+      </InlineAction>
+    </p>
+  );
+}
+
 export function EventSwitchCard({
   eventType,
   anchor,
@@ -63,17 +104,8 @@ export function EventSwitchCard({
 }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
-  const prefs = useQuery({
-    queryKey: queryKeys.notificationsPreferences(),
-    queryFn: () => apiGet<PreferencesPayload>("/api/notifications/preferences"),
-    enabled: isAuthenticated,
-  });
-
-  // A channel the person switched off, or the operator turned off for the
-  // server, takes no write: the matrix shows its cell disabled too.
-  const channels = (prefs.data?.channels ?? []).filter(
-    (ch) => ch.enabled && ch.globallyEnabled,
-  );
+  const prefs = usePreferences(isAuthenticated);
+  const channels = activeChannels(prefs.data);
   const offered = prefs.data?.eventTypes.includes(eventType) ?? true;
   const on = channels.some((ch) =>
     preferenceCellEnabled(prefs.data, ch.id, eventType),
@@ -126,35 +158,14 @@ export function EventSwitchCard({
           />
         }
       />
-      <div className="space-y-1">
-        {prefs.isError ? (
-          <QueryErrorRow
-            inset
-            error={prefs.error}
-            message={t("notifications.loadError")}
-            onRetry={() => void prefs.refetch()}
-          />
-        ) : null}
-        {noChannel ? (
-          <p className="text-sm" data-slot="event-switch-no-channel">
-            {t("settings.sections.notifications.alerts.noChannel")}
-          </p>
-        ) : null}
-        <div className="flex flex-wrap gap-x-4">
-          {noChannel ? (
-            <InlineAction size="sm" asChild>
-              <Link href={CHANNELS_HREF}>
-                {t("settings.sections.notifications.alerts.setUpChannel")}
-              </Link>
-            </InlineAction>
-          ) : null}
-          <InlineAction size="sm" tone="muted" asChild>
-            <Link href="/notifications">
-              {t("settings.sections.notifications.alerts.perChannel")}
-            </Link>
-          </InlineAction>
-        </div>
-      </div>
+      {prefs.isError ? (
+        <QueryErrorRow
+          inset
+          error={prefs.error}
+          message={t("notifications.loadError")}
+          onRetry={() => void prefs.refetch()}
+        />
+      ) : null}
     </SettingsCard>
   );
 }

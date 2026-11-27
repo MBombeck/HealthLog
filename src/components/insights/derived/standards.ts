@@ -3,7 +3,7 @@
  *
  * One place that pins, per derived metric, the cited standard (a real,
  * linkable primary source — DOI / WHO / professional-society standard) and
- * the i18n keys for the plain-language method copy + the honesty caveat the
+ * the i18n key for the plain-language method copy the
  * `ProvenanceExplainer` / `ScoreAnatomyView` surface. Every score surface
  * (the dashboard tiles, the wellness rings, the anatomy detail pages, the
  * coincident-deviation flag) reads from here so the method + cited standard
@@ -32,17 +32,11 @@ export interface MetricProvenanceMeta {
   methodKey: string;
   /** The cited primary standard rendered as an external link. */
   standard: ProvenanceStandard;
-  /**
-   * Optional i18n key for an honesty caveat surfaced above the method —
-   * e.g. STRESS_SCORE must state it is an HRV-derived proxy, not an
-   * EDA/galvanic measurement.
-   */
-  caveatKey?: string;
 }
 
 /**
- * The cited standard + method/caveat keys for every derived metric. The
- * `method`/`caveat` keys live under `insights.derived.composite.<ID>.*`
+ * The cited standard + method key for every derived metric. The
+ * `method` keys live under `insights.derived.composite.<ID>.*`
  * (extending the shape SLEEP_SCORE + READINESS already use) so the i18n
  * bundle carries one consistent namespace.
  */
@@ -87,7 +81,6 @@ export const METRIC_PROVENANCE: Record<DerivedMetricId, MetricProvenanceMeta> =
         name: "Reference Values for Arterial Stiffness 2010, Eur. Heart J.",
         url: "https://doi.org/10.1093/eurheartj/ehq165",
       },
-      caveatKey: "insights.derived.composite.VASCULAR_AGE_DELTA.caveat",
     },
     COINCIDENT_DEVIATION: {
       methodKey: "insights.derived.composite.COINCIDENT_DEVIATION.method",
@@ -96,7 +89,6 @@ export const METRIC_PROVENANCE: Record<DerivedMetricId, MetricProvenanceMeta> =
         name: "Leys et al. 2013, J. Exp. Soc. Psychol.",
         url: "https://doi.org/10.1016/j.jesp.2013.03.013",
       },
-      caveatKey: "insights.derived.composite.COINCIDENT_DEVIATION.caveat",
     },
     SLEEP_SCORE: {
       methodKey: "insights.derived.composite.SLEEP_SCORE.method",
@@ -143,7 +135,6 @@ export const METRIC_PROVENANCE: Record<DerivedMetricId, MetricProvenanceMeta> =
         name: "Leys et al. 2013, J. Exp. Soc. Psychol.",
         url: "https://doi.org/10.1016/j.jesp.2013.03.013",
       },
-      caveatKey: "insights.derived.composite.WRIST_TEMPERATURE_BASELINE.caveat",
     },
     STAIR_ASCENT_SPEED_BASELINE: {
       methodKey:
@@ -153,8 +144,6 @@ export const METRIC_PROVENANCE: Record<DerivedMetricId, MetricProvenanceMeta> =
         name: "Leys et al. 2013, J. Exp. Soc. Psychol.",
         url: "https://doi.org/10.1016/j.jesp.2013.03.013",
       },
-      caveatKey:
-        "insights.derived.composite.STAIR_ASCENT_SPEED_BASELINE.caveat",
     },
     STAIR_DESCENT_SPEED_BASELINE: {
       methodKey:
@@ -164,8 +153,6 @@ export const METRIC_PROVENANCE: Record<DerivedMetricId, MetricProvenanceMeta> =
         name: "Leys et al. 2013, J. Exp. Soc. Psychol.",
         url: "https://doi.org/10.1016/j.jesp.2013.03.013",
       },
-      caveatKey:
-        "insights.derived.composite.STAIR_DESCENT_SPEED_BASELINE.caveat",
     },
     SIX_MINUTE_WALK_BAND: {
       methodKey: "insights.derived.composite.SIX_MINUTE_WALK_BAND.method",
@@ -174,7 +161,6 @@ export const METRIC_PROVENANCE: Record<DerivedMetricId, MetricProvenanceMeta> =
         name: "Enright & Sherrill 1998, Am. J. Respir. Crit. Care Med.",
         url: "https://doi.org/10.1164/ajrccm.158.5.9710086",
       },
-      caveatKey: "insights.derived.composite.SIX_MINUTE_WALK_BAND.caveat",
     },
     TRAJECTORY: {
       methodKey: "insights.derived.composite.TRAJECTORY.method",
@@ -183,7 +169,6 @@ export const METRIC_PROVENANCE: Record<DerivedMetricId, MetricProvenanceMeta> =
         name: "Montgomery, Peck & Vining 2012, Intro. to Linear Regression Analysis",
         url: "https://www.wiley.com/en-us/Introduction+to+Linear+Regression+Analysis%2C+5th+Edition-p-9780470542811",
       },
-      caveatKey: "insights.derived.composite.TRAJECTORY.caveat",
     },
     SAME_TIME_BASELINE: {
       methodKey: "insights.derived.composite.SAME_TIME_BASELINE.method",
@@ -193,7 +178,6 @@ export const METRIC_PROVENANCE: Record<DerivedMetricId, MetricProvenanceMeta> =
         name: "Leys et al. 2013, J. Exp. Soc. Psychol.",
         url: "https://doi.org/10.1016/j.jesp.2013.03.013",
       },
-      caveatKey: "insights.derived.composite.SAME_TIME_BASELINE.caveat",
     },
     // The HEALTH_SCORE entry lives in its own module so the eager insights
     // overview can import just this metric's citation without pulling the whole
@@ -214,5 +198,4 @@ export const SAME_TIME_DAILY_TOTAL_PROVENANCE: MetricProvenanceMeta = {
     name: "Hyndman & Fan 1996, The American Statistician",
     url: "https://doi.org/10.1080/00031305.1996.10473566",
   },
-  caveatKey: "insights.derived.composite.SAME_TIME_BASELINE.caveat",
 };

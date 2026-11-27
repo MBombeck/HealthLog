@@ -19,6 +19,7 @@ import { isSurfaceVisible } from "@/lib/modules/surface";
 import { CoachNudgeCard } from "@/components/settings/coach-nudge-card";
 import { DoseSnoozeCard } from "@/components/settings/dose-snooze-card";
 import {
+  AlertsNoChannelNote,
   CHANNELS_HREF,
   EventSwitchCard,
 } from "@/components/settings/event-switch-card";
@@ -173,6 +174,7 @@ export function NotificationsSection() {
           icon={Siren}
           title={t("settings.sections.notifications.alerts.heading")}
         />
+        <AlertsNoChannelNote isAuthenticated={isAuthenticated} />
         <EventSwitchCard
           eventType="SECURITY_ALERT"
           anchor="security-alerts"

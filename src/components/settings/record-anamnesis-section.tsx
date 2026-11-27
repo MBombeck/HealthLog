@@ -1,5 +1,6 @@
 "use client";
 
+import { MedicalDisclaimer } from "@/components/common/medical-disclaimer";
 import { ShieldAlert, Users } from "lucide-react";
 
 import { SettingsCard } from "@/components/settings/settings-card";
@@ -76,7 +77,7 @@ export function RecordAnamnesisSection() {
         <FamilyHistoryManager />
       </SettingsCard>
 
-      <p className="text-muted-foreground text-xs">{t("records.disclaimer")}</p>
+      <MedicalDisclaimer variant="notDiagnosis" />
     </div>
   );
 }

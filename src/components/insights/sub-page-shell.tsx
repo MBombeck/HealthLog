@@ -16,6 +16,10 @@ import { useTranslations } from "@/lib/i18n/context";
 import { SUB_PAGE_SLUGS } from "@/lib/insights/sub-page-metric";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
+import {
+  MedicalDisclaimer,
+  type DisclaimerVariant,
+} from "@/components/common/medical-disclaimer";
 import { ChartContextProvider } from "@/components/charts/health-chart/context-scope";
 
 const INSIGHT_METRIC_RETURN_PATHS: Readonly<Record<string, true>> =
@@ -102,6 +106,13 @@ export interface SubPageShellProps {
    * brand-new-metric paths stay clean. Omitted on the empty-state branch.
    */
   statStrip?: ReactNode;
+  /**
+   * The page's one self-description note, closing the spine. A metric page
+   * says once that HealthLog does not diagnose; a page about associations
+   * (mood, medication effect) says once that a pattern is not a cause. No
+   * tile, caption or explainer on the page repeats it.
+   */
+  disclaimer?: DisclaimerVariant;
   /**
    * v1.21.2 — the "Coach read" strip, mounted between the stat strip and
    * the chart. A compact two-line own-baseline + lagged-association read that
@@ -239,6 +250,7 @@ export function SubPageShell({
   explainerParams,
   focusOnMount = false,
   statStrip,
+  disclaimer = "notDiagnosis",
   coachReadStrip,
   diversityNudge,
   // v1.21.0 — `coachLaunch` no longer renders a control (CCH-04
@@ -469,17 +481,9 @@ export function SubPageShell({
             <p className="text-foreground text-sm">{description}</p>
           ) : null}
         </header>
-        {/* v1.12.6 — the Min / Max / Median / Mittelwert stat strip LEADS
-          the spine, directly above the chart. Self-gating (renders nothing
-          without data), so the spacing rhythm holds on the empty-state and
-          brand-new-metric paths. Numbers-first is the Apple-Health /
-          Withings / Oura detail-screen convention.
-
-          v1.12.8 — the stats are chart-reactive: the chart reports the
-          per-type Min / Max / Median / Mean for the data under its active
-          range tab (7 / 30 / 90 / All), and the page threads it back into the
-          strip so the numbers always reflect the range the chart paints. No
-          drag, no pill — the range tab is the single selector. */}
+        {/* The stat strip leads the spine, directly above the chart, and
+          self-gates without data. Its numbers follow the chart's active range
+          tab (7 / 30 / 90 / All), which the page threads back into it. */}
         {statStrip}
         {/* v1.21.2 — the "Coach read" strip sits between the numbers-first
           stat strip and the chart, so the spine reads intro → numbers → Coach
@@ -492,6 +496,7 @@ export function SubPageShell({
         <ChartContextProvider enabled={chartContext}>
           {children}
         </ChartContextProvider>
+        <MedicalDisclaimer variant={disclaimer} />
       </div>
     </TargetAdjustProvider>
   );

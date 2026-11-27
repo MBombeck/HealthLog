@@ -157,9 +157,6 @@ function AchievementCard({ achievement, t, tCount }: AchievementCardProps) {
               <h3 className="text-sm font-semibold">
                 {t("achievements.hiddenCard.title")}
               </h3>
-              <p className="text-muted-foreground line-clamp-2 text-xs">
-                {t("achievements.hiddenCard.description")}
-              </p>
             </div>
           </div>
           <Badge variant="secondary" className="shrink-0">

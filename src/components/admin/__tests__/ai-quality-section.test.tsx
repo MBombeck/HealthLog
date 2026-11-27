@@ -58,8 +58,8 @@ describe("<AiQualitySection>", () => {
     mockQueryState.isError = false;
     const html = render(<AiQualitySection />);
     // v1.4.33 — admin section renamed from "AI Quality" to
-    // "Insights Quality" per the project-voice rule.
-    expect(html).toContain("Insights Quality");
+    // "Insights quality" per the project-voice rule.
+    expect(html).toContain("Insights quality");
     expect(html).toContain("No feedback yet");
   });
 

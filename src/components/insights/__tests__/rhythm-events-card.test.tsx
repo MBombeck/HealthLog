@@ -133,9 +133,9 @@ describe("<RhythmEventsCard>", () => {
   it("renders the permanent regulatory disclaimer", () => {
     const html = renderWith({ events: [IRREGULAR_EVENT], hasEvents: true });
     expect(html).toContain('data-slot="rhythm-events-disclaimer"');
-    // The disclaimer must state HealthLog does not make a medical
-    // assessment and does not diagnose.
-    expect(html).toContain("not a medical assessment by HealthLog");
-    expect(html).toContain("does not diagnose");
+    // The disclaimer must state the alert is the device's, not an
+    // assessment by HealthLog, and point to the doctor.
+    expect(html).toContain("not an assessment by HealthLog");
+    expect(html).toContain("talk to your doctor");
   });
 });

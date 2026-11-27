@@ -21,8 +21,8 @@ describe("<FitbitRemovalNoticeView>", () => {
   it("says what stopped and that the imported data stays", () => {
     const html = render();
     expect(html).toContain('data-testid="fitbit-removal-notice"');
-    expect(html).toContain("October 30, 2026");
-    expect(html).toContain("still marked as Fitbit");
+    expect(html).toContain("Fitbit Web API");
+    expect(html).toContain("marked as Fitbit");
   });
 
   it("points at Google Health on this page and at the Health Connect import", () => {

@@ -223,8 +223,7 @@ export default function InsightsBlutdruckPage() {
                 })}{" "}
                 {t("insights.subPage.bpDerived.meanArterialPressure", {
                   value: map,
-                })}{" "}
-                {t("insights.subPage.bpDerived.caveat")}
+                })}
               </p>
             </CardContent>
           </Card>

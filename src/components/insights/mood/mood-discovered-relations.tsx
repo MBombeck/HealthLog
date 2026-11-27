@@ -139,9 +139,9 @@ export function MoodDiscoveredRelations({
         <span>{t("insights.mood.discovery.subheading")}</span>
         <MoodExplainerIcon
           label={t("insights.mood.discovery.explainerLabel")}
-          detail={`${t("insights.mood.discovery.footer", {
+          detail={t("insights.mood.discovery.footer", {
             tested: pairsTested,
-          })} ${t("insights.mood.discovery.disclaimer")}`}
+          })}
         />
       </div>
       <ul className="divide-border divide-y">

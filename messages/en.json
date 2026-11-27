@@ -2565,11 +2565,10 @@
     "customize": "Customize medications",
     "efficacy": {
       "title": "Effect",
-      "intro": "How the measurements this medication is meant to influence have moved around the time you started it. It shows what lines up in time (an association, not a cause) and never advice about your treatment or dose.",
+      "intro": "How the measurements this medication is meant to influence have moved around the time you started it. It shows what lines up in time and never advice about your treatment or dose.",
       "notEligible": "There is no outcome to relate this medication to.",
       "startFallback": "No start date is set, so the comparison uses your first recorded reading as the reference point.",
       "noStart": "Set a start date for this medication to compare the readings before and after it began.",
-      "disclaimer": "Association only: these figures show what changed over the same period, not that the medication caused the change. Discuss any decision about your treatment with your doctor.",
       "primaryBadge": "Main target",
       "noSeries": "No readings recorded for this target yet.",
       "startMarker": "Start",
@@ -2597,7 +2596,7 @@
       },
       "insights": {
         "title": "Medication effect",
-        "subtitle": "What lines up with the measurements your medications target: association only, never a verdict.",
+        "subtitle": "What lines up with the measurements your medications target.",
         "link": "Open the effect view",
         "empty": "Not enough data yet to relate your medications to their target measurements."
       },
@@ -3345,7 +3344,7 @@
       "errorUnreachable": "The AI provider could not be reached, so the Coach has no reply. Check that it is running and reachable; a task bound to one provider tries no other.",
       "errorEmptyReply": "The AI provider answered with nothing, so the Coach has no reply. Try again, or choose a different model in your AI settings.",
       "errorDemo": "The Coach doesn't answer in the demo.",
-      "errorNoProvider": "The Coach reads your logged health data and answers questions about it (not medical advice). HealthLog needs an AI provider for that. Connect your own key or a local model.",
+      "errorNoProvider": "The Coach reads your logged health data and answers questions about it. HealthLog needs an AI provider for that. Connect your own key or a local model.",
       "errorNoProviderAction": "Connect an AI provider",
       "errorNetwork": "No internet connection. Try again once you're back online.",
       "prefsSaveError": "Couldn't save your Coach preferences. Please try again.",
@@ -3897,7 +3896,7 @@
         "bloodPressureBody": "Blood pressure is the force your blood exerts on the artery walls, written as systolic over diastolic (the peak during a heartbeat over the resting value between beats). Consistently high readings strain the heart and blood vessels over time.",
         "pulseBody": "Your pulse is how many times your heart beats per minute. A spot reading reflects what you were doing in the moment. At rest it is typically 60–100 beats per minute, and it rises naturally with movement, stress, or caffeine.",
         "weightBody": "Body weight is one of the simplest signals of long-term energy balance and overall health. The trend over weeks matters far more than any single reading, which fluctuates with hydration, food, and time of day.",
-        "bmiBody": "BMI is your weight divided by your height squared, giving a single number that places you in a broad weight category. It is a population-level screen, not a diagnosis, and does not distinguish muscle from fat.",
+        "bmiBody": "BMI is your weight divided by your height squared, giving a single number that places you in a broad weight category. It is a population-level screen and does not distinguish muscle from fat.",
         "sleepBody": "Sleep duration is how long you actually slept across the night, split into light, deep, and REM stages. Most adults need roughly seven to nine hours; both consistent quantity and quality support recovery, mood, and metabolism.",
         "moodBody": "Mood tracking records how you feel over time on a simple scale. Logging it regularly reveals patterns (how sleep, activity, or medication line up with how you feel) that a single day never shows.",
         "medicationsBody": "Adherence is how reliably you take your medication as prescribed, shown here as the share of expected doses you actually logged. Steady intake is often what makes a treatment work as intended.",
@@ -3947,15 +3946,14 @@
         "strainBody": "Strain captures how much cardiovascular and physical load you have put on your body, from workouts to an active day on your feet. It is a device-derived index judged against your own typical effort, not a clinical measure, and the headline number is not comparable across devices.",
         "stressBody": "Stress here is a device heuristic derived from heart-rate-variability patterns, not a cortisol measurement or how you consciously feel, and not a clinical stress score. Read it against your own baseline; it is not comparable across devices. A lower score points to a calm, well-regulated state; a higher one is an invitation to build in recovery.",
         "recoveryPageBody": "What your wearable reports, under its own names.",
-        "pulsePressureBody": "Pulse pressure is the gap between your systolic and diastolic readings (systolic minus diastolic). As general guidance, about 40 mmHg is typical at rest; a wide gap above roughly 60 mmHg in middle age can reflect stiffening arteries, while a narrow gap under about 25 mmHg can accompany low stroke volume (StatPearls/NIH 2023). It is a discussion prompt, not a diagnosis.",
+        "pulsePressureBody": "Pulse pressure is the gap between your systolic and diastolic readings (systolic minus diastolic). As general guidance, about 40 mmHg is typical at rest; a wide gap above roughly 60 mmHg in middle age can reflect stiffening arteries, while a narrow gap under about 25 mmHg can accompany low stroke volume (StatPearls/NIH 2023).",
         "meanArterialPressureBody": "Mean arterial pressure is the average pressure your organs see across a heartbeat, roughly the diastolic plus a third of the gap to systolic. As general guidance, a resting value sits around 70–100 mmHg (StatPearls/NIH 2023). The often-cited ~60 mmHg floor is an acute-care concept, not a consumer self-alarm.",
         "cycleEducationBody": "Your cycle runs through four phases driven by shifting hormones, and its length and regularity are an accessible window on overall health. As general guidance, adult cycles typically run 21–35 days (clinical references cite 24–38), with bleeding around five days (ACOG 2015). The luteal phase is the steady anchor, so ovulation is best estimated by counting back from your next expected period, never a fixed 'day 14'. A predicted fertile window is an estimate that needs several recorded cycles and stays approximate, and basal body temperature confirms ovulation after the fact rather than predicting it. This is not a contraceptive method.",
         "sleepHygieneBody": "A few evidence-based habits support sleep: keep consistent bed and wake times including weekends, get bright morning daylight and dim your evenings, keep the room cool, dark and quiet, and avoid afternoon caffeine, late alcohol and large late meals (CDC 2024). Regularity predicts health at least as strongly as duration, and a wearable's total sleep time is far more trustworthy than its deep, light and REM split."
       },
       "bpDerived": {
         "pulsePressure": "Pulse pressure (the gap between your readings) is about {value} mmHg; roughly 40 is typical at rest.",
-        "meanArterialPressure": "Mean arterial pressure (the average your organs see) is about {value} mmHg, normally around 70–100.",
-        "caveat": "These are derived from your latest reading as general guidance, not a diagnosis."
+        "meanArterialPressure": "Mean arterial pressure (the average your organs see) is about {value} mmHg, normally around 70–100."
       },
       "stats": {
         "label": "Summary statistics",
@@ -4736,7 +4734,6 @@
         "title": "What stands out",
         "subheading": "Discovered relationships",
         "footer": "Surfaced from {tested, plural, one {# day-to-day pair} other {# day-to-day pairs}} tested across all your metrics, after the false-discovery correction.",
-        "disclaimer": "Statistically filtered, but still observational: a pattern worth watching, not a cause.",
         "moodUp": "Higher {factor} tends to go with higher next-day mood in your data.",
         "moodDown": "Higher {factor} tends to go with lower next-day mood in your data.",
         "outcomeUp": "Higher mood tends to go with higher next-day {factor} in your data.",
@@ -4765,8 +4762,7 @@
         "lower": "lower",
         "higher": "higher",
         "statement": "On days with “{label}” the mood averaged {direction}: {withAvg} against {withoutAvg}.",
-        "counts": "{withDays, plural, one {# day} other {# days}} with, {withoutDays, plural, one {# day} other {# days}} without",
-        "caveat": "That shows a connection, not a cause."
+        "counts": "{withDays, plural, one {# day} other {# days}} with, {withoutDays, plural, one {# day} other {# days}} without"
       },
       "prognosis": {
         "title": "Your self-rating",
@@ -4782,7 +4778,6 @@
         "weightedTitle": "What weighed most in this day's comparison",
         "weightedUp": "{label}: counted towards a higher expected value",
         "weightedDown": "{label}: counted towards a lower expected value",
-        "caveat": "This is a comparison with your own past days, not a statement about how a day came to go the way it did.",
         "learning": "Learning phase: {entries} of {threshold, plural, one {# day} other {# days}} recorded. A comparison appears once there are enough of them.",
         "noPattern": "Nothing in the {entries, plural, one {# day} other {# days}} recorded so far is steady enough to compare a day against. When you also capture a day's context, more of it becomes comparable.",
         "featureValue": "{field}: {value}",
@@ -4790,7 +4785,7 @@
       },
       "patterns": {
         "title": "Patterns in your mood",
-        "basedOn": "Based on {subject} and {comparison} days. A pattern, not a cause.",
+        "basedOn": "Based on {subject} and {comparison} days.",
         "previousDayHigher": "After a below-usual day, the next day tends to be better ({subject} against {comparison} after an above-usual day).",
         "previousDayLower": "A below-usual day tends to carry over into the next one ({subject} against {comparison} after an above-usual day).",
         "weekendHigher": "Your mood tends to be higher at the weekend ({subject} against {comparison} on weekdays).",
@@ -4917,12 +4912,10 @@
         },
         "VASCULAR_AGE_DELTA": {
           "method": "Your device's vascular-age / pulse-wave-velocity estimate compared with your chronological age, expressed as a delta in years. The estimate is the device's; HealthLog only re-frames it.",
-          "caveat": "Your device's own estimate, re-framed: descriptive, not a clinical vascular assessment.",
           "description": "How your device's vascular-age estimate sits against your chronological age."
         },
         "COINCIDENT_DEVIATION": {
-          "method": "A flag raised when two or more of your vitals sit outside their personal typical range on the same day. Each band is the robust median ± k·MAD of your own history, so it adapts to you rather than to a population cut-off.",
-          "caveat": "An awareness flag from your own baselines: descriptive, not a diagnosis or a clinical alert."
+          "method": "A flag raised when two or more of your vitals sit outside their personal typical range on the same day. Each band is the robust median ± k·MAD of your own history, so it adapts to you rather than to a population cut-off."
         },
         "RECOVERY_SCORE": {
           "method": "A nightly 0–100 recovery proxy blended from your HRV, resting heart rate and sleep against your own baseline. Higher means better-recovered. Computed once each night and read back here, never recomputed on the fly.",
@@ -4941,28 +4934,22 @@
           "deviceSource": "Until HealthLog has computed its own value overnight, the card shows your device's day strain, rescaled to 0–100."
         },
         "WRIST_TEMPERATURE_BASELINE": {
-          "method": "Your typical overnight wrist temperature is the median of your nightly readings over the window, ± a robust spread (median absolute deviation, scaled). It tracks YOUR readings: last night is shown as a deviation from your own baseline, not a population norm.",
-          "caveat": "A personal-deviation band only: descriptive, not an illness, fever or cycle-phase signal. Interpret it yourself."
+          "method": "Your typical overnight wrist temperature is the median of your nightly readings over the window, ± a robust spread (median absolute deviation, scaled). It tracks YOUR readings: last night is shown as a deviation from your own baseline, not a population norm."
         },
         "STAIR_ASCENT_SPEED_BASELINE": {
-          "method": "Your typical stair-climbing pace is the median of your daily values over the window, ± a robust spread (median absolute deviation, scaled). The band is built from your data. There is no population stair-speed cut-off, because pace depends on stair geometry and leg length.",
-          "caveat": "A personal mobility-trend band: descriptive, not a frailty or fall-risk assessment."
+          "method": "Your typical stair-climbing pace is the median of your daily values over the window, ± a robust spread (median absolute deviation, scaled). The band is built from your data. There is no population stair-speed cut-off, because pace depends on stair geometry and leg length."
         },
         "STAIR_DESCENT_SPEED_BASELINE": {
-          "method": "Your typical stair-descent pace is the median of your daily values over the window, ± a robust spread (median absolute deviation, scaled). The band is built from your data. There is no population stair-speed cut-off, because pace depends on stair geometry and leg length.",
-          "caveat": "A personal mobility-trend band: descriptive, not a frailty or fall-risk assessment."
+          "method": "Your typical stair-descent pace is the median of your daily values over the window, ± a robust spread (median absolute deviation, scaled). The band is built from your data. There is no population stair-speed cut-off, because pace depends on stair geometry and leg length."
         },
         "SIX_MINUTE_WALK_BAND": {
-          "method": "Your device's ESTIMATED six-minute-walk distance placed against the Enright & Sherrill reference for your age, height, weight and sex, as a percent of predicted. The distance is the device's estimate, never recomputed here. Without your age, height, weight and sex the percent is hidden and only the distance and trend are shown.",
-          "caveat": "An estimate re-framed against a published reference: a functional-capacity awareness signal, not a clinical 6-minute-walk test or a diagnosis. The reference was established for ages 40–80; outside that range the predicted value is an extrapolation."
+          "method": "Your device's ESTIMATED six-minute-walk distance placed against the Enright & Sherrill reference for your age, height, weight and sex, as a percent of predicted. The distance is the device's estimate, never recomputed here. Without your age, height, weight and sex the percent is hidden and only the distance and trend are shown."
         },
         "TRAJECTORY": {
-          "method": "A least-squares line fitted to your recent daily values and projected forward over a short horizon, with the textbook prediction interval that widens the further it reaches. Computed only when the recent trend is strong enough and your history is long and current enough; otherwise no line is drawn.",
-          "caveat": "A projection of your own recent trend, not a prediction, a target, or a clinical forecast. It holds only if the recent pattern continues; the shaded band shows how quickly that certainty fades."
+          "method": "A least-squares line fitted to your recent daily values and projected forward over a short horizon, with the textbook prediction interval that widens the further it reaches. Computed only when the recent trend is strong enough and your history is long and current enough; otherwise no line is drawn."
         },
         "SAME_TIME_BASELINE": {
           "method": "Your running total for today set against the median of the same local hour across your last four weeks, with a robust median ± MAD band around it. Only days with enough recorded detail count towards it, and no comparison is shown until at least fourteen of them are in hand.",
-          "caveat": "A comparison with your own recent history, not a target. It says where today sits against your usual pattern at this hour and nothing about whether that pattern is right for you.",
           "methodDailyTotal": "Your source reports each day as one total, so there is no hour to compare at. Today's running total, as the source last reported it, is set against your full-day totals of the last 14 complete days: the tick marks their median, the shaded band their middle half. The range shows once 7 of those days have a total."
         }
       },
@@ -4988,7 +4975,7 @@
         "watch": "One vital is outside its usual range today.",
         "watchVital": "Outside range: {vital}. Often just a one-off, worth a glance over the next few days.",
         "firedHeadline": "{count} of your vitals are outside their personal range today.",
-        "factors": "Possible factors (never a cause): a hard workout, poor sleep, alcohol, altitude, stress, or illness. This is awareness from your own baselines, not a diagnosis.",
+        "factors": "Possible factors (never a cause): a hard workout, poor sleep, alcohol, altitude, stress, or illness.",
         "building": "Building your personal baselines. Track a few more days and this will appear.",
         "illnessExplained": "These shifts likely reflect the condition you logged."
       },
@@ -4996,7 +4983,6 @@
         "cardTitle": "Short-horizon projection",
         "headline": "If this pattern continues: the next {days, plural, one {# day} other {# days}}",
         "range": "Projected around {low} to {high} {unit} in {days, plural, one {# day} other {# days}}.",
-        "caveat": "A projection of your own recent trend, not a prediction. The shaded band widens to show how quickly the uncertainty grows.",
         "insufficient": "Not enough of a clear trend to project yet. Keep tracking and a projection will appear once the recent pattern is strong enough.",
         "daysNeeded": "About {count, plural, one {# more day} other {# more days}} of tracking needed before a projection can appear."
       },
@@ -5097,7 +5083,7 @@
       "sectionTitle": "Device health notifications",
       "sectionIntro": "Notifications your watch sent on its own. HealthLog only shows these. It does not detect, confirm, or interpret them.",
       "loadError": "Could not load your device notifications.",
-      "disclaimer": "These are alerts your device produced using its own built-in detection. They are shown here for your awareness only. This is not a medical assessment by HealthLog, and HealthLog does not diagnose any condition. If a notification concerns you, talk to your doctor.",
+      "disclaimer": "These are your device's own alerts, not an assessment by HealthLog; if one concerns you, talk to your doctor.",
       "event": {
         "irregularRhythm": "Irregular rhythm notification",
         "highHeartRate": "High heart rate notification",
@@ -6104,9 +6090,8 @@
         },
         "alerts": {
           "heading": "Alerts",
-          "noChannel": "No delivery channel is set up yet, so nothing can be sent. Once one is, this switch decides for all of them at once.",
+          "noChannel": "No delivery channel is set up yet, so nothing can be sent.",
           "setUpChannel": "Set up a delivery channel",
-          "perChannel": "Choose per channel",
           "saveError": "The notification setting could not be saved. Please try again."
         }
       },
@@ -6286,13 +6271,12 @@
             "passphrasePlaceholder": "Passphrase (min. 12 characters)",
             "passphraseHelp": "Derives the archive key with Argon2id and seals it with AES-256-GCM. Save the file with a .hlx extension.",
             "noRecoveryWarning": "There is no recovery. If you lose this passphrase, the archive cannot be opened. Keep it somewhere safe.",
-            "detail": "A portable copy of your record for you to keep and read: values in plain JSON, documents as metadata only. It is not the weekly account copy this server keeps for rolling an account back, and it cannot recreate an account on another server. Some record types are not carried yet; the file's manifest names what is in it.",
-            "contents": "Your measurements, medications, mood, cycle, labs, illness episodes, allergies, family history, nutrients, workouts, health profile and custom metrics in one JSON file."
+            "detail": "A portable copy of your record for you to keep and read: values in plain JSON, documents as metadata only."
           }
         },
         "import": {
           "heading": "Import",
-          "description": "Bring data into HealthLog from Apple Health, Health Connect, a watch's activity file, a JSON file or a CSV. Imports skip rows that already exist, so re-running one is safe.",
+          "description": "Uploaded files are deleted from the server as soon as the import ends, and importing the same file again adds nothing twice.",
           "charCount": "{used} / {max, plural, one {# character} other {# characters}}",
           "appleHealth": {
             "title": "Apple Health",
@@ -6301,7 +6285,7 @@
             "dropHint": "or click to choose a file",
             "fileInputLabel": "Choose an Apple Health export.zip file",
             "choose": "Choose file",
-            "idempotencyNote": "Re-uploading the same archive merges it and creates no duplicates. Large archives are processed in the background.",
+            "idempotencyNote": "Large archives are processed in the background.",
             "uploading": "Uploading…",
             "uploadFailed": "Upload failed. Please try again.",
             "rateLimited": "Too many uploads. Please wait a moment and try again.",
@@ -6514,7 +6498,7 @@
             "dropLabel": "Drop the Health Connect ZIP here",
             "dropHint": "or click to choose it. Up to 1 GB.",
             "fileInputLabel": "Health Connect export ZIP file",
-            "privacyNote": "The file is deleted from the server as soon as the import ends. Records from apps you already connect directly, such as Withings or Fitbit, are left out so nothing arrives twice. Uploading the same file again changes nothing.",
+            "privacyNote": "Records from apps you already connect directly, such as Withings, are left out so nothing arrives twice.",
             "rateLimited": "Too many uploads in a short time. Wait a minute and try again.",
             "busy": "An import is already running for your account. Wait until it has finished.",
             "rowsSoFar": "{count, plural, one {# value saved so far} other {# values saved so far}}",
@@ -6547,7 +6531,7 @@
             "dropLabel": "Drop the activity file here",
             "dropHint": "or click to choose it: a .fit, .fit.gz or .zip file up to 10 MB.",
             "fileInputLabel": "Activity file",
-            "privacyNote": "The file is deleted from the server as soon as the import ends. A workout that is already here from Garmin, Apple Health or another app is not added twice: it gets the heart rate curve from the file if it had none. The GPS track is only kept when Workout routes is switched on. Uploading the same file again changes nothing.",
+            "privacyNote": "A workout that is already here from Garmin, Apple Health or another app is not added twice: it gets the heart rate curve from the file if it had none. The GPS track is only kept when Workout routes is switched on.",
             "steps": {
               "garmin": "Garmin Connect: open the activity on the website, choose the gear menu, then Export original. Upload the ZIP file as it is.",
               "other": "Other apps and devices: export the activity as a FIT file (.fit or .fit.gz) and upload it here."
@@ -6607,7 +6591,6 @@
             "rateLimited": "Too many uploads in a short time. Wait a minute and try again.",
             "tooLarge": "The file is larger than the limit for this import.",
             "busy": "An import is already running for your account. Wait until it has finished.",
-            "privacyNote": "The file is deleted from the server as soon as the import ends. Everything is matched by the record it came from, so uploading the same file again adds nothing twice.",
             "fileInputLabel": "File to import",
             "lineCounts": "{imported} new, {duplicates} already here",
             "failure": {
@@ -6654,7 +6637,7 @@
             "password": "Password or app password",
             "passwordKept": "Leave empty to keep the saved password",
             "enabled": "Fetch about every six hours",
-            "privacyNote": "The password is stored encrypted and never shown again. Each file is imported once: a file HealthLog already has is not read twice. A folder on your home network works only when the person running the server allows its address.",
+            "privacyNote": "The password is stored encrypted and never shown again. A folder on your home network works only when the person running the server allows its address.",
             "lastAttempt": "Last attempt {when}: {outcome}",
             "fetchNow": "Fetch now",
             "fetchStarted": "Fetching now. The result appears on this card.",
@@ -7489,8 +7472,8 @@
     },
     "fitbitRemoval": {
       "title": "Fitbit no longer syncs",
-      "body": "Google shut down the Fitbit Web API on October 30, 2026, so HealthLog can no longer connect to Fitbit and the Fitbit integration has been removed. Everything already imported stays: your charts, exports, backups and doctor reports keep it, still marked as Fitbit.",
-      "ways": "To keep data from a Fitbit or Pixel Watch coming, connect Google Health below. It reads the same devices and asks for your consent at Google once. On Android you can also import a Health Connect export.",
+      "body": "Google shut down the Fitbit Web API, so the Fitbit connection is gone; everything already imported stays, marked as Fitbit.",
+      "ways": "To keep data from a Fitbit or Pixel Watch coming, connect Google Health below.",
       "toGoogleHealth": "Go to Google Health",
       "toHealthConnect": "Health Connect import",
       "dismiss": "Got it",
@@ -7499,7 +7482,7 @@
     "googleHealth": "Google Health",
     "googleHealthTag": "Fitbit & Pixel",
     "googleHealthBetaBadge": "Beta",
-    "googleHealthDescription": "Connect Fitbit, Pixel Watch and Fitbit Air through your Google account: weight, heart rate, sleep and activity. This replaces the classic Fitbit connection, which Google retires in September 2026.",
+    "googleHealthDescription": "Connect Fitbit, Pixel Watch and Fitbit Air through your Google account: weight, heart rate, sleep and activity.",
     "googleHealthCredentials": "API Credentials",
     "googleHealthClientId": "Client ID",
     "googleHealthClientSecret": "Client Secret",
@@ -7893,7 +7876,6 @@
     "polarCredentialsSaved": "Credentials saved",
     "polarCredentialsSavedPlaceholder": "Saved. Enter new to replace",
     "polarSaveCredentials": "Save",
-    "polarUnavailable": "Polar is not configured on this server. Add your own Polar OAuth credentials above, or ask your administrator to configure the shared app.",
     "polarConnect": "Connect Polar",
     "polarSync": "Sync now",
     "polarSyncResult": "{count, plural, one {# measurement synchronized} other {# measurements synchronized}}",
@@ -7923,7 +7905,6 @@
     "ouraCredentialsSaved": "Credentials saved",
     "ouraCredentialsSavedPlaceholder": "Saved. Enter new to replace",
     "ouraSaveCredentials": "Save",
-    "ouraUnavailable": "Oura is not configured on this server. Add your own Oura OAuth credentials above, or ask your administrator to configure the shared app.",
     "ouraConnect": "Connect Oura",
     "ouraSync": "Sync now",
     "ouraSyncResult": "{count, plural, one {# measurement synchronized} other {# measurements synchronized}}",
@@ -8207,7 +8188,6 @@
     "stravaCredentialsSaved": "Credentials saved",
     "stravaCredentialsSavedPlaceholder": "Saved. Enter new to replace",
     "stravaSaveCredentials": "Save",
-    "stravaUnavailable": "Strava is not configured on this server. Add your own Strava API credentials above, or ask your administrator to configure the shared app.",
     "stravaConnect": "Connect Strava",
     "stravaSync": "Sync now",
     "stravaSyncResult": "{count, plural, one {# measurement synchronized} other {# measurements synchronized}}",
@@ -8244,7 +8224,7 @@
         "receivedLabel": "Records received",
         "oldestLabel": "Oldest reading reached",
         "flowing": "Data arrived within the last hour. The iPhone app is still delivering.",
-        "waiting": "Waiting for the iPhone app to send more data. Delivery continues when the app is open or when iOS grants it background time. A quiet stretch during the first big backfill is normal, not an error."
+        "waiting": "Waiting for the iPhone app to send more data. A quiet stretch during the first big backfill is normal, not an error."
       },
       "delivery": {
         "title": "Delivery",
@@ -8278,7 +8258,7 @@
       "description": "Which band your blood-glucose readings are judged against.",
       "enable": "Use the diabetes goal band",
       "explainer": "Off, readings are judged against the general non-diabetic reference band. On, they are judged against the tighter glycemic goal band from the ADA Standards of Care, and the Coach grounds its glucose remarks on that band instead. Your own target overrides below still take precedence.",
-      "disclaimer": "This selects a reference band. It is not a diagnosis, it is never inferred from a reading, and the app takes no clinical action on it. Which targets apply to you is a question for your clinician.",
+      "disclaimer": "This only selects a reference band: not a diagnosis, never inferred from a reading; which targets apply to you is a question for your clinician.",
       "error": "Could not save the setting."
     },
     "dangerZoneDetail": "Your account and the credentials you sign in with are kept.",
@@ -8295,7 +8275,7 @@
     "documentSources": {
       "title": "Document archives",
       "description": "Search Paperless-ngx or Papra from HealthLog and import the documents you pick.",
-      "explainer": "An import button appears wherever you link documents: on a visit, a vaccination and a condition, and in Documents. HealthLog keeps its own encrypted copy of each document you import, and asks your archive only when you search or import.",
+      "explainer": "An import button appears wherever you link documents: on a visit, a vaccination and a condition, and in Documents.",
       "systemLabel": "Archive",
       "statusConnected": "Connected",
       "statusNotConnected": "Not connected",
@@ -8408,7 +8388,8 @@
       "historyEnds": {
         "horizon": "{type}: imported back to {date}. Older readings lie beyond the import limit.",
         "noProgress": "{type}: imported back to {date}. Google stopped returning older readings, so the import ends there."
-      }
+      },
+      "notConfigured": "{provider} is not set up on this server: add your own credentials above, or ask your administrator."
     },
     "dawarich": "Dawarich",
     "dawarichTag": "Movement",
@@ -9048,7 +9029,7 @@
       "backups": {
         "title": "Backups",
         "subtitle": "Account copies kept in this server's database, for rolling one account back on this server.",
-        "description": "Each account has one weekly copy, replaced every Sunday, plus any copy uploaded here and the copy taken before \"Delete all data\". A copy brings one existing account back on this server. It cannot rebuild a lost server: that takes a database dump and the encryption keys. Sizes show the encrypted copy. Download decrypts it for the admin who asks; the ciphertext stays in the database.",
+        "description": "Each account has one weekly copy, replaced every Sunday, plus any copy uploaded here and the copy taken before \"Delete all data\".",
         "runNow": "Backup now",
         "runEnqueued": "Backup job enqueued",
         "runFailed": "Failed to enqueue backup",
@@ -12691,10 +12672,10 @@
     "noResultYet": "No check-in yet",
     "backToList": "Overview",
     "followUpHint": {
-      "phq9": "Your score is in a range where talking to a health professional may help. This is a gentle suggestion, not a diagnosis.",
-      "gad7": "Your score is in a range where talking to a health professional may help. This is a gentle suggestion, not a diagnosis.",
-      "who5": "A well-being score of 50 or below can be worth a closer look. If you like, the PHQ-9 check-in on this page looks at mood in more depth. This is a gentle suggestion, not a diagnosis.",
-      "sci": "In the study behind this questionnaire, scores of 16 or below were associated with probable insomnia. If poor sleep keeps troubling you, talking to a health professional may help. This is not a diagnosis."
+      "phq9": "Your score is in a range where talking to a health professional may help.",
+      "gad7": "Your score is in a range where talking to a health professional may help.",
+      "who5": "A well-being score of 50 or below can be worth a closer look. If you like, the PHQ-9 check-in on this page looks at mood in more depth.",
+      "sci": "In the study behind this questionnaire, scores of 16 or below were associated with probable insomnia. If poor sleep keeps troubling you, talking to a health professional may help."
     },
     "openDetail": "Show details",
     "historyLoadError": "Your assessment history could not be loaded",
@@ -12797,7 +12778,6 @@
         }
       }
     },
-    "disclaimer": "These are your own records, not a medical diagnosis. HealthLog does not diagnose, treat, or interpret them.",
     "allergies": {
       "cardTitle": "Allergies & intolerances",
       "cardDescription": "Substances you react to, with the reaction and how severe it is.",
@@ -13110,7 +13090,7 @@
         "freeDaysDefault": "Without an answer, Saturday and Sunday count as free days."
       },
       "auditC": {
-        "intro": "Three questions on alcohol from the WHO AUDIT. A screening, not a diagnosis.",
+        "intro": "Three questions on alcohol from the WHO AUDIT.",
         "start": "Answer the questions",
         "again": "Answer again",
         "offerDue": "A quick look once a year is enough.",
@@ -13631,7 +13611,9 @@
     }
   },
   "selfDescription": {
-    "dataPosture": "HealthLog is self-hosted: your health data lives in your own instance's database. Notes and other free text, documents, questionnaire answers, AI-written text and access tokens are encrypted at rest; measurement values, lab results, medication names and mood scores are stored unencrypted and rely on the security of your server. AI features send data only to the AI provider set up for your account, and there is no third-party analytics on your health data."
+    "dataPosture": "HealthLog is self-hosted: your health data lives in your own instance's database. Notes and other free text, documents, questionnaire answers, AI-written text and access tokens are encrypted at rest; measurement values, lab results, medication names and mood scores are stored unencrypted and rely on the security of your server. AI features send data only to the AI provider set up for your account, and there is no third-party analytics on your health data.",
+    "notDiagnosis": "HealthLog describes your own data; it does not diagnose.",
+    "notCause": "These are patterns in your data, not causes."
   },
   "customMetrics": {
     "sectionTitle": "Custom metrics",
@@ -14189,10 +14171,10 @@
     "leafCycle": "Menstrual cycle",
     "templateStandard": "Standard doctor report",
     "applyStandard": "Apply {template}",
-    "standardHint": "One click fills in what a general visit usually needs. Every entry stays editable.",
+    "standardHint": "One click fills in what a general visit usually needs.",
     "groupCount": "{on}/{total}",
     "groupDisclosure": "Show the entries in {group}",
-    "sensitiveHint": "Nothing here is ever preselected. Pick each entry yourself.",
+    "sensitiveHint": "Nothing here is ever preselected.",
     "scopeNone": "Nothing selected yet. Choose what to include, or apply the standard report.",
     "scopeCount": "{count, plural, one {# entry} other {# entries}} from {groups, plural, one {# area} other {# areas}}",
     "scopeSensitive": "incl. {names}",
