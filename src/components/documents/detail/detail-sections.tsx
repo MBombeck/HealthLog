@@ -33,22 +33,24 @@ import { DocumentDownloadButton, DocumentOpenInTabItem } from "./original-file";
 import type { DocumentDetail } from "./use-document-detail";
 
 /**
- * The sheet's footer: one pair, Share (the owner's alone) and Download. The
- * rest (the AI reads, the Coach, opening the original in a tab, Delete) is
- * the "⋯" the sheet passes in, which `ActionPair` stands in the header.
+ * The sheet's footer: one pair, Share (the owner's alone) and Download, after
+ * the "⋯" the sheet passes in, which `ActionPair` stands in the header. A hook
+ * returning the bare fragment, not a component: the footer lays out the
+ * children it is handed, and a wrapper would read as one button.
  */
-export function DocumentDetailFooter({
+export function useDocumentDetailFooter({
   doc,
   detail,
   menu,
 }: {
-  doc: InboundDocumentDetailDto;
+  doc: InboundDocumentDetailDto | null | undefined;
   detail: DocumentDetail;
   /** The `ActionMenu`, or null when it would hold nothing. */
   menu: React.ReactNode;
-}) {
+}): React.ReactNode {
   const { t } = useTranslations();
   const { ownsVault, setShareOpen, inlineSrc, inlineFailed } = detail;
+  if (!doc) return undefined;
   return (
     <>
       {menu}

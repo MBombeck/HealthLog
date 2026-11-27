@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
@@ -191,7 +191,7 @@ export default function NotificationsPage() {
   }
 
   if (activeChannels.length === 0) {
-    return <NoChannelPage eventTypes={eventTypes} crossLinks={crossLinks} />;
+    return <NoChannelPage />;
   }
 
   return (
@@ -380,14 +380,11 @@ function PhoneKinds({
  * anything can deliver it, and an empty page said nothing about what there is
  * to receive.
  */
-function NoChannelPage({
-  eventTypes,
-  crossLinks,
-}: {
-  eventTypes: string[];
-  crossLinks: ReactNode;
-}) {
+function NoChannelPage() {
   const { t } = useTranslations();
+  // One sentence and the way to a channel. The kinds wait until there is a
+  // channel to switch them on for, and the channel row already goes where the
+  // page's own channels link would.
   return (
     <div className="space-y-6">
       <PageHeader title={t("notifications.title")} />
@@ -395,8 +392,7 @@ function NoChannelPage({
         <p className="text-muted-foreground text-sm">
           {t("notifications.noChannels")}
         </p>
-        {/* Channel setup lives in Settings > Integrations since v1.25.7;
-            point at that anchor, not the reminder-types screen. */}
+        {/* Channel setup lives in Settings > Integrations since v1.25.7. */}
         <ListGroup
           empty={{
             label: t("notifications.goToSettings"),
@@ -404,16 +400,6 @@ function NoChannelPage({
           }}
         />
       </section>
-      <ListGroup data-slot="notifications-kinds-without-channel">
-        {eventTypes.map((eventType) => (
-          <ListItem
-            key={eventType}
-            title={t(eventTranslationKey(eventType))}
-            meta={t(eventDescriptionTranslationKey(eventType))}
-          />
-        ))}
-      </ListGroup>
-      {crossLinks}
     </div>
   );
 }

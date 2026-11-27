@@ -38,9 +38,9 @@ import { useFormatters, useTranslations } from "@/lib/i18n/context";
 
 import {
   DocumentDetailFields,
-  DocumentDetailFooter,
   DocumentDetailMeta,
   DocumentSaveStatus,
+  useDocumentDetailFooter,
   useDocumentDetailMenuItems,
 } from "./detail/detail-sections";
 import { DocumentFileRow, InlinePreview } from "./detail/original-file";
@@ -142,7 +142,7 @@ export function DocumentDetailSheet({
     suggestionDateLabel,
   } = ai;
   const [chatOpen, setChatOpen] = useState(false);
-  const menu = useSheetMenu({
+  const footer = useSheetFooter({
     detail,
     ai,
     onOpenChange,
@@ -173,11 +173,7 @@ export function DocumentDetailSheet({
             <X className="size-5" aria-hidden="true" />
           </Button>
         }
-        footer={
-          doc ? (
-            <DocumentDetailFooter doc={doc} detail={detail} menu={menu} />
-          ) : undefined
-        }
+        footer={footer}
       >
         {detailQuery.isPending && open ? (
           <div className="space-y-3" data-slot="document-detail-loading">
@@ -365,11 +361,11 @@ export function DocumentDetailSheet({
 }
 
 /**
- * The sheet's one "⋯": the AI reads (the owner's or a guardian's, with a
- * provider), then the Coach, the original in a new tab and Delete. Null when
- * it would hold nothing.
+ * The sheet's footer: its one "⋯" (the AI reads, the owner's or a guardian's
+ * with a provider, then the Coach, the original in a new tab and Delete,
+ * left out when it would hold nothing), then Share and Download.
  */
-function useSheetMenu({
+function useSheetFooter({
   detail,
   ai,
   onOpenChange,
@@ -410,7 +406,12 @@ function useSheetMenu({
     onOpenChat,
   });
   const items = [...aiItems, ...otherItems];
-  return items.length > 0 ? (
-    <ActionMenu slot="document-detail-more">{items}</ActionMenu>
-  ) : null;
+  return useDocumentDetailFooter({
+    doc,
+    detail,
+    menu:
+      items.length > 0 ? (
+        <ActionMenu slot="document-detail-more">{items}</ActionMenu>
+      ) : null,
+  });
 }
