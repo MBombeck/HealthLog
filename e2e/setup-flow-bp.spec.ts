@@ -87,6 +87,8 @@ test.describe("setup flow — one's own record", () => {
     expect(setup.person.status).toBe("done");
     expect(setup.person.planned).toBe(true);
     expect(setup.person.cardShown).toBe(true);
+    // A fresh load, so the hide below is the only thing in flight.
+    await page.goto("/", { waitUntil: "networkidle" });
     await expect(page.locator('[data-slot="setup-card"]')).toBeVisible();
 
     // "Hide this card" holds on the server.

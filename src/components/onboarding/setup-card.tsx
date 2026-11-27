@@ -39,7 +39,7 @@ export function SetupCard({ state }: { state: SetupStateDto }) {
           icon={SETUP_CARD_ICON}
           title={t("setup.card.title")}
           right={
-            <span className="text-muted-foreground text-sm tabular-nums">
+            <span className="text-muted-foreground text-sm whitespace-nowrap tabular-nums">
               {t("setup.card.progress", {
                 done: done.length,
                 total: tasks.length,

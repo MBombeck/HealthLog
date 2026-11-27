@@ -40,10 +40,7 @@ export function AdminSetupPage() {
       ) : !setup.data ? (
         <Skeleton className="h-96 w-full rounded-xl" />
       ) : instance ? (
-        <SettingsCard
-          className="gap-0 py-0 md:gap-0 md:py-0"
-          data-slot="admin-setup"
-        >
+        <SettingsCard flush data-slot="admin-setup">
           <div className="border-border border-b px-4 py-4 md:px-6">
             <SettingsCardHeader
               icon={Compass}
