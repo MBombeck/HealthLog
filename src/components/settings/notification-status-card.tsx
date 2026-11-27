@@ -30,7 +30,6 @@ import {
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useMounted } from "@/hooks/use-mounted";
@@ -161,20 +160,9 @@ export function NotificationStatusCard() {
   // `.channels` slice) must never reach `.map` on a non-array — guard the
   // type here rather than white-screening the whole notifications panel.
   const channels = Array.isArray(data) ? data : [];
-  if (channels.length === 0) {
-    return (
-      <SettingsCard data-testid="notification-status-empty">
-        <SettingsCardHeader
-          icon={Bell}
-          title={t("settings.notificationStatus.title")}
-        />
-        <EmptyState
-          size="compact"
-          title={t("settings.notificationStatus.emptyTitle")}
-        />
-      </SettingsCard>
-    );
-  }
+  // No channel, no status: the channel cards right below are where one is
+  // set up, so an empty status card only repeated that.
+  if (channels.length === 0) return null;
 
   return (
     <SettingsCard>

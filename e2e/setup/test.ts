@@ -62,7 +62,34 @@ const OBSERVED_PAGE_EVENTS = [
   "worker",
 ] as const;
 
-export const test = base.extend<{ routeCleanup: void }>({
+/**
+ * Setup steps, import forms and long notes fold under a card's own "Set up",
+ * "Import" or "Learn more" (`data-fold` on the `<details>`). A journey spec
+ * drives what is inside them, so every page opens its folds as they mount
+ * unless a spec opts out with `test.use({ openFolds: false })`, which the text
+ * budget spec does to count the page as a reader first meets it.
+ */
+const OPEN_FOLDS_SCRIPT = () => {
+  // One selector query every 100 ms rather than a MutationObserver: a
+  // chart-heavy page adds thousands of nodes while it renders, and a
+  // per-mutation check slowed it enough to time out a layout spec.
+  const sweep = () => {
+    for (const el of document.querySelectorAll<HTMLDetailsElement>(
+      "details[data-fold]:not([open])",
+    )) {
+      el.open = true;
+    }
+  };
+  setInterval(sweep, 100);
+  document.addEventListener("DOMContentLoaded", sweep);
+};
+
+export const test = base.extend<{ routeCleanup: void; openFolds: boolean }>({
+  openFolds: [true, { option: true }],
+  page: async ({ page, openFolds }, provide) => {
+    if (openFolds) await page.addInitScript(OPEN_FOLDS_SCRIPT);
+    await provide(page);
+  },
   routeCleanup: [
     async ({ context }, use) => {
       await use();

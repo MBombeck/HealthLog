@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Badge } from "@/components/ui/badge";
+import { Disclosure } from "@/components/ui/disclosure";
 import { Button } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -279,11 +280,12 @@ function IngestTokenCard({
       />
 
       <div className="space-y-3">
-        {/* "Shown once" and what the token can do are one statement about
-            the credential, so they read as one paragraph. */}
-        <p className="text-sm leading-relaxed">
-          {copy.detail} {copy.scopeNote}
-        </p>
+        {/* "Shown once" leads; what the token can and cannot do opens under
+            "Learn more", so three token cards do not stack three paragraphs. */}
+        <p className="text-sm">{copy.detail}</p>
+        <Disclosure data-fold summary={t("common.learnMore")}>
+          <p className="text-sm leading-relaxed">{copy.scopeNote}</p>
+        </Disclosure>
         {explainerAction}
 
         <form onSubmit={handleCreate} className="flex items-center gap-2">

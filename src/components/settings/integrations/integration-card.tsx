@@ -18,6 +18,7 @@
  * Anatomy, top to bottom (design standards §1, §12, §13):
  *   header      `SettingsCardHeader`, the badge in its status slot
  *   sentence    `text-sm` foreground, then one muted meta line
+ *   setup       not connected: the forms and guides, folded behind "Set up"
  *   body        transient lines a controller adds (a sync result, a form)
  *   details     collapsed, always present on a connected card
  *   actions     `SettingsCardActions`, the last element: menu left, at most
@@ -42,6 +43,7 @@ import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Disclosure } from "@/components/ui/disclosure";
 import { ConfirmDialog } from "@/components/ui/confirm-button";
 import {
   DropdownMenu,
@@ -228,7 +230,7 @@ export function IntegrationCard({
         <p className="text-sm" data-slot="integration-sentence">
           {t("settings.integrationCard.notConnected")}
         </p>
-        {setup}
+        <IntegrationSetupFold>{setup}</IntegrationSetupFold>
         {children}
         {connectAction ? (
           <SettingsCardActions data-slot="integration-actions">
@@ -603,5 +605,25 @@ function DetailsPanel({
         </span>
       </div>
     </div>
+  );
+}
+
+/**
+ * The forms, guides and help a connection needs before it connects, folded
+ * under "Set up": a page of eleven cards read as eleven sets of instructions
+ * while they stood open. Renders nothing when the card brings none.
+ */
+function IntegrationSetupFold({ children }: { children?: ReactNode }) {
+  const { t } = useTranslations();
+  if (!children) return null;
+  return (
+    <Disclosure
+      framed
+      data-fold
+      data-slot="integration-setup"
+      summary={t("settings.integrationCard.setUp")}
+    >
+      {children}
+    </Disclosure>
   );
 }

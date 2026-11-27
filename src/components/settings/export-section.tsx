@@ -39,6 +39,7 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
+import { Disclosure } from "@/components/ui/disclosure";
 import { SwitchRow } from "@/components/ui/switch-row";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
@@ -509,21 +510,20 @@ function FullBackupCard() {
         </Button>
       }
     >
-      {/* The shape of the file. The description already says it holds the
-          whole record, so the list of record types it once repeated is gone. */}
-      <p className="text-sm">
-        {t("settings.sections.export.cards.fullBackup.detail")}
-      </p>
-
-      {/* What the file does not hold (document binaries, workout GPS and
-          sample series), so "whole record" is not read as "everything".
-          Always visible, not gated on the encrypt toggle. */}
-      <p
-        data-testid="export-full-backup-scope-note"
-        className="text-muted-foreground text-xs"
-      >
-        {t("settings.sections.export.cards.fullBackup.scopeNote")}
-      </p>
+      {/* What the file holds and what it leaves out (document binaries,
+          workout GPS and sample series), folded under "Learn more" so the
+          card reads as title, one line and the action. */}
+      <Disclosure data-fold summary={t("common.learnMore")}>
+        <p className="text-sm">
+          {t("settings.sections.export.cards.fullBackup.detail")}
+        </p>
+        <p
+          data-testid="export-full-backup-scope-note"
+          className="text-muted-foreground text-xs"
+        >
+          {t("settings.sections.export.cards.fullBackup.scopeNote")}
+        </p>
+      </Disclosure>
       <SwitchRow
         className="min-h-11"
         label={t("settings.sections.export.cards.fullBackup.encryptToggle")}

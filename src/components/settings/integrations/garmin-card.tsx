@@ -58,6 +58,7 @@ import {
 import { MetricFreshnessList } from "./metric-freshness-list";
 import {
   IntegrationCardDescription,
+  IntegrationSetupGuideLink,
   integrationDocsHref,
 } from "./setup-guide-link";
 import { failureStreakFor, type IntegrationStatusViewModel } from "./shared";
@@ -213,15 +214,17 @@ export function GarminCard({
         icon={Watch}
         titleAccessory={<TagChip>{t("settings.garminTag")}</TagChip>}
         description={
-          <IntegrationCardDescription
-            i18nPrefix="settings.garmin"
-            provider="garmin"
-          />
+          <IntegrationCardDescription i18nPrefix="settings.garmin" />
         }
         loading={viewModel === undefined}
         connected={false}
         health={null}
-        setup={form}
+        setup={
+          <>
+            <IntegrationSetupGuideLink provider="garmin" />
+            {form}
+          </>
+        }
       />
     );
   }

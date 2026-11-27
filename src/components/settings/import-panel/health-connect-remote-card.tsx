@@ -164,6 +164,7 @@ export function HealthConnectRemoteCard() {
       icon={CloudDownload}
       title={t(`${k}.title`)}
       description={t(`${k}.description`)}
+      foldLabel={t("settings.integrationCard.setUp")}
     >
       {recentProof.dialog}
       <CardQueryBody query={state} slot="hc-remote-state">
