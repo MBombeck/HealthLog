@@ -25,7 +25,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/api-handler", () => ({
   apiHandler: (fn: unknown) => fn,
-  requireAuth: vi.fn(),
+  requireSelfAuth: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -35,7 +35,7 @@ vi.mock("@/lib/db", () => ({
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
 
 import { GET } from "../route";
-import { requireAuth } from "@/lib/api-handler";
+import { requireSelfAuth } from "@/lib/api-handler";
 import { prisma } from "@/lib/db";
 import { buildOpenApiDocument } from "@/lib/openapi/registry";
 
@@ -52,7 +52,7 @@ const ROW = {
 
 beforeEach(() => {
   vi.resetAllMocks();
-  vi.mocked(requireAuth).mockResolvedValue({ user: USER } as never);
+  vi.mocked(requireSelfAuth).mockResolvedValue({ user: USER } as never);
   vi.mocked(prisma.passkey.findMany).mockResolvedValue([ROW] as never);
 });
 
@@ -128,7 +128,7 @@ describe("primary-passkey enrollment route guards", () => {
   it("keeps both registration legs cookie-only", () => {
     for (const source of [optionsSource, verifySource]) {
       expect(source).toContain("requireCookieAuth");
-      expect(source).not.toMatch(/\brequireAuth\b/);
+      expect(source).not.toMatch(/\brequire(?:Self)?Auth\b/);
       expect(source).not.toContain("requireMfaManagementAuth");
       expect(source).not.toContain("requireBearerAuth");
     }

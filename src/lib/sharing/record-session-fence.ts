@@ -174,6 +174,17 @@ export function recordSessionForPayload(
  */
 export async function assertRecordSessionFence(
   auth: AuthContext,
+  options?: {
+    /**
+     * #1615 — `requireAuth()` serves the caller's own record to a request
+     * that claims no record context at all (an image, a download link, an
+     * older client), as it did before it learned the owner rule. So the
+     * `unfenced-client` arm passes for it while the session is on its own
+     * record. A claim that contradicts the session still refuses, and inside
+     * a profile the fence holds in full.
+     */
+    readonly unclaimedOnOwnRecord?: "pass";
+  },
 ): Promise<void> {
   const verdict = await decide({
     transport: auth.authMethod === "bearer" ? "bearer" : "cookie",
@@ -182,6 +193,13 @@ export async function assertRecordSessionFence(
   });
 
   if (verdict === "pass") return;
+  if (
+    verdict === "unfenced-client" &&
+    options?.unclaimedOnOwnRecord === "pass" &&
+    (auth.session.actingAsUserId ?? null) === null
+  ) {
+    return;
+  }
 
   if (verdict === "stale") {
     annotate({ meta: { sharing_refusal: "record_context_stale" } });

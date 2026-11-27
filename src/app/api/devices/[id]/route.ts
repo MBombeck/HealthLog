@@ -15,7 +15,7 @@
  * `prisma.$transaction` call.
  */
 import { NextRequest } from "next/server";
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireSelfAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -27,7 +27,7 @@ interface RouteContext {
 
 export const DELETE = apiHandler(
   async (_request: NextRequest, context: RouteContext) => {
-    const { user } = await requireAuth();
+    const { user } = await requireSelfAuth();
     const { id } = await context.params;
 
     const result = await revokeDeviceCascade(user.id, id);

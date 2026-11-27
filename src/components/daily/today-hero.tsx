@@ -53,7 +53,10 @@ import { ProseBlocks } from "@/components/insights/prose-blocks";
 import { PriorityCard } from "@/components/daily/priority-card";
 import { useCoachCheckinAction } from "@/hooks/use-coach-checkin";
 import { usePriorityItemDismiss } from "@/hooks/use-priority-item-dismiss";
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import {
+  useRecordCapabilities,
+  holdsOwnerRights,
+} from "@/hooks/use-record-capabilities";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import { pluralKey } from "@/lib/i18n/plural";
@@ -101,8 +104,8 @@ export function TodayHero({
   // `PATCH /api/coach/plans/[id]`), which under a switch means a 403 rather
   // than a stray row; the control still goes, because an affordance the
   // server is on record refusing should not be on the page.
-  const { inSharedRecord } = useRecordCapabilities();
-  const ownRecord = !inSharedRecord;
+  // #1615 — or a managed profile's guardian, who holds the owner's rights.
+  const ownRecord = holdsOwnerRights(useRecordCapabilities());
 
   // The coach check-in card's keep / let-go intents carry the plan id after the
   // ":" (a closed two-intent allowlist); adjust is an href handled by the card

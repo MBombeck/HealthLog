@@ -34,7 +34,10 @@ import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import {
+  useRecordCapabilities,
+  holdsOwnerRights,
+} from "@/hooks/use-record-capabilities";
 import { DOCUMENT_PURGE_GRACE_DAYS } from "@/lib/documents/inbound-constants";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { DeletedDocumentDto } from "@/lib/validations/inbound-documents";
@@ -47,8 +50,10 @@ import { useRecentlyDeleted } from "./use-recently-deleted";
 export function RecentlyDeletedView() {
   const { t } = useTranslations();
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
-  const { canManageDomain, inSharedRecord } = useRecordCapabilities();
-  const canRestore = canManageDomain("documents");
+  const caps = useRecordCapabilities();
+  const canRestore = caps.canManageDomain("documents");
+  // Purging takes the owner rule (#1615).
+  const canPurge = holdsOwnerRights(caps);
   const router = useRouter();
   const moduleEnabled = user?.modules?.inboundDocuments === true;
   const ready = !authLoading && isAuthenticated && moduleEnabled;
@@ -154,9 +159,7 @@ export function RecentlyDeletedView() {
                   (purge.isPending && purge.variables === doc.id)
                 }
                 onRestore={() => restore.mutate(doc.id)}
-                onPurge={
-                  inSharedRecord ? undefined : () => setPendingPurge(doc)
-                }
+                onPurge={canPurge ? () => setPendingPurge(doc) : undefined}
               />
             ))}
           </ul>

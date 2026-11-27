@@ -11,14 +11,14 @@
  *     where access changes.
  *
  * A grant-management surface, resolved like the others (`/api/account/
- * grants/**`): bare `requireAuth()`, which refuses under an acting-account
+ * grants/**`): `requireSelfAuth()`, which refuses under an acting-account
  * switch and refuses a narrow Bearer scope. The owner is the session user; no
  * party to any grant comes from the body, only the claim-time grant id that
  * names which former Guardian a decision is about.
  */
 import { NextRequest } from "next/server";
 
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireSelfAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
@@ -32,7 +32,7 @@ import { prisma } from "@/lib/db";
 import { handoverDecisionSchema } from "@/lib/validations/managed-profile-handover";
 
 export const GET = apiHandler(async (_request: NextRequest) => {
-  const { user } = await requireAuth();
+  const { user } = await requireSelfAuth();
   const pending = await readPendingHandoverDecision(user.id);
   annotate({
     action: { name: "managed_profile.handover.decision_read" },
@@ -49,7 +49,7 @@ export const GET = apiHandler(async (_request: NextRequest) => {
 });
 
 export const POST = apiHandler(async (request: NextRequest) => {
-  const { user } = await requireAuth();
+  const { user } = await requireSelfAuth();
 
   const parsed = await parseJsonBody(request, handoverDecisionSchema, {
     maxBytes: 16 * 1024,

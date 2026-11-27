@@ -22,13 +22,13 @@
  * and who ended it" is a question a deleted row cannot answer. DELETE is the
  * right HTTP verb for "end this thing"; it is not a promise about storage.
  *
- * Not delegable: bare `requireAuth()` refuses under a switch, and the owner is
+ * Not delegable: `requireSelfAuth()` refuses under a switch, and the owner is
  * the session user, so a delegate can neither revoke somebody else's grant nor
  * hand their own to a third party.
  */
 import { NextRequest } from "next/server";
 
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireSelfAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
@@ -41,7 +41,7 @@ type RouteParams = { params: Promise<{ id: string }> };
 
 export const DELETE = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireAuth();
+    const { user } = await requireSelfAuth();
     const { id } = await params;
 
     try {

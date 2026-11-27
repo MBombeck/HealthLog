@@ -28,12 +28,12 @@
  * means, not a property of the read, so it is left where it was.
  */
 import { prisma } from "@/lib/db";
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireSelfAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { apiSuccess } from "@/lib/api-response";
 
 export const GET = apiHandler(async () => {
-  const { user } = await requireAuth();
+  const { user } = await requireSelfAuth();
   annotate({ action: { name: "tokens.list" } });
 
   const tokens = await prisma.apiToken.findMany({

@@ -24,7 +24,10 @@ vi.mock("@/hooks/use-auth", () => ({
 }));
 
 let shared = false;
-vi.mock("@/hooks/use-record-capabilities", () => ({
+vi.mock("@/hooks/use-record-capabilities", async (importOriginal) => ({
+  holdsOwnerRights: (
+    await importOriginal<typeof import("@/hooks/use-record-capabilities")>()
+  ).holdsOwnerRights,
   useRecordCapabilities: () => ({
     inSharedRecord: shared,
     canManageDomain: () => !shared,

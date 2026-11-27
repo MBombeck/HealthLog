@@ -24,7 +24,7 @@
  */
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireSelfAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
@@ -49,7 +49,7 @@ const devicePatchSchema = z
 
 export const PATCH = apiHandler(
   async (request: NextRequest, context: RouteContext) => {
-    const { user } = await requireAuth();
+    const { user } = await requireSelfAuth();
     const { id } = await context.params;
 
     const parsed = await parseJsonBody(request, devicePatchSchema, {
@@ -92,7 +92,7 @@ export const PATCH = apiHandler(
 
 export const DELETE = apiHandler(
   async (_request: NextRequest, context: RouteContext) => {
-    const { user } = await requireAuth();
+    const { user } = await requireSelfAuth();
     const { id } = await context.params;
 
     const result = await revokeDeviceCascade(user.id, id);

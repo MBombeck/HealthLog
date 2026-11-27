@@ -120,7 +120,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // a live session. The shipped app creates links on its token without an
   // elevation, and reads any 401 here as a dead session, so the Bearer arm
   // stays on the token until the app sends one (see the iOS note).
-  const { user } = await requireRecentProof({ bearer: "token" });
+  const { user } = await requireRecentProof({
+    bearer: "token",
+    record: "owner",
+  });
   annotate({ action: { name: "share-link.create" } });
 
   const rl = await checkRateLimit(`share-link:${user.id}`, 20, 60 * 60 * 1000);

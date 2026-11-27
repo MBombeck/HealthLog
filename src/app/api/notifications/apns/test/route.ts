@@ -16,7 +16,7 @@
  *   spamming the other channels too.
  */
 import type { NextRequest } from "next/server";
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireSelfAuth } from "@/lib/api-handler";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
@@ -29,7 +29,7 @@ export const dynamic = "force-dynamic";
 
 export const POST = apiHandler(async (request: NextRequest) => {
   void request;
-  const { user } = await requireAuth();
+  const { user } = await requireSelfAuth();
   annotate({ action: { name: "notifications.apns.test" } });
 
   const rl = await checkRateLimit(`apns-test:${user.id}`, 5, 60_000);

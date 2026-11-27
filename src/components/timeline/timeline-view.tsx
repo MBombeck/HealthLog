@@ -38,7 +38,10 @@ import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import {
+  useRecordCapabilities,
+  holdsOwnerRights,
+} from "@/hooks/use-record-capabilities";
 import {
   capTimelineSeriesKeys,
   DAY_QUERY_PARAM,
@@ -255,8 +258,8 @@ export function TimelineView() {
   const searchParams = useUrlSearch();
   const today = todayKeyIn(user?.timezone);
   const dayParam = parseDayParam(searchParams.get(DAY_QUERY_PARAM), today);
-  // Life events are written in one's own record only (owner-only routes).
-  const canAddLifeEvent = !caps.inSharedRecord;
+  // Life events: the owner, or a guardian holding the owner's rights (#1615).
+  const canAddLifeEvent = holdsOwnerRights(caps);
 
   // The zoom and a chosen range live in the URL (`timeline-url.ts`), so Back
   // and a bookmark return to them. Without a `zoom` the page opens on three

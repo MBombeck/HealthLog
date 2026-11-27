@@ -99,7 +99,15 @@ const AUTH_LAYER = (() => {
 })();
 
 /** The two helpers that resolve a record and therefore must consult the fence. */
-const FENCED_RESOLVERS = ["requireRecordAuth", "requireGuardianAuth"] as const;
+// #1615 — `requireAuth()` joins them: it admits a managed profile's guardian
+// under a switch, so it acts on a record context and is fenced like the two
+// that already did. A request claiming no context at all still reaches the
+// caller's own record through it, which the fence's option states.
+const FENCED_RESOLVERS = [
+  "requireRecordAuth",
+  "requireGuardianAuth",
+  "requireAuth",
+] as const;
 
 /**
  * The helpers that deliberately do NOT consult the fence.
@@ -119,20 +127,20 @@ const FENCED_RESOLVERS = ["requireRecordAuth", "requireGuardianAuth"] as const;
  *   * `requireActorAuth` is the way OUT of a switch. Fencing it would make an
  *     unprovable context unrecoverable, and it serves the caller's own rows by
  *     definition, so the selector cannot change what it returns.
- *   * `requireAuth` bare already refuses outright under an active switch, and
- *     its routes are classified actor-only elsewhere.
+ *   * `requireSelfAuth` refuses outright under an active switch, and its routes
+ *     are the reasoned exclusion list in `managed-profile-owner-rule-guard`.
  *   * `requireAdmin`, `requireCookieAuth` and `requireFreshMfa` resolve through
  *     `getSession()` and are structurally unreachable by a switch.
  */
 const UNFENCED_HELPERS = [
-  "requireAuth",
+  "requireSelfAuth",
   "requireActorAuth",
   "requireAdmin",
   "requireCookieAuth",
   "requireFreshMfa",
 ] as const;
 
-describe("the fence runs in exactly two auth helpers", () => {
+describe("the fence runs in exactly three auth helpers", () => {
   it("is called by both record resolvers and by nothing else in the auth layer", () => {
     const calls = [
       ...authGuardsText().matchAll(/assertRecordSessionFence\s*\(/g),
@@ -147,7 +155,7 @@ describe("the fence runs in exactly two auth helpers", () => {
       functionBody(AUTH_LAYER, name).includes("assertRecordSessionFence("),
     );
     expect(callers).toEqual([...FENCED_RESOLVERS]);
-    // Two call sites, one import. Anything else means a third caller appeared.
+    // One call site each. Anything else means another caller appeared.
     expect(calls.length).toBe(FENCED_RESOLVERS.length);
   });
 

@@ -22,7 +22,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { TagChip } from "@/components/ui/tag-chip";
 import { ActivityGoalsSheet } from "@/components/activity/activity-goals-sheet";
 import { useActivityCalendar } from "@/hooks/use-activity-calendar";
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import {
+  useRecordCapabilities,
+  holdsOwnerRights,
+} from "@/hooks/use-record-capabilities";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { translateOrNull } from "@/lib/i18n/translate-code";
 import { cn } from "@/lib/utils";
@@ -511,7 +514,7 @@ export function ActivityCalendarCard() {
                   />
                 </div>
               ))}
-              {!capabilities.inSharedRecord ? (
+              {holdsOwnerRights(capabilities) ? (
                 <InlineAction
                   type="button"
                   tone="primary"
@@ -531,7 +534,7 @@ export function ActivityCalendarCard() {
           </>
         )}
       </CardContent>
-      {data && !capabilities.inSharedRecord ? (
+      {data && holdsOwnerRights(capabilities) ? (
         <ActivityGoalsSheet
           key={goalsOpenCount}
           open={goalsOpen}

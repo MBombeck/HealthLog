@@ -40,7 +40,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const wholeRecord =
     (new URL(request.url).searchParams.get("type") ?? "all") === "all";
   const auth = wholeRecord
-    ? await requireRecentProof({ bearer: "elevation" })
+    ? await requireRecentProof({ bearer: "elevation", record: "owner" })
     : { ...(await requireAuth()), commitElevation: async () => {} };
   const { user } = auth;
 

@@ -208,3 +208,64 @@ A card's actions live in **one** row, and that row is the **last thing in the ca
 ### Enforcement
 
 The `p-5` / `py-5` / `px-5` / `space-y-5` family does not occur in the app, and `healthlog/spacing-scale` runs at `error` over `src/components/**` and `src/app/**`, so the step cannot come back unnoticed. `no-raw-card-shell` is described in §7. The header icon colour (§1) has no lint rule; check it in review.
+
+## 14. Score rings; colour is the band
+
+A ring's colour says how the score stands today, never which score it is. Rules marked (1.50.0) ship with the start page change in that release.
+
+- **Colour is the band.** A good, fair or low score draws its arc in `--score-good`, `--score-fair` or `--score-low`. A score that carries no band (a device value, Rest mode) draws in the neutral `--score-ink`, and never falls back to a series colour. (1.50.0)
+- **A stale score shows an empty ring.** A score that is not about today shows the bare track (`--score-track`), no number in the ring and no band word; the line under it says when the last value was.
+- **The band word stands next to the ring**, with a fill mark (full for good, half for fair, hollow for low) in the band's colour, so colour is never the only carrier (WCAG 1.4.1). Low is "low", never "bad".
+- **Identity comes from the icon and the name** and the tile's fixed place. Series colours (`--chart-1..5`) belong to charts, where lines must be told apart.
+- **The tokens** (`globals.css`, tuned for contrast against the card and for deuteranopia; the green leans blue on purpose):
+
+| Token           | Dark      | Light     |
+| --------------- | --------- | --------- |
+| `--score-good`  | `#3cc291` | `#0b7f5c` |
+| `--score-fair`  | `#ecb354` | `#b9770a` |
+| `--score-low`   | `#dc5f58` | `#b23a32` |
+| `--score-ink`   | `#c9cdd8` | `#4b4658` |
+| `--score-track` | `#44475a` | `#dad8de` |
+
+Component: `ScoreRing` (`insights/derived/score-ring.tsx`), coloured only through `ringColor()` (`insights/derived/ring-color.ts`), and `ScoreRingTile` (`insights/derived/score-ring-tile.tsx`) with its `BandWord`. A ring takes no hue prop. The medication ring keeps `--primary`; it is a progress ring, not a score. The native app follows the same rule from the band the server sends. Guard: `score-ring-colour-guard.test.tsx` (every band renders its token, no band renders the ink, no source hands a ring a hue). (1.50.0)
+
+## 15. The asks card on the start page
+
+The start page asks for something only when something needs the reader. (1.50.0)
+
+- **One card, shown only when the policy has rows.** The rows come from one server function, `resolveDailyAsks` (`src/lib/daily/asks.ts`), published as `asks` on `GET /api/daily/digest`, so the web and the app show the same rows in the same order. On most days the card is absent; there is no empty state.
+- **Order by tier:** `safety` (a dose past its on-time window), then `decision` (a question only this person can answer: the admin's server setup or push relay question, a coach check-in), then `due` (a dose takeable now, a check-up due today, a visit within 24 hours, a connection that needs a reconnect). Observations never ask.
+- **Two actions per row**, in equal-width framed buttons in one column on the right: the secondary left, the filled primary right. Each row is its own decision, so each row has its own primary; this is the stated exception to §12's one primary per card. Component: `AskActions` (`dashboard/ask-actions.tsx`); a narrow card puts the two buttons under the text as one row split in halves.
+- **A consent asks "No" and "Yes"**, never "Later" (`CONSENT_ASK_KINDS`).
+- **"Later" always acts on the server.** A dose reminder snoozes the way the medication card does, a setup notice is set aside, every other row is set aside for the rest of the local day through the dismiss ledger. Nothing is hidden in the browser only.
+- **One line of body text** plus an inline "More" at its end. No collapse, no "show all".
+- **Categories can be switched off** in Settings (`OPTIONAL_ASK_KINDS`, stored as the layout's `enabledHeroItemKinds`). Setup, consent and safety rows cannot be switched off (`isMandatoryAsk`), and the note under the switches says so.
+
+Component: `TodayAsks` (`dashboard/today-asks.tsx`). Guards: `src/lib/daily/__tests__/asks.test.ts` (tiers, order, mandatory rows, Rest mode), `e2e/today-asks.spec.ts` (the card in the browser, both widths).
+
+## 16. Score tiles
+
+- **Start page:** the Health score, sleep score and readiness sit below the asks card as one row. On a wide screen each tile spans 2 of the 6 tile columns, so its edges sit on the metric tile row's gutters; on a phone it is one tile holding three rings. Component: `TodayScores` (`dashboard/today-scores.tsx`) with `ScoreRingTile size="wide"`. (1.50.0)
+- **Insights:** the scores form one compact row at the head of the page, every score with the same tile and the same page order behind it (assessment, contributors, course). Today that tile is `RingTile` (`insights/derived/wellness-scores.tsx`); it moves to `ScoreRingTile size="compact"` (1.50.0).
+- One anatomy, two sizes: the ring, the short name, the band word and one line. No subtitle, no tinted tile.
+
+Guards: `today-scores.test.tsx`, `score-ring-tile.test.tsx` (1.50.0), `e2e/insights-score-parity.spec.ts` (head order and labels, both themes).
+
+## 17. Text; a heading plus one sentence
+
+- **A surface is a heading plus at most one sentence.** Explanations, setup steps and long notes sit behind "More", a `Disclosure` or a popover. A subtitle that tells people what they do not need to know is removed, not shortened.
+- **Word budgets per page are frozen** in `e2e/text-budgets.json`, counted on a phone the way a reader meets the page (closed disclosures left out). Raise a number only in a reviewed change that says why; lower it when a page gets shorter. Guard: `e2e/text-budget.spec.ts`.
+- **One disclaimer component, once per page.** "Not a diagnosis" and "not a cause" each have one key under `selfDescription.*` and one renderer, `MedicalDisclaimer` (`common/medical-disclaimer.tsx`); every Insights metric page closes with it through `SubPageShell`. No other string says it again, except the reasoned in-context list in the guard. Guard: `disclaimer-central-guard.test.ts`.
+
+## 18. Icons and labels
+
+- **One icon per destination, from one map.** `DESTINATION_ICONS` (`layout/destination-icons/`) is the only source of a destination's glyph: the rail, the phone bars, the account menus, the Settings and Admin rails, the module list and the search palette all read it, and no two destinations share a glyph. Guard: `destination-icon-guard.test.ts`.
+- **Sentence case everywhere**: "Blood pressure", not "Blood Pressure"; product names and acronyms excepted. Guard: `i18n-title-sentence-case.test.ts`.
+- **One thing, one name.** Every concept has one term per locale in `src/lib/i18n/glossary.json`, and a one-line heading, tile, chip or tab takes the glossary's `short` form through `metricName`, never a name made up on the spot. Guard: `glossary-guard.test.ts`.
+
+## 19. Charts
+
+- **Controls sit top right**, in the header's `chart-header-controls` slot: range first, then overlays or a time-of-day switch. The title and its captions stay on the left (`health-chart/chart-header.tsx`; the mood, compliance and score trend charts use the same slot).
+- **Context markers belong to the chart's key.** Medication changes, an illness and cycle phases are drawn by `ChartContextParts` (`health-chart/context-rail.tsx`) under the plot at their days; the cycle phase legend uses the series legend's dot and spacing. Guard: `health-chart-context-golden.test.tsx`.
+
+Planned (until it lands, this is a review-checklist item): context markers such as an illness move into the legend row itself, at the same height and spacing as the series entries; and a guard that holds every chart's controls to the top-right slot.
