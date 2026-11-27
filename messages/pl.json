@@ -2549,8 +2549,8 @@
         },
         "intake": {
           "title": "Przyjęcie",
-          "missedNone": "W ciągu {days, plural, one {# dnia} few {# dni} many {# dni} other {# dnia}} nie pominięto żadnej dawki.",
-          "missedSome": "W ciągu {days, plural, one {# dnia} few {# dni} many {# dni} other {# dnia}} {count, plural, one {pominięto jedną dawkę} few {pominięto # dawki} many {pominięto # dawek} other {pominięto # dawki}}.",
+          "missedNone": "W ciągu {days, plural, one {# dnia} few {# dni} many {# dni} other {# dnia}} nie było nieprzyjętej dawki.",
+          "missedSome": "W ciągu {days, plural, one {# dnia} few {# dni} many {# dni} other {# dnia}}: {count, plural, one {# nieprzyjęta dawka} few {# nieprzyjęte dawki} many {# nieprzyjętych dawek} other {# nieprzyjętej dawki}}.",
           "asNeededCount": "{count, plural, =0 {Nieprzyjęte przez {days} dni.} one {Przyjęte raz w ciągu {days} dni.} few {Przyjęte # razy w ciągu {days} dni.} many {Przyjęte # razy w ciągu {days} dni.} other {Przyjęte # razy w ciągu {days} dni.}}"
         },
         "legend": {

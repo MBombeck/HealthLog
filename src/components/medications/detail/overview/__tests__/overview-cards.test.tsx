@@ -24,10 +24,9 @@ vi.mock("@/hooks/use-auth", () => ({
 }));
 
 import { I18nProvider } from "@/lib/i18n/context";
-import {
-  IntakeCard,
-  PlanCard,
-} from "@/components/medications/detail/overview/overview-cards";
+import { IntakeCard } from "@/components/medications/detail/overview/intake-card";
+import { PlanCard } from "@/components/medications/detail/overview/plan-card";
+import type { OverviewCompliance } from "@/components/medications/detail/overview/anatomy";
 import type { LedgerRow } from "@/components/medications/dose-history-ledger-compute";
 import type { MedicationDetailSnapshot } from "@/components/medications/detail/medication-detail-tabs";
 import { snapshotToWizardPayload } from "@/components/medications/detail/snapshot-wizard-payload";
@@ -61,7 +60,7 @@ const slot = (
       : null,
 });
 
-const compliance = {
+const compliance: OverviewCompliance = {
   applicable: true,
   notApplicableReason: null,
   compliance7: { rate: 96, streak: 3 },
@@ -74,10 +73,24 @@ const compliance = {
     minStableDoses: 6,
     short: { rate: 100, taken: 14, expected: 14, missed: 0, streak: 7 },
     long: { rate: 98, taken: 59, expected: 60, missed: 1 },
-    currentCycle: {},
-    currentDose: {},
+    currentCycle: {
+      state: "on_track",
+      nextDueAt: null,
+      graceUntil: null,
+      hasClosedCycles: true,
+    },
+    currentDose: {
+      status: "upcoming",
+      targetAt: null,
+      state: null,
+      takenLate: false,
+      dueAt: null,
+      overdueSince: null,
+      missedAfter: null,
+      lateTakeCounts: false,
+    },
   },
-} as never;
+};
 
 describe("intake card", () => {
   const byDay = new Map<string, LedgerRow[]>([

@@ -670,7 +670,7 @@ function composeDose(amount: string, unit: string): string {
   return `${a} ${u}`;
 }
 
-function sortTimes(times: string[]): string[] {
+export function sortTimes(times: string[]): string[] {
   return [...times]
     .filter((t) => TIME_RE.test(t))
     .sort((a, b) => a.localeCompare(b));
@@ -981,7 +981,7 @@ function cadenceDetailPhrase(
  * {@link summariseScheduleDraft} build their first segment from this so
  * the two summaries render byte-identical cadence text.
  */
-function cadenceLineFor(
+export function cadenceLineFor(
   shape: CadenceShape,
   t: (key: string, params?: Record<string, string | number>) => string,
 ): string {
@@ -1034,30 +1034,6 @@ export function summariseCadence(
   return [cadenceLine, timesPhrase, startPhrase, endPhrase]
     .filter(Boolean)
     .join(", ");
-}
-
-/**
- * The cadence and its times without the course window ("Jeden Tag, um 08:00
- * und 20:00"): the one-line form the detail page's header shows. The start
- * and end dates live in the plan below it. `joinTimes` joins the clock times
- * as a list in the reader's language.
- */
-export function summariseCadenceShort(
-  payload: WizardPayload,
-  t: (key: string, params?: Record<string, string | number>) => string,
-  wallTime: (hhmm: string) => string = (hhmm) => hhmm,
-  joinTimes: (times: string[]) => string = (times) => times.join(", "),
-): string {
-  const cadenceLine = cadenceLineFor(payload, t);
-  const timesPhrase =
-    payload.mode !== "oneShot" &&
-    payload.mode !== "asNeeded" &&
-    payload.timesOfDay.length > 0
-      ? t("medications.wizard.summary.times", {
-          times: joinTimes(sortTimes(payload.timesOfDay).map(wallTime)),
-        })
-      : "";
-  return [cadenceLine, timesPhrase].filter(Boolean).join(", ");
 }
 
 /**

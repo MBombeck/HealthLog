@@ -289,9 +289,6 @@ const PINNED_AFFORDANCES: Record<
   // The tone of the due and taken dose states, which every dose surface
   // renders through this one label (it reports no write).
   "src/components/medications/dose-state-label.tsx": { "text-success": 2 },
-  "src/components/medications/dose-history/ledger-summary-chart.tsx": {
-    "text-success": 1,
-  },
   "src/components/medications/dose-history/use-dose-history-ledger.ts": {
     "toast.success": 3,
   },

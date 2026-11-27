@@ -106,7 +106,7 @@ describe("medication detail compliance applicability", () => {
   const cards = readFileSync(
     join(
       process.cwd(),
-      "src/components/medications/detail/overview/overview-cards.tsx",
+      "src/components/medications/detail/overview/intake-card.tsx",
     ),
     "utf8",
   );

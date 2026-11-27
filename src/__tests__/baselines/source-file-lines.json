@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
-  "count": 71,
-  "total": 77407,
+  "count": 70,
+  "total": 76453,
   "entries": {
     "components/cycle/log-day-sheet.tsx": 1640,
     "components/insights/coach-panel/chat-bubble.tsx": 821,
@@ -10,7 +10,6 @@
     "components/insights/derived/vitals-dashboard.tsx": 826,
     "components/insights/health-score-card.tsx": 912,
     "components/insights/insights-tab-strip.tsx": 1072,
-    "components/medications/detail/medication-detail-tabs.tsx": 943,
     "components/medications/wizard/wizard-payload.ts": 1347,
     "components/mood/mood-list.tsx": 1130,
     "components/records/life-circumstances-manager.tsx": 821,
@@ -63,7 +62,7 @@
     "lib/measurements/dense-intraday-retention.ts": 1016,
     "lib/medications/scheduling/cadence.ts": 973,
     "lib/medications/scheduling/recurrence.ts": 1100,
-    "lib/notifications/senders/apns.ts": 1005,
+    "lib/notifications/senders/apns.ts": 991,
     "lib/oura/sync.ts": 898,
     "lib/rollups/measurement-rollups.ts": 1302,
     "lib/search/search-records.ts": 1007,

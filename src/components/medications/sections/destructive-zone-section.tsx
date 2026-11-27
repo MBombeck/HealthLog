@@ -392,29 +392,23 @@ export function DangerZoneBody({
       {/* Tier 3a — Verlauf löschen. Matched pair with the delete row
           below: identical `py-3` spacing, identical destructive button. */}
       <div className="flex items-center justify-between gap-3 py-3">
-        {compact ? (
-          <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
-            <p className="text-foreground text-sm font-medium">
-              {t("medications.detail.settingsTab.rows.history")}
-            </p>
-            <p className="text-muted-foreground text-sm tabular-nums">
-              {t("medications.detail.settingsTab.intakeCount", {
-                count: intakeCount,
-              })}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-1">
-            <p className="text-foreground text-sm font-medium">
-              {t("medications.detail.zone.purge.title")}
-            </p>
-            <p className="text-muted-foreground text-xs">
-              {t("medications.detail.zone.purge.helper", {
-                count: intakeCount,
-              })}
-            </p>
-          </div>
-        )}
+        <ZoneRowText
+          compact={compact}
+          name={
+            compact
+              ? t("medications.detail.settingsTab.rows.history")
+              : t("medications.detail.zone.purge.title")
+          }
+          detail={
+            compact
+              ? t("medications.detail.settingsTab.intakeCount", {
+                  count: intakeCount,
+                })
+              : t("medications.detail.zone.purge.helper", {
+                  count: intakeCount,
+                })
+          }
+        />
         <Button
           variant="destructive"
           size="sm"
@@ -432,25 +426,19 @@ export function DangerZoneBody({
 
       {/* Tier 3b — Medikament löschen */}
       <div className="flex items-center justify-between gap-3 py-3">
-        {compact ? (
-          <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
-            <p className="text-foreground text-sm font-medium">
-              {t("medications.detail.settingsTab.rows.medication")}
-            </p>
-            <p className="text-muted-foreground text-sm">
-              {t("medications.detail.settingsTab.withAllData")}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-1">
-            <p className="text-foreground text-sm font-medium">
-              {t("medications.detail.zone.delete.title")}
-            </p>
-            <p className="text-muted-foreground text-xs">
-              {t("medications.detail.zone.delete.helper")}
-            </p>
-          </div>
-        )}
+        <ZoneRowText
+          compact={compact}
+          name={
+            compact
+              ? t("medications.detail.settingsTab.rows.medication")
+              : t("medications.detail.zone.delete.title")
+          }
+          detail={
+            compact
+              ? t("medications.detail.settingsTab.withAllData")
+              : t("medications.detail.zone.delete.helper")
+          }
+        />
         <Button
           variant="destructive"
           size="sm"
@@ -464,78 +452,111 @@ export function DangerZoneBody({
       </div>
 
       {/* Tier 3a — Verlauf purge confirm */}
-      <AlertDialog open={purgeDialogOpen} onOpenChange={setPurgeDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("medications.detail.zone.purge.dialogTitle")}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("medications.detail.zone.purge.dialogBody", {
-                count: intakeCount,
-              })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              onClick={(e) => {
-                e.preventDefault();
-                void tier3aPurge();
-              }}
-              disabled={tier3aBusy}
-              aria-busy={tier3aBusy || undefined}
-              className="font-semibold"
-            >
-              {tier3aBusy && (
-                <Loader2
-                  aria-hidden="true"
-                  className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none"
-                />
-              )}
-              {t("medications.detail.zone.purge.button")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DestructiveConfirm
+        open={purgeDialogOpen}
+        onOpenChange={setPurgeDialogOpen}
+        title={t("medications.detail.zone.purge.dialogTitle")}
+        body={t("medications.detail.zone.purge.dialogBody", {
+          count: intakeCount,
+        })}
+        action={t("medications.detail.zone.purge.button")}
+        busy={tier3aBusy}
+        onConfirm={() => void tier3aPurge()}
+      />
 
       {/* Tier 3b — Medikament delete confirm */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("medications.detail.zone.delete.dialogTitle", {
-                name: medicationName,
-              })}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("medications.detail.zone.delete.dialogBody")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              onClick={(e) => {
-                e.preventDefault();
-                void tier3bDelete();
-              }}
-              disabled={tier3bBusy}
-              aria-busy={tier3bBusy || undefined}
-              className="font-semibold"
-            >
-              {tier3bBusy && (
-                <Loader2
-                  aria-hidden="true"
-                  className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none"
-                />
-              )}
-              {t("medications.detail.zone.delete.button")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DestructiveConfirm
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title={t("medications.detail.zone.delete.dialogTitle", {
+          name: medicationName,
+        })}
+        body={t("medications.detail.zone.delete.dialogBody")}
+        action={t("medications.detail.zone.delete.button")}
+        busy={tier3bBusy}
+        onConfirm={() => void tier3bDelete()}
+      />
     </div>
+  );
+}
+
+/**
+ * A danger-zone row's words: the name over its helper, or (compact) the
+ * name with a short detail beside it on one line.
+ */
+function ZoneRowText({
+  compact,
+  name,
+  detail,
+}: {
+  compact: boolean;
+  name: string;
+  detail: string;
+}) {
+  if (compact) {
+    return (
+      <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
+        <p className="text-foreground text-sm font-medium">{name}</p>
+        <p className="text-muted-foreground text-sm tabular-nums">{detail}</p>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-1">
+      <p className="text-foreground text-sm font-medium">{name}</p>
+      <p className="text-muted-foreground text-xs">{detail}</p>
+    </div>
+  );
+}
+
+/** A destructive confirmation: Cancel keeps the default focus. */
+function DestructiveConfirm({
+  open,
+  onOpenChange,
+  title,
+  body,
+  action,
+  busy,
+  onConfirm,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  body: string;
+  action: string;
+  busy: boolean;
+  onConfirm: () => void;
+}) {
+  const { t } = useTranslations();
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{body}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+          <AlertDialogAction
+            variant="destructive"
+            onClick={(e) => {
+              e.preventDefault();
+              onConfirm();
+            }}
+            disabled={busy}
+            aria-busy={busy || undefined}
+            className="font-semibold"
+          >
+            {busy && (
+              <Loader2
+                aria-hidden="true"
+                className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none"
+              />
+            )}
+            {action}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

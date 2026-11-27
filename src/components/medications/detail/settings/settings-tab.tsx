@@ -200,64 +200,7 @@ export function MedicationSettingsTab({
   const times = schedules.flatMap((s) =>
     s.timesOfDay && s.timesOfDay.length > 0 ? s.timesOfDay : [s.windowStart],
   );
-  const scheduleSnapshots = schedules.map((s) => ({
-    id: s.id,
-    windowStart: s.windowStart,
-    windowEnd: s.windowEnd,
-    label: s.label,
-    dose: s.dose,
-    daysOfWeek: s.daysOfWeek,
-    timesOfDay: s.timesOfDay,
-    rrule: s.rrule,
-    rollingIntervalDays: s.rollingIntervalDays,
-    reminderGraceMinutes: s.reminderGraceMinutes,
-    scheduleType: s.scheduleType,
-    cyclicOnWeeks: s.cyclicOnWeeks,
-    cyclicOffWeeks: s.cyclicOffWeeks,
-    doseWindows: s.doseWindows,
-  }));
-
-  // The delete row's count: the Erweitert tab paid for this read before.
-  const countParams = {
-    sortBy: "takenAt",
-    sortDir: "desc" as const,
-    limit: 1,
-    offset: 0,
-    status: "completed",
-  };
-  const { data: intakeCount } = useQuery({
-    queryKey: queryKeys.medicationIntakeList(id, countParams),
-    queryFn: async () => {
-      const search = new URLSearchParams({
-        sortBy: countParams.sortBy,
-        sortDir: countParams.sortDir,
-        limit: String(countParams.limit),
-        offset: String(countParams.offset),
-        status: countParams.status,
-      });
-      try {
-        const data = await apiGet<{ meta?: { total?: number } }>(
-          `/api/medications/${id}/intake?${search.toString()}`,
-        );
-        return data?.meta?.total ?? 0;
-      } catch {
-        return 0;
-      }
-    },
-    enabled: ownRecord,
-    staleTime: 30_000,
-  });
-
-  const courses = medication.courses ?? [];
-  const sheetTitle: Record<SettingsSheet, string> = {
-    times: t("medications.detail.zeitplan.timesTitle"),
-    supply: t("medications.detail.bestand.title"),
-    courses: t("medications.course.title"),
-    history: t("medications.detail.zeitplan.history.title"),
-    export: t("medications.detail.settingsTab.rows.export"),
-    api: t("medications.detail.settingsTab.rows.api"),
-    codes: t("medications.detail.settingsTab.rows.codes"),
-  };
+  const scheduleSnapshots = scheduleSnapshotsOf(schedules);
 
   return (
     <div className="space-y-10" data-slot="medication-settings-tab">
@@ -353,166 +296,38 @@ export function MedicationSettingsTab({
           </Group>
         )}
 
-        {/* PERIOD */}
         {(ownRecord || runsSchedule) && (
-          <Group
-            icon={CalendarRange}
-            title={t("medications.detail.settingsTab.groups.period")}
-            slot="medication-settings-period"
-          >
-            {ownRecord && (
-              <li data-slot="medication-settings-lifecycle">
-                <LifecycleManageBody medication={medication} compact />
-              </li>
-            )}
-            <OpenRow
-              label={t("medications.course.title")}
-              value={
-                courses.length > 0
-                  ? t("medications.detail.settingsTab.courseCount", {
-                      count: courses.length,
-                    })
-                  : undefined
-              }
-              onOpen={() => setSheet("courses")}
-              slot="medication-settings-courses"
-            />
-            <OpenRow
-              label={t("medications.detail.zeitplan.history.title")}
-              onOpen={() => setSheet("history")}
-              slot="medication-zeitplan-history"
-            />
-          </Group>
+          <PeriodGroup
+            medication={medication}
+            ownRecord={ownRecord}
+            onOpenSheet={setSheet}
+          />
         )}
 
-        {/* DATA */}
         {ownRecord && (
-          <Group
-            icon={Database}
-            title={t("medications.detail.erweitert.group.data")}
-            slot="medication-settings-data"
-          >
-            <OpenRow
-              label={t("medications.detail.settingsTab.rows.export")}
-              value="CSV"
-              onOpen={() => setSheet("export")}
-              slot="medication-settings-export"
-            />
-            <OpenRow
-              label={t("medications.detail.settingsTab.rows.import")}
-              value="JSON"
-              onOpen={() => setImportOpen(true)}
-              slot="medication-settings-import"
-            />
-            <OpenRow
-              label={t("medications.detail.settingsTab.rows.api")}
-              onOpen={() => setSheet("api")}
-              slot="api-group-external-api"
-            />
-            <OpenRow
-              label={t("medications.detail.settingsTab.rows.codes")}
-              value={[medication.atcCode, medication.rxNormCode]
-                .filter(Boolean)
-                .join(", ")}
-              onOpen={() => setSheet("codes")}
-              slot="medication-settings-codes"
-            />
-            {nutrientsOn && !showComposition && (
-              <InlineRow slot="medication-settings-composition">
-                <CompositionRow medicationId={id} ownRecord={ownRecord} />
-              </InlineRow>
-            )}
-          </Group>
-        )}
-
-        {/* DELETE */}
-        {ownRecord && (
-          <Group
-            icon={Trash2}
-            title={t("common.delete")}
-            slot="erweitert-group-danger"
-          >
-            <li>
-              <DangerZoneBody
-                medicationId={id}
-                medicationName={medication.name}
-                intakeCount={intakeCount ?? 0}
-                compact
-              />
-            </li>
-          </Group>
+          <DataAndDeleteGroups
+            medication={medication}
+            offerComposition={nutrientsOn && !showComposition}
+            onOpenSheet={setSheet}
+            onOpenImport={() => setImportOpen(true)}
+          />
         )}
       </div>
 
       {sheet && (
-        <ResponsiveSheet
-          open
-          onOpenChange={(open) => !open && setSheet(null)}
-          title={sheetTitle[sheet]}
-          contentWidth={sheet === "supply" || sheet === "history" ? "lg" : "md"}
-        >
-          <div
-            className="space-y-4"
-            data-slot={`medication-settings-sheet-${sheet}`}
-          >
-            {sheet === "times" && (
-              <ScheduleTimesEditor
-                medicationId={id}
-                trackIntake={!recordOnly}
-                schedules={scheduleSnapshots}
-              />
-            )}
-            {sheet === "supply" && (
-              <InventorySection
-                medicationId={id}
-                dosesPerUnit={medication.dosesPerUnit}
-                unitsPerDose={medication.unitsPerDose}
-                deliveryForm={medication.deliveryForm}
-              />
-            )}
-            {sheet === "courses" &&
-              (ownRecord ? (
-                <CoursesRow
-                  medicationId={id}
-                  courses={courses}
-                  canStartCourse={medication.canStartCourse === true}
-                  canEdit
-                  showTitle={false}
-                />
-              ) : (
-                <GuardianCoursesSection
-                  medicationId={id}
-                  courses={courses}
-                  canStartCourse={medication.canStartCourse === true}
-                />
-              ))}
-            {sheet === "history" && (
-              <ScheduleHistoryTimeline medicationId={id} currentTimes={times} />
-            )}
-            {sheet === "export" && (
-              <DataPortabilityRow
-                medicationId={id}
-                onOpenImport={() => {
-                  setSheet(null);
-                  setImportOpen(true);
-                }}
-              />
-            )}
-            {sheet === "api" && (
-              <ApiTokensRow
-                medicationId={id}
-                medicationName={medication.name}
-              />
-            )}
-            {sheet === "codes" && (
-              <DrugCodingRow
-                medicationId={id}
-                atcCode={medication.atcCode}
-                rxNormCode={medication.rxNormCode}
-              />
-            )}
-          </div>
-        </ResponsiveSheet>
+        <SettingsSheetView
+          sheet={sheet}
+          onClose={() => setSheet(null)}
+          medication={medication}
+          recordOnly={recordOnly}
+          ownRecord={ownRecord}
+          times={times}
+          schedules={scheduleSnapshots}
+          onOpenImport={() => {
+            setSheet(null);
+            setImportOpen(true);
+          }}
+        />
       )}
 
       {importOpen && (
@@ -528,5 +343,281 @@ export function MedicationSettingsTab({
         onOpenChange={setPhaseSheetOpen}
       />
     </div>
+  );
+}
+
+/** The delete row's count of recorded intakes; the owner's read. */
+function useIntakeCount(id: string, enabled: boolean): number {
+  const countParams = {
+    sortBy: "takenAt",
+    sortDir: "desc" as const,
+    limit: 1,
+    offset: 0,
+    status: "completed",
+  };
+  const { data: intakeCount } = useQuery({
+    queryKey: queryKeys.medicationIntakeList(id, countParams),
+    queryFn: async () => {
+      const search = new URLSearchParams({
+        sortBy: countParams.sortBy,
+        sortDir: countParams.sortDir,
+        limit: String(countParams.limit),
+        offset: String(countParams.offset),
+        status: countParams.status,
+      });
+      try {
+        const data = await apiGet<{ meta?: { total?: number } }>(
+          `/api/medications/${id}/intake?${search.toString()}`,
+        );
+        return data?.meta?.total ?? 0;
+      } catch {
+        return 0;
+      }
+    },
+    enabled,
+    staleTime: 30_000,
+  });
+
+  return intakeCount ?? 0;
+}
+
+/** The sheet a settings row opens: the full control, with its explanations. */
+function SettingsSheetView({
+  sheet,
+  onClose,
+  medication,
+  recordOnly,
+  ownRecord,
+  times,
+  schedules,
+  onOpenImport,
+}: {
+  sheet: SettingsSheet;
+  onClose: () => void;
+  medication: MedicationDetailSnapshot;
+  recordOnly: boolean;
+  ownRecord: boolean;
+  times: string[];
+  schedules: ScheduleSnapshotRow[];
+  onOpenImport: () => void;
+}) {
+  const { t } = useTranslations();
+  const sheetTitle: Record<SettingsSheet, string> = {
+    times: t("medications.detail.zeitplan.timesTitle"),
+    supply: t("medications.detail.bestand.title"),
+    courses: t("medications.course.title"),
+    history: t("medications.detail.zeitplan.history.title"),
+    export: t("medications.detail.settingsTab.rows.export"),
+    api: t("medications.detail.settingsTab.rows.api"),
+    codes: t("medications.detail.settingsTab.rows.codes"),
+  };
+  return (
+    <ResponsiveSheet
+      open
+      onOpenChange={(open) => !open && onClose()}
+      title={sheetTitle[sheet]}
+      contentWidth={sheet === "supply" || sheet === "history" ? "lg" : "md"}
+    >
+      <div
+        className="space-y-4"
+        data-slot={`medication-settings-sheet-${sheet}`}
+      >
+        {sheet === "times" && (
+          <ScheduleTimesEditor
+            medicationId={medication.id}
+            trackIntake={!recordOnly}
+            schedules={schedules}
+          />
+        )}
+        {sheet === "supply" && (
+          <InventorySection
+            medicationId={medication.id}
+            dosesPerUnit={medication.dosesPerUnit}
+            unitsPerDose={medication.unitsPerDose}
+            deliveryForm={medication.deliveryForm}
+          />
+        )}
+        {sheet === "courses" &&
+          (ownRecord ? (
+            <CoursesRow
+              medicationId={medication.id}
+              courses={medication.courses ?? []}
+              canStartCourse={medication.canStartCourse === true}
+              canEdit
+              showTitle={false}
+            />
+          ) : (
+            <GuardianCoursesSection
+              medicationId={medication.id}
+              courses={medication.courses ?? []}
+              canStartCourse={medication.canStartCourse === true}
+            />
+          ))}
+        {sheet === "history" && (
+          <ScheduleHistoryTimeline
+            medicationId={medication.id}
+            currentTimes={times}
+          />
+        )}
+        {sheet === "export" && (
+          <DataPortabilityRow
+            medicationId={medication.id}
+            onOpenImport={onOpenImport}
+          />
+        )}
+        {sheet === "api" && (
+          <ApiTokensRow
+            medicationId={medication.id}
+            medicationName={medication.name}
+          />
+        )}
+        {sheet === "codes" && (
+          <DrugCodingRow
+            medicationId={medication.id}
+            atcCode={medication.atcCode}
+            rxNormCode={medication.rxNormCode}
+          />
+        )}
+      </div>
+    </ResponsiveSheet>
+  );
+}
+
+type ScheduleSnapshotRow = ReturnType<typeof scheduleSnapshotsOf>[number];
+
+/** The stored schedules as the times editor and the grace row take them. */
+function scheduleSnapshotsOf(schedules: MedicationDetailSnapshot["schedules"]) {
+  return schedules.map((s) => ({
+    id: s.id,
+    windowStart: s.windowStart,
+    windowEnd: s.windowEnd,
+    label: s.label,
+    dose: s.dose,
+    daysOfWeek: s.daysOfWeek,
+    timesOfDay: s.timesOfDay,
+    rrule: s.rrule,
+    rollingIntervalDays: s.rollingIntervalDays,
+    reminderGraceMinutes: s.reminderGraceMinutes,
+    scheduleType: s.scheduleType,
+    cyclicOnWeeks: s.cyclicOnWeeks,
+    cyclicOffWeeks: s.cyclicOffWeeks,
+    doseWindows: s.doseWindows,
+  }));
+}
+
+/** The owner's data and delete groups. */
+function DataAndDeleteGroups({
+  medication,
+  offerComposition,
+  onOpenSheet,
+  onOpenImport,
+}: {
+  medication: MedicationDetailSnapshot;
+  offerComposition: boolean;
+  onOpenSheet: (sheet: SettingsSheet) => void;
+  onOpenImport: () => void;
+}) {
+  const { t } = useTranslations();
+  const intakeCount = useIntakeCount(medication.id, true);
+  return (
+    <>
+      {/* DATA */}
+      <Group
+        icon={Database}
+        title={t("medications.detail.erweitert.group.data")}
+        slot="medication-settings-data"
+      >
+        <OpenRow
+          label={t("medications.detail.settingsTab.rows.export")}
+          value="CSV"
+          onOpen={() => onOpenSheet("export")}
+          slot="medication-settings-export"
+        />
+        <OpenRow
+          label={t("medications.detail.settingsTab.rows.import")}
+          value="JSON"
+          onOpen={onOpenImport}
+          slot="medication-settings-import"
+        />
+        <OpenRow
+          label={t("medications.detail.settingsTab.rows.api")}
+          onOpen={() => onOpenSheet("api")}
+          slot="api-group-external-api"
+        />
+        <OpenRow
+          label={t("medications.detail.settingsTab.rows.codes")}
+          value={[medication.atcCode, medication.rxNormCode]
+            .filter(Boolean)
+            .join(", ")}
+          onOpen={() => onOpenSheet("codes")}
+          slot="medication-settings-codes"
+        />
+        {offerComposition && (
+          <InlineRow slot="medication-settings-composition">
+            <CompositionRow medicationId={medication.id} ownRecord />
+          </InlineRow>
+        )}
+      </Group>
+
+      {/* DELETE */}
+      <Group
+        icon={Trash2}
+        title={t("common.delete")}
+        slot="erweitert-group-danger"
+      >
+        <li>
+          <DangerZoneBody
+            medicationId={medication.id}
+            medicationName={medication.name}
+            intakeCount={intakeCount}
+            compact
+          />
+        </li>
+      </Group>
+    </>
+  );
+}
+
+/** Pause, end, the courses and the plan history. */
+function PeriodGroup({
+  medication,
+  ownRecord,
+  onOpenSheet,
+}: {
+  medication: MedicationDetailSnapshot;
+  ownRecord: boolean;
+  onOpenSheet: (sheet: SettingsSheet) => void;
+}) {
+  const { t } = useTranslations();
+  const courses = medication.courses ?? [];
+  return (
+    <Group
+      icon={CalendarRange}
+      title={t("medications.detail.settingsTab.groups.period")}
+      slot="medication-settings-period"
+    >
+      {ownRecord && (
+        <li data-slot="medication-settings-lifecycle">
+          <LifecycleManageBody medication={medication} compact />
+        </li>
+      )}
+      <OpenRow
+        label={t("medications.course.title")}
+        value={
+          courses.length > 0
+            ? t("medications.detail.settingsTab.courseCount", {
+                count: courses.length,
+              })
+            : undefined
+        }
+        onOpen={() => onOpenSheet("courses")}
+        slot="medication-settings-courses"
+      />
+      <OpenRow
+        label={t("medications.detail.zeitplan.history.title")}
+        onOpen={() => onOpenSheet("history")}
+        slot="medication-zeitplan-history"
+      />
+    </Group>
   );
 }

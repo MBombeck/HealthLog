@@ -2549,8 +2549,8 @@
         },
         "intake": {
           "title": "Приём",
-          "missedNone": "За {days, plural, one {# день} few {# дня} many {# дней} other {# дня}} ни одной пропущенной дозы.",
-          "missedSome": "За {days, plural, one {# день} few {# дня} many {# дней} other {# дня}} {count, plural, one {пропущена # доза} few {пропущены # дозы} many {пропущено # доз} other {пропущено # дозы}}.",
+          "missedNone": "За {days, plural, one {# день} few {# дня} many {# дней} other {# дня}} нет ни одной не принятой дозы.",
+          "missedSome": "За {days, plural, one {# день} few {# дня} many {# дней} other {# дня}} {count, plural, one {не принята # доза} few {не приняты # дозы} many {не принято # доз} other {не принято # дозы}}.",
           "asNeededCount": "{count, plural, =0 {Не принималось {days} дней.} one {Принято # раз за {days} дней.} few {Принято # раза за {days} дней.} many {Принято # раз за {days} дней.} other {Принято # раза за {days} дней.}}"
         },
         "legend": {

@@ -89,15 +89,13 @@ export function DoseHistoryLedger({
   schedules,
   windowDays = 90,
 }: DoseHistoryLedgerProps) {
-  const { t, locale } = useTranslations();
+  const { t } = useTranslations();
   const fmt = useFormatters();
-  const dateFormatPref = useDateFormatPreference();
   // A delegate may record a dose, which is what "add" and the visible take
   // do. Editing, deleting, pinning and un-skipping an existing event are the
   // owner's, so the day menu is absent for them.
   const { canWriteDomain } = useRecordCapabilities();
   const canAddIntake = canWriteDomain("medications");
-  const today = useTodayKey();
   const [addOpen, setAddOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<{
     id: string;
@@ -123,11 +121,6 @@ export function DoseHistoryLedger({
     pendingPin,
     setPendingPin,
   } = useDoseHistoryLedger({ medicationId, medicationName, windowDays });
-
-  const columns = useMemo(() => ledgerColumns(groups), [groups]);
-  const hasOffSchedule = groups.some((g) =>
-    g.rows.some((row) => row.kind === "ad_hoc"),
-  );
 
   const handlers: LedgerRowHandlers = {
     onMark: markSlot,
@@ -196,113 +189,12 @@ export function DoseHistoryLedger({
       )}
 
       {data && groups.length > 0 && (
-        <table className="w-full table-fixed text-sm" data-slot="ledger-table">
-          <caption className="sr-only">
-            {t("medications.detail.intake.title")}
-          </caption>
-          <thead>
-            <tr className="border-border/60 text-muted-foreground border-b text-left text-xs">
-              <th scope="col" className="w-[34%] py-2 pr-2 font-medium">
-                {t("medications.detail.verlauf.dayColumn")}
-              </th>
-              {columns.map((time) => (
-                <th
-                  key={time}
-                  scope="col"
-                  className="px-2 py-2 font-medium tabular-nums"
-                >
-                  {fmt.wallTime(time)}
-                </th>
-              ))}
-              {(hasOffSchedule || columns.length === 0) && (
-                <th scope="col" className="px-2 py-2 font-medium">
-                  {columns.length === 0
-                    ? t("medications.detail.verlauf.takenColumn")
-                    : t("medications.detail.verlauf.extraColumn")}
-                </th>
-              )}
-              <th scope="col" className="w-11 py-2">
-                <span className="sr-only">
-                  {t("medications.detail.verlauf.actionsColumn")}
-                </span>
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-border/60 divide-y">
-            {groups.map((group) => {
-              const dayLabel = formatDateWithWeekdaySmart(
-                group.dayKey,
-                dateFormatPref,
-                locale,
-              );
-              const isToday = group.dayKey === todayKey;
-              const dayKey = group.dayKey;
-              const openable = isOpenableDay(dayKey, today);
-              const offSchedule = group.rows.filter(
-                (row) => row.kind === "ad_hoc",
-              );
-              return (
-                <tr
-                  key={group.dayKey}
-                  className="h-11 align-middle"
-                  data-slot="ledger-day"
-                  data-day={group.dayKey}
-                >
-                  <th
-                    scope="row"
-                    className="text-muted-foreground py-1.5 pr-2 text-left font-normal tabular-nums"
-                  >
-                    {dayLabel}
-                  </th>
-                  {columns.map((time) => (
-                    <td key={time} className="px-2 py-1.5">
-                      {group.rows
-                        .filter(
-                          (row) =>
-                            row.kind === "slot" && row.timeOfDay === time,
-                        )
-                        .map((row, i) => (
-                          <LedgerDoseCell
-                            key={`${row.at}:${row.intake?.id ?? i}`}
-                            row={row}
-                            marking={marking}
-                            isToday={isToday}
-                            onMark={markSlot}
-                          />
-                        ))}
-                    </td>
-                  ))}
-                  {(hasOffSchedule || columns.length === 0) && (
-                    <td className="px-2 py-1.5">
-                      <div className="flex flex-wrap gap-x-3 gap-y-1">
-                        {offSchedule.map((row: LedgerRow, i) => (
-                          <LedgerDoseCell
-                            key={`${row.at}:${row.intake?.id ?? i}`}
-                            row={row}
-                            marking={marking}
-                            isToday={isToday}
-                            onMark={markSlot}
-                          />
-                        ))}
-                      </div>
-                    </td>
-                  )}
-                  <td className="py-1 text-right">
-                    <LedgerDayMenu
-                      dayLabel={dayLabel}
-                      rows={group.rows}
-                      isToday={isToday}
-                      onOpenDay={
-                        openable ? () => openDay(dayKey as DateKey) : undefined
-                      }
-                      handlers={handlers}
-                    />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <LedgerTable
+          groups={groups}
+          todayKey={todayKey}
+          marking={marking}
+          handlers={handlers}
+        />
       )}
 
       <IntakeEditDialog
@@ -335,5 +227,134 @@ export function DoseHistoryLedger({
         />
       )}
     </div>
+  );
+}
+
+/** The ledger as a table: one row per day, a column per dose time. */
+function LedgerTable({
+  groups,
+  todayKey,
+  marking,
+  handlers,
+}: {
+  groups: LedgerDayGroup[];
+  todayKey: string;
+  marking: string | null;
+  handlers: LedgerRowHandlers;
+}) {
+  const { t, locale } = useTranslations();
+  const fmt = useFormatters();
+  const dateFormatPref = useDateFormatPreference();
+  const today = useTodayKey();
+  const markSlot = handlers.onMark;
+  const columns = useMemo(() => ledgerColumns(groups), [groups]);
+  const hasOffSchedule = groups.some((g) =>
+    g.rows.some((row) => row.kind === "ad_hoc"),
+  );
+  return (
+    <table className="w-full table-fixed text-sm" data-slot="ledger-table">
+      <caption className="sr-only">
+        {t("medications.detail.intake.title")}
+      </caption>
+      <thead>
+        <tr className="border-border/60 text-muted-foreground border-b text-left text-xs">
+          <th scope="col" className="w-[34%] py-2 pr-2 font-medium">
+            {t("medications.detail.verlauf.dayColumn")}
+          </th>
+          {columns.map((time) => (
+            <th
+              key={time}
+              scope="col"
+              className="px-2 py-2 font-medium tabular-nums"
+            >
+              {fmt.wallTime(time)}
+            </th>
+          ))}
+          {(hasOffSchedule || columns.length === 0) && (
+            <th scope="col" className="px-2 py-2 font-medium">
+              {columns.length === 0
+                ? t("medications.detail.verlauf.takenColumn")
+                : t("medications.detail.verlauf.extraColumn")}
+            </th>
+          )}
+          <th scope="col" className="w-11 py-2">
+            <span className="sr-only">
+              {t("medications.detail.verlauf.actionsColumn")}
+            </span>
+          </th>
+        </tr>
+      </thead>
+      <tbody className="divide-border/60 divide-y">
+        {groups.map((group) => {
+          const dayLabel = formatDateWithWeekdaySmart(
+            group.dayKey,
+            dateFormatPref,
+            locale,
+          );
+          const isToday = group.dayKey === todayKey;
+          const dayKey = group.dayKey;
+          const openable = isOpenableDay(dayKey, today);
+          const offSchedule = group.rows.filter((row) => row.kind === "ad_hoc");
+          return (
+            <tr
+              key={group.dayKey}
+              className="h-11 align-middle"
+              data-slot="ledger-day"
+              data-day={group.dayKey}
+            >
+              <th
+                scope="row"
+                className="text-muted-foreground py-1.5 pr-2 text-left font-normal tabular-nums"
+              >
+                {dayLabel}
+              </th>
+              {columns.map((time) => (
+                <td key={time} className="px-2 py-1.5">
+                  {group.rows
+                    .filter(
+                      (row) => row.kind === "slot" && row.timeOfDay === time,
+                    )
+                    .map((row, i) => (
+                      <LedgerDoseCell
+                        key={`${row.at}:${row.intake?.id ?? i}`}
+                        row={row}
+                        marking={marking}
+                        isToday={isToday}
+                        onMark={markSlot}
+                      />
+                    ))}
+                </td>
+              ))}
+              {(hasOffSchedule || columns.length === 0) && (
+                <td className="px-2 py-1.5">
+                  <div className="flex flex-wrap gap-x-3 gap-y-1">
+                    {offSchedule.map((row: LedgerRow, i) => (
+                      <LedgerDoseCell
+                        key={`${row.at}:${row.intake?.id ?? i}`}
+                        row={row}
+                        marking={marking}
+                        isToday={isToday}
+                        onMark={markSlot}
+                      />
+                    ))}
+                  </div>
+                </td>
+              )}
+              <td className="py-1 text-right">
+                <LedgerDayMenu
+                  dayLabel={dayLabel}
+                  rows={group.rows}
+                  isToday={isToday}
+                  onOpenDay={
+                    openable ? () => openDay(dayKey as DateKey) : undefined
+                  }
+                  handlers={handlers}
+                />
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
   );
 }

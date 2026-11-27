@@ -14,10 +14,10 @@ export type TabSlug = (typeof TAB_SLUGS)[number];
 
 /**
  * Slugs an old link may still carry, and the tab each one opens now. The
- * tabs had German slugs in every language until v1.44, and six tabs until
- * v1.50: the schedule, supply and advanced tabs folded into the settings
- * tab, so a bookmark, a report or a low-stock push sent before either change
- * still opens the page where its controls live.
+ * tabs once had German slugs in every language, and there were six of them:
+ * the schedule, supply and advanced tabs folded into the settings tab. A
+ * bookmark, a report or a low-stock push sent before either change still
+ * opens the page where its controls live.
  */
 export const LEGACY_TAB_SLUGS: Record<string, TabSlug> = {
   uebersicht: "overview",

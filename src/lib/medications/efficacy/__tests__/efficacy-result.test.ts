@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  efficacyDirection,
-  efficacyResultOf,
   localiseEfficacyLabels,
   type EfficacyBeforeAfter,
   type MedicationEfficacyDTO,
 } from "@/lib/medications/efficacy/build-efficacy";
+import {
+  efficacyDirection,
+  efficacyResultOf,
+} from "@/lib/medications/efficacy/efficacy-result";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { locales } from "@/lib/i18n/config";
 

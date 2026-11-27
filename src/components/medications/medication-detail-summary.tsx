@@ -15,9 +15,11 @@ import type { ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import {
+  cadenceLineFor,
   hydrateWizardPayload,
-  summariseCadenceShort,
+  sortTimes,
   type MedicationPayload,
+  type WizardPayload,
 } from "@/components/medications/wizard/wizard-payload";
 import {
   useTranslations,
@@ -57,6 +59,28 @@ function resolveStatus(
 ): Status {
   if (courseStatus === "ENDED") return "ended";
   return active ? "active" : "paused";
+}
+
+/**
+ * The cadence and its times without the course window ("Jeden Tag, um 08:00
+ * und 20:00"): the start and end dates live in the plan below the header.
+ */
+export function summariseCadenceShort(
+  payload: WizardPayload,
+  t: (key: string, params?: Record<string, string | number>) => string,
+  wallTime: (hhmm: string) => string,
+  joinTimes: (times: string[]) => string,
+): string {
+  const cadenceLine = cadenceLineFor(payload, t);
+  const timesPhrase =
+    payload.mode !== "oneShot" &&
+    payload.mode !== "asNeeded" &&
+    payload.timesOfDay.length > 0
+      ? t("medications.wizard.summary.times", {
+          times: joinTimes(sortTimes(payload.timesOfDay).map(wallTime)),
+        })
+      : "";
+  return [cadenceLine, timesPhrase].filter(Boolean).join(", ");
 }
 
 /** Clock times as a list in the reader's language: "08:00 und 20:00". */

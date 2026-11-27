@@ -88,16 +88,18 @@ import {
   TAB_SLUGS,
   type TabSlug,
 } from "@/components/medications/detail/tab-slugs";
+import type { OverviewCompliance } from "@/components/medications/detail/overview/anatomy";
+import { EffectCard } from "@/components/medications/detail/overview/effect-card";
 import {
-  EffectCard,
-  IntakeCard,
-  PlanCard,
-  TodayCard,
-  useOverviewLedger,
-  useTodayDoses,
   GRID_DAYS,
-  type OverviewCompliance,
-} from "@/components/medications/detail/overview/overview-cards";
+  IntakeCard,
+  useOverviewLedger,
+} from "@/components/medications/detail/overview/intake-card";
+import { PlanCard } from "@/components/medications/detail/overview/plan-card";
+import {
+  TodayCard,
+  useTodayDoses,
+} from "@/components/medications/detail/overview/today-card";
 import { MedicationSettingsTab } from "@/components/medications/detail/settings/settings-tab";
 import { useTodayKey } from "@/components/day/use-today-key";
 
