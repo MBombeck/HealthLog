@@ -798,13 +798,6 @@
   },
   "dashboard": {
     "title": "Pulpit",
-    "greeting": {
-      "morning": "Dzień dobry",
-      "day": "Cześć",
-      "evening": "Dobry wieczór"
-    },
-    "welcomeBack": "{greeting}, witaj ponownie.",
-    "welcomeBackWithName": "{greeting}, {name}, witaj ponownie.",
     "greetingSalutation": "Cześć, {name}",
     "streakLabel": "dni z rzędu",
     "weight": "Waga",
@@ -941,9 +934,6 @@
       "body": "Bez kopii kluczy, których używa ten serwer, jego danych nie da się odzyskać po ponownej instalacji. To zajmie kilka minut.",
       "action": "Otwórz zestaw"
     },
-    "greetingOnly": "{greeting}.",
-    "welcomeNew": "Witaj.",
-    "welcomeNewWithName": "Witaj, {name}.",
     "quickAddSeizure": "Zapisz napad",
     "morning": {
       "heroItemsTitle": "Do zrobienia dziś",
@@ -9716,8 +9706,6 @@
       },
       "question": {
         "title": "Korzystać z przekaźnika push HealthLog?",
-        "askTitle": "Użyć przekaźnika push?",
-        "askBody": "Treść pozostaje zaszyfrowana.",
         "body": "Powiadomienia dla aplikacji z App Store, szyfrowane end-to-end: przekaźnik widzi tylko, kiedy jakieś zostaje wysłane.",
         "yes": "Tak",
         "no": "Nie",
@@ -9810,7 +9798,6 @@
       "notice": {
         "title": "Skonfiguruj ten serwer",
         "body": "Pięć krótkich kroków o rejestracji, powiadomieniach, AI i prywatności; każdy możesz pominąć lub zmienić później.",
-        "bodyShort": "Pięć krótkich kroków o rejestracji, powiadomieniach, AI i prywatności.",
         "open": "Rozpocznij konfigurację",
         "dismiss": "Nie teraz"
       },
@@ -13843,7 +13830,6 @@
       },
       "syncIssue": {
         "title": "Synchronizacja wymaga uwagi",
-        "askTitle": "Synchronizacja przerwana",
         "body": "{integration} się nie synchronizuje. Połącz ponownie, aby dane były aktualne."
       },
       "sourceQuiet": {
@@ -13896,10 +13882,9 @@
     "action": {
       "logDose": "Przyjmij",
       "later": "Później",
-      "answer": "Odpowiedz",
-      "learnMore": "Więcej",
+      "answer": "Odpisz",
       "open": "Otwórz",
-      "setUp": "Skonfiguruj",
+      "setUp": "Ustaw",
       "reconnectShort": "Połącz",
       "reconnect": "Połącz ponownie",
       "viewCheckups": "Otwórz profilaktykę",
@@ -13911,6 +13896,23 @@
       "viewEcg": "Zobacz zapis",
       "viewSteps": "Zobacz kroki",
       "openSource": "Otwórz"
+    },
+    "ask": {
+      "medication": "Lek",
+      "overdue": "Zaległy {time}",
+      "overdueNow": "Zaległy",
+      "due": "O godz. {time}",
+      "dueNow": "Do przyjęcia",
+      "checkupDue": "Do wykonania",
+      "visitToday": "Wizyta dzisiaj",
+      "visitTomorrow": "Wizyta jutro",
+      "signedOut": "Rozłączono",
+      "planFallback": "Twój plan",
+      "planReview": "Do przeglądu",
+      "setupTitle": "Ten serwer",
+      "setupMeta": "Do konfiguracji",
+      "relayTitle": "Przekaźnik?",
+      "relayMeta": "Szyfrowane"
     },
     "today": {
       "deltaShort": "{delta} wzgl. bazowej",
@@ -16305,10 +16307,10 @@
       "fieldsLabel": "Co pokazuje link",
       "expiryLabel": "Koniec ważności linku",
       "expiry": {
-        "none": "Nigdy, do cofnięcia",
         "30": "Za 30 dni",
         "365": "Za rok",
-        "730": "Za dwa lata"
+        "730": "Za dwa lata",
+        "none": "Nigdy, do cofnięcia"
       },
       "create": "Utwórz link",
       "qrAlt": "Kod QR do linku karty ratunkowej",

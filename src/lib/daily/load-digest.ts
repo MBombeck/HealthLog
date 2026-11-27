@@ -947,6 +947,7 @@ export async function loadDailyDigest(
       reactionLanguage,
       firstName: firstNameFromDisplayName(user.displayName),
       nextDoseTimeLabel: nextOpensAt ? localTime(new Date(nextOpensAt)) : null,
+      localTime,
       lastNight,
       syncIssues,
       quietSources: wordQuietSources(quietRows, now, user.timezone, locale),

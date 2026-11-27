@@ -9,11 +9,19 @@
  * (`src/lib/daily/asks.ts`), so the app shows the same rows, all of them:
  * the rules keep the list short, so nothing folds away.
  *
- * Each row: the kind's icon, one title line and one body line at the same
- * size (the title semibold, both foreground; "Learn more" at the end of the
- * sentence where there is one), and the row's buttons (`AskActions`). Rows
- * are spaced, never ruled. In a wide card the buttons stand beside the
- * text; in a narrow one under it.
+ * One list, a line between rows, the same anatomy at every width: the
+ * kind's icon, the title (the thing: a medication, a check-up, a visit) over
+ * one meta line (its state: "Overdue 8:00 AM", "Visit tomorrow"), and the
+ * two buttons at the right end of the row (`AskActions`). Title and meta are
+ * one line each. The server words them to fit a phone (`asks-text-budget`
+ * test); a name the person typed can still be longer, and only the title
+ * then ends in an ellipsis, its full text still the heading's accessible
+ * name and its tooltip. A row past its time (`safety`) sets its meta in the
+ * warning colour; the word carries the meaning, the colour repeats it.
+ *
+ * The card is a grid whose rows share its columns (`subgrid`): the buttons'
+ * column is as wide as the widest pair in the card, so every row's buttons
+ * stand in one column and the text takes all the room that is left.
  *
  * Every row has two actions. A dose opens the intake sheet (or its
  * medication) and "Later" snoozes it the way the medication card does; a
@@ -50,6 +58,7 @@ import { apiPost } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
 import { useDismissServerSetupNotice } from "@/lib/queries/use-server-setup";
 import { queryKeys } from "@/lib/query-keys";
+import { cn } from "@/lib/utils";
 
 const KIND_ICON: Record<DailyAskKind, LucideIcon> = {
   dose_window: Pill,
@@ -80,8 +89,14 @@ export function TodayAsks({
       <h2 id={headingId} className="sr-only">
         {t("daily.morningCard.title.toDo")}
       </h2>
-      <Card className="@container" data-ask-count={asks.length}>
-        <ul className="flex flex-col gap-4 md:gap-6">
+      <Card
+        className="@container gap-0 overflow-hidden py-0 md:py-0"
+        data-ask-count={asks.length}
+      >
+        <ul
+          data-slot="today-ask-list"
+          className="divide-border/70 grid grid-cols-[auto_minmax(0,1fr)_max-content] divide-y"
+        >
           {asks.map((ask) => (
             <AskRow key={ask.itemKey} ask={ask} onLogDose={onLogDose} />
           ))}
@@ -94,6 +109,7 @@ export function TodayAsks({
 function AskRow({ ask, onLogDose }: { ask: DailyAsk; onLogDose?: () => void }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
+  const titleId = useId();
   const caps = useRecordCapabilities();
   const { canWriteDomain } = caps;
   // #1615 — or a managed profile's guardian, who holds the owner's rights.
@@ -179,55 +195,52 @@ function AskRow({ ask, onLogDose }: { ask: DailyAsk; onLogDose?: () => void }) {
       data-slot="today-ask"
       data-kind={ask.kind}
       data-tier={ask.tier}
-      className="flex flex-col gap-3 px-4 md:px-6 @min-[44.25rem]:flex-row @min-[44.25rem]:items-center @min-[44.25rem]:gap-6"
+      className="col-span-3 grid grid-cols-subgrid items-center gap-x-2 px-3 py-3 md:gap-x-3 md:px-6"
     >
-      <div className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1">
-        <Icon aria-hidden="true" className="text-foreground size-5" />
+      <Icon
+        aria-hidden="true"
+        className="text-foreground size-4 @min-[44.25rem]:size-5"
+      />
+      <div className="min-w-0">
         <h3
-          // The title carries the row, at the body's size so the two lines
-          // weigh alike; the card's one heading is the section's (screen
+          id={titleId}
+          // One line. A name the person typed may run long: it ends in an
+          // ellipsis, and the full text stays the heading's accessible name
+          // and its tooltip. The card's one heading is the section's (screen
           // readers only).
           data-slot="today-ask-title"
-          className="text-foreground text-sm leading-5 font-semibold"
+          title={ask.title}
+          className="text-foreground truncate text-sm leading-5 font-semibold"
         >
           {ask.title}
         </h3>
         {ask.body ? (
-          // One line in a wide card: the sentence takes the width the
-          // buttons leave, and "More" stays at its end; copy is written to
-          // fit. In a narrow card, two lines at most.
+          // One line, worded on the server to fit it at 360 px in every
+          // language (`ASK_TEXT_BUDGET`).
           <p
-            data-slot="today-ask-body"
-            title={ask.body}
-            className="text-foreground col-start-2 line-clamp-2 min-w-0 text-sm leading-5 @min-[44.25rem]:line-clamp-none @min-[44.25rem]:flex @min-[44.25rem]:gap-1"
+            data-slot="today-ask-meta"
+            className={cn(
+              "flex min-w-0 gap-1 text-xs leading-4 whitespace-nowrap",
+              ask.tier === "safety"
+                ? "text-warning font-medium"
+                : "text-muted-foreground",
+            )}
           >
-            <span className="@min-[44.25rem]:min-w-0 @min-[44.25rem]:truncate">
-              {ask.body}
-            </span>
+            <span className="min-w-0 truncate">{ask.body}</span>
             {ask.learnMore ? (
-              <>
-                {" "}
-                <InlineAction
-                  asChild
-                  tone="muted"
-                  size="sm"
-                  className="@min-[44.25rem]:shrink-0"
-                >
-                  <a href={ask.learnMore.href} target="_blank" rel="noreferrer">
-                    {t(ask.learnMore.labelKey)}
-                  </a>
-                </InlineAction>
-              </>
+              <InlineAction asChild tone="muted" size="xs" className="shrink-0">
+                <a href={ask.learnMore.href} target="_blank" rel="noreferrer">
+                  {t(ask.learnMore.labelKey)}
+                </a>
+              </InlineAction>
             ) : null}
           </p>
         ) : null}
         {ask.kind === "push_relay" && relay.refusalNote ? (
-          <div className="col-start-2">{relay.refusalNote}</div>
+          <div className="mt-1 whitespace-normal">{relay.refusalNote}</div>
         ) : null}
       </div>
-      <div className="pl-8 @min-[44.25rem]:pl-0">
-        <AskActions actions={actions} pending={pending} />
-      </div>
+      <AskActions actions={actions} pending={pending} describedBy={titleId} />
       {ask.kind === "push_relay" ? relay.dialog : null}
     </li>
   );

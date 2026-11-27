@@ -798,13 +798,6 @@
   },
   "dashboard": {
     "title": "Tableau de bord",
-    "greeting": {
-      "morning": "Bonjour",
-      "day": "Bonjour",
-      "evening": "Bonsoir"
-    },
-    "welcomeBack": "{greeting}, content de vous revoir.",
-    "welcomeBackWithName": "{greeting}, {name}, content de vous revoir.",
     "greetingSalutation": "Bonjour, {name}",
     "streakLabel": "jours d’affilée",
     "weight": "Poids",
@@ -941,9 +934,6 @@
       "body": "Sans copies des clés utilisées par ce serveur, ses données ne peuvent pas être récupérées après une réinstallation. Ça prend quelques minutes.",
       "action": "Ouvrir le kit"
     },
-    "greetingOnly": "{greeting}.",
-    "welcomeNew": "Bienvenue.",
-    "welcomeNewWithName": "Bienvenue, {name}.",
     "quickAddSeizure": "Enregistrer une crise",
     "morning": {
       "heroItemsTitle": "À faire aujourd'hui",
@@ -9716,8 +9706,6 @@
       },
       "question": {
         "title": "Utiliser le relais push HealthLog ?",
-        "askTitle": "Notifications par relais push ?",
-        "askBody": "Le contenu reste chiffré.",
         "body": "Des notifications pour l'app de l'App Store, chiffrées de bout en bout : le relais voit seulement quand l'une d'elles est envoyée.",
         "yes": "Oui",
         "no": "Non",
@@ -9810,7 +9798,6 @@
       "notice": {
         "title": "Configurer ce serveur",
         "body": "Cinq étapes courtes sur les inscriptions, les notifications, l'IA et la confidentialité ; chacune peut être ignorée ou modifiée plus tard.",
-        "bodyShort": "Cinq étapes courtes sur les inscriptions, les notifications, l'IA et la confidentialité.",
         "open": "Commencer la configuration",
         "dismiss": "Pas maintenant"
       },
@@ -13843,7 +13830,6 @@
       },
       "syncIssue": {
         "title": "La synchronisation demande votre attention",
-        "askTitle": "Synchro interrompue",
         "body": "{integration} ne se synchronise pas. Reconnectez-le pour garder vos données à jour."
       },
       "sourceQuiet": {
@@ -13897,10 +13883,9 @@
       "logDose": "Prendre",
       "later": "Plus tard",
       "answer": "Répondre",
-      "learnMore": "Plus",
       "open": "Ouvrir",
       "setUp": "Configurer",
-      "reconnectShort": "Reconnecter",
+      "reconnectShort": "Connecter",
       "reconnect": "Reconnecter",
       "viewCheckups": "Voir les examens",
       "checkinKeep": "Garder",
@@ -13911,6 +13896,23 @@
       "viewEcg": "Voir l’enregistrement",
       "viewSteps": "Voir les pas",
       "openSource": "Ouvrir"
+    },
+    "ask": {
+      "medication": "Médicament",
+      "overdue": "En retard {time}",
+      "overdueNow": "En retard",
+      "due": "Prévu {time}",
+      "dueNow": "À prendre",
+      "checkupDue": "Examen à faire",
+      "visitToday": "Aujourd’hui",
+      "visitTomorrow": "Demain",
+      "signedOut": "Déconnecté",
+      "planFallback": "Votre plan",
+      "planReview": "Point à faire",
+      "setupTitle": "Ce serveur",
+      "setupMeta": "Pas configuré",
+      "relayTitle": "Relais push ?",
+      "relayMeta": "Chiffré"
     },
     "today": {
       "deltaShort": "{delta} vs référence",
@@ -16305,10 +16307,10 @@
       "fieldsLabel": "Ce que le lien affiche",
       "expiryLabel": "Fin du lien",
       "expiry": {
-        "none": "Jamais, jusqu'à révocation",
         "30": "Dans 30 jours",
         "365": "Dans un an",
-        "730": "Dans deux ans"
+        "730": "Dans deux ans",
+        "none": "Jamais, jusqu'à révocation"
       },
       "create": "Créer le lien",
       "qrAlt": "Code QR du lien vers la carte d'urgence",

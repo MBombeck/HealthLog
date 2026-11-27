@@ -371,6 +371,13 @@ export interface DailyDigestInput {
   /** `medsToday.nextDueAt` as a local time in the reader's format. */
   nextDoseTimeLabel?: string | null;
   /**
+   * An instant as a time on the reader's own clock, in their timezone and
+   * hour-cycle preference ("08:00", "8:00 AM"): a dose's time in its ask.
+   * Optional so a fixture that predates it stays valid; an ask then says
+   * the state without the time.
+   */
+  localTime?: (instant: Date) => string;
+  /**
    * Last night as the morning reads it (`resolveLastNight`, through
    * `lastNightFromSnapshot`): whether it is in, with its duration, and whether
    * the day still waits for it. The freshness phase, `sleepPending` and the

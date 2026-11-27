@@ -35,20 +35,34 @@
  *    unanswered question simply stays until it is answered.
  *  - Each action carries the short label of its verb (`daily.action.*`), so
  *    every button of the card fits one size in every language.
+ *  - The wording is object and state: the title names the thing (the
+ *    medication, the check-up, the visit, the source, the plan), the body
+ *    its state in a few words (`daily.ask.*`, `wordAsk`). One line each on a
+ *    phone in every language; a name the person typed may still run long,
+ *    and the card cuts only that.
  *
  * Pure: the inputs are the digest's own candidates, already filtered by the
  * person's item-kind visibility and the dismiss ledger. The IO seam
  * (`load-digest.ts`) reads the snoozes and the admin state.
  */
-import { SERVER_SETUP_DOCS } from "@/lib/admin/server-setup";
+import {
+  CONNECTION_LABELS,
+  type ConnectionKey,
+} from "@/lib/integrations/connection-health";
 import type { DailyDigestInput } from "@/lib/daily/digest";
 import {
   ASK_INTENT,
   askLaterKey,
   OPTIONAL_ASK_KINDS,
 } from "@/lib/daily/ask-intents";
-import { doseWindowItemKey } from "@/lib/daily/priority-item-key";
+import {
+  coachCheckinItemKey,
+  doseWindowItemKey,
+  syncIssueItemKey,
+} from "@/lib/daily/priority-item-key";
 import { COACH_CHECKIN_ADJUST_INTENT } from "@/lib/daily/coach-checkin-intents";
+import type { EncounterKind } from "@/generated/prisma/client";
+import { encounterKindLabelKey } from "@/lib/encounters/kind-label";
 
 export { ASK_INTENT, OPTIONAL_ASK_KINDS };
 import type {
@@ -56,6 +70,28 @@ import type {
   PriorityItemAction,
   PriorityItemKind,
 } from "@/lib/daily/priority-item";
+
+/**
+ * The one text budget of an ask, shared with the iPhone app: in every
+ * language, a title the server words itself is at most `titleChars`
+ * characters and a meta line (`body`) at most `metaChars`, so both fit one
+ * line beside the icon and the button pair on the narrowest phone either
+ * client supports (`phoneCssPx`, 360 css px / 375 pt), even with a 15 px
+ * scrollbar taking width. A title over budget (a name the person typed)
+ * ends in an ellipsis on the client; a meta never does, so the server never
+ * sends one over budget. The numbers come from measuring every language's
+ * longest line in Inter on the web card. Guard: `asks-text-budget.test.ts`.
+ */
+export const ASK_TEXT_BUDGET = {
+  titleChars: 14,
+  metaChars: 16,
+  phoneCssPx: 360,
+} as const;
+
+/** Characters as a reader counts them (code points, not UTF-16 units). */
+export function askTextLength(text: string): number {
+  return [...text].length;
+}
 
 /** More rows than this means the rules let too much through. */
 export const ASKS_EXPECTED_MAX = 5;
@@ -137,9 +173,18 @@ export interface DailyAsk {
   tier: DailyAskTier;
   /** Stable identity, namespaced `<kind>:...`. */
   itemKey: string;
-  /** Worded on the server, in the response language. */
+  /**
+   * The thing asked about, one line: a medication's name, a check-up, who a
+   * visit is with, a source, the coach plan. Worded on the server, in the
+   * response language.
+   */
   title: string;
-  /** One sentence, or null. */
+  /**
+   * Its state, one short line ("Overdue 8:00 AM", "Visit tomorrow"),
+   * worded to fit one line on a phone in every language
+   * (`asks-text-budget.test.ts`). Null only for an ask built outside the
+   * digest (a test fixture).
+   */
   body: string | null;
   /**
    * The name of what is asked about (a medication), for the confirmation an
@@ -355,9 +400,8 @@ export function buildAdminAsk(kind: AdminAskKind, t: Translate): DailyAsk {
       kind,
       tier: "decision",
       itemKey: "server_setup:notice",
-      title: t("admin.serverSetup.notice.title"),
-      // The one-clause form: an ask's sentence fits one line at 1440.
-      body: t("admin.serverSetup.notice.bodyShort"),
+      title: t("daily.ask.setupTitle"),
+      body: t("daily.ask.setupMeta"),
       subject: null,
       actions: [
         {
@@ -374,17 +418,17 @@ export function buildAdminAsk(kind: AdminAskKind, t: Translate): DailyAsk {
     kind,
     tier: "decision",
     itemKey: "push_relay:question",
-    title: t("admin.pushRelay.question.askTitle"),
-    body: t("admin.pushRelay.question.askBody"),
+    title: t("daily.ask.relayTitle"),
+    body: t("daily.ask.relayMeta"),
     subject: null,
     actions: [
       { labelKey: "admin.pushRelay.question.yes", intent: ASK_INTENT.relayYes },
       { labelKey: "admin.pushRelay.question.no", intent: ASK_INTENT.relayNo },
     ],
-    learnMore: {
-      labelKey: "daily.action.learnMore",
-      href: SERVER_SETUP_DOCS.pushRelay,
-    },
+    // No link on the row: it has no room on a phone, and "Yes" opens the
+    // relay dialog, which links the terms and the privacy notice before
+    // anything is switched on.
+    learnMore: null,
   };
 }
 
@@ -402,7 +446,10 @@ export function asksFromDigest(
   t: Translate,
 ): DailyAsk[] {
   const meds = input.medsToday;
-  const doses = new Map<string, { overdue: boolean; name: string | null }>();
+  const doses = new Map<
+    string,
+    { overdue: boolean; name: string | null; dueAt: string }
+  >();
   const dueCandidates =
     meds.dueCandidates ??
     (meds.nextDueAt || meds.nextDueOverdue
@@ -419,6 +466,7 @@ export function asksFromDigest(
     doses.set(doseWindowItemKey(c.medicationId, c.dueAt), {
       overdue: c.overdue,
       name: c.medicationName || null,
+      dueAt: c.dueAt,
     });
   }
   const visits = input.upcomingVisits ?? [];
@@ -472,11 +520,127 @@ export function asksFromDigest(
     restMode: Boolean(input.restMode),
     now: input.now,
   });
-  // A reconnect asks under a title short enough for one line on a phone;
-  // the rail keeps its own wording.
-  return asks.map((ask) =>
-    ask.kind === "sync_issue"
-      ? { ...ask, title: t("daily.item.syncIssue.askTitle") }
-      : ask,
-  );
+  return asks.map((ask) => ({
+    ...ask,
+    ...wordAsk(ask, { input, doses, visits }, t),
+  }));
+}
+
+/** What `wordAsk` reads beside the ask: the digest's own input. */
+interface WordingContext {
+  input: Pick<
+    DailyDigestInput,
+    "preventiveDue" | "coachPlans" | "syncIssues" | "localTime"
+  >;
+  doses: ReadonlyMap<
+    string,
+    { overdue: boolean; name: string | null; dueAt: string }
+  >;
+  visits: readonly NonNullable<DailyDigestInput["upcomingVisits"]>[number][];
+}
+
+/**
+ * A dose's meta: the state with the time it was due, or the state alone
+ * when there is no time or the time would take the line past the budget (a
+ * 12-hour clock a reader forced on a language that counts 24).
+ */
+export function doseMeta(
+  overdue: boolean,
+  time: string | null,
+  t: Translate,
+): string {
+  const withTime = time
+    ? t(overdue ? "daily.ask.overdue" : "daily.ask.due", { time })
+    : null;
+  return withTime && askTextLength(withTime) <= ASK_TEXT_BUDGET.metaChars
+    ? withTime
+    : t(overdue ? "daily.ask.overdueNow" : "daily.ask.dueNow");
+}
+
+/** How many due check-ups a title names before it counts the rest. */
+const CHECKUP_TITLE_NAMED = 1;
+
+/**
+ * An ask's two lines, object and state. The rail item's own title and body
+ * stay as they are (they are sentences, for the notification and the rail);
+ * an ask says the thing in its title and its state in a few words, so both
+ * fit one line on a phone. The admin asks are worded where they are built.
+ */
+export function wordAsk(
+  ask: DailyAsk,
+  { input, doses, visits }: WordingContext,
+  t: Translate,
+): Pick<DailyAsk, "title" | "body"> {
+  const time = (iso: string | undefined): string | null => {
+    const at = iso ? Date.parse(iso) : NaN;
+    return Number.isFinite(at) && input.localTime
+      ? input.localTime(new Date(at))
+      : null;
+  };
+  switch (ask.kind) {
+    case "dose_window": {
+      const dose = doses.get(ask.itemKey);
+      const at = time(dose?.dueAt);
+      const overdue = ask.tier === "safety";
+      return {
+        title: dose?.name ?? ask.subject ?? t("daily.ask.medication"),
+        body: doseMeta(overdue, at, t),
+      };
+    }
+    case "preventive_care": {
+      const labels = input.preventiveDue.map((d) => d.label);
+      const rest = labels.length - CHECKUP_TITLE_NAMED;
+      return {
+        title:
+          labels.length === 0
+            ? ask.title
+            : rest > 0
+              ? `${labels[0]} +${rest}`
+              : labels[0],
+        body: t("daily.ask.checkupDue"),
+      };
+    }
+    case "upcoming_visit": {
+      const first = visits.find((v) => ask.itemKey.endsWith(`:${v.id}`));
+      const offset = first ? Math.max(0, first.dayOffset) : 0;
+      const names = visits
+        .filter((v) => Math.max(0, v.dayOffset) === offset)
+        .map(
+          (v) =>
+            v.practitionerName ??
+            t(encounterKindLabelKey(v.kind as EncounterKind)),
+        );
+      return {
+        title:
+          names.length > 0 ? Array.from(new Set(names)).join(", ") : ask.title,
+        body: t(
+          offset === 0 ? "daily.ask.visitToday" : "daily.ask.visitTomorrow",
+        ),
+      };
+    }
+    case "sync_issue": {
+      const issue = input.syncIssues.find(
+        (i) => syncIssueItemKey(i.integration) === ask.itemKey,
+      );
+      const token = issue?.integration ?? "";
+      return {
+        title:
+          CONNECTION_LABELS[token as ConnectionKey] ??
+          (token ? token.charAt(0).toUpperCase() + token.slice(1) : ask.title),
+        body: t("daily.ask.signedOut"),
+      };
+    }
+    case "coach_checkin": {
+      const plan = input.coachPlans.find(
+        (p) => coachCheckinItemKey(p.id) === ask.itemKey,
+      );
+      return {
+        title: plan?.planText?.trim() || t("daily.ask.planFallback"),
+        body: t("daily.ask.planReview"),
+      };
+    }
+    case "push_relay":
+    case "server_setup":
+      return { title: ask.title, body: ask.body };
+  }
 }

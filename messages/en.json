@@ -798,13 +798,6 @@
   },
   "dashboard": {
     "title": "Dashboard",
-    "greeting": {
-      "morning": "Good morning",
-      "day": "Hello",
-      "evening": "Good evening"
-    },
-    "welcomeBack": "{greeting}, welcome back.",
-    "welcomeBackWithName": "{greeting}, {name}, welcome back.",
     "greetingSalutation": "Hi, {name}",
     "streakLabel": "days in a row",
     "weight": "Weight",
@@ -941,9 +934,6 @@
       "body": "Without copies of the keys this server uses, its data cannot be recovered after a reinstall. It takes a few minutes.",
       "action": "Open the kit"
     },
-    "greetingOnly": "{greeting}.",
-    "welcomeNew": "Welcome.",
-    "welcomeNewWithName": "Welcome, {name}.",
     "quickAddSeizure": "Log seizure",
     "morning": {
       "heroItemsTitle": "To do today",
@@ -9716,8 +9706,6 @@
       },
       "question": {
         "title": "Use the HealthLog push relay?",
-        "askTitle": "Notifications via push relay?",
-        "askBody": "The content stays encrypted.",
         "body": "Notifications for the App Store app, end-to-end encrypted: the relay only sees when one is sent.",
         "yes": "Yes",
         "no": "No",
@@ -9810,7 +9798,6 @@
       "notice": {
         "title": "Set up this server",
         "body": "Five short steps for sign-ups, notifications, AI and privacy; skip or change any of them later.",
-        "bodyShort": "Five short steps for sign-ups, notifications, AI and privacy.",
         "open": "Start the setup",
         "dismiss": "Not now"
       },
@@ -13843,7 +13830,6 @@
       },
       "syncIssue": {
         "title": "Sync needs attention",
-        "askTitle": "Sync stopped",
         "body": "{integration} isn't syncing. Reconnect to keep your data current."
       },
       "sourceQuiet": {
@@ -13897,10 +13883,9 @@
       "logDose": "Take",
       "later": "Later",
       "answer": "Answer",
-      "learnMore": "More",
       "open": "Open",
       "setUp": "Set up",
-      "reconnectShort": "Reconnect",
+      "reconnectShort": "Connect",
       "reconnect": "Reconnect",
       "viewCheckups": "Open Care",
       "checkinKeep": "Keep it",
@@ -13911,6 +13896,23 @@
       "viewEcg": "View recording",
       "viewSteps": "View steps",
       "openSource": "Open"
+    },
+    "ask": {
+      "medication": "Medication",
+      "overdue": "Overdue {time}",
+      "overdueNow": "Overdue",
+      "due": "Due {time}",
+      "dueNow": "Due now",
+      "checkupDue": "Check-up due",
+      "visitToday": "Visit today",
+      "visitTomorrow": "Visit tomorrow",
+      "signedOut": "Disconnected",
+      "planFallback": "Your plan",
+      "planReview": "Check-in due",
+      "setupTitle": "This server",
+      "setupMeta": "Not set up",
+      "relayTitle": "Push relay?",
+      "relayMeta": "Encrypted"
     },
     "today": {
       "deltaShort": "{delta} vs baseline",
@@ -16305,10 +16307,10 @@
       "fieldsLabel": "What the link shows",
       "expiryLabel": "Link ends",
       "expiry": {
-        "none": "Never, until revoked",
         "30": "In 30 days",
         "365": "In one year",
-        "730": "In two years"
+        "730": "In two years",
+        "none": "Never, until revoked"
       },
       "create": "Make the link",
       "qrAlt": "QR code for the emergency card link",

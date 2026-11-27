@@ -798,13 +798,6 @@
   },
   "dashboard": {
     "title": "Dashboard",
-    "greeting": {
-      "morning": "Goedemorgen",
-      "day": "Hallo",
-      "evening": "Goedenavond"
-    },
-    "welcomeBack": "{greeting}, welkom terug.",
-    "welcomeBackWithName": "{greeting} {name}, welkom terug.",
     "greetingSalutation": "Hoi {name}",
     "streakLabel": "dagen op rij",
     "weight": "Gewicht",
@@ -941,9 +934,6 @@
       "body": "Zonder kopieën van de sleutels die deze server gebruikt, kunnen de gegevens na een herinstallatie niet worden hersteld. Het kost een paar minuten.",
       "action": "Kit openen"
     },
-    "greetingOnly": "{greeting}.",
-    "welcomeNew": "Welkom.",
-    "welcomeNewWithName": "Welkom, {name}.",
     "quickAddSeizure": "Aanval vastleggen",
     "morning": {
       "heroItemsTitle": "Vandaag te doen",
@@ -9716,8 +9706,6 @@
       },
       "question": {
         "title": "De HealthLog-pushrelay gebruiken?",
-        "askTitle": "Meldingen via pushrelay?",
-        "askBody": "De inhoud blijft versleuteld.",
         "body": "Meldingen voor de app uit de App Store, end-to-end versleuteld: de relay ziet alleen wanneer er een wordt verstuurd.",
         "yes": "Ja",
         "no": "Nee",
@@ -9810,7 +9798,6 @@
       "notice": {
         "title": "Deze server inrichten",
         "body": "Vijf korte stappen over aanmeldingen, meldingen, AI en privacy; elke stap kun je overslaan of later wijzigen.",
-        "bodyShort": "Vijf korte stappen over aanmeldingen, meldingen, AI en privacy.",
         "open": "Inrichting starten",
         "dismiss": "Niet nu"
       },
@@ -13843,7 +13830,6 @@
       },
       "syncIssue": {
         "title": "Synchronisatie vraagt aandacht",
-        "askTitle": "Synchronisatie gestopt",
         "body": "{integration} synchroniseert niet. Maak opnieuw verbinding om je gegevens actueel te houden."
       },
       "sourceQuiet": {
@@ -13896,8 +13882,7 @@
     "action": {
       "logDose": "Innemen",
       "later": "Later",
-      "answer": "Antwoorden",
-      "learnMore": "Meer",
+      "answer": "Reageren",
       "open": "Openen",
       "setUp": "Instellen",
       "reconnectShort": "Verbinden",
@@ -13911,6 +13896,23 @@
       "viewEcg": "Opname bekijken",
       "viewSteps": "Stappen bekijken",
       "openSource": "Openen"
+    },
+    "ask": {
+      "medication": "Medicijn",
+      "overdue": "Te laat {time}",
+      "overdueNow": "Te laat",
+      "due": "Om {time}",
+      "dueNow": "Nu aan de beurt",
+      "checkupDue": "Controle nodig",
+      "visitToday": "Bezoek vandaag",
+      "visitTomorrow": "Bezoek morgen",
+      "signedOut": "Niet verbonden",
+      "planFallback": "Je plan",
+      "planReview": "Evaluatie nodig",
+      "setupTitle": "Deze server",
+      "setupMeta": "Niet ingericht",
+      "relayTitle": "Pushrelay?",
+      "relayMeta": "Versleuteld"
     },
     "today": {
       "deltaShort": "{delta} t.o.v. basislijn",
@@ -16305,10 +16307,10 @@
       "fieldsLabel": "Wat de link toont",
       "expiryLabel": "Link verloopt",
       "expiry": {
-        "none": "Nooit, tot intrekking",
         "30": "Over 30 dagen",
         "365": "Over een jaar",
-        "730": "Over twee jaar"
+        "730": "Over twee jaar",
+        "none": "Nooit, tot intrekking"
       },
       "create": "Link maken",
       "qrAlt": "QR-code voor de link naar de noodkaart",

@@ -798,13 +798,6 @@
   },
   "dashboard": {
     "title": "대시보드",
-    "greeting": {
-      "morning": "좋은 아침이에요",
-      "day": "안녕하세요",
-      "evening": "좋은 저녁이에요"
-    },
-    "welcomeBack": "{greeting}, 다시 오셨네요.",
-    "welcomeBackWithName": "{greeting}, {name}님, 다시 오셨네요.",
     "greetingSalutation": "안녕하세요, {name}님",
     "streakLabel": "일 연속",
     "weight": "체중",
@@ -941,9 +934,6 @@
       "body": "이 서버가 사용하는 키의 사본이 없으면 다시 설치한 뒤 데이터를 복구할 수 없습니다. 몇 분이면 됩니다.",
       "action": "키트 열기"
     },
-    "greetingOnly": "{greeting}.",
-    "welcomeNew": "환영합니다.",
-    "welcomeNewWithName": "{name}님, 환영합니다.",
     "quickAddSeizure": "발작 기록",
     "morning": {
       "heroItemsTitle": "오늘 할 일",
@@ -9716,8 +9706,6 @@
       },
       "question": {
         "title": "HealthLog 푸시 릴레이를 사용할까요?",
-        "askTitle": "푸시 릴레이로 알림을 받을까요?",
-        "askBody": "내용은 암호화된 채로 유지됩니다.",
         "body": "App Store 앱을 위한 종단간 암호화 알림으로, 릴레이는 알림이 언제 보내지는지만 봅니다.",
         "yes": "예",
         "no": "아니요",
@@ -9810,7 +9798,6 @@
       "notice": {
         "title": "이 서버 설정하기",
         "body": "가입, 알림, AI, 개인정보에 관한 짧은 다섯 단계이며, 어느 단계든 건너뛰거나 나중에 바꿀 수 있습니다.",
-        "bodyShort": "가입, 알림, AI, 개인정보에 관한 짧은 다섯 단계입니다.",
         "open": "설정 시작",
         "dismiss": "나중에"
       },
@@ -13843,7 +13830,6 @@
       },
       "syncIssue": {
         "title": "동기화 확인이 필요해요",
-        "askTitle": "동기화 중단",
         "body": "{integration} 동기화가 멈췄어요. 데이터를 최신으로 유지하려면 다시 연결해 주세요."
       },
       "sourceQuiet": {
@@ -13897,7 +13883,6 @@
       "logDose": "복용",
       "later": "나중에",
       "answer": "답하기",
-      "learnMore": "더 보기",
       "open": "열기",
       "setUp": "설정",
       "reconnectShort": "다시 연결",
@@ -13911,6 +13896,23 @@
       "viewEcg": "기록 보기",
       "viewSteps": "걸음 수 보기",
       "openSource": "열기"
+    },
+    "ask": {
+      "medication": "약",
+      "overdue": "{time}부터 지남",
+      "overdueNow": "시간 지남",
+      "due": "{time} 복용 예정",
+      "dueNow": "지금 복용",
+      "checkupDue": "건강검진 시기",
+      "visitToday": "오늘 진료",
+      "visitTomorrow": "내일 진료",
+      "signedOut": "연결 끊김",
+      "planFallback": "내 계획",
+      "planReview": "점검할 때예요",
+      "setupTitle": "이 서버",
+      "setupMeta": "설정 안 됨",
+      "relayTitle": "푸시 릴레이?",
+      "relayMeta": "암호화됨"
     },
     "today": {
       "deltaShort": "기준값 대비 {delta}",
@@ -16305,10 +16307,10 @@
       "fieldsLabel": "링크에 표시할 항목",
       "expiryLabel": "링크 만료",
       "expiry": {
-        "none": "철회할 때까지 유지",
         "30": "30일 후",
         "365": "1년 후",
-        "730": "2년 후"
+        "730": "2년 후",
+        "none": "철회할 때까지 유지"
       },
       "create": "링크 만들기",
       "qrAlt": "응급 카드 링크 QR 코드",

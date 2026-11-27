@@ -54,6 +54,7 @@ export const SERVER_FEATURES = [
   "medication.low-stock-trigger",
   "insights.score-origin",
   "daily.asks",
+  "daily.asks-compact",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -154,4 +155,6 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "RECOVERY_SCORE, STRESS_SCORE and STRAIN_SCORE values on GET /api/insights/derived carry origin (estimate | device | computed) and deviceSource (the measurement source of a device value, else null); the health score composite carries weights (one { id, weight } per counted pillar, summing to 1) and each snapshot healthScore.pillars row its weight (null when it did not count); every scored pillar carries its own band (green | yellow | red), resolved on the server: value.band on the score report's pillars (/api/analytics) and band on each snapshot healthScore.pillars row (null when it did not count).",
   "daily.asks":
     "GET /api/daily/digest carries asks: every row the start page asks today, often none (kind, tier safety | decision | due, itemKey, title, body, subject, exactly two actions with the primary first, learnMore), ranked on the server, never capped or folded; render as delivered, no card when empty. Later is dose.snooze:<medicationId> on a dose and ask.later:<dismissKey> on other reminders; the admin rows (push_relay, server_setup) come only to a browser session.",
+  "daily.asks-compact":
+    "DailyAsk.title is the thing asked about (a medication's name, a check-up, who a visit is with, a source, the plan) and DailyAsk.body its state in a few words (Overdue 8:00 AM; Visit tomorrow; Disconnected): a server-worded title at most 14 characters and a state at most 16 in every language, one line each beside the icon and the button pair on a 360 px phone; learnMore is always null. The web renders each ask as one list row: icon, title over the state line, Later and the primary at the row's end. A consent row (kind push_relay, CONSENT_ASK_KINDS) carries exactly No and Yes and is never set aside.",
 };

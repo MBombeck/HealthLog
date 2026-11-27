@@ -798,13 +798,6 @@
   },
   "dashboard": {
     "title": "Dashboard",
-    "greeting": {
-      "morning": "Guten Morgen",
-      "day": "Hallo",
-      "evening": "Guten Abend"
-    },
-    "welcomeBack": "{greeting}, willkommen zurück.",
-    "welcomeBackWithName": "{greeting}, {name}, willkommen zurück.",
     "greetingSalutation": "Hallo, {name}",
     "streakLabel": "Tage in Folge",
     "weight": "Gewicht",
@@ -941,9 +934,6 @@
       "body": "Ohne Kopien der Schlüssel, die dieser Server nutzt, lassen sich seine Daten nach einer Neuinstallation nicht wiederherstellen. Das dauert nur ein paar Minuten.",
       "action": "Kit öffnen"
     },
-    "greetingOnly": "{greeting}.",
-    "welcomeNew": "Willkommen.",
-    "welcomeNewWithName": "Willkommen, {name}.",
     "quickAddSeizure": "Anfall eintragen",
     "morning": {
       "heroItemsTitle": "Heute zu tun",
@@ -9716,8 +9706,6 @@
       },
       "question": {
         "title": "HealthLog-Push-Relay nutzen?",
-        "askTitle": "Benachrichtigungen per Push-Relay?",
-        "askBody": "Der Inhalt bleibt verschlüsselt.",
         "body": "Benachrichtigungen für die App aus dem App Store, Ende-zu-Ende-verschlüsselt: Das Relay sieht nur, wann eine verschickt wird.",
         "yes": "Ja",
         "no": "Nein",
@@ -9810,7 +9798,6 @@
       "notice": {
         "title": "Diesen Server einrichten",
         "body": "Fünf kurze Schritte zu Registrierung, Benachrichtigungen, KI und Datenschutz; jeden kannst du überspringen oder später ändern.",
-        "bodyShort": "Fünf kurze Schritte zu Registrierung, Benachrichtigungen, KI und Datenschutz.",
         "open": "Einrichtung starten",
         "dismiss": "Nicht jetzt"
       },
@@ -13843,7 +13830,6 @@
       },
       "syncIssue": {
         "title": "Synchronisierung braucht Aufmerksamkeit",
-        "askTitle": "Sync gestört",
         "body": "{integration} synchronisiert nicht. Verbinde neu, um deine Daten aktuell zu halten."
       },
       "sourceQuiet": {
@@ -13897,7 +13883,6 @@
       "logDose": "Einnehmen",
       "later": "Später",
       "answer": "Antworten",
-      "learnMore": "Mehr",
       "open": "Öffnen",
       "setUp": "Einrichten",
       "reconnectShort": "Verbinden",
@@ -13911,6 +13896,23 @@
       "viewEcg": "Aufzeichnung ansehen",
       "viewSteps": "Schritte ansehen",
       "openSource": "Öffnen"
+    },
+    "ask": {
+      "medication": "Medikament",
+      "overdue": "Überfällig {time}",
+      "overdueNow": "Überfällig",
+      "due": "Fällig {time}",
+      "dueNow": "Jetzt fällig",
+      "checkupDue": "Vorsorge fällig",
+      "visitToday": "Termin heute",
+      "visitTomorrow": "Termin morgen",
+      "signedOut": "Getrennt",
+      "planFallback": "Dein Plan",
+      "planReview": "Rückblick fällig",
+      "setupTitle": "Dieser Server",
+      "setupMeta": "Nicht fertig",
+      "relayTitle": "Push-Relay?",
+      "relayMeta": "Verschlüsselt"
     },
     "today": {
       "deltaShort": "{delta} zum Ausgangswert",
@@ -16305,10 +16307,10 @@
       "fieldsLabel": "Was der Link zeigt",
       "expiryLabel": "Link endet",
       "expiry": {
-        "none": "Nie, bis zum Widerruf",
         "30": "In 30 Tagen",
         "365": "In einem Jahr",
-        "730": "In zwei Jahren"
+        "730": "In zwei Jahren",
+        "none": "Nie, bis zum Widerruf"
       },
       "create": "Link erstellen",
       "qrAlt": "QR-Code für den Link zur Notfallkarte",

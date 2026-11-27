@@ -3,7 +3,9 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "./setup/test";
 
 import { STORAGE_STATE_PATH } from "./setup/global-setup";
+import { serverAsks } from "./setup/asks-fixture";
 import type { DailyAsk } from "@/lib/daily/asks";
+import { locales } from "@/lib/i18n/config";
 import type { DailyDigest } from "@/lib/daily/digest";
 import type { DailyMorning } from "@/lib/daily/morning";
 
@@ -15,6 +17,10 @@ import type { DailyMorning } from "@/lib/daily/morning";
  *
  * Every assertion is on a `data-slot` / `data-kind`, never on viewport text,
  * except the one action label a person taps.
+ *
+ * The one-line rule is checked here with the server's own wording
+ * (`setup/asks-fixture.ts`) in every language at 360 px; its width budget
+ * is `asks-text-budget.test.ts`.
  *
  * Round trips: a dose opens the intake sheet in one tap, a coach check-in
  * is answered in place. The policy itself (which rows, how many, in which
@@ -45,8 +51,8 @@ const DOSE: DailyAsk = {
   kind: "dose_window",
   tier: "safety",
   itemKey: "dose_window:e2e-med:2026-11-26T07:00:00.000Z",
-  title: "Medication overdue",
-  body: "Ramipril is past due.",
+  title: "Ramipril",
+  body: "Overdue 8:00 AM",
   subject: "Ramipril",
   learnMore: null,
   actions: [
@@ -63,8 +69,8 @@ const CHECKIN: DailyAsk = {
   kind: "coach_checkin",
   tier: "decision",
   itemKey: "coach_checkin:e2e-plan",
-  title: "Check in on your plan",
-  body: "Ten minutes of walking after lunch.",
+  title: "Walk after lunch",
+  body: "Check-in due",
   subject: null,
   learnMore: null,
   actions: [
@@ -216,8 +222,8 @@ test.describe("the top of the dashboard", () => {
       kind: "preventive_care",
       tier: "due",
       itemKey: `preventive_care:e2e-${n}`,
-      title: `Check-up ${n} due`,
-      body: "Dental check-up is due.",
+      title: `Check-up ${n}`,
+      body: "Check-up due",
       subject: null,
       learnMore: null,
       actions: [
@@ -351,5 +357,146 @@ test.describe("the top of the dashboard", () => {
     await expect(
       page.locator('[data-slot="today-scores-skeleton"]'),
     ).toHaveCount(0);
+  });
+  /** Every title and meta line of the card is one line high. */
+  async function lines(page: Page) {
+    return page
+      .locator('[data-slot="today-ask-title"], [data-slot="today-ask-meta"]')
+      .evaluateAll((els) =>
+        els.map((el) => {
+          const style = getComputedStyle(el);
+          const text = el.querySelector("span") ?? el;
+          return {
+            slot: el.getAttribute("data-slot"),
+            text: el.textContent ?? "",
+            height: el.getBoundingClientRect().height,
+            lineHeight: parseFloat(style.lineHeight),
+            cut: text.scrollWidth > text.clientWidth + 1,
+          };
+        }),
+      );
+  }
+
+  test("title and meta are one line each, in every language, on the narrowest phone", async ({
+    page,
+    context,
+  }) => {
+    test.setTimeout(240_000);
+    // 360 css px, the narrowest supported phone; the browser's scrollbar
+    // takes another 15 px here, the worst case the budget is set for.
+    await page.setViewportSize({ width: 360, height: 780 });
+    const baseURL = test.info().project.use.baseURL ?? "http://localhost:3000";
+    const failures: string[] = [];
+    for (const locale of locales) {
+      await context.addCookies([
+        { name: "healthlog-locale", value: locale, url: baseURL },
+      ]);
+      for (const timeFormat of ["AUTO", "H12"] as const) {
+        await page.unrouteAll({ behavior: "ignoreErrors" });
+        const asks = serverAsks(locale, { timeFormat });
+        await serveToday(page, { asks });
+        await page.goto("/");
+        const card = page.locator('[data-slot="today-asks"]');
+        await expect(card).toBeVisible({ timeout: 20_000 });
+        await expect(card.locator('[data-slot="today-ask"]')).toHaveCount(
+          asks.length,
+        );
+        for (const line of await lines(page)) {
+          if (line.height > line.lineHeight + 0.5 || line.cut) {
+            failures.push(
+              `${locale}/${timeFormat} ${line.slot} "${line.text}": ${line.height}px (line ${line.lineHeight}px)${line.cut ? ", cut" : ""}`,
+            );
+          }
+        }
+        const overflow = await page.evaluate(
+          () => document.documentElement.scrollWidth > window.innerWidth,
+        );
+        if (overflow) failures.push(`${locale}/${timeFormat}: page overflows`);
+      }
+    }
+    expect(failures).toEqual([]);
+  });
+
+  test("a long name ends in an ellipsis on one line, whole in its name and tooltip", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const name = "Gemeinschaftspraxis für Allgemeinmedizin am Stadtpark";
+    const asks = serverAsks("en", { practitionerName: name });
+    await serveToday(page, { asks });
+    await page.goto("/");
+    const visit = page.locator(
+      '[data-slot="today-ask"][data-kind="upcoming_visit"]',
+    );
+    await expect(visit).toBeVisible({ timeout: 20_000 });
+    const title = visit.locator('[data-slot="today-ask-title"]');
+    await expect(title).toHaveAttribute("title", name);
+    await expect(visit.getByRole("heading", { name })).toBeVisible();
+    const box = await title.evaluate((el) => ({
+      height: el.getBoundingClientRect().height,
+      lineHeight: parseFloat(getComputedStyle(el).lineHeight),
+      cut: el.scrollWidth > el.clientWidth,
+      overflow: getComputedStyle(el).textOverflow,
+    }));
+    expect(box.height).toBeLessThanOrEqual(box.lineHeight + 0.5);
+    expect(box.cut).toBe(true);
+    expect(box.overflow).toBe("ellipsis");
+    // The meta under it is whole.
+    const meta = (await lines(page)).filter((l) => l.slot === "today-ask-meta");
+    expect(meta.every((l) => !l.cut)).toBe(true);
+  });
+
+  test("compact buttons: a 32 px face, a 44 px target, one column, in the row", async ({
+    page,
+  }) => {
+    for (const width of [390, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await serveToday(page, { asks: serverAsks("en") });
+      await page.goto("/");
+      const card = page.locator('[data-slot="today-asks"]');
+      await expect(card).toBeVisible({ timeout: 20_000 });
+      const rows = await card
+        .locator('[data-slot="today-ask"]')
+        .evaluateAll((els) =>
+          els.map((row) => {
+            const title = row
+              .querySelector('[data-slot="today-ask-title"]')!
+              .getBoundingClientRect();
+            return [
+              ...row.querySelectorAll('[data-slot="today-ask-action"]'),
+            ].map((b) => {
+              const r = b.getBoundingClientRect();
+              const x = r.left + r.width / 2;
+              // 5 px outside the face, above and below: still the button.
+              const above = document.elementFromPoint(x, r.top - 5);
+              const below = document.elementFromPoint(x, r.bottom + 5);
+              return {
+                left: Math.round(r.left),
+                right: Math.round(r.right),
+                width: Math.round(r.width),
+                height: Math.round(r.height),
+                target: b.contains(above) && b.contains(below),
+                inRow: r.top < title.bottom && r.bottom > title.top,
+                // The quiet pair: both filled, neither framed.
+                filled:
+                  getComputedStyle(b).backgroundColor !== "rgba(0, 0, 0, 0)",
+                framed: parseFloat(getComputedStyle(b).borderTopWidth) > 0,
+              };
+            });
+          }),
+        );
+      const buttons = rows.flat();
+      expect(buttons.length).toBeGreaterThan(0);
+      for (const b of buttons) {
+        expect(b.height, `face at ${width}`).toBe(32);
+        expect(b.target, `44 px target at ${width}`).toBe(true);
+        expect(b.inRow, `beside the text at ${width}`).toBe(true);
+        expect(b.filled, `filled at ${width}`).toBe(true);
+        expect(b.framed, `no frame at ${width}`).toBe(false);
+      }
+      // One width for every button, one column for each position.
+      expect(new Set(buttons.map((b) => b.width)).size).toBe(1);
+      expect(new Set(rows.map((r) => r[r.length - 1].right)).size).toBe(1);
+    }
   });
 });

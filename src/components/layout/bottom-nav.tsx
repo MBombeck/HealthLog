@@ -228,6 +228,9 @@ export function BottomNav() {
                 aria-expanded={captureOpen}
                 onClick={() => setCaptureOpen(true)}
                 data-testid="bottom-nav-capture"
+                // The tour's "add" stop on a phone: the header has no add
+                // button there (`dashboard-header.tsx`).
+                data-tour-id="dashboard-quick-add"
                 className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring/70 ring-card -mt-5 flex h-14 w-14 items-center justify-center rounded-full shadow-lg ring-4 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
               >
                 <Plus className="h-7 w-7" />

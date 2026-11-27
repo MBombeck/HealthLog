@@ -46,6 +46,15 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost:
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
+        // The quiet pair, for a list whose rows each carry their own two
+        // actions (the start page's asks): `neutral` is the secondary, a
+        // grey fill with foreground text; `tonal` is the primary, the accent
+        // at a tenth with accent text. Both filled, neither framed, same
+        // size, so the pair reads as one control and the primary differs
+        // by colour alone, never by weight or outline (UI standards §15).
+        neutral: "bg-muted text-foreground hover:bg-muted/70",
+        tonal:
+          "bg-primary/10 text-primary hover:bg-primary/15 dark:bg-primary/15 dark:hover:bg-primary/20",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
@@ -53,6 +62,12 @@ const buttonVariants = cva(
         xs: "h-6 gap-1 rounded-md px-2 text-xs has-[>svg]:px-1.5 [&_svg:not([class*='size-'])]:size-3",
         sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5 pointer-coarse:min-h-11 pointer-coarse:min-w-11",
         lg: "h-11 rounded-md px-6 has-[>svg]:px-4",
+        // A 32 px face with a 44 px target: the target grows 6 px above and
+        // below through `::before`, so a row of these stays compact and still
+        // meets 44 px under a finger. No `pointer-coarse:min-h-11`: that would
+        // grow the face itself back to 44 px on a touch screen.
+        compact:
+          "relative h-8 gap-1 rounded-md px-1.5 text-xs before:absolute before:inset-x-0 before:-inset-y-1.5 before:content-['']",
         icon: "size-10 pointer-coarse:min-h-11 pointer-coarse:min-w-11",
         "icon-xs": "size-6 rounded-md [&_svg:not([class*='size-'])]:size-3",
         "icon-sm": "size-8 pointer-coarse:min-h-11 pointer-coarse:min-w-11",

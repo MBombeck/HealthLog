@@ -798,13 +798,6 @@
   },
   "dashboard": {
     "title": "Cruscotto",
-    "greeting": {
-      "morning": "Buongiorno",
-      "day": "Ciao",
-      "evening": "Buonasera"
-    },
-    "welcomeBack": "{greeting}, bentornato.",
-    "welcomeBackWithName": "{greeting}, {name}, bentornato.",
     "greetingSalutation": "Ciao, {name}",
     "streakLabel": "giorni di fila",
     "weight": "Peso",
@@ -941,9 +934,6 @@
       "body": "Senza copie delle chiavi usate da questo server, i suoi dati non si possono recuperare dopo una reinstallazione. Ci vogliono pochi minuti.",
       "action": "Apri il kit"
     },
-    "greetingOnly": "{greeting}.",
-    "welcomeNew": "Ti diamo il benvenuto.",
-    "welcomeNewWithName": "Ti diamo il benvenuto, {name}.",
     "quickAddSeizure": "Registra crisi",
     "morning": {
       "heroItemsTitle": "Da fare oggi",
@@ -9716,8 +9706,6 @@
       },
       "question": {
         "title": "Usare il relay push di HealthLog?",
-        "askTitle": "Notifiche tramite relay push?",
-        "askBody": "Il contenuto resta crittografato.",
         "body": "Notifiche per l'app dell'App Store, crittografate end-to-end: il relay vede solo quando ne viene inviata una.",
         "yes": "Sì",
         "no": "No",
@@ -9810,7 +9798,6 @@
       "notice": {
         "title": "Configura questo server",
         "body": "Cinque brevi passaggi su registrazioni, notifiche, IA e privacy; puoi saltarli o cambiarli più tardi.",
-        "bodyShort": "Cinque brevi passaggi su registrazioni, notifiche, IA e privacy.",
         "open": "Inizia la configurazione",
         "dismiss": "Non ora"
       },
@@ -13843,7 +13830,6 @@
       },
       "syncIssue": {
         "title": "La sincronizzazione richiede attenzione",
-        "askTitle": "Sincronizzazione ferma",
         "body": "{integration} non si sincronizza. Riconnettilo per mantenere aggiornati i tuoi dati."
       },
       "sourceQuiet": {
@@ -13897,10 +13883,9 @@
       "logDose": "Assumi",
       "later": "Più tardi",
       "answer": "Rispondi",
-      "learnMore": "Altro",
       "open": "Apri",
       "setUp": "Configura",
-      "reconnectShort": "Riconnetti",
+      "reconnectShort": "Connetti",
       "reconnect": "Riconnetti",
       "viewCheckups": "Vedi controlli",
       "checkinKeep": "Mantieni",
@@ -13911,6 +13896,23 @@
       "viewEcg": "Vedi registrazione",
       "viewSteps": "Vedi i passi",
       "openSource": "Apri"
+    },
+    "ask": {
+      "medication": "Farmaco",
+      "overdue": "In ritardo {time}",
+      "overdueNow": "In ritardo",
+      "due": "Alle {time}",
+      "dueNow": "Da assumere ora",
+      "checkupDue": "Da fare",
+      "visitToday": "Visita oggi",
+      "visitTomorrow": "Visita domani",
+      "signedOut": "Disconnesso",
+      "planFallback": "Il tuo piano",
+      "planReview": "Da rivedere",
+      "setupTitle": "Questo server",
+      "setupMeta": "Da configurare",
+      "relayTitle": "Relay push?",
+      "relayMeta": "Crittografato"
     },
     "today": {
       "deltaShort": "{delta} vs riferimento",
@@ -16305,10 +16307,10 @@
       "fieldsLabel": "Cosa mostra il link",
       "expiryLabel": "Scadenza del link",
       "expiry": {
-        "none": "Mai, fino alla revoca",
         "30": "Tra 30 giorni",
         "365": "Tra un anno",
-        "730": "Tra due anni"
+        "730": "Tra due anni",
+        "none": "Mai, fino alla revoca"
       },
       "create": "Crea il link",
       "qrAlt": "Codice QR del link alla tessera di emergenza",
