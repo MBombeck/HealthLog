@@ -301,6 +301,30 @@ describe("computeDisplayDue — open overdue slot", () => {
     expect(due!.at.toISOString()).toBe("2026-06-10T19:00:00.000Z"); // 21:00 Berlin
   });
 
+  it("keeps the passed 21:00 slot but calls it due, not overdue, inside its on-time window", () => {
+    // The resolver's rule: overdue only past the on-time window (22:00).
+    for (const iso of ["2026-06-10T19:01:00Z", "2026-06-10T20:00:00Z"]) {
+      const due = computeDisplayDue({
+        medication,
+        schedules,
+        now: d(iso),
+        userTz: BERLIN,
+        lastIntakeAt: null,
+      });
+      expect(due).not.toBeNull();
+      expect(due!.at.toISOString()).toBe("2026-06-10T19:00:00.000Z");
+      expect(due!.overdue).toBe(false);
+    }
+    const past = computeDisplayDue({
+      medication,
+      schedules,
+      now: d("2026-06-10T20:00:01Z"),
+      userTz: BERLIN,
+      lastIntakeAt: null,
+    });
+    expect(past!.overdue).toBe(true);
+  });
+
   it("advances to the next future slot (09:00) once the band closed at 02:00", () => {
     const now = d("2026-06-11T00:00:00Z"); // 02:00 Berlin — past the 01:00 tail end
     const due = computeDisplayDue({
@@ -437,7 +461,7 @@ describe("resolved-slot marks — ad-hoc rows only match their own anchor", () =
   });
 
   it("a 14:30 ad-hoc take does not suppress the 20:00 overdue pill either", () => {
-    const now = d("2026-06-10T19:00:00Z"); // 21:00 Berlin — inside the late tail
+    const now = d("2026-06-10T19:30:00Z"); // 21:30 Berlin — inside the late tail
     const due = computeDisplayDue({
       medication,
       schedules: [schedule()],
@@ -504,7 +528,7 @@ describe("resolved-slot marks — ad-hoc rows only match their own anchor", () =
     const AUCKLAND = "Pacific/Auckland"; // UTC+12 in June (NZST)
     // 08:00 / 20:00 Auckland on 2026-06-10 = 2026-06-09T20:00Z / 2026-06-10T08:00Z.
     const adhoc = d("2026-06-10T02:30:00Z"); // 14:30 Auckland
-    const now = d("2026-06-10T09:00:00Z"); // 21:00 Auckland
+    const now = d("2026-06-10T09:30:00Z"); // 21:30 Auckland, past on-time
     const due = computeDisplayDue({
       medication,
       schedules: [schedule()],
@@ -931,7 +955,7 @@ describe("resolved-slot marks — a row resolves only its nearest occurrence", (
   });
 
   it("the overdue search agrees: 23:59 stays open overdue after midnight", () => {
-    const now = d("2026-09-10T22:30:00Z"); // 00:30 Berlin, next day
+    const now = d("2026-09-10T23:30:00Z"); // 01:30 Berlin, next day
     const due = computeDisplayDue({
       medication,
       schedules: [closeSlots(["19:49", "23:59"])],
