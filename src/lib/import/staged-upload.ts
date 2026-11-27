@@ -50,12 +50,12 @@ import {
 } from "@/lib/multipart/stream-to-disk";
 import { checkRateLimit } from "@/lib/rate-limit";
 import {
-  ACTIVE_IMPORT_MAX_AGE_MS,
   ACTIVE_IMPORT_STATUSES,
   createImportJobUnlessBusy,
   discardStagedUpload,
   IMPORT_BUSY_CODE,
   IMPORT_BUSY_MESSAGE,
+  STAGING_MAX_AGE_MS,
 } from "@/lib/import/apple-health-staging";
 
 /** Five uploads a minute per acting account and kind. */
@@ -114,7 +114,8 @@ export async function queueStagedImport(
       uploadSha256: input.sha256,
       parserRevision: spec.parserRevision,
       status: { not: "failed" },
-      // A finished import, or one still within the queue's own expiry. An
+      // A finished import, or one still within the queue's own expiry
+      // (`STAGING_MAX_AGE_MS` is that bound: the active-import age). An
       // active row older than that holds nothing any more (the busy check
       // ignores it too); counting it here answered "already uploaded" for
       // that file forever, with no import running.
@@ -122,7 +123,7 @@ export async function queueStagedImport(
         { status: { notIn: [...ACTIVE_IMPORT_STATUSES] } },
         {
           startedAt: {
-            gte: new Date(Date.now() - ACTIVE_IMPORT_MAX_AGE_MS),
+            gte: new Date(Date.now() - STAGING_MAX_AGE_MS),
           },
         },
       ],
