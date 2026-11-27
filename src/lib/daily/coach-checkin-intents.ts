@@ -18,7 +18,7 @@ export const COACH_CHECKIN_REVIEW_DAYS = 7;
 
 /**
  * Closed allowlist of the check-in card's two MUTATING intents. The generic,
- * id-less `PriorityCard` forwards only a single `intent` string, so the target
+ * id-less ask card (`today-asks.tsx`) forwards only a single `intent` string, so the target
  * plan id is appended after the ":" — the Today handler recovers it and PATCHes
  * the existing plan-lifecycle route. "Adjust" is navigation (an `href` into the
  * coach), so it carries no plan id and never mutates.

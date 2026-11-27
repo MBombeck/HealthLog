@@ -49,7 +49,7 @@ export default function AdminOverviewPage() {
         )}
 
         {/* Once per admin: the server setup is not finished (1.49). */}
-        <ServerSetupNotice surface="admin" />
+        <ServerSetupNotice />
 
         {/* Once for the server, until an admin answers: the relay question. */}
         <PushRelayQuestion />

@@ -31,7 +31,6 @@
  * exclamation mark, no general warning (`morning-copy.test.ts`). A rank that
  * cannot say something true for the case at hand does not hold.
  */
-import { isLastNight } from "@/lib/sleep/last-night";
 import type { Locale } from "@/lib/i18n/config";
 import { pluralKey } from "@/lib/i18n/plural";
 import { resolveIntlLocale } from "@/lib/format-locale";
@@ -59,6 +58,14 @@ import {
   vitalsInRangeSentence,
   vitalsOutsideSentence,
 } from "@/lib/daily/lead-sentences";
+import {
+  buildMorningScores,
+  CONTRIBUTOR_LABEL_KEY,
+  heaviestDeductions,
+  lastNightScored,
+} from "@/lib/daily/morning-scores";
+
+export { heaviestDeductions };
 
 type Translate = (
   key: string,
@@ -159,8 +166,30 @@ export interface DailyMorningLead {
   language: string;
 }
 
+/**
+ * One score tile on the start page: the ring as the morning cards carry it
+ * (no number when not fresh) and one meta line, worded here.
+ */
+export interface DailyMorningScore {
+  ring: DailyMorningRing;
+  /** One line beside the ring, or null. */
+  line: string | null;
+  /** The score's own page. */
+  href: string;
+}
+
 export interface DailyMorning {
   lead: DailyMorningLead;
+  /**
+   * The start page's score tiles beside the Health score (which is the
+   * digest's): last night's sleep score and today's readiness. A score whose
+   * module is off, or that this record never produces, is null and has no
+   * tile. Additive since 1.50.
+   */
+  scores: {
+    sleep: DailyMorningScore | null;
+    readiness: DailyMorningScore | null;
+  };
   /** Night first, then what is different today; never padded. */
   cards: DailyMorningCard[];
   /**
@@ -371,32 +400,6 @@ function quietSentence(
   });
 }
 
-const CONTRIBUTOR_LABEL_KEY: Record<MorningReadinessComponent["key"], string> =
-  {
-    rhr: "insights.derived.composite.READINESS.component.rhr",
-    hrv: "insights.derived.composite.READINESS.component.hrv",
-    // The sleep contributor is the sleep score, and is called that.
-    sleep: "insights.derived.composite.SLEEP_SCORE.title",
-    respiratory: "insights.derived.composite.READINESS.component.respiratory",
-    mood: "insights.derived.composite.READINESS.component.mood",
-  };
-
-/**
- * The contributors holding readiness back, largest weighted deduction first.
- * A contributor at 100 deducts nothing and is never named.
- */
-export function heaviestDeductions(
-  components: readonly MorningReadinessComponent[],
-): MorningReadinessComponent[] {
-  return components
-    .filter((c) => c.value !== null && c.weight > 0 && c.value < 100)
-    .sort(
-      (a, b) =>
-        b.weight * (100 - (b.value as number)) -
-        a.weight * (100 - (a.value as number)),
-    );
-}
-
 /** A contributor's name as it stands inside a sentence. */
 function contributorInSentence(
   t: Translate,
@@ -449,7 +452,7 @@ function plannedSentence(
 }
 
 /** Everything the rules read, narrowed to what the modules let speak. */
-interface Facts {
+export interface Facts {
   vitals: TodayVital[];
   outside: TodayVital[];
   families: SignalFamily[];
@@ -613,22 +616,6 @@ function nightCard(
   };
 }
 
-/**
- * Whether the night card carries last night's sleep score ring: only when
- * last night is in (`resolveLastNight`), never beside "not in yet".
- */
-function lastNightScored(input: MorningInput): boolean {
-  return (
-    input.modules.sleep !== false &&
-    input.sleep !== null &&
-    input.sleepScore !== null &&
-    isLastNight(
-      { night: input.sleepScore.night, asleepMinutes: input.sleep.minutes },
-      input.todayKey,
-    )
-  );
-}
-
 function todayDifferentCard(
   input: MorningInput,
   facts: Facts,
@@ -740,6 +727,7 @@ export function buildDailyMorning(
   return {
     lead: buildMorningLead(input, t),
     cards,
+    scores: buildMorningScores(input, facts, t),
     toDo: cardTitle("to_do", t),
     generatedAt: input.now.toISOString(),
   };
