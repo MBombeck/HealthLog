@@ -240,7 +240,7 @@
     "lib/cycle/day-log-write.ts :: writeDayLog": 310,
     "lib/daily/digest.ts :: buildDailyDigest": 228,
     "lib/daily/load-digest.ts :: loadDailyDigest": 428,
-    "lib/dashboard/snapshot.ts :: buildDashboardSnapshot": 290,
+    "lib/dashboard/snapshot.ts :: buildDashboardSnapshot": 293,
     "lib/day/records.ts :: medicationsPart": 280,
     "lib/doctor-report-pdf/clinical-records-notes-section.ts :: buildClinicalRecordsNotesSection": 590,
     "lib/doctor-report-pdf/measurements-charts-section.ts :: buildMeasurementsChartsSection": 384,

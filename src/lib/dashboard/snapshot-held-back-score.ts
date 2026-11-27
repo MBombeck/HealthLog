@@ -107,11 +107,24 @@ export function heldBackScore(
   user: SnapshotUserInput,
   coverage: RollupCoverageMap,
   now: Date,
-  modules: Record<ModuleKey, boolean>,
+  modules: Promise<Record<ModuleKey, boolean>>,
   locale: Locale,
 ): Promise<DashboardSnapshotHealthScore | null> {
   const userTz = user.timezone ?? DEFAULT_TIMEZONE;
-  return coldPhaseHealthScore(user.id, userTz, coverage, now, locale, () =>
-    liveSnapshotScoreReport(prisma, user, userTz, coverage, now, modules),
+  return coldPhaseHealthScore(
+    user.id,
+    userTz,
+    coverage,
+    now,
+    locale,
+    async () =>
+      liveSnapshotScoreReport(
+        prisma,
+        user,
+        userTz,
+        coverage,
+        now,
+        await modules,
+      ),
   );
 }

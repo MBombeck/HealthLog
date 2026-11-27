@@ -591,6 +591,28 @@ describe("buildDashboardSnapshot — healthScore", () => {
     expect(snap.healthScore?.score).toBe(71);
   });
 
+  it("reads the held-back score inside the one Promise.all, timed", async () => {
+    probeRollupCoverage.mockResolvedValue(new Map([["WEIGHT", false]]));
+    isFullyCovered.mockReturnValue(false);
+    const events: string[] = [];
+    const time = async <T>(label: string, fn: () => Promise<T>) => {
+      events.push(`start:${label}`);
+      try {
+        return await fn();
+      } finally {
+        events.push(`end:${label}`);
+      }
+    };
+
+    await buildDashboardSnapshot(fakePrisma, baseUser(), { time });
+
+    const started = events.indexOf("start:heldBackScore");
+    expect(started).toBeGreaterThan(-1);
+    // It starts beside the fast phase's reads, not after they all settled.
+    expect(started).toBeLessThan(events.indexOf("end:summaries"));
+    expect(computeUserHealthScoreMock).toHaveBeenCalledTimes(1);
+  });
+
   it("serialises the additive score identity when warm", async () => {
     const coverageMap = new Map([["WEIGHT", true]]);
     probeRollupCoverage.mockResolvedValue(coverageMap);
