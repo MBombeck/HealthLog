@@ -9,6 +9,7 @@
  * Extracted from the dashboard page; the page keeps the open-state and
  * the quick-add menu that triggers each sheet.
  */
+import { MEASUREMENT_SHEET_WIDTH } from "@/components/measurements/measurement-form-types";
 import { useState } from "react";
 import {
   ResponsiveSheet,
@@ -125,6 +126,7 @@ export function QuickEntrySheets({
         onOpenChange={handleQuickEntryOpenChange}
         dirty={sheetBodyHasUnsavedInput}
         title={t("dashboard.quickAddMeasurement")}
+        contentWidth={MEASUREMENT_SHEET_WIDTH}
         footer={<div ref={setMeasurementFooterEl} className="flex w-full" />}
       >
         <MeasurementForm

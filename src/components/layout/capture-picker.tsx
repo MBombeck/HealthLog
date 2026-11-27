@@ -25,6 +25,7 @@ import {
 } from "@/components/dashboard/quick-entry-forms.lazy";
 import { LifeEventForm } from "@/components/timeline/life-event-form.lazy";
 import {
+  MEASUREMENT_SHEET_WIDTH,
   MEASUREMENT_TYPES,
   measurementFormTypes,
 } from "@/components/measurements/measurement-form-types";
@@ -431,6 +432,9 @@ export function CapturePicker({
         dirty={sheetBodyHasUnsavedInput}
         title={formTitle}
         description={captureFormDescription(openKind, t)}
+        contentWidth={
+          openKind === "measurement" ? MEASUREMENT_SHEET_WIDTH : "md"
+        }
         footer={<div ref={setFooterEl} className="flex w-full" />}
       >
         {openKind === "measurement" && (

@@ -77,7 +77,10 @@ function ActionPair({
     <div
       ref={rowRef}
       data-slot="action-pair-row"
-      className={cn("flex w-full min-w-0 items-center gap-2", className)}
+      className={cn(
+        "flex w-full min-w-0 items-center gap-2 has-[[data-stacked=true]]:items-end",
+        className,
+      )}
       {...props}
     >
       {menus.length > 0 ? (

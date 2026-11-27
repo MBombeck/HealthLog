@@ -7,7 +7,10 @@ import { useMounted } from "@/hooks/use-mounted";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { MeasurementForm } from "@/components/measurements/measurement-form";
-import { resolveAddToken } from "@/components/measurements/measurement-form-types";
+import {
+  MEASUREMENT_SHEET_WIDTH,
+  resolveAddToken,
+} from "@/components/measurements/measurement-form-types";
 import { MeasurementList } from "@/components/measurements/measurement-list";
 import { CustomMetricList } from "@/components/custom-metrics/custom-metric-list";
 import { Button } from "@/components/ui/button";
@@ -189,6 +192,7 @@ export default function MeasurementsPage() {
           }
         }}
         title={t("dashboard.quickAddMeasurement")}
+        contentWidth={MEASUREMENT_SHEET_WIDTH}
         footer={<div ref={setFooterEl} className="flex w-full" />}
       >
         <MeasurementForm

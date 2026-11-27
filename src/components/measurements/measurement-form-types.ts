@@ -7,6 +7,14 @@
  */
 import { isSurfaceVisible, type SurfaceModuleMap } from "@/lib/modules/surface";
 
+/**
+ * The width of a sheet that hosts this form with `chain` on a wide screen.
+ * "Save and next value" is a long label in most languages, and the pair
+ * (`ActionPair`) keeps both buttons as wide as the longer one; at the
+ * default 448 px dialog the pair no longer fits beside the "⋯" and stacks.
+ */
+export const MEASUREMENT_SHEET_WIDTH = "lg" as const;
+
 export const MEASUREMENT_TYPES = [
   {
     value: "BLOOD_PRESSURE",
