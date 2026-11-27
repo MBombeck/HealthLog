@@ -152,7 +152,7 @@ export function DocumentDetailSheet({
       <ResponsiveSheet
         open={open}
         onOpenChange={onOpenChange}
-        title={title}
+        title={<OneLineTitle text={title} />}
         contentWidth="3xl"
         footer={footer}
       >
@@ -395,4 +395,13 @@ function useSheetFooter({
         <ActionMenu slot="document-detail-more">{items}</ActionMenu>
       ) : null,
   });
+}
+
+/** The sheet's title on one line; the full title is the Title row's value. */
+function OneLineTitle({ text }: { text: string }) {
+  return (
+    <span className="block truncate" title={text}>
+      {text}
+    </span>
+  );
 }

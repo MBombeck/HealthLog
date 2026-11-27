@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ListGroup, ListItem } from "@/components/ui/list-row";
-import { NativeSelect } from "@/components/ui/native-select";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
+import { RowValue, RowValueSelect } from "@/components/ui/row-value";
 import {
   EMERGENCY_CARD_FIELDS,
   type EmergencyCardField,
@@ -61,12 +61,12 @@ export function CardFieldRows({
           onSelect={() => setOpen(true)}
           title={fieldsLabel}
           trailing={
-            <span className="text-muted-foreground font-normal">
+            <RowValue>
               {t("emergencyCard.fieldsCount", {
                 count: fields.size,
                 total: EMERGENCY_CARD_FIELDS.length,
               })}
-            </span>
+            </RowValue>
           }
         />
         <ListItem
@@ -77,11 +77,9 @@ export function CardFieldRows({
             </Label>
           }
           trailing={
-            <NativeSelect
+            <RowValueSelect
               id={`${idPrefix}-expiry`}
               value={expiry}
-              // No frame: the choice reads as the row's value.
-              className="h-9 w-auto border-transparent bg-transparent font-normal shadow-none"
               onChange={(e) => onExpiryChange(e.target.value as ExpiryChoice)}
             >
               {EXPIRY_CHOICES.map((c) => (
@@ -89,7 +87,7 @@ export function CardFieldRows({
                   {t(`emergencyCard.link.expiry.${c}`)}
                 </option>
               ))}
-            </NativeSelect>
+            </RowValueSelect>
           }
         />
       </ul>

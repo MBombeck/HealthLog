@@ -323,6 +323,25 @@ test.describe("document vault", () => {
     await expect(sheet).toBeVisible();
   });
 
+  test("the sheet's row values end on one line at 390 px", async ({ page }) => {
+    // ui-standards §20: a text, a select and a date in one group end against
+    // the same glyph slot, so their right edges agree.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/documents?episode=${KNIE_EPISODE_ID}&view=compact&q=MRT`);
+    await openButton(page, "MRT Knie").click();
+    const group = page
+      .getByRole("dialog", { name: "MRT Knie" })
+      .locator('[data-slot="document-detail-fields"]');
+    const values = group.locator(
+      '[data-slot="row-value-text"], [data-slot="row-value"] input[type="text"]',
+    );
+    await expect(values).toHaveCount(3);
+    const edges = await values.evaluateAll((els) =>
+      els.map((el) => el.getBoundingClientRect().right),
+    );
+    expect(Math.max(...edges) - Math.min(...edges)).toBeLessThanOrEqual(1);
+  });
+
   test("a browser without a PDF viewer gets the file row, not a frame", async ({
     page,
   }) => {

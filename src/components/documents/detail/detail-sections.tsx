@@ -13,13 +13,16 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { DateField } from "@/components/ui/date-field";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { InlineAction } from "@/components/ui/inline-action";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ListGroup, ListItem } from "@/components/ui/list-row";
-import { NativeSelect } from "@/components/ui/native-select";
+import {
+  RowValue,
+  RowValueDate,
+  RowValueSelect,
+} from "@/components/ui/row-value";
 import { INBOUND_DOCUMENT_KINDS } from "@/lib/documents/inbound-constants";
 import { useTranslations } from "@/lib/i18n/context";
 import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
@@ -178,13 +181,6 @@ export function useDocumentDetailMenuItems({
 }
 
 /**
- * A control standing as a row's value: no frame, the value in the row's
- * value weight, its chevron or calendar the only sign it opens.
- */
-const ROW_CONTROL =
-  "h-9 w-auto border-transparent bg-transparent font-normal shadow-none";
-
-/**
  * Title, kind and filing date as three rows of one card, each saving on
  * commit. A tap on the title row turns it into the field; kind and date
  * carry their control on the right.
@@ -242,15 +238,12 @@ export function DocumentDetailFields({
               }
             : {})}
           trailing={
-            <span
+            <RowValue
               title={titleText}
-              className={cn(
-                "max-w-[55vw] truncate font-normal sm:max-w-sm",
-                doc.title === null && "text-muted-foreground",
-              )}
+              className={cn(doc.title === null && "text-muted-foreground")}
             >
               {titleText}
-            </span>
+            </RowValue>
           }
         />
       )}
@@ -263,11 +256,10 @@ export function DocumentDetailFields({
           </Label>
         }
         trailing={
-          <NativeSelect
+          <RowValueSelect
             id="document-kind-select"
             value={doc.kind}
             disabled={!canManageDocuments}
-            className={ROW_CONTROL}
             onChange={(e) =>
               patch.mutate({
                 kind: e.target.value as InboundDocumentKindValue,
@@ -279,7 +271,7 @@ export function DocumentDetailFields({
                 {t(`documents.kind.${kind}`)}
               </option>
             ))}
-          </NativeSelect>
+          </RowValueSelect>
         }
       />
       <ListItem
@@ -289,9 +281,8 @@ export function DocumentDetailFields({
           </Label>
         }
         trailing={
-          <DateField
+          <RowValueDate
             id="document-date-field"
-            className={cn(ROW_CONTROL, "w-36")}
             disabled={!canManageDocuments}
             value={doc.documentDate ?? ""}
             onChange={(value) =>
