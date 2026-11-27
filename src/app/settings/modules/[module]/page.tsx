@@ -39,7 +39,7 @@ export default async function SettingsModulePage({ params }: PageProps) {
 
   const locale = await resolveServerLocale();
   const { t } = getServerTranslator(locale);
-  const { titleKey, descriptionKey } = moduleSettingsPageKeys(module);
+  const { titleKey } = moduleSettingsPageKeys(module);
   const headingId = `settings-section-modules-${module}-title`;
 
   return (
@@ -47,7 +47,6 @@ export default async function SettingsModulePage({ params }: PageProps) {
       active="modules"
       heading={{
         title: t(titleKey),
-        subtitle: t(descriptionKey),
         headingId,
         topSlot: (
           <SettingsHubBackLink

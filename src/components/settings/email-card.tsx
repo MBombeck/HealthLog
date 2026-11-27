@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { SwitchRow } from "@/components/ui/switch-row";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
+import { useChannelStatusTone } from "@/components/settings/notification-status-card";
+import { StatusChip } from "@/components/ui/status-chip";
 import { TestConnectionButton } from "@/components/settings/test-connection-button";
 import { isEmailFormDirty } from "@/components/settings/channel-form-dirty";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
@@ -81,6 +83,12 @@ export function EmailCard({ isAuthenticated }: { isAuthenticated: boolean }) {
     },
   });
 
+  const statusTone = useChannelStatusTone(
+    null,
+    isAuthenticated,
+    Boolean(settings && settings.enabled && Boolean(settings.recipient)),
+  );
+
   // Operator hasn't configured SMTP — no transport, so no card. The dispatcher
   // skips the channel too; surfacing an unusable toggle would only confuse.
   if (settings && !settings.smtpConfigured) return null;
@@ -90,7 +98,7 @@ export function EmailCard({ isAuthenticated }: { isAuthenticated: boolean }) {
       <SettingsCardHeader
         icon={Mail}
         title={t("settings.email")}
-        description={t("settings.emailDescription")}
+        status={settings ? <StatusChip tone={statusTone} /> : null}
       />
 
       <div className="space-y-4">

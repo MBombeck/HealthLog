@@ -2213,7 +2213,8 @@
                 },
                 "noiseFloor": 1,
                 "deltaEligible": true,
-                "deltaIdentity": "graded_bp_pair_series"
+                "deltaIdentity": "graded_bp_pair_series",
+                "band": "green"
               },
               "coverage": {
                 "requiredInputs": 12,
@@ -2260,7 +2261,8 @@
                 },
                 "noiseFloor": 1,
                 "deltaEligible": true,
-                "deltaIdentity": "fasting_glucose"
+                "deltaIdentity": "fasting_glucose",
+                "band": "green"
               },
               "coverage": {
                 "requiredInputs": 8,
@@ -2307,7 +2309,8 @@
                 },
                 "noiseFloor": 5,
                 "deltaEligible": true,
-                "deltaIdentity": "ACTIVITY_STEPS"
+                "deltaIdentity": "ACTIVITY_STEPS",
+                "band": "green"
               },
               "coverage": {
                 "requiredInputs": 21,
@@ -2354,7 +2357,8 @@
                 },
                 "noiseFloor": 2,
                 "deltaEligible": true,
-                "deltaIdentity": "sleep_duration_rhythm"
+                "deltaIdentity": "sleep_duration_rhythm",
+                "band": "green"
               },
               "coverage": {
                 "requiredInputs": 14,

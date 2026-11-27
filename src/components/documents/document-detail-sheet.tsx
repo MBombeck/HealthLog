@@ -21,7 +21,6 @@
 import { X } from "lucide-react";
 
 import { DocumentReadingConsentPrompt } from "@/components/ai/document-reading-consent-prompt";
-import { RelatedRecordsBlock } from "@/components/links/related-records";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-button";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
@@ -30,7 +29,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { VaccinationDocumentSuggestion } from "@/components/vaccinations/vaccination-document-suggestion";
 import { DOCUMENT_PURGE_GRACE_DAYS } from "@/lib/documents/inbound-constants";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
-import type { RelatedLink } from "@/lib/links/related";
 
 import {
   DocumentDetailFields,
@@ -295,10 +293,11 @@ export function DocumentDetailSheet({
                 />
               ) : null}
 
-              {/* Which visits and doses this page is filed against, and — for
-                  someone who may manage the vault — the links themselves.
-                  Keyed on the write-failure count so a refused write drops
-                  the local selection back to what the server confirmed. */}
+              {/* What this page is filed against, as one row of chips,
+                  and for someone who may manage the vault the one button
+                  that links more. Keyed on the write-failure count so a
+                  refused write drops the local selection back to what the
+                  server confirmed. */}
               <DocumentRecordLinks
                 key={`${doc.id}:${linkResets}`}
                 doc={doc}
@@ -306,15 +305,8 @@ export function DocumentDetailSheet({
                 seedFresh={linkSeedFresh}
                 seedError={!linkSeedFresh && detailQuery.isRefetchError}
                 onRetrySeed={() => void detailQuery.refetch()}
+                episodes={detail.episodes}
                 onChange={(part) => patch.mutate(part)}
-              />
-
-              {/* The lab results read from this page and the
-                  medications it belongs to. Conditions, visits and doses
-                  have their own blocks above. */}
-              <RelatedRecordsBlock
-                related={(doc as { related?: RelatedLink[] }).related}
-                omitKinds={["conditionEpisode", "encounter", "vaccination"]}
               />
 
               {/* Staged-facts review + the stored-text extract recovery. The

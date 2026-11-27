@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { StatusChip } from "@/components/ui/status-chip";
 import { SwitchRow } from "@/components/ui/switch-row";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import {
@@ -165,6 +166,11 @@ export function HealthConnectRemoteCard() {
       title={t(`${k}.title`)}
       description={t(`${k}.description`)}
       foldLabel={t("settings.integrationCard.setUp")}
+      status={
+        state.data ? (
+          <StatusChip tone={source?.enabled ? "active" : "off"} />
+        ) : null
+      }
     >
       {recentProof.dialog}
       <CardQueryBody query={state} slot="hc-remote-state">

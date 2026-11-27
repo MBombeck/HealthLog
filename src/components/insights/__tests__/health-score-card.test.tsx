@@ -194,13 +194,14 @@ const FASTING_GLUCOSE: ScorePillarResult = {
 function scoredAt(
   id: ScorePillarResult["id"],
   score: number,
+  band?: "green" | "yellow" | "red",
 ): ScorePillarResult {
   const base = BLOOD_PRESSURE.result;
   if (base.status !== "ok") throw new Error("fixture is not scored");
   return {
     ...BLOOD_PRESSURE,
     id,
-    result: { ...base, value: { ...base.value, score } },
+    result: { ...base, value: { ...base.value, score, band } },
   };
 }
 
@@ -456,9 +457,12 @@ describe("<HealthScoreCard> pillars", () => {
             provenance,
           },
           pillars: [
-            scoredAt("BLOOD_PRESSURE", 92),
-            scoredAt("GLYCAEMIA", 22),
-            scoredAt("SLEEP", 55),
+            scoredAt("BLOOD_PRESSURE", 92, "green"),
+            scoredAt("GLYCAEMIA", 22, "red"),
+            scoredAt("SLEEP", 55, "yellow"),
+            // No served band (an older server): drawn neutral, never banded
+            // from the number here.
+            scoredAt("ACTIVITY", 22),
           ],
         })}
       />,
@@ -476,6 +480,8 @@ describe("<HealthScoreCard> pillars", () => {
     expect(barClass("BLOOD_PRESSURE")).toContain("bg-success");
     expect(barClass("GLYCAEMIA")).toContain("bg-destructive");
     expect(barClass("SLEEP")).toContain("bg-warning");
+    expect(barClass("ACTIVITY")).toContain("bg-muted-foreground");
+    expect(barClass("ACTIVITY")).not.toContain("bg-destructive");
     // The composite is red, so a composite-tinted set would be all-red.
     expect(barClass("BLOOD_PRESSURE")).not.toContain("bg-destructive");
   });

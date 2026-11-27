@@ -53,6 +53,7 @@ function input(over: Partial<TodayOverviewInput> = {}): TodayOverviewInput {
     reactionLine: null,
     briefing: null,
     scoreValue: 94,
+    scoreFlag: null,
     medsToday: meds(),
     visits: [],
     rail: [],

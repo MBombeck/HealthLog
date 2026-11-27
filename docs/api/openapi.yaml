@@ -49924,6 +49924,7 @@ components:
               - medication.low-stock-trigger
               - insights.score-origin
               - daily.asks
+              - daily.scores-short-labels
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices; since
@@ -50061,12 +50062,17 @@ components:
             RECOVERY_SCORE, STRESS_SCORE and STRAIN_SCORE values on GET /api/insights/derived carry origin (estimate |
             device | computed) and deviceSource (the measurement source of a device value, else null); the health score
             composite carries weights (one { id, weight } per counted pillar, summing to 1) and each snapshot
-            healthScore.pillars row its weight (null when it did not count). `daily.asks`: GET /api/daily/digest carries
-            asks: every row the start page asks today, often none (kind, tier safety | decision | due, itemKey, title,
-            body, subject, exactly two actions with the primary first, learnMore), ranked on the server, never capped or
-            folded; render as delivered, no card when empty. Later is dose.snooze:<medicationId> on a dose and
-            ask.later:<dismissKey> on other reminders; the admin rows (push_relay, server_setup) come only to a browser
-            session."
+            healthScore.pillars row its weight (null when it did not count); every scored pillar carries its own band
+            (green | yellow | red), resolved on the server: value.band on the score report's pillars (/api/analytics)
+            and band on each snapshot healthScore.pillars row (null when it did not count). `daily.asks`: GET
+            /api/daily/digest carries asks: every row the start page asks today, often none (kind, tier safety |
+            decision | due, itemKey, title, body, subject, exactly two actions with the primary first, learnMore),
+            ranked on the server, never capped or folded; render as delivered, no card when empty. Later is
+            dose.snooze:<medicationId> on a dose and ask.later:<dismissKey> on other reminders; the admin rows
+            (push_relay, server_setup) come only to a browser session. `daily.scores-short-labels`: Each start-page
+            score carries shortLabel, its short name for a tile from the score registry, worded in the response
+            language: GET /api/daily/morning scores.sleep and scores.readiness, and GET /api/daily/digest score (the
+            Health score). Render it as is; the web shows the same words."
       required:
         - version
         - buildSha
@@ -79823,24 +79829,28 @@ components:
                     - id: BLOOD_PRESSURE
                       label: Blood pressure
                       value: 82
+                      band: green
                       reason: null
                       reasonCode: null
                       weight: 0.5
                     - id: ACTIVITY
                       label: Activity
                       value: 64
+                      band: yellow
                       reason: null
                       reasonCode: null
                       weight: 0.5
                     - id: SLEEP
                       label: Sleep
                       value: null
+                      band: null
                       reason: Not tracked
                       reasonCode: not_tracked
                       weight: null
                     - id: WELLBEING
                       label: Wellbeing
                       value: null
+                      band: null
                       reason: Not counted after your last check-in
                       reasonCode: crisis_signposting
                       weight: null
@@ -80278,6 +80288,17 @@ components:
               maximum: 100
             - type: "null"
           description: The pillar's own 0–100 score when it counted toward the health score; null when it did not.
+        band:
+          description: 1.50 (feature `insights.score-origin`) — the pillar's own band, resolved on the server from its score by
+            the rule every HealthLog score follows (green from 70, yellow from 50). Null when the pillar did not count.
+            Draw the pillar from this, never from thresholds of your own. Optional so older cached snapshots stay valid.
+          anyOf:
+            - type: string
+              enum:
+                - green
+                - yellow
+                - red
+            - type: "null"
         reason:
           description: Why the pillar did not count, worded as the web panel words it ("Not tracked", "Not enough recent eligible
             data"). Null when it counted. A WELLBEING pillar held back for safety signposting says so in a neutral label
@@ -81855,6 +81876,16 @@ components:
               properties:
                 score:
                   type: number
+                band:
+                  description: 1.50 (feature `insights.score-origin`) — the pillar's own band, resolved on the server from its score by
+                    the rule every HealthLog score follows (green from 70, yellow from 50; a pillar score is
+                    higher-better). Draw the pillar from this, never from thresholds of your own. Optional so a payload
+                    from an older server stays valid; this server sets it on every scored pillar.
+                  type: string
+                  enum:
+                    - green
+                    - yellow
+                    - red
                 observed:
                   type: object
                   properties:
@@ -101565,6 +101596,11 @@ components:
                   type:
                     - string
                     - "null"
+                shortLabel:
+                  description: The score's short name for a tile, from the score registry and worded in the response language
+                    ("Gesundheit", "Health score"). Render it as is. Absent on older cached digests. Feature key
+                    `daily.scores-short-labels`.
+                  type: string
               required:
                 - value
                 - band
@@ -102061,7 +102097,9 @@ components:
               description: "The rule by name: floor (a confirmed safety floor in the last 24 hours), rest_mode, coincident (two or
                 more independent signals outside their usual range: blood pressure counts once, resting heart rate and
                 pulse once, weight and glucose never), vital_outside, sleep_pending, source_quiet (first and second
-                quiet day only), readiness (fresh, yellow or red), night_notable, in_range, planned, nothing."
+                quiet day only), readiness (fresh, yellow or red), night_notable, in_range (today's values counted and
+                all in range, or an ordinary night; while the Health score flags a pillar, its `band` below green, that
+                pillar is named instead and the day is never called in range), planned, nothing."
             text:
               type: string
               description: One sentence, a finding and never advice, worded on the server from the day's own readings. No model text.
@@ -102270,6 +102308,10 @@ components:
     DailyMorningScore:
       type: object
       properties:
+        shortLabel:
+          type: string
+          description: The score's short name for the tile, from the score registry and worded in the response language
+            ("Schlafscore", "Bereitschaft"). Render it as is. Feature key `daily.scores-short-labels`.
         ring:
           description: "The ring as the cards carry it: no number when not fresh."
           $ref: "#/components/schemas/DailyMorningRing"
@@ -102283,6 +102325,7 @@ components:
           type: string
           description: The score's own page.
       required:
+        - shortLabel
         - ring
         - line
         - href

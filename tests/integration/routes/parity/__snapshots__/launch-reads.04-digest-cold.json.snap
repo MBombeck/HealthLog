@@ -29,7 +29,8 @@
         "bandSetterBand": null,
         "bandSetterLine": null,
         "steadyWeeks": null,
-        "steadyAtLeast": false
+        "steadyAtLeast": false,
+        "shortLabel": "Health score"
       },
       "topSignal": null,
       "briefingLead": null,

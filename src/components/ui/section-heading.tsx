@@ -110,7 +110,7 @@ export function SectionHeading({
         // to the row width instead. The parent's `flex-wrap` still moves the
         // slot onto its own line before anything is squeezed, so a compact
         // control keeps its size.
-        <div className="flex min-w-0 items-center gap-2">{action}</div>
+        <div className="ml-auto flex min-w-0 items-center gap-2">{action}</div>
       ) : null}
     </div>
   );

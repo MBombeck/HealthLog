@@ -121,7 +121,6 @@ interface ExportCardShellProps {
   anchor: string;
   icon: LucideIcon;
   title: string;
-  description: string;
   format: ExportFormat;
   children?: React.ReactNode;
   /** The card's action row — the "Download" button, and nothing after it. */
@@ -135,7 +134,6 @@ function ExportCardShell({
   anchor,
   icon: Icon,
   title,
-  description,
   format,
   children,
   footer,
@@ -150,7 +148,6 @@ function ExportCardShell({
         anchor={anchor}
         icon={Icon}
         title={title}
-        description={description}
         status={
           <span className="border-border text-muted-foreground rounded-full border px-2 py-0.5 text-xs font-medium tracking-wide uppercase">
             {format}
@@ -224,7 +221,6 @@ interface CsvCardProps {
   actionTestId: string;
   icon: LucideIcon;
   titleKey: string;
-  descriptionKey: string;
   endpoint: string;
   filenamePrefix: string;
 }
@@ -235,7 +231,6 @@ function CsvCard({
   actionTestId,
   icon,
   titleKey,
-  descriptionKey,
   endpoint,
   filenamePrefix,
 }: CsvCardProps) {
@@ -270,7 +265,6 @@ function CsvCard({
       anchor={anchor}
       icon={icon}
       title={t(titleKey)}
-      description={t(descriptionKey)}
       format="CSV"
       footer={
         <Button
@@ -313,7 +307,6 @@ function MeasurementsCsvCard() {
       actionTestId="export-action-measurements-csv"
       icon={FileSpreadsheet}
       titleKey="settings.sections.export.cards.measurementsCsv.title"
-      descriptionKey="settings.sections.export.cards.measurementsCsv.description"
       endpoint="/api/export/measurements"
       filenamePrefix="healthlog-measurements"
     />
@@ -358,9 +351,6 @@ function MedicationsCsvCard() {
       anchor="medications-csv"
       icon={Pill}
       title={t("settings.sections.export.cards.medicationsCsv.title")}
-      description={t(
-        "settings.sections.export.cards.medicationsCsv.description",
-      )}
       format="CSV"
       footer={
         <Button
@@ -411,7 +401,6 @@ function MoodCsvCard() {
       actionTestId="export-action-mood-csv"
       icon={Waves}
       titleKey="settings.sections.export.cards.moodCsv.title"
-      descriptionKey="settings.sections.export.cards.moodCsv.description"
       endpoint="/api/export/mood"
       filenamePrefix="healthlog-mood"
     />
@@ -491,7 +480,6 @@ function FullBackupCard() {
       anchor="full-backup"
       icon={FileJson}
       title={t("settings.sections.export.cards.fullBackup.title")}
-      description={t("settings.sections.export.cards.fullBackup.description")}
       format="JSON"
       footer={
         <Button

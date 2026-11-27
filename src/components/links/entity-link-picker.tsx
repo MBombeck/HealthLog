@@ -234,23 +234,7 @@ function toggleOne(selected: string[], id: string): string[] {
     : [...selected, id];
 }
 
-export function EntityLinkPicker({
-  icon: Icon,
-  title,
-  slot,
-  options,
-  pending,
-  selected,
-  onChange,
-  searchPlaceholder,
-  emptyLabel,
-  error = null,
-  errorLabel,
-  onRetry,
-  extraAction,
-  server,
-  knownOptions,
-}: {
+export interface EntityLinkPickerProps {
   icon: LucideIcon;
   title: string;
   /** data-slot on the inline block; the module-gate tests assert this. */
@@ -286,9 +270,41 @@ export function EntityLinkPicker({
    * holds them.
    */
   knownOptions?: EntityLinkOption[];
-}) {
+  /**
+   * Render the search sheet alone, opened from outside (`open` /
+   * `onOpenChange`). The record's chips then live in the caller's
+   * `RecordLinksRow`, and the loading, failed and empty states move into the
+   * sheet.
+   */
+  sheetOnly?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function EntityLinkPicker({
+  icon: Icon,
+  title,
+  slot,
+  options,
+  pending,
+  selected,
+  onChange,
+  searchPlaceholder,
+  emptyLabel,
+  error = null,
+  errorLabel,
+  onRetry,
+  extraAction,
+  server,
+  knownOptions,
+  sheetOnly = false,
+  open: openProp,
+  onOpenChange: onOpenChangeProp,
+}: EntityLinkPickerProps) {
   const { t, locale } = useTranslations();
-  const [open, setOpen] = useState(false);
+  const [openState, setOpenState] = useState(false);
+  const open = openProp ?? openState;
+  const setOpen = onOpenChangeProp ?? setOpenState;
   const [localTerm, setLocalTerm] = useState("");
   const term = server ? server.term : localTerm;
   const setTerm = server ? server.onTermChange : setLocalTerm;
@@ -355,6 +371,179 @@ export function EntityLinkPicker({
   const selectedChips = selected
     .map((id) => optionById.get(id))
     .filter((option): option is EntityLinkOption => option != null);
+
+  // In sheet-only mode the loading, failed and empty states the inline
+  // block would show move into the sheet.
+  const sheetStatus = sheetOnly
+    ? pickerSheetStatus({
+        pending,
+        error,
+        errorLabel,
+        onRetry,
+        slot,
+        emptyLabel,
+        extraAction,
+        empty:
+          options.length === 0 &&
+          selected.length === 0 &&
+          !term.trim() &&
+          !(server && (server.hasOlder || server.hasNewer)),
+      })
+    : null;
+
+  const sheet = (
+    <ResponsiveSheet
+      open={open}
+      onOpenChange={setOpen}
+      title={title}
+      contentWidth="lg"
+    >
+      <div className="space-y-3">
+        <div className="relative">
+          <Search
+            className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+            aria-hidden
+          />
+          <Input
+            type="search"
+            value={term}
+            onChange={(event) => setTerm(event.target.value)}
+            placeholder={searchPlaceholder}
+            aria-label={searchPlaceholder}
+            className="pl-9"
+            data-slot={`${slot}-search`}
+          />
+        </div>
+
+        {server?.period ? (
+          <p
+            className="text-muted-foreground px-1 text-xs"
+            data-slot={`${slot}-period`}
+          >
+            {t("links.picker.period.showing", {
+              period: formatPeriod(server.period, locale),
+            })}
+          </p>
+        ) : null}
+
+        {sheetStatus ? (
+          sheetStatus
+        ) : server?.searchPending && groups.length === 0 ? (
+          <div
+            className="flex justify-center py-6"
+            data-slot={`${slot}-searching`}
+          >
+            <Loader2
+              className="text-muted-foreground size-4 animate-spin motion-reduce:animate-none"
+              aria-hidden
+            />
+          </div>
+        ) : groups.length === 0 &&
+          !(server && (server.hasOlder || server.hasNewer)) ? (
+          <p className="text-muted-foreground px-1 py-6 text-center text-sm">
+            {t("links.picker.searchNoMatch")}
+          </p>
+        ) : (
+          <div className="max-h-[50vh] space-y-4 overflow-y-auto overscroll-contain">
+            {server?.hasNewer ? (
+              <PageButton
+                slot={`${slot}-load-newer`}
+                loading={server.loadingNewer}
+                onClick={server.onNewer}
+                label={t("links.picker.loadNewer")}
+              />
+            ) : null}
+            {groups.map((group) => {
+              const groupIds = group.options.map((option) => option.id);
+              return (
+                <div key={group.key ?? "__flat__"} className="space-y-1">
+                  {group.label ? (
+                    <div className="flex items-center justify-between gap-2 px-1">
+                      <span
+                        className="text-muted-foreground text-xs font-medium"
+                        data-slot={`${slot}-group-heading`}
+                      >
+                        {group.label}
+                      </span>
+                      <InlineAction
+                        tone="muted"
+                        data-slot={`${slot}-group-select`}
+                        onClick={() =>
+                          change(toggleAll(selected, groupIds), group.options)
+                        }
+                      >
+                        {t("links.picker.selectAll")}
+                      </InlineAction>
+                    </div>
+                  ) : null}
+                  <ul className="space-y-1">
+                    {group.options.map((option) => {
+                      const on = selectedSet.has(option.id);
+                      return (
+                        <li key={option.id}>
+                          <button
+                            type="button"
+                            aria-pressed={on}
+                            data-slot={`${slot}-option`}
+                            onClick={() =>
+                              change(toggleOne(selected, option.id), [option])
+                            }
+                            className={cn(
+                              "border-border hover:bg-muted/50 focus-visible:ring-ring/50 flex min-h-11 w-full items-center gap-2 rounded-md border px-3 text-left focus-visible:ring-[3px] focus-visible:outline-none",
+                              on && "border-primary/40 bg-primary/5",
+                            )}
+                          >
+                            <Check
+                              className={cn(
+                                "size-4 shrink-0",
+                                on ? "opacity-100" : "opacity-0",
+                              )}
+                              aria-hidden
+                            />
+                            <span className="min-w-0 flex-1">
+                              <span className="text-foreground block truncate text-sm">
+                                {option.label}
+                              </span>
+                              {option.meta ? (
+                                <span className="text-muted-foreground block truncate text-xs">
+                                  {option.meta}
+                                </span>
+                              ) : null}
+                            </span>
+                            {option.dateLabel ? (
+                              <span className="text-muted-foreground shrink-0 text-xs">
+                                {option.dateLabel}
+                              </span>
+                            ) : null}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            })}
+            {server?.hasOlder ? (
+              <PageButton
+                slot={`${slot}-load-older`}
+                loading={server.loadingOlder}
+                onClick={server.onOlder}
+                label={t("links.picker.loadOlder")}
+              />
+            ) : null}
+          </div>
+        )}
+
+        <div className="flex justify-end border-t pt-3">
+          <Button type="button" onClick={() => setOpen(false)}>
+            {t("links.picker.done")}
+          </Button>
+        </div>
+      </div>
+    </ResponsiveSheet>
+  );
+
+  if (sheetOnly) return sheet;
 
   return (
     <div className="space-y-2" data-slot={slot}>
@@ -476,153 +665,47 @@ export function EntityLinkPicker({
         </div>
       )}
 
-      <ResponsiveSheet
-        open={open}
-        onOpenChange={setOpen}
-        title={title}
-        contentWidth="lg"
-      >
-        <div className="space-y-3">
-          <div className="relative">
-            <Search
-              className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
-              aria-hidden
-            />
-            <Input
-              type="search"
-              value={term}
-              onChange={(event) => setTerm(event.target.value)}
-              placeholder={searchPlaceholder}
-              aria-label={searchPlaceholder}
-              className="pl-9"
-              data-slot={`${slot}-search`}
-            />
-          </div>
+      {sheet}
+    </div>
+  );
+}
 
-          {server?.period ? (
-            <p
-              className="text-muted-foreground px-1 text-xs"
-              data-slot={`${slot}-period`}
-            >
-              {t("links.picker.period.showing", {
-                period: formatPeriod(server.period, locale),
-              })}
-            </p>
-          ) : null}
-
-          {server?.searchPending && groups.length === 0 ? (
-            <div
-              className="flex justify-center py-6"
-              data-slot={`${slot}-searching`}
-            >
-              <Loader2
-                className="text-muted-foreground size-4 animate-spin motion-reduce:animate-none"
-                aria-hidden
-              />
-            </div>
-          ) : groups.length === 0 &&
-            !(server && (server.hasOlder || server.hasNewer)) ? (
-            <p className="text-muted-foreground px-1 py-6 text-center text-sm">
-              {t("links.picker.searchNoMatch")}
-            </p>
-          ) : (
-            <div className="max-h-[50vh] space-y-4 overflow-y-auto overscroll-contain">
-              {server?.hasNewer ? (
-                <PageButton
-                  slot={`${slot}-load-newer`}
-                  loading={server.loadingNewer}
-                  onClick={server.onNewer}
-                  label={t("links.picker.loadNewer")}
-                />
-              ) : null}
-              {groups.map((group) => {
-                const groupIds = group.options.map((option) => option.id);
-                return (
-                  <div key={group.key ?? "__flat__"} className="space-y-1">
-                    {group.label ? (
-                      <div className="flex items-center justify-between gap-2 px-1">
-                        <span
-                          className="text-muted-foreground text-xs font-medium"
-                          data-slot={`${slot}-group-heading`}
-                        >
-                          {group.label}
-                        </span>
-                        <InlineAction
-                          tone="muted"
-                          data-slot={`${slot}-group-select`}
-                          onClick={() =>
-                            change(toggleAll(selected, groupIds), group.options)
-                          }
-                        >
-                          {t("links.picker.selectAll")}
-                        </InlineAction>
-                      </div>
-                    ) : null}
-                    <ul className="space-y-1">
-                      {group.options.map((option) => {
-                        const on = selectedSet.has(option.id);
-                        return (
-                          <li key={option.id}>
-                            <button
-                              type="button"
-                              aria-pressed={on}
-                              data-slot={`${slot}-option`}
-                              onClick={() =>
-                                change(toggleOne(selected, option.id), [option])
-                              }
-                              className={cn(
-                                "border-border hover:bg-muted/50 focus-visible:ring-ring/50 flex min-h-11 w-full items-center gap-2 rounded-md border px-3 text-left focus-visible:ring-[3px] focus-visible:outline-none",
-                                on && "border-primary/40 bg-primary/5",
-                              )}
-                            >
-                              <Check
-                                className={cn(
-                                  "size-4 shrink-0",
-                                  on ? "opacity-100" : "opacity-0",
-                                )}
-                                aria-hidden
-                              />
-                              <span className="min-w-0 flex-1">
-                                <span className="text-foreground block truncate text-sm">
-                                  {option.label}
-                                </span>
-                                {option.meta ? (
-                                  <span className="text-muted-foreground block truncate text-xs">
-                                    {option.meta}
-                                  </span>
-                                ) : null}
-                              </span>
-                              {option.dateLabel ? (
-                                <span className="text-muted-foreground shrink-0 text-xs">
-                                  {option.dateLabel}
-                                </span>
-                              ) : null}
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                );
-              })}
-              {server?.hasOlder ? (
-                <PageButton
-                  slot={`${slot}-load-older`}
-                  loading={server.loadingOlder}
-                  onClick={server.onOlder}
-                  label={t("links.picker.loadOlder")}
-                />
-              ) : null}
-            </div>
-          )}
-
-          <div className="flex justify-end border-t pt-3">
-            <Button type="button" onClick={() => setOpen(false)}>
-              {t("links.picker.done")}
-            </Button>
-          </div>
-        </div>
-      </ResponsiveSheet>
+/** What a sheet-only picker shows instead of its list, or null for the list. */
+function pickerSheetStatus({
+  pending,
+  error,
+  errorLabel,
+  onRetry,
+  slot,
+  emptyLabel,
+  extraAction,
+  empty,
+}: {
+  pending: boolean;
+  error: unknown;
+  errorLabel?: string;
+  onRetry?: () => void;
+  slot: string;
+  emptyLabel: string;
+  extraAction?: ReactNode;
+  empty: boolean;
+}): ReactNode {
+  if (pending && !error) return <Skeleton className="h-11 w-full rounded-md" />;
+  if (error) {
+    return (
+      <QueryErrorRow
+        error={error}
+        message={errorLabel}
+        onRetry={onRetry}
+        slot={`${slot}-error`}
+      />
+    );
+  }
+  if (!empty) return null;
+  return (
+    <div className="space-y-2 px-1 py-6 text-center">
+      <p className="text-muted-foreground text-sm">{emptyLabel}</p>
+      {extraAction}
     </div>
   );
 }

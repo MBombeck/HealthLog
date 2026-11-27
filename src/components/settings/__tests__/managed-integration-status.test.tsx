@@ -123,8 +123,9 @@ describe("<ManagedIntegrationStatus>", () => {
     );
     expect(html.match(/>Connect for Managed record</g)).toHaveLength(4);
     // The legacy `state: "connected"` on every row does not make a card
-    // connected; only `health` does.
-    expect(html.match(/>Not connected\.</g)).toHaveLength(5);
+    // connected; only `health` does. An unconnected card says so with the
+    // off chip.
+    expect(html.match(/data-state="not_connected"[^>]*>/g)?.length).toBe(10);
   });
 
   it("says once where connected data goes, and links the explanation", () => {
