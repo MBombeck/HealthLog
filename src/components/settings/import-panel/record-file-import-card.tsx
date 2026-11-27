@@ -25,7 +25,6 @@ import { ListGroup, ListItem } from "@/components/ui/list-row";
 import {
   ImportDetails,
   ImportPickerRow,
-  ImportQueryErrorRow,
   ImportSource,
   useFinishedJobMeta,
 } from "./import-card-shell";
@@ -223,6 +222,7 @@ export function RecordFileImportSource({ kind }: { kind: CardKind }) {
       }
       open={open}
       onOpenChange={setOpen}
+      query={statusQuery}
       chooseTestId={`${testId}-open`}
       file={{
         inputRef,
@@ -231,7 +231,6 @@ export function RecordFileImportSource({ kind }: { kind: CardKind }) {
         onFiles: ([file]) => void upload(file!),
       }}
     >
-      <ImportQueryErrorRow query={statusQuery} />
       <ListGroup aria-live="polite">
         <ImportPickerRow
           busy={busy}

@@ -25,7 +25,6 @@ import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import {
   ImportPickerRow,
-  ImportQueryErrorRow,
   ImportSource,
   useFinishedJobMeta,
 } from "./import-card-shell";
@@ -341,6 +340,7 @@ export function FitImportSource() {
       }
       open={open}
       onOpenChange={setOpen}
+      query={statusQuery}
       chooseTestId="import-choose-fit"
       file={{
         inputRef: fileInputRef,
@@ -351,7 +351,6 @@ export function FitImportSource() {
         onFiles: (files) => void start(files),
       }}
     >
-      <ImportQueryErrorRow query={statusQuery} />
       <ListGroup aria-live="polite" data-testid="import-fit-rows">
         <ImportPickerRow
           multiple

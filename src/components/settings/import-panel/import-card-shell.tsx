@@ -66,6 +66,7 @@ export function ImportSource({
   open,
   onOpenChange,
   file,
+  query,
   chooseTestId,
   footer,
   children,
@@ -83,6 +84,12 @@ export function ImportSource({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   file?: SourceFileInput;
+  /**
+   * The source's status read. When it fails the row says so with the Error
+   * chip, and the sheet opens on the failure with Retry; choosing a file
+   * stays possible (the server refuses a second run itself).
+   */
+  query?: { isError: boolean; error: unknown; refetch: () => unknown };
   chooseTestId: string;
   /** The sheet's buttons; "Close" alone by default. */
   footer?: React.ReactNode;
@@ -90,21 +97,25 @@ export function ImportSource({
 }) {
   const { t } = useTranslations();
   useOpenOnAnchor(anchor, () => onOpenChange(true));
+  const readFailed = query?.isError === true;
+  const rowStatus = status ?? (readFailed ? "failed" : null);
   return (
     <>
       <ListItem
         id={anchor}
         data-testid={testId}
-        data-status={status ?? "idle"}
+        data-status={rowStatus ?? "idle"}
         className="scroll-mt-28"
         icon={<SourceIcon icon={icon} />}
         title={title}
-        meta={meta}
+        meta={readFailed && status === null ? t("common.loadFailed") : meta}
         onSelect={() => onOpenChange(true)}
         trailing={
           <>
-            {status ? (
-              <StatusChip tone={status === "running" ? "running" : "error"} />
+            {rowStatus ? (
+              <StatusChip
+                tone={rowStatus === "running" ? "running" : "error"}
+              />
             ) : (
               <Button
                 type="button"
@@ -168,6 +179,7 @@ export function ImportSource({
         }
       >
         <div data-testid={`${testId}-sheet`} className="space-y-4">
+          {query ? <ImportQueryErrorRow query={query} /> : null}
           {children}
         </div>
       </ResponsiveSheet>

@@ -27,7 +27,6 @@ import { HEALTH_CONNECT_FOLDER_HREF } from "@/components/settings/integrations/h
 import {
   ImportDetails,
   ImportPickerRow,
-  ImportQueryErrorRow,
   ImportSource,
   useFinishedJobMeta,
 } from "./import-card-shell";
@@ -281,6 +280,7 @@ export function HealthConnectImportSource() {
       status={busy ? "running" : uploadError || isFailed ? "failed" : null}
       open={open}
       onOpenChange={setOpen}
+      query={statusQuery}
       chooseTestId="import-choose-health-connect"
       file={{
         inputRef: fileInputRef,
@@ -291,7 +291,6 @@ export function HealthConnectImportSource() {
         onFiles: ([file]) => void upload(file!),
       }}
     >
-      <ImportQueryErrorRow query={statusQuery} />
       <ListGroup aria-live="polite">
         <ImportPickerRow
           busy={busy}

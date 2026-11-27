@@ -61,8 +61,8 @@ test.describe("activity file import, several files", () => {
     // A start time no earlier run used: yesterday, to the second.
     const start = new Date(Math.floor(Date.now() / 1000) * 1000 - 86_400_000);
     const activity = buildWatchActivity({ start, seconds: 600 });
-    const card = await openFitCard(page);
-    await card.locator('input[type="file"]').setInputFiles([
+    const row = await openFitCard(page);
+    await row.locator('input[type="file"]').setInputFiles([
       {
         name: "run.fit",
         mimeType: "application/octet-stream",
@@ -85,6 +85,9 @@ test.describe("activity file import, several files", () => {
       },
     ]);
 
+    // Choosing files opens the sheet with one row per file.
+    const card = page.getByTestId("import-card-fit-sheet");
+    await expect(card).toBeVisible({ timeout: 10_000 });
     const rows = card.getByTestId("import-fit-file");
     await expect(rows).toHaveCount(4);
     await expect(rows.nth(3)).toHaveAttribute("data-status", "failed", {
@@ -96,7 +99,9 @@ test.describe("activity file import, several files", () => {
     await expect(card.getByTestId("import-fit-batch-progress")).toContainText(
       "4",
     );
-    // Once the run is over the card takes the next selection.
+    // Once the run is over the sheet takes the next selection, and the
+    // page row, its chip gone, offers Choose again behind the sheet.
     await expect(card.getByTestId("import-action-fit")).toBeEnabled();
+    await expect(row).not.toHaveAttribute("data-status", "running");
   });
 });

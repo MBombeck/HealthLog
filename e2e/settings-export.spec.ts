@@ -56,14 +56,14 @@ test.describe("Settings → Export & Import", () => {
 
   test("renders all export surfaces with stable testids", async ({ page }) => {
     await page.goto("/settings/export", { waitUntil: "domcontentloaded" });
-    // v1.18.0 — the full health-record export moved to its own
-    // `/settings/health-record` section. The Export & Import page keeps
-    // the four CSV/backup tiles with the `export-card-*` shape.
+    // One row per export; the doctor's report is a row that leads to its
+    // own page, `/settings/health-record`.
     for (const id of [
       "export-card-measurements-csv",
       "export-card-medications-csv",
       "export-card-mood-csv",
       "export-card-full-backup",
+      "export-card-doctor-report",
     ]) {
       await expect(page.getByTestId(id)).toBeVisible({ timeout: 10_000 });
     }
@@ -210,22 +210,70 @@ test.describe("Settings → Export & Import", () => {
 
   test("renders the import surfaces with stable testids", async ({ page }) => {
     await page.goto("/settings/export", { waitUntil: "domcontentloaded" });
-    // v1.15.7 (issue #281) — the Apple Health and generic-JSON import
-    // cards live in the same section, below the export options.
-    for (const id of ["import-card-apple-health", "import-card-json"]) {
+    // One row per source in one list, above the exports.
+    for (const id of [
+      "import-card-apple-health",
+      "import-card-health-connect",
+      "import-card-fit",
+      "import-card-gadgetbridge",
+      "import-card-fhir-bundle",
+      "import-card-csv",
+      "import-card-json",
+      "import-card-dose-history",
+      "import-card-labs-csv",
+      "import-card-medications-csv",
+    ]) {
       await expect(page.getByTestId(id)).toBeVisible({ timeout: 10_000 });
     }
+  });
+
+  test("pasted CSV still previews from its sheet", async ({ page }) => {
+    await page.goto("/settings/export", { waitUntil: "domcontentloaded" });
+    await page.getByTestId("import-choose-csv").click();
+    const sheet = page.getByTestId("import-card-csv-sheet");
+    await expect(sheet).toBeVisible({ timeout: 10_000 });
+    await sheet
+      .getByTestId("import-csv-textarea")
+      .fill(
+        "type,value,unit,measuredAt\nWEIGHT,80.4,kg,2026-05-01T08:00:00+02:00\n",
+      );
+    await page.getByTestId("import-csv-preview").click();
+    await expect(sheet.getByTestId("import-csv-result")).toBeVisible({
+      timeout: 15_000,
+    });
+    // The step opens its example and columns from one row.
+    await sheet.getByTestId("import-csv-guide").getByRole("button").click();
+    await expect(page.getByTestId("import-csv-download-example")).toBeVisible();
+  });
+
+  test("the Health Connect sheet leads to the folder source", async ({
+    page,
+  }) => {
+    await page.goto("/settings/export#import-health-connect", {
+      waitUntil: "domcontentloaded",
+    });
+    const folder = page.getByTestId("import-health-connect-folder");
+    await expect(folder).toBeVisible({ timeout: 10_000 });
+    await folder.getByRole("link").click();
+    await expect(page).toHaveURL(/\/settings\/integrations#import-health-connect-remote/);
+    await expect(
+      page.getByTestId("import-card-health-connect-remote"),
+    ).toBeVisible({ timeout: 10_000 });
   });
 
   test("JSON import 'Download example' fires a real download", async ({
     page,
   }) => {
     await page.goto("/settings/export", { waitUntil: "domcontentloaded" });
+    await page.getByTestId("import-choose-json").click();
+    const sheet = page.getByTestId("import-card-json-sheet");
+    await expect(sheet).toBeVisible({ timeout: 10_000 });
+    await sheet.getByTestId("import-json-guide").getByRole("button").click();
     const exampleBtn = page.getByTestId("import-json-download-example");
     await expect(exampleBtn).toBeVisible({ timeout: 10_000 });
 
     const a11y = await new AxeBuilder({ page })
-      .include('[data-testid="import-card-json"]')
+      .include('[data-testid="import-card-json-sheet"]')
       .analyze();
     expect(
       a11y.violations.filter(
@@ -309,6 +357,7 @@ test.describe("Settings → Export & Import", () => {
     );
 
     await page.goto("/settings/export", { waitUntil: "domcontentloaded" });
+    await page.getByTestId("export-card-measurements-csv").click();
     const downloadBtn = page.getByTestId("export-action-measurements-csv");
     await expect(downloadBtn).toBeVisible({ timeout: 10_000 });
 

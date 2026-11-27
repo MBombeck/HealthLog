@@ -26,7 +26,6 @@ import { ListGroup } from "@/components/ui/list-row";
 import {
   ImportDetails,
   ImportPickerRow,
-  ImportQueryErrorRow,
   ImportSource,
   useFinishedJobMeta,
 } from "./import-card-shell";
@@ -540,6 +539,7 @@ export function AppleHealthImportSource() {
       status={busy ? "running" : uploadError || isFailed ? "failed" : null}
       open={open}
       onOpenChange={setOpen}
+      query={statusQuery}
       chooseTestId="import-choose-apple-health"
       file={{
         inputRef: fileInputRef,
@@ -550,7 +550,6 @@ export function AppleHealthImportSource() {
         onFiles: ([file]) => void upload(file!),
       }}
     >
-      <ImportQueryErrorRow query={statusQuery} />
       <ListGroup aria-live="polite">
         <ImportPickerRow
           busy={busy}

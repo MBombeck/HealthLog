@@ -6,9 +6,10 @@
  * panel's interactive paths (upload, poll, paste-and-import) are
  * exercised end-to-end by the e2e suite; here we pin:
  *
- *   1. The page-level shape — both import cards render with their stable
- *      testids, localised copy, and the accessible controls (labelled
- *      file inputs, keyboard-operable drop area, aria-live status slot).
+ *   1. The list's shape — one row per source with its stable testid, its
+ *      localised copy and a real Choose button; the file sources hold a
+ *      labelled file input in their row. The sheets are closed in SSR and
+ *      are exercised by the e2e suite.
  *   2. The "Download example" payload — the inline example JSON the
  *      button mints must parse and carry the documented field shape (the
  *      two arrays, the German-anchored mood enum), so the docs and the
@@ -35,8 +36,9 @@ import {
   summarizeAppleHealthSkips,
 } from "../import-panel/apple-health-import-card";
 import { I18nProvider } from "@/lib/i18n/context";
+import { ListGroup } from "@/components/ui/list-row";
 import {
-  ImportPanel,
+  ImportSources,
   EXAMPLE_IMPORT,
   EXAMPLE_IMPORT_DOWNLOAD_HREF,
   EXAMPLE_CSV,
@@ -56,56 +58,66 @@ function render(node: React.ReactElement, locale: Locale = "en") {
   );
 }
 
-describe("<ImportPanel> — SSR smoke", () => {
-  it("renders the import heading and both cards", () => {
+function ImportPanel() {
+  return (
+    <ListGroup>
+      <ImportSources />
+    </ListGroup>
+  );
+}
+
+describe("<ImportSources> — SSR smoke", () => {
+  it("renders one row per source", () => {
     const html = render(<ImportPanel />);
-    expect(html).toContain('id="settings-section-import-title"');
-    expect(html).toContain('data-testid="import-card-apple-health"');
-    expect(html).toContain('data-testid="import-card-json"');
-    expect(html).toContain('data-testid="import-card-csv"');
+    for (const id of [
+      "import-card-apple-health",
+      "import-card-health-connect",
+      "import-card-fit",
+      "import-card-gadgetbridge",
+      "import-card-fhir-bundle",
+      "import-card-csv",
+      "import-card-json",
+      "import-card-dose-history",
+      "import-card-labs-csv",
+      "import-card-medications-csv",
+    ])
+      expect(html).toContain(`data-testid="${id}"`);
     // Raw i18n keys never leak past the provider.
     expect(html).not.toContain("settings.sections.export.import.");
   });
 
-  it("exposes the action controls with stable testids", () => {
+  it("puts a real Choose button on every idle row", () => {
     const html = render(<ImportPanel />);
     for (const id of [
-      "import-action-apple-health",
-      "import-json-textarea",
-      "import-json-choose-file",
-      "import-json-download-example",
-      "import-action-json",
-      "import-csv-textarea",
-      "import-csv-choose-file",
-      "import-csv-download-example",
-      "import-csv-preview",
-      "import-action-csv",
-    ]) {
+      "import-choose-apple-health",
+      "import-choose-health-connect",
+      "import-choose-fit",
+      "import-card-gadgetbridge-open",
+      "import-card-fhir-bundle-open",
+      "import-choose-csv",
+      "import-choose-json",
+      "import-choose-dose-history",
+    ])
       expect(html).toContain(`data-testid="${id}"`);
-    }
-  });
-
-  it("opens every file picker from a real button in its row", () => {
-    const html = render(<ImportPanel />);
-    // The file cards carry no drop area posing as a button: each picker row
-    // holds a real <button>, so a keyboard reaches it like any other.
-    const pickers = html.split("data-import-picker").length - 1;
-    expect(pickers).toBe(5);
+    expect(html).toContain('data-slot="record-import-open-labs"');
+    expect(html).toContain('data-slot="record-import-open-medications"');
     expect(html).not.toContain('role="button"');
-    expect(html).toContain("aria-live");
   });
 
-  it("labels the hidden file inputs for assistive tech", () => {
+  it("holds a labelled file input in each file source's row", () => {
     const html = render(<ImportPanel />);
-    // Both file inputs are visually hidden (sr-only) but must carry an
-    // accessible name.
-    expect(html).toContain('type="file"');
-    expect(html).toContain("aria-label");
+    // Apple Health, Health Connect, FIT, Gadgetbridge and FHIR open the
+    // file dialog straight from the row, so the input lives there.
+    expect(html.match(/type="file"/g)?.length).toBe(5);
+    const inputs = html.match(/<input[^>]*type="file"[^>]*>/g) ?? [];
+    for (const input of inputs) expect(input).toContain("aria-label");
+    // The FIT row takes several files at once.
+    expect(inputs.filter((i) => i.includes("multiple")).length).toBe(1);
   });
 
   it("renders the German copy under the de locale", () => {
     const html = render(<ImportPanel />, "de");
-    expect(html).toContain("Import");
+    expect(html).toContain("Auswählen");
     expect(html).not.toContain("settings.sections.export.import.");
   });
 });
