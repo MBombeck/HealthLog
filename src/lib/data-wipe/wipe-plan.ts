@@ -614,8 +614,6 @@ export const USER_KEPT_FIELDS: Readonly<Record<string, string>> = {
     "an interface nudge the person already dismissed",
   adminNoticesDismissed:
     "one-time admin notices this admin already dismissed; interface state, not record content",
-  dismissedHints:
-    "one-time hints the person already put away; interface state, not record content",
   timezone: "an interface preference — how dates and times are rendered",
   locale: "an interface preference — which language the interface speaks",
   unitPreference: "an interface preference — metric or imperial rendering",

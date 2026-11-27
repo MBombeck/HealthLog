@@ -46,7 +46,6 @@ export const ACCOUNT_SEED_FIELDS = [
   "dateFormat",
   "medicineRegistry",
   "showNavCounts",
-  "dismissedHints",
   "notificationPrefs",
   "disableCoach",
   "displayName",

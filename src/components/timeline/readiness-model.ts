@@ -71,3 +71,6 @@ export function showReadinessCard(
     (lane) => lane.status !== "carries" && lane.gaps.length > 0,
   );
 }
+
+/** Storage key for the dismissed card; a per-viewer convenience only. */
+export const READINESS_CARD_DISMISSED_KEY = "healthlog.timeline.readinessCard";

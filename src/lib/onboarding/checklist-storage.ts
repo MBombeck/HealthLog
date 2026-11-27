@@ -1,10 +1,12 @@
 /**
- * The getting-started checklist's per-browser state: whether it is open.
+ * The getting-started checklist's per-browser state.
  *
- * Which rows are hidden, and whether the whole card is, lives on the account
- * (`getting-started.<row>` and `getting-started` in `dismissible-hints.ts`).
- * The two keys they were kept under in this browser before are named here
- * only so `legacy-dismissals.ts` can carry them over once.
+ * Three keys, all of them conveniences rather than record: which rows this
+ * browser hid, whether the whole card was hidden, and whether it is open.
+ * They were private to the card until the setup flow needed two of them —
+ * the done screen and "skip for now" open the list, and Settings brings a
+ * hidden list back — and a second copy of a storage key is how two surfaces
+ * end up writing different ones.
  *
  * Every access is wrapped: storage can be full, disabled, or absent, and the
  * card renders correctly with no stored value.
@@ -29,5 +31,26 @@ export function markChecklistExpanded(): void {
     storage()?.setItem(CHECKLIST_EXPANDED_KEY, "1");
   } catch {
     /* storage may be full or disabled */
+  }
+}
+
+/**
+ * "Show the checklist again": forget every dismissal and open the list.
+ * Returns whether anything was stored to forget, so the caller can say
+ * "it is back" rather than "done" to somebody who never hid it.
+ */
+export function resetChecklistDismissals(): boolean {
+  const store = storage();
+  if (!store) return false;
+  try {
+    const hadState =
+      store.getItem(CHECKLIST_DISMISSED_ALL_KEY) === "1" ||
+      (store.getItem(CHECKLIST_DISMISSED_ITEMS_KEY) ?? "[]") !== "[]";
+    store.removeItem(CHECKLIST_DISMISSED_ITEMS_KEY);
+    store.removeItem(CHECKLIST_DISMISSED_ALL_KEY);
+    store.setItem(CHECKLIST_EXPANDED_KEY, "1");
+    return hadState;
+  } catch {
+    return false;
   }
 }

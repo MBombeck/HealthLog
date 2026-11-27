@@ -934,11 +934,6 @@ model User {
   /// is answered once for the server (`AppSettings.pushRelayDecision`); an id
   /// already stored is inert.
   adminNoticesDismissed        String[]  @default([]) @map("admin_notices_dismissed")
-  /// One-time hints, notes and banners this account has put away, by id
-  /// (`src/lib/hints/dismissible-hints.ts`): a family, or `family.member`.
-  /// Reader: `/api/auth/me` `dismissedHints`, which every such hint gates on.
-  /// Written by `PATCH /api/auth/me/dismissed-hints`.
-  dismissedHints               String[]  @default([]) @map("dismissed_hints")
 
   // Relations
   passkeys                                  Passkey[]

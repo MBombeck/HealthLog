@@ -177,8 +177,6 @@ export interface AuthUser {
    * default) against a stale /me payload.
    */
   showNavCounts: boolean;
-  /** Hints this account closed; absent on a stale payload (`useDismissedHints`). */
-  dismissedHints?: string[];
   /**
    * v1.4.47 — the signed-in person's own stored Coach opt-out. It is
    * the value the Activate-Coach switch and the module toggle edit, and

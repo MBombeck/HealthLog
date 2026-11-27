@@ -189,7 +189,6 @@ export const USER_COLUMNS_OUTSIDE_SETTINGS = {
   healthKitLastBackgroundSyncAt: "OPERATIONAL",
   lastSyncedAt: "OPERATIONAL",
   adminNoticesDismissed: "OPERATIONAL",
-  dismissedHints: "OPERATIONAL",
   // The restore stamps its own: paired clients' cursors from before it must
   // be refused, which a carried value would undo.
   syncResetAt: "OPERATIONAL",

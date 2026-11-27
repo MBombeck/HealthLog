@@ -546,11 +546,6 @@ const accountPayload = z
       .describe(
         "#1113 — whether the navigation shows its counts (doses due on Medications, check-ups due on Checkups). `true` by default. When `false`, show no count and do not call `GET /api/nav/counts`. Set it with `PATCH /api/auth/me/show-nav-counts`.",
       ),
-    dismissedHints: z
-      .array(z.string())
-      .describe(
-        "The one-time hints, notes and banners this account has put away, by id (a family such as `timeline-readiness`, or `family.member` such as `i18n-banner.fr`). Show a hint only while its id, or its family, is absent. Change it with `PATCH /api/auth/me/dismissed-hints`.",
-      ),
     features: accountFeaturesBlock,
     push: accountPushBlock,
     accountAccess: accountAccessBlock,

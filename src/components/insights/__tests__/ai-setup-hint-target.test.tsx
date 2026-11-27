@@ -20,13 +20,6 @@ vi.mock("@/hooks/use-auth", () => ({
   }),
 }));
 vi.mock("@/hooks/use-mounted", () => ({ useMounted: () => true }));
-const hints = vi.hoisted(() => ({ stored: [] as string[] }));
-vi.mock("@/hooks/use-dismissed-hints", () => ({
-  useDismissedHints: () => ({
-    isDismissed: (family: string) => hints.stored.includes(family),
-    dismiss: async () => true,
-  }),
-}));
 vi.mock("@/hooks/use-ai-capability", () => ({
   useAiProviderState: () => ({
     configured: false,
@@ -39,11 +32,15 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { AiSetupHint } from "../ai-setup-hint";
 
 function render(surface: "insights" | "settings" = "insights"): string {
+  vi.stubGlobal("window", {
+    localStorage: { getItem: () => null, setItem: () => undefined },
+  });
   const html = renderToStaticMarkup(
     <I18nProvider initialLocale="en">
       <AiSetupHint surface={surface} />
     </I18nProvider>,
   );
+  vi.unstubAllGlobals();
   return html;
 }
 
@@ -80,17 +77,5 @@ describe("the setup hint after an opt-out", () => {
     expect(render("insights")).toContain('data-slot="ai-setup-hint"');
     auth.modules = { coach: true, insights: false };
     expect(render("settings")).toContain('data-slot="ai-setup-hint"');
-  });
-});
-
-describe("the setup hint once closed", () => {
-  afterEach(() => {
-    hints.stored = [];
-  });
-
-  it("stays gone on both surfaces when the account has it closed", () => {
-    hints.stored = ["ai-setup"];
-    expect(render("insights")).not.toContain('data-slot="ai-setup-hint"');
-    expect(render("settings")).not.toContain('data-slot="ai-setup-hint"');
   });
 });

@@ -295,9 +295,6 @@ function displayPreferences(
     // #1113 — whether the sidebar and the More sheet show their counts. Off
     // means no count and no `/api/nav/counts` read.
     showNavCounts: user.showNavCounts,
-    // The one-time hints the caller has put away, by id. Every such hint
-    // gates on this list, so closed means closed on every device.
-    dismissedHints: user.dismissedHints,
   };
 }
 

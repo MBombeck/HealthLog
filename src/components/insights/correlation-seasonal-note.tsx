@@ -1,10 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { Info, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { useDismissedHints } from "@/hooks/use-dismissed-hints";
 import { useMounted } from "@/hooks/use-mounted";
 import { useTranslations } from "@/lib/i18n/context";
 
@@ -19,9 +19,28 @@ import { useTranslations } from "@/lib/i18n/context";
  * Who sees it is decided on the server: `findingsBeforeSeasonalAdjustment`
  * on the correlations response is true only when the record kept a discovery
  * pattern from before the change, so an account created since never sees it.
- * Dismissing follows the app's one-off hint convention: it is remembered on
- * the account (`useDismissedHints`), so the note stays gone on every device.
+ * Dismissing follows the app's one-off hint convention (`AiSetupHint`): it is
+ * remembered per viewer in this browser, and a storage failure hides the note
+ * for the current visit only.
  */
+const STORAGE_PREFIX = "healthlog.correlation-seasonal-note.dismissed";
+
+export function correlationSeasonalNoteStorageKey(viewerId: string): string {
+  return `${STORAGE_PREFIX}.${viewerId}`;
+}
+
+function readDismissed(viewerId: string): boolean {
+  try {
+    return (
+      window.localStorage.getItem(
+        correlationSeasonalNoteStorageKey(viewerId),
+      ) === "1"
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function CorrelationSeasonalNote({
   findingsBeforeSeasonalAdjustment,
 }: {
@@ -30,16 +49,27 @@ export function CorrelationSeasonalNote({
 }) {
   const { t } = useTranslations();
   const { user } = useAuth();
-  const hints = useDismissedHints();
-  // Nothing renders before hydration, so the server HTML and the first
-  // client render agree.
+  // Storage is browser-only: nothing renders before hydration, so the server
+  // HTML and the first client render agree.
   const mounted = useMounted();
+  const [dismissedNow, setDismissedNow] = useState(false);
 
-  if (!mounted || !user) return null;
+  const viewerId = user?.id ?? null;
+  if (!mounted || viewerId === null) return null;
   if (findingsBeforeSeasonalAdjustment !== true) return null;
-  if (hints.isDismissed("correlation-seasonal")) return null;
+  if (dismissedNow || readDismissed(viewerId)) return null;
 
-  const dismiss = () => void hints.dismiss("correlation-seasonal");
+  const dismiss = () => {
+    setDismissedNow(true);
+    try {
+      window.localStorage.setItem(
+        correlationSeasonalNoteStorageKey(viewerId),
+        "1",
+      );
+    } catch {
+      // Storage unavailable (private mode): hidden for this visit only.
+    }
+  };
 
   return (
     <div

@@ -38,7 +38,6 @@ import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
-import { useDismissedHints } from "@/hooks/use-dismissed-hints";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import {
   capTimelineSeriesKeys,
@@ -65,7 +64,10 @@ import { LabExcludedNote } from "./lab-lines";
 import { TimelineLegend } from "./timeline-legend";
 import { LifeEventSheet } from "./life-event-sheet";
 import { ReadinessCard } from "./readiness-card";
-import { showReadinessCard } from "./readiness-model";
+import {
+  READINESS_CARD_DISMISSED_KEY,
+  showReadinessCard,
+} from "./readiness-model";
 import { TimelineReadinessSheet } from "./readiness-sheet";
 import { Segmented } from "@/components/ui/segmented";
 import { SERIES_PALETTE, assignSeriesColors } from "./series-colors";
@@ -93,7 +95,11 @@ import {
   symptomNames,
 } from "./timeline-menus";
 import { withSymptomLines } from "./series-format";
-import { isStringArray, useDevicePreference } from "./use-device-preference";
+import {
+  isBoolean,
+  isStringArray,
+  useDevicePreference,
+} from "./use-device-preference";
 import {
   useLifeEvents,
   useTimeline,
@@ -281,8 +287,11 @@ export function TimelineView() {
     [],
     isStringArray,
   );
-  const hints = useDismissedHints();
-  const cardDismissed = hints.isDismissed("timeline-readiness");
+  const [cardDismissed, setCardDismissed] = useDevicePreference(
+    READINESS_CARD_DISMISSED_KEY,
+    false,
+    isBoolean,
+  );
 
   const modules = user?.modules;
   const { values, allowed, setStoredValues, seriesColor } =
@@ -514,7 +523,7 @@ export function TimelineView() {
       {readiness.data && showReadinessCard(readiness.data, cardDismissed) && (
         <ReadinessCard
           readiness={readiness.data}
-          onDismiss={() => void hints.dismiss("timeline-readiness")}
+          onDismiss={() => setCardDismissed(true)}
         />
       )}
 

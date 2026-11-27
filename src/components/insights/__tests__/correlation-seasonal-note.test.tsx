@@ -9,38 +9,51 @@
  * The project runs SSR-only component tests, so nothing here clicks. The
  * close path is driven by calling the component as a plain function and
  * invoking the dismiss button's own `onClick` from the returned tree, then
- * mounting again against the same account. Persistence across mounts is the
- * property, and it lives on the account (`useDismissedHints`), not in
- * component state or browser storage.
+ * mounting again against the same storage. `useState` is replaced by a
+ * stateless stand-in for that; persistence across mounts is the property, and
+ * it lives in storage, not in component state.
  */
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("react", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("react")>();
+  return {
+    ...actual,
+    useState: <T,>(init: T | (() => T)) => [
+      typeof init === "function" ? (init as () => T)() : init,
+      () => undefined,
+    ],
+  };
+});
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({ user: { id: "viewer-1" }, isAuthenticated: true }),
 }));
 vi.mock("@/hooks/use-mounted", () => ({ useMounted: () => true }));
-let stored: string[] = [];
-const dismiss = vi.fn(async (...ids: string[]) => {
-  stored.push(...ids);
-  return true;
-});
-vi.mock("@/hooks/use-dismissed-hints", () => ({
-  useDismissedHints: () => ({
-    isDismissed: (family: string) => stored.includes(family),
-    dismiss,
-  }),
-}));
 vi.mock("@/lib/i18n/context", () => ({
   useTranslations: () => ({ t: (key: string) => key }),
 }));
 
-import { CorrelationSeasonalNote } from "../correlation-seasonal-note";
+import {
+  CorrelationSeasonalNote,
+  correlationSeasonalNoteStorageKey,
+} from "../correlation-seasonal-note";
+
+let store: Map<string, string>;
 
 beforeEach(() => {
-  stored = [];
-  dismiss.mockClear();
+  store = new Map();
+  vi.stubGlobal("window", {
+    localStorage: {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => void store.set(key, value),
+    },
+  });
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 function render(flag: boolean | undefined): string {
@@ -87,7 +100,33 @@ describe("CorrelationSeasonalNote", () => {
     expect(button).not.toBeNull();
     (button!.props as { onClick: () => void }).onClick();
 
-    expect(dismiss).toHaveBeenCalledWith("correlation-seasonal");
+    expect(store.get(correlationSeasonalNoteStorageKey("viewer-1"))).toBe("1");
     expect(render(true)).toBe("");
+  });
+
+  it("is remembered per viewer, not per browser", () => {
+    store.set(correlationSeasonalNoteStorageKey("someone-else"), "1");
+    expect(render(true)).toContain('data-slot="correlation-seasonal-note"');
+  });
+
+  it("still shows and still closes when storage is unavailable", () => {
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: () => {
+          throw new Error("blocked");
+        },
+        setItem: () => {
+          throw new Error("blocked");
+        },
+      },
+    });
+    const tree = CorrelationSeasonalNote({
+      findingsBeforeSeasonalAdjustment: true,
+    });
+    const button = findBySlot(tree, "correlation-seasonal-note-dismiss");
+    expect(button).not.toBeNull();
+    expect(() =>
+      (button!.props as { onClick: () => void }).onClick(),
+    ).not.toThrow();
   });
 });

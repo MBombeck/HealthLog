@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Loader2, ShieldCheck, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,6 @@ import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useAiConsent, useAiProviderState } from "@/hooks/use-ai-capability";
 import { useAuth } from "@/hooks/use-auth";
-import { useDismissedHints } from "@/hooks/use-dismissed-hints";
 import { useGrantAiConsent } from "@/hooks/use-grant-ai-consent";
 import { useMounted } from "@/hooks/use-mounted";
 import type { AiConsentState } from "@/lib/ai/capabilities/types";
@@ -30,9 +30,21 @@ import { useTranslations } from "@/lib/i18n/context";
  *
  * Two surfaces. In Settings → AI it is a settings card that stays until the
  * question is answered there. On the Insights overview, beside the setup
- * hint, it is a tile the person can put away; that is remembered on the
- * account (`useDismissedHints`) and does not count as an answer.
+ * hint, it is a tile the person can put away; that is remembered per viewer
+ * in this browser and does not count as an answer.
  */
+const DISMISS_STORAGE_PREFIX = "healthlog.ai-consent-request.dismissed";
+
+function readDismissed(viewerId: string): boolean {
+  try {
+    return (
+      window.localStorage.getItem(`${DISMISS_STORAGE_PREFIX}.${viewerId}`) ===
+      "1"
+    );
+  } catch {
+    return false;
+  }
+}
 
 /** The services the consent would cover, as one readable list. */
 function recipientList(consent: AiConsentState): string {
@@ -54,12 +66,13 @@ export function AiConsentRequest({
   const provider = useAiProviderState();
   const grant = useGrantAiConsent();
   const mounted = useMounted();
-  const hints = useDismissedHints();
+  const [dismissedNow, setDismissedNow] = useState(false);
 
+  const viewerId = user?.id ?? null;
   // Asked only of somebody who could set AI up for this record: not inside a
   // record somebody else owns, not while the operator has AI switched off.
   if (consent?.status !== "needed" || !provider.canConfigure) return null;
-  if (!user) return null;
+  if (viewerId === null) return null;
 
   const body = (
     <>
@@ -112,10 +125,17 @@ export function AiConsentRequest({
     );
   }
 
-  // Nothing renders before hydration, so the server HTML and the first
-  // client render agree.
-  if (!mounted || hints.isDismissed("ai-consent-request")) return null;
-  const dismiss = () => void hints.dismiss("ai-consent-request");
+  // Storage is browser-only: nothing renders before hydration, so the server
+  // HTML and the first client render agree.
+  if (!mounted || dismissedNow || readDismissed(viewerId)) return null;
+  const dismiss = () => {
+    setDismissedNow(true);
+    try {
+      window.localStorage.setItem(`${DISMISS_STORAGE_PREFIX}.${viewerId}`, "1");
+    } catch {
+      // Storage unavailable (private mode): hidden for this visit only.
+    }
+  };
 
   return (
     <Card data-slot="ai-consent-request" density="compact">

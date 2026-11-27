@@ -1001,7 +1001,6 @@
       "mfaEnforced": false,
       "passkeyUpgradeNudgeDismissed": false,
       "adminNoticesDismissed": [],
-      "dismissedHints": [],
       "fullName": null,
       "insurerName": null,
       "insuranceNumberEncrypted": null,

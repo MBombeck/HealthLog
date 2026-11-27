@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Sparkles, X } from "lucide-react";
 
@@ -11,7 +12,6 @@ import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { useAiProviderState } from "@/hooks/use-ai-capability";
 import { useAuth } from "@/hooks/use-auth";
-import { useDismissedHints } from "@/hooks/use-dismissed-hints";
 import { useMounted } from "@/hooks/use-mounted";
 import { hasOptedOutOfAi } from "@/lib/ai/capabilities/types";
 import { useTranslations } from "@/lib/i18n/context";
@@ -29,9 +29,21 @@ import { useTranslations } from "@/lib/i18n/context";
  * while the operator has AI switched off, where the hint would point at a
  * setting nobody on this screen can change) AND they have not switched both
  * the Coach and AI analysis off (`hasOptedOutOfAi`). Dismissing it is
- * remembered on the account (`useDismissedHints`); the hint stays gone on
- * both surfaces and every device.
+ * remembered per viewer in this browser; the hint stays gone on both surfaces.
  */
+const AI_SETUP_HINT_STORAGE_PREFIX = "healthlog.ai-setup-hint.dismissed";
+
+function storageKey(viewerId: string): string {
+  return `${AI_SETUP_HINT_STORAGE_PREFIX}.${viewerId}`;
+}
+
+function readDismissed(viewerId: string): boolean {
+  try {
+    return window.localStorage.getItem(storageKey(viewerId)) === "1";
+  } catch {
+    return false;
+  }
+}
 
 export function AiSetupHint({
   surface = "insights",
@@ -45,17 +57,25 @@ export function AiSetupHint({
   const { t } = useTranslations();
   const { user } = useAuth();
   const provider = useAiProviderState();
-  const hints = useDismissedHints();
-  // Nothing renders before hydration, so the server HTML and the first
-  // client render agree.
+  // Storage is browser-only: nothing renders before hydration, so the server
+  // HTML and the first client render agree.
   const mounted = useMounted();
+  const [dismissedNow, setDismissedNow] = useState(false);
 
-  if (!mounted || !user) return null;
+  const viewerId = user?.id ?? null;
+  if (!mounted || viewerId === null) return null;
   if (provider.configured || !provider.canConfigure) return null;
-  if (hasOptedOutOfAi(user.modules)) return null;
-  if (hints.isDismissed("ai-setup")) return null;
+  if (hasOptedOutOfAi(user?.modules)) return null;
+  if (dismissedNow || readDismissed(viewerId)) return null;
 
-  const dismiss = () => void hints.dismiss("ai-setup");
+  const dismiss = () => {
+    setDismissedNow(true);
+    try {
+      window.localStorage.setItem(storageKey(viewerId), "1");
+    } catch {
+      // Storage unavailable (private mode): hidden for this visit only.
+    }
+  };
 
   if (surface === "settings") {
     return (
