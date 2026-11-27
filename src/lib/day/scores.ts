@@ -41,6 +41,7 @@ import { modelBoundComposite } from "@/lib/analytics/score/model-bound";
 import { prisma } from "@/lib/db";
 import { buildBaselineBand } from "@/lib/insights/derived/baseline";
 import {
+  recoveryLadder,
   resolveCanonicalRecovery,
   wakeDayKeyOf,
 } from "@/lib/insights/derived/recovery-resolve";
@@ -211,7 +212,11 @@ async function wellnessScores(
     string,
     { value: number; source: MeasurementSource }
   >();
-  for (const row of resolveCanonicalRecovery(recovery, tz)) {
+  for (const row of resolveCanonicalRecovery(
+    recovery,
+    tz,
+    recoveryLadder(args.priorityJson),
+  )) {
     canonical.set(wakeDayKeyOf(row.measuredAt, row.source, tz), row);
   }
   const device = canonical.get(day);

@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { summariseRecoveryBySource } from "@/lib/doctor-report-data";
+import { recoveryLadder } from "@/lib/insights/derived/recovery-resolve";
+
+const DEFAULT_LADDER = recoveryLadder(null);
 
 function m(type: string, value: number, iso: string, source: string) {
   return { type, value, measuredAt: new Date(iso), source: source as never };
@@ -8,9 +11,11 @@ function m(type: string, value: number, iso: string, source: string) {
 describe("summariseRecoveryBySource", () => {
   it("returns no row when no recovery rows exist", () => {
     expect(
-      summariseRecoveryBySource([
-        m("STRESS_SCORE", 40, "2026-06-01T12:00:00Z", "COMPUTED"),
-      ]),
+      summariseRecoveryBySource(
+        [m("STRESS_SCORE", 40, "2026-06-01T12:00:00Z", "COMPUTED")],
+        null,
+        DEFAULT_LADDER,
+      ),
     ).toEqual([]);
   });
 
@@ -20,10 +25,14 @@ describe("summariseRecoveryBySource", () => {
     // COMPUTED proxy stamps the day that ended (May 31 noon). The resolver
     // shifts the proxy onto the wake day so they collapse to one night, and the
     // report reads the native value, not a blend, and no proxy row at all.
-    const rows = summariseRecoveryBySource([
-      m("RECOVERY_SCORE", 50, "2026-05-31T12:00:00Z", "COMPUTED"),
-      m("RECOVERY_SCORE", 80, "2026-06-01T06:00:00Z", "WHOOP"),
-    ]);
+    const rows = summariseRecoveryBySource(
+      [
+        m("RECOVERY_SCORE", 50, "2026-05-31T12:00:00Z", "COMPUTED"),
+        m("RECOVERY_SCORE", 80, "2026-06-01T06:00:00Z", "WHOOP"),
+      ],
+      null,
+      DEFAULT_LADDER,
+    );
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
       source: "WHOOP",
@@ -40,11 +49,15 @@ describe("summariseRecoveryBySource", () => {
     // noon) collapse to the native 80. Night B (wake Jun 2): a COMPUTED-only
     // proxy 60, stamped Jun 1 noon, stands alone. One row would have averaged
     // a WHOOP percentage with HealthLog's readiness into 70.
-    const rows = summariseRecoveryBySource([
-      m("RECOVERY_SCORE", 60, "2026-06-01T12:00:00Z", "COMPUTED"),
-      m("RECOVERY_SCORE", 80, "2026-06-01T06:00:00Z", "WHOOP"),
-      m("RECOVERY_SCORE", 40, "2026-05-31T12:00:00Z", "COMPUTED"),
-    ]);
+    const rows = summariseRecoveryBySource(
+      [
+        m("RECOVERY_SCORE", 60, "2026-06-01T12:00:00Z", "COMPUTED"),
+        m("RECOVERY_SCORE", 80, "2026-06-01T06:00:00Z", "WHOOP"),
+        m("RECOVERY_SCORE", 40, "2026-05-31T12:00:00Z", "COMPUTED"),
+      ],
+      null,
+      DEFAULT_LADDER,
+    );
     expect(rows.map((r) => r.source)).toEqual(["WHOOP", "COMPUTED"]);
     expect(rows[0]).toMatchObject({ latest: 80, avg: 80, count: 1 });
     expect(rows[1]).toMatchObject({ latest: 60, avg: 60, count: 1 });
@@ -53,10 +66,14 @@ describe("summariseRecoveryBySource", () => {
 
   it("shows Polar's Nightly Recharge back on its own 1 to 6 scale", () => {
     // Stored rescaled to 0..100 on ingest: status 5 → 80, status 3 → 40.
-    const rows = summariseRecoveryBySource([
-      m("RECOVERY_SCORE", 80, "2026-06-02T00:00:00Z", "POLAR"),
-      m("RECOVERY_SCORE", 40, "2026-06-01T00:00:00Z", "POLAR"),
-    ]);
+    const rows = summariseRecoveryBySource(
+      [
+        m("RECOVERY_SCORE", 80, "2026-06-02T00:00:00Z", "POLAR"),
+        m("RECOVERY_SCORE", 40, "2026-06-01T00:00:00Z", "POLAR"),
+      ],
+      null,
+      DEFAULT_LADDER,
+    );
     expect(rows).toEqual([
       expect.objectContaining({
         source: "POLAR",
@@ -68,5 +85,22 @@ describe("summariseRecoveryBySource", () => {
         count: 2,
       }),
     ]);
+  });
+
+  it("picks each night and orders the rows by the person's recovery order", () => {
+    const ouraFirst = recoveryLadder({
+      metricPriority: { recovery: ["OURA", "WHOOP", "POLAR", "COMPUTED"] },
+    });
+    const rows = summariseRecoveryBySource(
+      [
+        m("RECOVERY_SCORE", 80, "2026-06-02T06:00:00Z", "WHOOP"),
+        m("RECOVERY_SCORE", 55, "2026-06-02T05:30:00Z", "OURA"),
+        m("RECOVERY_SCORE", 70, "2026-06-03T06:00:00Z", "WHOOP"),
+      ],
+      "Europe/Berlin",
+      ouraFirst,
+    );
+    expect(rows.map((r) => r.source)).toEqual(["OURA", "WHOOP"]);
+    expect(rows[0]).toMatchObject({ latest: 55, count: 1 });
   });
 });

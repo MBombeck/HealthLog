@@ -19,8 +19,10 @@
 import { prisma } from "@/lib/db";
 import {
   describeRecoveryDivergence,
+  recoveryLadder,
   type RecoveryDivergence,
 } from "@/lib/insights/derived/recovery-resolve";
+import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 
 /** How far back the divergence read looks for a comparable two-source night. */
 export const SIGNAL_TRUST_WINDOW_DAYS = 10;
@@ -67,6 +69,7 @@ export async function buildSignalTrust(
       source: r.source,
     })),
     timezone,
+    recoveryLadder(await loadUserSourcePriority(userId)),
   );
   if (!divergence) return null;
 

@@ -1,20 +1,23 @@
 /**
- * The digest reads last night by the morning's rule (`resolveLastNight`), so
- * its `sleepPending` and phase cannot disagree with the morning beside it.
+ * The digest reads last night by the one rule (`resolveLastNight`), over the
+ * same night the morning reads (`readLastNight`), so its `sleepPending` and
+ * phase cannot disagree with the morning beside it.
  *
  * The digest used to decide "in" from a rolling 24-hour window since the
  * newest sleep row (`daysAgo === 0`). A night that ended 23 h 40 min ago is
  * yesterday's, but the window called it last night: the digest settled the
  * day while the morning still waited for tonight's sleep.
  */
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { __resetAllCachesForTests, caches } from "@/lib/cache/server-cache";
-import {
-  lastNightFromSnapshot,
-  morningExtrasCacheKey,
-  peekMorningSleepScore,
-} from "@/lib/daily/last-night";
+const findMany = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/db", () => ({ prisma: { measurement: { findMany } } }));
+vi.mock("@/lib/rollups/measurement-read", () => ({
+  loadUserSourcePriority: vi.fn().mockResolvedValue(null),
+}));
+
+import { __resetAllCachesForTests } from "@/lib/cache/server-cache";
+import { lastNightFromSnapshot, readLastNight } from "@/lib/daily/last-night";
 import { buildDailyDigest, type DailyDigestInput } from "@/lib/daily/digest";
 import { PRIORITY_ITEM_KINDS } from "@/lib/daily/priority-item";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
@@ -79,11 +82,10 @@ describe("last night in the digest", () => {
     const wokeAt = new Date(NOW.getTime() - (23 * 60 + 40) * MIN);
     const { lastNight } = lastNightFromSnapshot({
       snapshot: snapshotWithSleep(wokeAt, 0),
-      tz: TZ,
       todayKey: TODAY,
       sleepOn: true,
       morningRefreshedToday: false,
-      sleepScore: null,
+      night: { night: "2026-07-15", asleepMinutes: 430 },
     });
 
     expect(lastNight.sleep).toBeNull();
@@ -94,22 +96,16 @@ describe("last night in the digest", () => {
     expect(digest.phase).toBe("provisional");
   });
 
-  it("counts the sleep score's night even when the snapshot still shows yesterday's row", () => {
-    // The snapshot is cached apart from the sleep score: its newest row is
-    // still yesterday's, while the score already describes tonight's night.
+  it("counts the night read even when the snapshot still shows yesterday's row", () => {
+    // The snapshot is cached apart from the night: its newest row is still
+    // yesterday's, while the night read already has this morning's.
     const yesterday = new Date(NOW.getTime() - 24 * 60 * MIN);
     const { lastNight } = lastNightFromSnapshot({
       snapshot: snapshotWithSleep(yesterday, 1),
-      tz: TZ,
       todayKey: TODAY,
       sleepOn: true,
       morningRefreshedToday: false,
-      sleepScore: {
-        score: 84,
-        band: "green",
-        night: TODAY,
-        asleepMinutes: 455,
-      },
+      night: { night: TODAY, asleepMinutes: 455 },
     });
 
     expect(lastNight.sleepPending).toBe(false);
@@ -120,30 +116,62 @@ describe("last night in the digest", () => {
     expect(digest.phase).toBe("final");
   });
 
-  it("reads the sleep score from the morning's own cell, never computing one", () => {
-    const modules = { sleep: true, recovery: true };
-    expect(peekMorningSleepScore("u1", TODAY, modules)).toBeNull();
-
-    const sleepScore = {
-      score: 84,
-      band: "green" as const,
-      night: TODAY,
-      asleepMinutes: 455,
-    };
-    caches.analytics.set(morningExtrasCacheKey("u1", TODAY, modules), {
-      vitals: [],
-      illnessExplained: false,
-      readiness: null,
-      sleepScore,
-      deviceScores: [],
+  it("never takes the snapshot's newest row for last night", () => {
+    // A nap at 13:00 today is the snapshot's newest sleep row. Its calendar
+    // day is today, but it is no night: last night is the night read.
+    const nap = new Date("2026-07-16T11:00:00.000Z");
+    const { lastNight } = lastNightFromSnapshot({
+      snapshot: snapshotWithSleep(nap, 0),
+      todayKey: TODAY,
+      sleepOn: true,
+      morningRefreshedToday: false,
+      night: { night: "2026-07-15", asleepMinutes: 430 },
     });
+    expect(lastNight.sleep).toBeNull();
+    expect(lastNight.latestNightDay).toBe("2026-07-15");
+  });
+});
 
-    expect(peekMorningSleepScore("u1", TODAY, modules)).toEqual(sleepScore);
-    // Another day's cell is not today's.
-    expect(peekMorningSleepScore("u1", "2026-07-17", modules)).toBeNull();
-    // With sleep off there is no night to read.
-    expect(
-      peekMorningSleepScore("u1", TODAY, { sleep: false, recovery: true }),
-    ).toBeNull();
+describe("readLastNight", () => {
+  const row = (iso: string, value: number, timeZone: string | null = null) => ({
+    value,
+    measuredAt: new Date(iso),
+    sleepStage: "ASLEEP",
+    source: "APPLE_HEALTH",
+    deviceType: null,
+    timeZone,
+  });
+
+  it("passes over a nap and reads the main night", async () => {
+    findMany.mockResolvedValueOnce([
+      row("2026-07-15T05:00:00.000Z", 420),
+      // A 40-minute nap at 13:00 local, after last night's.
+      row("2026-07-16T11:20:00.000Z", 40),
+    ]);
+    // The nap counts in its day's total, but its day has no main sleep.
+    expect(await readLastNight("u1", TZ, TODAY, NOW)).toEqual({
+      night: "2026-07-15",
+      asleepMinutes: 420,
+    });
+  });
+
+  it("files a night slept abroad under its own zone's wake day", async () => {
+    // Woke 06:30 in Tokyo on the 16th: 23:30 on the 15th in Berlin, the
+    // profile zone, whose calendar would call it yesterday's night.
+    findMany.mockResolvedValueOnce([
+      row("2026-07-15T21:30:00.000Z", 430, "Asia/Tokyo"),
+    ]);
+    expect(await readLastNight("u1", TZ, TODAY, NOW)).toEqual({
+      night: TODAY,
+      asleepMinutes: 430,
+    });
+  });
+
+  it("reads once per user and day: the morning and the digest share the cell", async () => {
+    findMany.mockResolvedValue([row("2026-07-16T05:00:00.000Z", 400)]);
+    const first = await readLastNight("u1", TZ, TODAY, NOW);
+    const second = await readLastNight("u1", TZ, TODAY, NOW);
+    expect(second).toEqual(first);
+    expect(findMany).toHaveBeenCalledTimes(1);
   });
 });

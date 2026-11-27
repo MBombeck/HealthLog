@@ -8,8 +8,8 @@
  * token is gone can no longer be ended by anyone: it would stay on the lock
  * screen, showing a dose of an account the phone has left, until
  * ActivityKit's own limit. {@link endDeviceLiveActivities} ends them first,
- * whoever started them, while the relay binding that carries a relay end
- * still exists.
+ * each the way its starter can end it ({@link leaveEndWays}), while the
+ * relay binding that carries a relay end still exists.
  */
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
@@ -20,10 +20,12 @@ import {
 } from "@/lib/notifications/live-activity-content-state";
 import { sendApnsRawPush } from "@/lib/notifications/senders/apns";
 import { endActivitiesOverRelay } from "@/lib/push-relay/medication-pushes";
+import { relayActivityKind } from "@/lib/push-relay/live-activity-owner";
 import {
   loadPushContext,
   ROUTABLE_DEVICE_SELECT,
   routeOf,
+  type DeviceRoute,
 } from "@/lib/push-relay/route-device";
 
 /**
@@ -86,13 +88,45 @@ const LEAVING_DEVICE_SELECT = {
       pushToken: true,
       activityStatement: true,
       activitySignature: true,
+      relayStarted: true,
     },
   },
 } satisfies Prisma.DeviceSelect;
 
 /**
- * End every running Live Activity of these devices, over the relay for a
- * relay-bound device and with this server's own key otherwise. Call it
+ * How each running Activity of a leaving device ends: the way its starter
+ * can end it. A relay-started one only over the relay, whatever way the
+ * device's ordinary pushes take (this server's key would send it the app's
+ * content state, which its attributes type does not read); an app-started
+ * one, and the app's own update token, over the device's route (this
+ * server's key for `direct` and `legacy`).
+ */
+export function leaveEndWays<
+  A extends { pushToken: string; relayStarted: boolean },
+>(
+  device: { liveActivities: A[]; liveActivityPushToken: string | null },
+  route: DeviceRoute,
+): { overRelay: A[]; ownKey: string[] } {
+  if (route === "relay") {
+    return { overRelay: device.liveActivities, ownKey: [] };
+  }
+  const relayStarted = device.liveActivities.filter(
+    (a) => relayActivityKind(a) === "relay_started",
+  );
+  if (route === "none") return { overRelay: relayStarted, ownKey: [] };
+  return {
+    overRelay: relayStarted,
+    ownKey: [
+      ...device.liveActivities
+        .filter((a) => relayActivityKind(a) === "app_started")
+        .map((a) => a.pushToken),
+      ...(device.liveActivityPushToken ? [device.liveActivityPushToken] : []),
+    ],
+  };
+}
+
+/**
+ * End every running Live Activity of these devices ({@link leaveEndWays}). Call it
  * before the rows lose their tokens or go. Returns how many Activities
  * ended. Best effort, never throws: the sign-out or takeover it precedes
  * goes on either way.
@@ -116,23 +150,16 @@ export async function endDeviceLiveActivities(
     const ctx = await loadPushContext();
     let ended = 0;
     for (const device of devices) {
-      const route = routeOf(device, ctx);
-      if (route === "relay") {
-        ended += (
-          await endActivitiesOverRelay(device, device.liveActivities, ctx)
-        ).length;
-        continue;
+      const { overRelay, ownKey } = leaveEndWays(device, routeOf(device, ctx));
+      if (overRelay.length > 0) {
+        ended += (await endActivitiesOverRelay(device, overRelay, ctx)).length;
       }
-      if (route === "none" || !device.apnsToken || !ctx.bundleId) continue;
+      if (ownKey.length === 0 || !device.apnsToken || !ctx.bundleId) continue;
       const contentState = endedMedicationContentState({
         resolvedAt: new Date(),
         timeFormat: device.user.timeFormat,
       });
-      const tokens = [
-        ...device.liveActivities.map((a) => a.pushToken),
-        ...(device.liveActivityPushToken ? [device.liveActivityPushToken] : []),
-      ];
-      for (const token of tokens) {
+      for (const token of ownKey) {
         const spent = await sendLiveActivityEnd({
           token,
           environment:

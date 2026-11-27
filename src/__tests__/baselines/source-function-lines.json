@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 313,
-  "total": 97837,
+  "total": 97842,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
@@ -245,7 +245,7 @@
     "lib/doctor-report-pdf/clinical-records-notes-section.ts :: buildClinicalRecordsNotesSection": 590,
     "lib/doctor-report-pdf/measurements-charts-section.ts :: buildMeasurementsChartsSection": 384,
     "lib/doctor-report-pdf/medication-mood-wellness-section.ts :: buildMedicationMoodWellnessSection": 502,
-    "lib/doctor-report/collect.ts :: collectDoctorReportData": 548,
+    "lib/doctor-report/collect.ts :: collectDoctorReportData": 549,
     "lib/documents/fenced-chat.ts :: streamFencedReply": 307,
     "lib/documents/ingest.ts :: ingestDocument": 272,
     "lib/export/backup-json-scan.ts :: scanBackupJson": 225,
@@ -266,7 +266,7 @@
     "lib/integrations/connection-health-load.ts :: loadConnectionFacts": 217,
     "lib/integrations/status.ts :: recordSyncFailure": 292,
     "lib/jobs/apple-health-import-worker.ts :: handleAppleHealthImport": 273,
-    "lib/jobs/coach-nudge.ts :: findTriggerForUser": 275,
+    "lib/jobs/coach-nudge.ts :: findTriggerForUser": 279,
     "lib/jobs/coach-nudge.ts :: runCoachNudgeTick": 292,
     "lib/jobs/coach-reminder-sweep.ts :: runCoachReminderSweep": 222,
     "lib/jobs/cycle-reminder.ts :: runCycleReminderTick": 243,

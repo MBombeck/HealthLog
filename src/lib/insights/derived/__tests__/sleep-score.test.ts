@@ -429,6 +429,42 @@ describe("computeSleepScore", () => {
     expect(fresh.status === "ok" && fresh.value.fresh).toBe(true);
   });
 
+  it("scores last night, not a nap after it", async () => {
+    // One rule for last night (`@/lib/sleep/last-night`): a daytime nap is no
+    // night, so the score stays on the night before it and is not fresh.
+    findMany.mockResolvedValue([
+      ...night("2026-05-31", [["ASLEEP", 420, "06:00"]]),
+      ...night("2026-06-01", [["ASLEEP", 430, "06:10"]]),
+      ...night("2026-06-02", [["ASLEEP", 40, "15:00"]]),
+    ]);
+    const result = await computeSleepScore("u1", PROFILE, {
+      now: new Date("2026-06-02T16:00:00Z"),
+      tz: "UTC",
+    });
+    expect(result.status === "ok" && result.value.night).toBe("2026-06-01");
+    expect(result.status === "ok" && result.value.fresh).toBe(false);
+  });
+
+  it("files a night slept abroad under the wake day of its own zone", async () => {
+    // Woke 08:30 in Tokyo, 23:30 UTC the evening before: the night is the
+    // Tokyo morning's, as the night view and the morning file it.
+    findMany.mockResolvedValue([
+      ...night("2026-05-31", [["ASLEEP", 420, "06:00"]]),
+      {
+        value: 430,
+        measuredAt: new Date("2026-06-01T23:30:00Z"),
+        sleepStage: "ASLEEP" as const,
+        timeZone: "Asia/Tokyo",
+      },
+    ]);
+    const result = await computeSleepScore("u1", PROFILE, {
+      now: NOW,
+      tz: "UTC",
+    });
+    expect(result.status === "ok" && result.value.night).toBe("2026-06-02");
+    expect(result.status === "ok" && result.value.fresh).toBe(true);
+  });
+
   it("reweights around composition on a legacy ASLEEP-only night", async () => {
     const rows = [
       ...night("2026-05-31", [["ASLEEP", 420, "06:00"]]),

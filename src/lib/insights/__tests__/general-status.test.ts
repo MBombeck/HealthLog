@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { afterEach, describe, expect, it, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -33,6 +33,16 @@ vi.mock("@/lib/insights/recent-readings", async (importOriginal) => {
       ].reverse(),
   };
 });
+
+// Sleep reaches the overview as nights (`readSleepNightPoints`), not stage rows.
+const sleepNights = vi.hoisted(() => vi.fn().mockResolvedValue([]));
+vi.mock("@/lib/measurements/list/sleep-nights", () => ({
+  readSleepNightPoints: sleepNights,
+}));
+vi.mock("@/lib/rollups/measurement-read", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/rollups/measurement-read")>()),
+  loadUserSourcePriority: async () => null,
+}));
 
 vi.mock("@/lib/insights/status-provider", () => ({
   runStatusCompletion: vi.fn(),
@@ -90,6 +100,12 @@ function stubCompletion(
 
 beforeEach(() => {
   vi.resetAllMocks();
+  sleepNights.mockResolvedValue([]);
+  // No intake and no mood unless a test says otherwise.
+  vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue(
+    [] as never,
+  );
+  vi.mocked(prisma.moodEntry.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.insightStatusCache.findUnique).mockResolvedValue(null);
   vi.mocked(prisma.insightStatusCache.upsert).mockResolvedValue({} as never);
   vi.mocked(prisma.insightStatusCache.updateMany).mockResolvedValue(
@@ -120,10 +136,6 @@ describe("generateGeneralStatusForUser — graded payload", () => {
     vi.mocked(prisma.measurement.findMany).mockResolvedValue(
       weightRecords as never,
     );
-    vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue(
-      [] as never,
-    );
-    vi.mocked(prisma.moodEntry.findMany).mockResolvedValue([] as never);
 
     const captured: { userPrompt: string | null } = { userPrompt: null };
     stubCompletion('{"summary":"OK"}', captured);
@@ -160,10 +172,6 @@ describe("generateGeneralStatusForUser — graded payload", () => {
     vi.mocked(prisma.measurement.findMany).mockResolvedValue([
       { type: "WEIGHT", value: 80, measuredAt: now },
     ] as never);
-    vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue(
-      [] as never,
-    );
-    vi.mocked(prisma.moodEntry.findMany).mockResolvedValue([] as never);
 
     const captured: { userPrompt: string | null } = { userPrompt: null };
     stubCompletion('{"summary":"OK"}', captured);
@@ -176,6 +184,49 @@ describe("generateGeneralStatusForUser — graded payload", () => {
   });
 });
 
+describe("generateGeneralStatusForUser — sleep by night", () => {
+  // A fixed anchor: the night below spans midnight whatever hour this runs.
+  const ANCHOR = new Date("2026-11-25T12:00:00Z");
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"], now: ANCHOR });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("reads a night that spans midnight as one night, never per calendar day", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      dateOfBirth: null,
+    } as never);
+    // The night's stage rows fall on two calendar days.
+    vi.mocked(prisma.measurement.findMany).mockResolvedValue([
+      {
+        type: "SLEEP_DURATION",
+        value: 90,
+        measuredAt: new Date("2026-11-24T23:30:00Z"),
+      },
+      {
+        type: "SLEEP_DURATION",
+        value: 330,
+        measuredAt: new Date("2026-11-25T06:00:00Z"),
+      },
+    ] as never);
+    sleepNights.mockResolvedValueOnce([
+      { measuredAt: new Date("2026-11-25T06:00:00Z"), value: 420 },
+    ]);
+
+    const captured: { userPrompt: string | null } = { userPrompt: null };
+    stubCompletion('{"summary":"OK"}', captured);
+    await generateGeneralStatusForUser("user-1", { locale: "en" });
+    const snapshot = JSON.parse(captured.userPrompt!.match(/\{[\s\S]*\}/)![0]);
+
+    expect(snapshot.measurementSeries.SLEEP_DURATION.summary).toMatchObject({
+      points: 1,
+      mean: 420,
+    });
+  });
+});
+
 describe("generateGeneralStatusForUser — timeout/error never persists", () => {
   it("serves the fallback without writing a cache row on timeout", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
@@ -184,10 +235,6 @@ describe("generateGeneralStatusForUser — timeout/error never persists", () => 
     vi.mocked(prisma.measurement.findMany).mockResolvedValue([
       { type: "WEIGHT", value: 82, measuredAt: new Date() },
     ] as never);
-    vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue(
-      [] as never,
-    );
-    vi.mocked(prisma.moodEntry.findMany).mockResolvedValue([] as never);
 
     vi.mocked(runStatusCompletion).mockResolvedValue({
       kind: "timeout",
@@ -234,10 +281,6 @@ describe("generateGeneralStatusForUser — a negative window is not a note", () 
     vi.mocked(prisma.measurement.findMany).mockResolvedValue([
       { type: "WEIGHT", value: 82, measuredAt: now },
     ] as never);
-    vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue(
-      [] as never,
-    );
-    vi.mocked(prisma.moodEntry.findMany).mockResolvedValue([] as never);
 
     stubCompletion('{"summary":"Fresh general assessment."}');
 
@@ -259,10 +302,6 @@ describe("generateGeneralStatusForUser — token-leak hardening (v1.4.27 F16)", 
     vi.mocked(prisma.measurement.findMany).mockResolvedValue([
       { type: "WEIGHT", value: 82, measuredAt: new Date() },
     ] as never);
-    vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue(
-      [] as never,
-    );
-    vi.mocked(prisma.moodEntry.findMany).mockResolvedValue([] as never);
 
     stubCompletion(
       '{"summary":"Weight trended down. metric:WEIGHT BP stable. metric:BLOOD_PRESSURE_SYS"}',
@@ -307,10 +346,6 @@ describe("generateGeneralStatusForUser — a pulse day is the mean of its hours"
       timezone: "UTC",
     } as never);
     vi.mocked(prisma.measurement.findMany).mockResolvedValue(rows as never);
-    vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue(
-      [] as never,
-    );
-    vi.mocked(prisma.moodEntry.findMany).mockResolvedValue([] as never);
     const captured: { userPrompt: string | null } = { userPrompt: null };
     stubCompletion('{"summary":"OK"}', captured);
 

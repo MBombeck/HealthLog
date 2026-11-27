@@ -43,7 +43,10 @@ import type {
   PrismaClient,
 } from "@/generated/prisma/client";
 import { resolveUserTimezone } from "@/lib/measurements/consolidation-base";
-import { DEFAULT_SOURCE_PRIORITY } from "@/lib/validations/source-priority";
+import {
+  getSourceLadder,
+  parseSourcePriority,
+} from "@/lib/validations/source-priority";
 import { userDayKey } from "@/lib/tz/format";
 import { isProxyRecovery } from "@/lib/scores/registry";
 
@@ -57,19 +60,25 @@ export interface RecoveryRow {
 }
 
 /**
- * The per-source preference for `RECOVERY_SCORE`: a native device row outranks
- * the COMPUTED proxy for the same day. Authority is read straight off
- * `DEFAULT_SOURCE_PRIORITY.recovery` (`WHOOP > OURA > POLAR > COMPUTED`) — that
- * ordered ladder is the single source of truth, so adding a recovery source
- * updates only the priority list and this resolver inherits the new rank for
- * free. WHOOP's all-night strap leads, then the Oura ring readiness and the
- * Polar Nightly Recharge band, then the computed proxy as the fallback for
- * users without a wearable. A source not on the ladder falls below all of them.
+ * The person's recovery ladder, best first: the `recovery` order of their
+ * stored `sourcePriorityJson` (the settings' order), the default ladder
+ * (`WHOOP > OURA > POLAR > COMPUTED`) when they set none. Every recovery
+ * read resolves by it, as the SQL rank of the charts does
+ * (`buildSourceRankCase`), so the ring and the chart never pick two sources
+ * for one night.
  */
-const RECOVERY_LADDER = DEFAULT_SOURCE_PRIORITY.recovery;
+export type RecoveryLadder = readonly MeasurementSource[];
 
-function rankOf(source: MeasurementSource): number {
-  const idx = RECOVERY_LADDER.indexOf(source);
+export function recoveryLadder(priorityJson: unknown): RecoveryLadder {
+  return getSourceLadder(parseSourcePriority(priorityJson), "recovery");
+}
+
+/** A source's place on `ladder`; one off it falls below all of them. */
+export function recoveryRank(
+  ladder: RecoveryLadder,
+  source: MeasurementSource | string,
+): number {
+  const idx = ladder.indexOf(source as MeasurementSource);
   return idx === -1 ? Number.MAX_SAFE_INTEGER : idx;
 }
 
@@ -108,8 +117,8 @@ export function wakeDayKeyOf(
 
 /**
  * Collapse a mixed-source `RECOVERY_SCORE` set to ONE canonical row per
- * physiological NIGHT: the WHOOP-native row wins when present, else the
- * COMPUTED proxy. Within a source the latest `measuredAt` wins (a same-night
+ * physiological NIGHT: the source highest on the person's `ladder`
+ * ({@link recoveryLadder}) wins. Within a source the latest `measuredAt` wins (a same-night
  * re-score). Rows are bucketed by their local WAKE-day (the COMPUTED proxy's
  * day-that-ended stamp is shifted forward one day to meet WHOOP's wake-morning
  * stamp) so a single night never splits into two competing days. Returns the
@@ -123,8 +132,10 @@ export function wakeDayKeyOf(
  */
 export function resolveCanonicalRecovery(
   rows: RecoveryRow[],
-  timezone?: string | null,
+  timezone: string | null | undefined,
+  ladder: RecoveryLadder,
 ): RecoveryRow[] {
+  const rankOf = (source: MeasurementSource) => recoveryRank(ladder, source);
   const tz = resolveUserTimezone(timezone ?? null);
   const byDay = new Map<string, RecoveryRow>();
   for (const row of rows) {
@@ -170,8 +181,9 @@ export const RECOVERY_CURRENT_WINDOW_DAYS = 14;
  * the same bounded read and the same per-night resolution as the wellness
  * reader, newest night first. Null when no recovery row sits in the window.
  * The caller passes its client; this module keeps no `@/lib/db` import so the
- * pure resolvers above stay importable anywhere. The zone is read from the
- * user row when the caller does not pass one, as the wellness reader does.
+ * pure resolvers above stay importable anywhere. The person's recovery
+ * ladder is read from the user row, and the zone too when the caller does
+ * not pass one.
  */
 export async function readCurrentCanonicalRecovery(
   db: Pick<PrismaClient, "measurement" | "user">,
@@ -193,15 +205,17 @@ export async function readCurrentCanonicalRecovery(
     orderBy: { measuredAt: "desc" },
   });
   if (rows.length === 0) return null;
-  let tz = timezone ?? null;
-  if (tz === null) {
-    const user = await db.user.findUnique({
-      where: { id: userId },
-      select: { timezone: true },
-    });
-    tz = user?.timezone ?? null;
-  }
-  return resolveCanonicalRecovery(rows, tz)[0] ?? null;
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { timezone: true, sourcePriorityJson: true },
+  });
+  return (
+    resolveCanonicalRecovery(
+      rows,
+      timezone ?? user?.timezone ?? null,
+      recoveryLadder(user?.sourcePriorityJson ?? null),
+    )[0] ?? null
+  );
 }
 
 /**
@@ -235,9 +249,11 @@ const MATERIAL_RECOVERY_DIVERGENCE = 7;
 
 export function describeRecoveryDivergence(
   rows: RecoveryRow[],
-  timezone?: string | null,
+  timezone: string | null | undefined,
+  ladder: RecoveryLadder,
   opts?: { materialThreshold?: number },
 ): RecoveryDivergence | null {
+  const rankOf = (source: MeasurementSource) => recoveryRank(ladder, source);
   const tz = resolveUserTimezone(timezone ?? null);
   const threshold = opts?.materialThreshold ?? MATERIAL_RECOVERY_DIVERGENCE;
 

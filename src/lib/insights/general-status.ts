@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/db";
 import { readRecentMoodScores } from "@/lib/mood/recent-scores";
 import { readLatestReadingsPerType } from "@/lib/insights/recent-readings";
+import { readSleepNightPoints } from "@/lib/measurements/list/sleep-nights";
+import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import {
   getGeneralStatusSystemPrompt,
   getGeneralStatusUserPrompt,
@@ -99,6 +101,15 @@ async function buildGeneralSnapshot(
   );
 
   const now = new Date();
+  // Sleep reaches the overview as nights: its stage rows bucketed by
+  // calendar day split a night across two days and average its stages.
+  const sleepNights = MEASUREMENT_TYPES.includes("SLEEP_DURATION")
+    ? await readSleepNightPoints(
+        userId,
+        userTz,
+        await loadUserSourcePriority(userId),
+      )
+    : [];
 
   // v1.2.5 — every day-bucketing pass below keys on the user's own
   // calendar (a near-midnight reading lands on the user's day for
@@ -116,12 +127,15 @@ async function buildGeneralSnapshot(
   >();
   const measurementSeries = Object.fromEntries(
     MEASUREMENT_TYPES.flatMap((type) => {
-      const records = measurements
-        .filter((measurement) => measurement.type === type)
-        .map((measurement) => ({
-          measuredAt: measurement.measuredAt,
-          value: measurement.value,
-        }));
+      const records =
+        type === "SLEEP_DURATION"
+          ? sleepNights
+          : measurements
+              .filter((measurement) => measurement.type === type)
+              .map((measurement) => ({
+                measuredAt: measurement.measuredAt,
+                value: measurement.value,
+              }));
       if (records.length === 0) return [];
 
       // `type` makes a pulse day the mean of its hours' means and a pulse

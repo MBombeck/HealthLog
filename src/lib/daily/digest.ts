@@ -82,7 +82,7 @@ import {
   type TodayRestMode,
   type TodayVital,
 } from "@/lib/daily/today-overview";
-import type { LastNight } from "@/lib/daily/morning";
+import type { LastNight } from "@/lib/sleep/last-night";
 
 /** At most three rail items — a glance, never a wall (§2.5, never padded). */
 export const MAX_WORTH_A_LOOK = 3;

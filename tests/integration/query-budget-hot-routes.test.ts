@@ -125,7 +125,9 @@ const BUDGET = {
   // 133 → 130: one read of the source order per GET request (see the
   // summary); the digest sent it in up to five statements and flickered
   // between 131 and 132.
-  dailyDigest: 130,
+  // 130 → 131: last night is read once per user and day (`readLastNight`),
+  // shared with the morning, instead of peeking into the morning's cell.
+  dailyDigest: 131,
   // The morning read (1.50.0): the snapshot (its own cell, rebuilt here, 88
   // of them), the coincident engine, readiness and the sleep score in one day
   // cell, the floor ledger, the quiet-source stamps and the day's first
@@ -143,7 +145,9 @@ const BUDGET = {
   // 127 → 122: one read of the source order per GET request (see the
   // summary); readiness and the sleep score share it, so the in-flight
   // timing between them no longer moves the count.
-  dailyMorning: 122,
+  // 122 → 123: last night is read once per user and day (`readLastNight`),
+  // shared with the digest, instead of taken from the snapshot's newest row.
+  dailyMorning: 123,
   // The target cards; their seven-day means come from the slice when a
   // fresh one is cached, here (evicted) from the slice's window aggregate.
   // 22 → 23, health status 59 → 60 (1.49.0): both grade weight and BMI, and

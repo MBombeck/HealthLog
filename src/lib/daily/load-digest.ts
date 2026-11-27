@@ -101,10 +101,7 @@ import type {
   TodayVital,
 } from "@/lib/daily/today-overview";
 import { nextDoseOpensAt } from "@/lib/daily/today-medications-fact";
-import {
-  lastNightFromSnapshot,
-  peekMorningSleepScore,
-} from "@/lib/daily/last-night";
+import { lastNightFromSnapshot, readLastNight } from "@/lib/daily/last-night";
 import { translateOrNull } from "@/lib/i18n/translate-code";
 import {
   loadQuietSources,
@@ -767,23 +764,20 @@ export async function loadDailyDigest(
       }
     : null;
 
-  // Last night by the morning's one rule (`resolveLastNight`): the sleep
-  // score's night, read from the morning's own cell when the morning has been
-  // read today, else the latest sleep row's wake day. The
-  // `morningDigestRefreshedOn` stamp is read fresh off the row, so the day
-  // settles the instant the sleep-arrival refresh runs, ahead of the
-  // snapshot cache.
+  // Last night by the one rule (`resolveLastNight`) over the night the
+  // morning reads too (`readLastNight`), whether or not the morning was read
+  // today. The `morningDigestRefreshedOn` stamp is read fresh off the row,
+  // so the day settles the instant the sleep-arrival refresh runs, ahead of
+  // the snapshot cache.
   const sleepOn = modules.sleep !== false;
   const { lastNight } = lastNightFromSnapshot({
     snapshot,
-    tz: user.timezone,
     todayKey: todayLocalDate,
     sleepOn,
     morningRefreshedToday: user.morningDigestRefreshedOn === todayLocalDate,
-    sleepScore: peekMorningSleepScore(user.id, todayLocalDate, {
-      sleep: sleepOn,
-      recovery: modules.recovery !== false,
-    }),
+    night: sleepOn
+      ? await readLastNight(user.id, user.timezone, todayLocalDate, now)
+      : null,
   });
 
   const syncIssues: DailyDigestSyncIssue[] = syncRows.map((row) => ({

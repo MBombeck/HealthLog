@@ -4,92 +4,119 @@
  * Neutral ground between the two: the morning loader and the digest loader
  * both import this, and neither imports the other (the digest feeds the
  * reaction-line evidence and the daily push, which stay clear of the morning
- * loader; see `morning-model-free-guard.test.ts`). Nothing here is
- * model-written: a sleep row's wake day and the sleep score's night.
+ * loader; see `morning-model-free-guard.test.ts`). Both read the night
+ * through `readLastNight`, by the one rule in `@/lib/sleep/last-night`;
+ * neither reads the other's cache cell. Nothing here is model-written.
  */
-import { caches, type ServerCache } from "@/lib/cache/server-cache";
+import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
 import type { DashboardSnapshot } from "@/lib/dashboard/snapshot";
 import { isSleepExpected } from "@/lib/daily/digest";
+import { prisma } from "@/lib/db";
+import { reconstructSleepNights } from "@/lib/analytics/sleep-night";
+import { annotate } from "@/lib/logging/context";
+import { DASHBOARD_REFETCH_INTERVAL_MS } from "@/lib/queries/refetch-interval";
+import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import {
+  lastNightOnRecord,
   resolveLastNight,
   type LastNight,
-  type MorningSleepScore,
-} from "@/lib/daily/morning";
-import { userDayKey } from "@/lib/tz/format";
+  type NightOnRecord,
+} from "@/lib/sleep/last-night";
+
+/** How long a morning cell, and the night cell beside it, serves. */
+export const MORNING_CACHE_TTL_MS = DASHBOARD_REFETCH_INTERVAL_MS + 60_000;
 
 /** The prefix of the morning's day cells; a refresh evicts by it. */
 export function morningCacheKey(userId: string, dateKey: string): string {
   return `${userId}|daily-morning|${dateKey}`;
 }
 
+/** How far back the night read looks: a long night's first rows included. */
+const NIGHT_READ_MS = 72 * 3600_000;
+
+/**
+ * The latest night on record (`lastNightOnRecord`), read once per user and
+ * day and shared by the morning and the digest, so the two never read the
+ * night two ways. The cell sits under the morning's prefix, so the refresh
+ * that follows a night's arrival evicts it with the morning's.
+ */
+export function readLastNight(
+  userId: string,
+  tz: string,
+  todayKey: string,
+  now: Date,
+): Promise<NightOnRecord | null> {
+  return cachedSwr(
+    caches.analytics as ServerCache<NightOnRecord | null>,
+    `${morningCacheKey(userId, todayKey)}|night`,
+    async () => {
+      const [rows, priorityJson] = await Promise.all([
+        prisma.measurement.findMany({
+          where: {
+            userId,
+            type: "SLEEP_DURATION",
+            deletedAt: null,
+            measuredAt: {
+              gte: new Date(now.getTime() - NIGHT_READ_MS),
+              lte: now,
+            },
+          },
+          orderBy: { measuredAt: "asc" },
+          select: {
+            value: true,
+            measuredAt: true,
+            sleepStage: true,
+            source: true,
+            deviceType: true,
+            timeZone: true,
+          },
+        }),
+        loadUserSourcePriority(userId),
+      ]);
+      const latest = lastNightOnRecord(
+        reconstructSleepNights(rows, tz, priorityJson),
+        (n) => n.mainSession !== null,
+      );
+      return latest
+        ? {
+            night: latest.night,
+            asleepMinutes: Math.round(latest.asleepMinutes),
+          }
+        : null;
+    },
+    annotate,
+    MORNING_CACHE_TTL_MS,
+  );
+}
+
 /**
  * Last night as the morning and the digest both read it: whether sleep is
- * expected at all from the snapshot's last-seen slot, and whether last night
- * is in by one rule (`resolveLastNight`), from the sleep score's night when
- * there is one, else the latest sleep row's wake day. Pure.
+ * expected at all from the snapshot's last-seen slot, its usual length from
+ * the snapshot's 30-day mean, and whether last night is in by the one rule
+ * (`resolveLastNight`) from the night `readLastNight` read. Pure.
  */
 export function lastNightFromSnapshot(args: {
   snapshot: Pick<DashboardSnapshot, "tiles">;
-  tz: string;
   todayKey: string;
   sleepOn: boolean;
   morningRefreshedToday: boolean;
-  sleepScore: MorningSleepScore | null;
+  night: NightOnRecord | null;
 }): { lastNight: LastNight; sleepExpected: boolean } {
-  const { snapshot, tz, todayKey, sleepOn, sleepScore } = args;
+  const { snapshot, todayKey, sleepOn } = args;
   const sleepSlot = snapshot.tiles.lastSeenByType["SLEEP_DURATION"];
-  const sleepLastSeenDaysAgo = sleepSlot ? sleepSlot.daysAgo : null;
-  const sleepExpected = sleepOn && isSleepExpected(sleepLastSeenDaysAgo);
-  const sleepSummary = snapshot.tiles.summaries?.SLEEP_DURATION;
+  const sleepExpected =
+    sleepOn && isSleepExpected(sleepSlot ? sleepSlot.daysAgo : null);
+  const avg30 = snapshot.tiles.summaries?.SLEEP_DURATION?.avg30;
   const lastNight = resolveLastNight({
     todayKey,
     sleepOn,
     sleepExpected,
     morningRefreshedToday: args.morningRefreshedToday,
-    sleepScore: sleepScore
-      ? {
-          night: sleepScore.night,
-          asleepMinutes:
-            sleepScore.asleepMinutes ??
-            (sleepSlot &&
-            userDayKey(new Date(sleepSlot.lastSeenAt), tz) === sleepScore.night
-              ? (sleepSummary?.latest ?? 0)
-              : 0),
-        }
-      : null,
-    latestSleep: sleepSlot
-      ? {
-          wakeDay: userDayKey(new Date(sleepSlot.lastSeenAt), tz),
-          minutes: sleepSummary?.latest ?? null,
-        }
-      : null,
+    night: args.night,
     usualMinutes:
-      sleepSummary?.avg30 !== null &&
-      sleepSummary?.avg30 !== undefined &&
-      sleepSummary.avg30 > 0
-        ? sleepSummary.avg30
-        : null,
+      avg30 !== null && avg30 !== undefined && avg30 > 0 ? avg30 : null,
   });
   return { lastNight, sleepExpected };
-}
-
-/**
- * The sleep score the morning holds for today, without computing one: the
- * morning's own cell, fresh or stale, exactly what the morning would serve on
- * its next read. Null when the morning has not been read today. The digest
- * reads last night through this so the two agree without the digest paying
- * the morning's reads.
- */
-export function peekMorningSleepScore(
-  userId: string,
-  todayKey: string,
-  modules: { sleep: boolean; recovery: boolean },
-): MorningSleepScore | null {
-  if (!modules.sleep) return null;
-  const hit = (
-    caches.analytics as ServerCache<{ sleepScore: MorningSleepScore | null }>
-  ).getAllowStale(morningExtrasCacheKey(userId, todayKey, modules));
-  return hit?.value.sleepScore ?? null;
 }
 
 /** The key of the morning's day cell for this module state. */
