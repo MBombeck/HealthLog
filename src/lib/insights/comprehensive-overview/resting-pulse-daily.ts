@@ -16,10 +16,16 @@
  * evening logger west of UTC by one day and sell a lag-1 correlation as
  * same-day. Unlike the mood side, this series builds from raw rows, so it
  * re-keys directly with no rollup-tier change.
+ *
+ * A day with resting rows from two sources (a watch and a ring) reads the
+ * one source the person's ladder puts first, as every other day reader does,
+ * instead of the mean of both.
  */
 import { prisma } from "@/lib/db";
 import { resolveRestingPulseSeries } from "@/lib/analytics/resting-pulse";
 import { readRestingPulseProxy } from "@/lib/analytics/resting-pulse-read";
+import { pickCanonicalSourceRows } from "@/lib/analytics/source-priority";
+import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { userDayKey } from "@/lib/tz/format";
 
 import type { DailyValue } from "./daily-series";
@@ -36,13 +42,29 @@ export async function readRestingPulseDaily(
       deletedAt: null,
       measuredAt: { gte: since },
     },
-    select: { measuredAt: true, value: true },
+    orderBy: [{ measuredAt: "asc" }, { id: "asc" }],
+    select: {
+      measuredAt: true,
+      value: true,
+      source: true,
+      deviceType: true,
+      type: true,
+    },
   });
   const localDayKey = (d: Date) => userDayKey(d, userTz);
-  const restingPulseSeries =
+  const restingRows =
     restingPulseRows.length > 0
+      ? pickCanonicalSourceRows(
+          restingPulseRows,
+          "restingHeartRate",
+          await loadUserSourcePriority(userId),
+          localDayKey,
+        ).canonicalRows
+      : restingPulseRows;
+  const restingPulseSeries =
+    restingRows.length > 0
       ? resolveRestingPulseSeries({
-          restingSamples: restingPulseRows,
+          restingSamples: restingRows,
           pulseSamples: [],
           dayKeyOf: localDayKey,
         }).series

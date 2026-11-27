@@ -18,8 +18,23 @@
  * a stream just over the cap can move against the same stream just under it.
  * The longer tail of every snapshot comes from the rollup tier, not from
  * here.
+ *
+ * Every read keeps, per local day, the readings of the day's first source on
+ * the person's ladder (`pickCanonicalSourceRows`, the pick the metric page
+ * makes). The snapshots fold these readings into days, and a day that holds
+ * a watch's and a phone app's readings of one metric is two estimates of one
+ * value, not one estimate weighed by whichever wrote more often. A type
+ * without a ladder has one producer per day and passes through. The cut that
+ * decides between the latest readings and the 30-day window is taken on
+ * every source's readings, before the pick, so it does not move with the
+ * ladder.
  */
-import type { MeasurementType } from "@/generated/prisma/client";
+import type {
+  MeasurementSource,
+  MeasurementType,
+} from "@/generated/prisma/client";
+import { pickCanonicalSourceRows } from "@/lib/analytics/source-priority";
+import { isSourceRankedType } from "@/lib/analytics/source-rank-sql";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { isCumulativeDaySumType } from "@/lib/measurements/cumulative-day-sum";
@@ -27,7 +42,10 @@ import {
   countReadingsUpTo,
   readHourCells,
 } from "@/lib/measurements/dense-bucket-read";
+import { metricKeyForType } from "@/lib/measurements/cumulative-day-sum";
 import { readNewestRowsPerType } from "@/lib/measurements/newest-per-type";
+import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
+import { userDayKey } from "@/lib/tz/format";
 
 export const RECENT_READINGS = 365;
 export const RECENT_MIN_DAYS = 30;
@@ -41,6 +59,45 @@ export interface RecentReading {
   measuredAt: Date;
 }
 
+/** A reading as read, with what the source pick needs. */
+interface SourcedReading extends RecentReading {
+  source: MeasurementSource;
+  deviceType: string | null;
+}
+
+const SOURCED_SELECT = {
+  value: true,
+  measuredAt: true,
+  source: true,
+  deviceType: true,
+} as const;
+
+/**
+ * `rows` (oldest first) narrowed to each local day's canonical source, as
+ * plain readings. A type without a ladder passes through.
+ */
+async function pickDaySource(
+  userId: string,
+  type: MeasurementType,
+  timeZone: string,
+  rows: readonly SourcedReading[],
+): Promise<RecentReading[]> {
+  const metricKey = metricKeyForType(type);
+  const kept =
+    metricKey === null || !isSourceRankedType(type) || rows.length === 0
+      ? rows
+      : pickCanonicalSourceRows(
+          rows.map((r) => ({ ...r, type })),
+          metricKey,
+          await loadUserSourcePriority(userId),
+          (d) => userDayKey(d, timeZone),
+        ).canonicalRows;
+  // The picker keeps a day's rows together; the readings stay oldest first.
+  return kept
+    .map((r) => ({ value: r.value, measuredAt: r.measuredAt }))
+    .sort((a, b) => a.measuredAt.getTime() - b.measuredAt.getTime());
+}
+
 /** Oldest first. */
 export async function readRecentReadings(
   userId: string,
@@ -51,9 +108,9 @@ export async function readRecentReadings(
   // dense-take: the newest 365 only; when they span under 30 days the 30-day window is read by time below.
   const latest = await prisma.measurement.findMany({
     where: { userId, type, deletedAt: null },
-    orderBy: { measuredAt: "desc" },
+    orderBy: [{ measuredAt: "desc" }, { id: "desc" }],
     take: RECENT_READINGS,
-    select: { value: true, measuredAt: true },
+    select: SOURCED_SELECT,
   });
   const since = new Date(now.getTime() - RECENT_MIN_DAYS * DAY_MS);
   const oldest = latest.at(-1);
@@ -62,21 +119,27 @@ export async function readRecentReadings(
     !oldest ||
     oldest.measuredAt <= since
   ) {
-    return latest.reverse();
+    return pickDaySource(userId, type, timeZone, latest.reverse());
   }
-  return readWindowReadings(userId, type, since, timeZone);
+  return pickDaySource(
+    userId,
+    type,
+    timeZone,
+    await readWindowReadings(userId, type, since, timeZone),
+  );
 }
 
 /**
- * Every reading of the window, oldest first: the rows themselves while they
- * fit under {@link DENSE_READ_CAP}, one reading per local hour beyond it.
+ * Every reading of the window, oldest first, with its source: the rows
+ * themselves while they fit under {@link DENSE_READ_CAP}, one reading per
+ * local hour, source and device type beyond it.
  */
 async function readWindowReadings(
   userId: string,
   type: MeasurementType,
   since: Date,
   timeZone: string,
-): Promise<RecentReading[]> {
+): Promise<SourcedReading[]> {
   const count = await countReadingsUpTo({
     userId,
     type,
@@ -86,8 +149,8 @@ async function readWindowReadings(
   if (count <= DENSE_READ_CAP) {
     return prisma.measurement.findMany({
       where: { userId, type, deletedAt: null, measuredAt: { gte: since } },
-      orderBy: { measuredAt: "asc" },
-      select: { value: true, measuredAt: true },
+      orderBy: [{ measuredAt: "asc" }, { id: "asc" }],
+      select: SOURCED_SELECT,
     });
   }
   annotate({
@@ -100,9 +163,15 @@ async function readWindowReadings(
     since,
     timeZone,
     summed: isCumulativeDaySumType(type),
-    bySource: false,
+    bySource: true,
   });
-  return cells.map((c) => ({ value: c.value, measuredAt: c.measuredAt }));
+  return cells.map((c) => ({
+    value: c.value,
+    measuredAt: c.measuredAt,
+    // `bySource` names every cell's source.
+    source: c.source!,
+    deviceType: c.deviceType,
+  }));
 }
 
 /**
@@ -129,10 +198,15 @@ export async function readLatestReadingsPerType(
     perTypeCap: perType,
   });
   const since = new Date(now.getTime() - RECENT_MIN_DAYS * DAY_MS);
-  const byType = new Map<MeasurementType, RecentReading[]>();
+  const byType = new Map<MeasurementType, SourcedReading[]>();
   for (const r of rows) {
     const list = byType.get(r.type) ?? [];
-    list.push({ value: r.value, measuredAt: r.measuredAt });
+    list.push({
+      value: r.value,
+      measuredAt: r.measuredAt,
+      source: r.source,
+      deviceType: r.deviceType,
+    });
     byType.set(r.type, list);
   }
   const out: Array<RecentReading & { type: MeasurementType }> = [];
@@ -141,9 +215,14 @@ export async function readLatestReadingsPerType(
     if (!list) continue;
     // Oldest first, so the first row is the oldest of the newest `perType`.
     const shortWindow = list.length >= perType && list[0].measuredAt > since;
-    const readings = shortWindow
-      ? await readWindowReadings(userId, type, since, timeZone)
-      : list;
+    const readings = await pickDaySource(
+      userId,
+      type,
+      timeZone,
+      shortWindow
+        ? await readWindowReadings(userId, type, since, timeZone)
+        : list,
+    );
     for (const r of readings) out.push({ type, ...r });
   }
   return out.sort((a, b) => a.measuredAt.getTime() - b.measuredAt.getTime());

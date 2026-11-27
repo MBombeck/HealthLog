@@ -43,6 +43,7 @@ vi.mock("../measurement-coverage", () => ({
 vi.mock("@/lib/db", () => ({
   prisma: {
     measurement: { findMany: mocks.measurementFindMany },
+    user: { findUnique: async () => null },
     // v1.37.19 — the live band fallback.
     $queryRaw: mocks.queryRaw,
   },

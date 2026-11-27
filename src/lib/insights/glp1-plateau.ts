@@ -18,6 +18,8 @@
  */
 import { prisma } from "@/lib/db";
 import type { Locale } from "@/lib/i18n/config";
+import { pickCanonicalSourceRows } from "@/lib/analytics/source-priority";
+import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { sanitizeForPrompt } from "@/lib/insights/sanitize";
 import {
   applyDisplayTransformDelta,
@@ -83,16 +85,31 @@ export async function detectGlp1Plateau(
 
   const windowStart = new Date(now.getTime());
   windowStart.setDate(windowStart.getDate() - PLATEAU_WINDOW_DAYS);
-  const weightRows = await prisma.measurement.findMany({
-    where: {
-      userId,
-      type: "WEIGHT",
-      measuredAt: { gte: windowStart },
-      deletedAt: null,
-    },
-    orderBy: { measuredAt: "asc" },
-    select: { value: true, measuredAt: true },
-  });
+  // A day weighed on two scales (or a scale and a hand entry) keeps the one
+  // source the person's ladder puts first, so the window's ends are the
+  // same readings the weight chart shows for those days.
+  const { canonicalRows: weightRows } = pickCanonicalSourceRows(
+    await prisma.measurement.findMany({
+      where: {
+        userId,
+        type: "WEIGHT",
+        measuredAt: { gte: windowStart },
+        deletedAt: null,
+      },
+      orderBy: [{ measuredAt: "asc" }, { id: "asc" }],
+      select: {
+        value: true,
+        measuredAt: true,
+        source: true,
+        deviceType: true,
+        type: true,
+      },
+    }),
+    "weight",
+    await loadUserSourcePriority(userId),
+    // eslint-disable-next-line healthlog/no-utc-day-key -- baseline: this builder has no zone yet (see doseSince below)
+    (d) => d.toISOString().slice(0, 10),
+  );
   if (weightRows.length < 2) return null;
 
   const first = weightRows[0].value;

@@ -18,7 +18,10 @@
  * convention the rollup writer uses for its date-trunc + type-list splices.
  * The user id is always passed as a bound parameter, never spliced.
  */
-import type { MeasurementType } from "@/generated/prisma/client";
+import type {
+  MeasurementSource,
+  MeasurementType,
+} from "@/generated/prisma/client";
 import { assertInstantSql } from "@/lib/analytics/request-clock-sql";
 import { metricKeyForType } from "@/lib/measurements/cumulative-day-sum";
 import {
@@ -109,6 +112,40 @@ export function buildSourceRankCase(
   }
   if (branches.length === 0) return "90";
   return `CASE ${branches.join(" ")} ELSE 90 END`;
+}
+
+/**
+ * The source ladder a day read of `type` picks by, best first, from the
+ * user's `sourcePriorityJson` (`null` for the default ladders). Empty for a
+ * type without a ladder: its days have one producer and nothing to pick.
+ */
+export function sourceLadderOfType(
+  type: MeasurementType,
+  priorityJson: unknown,
+): readonly MeasurementSource[] {
+  const metricKey = metricKeyForType(type);
+  if (metricKey === null || !RANKED_TYPES.includes(type)) return [];
+  return getSourceLadder(parseSourcePriority(priorityJson), metricKey);
+}
+
+/**
+ * A SQL rank of `sourceCol` on `type`'s ladder: 0 for the best source, 90 for
+ * a source off the ladder, so the source name breaks the tie as it does in
+ * `canonicalMeasurementsCte`. `null` for a type without a ladder. The
+ * literals are closed-enum values asserted against a fixed pattern before
+ * they are spliced; `sourceCol` is the caller's own column reference.
+ */
+export function sourceRankOfTypeSql(
+  type: MeasurementType,
+  priorityJson: unknown,
+  sourceCol: string,
+): string | null {
+  const ladder = sourceLadderOfType(type, priorityJson);
+  if (ladder.length === 0) return null;
+  const whens = ladder
+    .map((source, i) => `WHEN '${assertEnumLiteral(source)}' THEN ${i}`)
+    .join(" ");
+  return `CASE ${sourceCol}::text ${whens} ELSE 90 END`;
 }
 
 const INTERVAL_RE = /^\d+ (day|days|month|months|year|years)$/;
