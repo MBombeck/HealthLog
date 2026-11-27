@@ -3592,8 +3592,11 @@
         "steadyLatestBelow": "Your readings usually sit at {low} {unit}; your latest reading, {date}, was {value}, below that.",
         "componentLine": "{component}: {line}",
         "insufficient": "Still learning your usual range. Keep logging for a few more days.",
-        "driver": "{note}",
-        "loadError": "Could not load your usual range."
+        "loadError": "Could not load your usual range.",
+        "range": "Range",
+        "todayValue": "today {value}",
+        "latestValue": "{date}: {value}",
+        "soFarValue": "so far today {value}"
       },
       "scope": {
         "prefix": "The Coach is already on {metric}"
@@ -3955,7 +3958,9 @@
       },
       "bpDerived": {
         "pulsePressure": "Pulse pressure (the gap between your readings) is about {value} mmHg; roughly 40 is typical at rest.",
-        "meanArterialPressure": "Mean arterial pressure (the average your organs see) is about {value} mmHg, normally around 70–100."
+        "meanArterialPressure": "Mean arterial pressure (the average your organs see) is about {value} mmHg, normally around 70–100.",
+        "pulsePressureLabel": "Pulse pressure",
+        "meanArterialPressureLabel": "Mean pressure"
       },
       "stats": {
         "label": "Summary statistics",
@@ -5363,7 +5368,6 @@
     },
     "bpTimeOfDay": {
       "title": "By time of day",
-      "description": "Your average blood pressure in each part of the day, over the chart's range.",
       "part": {
         "morning": "Morning",
         "midday": "Midday",
@@ -5371,14 +5375,7 @@
       },
       "filterAll": "All day",
       "filterLabel": "Show in the chart",
-      "readingsOne": "{count} reading",
-      "readingsFew": "{count} readings",
-      "readingsOther": "{count} readings",
       "notEnough": "Too few readings",
-      "pulse": "Pulse {value} bpm",
-      "difference": "Morning minus evening: {systolic}/{diastolic} mmHg.",
-      "differencePending": "Morning and evening are compared once each has at least {min, plural, one {# reading} other {# readings}}.",
-      "hours": "Morning {morning}, midday {midday}, evening {evening}, in your time zone.",
       "hourRange": "{start}–{end}",
       "emptyTitle": "No complete readings in this range",
       "emptyDescription": "Readings with both a systolic and a diastolic value show up here.",
@@ -5396,7 +5393,6 @@
       }
     },
     "scores": {
-      "historyWindow": "{days}-day history",
       "staleLast": "Last {score} on {date}",
       "valuesFrom": "Values from {date}",
       "loadError": "Your scores could not be loaded right now.",
@@ -16411,7 +16407,6 @@
     "expiryPushBody": "{title}: valid until {date}, {count, plural, one {# session} other {# sessions}} left."
   },
   "chartContext": {
-    "listLabel": "Medication and illness in this range",
     "start": "{name} started",
     "startDose": "{name} started at {dose}",
     "startEstimated": "{name}: first logged dose",

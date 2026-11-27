@@ -138,15 +138,17 @@ describe("<HealthChart> context marks", () => {
     ).toBe(golden);
   });
 
-  it("adds a named row of marks, each saying what happened", async () => {
+  it("names the marks in the legend row, each saying what happened", async () => {
     const html = await renderChart({
       provider: true,
       context: withMark("2026-10-30"),
     });
-    expect(html).toContain('data-slot="chart-context"');
-    expect(html).toContain('aria-label="Medication and illness in this range"');
+    // No row of its own under the plot: the mark is an item of the legend.
+    expect(html).not.toContain('data-slot="chart-context"');
+    expect(html).toContain('data-slot="chart-legend"');
     const buttons = html.match(/data-slot="chart-context-mark"/g) ?? [];
     expect(buttons).toHaveLength(1);
     expect(html).toMatch(/aria-label="[^"]*Ramipril: dose changed to 10 mg"/);
+    expect(html).toMatch(/data-slot="chart-context-mark"[^>]*>.*Ramipril</);
   });
 });

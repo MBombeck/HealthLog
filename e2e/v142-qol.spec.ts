@@ -223,18 +223,38 @@ test.describe("documents", () => {
 });
 
 test.describe("wellness scores", () => {
-  test("every score tile shows its course", async ({ page }) => {
+  test("every score tile shows its ring, its name and one line, in one row", async ({
+    page,
+  }) => {
     await mockPopulatedInsights(page);
     await page.goto("/insights");
-    for (const metric of ["READINESS"]) {
-      const tile = page.locator(
-        `[data-slot="wellness-score-tile"][data-metric="${metric}"]`,
-      );
-      await tile.scrollIntoViewIfNeeded();
+    const tiles = page.locator(
+      '[data-slot="wellness-scores-grid"] [data-slot="score-ring-tile"]',
+    );
+    await expect(tiles.first()).toBeVisible();
+    const boxes = await tiles.evaluateAll((els) =>
+      els.map((el) => {
+        const r = el.getBoundingClientRect();
+        return { top: Math.round(r.top), width: Math.round(r.width) };
+      }),
+    );
+    // One row, equal widths.
+    expect(new Set(boxes.map((b) => b.top)).size).toBe(1);
+    expect(new Set(boxes.map((b) => b.width)).size).toBe(1);
+    for (const tile of await tiles.all()) {
+      const ring = tile.locator('[data-slot="score-ring"]');
+      await expect(ring).toHaveCount(1);
+      // The ring's name says how the score stands; the line keeps its slot
+      // even when a fresh score has nothing to add, so the row lines up.
+      await expect(ring).toHaveAttribute("aria-label", /\S/);
       await expect(
-        tile.locator('[data-slot="wellness-score-history"]'),
-      ).toBeVisible();
+        tile.locator('[data-slot="score-ring-tile-line"]'),
+      ).toHaveCount(1);
     }
+    // The course lives on the score's page, not on the row.
+    await expect(
+      page.locator('[data-slot="wellness-score-history"]'),
+    ).toHaveCount(0);
   });
 
   test("a score's detail page carries its history under the card, without the caveat line", async ({

@@ -3592,8 +3592,11 @@
         "steadyLatestBelow": "Deine Werte liegen meist bei {low} {unit}; dein letzter Wert vom {date} lag mit {value} darunter.",
         "componentLine": "{component}: {line}",
         "insufficient": "Lerne noch deinen üblichen Bereich. Protokolliere noch ein paar Tage weiter.",
-        "driver": "{note}",
-        "loadError": "Dein üblicher Bereich konnte nicht geladen werden."
+        "loadError": "Dein üblicher Bereich konnte nicht geladen werden.",
+        "range": "Bereich",
+        "todayValue": "heute {value}",
+        "latestValue": "{date}: {value}",
+        "soFarValue": "heute bisher {value}"
       },
       "scope": {
         "prefix": "Der Coach ist schon bei {metric}"
@@ -3955,7 +3958,9 @@
       },
       "bpDerived": {
         "pulsePressure": "Der Pulsdruck (die Differenz zwischen deinen Werten) beträgt etwa {value} mmHg; rund 40 ist in Ruhe typisch.",
-        "meanArterialPressure": "Der mittlere arterielle Druck (der Durchschnitt, den deine Organe sehen) liegt bei etwa {value} mmHg, normalerweise um 70–100."
+        "meanArterialPressure": "Der mittlere arterielle Druck (der Durchschnitt, den deine Organe sehen) liegt bei etwa {value} mmHg, normalerweise um 70–100.",
+        "pulsePressureLabel": "Pulsdruck",
+        "meanArterialPressureLabel": "Mitteldruck"
       },
       "stats": {
         "label": "Zusammenfassende Statistik",
@@ -5363,7 +5368,6 @@
     },
     "bpTimeOfDay": {
       "title": "Nach Tageszeit",
-      "description": "Dein durchschnittlicher Blutdruck je Tageszeit im Zeitraum des Diagramms.",
       "part": {
         "morning": "Morgens",
         "midday": "Mittags",
@@ -5371,14 +5375,7 @@
       },
       "filterAll": "Ganzer Tag",
       "filterLabel": "Im Diagramm zeigen",
-      "readingsOne": "{count} Messung",
-      "readingsFew": "{count} Messungen",
-      "readingsOther": "{count} Messungen",
       "notEnough": "Zu wenige Messungen",
-      "pulse": "Puls {value} bpm",
-      "difference": "Morgens minus abends: {systolic}/{diastolic} mmHg.",
-      "differencePending": "Morgen und Abend werden verglichen, sobald beide mindestens {min, plural, one {# Messung} other {# Messungen}} haben.",
-      "hours": "Morgens {morning}, mittags {midday}, abends {evening}, in deiner Zeitzone.",
       "hourRange": "{start} bis {end} Uhr",
       "emptyTitle": "Keine vollständigen Messungen in diesem Zeitraum",
       "emptyDescription": "Hier erscheinen Messungen mit systolischem und diastolischem Wert.",
@@ -5396,7 +5393,6 @@
       }
     },
     "scores": {
-      "historyWindow": "Verlauf {days} Tage",
       "staleLast": "Zuletzt {score} am {date}",
       "valuesFrom": "Werte vom {date}",
       "loadError": "Deine Scores konnten gerade nicht geladen werden.",
@@ -16411,7 +16407,6 @@
     "expiryPushBody": "{title}: gültig bis {date}, noch {count, plural, one {# Sitzung} other {# Sitzungen}} offen."
   },
   "chartContext": {
-    "listLabel": "Medikamente und Erkrankungen in diesem Zeitraum",
     "start": "{name} begonnen",
     "startDose": "{name} begonnen mit {dose}",
     "startEstimated": "{name}: erste erfasste Einnahme",
