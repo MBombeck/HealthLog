@@ -88,7 +88,11 @@ async function seed() {
   });
   cookieJar.set("healthlog_session", session.id);
 
-  const today = new Date();
+  // Anchored a day back: the latest night then ends yesterday morning, so
+  // no segment lies after the run's clock, whatever hour the suite runs at.
+  // Anchored on today, the latest night ran until about 05:30 UTC and a run
+  // between midnight and then saw it only in part.
+  const today = new Date(Date.now() - DAY_MS);
   today.setUTCHours(0, 0, 0, 0);
   const rows: Array<{
     userId: string;
