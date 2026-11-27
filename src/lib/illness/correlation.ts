@@ -60,8 +60,11 @@ export const BASELINE_WINDOW_DAYS = 30;
  */
 export const MIN_BASELINE_DAYS = 7;
 /**
- * A deviation of ≥ this many robust SDs (k·MAD·scale units) from baseline
- * counts as "notable" for the pre-onset + nadir surfaces. ~2σ-equivalent.
+ * A deviation of ≥ this many robust SDs (σ = MAD·1.4826, the band's
+ * half-width over its k) from baseline counts as "notable" for the pre-onset,
+ * nadir and recovery surfaces. The deviation used to be divided by the band's
+ * whole half-width (k = 3 of them), so "2 SD" meant six, and an illness
+ * hardly ever moved a vital far enough to count.
  */
 export const NOTABLE_SD = 2;
 /**
@@ -424,7 +427,12 @@ export const RED_FLAG_RUN_DAYS = 3;
 
 /* ── pure helpers ─────────────────────────────────────────────────────── */
 
-/** Robust band for a vital, or null below the min-baseline-days floor. */
+/**
+ * Robust centre and σ for a vital, or null below the min-baseline-days floor.
+ * σ is the band's half-width over its k: the MAD-derived σ, never narrower
+ * than the measurement's own day-to-day wobble (`minimumBandHalfWidth`), so a
+ * run of near-identical baseline days does not make every small move notable.
+ */
 function bandFor(series: VitalSeries): {
   center: number;
   spread: number;
@@ -435,10 +443,10 @@ function bandFor(series: VitalSeries): {
     series.type,
   );
   if (!band || band.spread <= 0) return null;
-  return { center: band.center, spread: band.spread };
+  return { center: band.center, spread: (band.high - band.center) / band.k };
 }
 
-/** Signed deviation of a value in robust-SD units (spread = k·MAD·scale). */
+/** Signed deviation of a value in robust SDs (`spread` is σ, see `bandFor`). */
 function deviationSd(value: number, center: number, spread: number): number {
   return (value - center) / spread;
 }
