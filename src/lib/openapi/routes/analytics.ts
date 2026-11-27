@@ -306,12 +306,12 @@ const pillarValue = z.object({
   deltaEligible: z
     .boolean()
     .describe(
-      "False for slow markers: they set the level but never contribute to the weekly delta.",
+      "False for slow markers: they set the level and stay out of the score's noise floor.",
     ),
   deltaIdentity: z
     .string()
     .describe(
-      "Input/scoring-mode identity. Two windows only form a delta when their identities match.",
+      "Input/scoring-mode identity. Part of the stored day's fingerprint.",
     ),
 });
 
@@ -405,7 +405,9 @@ const healthScoreReport = z
     delta: z
       .number()
       .nullable()
-      .describe("Move against the previous window, or null when none forms."),
+      .describe(
+        "Today's score minus the stored score of the comparison day (the newest stored day in the week that ends seven days back): the move between two points of the score history. Null whenever `deltaReason` explains why there is none.",
+      ),
     deltaReason: z
       .enum([
         "algorithm_changed",

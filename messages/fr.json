@@ -3239,10 +3239,12 @@
         "missingProfile": "L'âge ou le profil de référence manque",
         "missingHeight": "La taille manque",
         "incompletePanel": "Un bilan récent complet avec plages de référence est requis",
-        "crisis": "Des consignes de sécurité sont affichées à la place d'un score",
+        "crisis": "Non compté après votre dernier bilan",
         "insufficientHistory": "Pas assez de données récentes admissibles",
         "unavailable": "Ce pilier n'est pas admissible actuellement"
       },
+      "crisisWithheld": "Le bien-être n'est pas compté après votre dernier bilan.",
+      "crisisSupportLink": "Où trouver de l'aide",
       "tension": "Les signaux de préparation diffèrent. Favorables : {positive}. Sous tension : {negative}.",
       "returnToBand": "{metric} est revenu dans votre plage habituelle depuis {days, plural, one {# jour} other {# jours}}.",
       "weightGoal": {
@@ -6833,7 +6835,7 @@
         "state": {
           "counting": "Compte dans votre score",
           "waiting": "Sélectionné, en attente de données",
-          "crisis": "Un message de sécurité s'affiche à la place d'un score. Votre sélection n'est pas en cause.",
+          "crisis": "Non compté après votre dernier bilan. Votre sélection n'est pas en cause.",
           "readFailed": "Ce pilier n'a pas pu être lu lors du dernier calcul."
         },
         "presets": {

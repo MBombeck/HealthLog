@@ -3453,7 +3453,7 @@
           "tier": "full",
           "physiological": true
         },
-        "deltaReason": "first_eligibility_window",
+        "deltaReason": "no_previous_window",
         "scoreVersion": 4,
         "bandSetter": null,
         "bandSetterBand": null,

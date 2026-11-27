@@ -4,13 +4,13 @@
  * health dropped.
  *
  * The bug is subtle enough that it survives any test which stops at one
- * end. All three comparison windows are computed in ONE request under
- * whatever recipe is in force at that moment, so both sides carry the
- * same composition, `sameComposition` agrees, and the subtraction looks
+ * end. The recipe can leave the composition alone, so both sides carry
+ * the same pillars, `sameComposition` agrees, and the subtraction looks
  * legitimate. What actually moved is the construct: the week-over-week
- * delta after a reconfiguration averages a different set of pillars
- * than the one before it, so a week that read as a couple of points can
- * read as fourteen the moment the person leaves the settings page.
+ * delta after a reconfiguration compares a day scored under one recipe
+ * with a day scored under another. Since 1.50 the earlier side is the
+ * stored day the history chart draws, and the row says which recipe
+ * scored it.
  *
  * So this file refuses to hand a payload from one end to the other. It
  * drives the real chain, in the order a request does:
@@ -34,9 +34,9 @@
  * Every case runs twice with the same data: once with the recipe
  * changed inside the comparison window, once with it changed a month
  * before. The second run is not decoration. It is what proves the
- * fixture really does produce a ten-point-plus drop and that the first
- * run's silence is the guard doing work rather than an account with
- * nothing to say.
+ * stored week really does sit ten points and more above today and that
+ * the first run's silence is the guard doing work rather than an account
+ * with nothing to say.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -111,12 +111,16 @@ const FIXTURE = vi.hoisted(() => {
  */
 const writtenRecords = vi.hoisted(() => [] as Array<Record<string, unknown>>);
 
+/** The days the history holds before today: what the delta compares. */
+const storedDays = vi.hoisted(() => [] as Array<Record<string, unknown>>);
+
 /** The dismiss ledger, as a set of item keys the account has acknowledged. */
 const dismissedKeys = vi.hoisted(() => new Set<string>());
 
 const fakeDb = vi.hoisted(() => {
   const rows = FIXTURE;
   const written = writtenRecords;
+  const stored = storedDays;
   const none = async () => [];
   return {
     measurement: {
@@ -167,6 +171,8 @@ const fakeDb = vi.hoisted(() => {
       // an account with no stored day has nothing to compare against
       // either way.
       findFirst: async () => null,
+      // 1.50 — the delta's read: the stored days of the last weeks.
+      findMany: async () => stored,
     },
     illnessEpisode: { findMany: none },
     moodEntry: { findMany: none },
@@ -332,8 +338,6 @@ function scoreInput(healthScoreConfigJson: unknown) {
     healthScoreConfigJson,
     bpTargets: null,
     bpEnvelope: null,
-    bpEnvelopePriorWeek: null,
-    bpEnvelopePriorTwoWeeks: null,
   };
 }
 
@@ -341,9 +345,30 @@ function scoreInput(healthScoreConfigJson: unknown) {
  * The whole chain for one account, from fixture rows to the sentence
  * that would ride a morning push.
  */
-async function runChain(healthScoreConfigJson: unknown) {
+async function runChain(
+  healthScoreConfigJson: unknown,
+  storedConfigVersion: number,
+) {
   __resetAllCachesForTests();
   writtenRecords.length = 0;
+  // The two stored weeks, scored fifteen points above today under the
+  // recipe that was in force on their day, with today's own pillar set.
+  storedDays.length = 0;
+  const today = await computeUserHealthScore(scoreInput(healthScoreConfigJson));
+  if (today.composite.status === "ok") {
+    const { score, composition } = today.composite.value;
+    for (const back of [7, 14]) {
+      const at = new Date(NOW.getTime() - back * DAY_MS);
+      storedDays.push({
+        dayKey: at.toISOString().slice(0, 10),
+        composite: score + 15,
+        scoreVersion: SCORE_VERSION,
+        composition,
+        configVersion: storedConfigVersion,
+        computedAt: at,
+      });
+    }
+  }
   const snapshot = await buildDashboardSnapshot(
     fakeDb as never,
     user(healthScoreConfigJson),
@@ -439,17 +464,20 @@ afterEach(() => {
 });
 
 /**
- * The control. Same rows, same recipe, changed a month ago — outside
- * every comparison window — so nothing suppresses and the account's
- * genuine decline is narrated in full.
+ * The control. Same rows, same recipe, changed a month ago — before both
+ * stored weeks, which were scored under it — so nothing suppresses and the
+ * account's genuine decline is narrated in full.
  */
 const SETTLED = recipe(new Date(NOW.getTime() - 30 * DAY_MS));
-/** The act: the recipe changed three days ago. */
+/** The act: the recipe changed three days ago, after both stored weeks. */
 const JUST_CHANGED = recipe(new Date(NOW.getTime() - 3 * DAY_MS));
+/** The recipe version the stored weeks carry in each case. */
+const SETTLED_ROWS = 3;
+const JUST_CHANGED_ROWS = 2;
 
 describe("a settings change is never narrated as a health event", () => {
   it("shows a real ten-point-plus drop when no recipe changed in the window", async () => {
-    const { snapshot, digest } = await runChain(SETTLED);
+    const { snapshot, digest } = await runChain(SETTLED, SETTLED_ROWS);
 
     // If this ever stops holding, every assertion in the next test is
     // vacuous: an account with no drop to suppress would pass it while
@@ -478,7 +506,7 @@ describe("a settings change is never narrated as a health event", () => {
     // person actually sees and what has to go red when the guard goes
     // missing. Asserting the reason before it would fail one step
     // earlier and never exercise the render condition at all.
-    const { digest } = await runChain(JUST_CHANGED);
+    const { digest } = await runChain(JUST_CHANGED, JUST_CHANGED_ROWS);
 
     expect(
       digest.score !== null &&
@@ -488,7 +516,7 @@ describe("a settings change is never narrated as a health event", () => {
   });
 
   it("suppresses the delta with the reason that names the act", async () => {
-    const { snapshot } = await runChain(JUST_CHANGED);
+    const { snapshot } = await runChain(JUST_CHANGED, JUST_CHANGED_ROWS);
 
     expect(snapshot.healthScore).not.toBeNull();
     expect(snapshot.healthScore!.deltaReason).toBe("config_changed");
@@ -499,7 +527,10 @@ describe("a settings change is never narrated as a health event", () => {
     // The digest is the push's only source of words. A delta that
     // reached it without its reason is a drop nothing can explain: the
     // hero renders the chip on `deltaReason === null` alone.
-    const { snapshot, digest } = await runChain(JUST_CHANGED);
+    const { snapshot, digest } = await runChain(
+      JUST_CHANGED,
+      JUST_CHANGED_ROWS,
+    );
 
     expect(digest.score).not.toBeNull();
     expect(digest.score!.delta).toBeNull();
@@ -521,7 +552,10 @@ describe("a settings change is never narrated as a health event", () => {
     // Suppressing the delta must not suppress the score. A person who
     // changed what counts should see what the new recipe says today;
     // what they must not see is a subtraction across the change.
-    const { snapshot, digest } = await runChain(JUST_CHANGED);
+    const { snapshot, digest } = await runChain(
+      JUST_CHANGED,
+      JUST_CHANGED_ROWS,
+    );
 
     expect(snapshot.healthScore!.score).toBeGreaterThan(0);
     expect(digest.score!.value).toBe(snapshot.healthScore!.score);
@@ -532,7 +566,7 @@ describe("a settings change is never narrated as a health event", () => {
     // path inside the same request the assertions above read from, so a
     // version that never reached the writer would show up here rather
     // than a release later when the seam turns out to be underivable.
-    const { record } = await runChain(JUST_CHANGED);
+    const { record } = await runChain(JUST_CHANGED, JUST_CHANGED_ROWS);
 
     expect(record).not.toBeNull();
     expect(record!.configVersion).toBe(3);
@@ -585,7 +619,7 @@ describe("a settings change is never narrated as a health event", () => {
   it("stamps an honest zero when the account never chose", async () => {
     // Not an absence. The first authored recipe has to be recognisable
     // as a move from something, and 0 is what it moves from.
-    const { record } = await runChain(null);
+    const { record } = await runChain(null, 0);
 
     expect(record).not.toBeNull();
     expect(record!.configVersion).toBe(0);

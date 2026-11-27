@@ -40,7 +40,7 @@ test.describe("the Health Score panel at phone width", () => {
   test("is on screen with its rows before anything is measured", async ({
     page,
   }) => {
-    await mockPopulatedInsights(page);
+    await mockPopulatedInsights(page, { everyState: true });
     await page.setViewportSize({ width: 360, height: 851 });
     await page.goto("/insights/scores/health", {
       waitUntil: "domcontentloaded",
@@ -61,9 +61,12 @@ test.describe("the Health Score panel at phone width", () => {
     await expect(
       panel.locator('[data-slot="health-score-pillar-retry"]'),
     ).toBeVisible();
+    // The withheld pillar is one plain sentence with the way to support.
+    const crisis = panel.locator('[data-slot="health-score-crisis"]');
+    await expect(crisis).toBeVisible();
     await expect(
-      panel.locator('[data-slot="health-score-crisis"]'),
-    ).toBeVisible();
+      crisis.locator('[data-slot="health-score-crisis-link"]'),
+    ).toHaveAttribute("href", "/mental-wellbeing");
     await expect(
       panel.locator('[data-slot="health-score-not-scored-count"]'),
     ).toBeVisible();
@@ -72,7 +75,7 @@ test.describe("the Health Score panel at phone width", () => {
   test("does not scroll the page sideways, closed or open", async ({
     page,
   }) => {
-    await mockPopulatedInsights(page);
+    await mockPopulatedInsights(page, { everyState: true });
     await page.setViewportSize({ width: 360, height: 851 });
     await page.goto("/insights/scores/health", {
       waitUntil: "domcontentloaded",
@@ -102,7 +105,7 @@ test.describe("the Health Score panel at phone width", () => {
   test("keeps the panel inside the band, never wider than it", async ({
     page,
   }) => {
-    await mockPopulatedInsights(page);
+    await mockPopulatedInsights(page, { everyState: true });
     await page.setViewportSize({ width: 360, height: 851 });
     await page.goto("/insights/scores/health", {
       waitUntil: "domcontentloaded",
@@ -147,10 +150,10 @@ test.describe("the Health Score panel at phone width", () => {
     ).toBeLessThanOrEqual(measured.panelClient + 1);
   });
 
-  test("keeps the safety line on the overview's Health score ring", async ({
+  test("leaves a withheld pillar off the overview's Health score ring", async ({
     page,
   }) => {
-    await mockPopulatedInsights(page);
+    await mockPopulatedInsights(page, { everyState: true });
     await page.setViewportSize({ width: 360, height: 851 });
     await page.goto("/insights", { waitUntil: "domcontentloaded" });
 
@@ -159,9 +162,10 @@ test.describe("the Health Score panel at phone width", () => {
     );
     await expect(tile).toBeVisible();
     await expect(tile).toHaveAttribute("href", "/insights/scores/health");
-    await expect(
-      tile.locator('[data-slot="wellness-score-note"]'),
-    ).toBeVisible();
+    // The ring names the pillar that sets its band, never the withheld one.
+    const note = tile.locator('[data-slot="wellness-score-note"]');
+    await expect(note).toBeVisible();
+    await expect(note).not.toContainText(/check-in|safety/i);
     await settleForOverflowMeasurement(page);
     await expectNoHorizontalOverflow(page, "/insights score rings @360px");
   });

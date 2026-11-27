@@ -425,7 +425,7 @@ export const dashboardScorePillar = z
       .string()
       .nullable()
       .describe(
-        'Why the pillar did not count, worded as the web panel words it ("Not tracked", "Not enough recent eligible data"). Null when it counted. A WELLBEING pillar held back for safety signposting says so ("Safety guidance is shown instead of a score"); the guidance itself is on the Insights health-score card.',
+        'Why the pillar did not count, worded as the web panel words it ("Not tracked", "Not enough recent eligible data"). Null when it counted. A WELLBEING pillar held back for safety signposting says so in a neutral label ("Not counted after your last check-in"); the support it points to is on the Mental wellbeing page.',
       ),
     reasonCode: z
       .string()
@@ -2638,7 +2638,7 @@ const healthScorePillar = z.object({
           deltaEligible: z
             .boolean()
             .describe(
-              "False for slow markers, which contribute to the level but never to the weekly delta.",
+              "False for slow markers, which set the level and stay out of the score's noise floor.",
             ),
           deltaIdentity: z.string(),
         }),
@@ -2661,7 +2661,7 @@ export const healthScoreReport = z
       .number()
       .nullable()
       .describe(
-        "Week-over-week move; null whenever `deltaReason` explains why there is none.",
+        "Today's score minus the stored score of the comparison day (the newest stored day in the week that ends seven days back): the move between two points of the score history. Null whenever `deltaReason` explains why there is none.",
       ),
     deltaReason: z
       .enum([

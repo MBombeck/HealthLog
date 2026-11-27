@@ -6,6 +6,7 @@ import {
   attachScoreDelta,
   computeComposite,
   SCORE_ALGORITHM_CHANGED_AT,
+  type StoredScoreDay,
 } from "../composite";
 import { UNCONFIGURED_SCORE_BOUNDARY } from "../config";
 import { SCORE_GREEN_FLOOR, scoreBand } from "../shared";
@@ -342,216 +343,200 @@ describe("reference-score composite", () => {
       expect(result.value.bandSetter).toBe("BLOOD_PRESSURE");
     }
   });
+});
+
+/**
+ * 1.50 — the week-over-week move is read from the stored days, the same rows
+ * the history chart draws, so the panel's "+2" is the difference between two
+ * points of that chart. A move against a day the chart has no point for is
+ * the contradiction this replaces.
+ */
+describe("the delta reads the score's own history", () => {
+  const TODAY = "2026-08-20";
+  const CORE: ScorePillarId[] = ["BLOOD_PRESSURE", "ACTIVITY", "SLEEP"];
+
+  function day(offset: number): string {
+    return new Date(Date.parse(`${TODAY}T12:00:00Z`) + offset * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
+  }
+
+  function stored(
+    offset: number,
+    composite: number,
+    options: {
+      composition?: ScorePillarId[];
+      scoreVersion?: number;
+      configVersion?: number | null;
+      computedAt?: Date;
+    } = {},
+  ): StoredScoreDay {
+    return {
+      dayKey: day(offset),
+      composite,
+      scoreVersion: options.scoreVersion ?? SCORE_VERSION,
+      composition: options.composition ?? CORE,
+      configVersion:
+        options.configVersion === undefined ? 0 : options.configVersion,
+      computedAt:
+        options.computedAt ?? new Date(Date.parse(`${day(offset)}T09:00:00Z`)),
+    };
+  }
+
+  function today(scores: number[], noiseFloor = 1) {
+    return evaluation(
+      CORE.map((id, i) => pillar(id, scores[i]!, { noiseFloor })),
+      NOW,
+    );
+  }
+
+  function delta(
+    current: ReturnType<typeof today>,
+    history: StoredScoreDay[],
+    config = UNCONFIGURED_SCORE_BOUNDARY,
+    asOf = NOW,
+  ) {
+    return attachScoreDelta({
+      current,
+      history,
+      todayKey: TODAY,
+      asOf,
+      config,
+    });
+  }
+
+  it("is the move between today's score and the stored day a week back", () => {
+    const report = delta(today([75, 75, 72]), [
+      stored(-7, 72),
+      stored(-14, 70),
+    ]);
+    expect(report).toEqual({ delta: 2, deltaReason: null });
+  });
+
+  it("compares against the newest stored day of that week when the day itself is missing", () => {
+    const report = delta(today([80, 80, 80]), [
+      stored(-9, 70),
+      stored(-13, 60),
+      stored(-6, 90),
+      stored(-16, 70),
+    ]);
+    // Day −6 sits inside the last week and is not the comparison day; −9 is
+    // the newest of the week before it.
+    expect(report).toEqual({ delta: 10, deltaReason: null });
+  });
+
+  it("says there is no previous window when the chart has no point there", () => {
+    const report = delta(today([80, 80, 80]), [
+      stored(-3, 70),
+      stored(-20, 70),
+    ]);
+    expect(report).toEqual({
+      delta: null,
+      deltaReason: "no_previous_window",
+    });
+  });
+
+  it("says there is no current score before anything else", () => {
+    const none = evaluation([], NOW, CORE);
+    expect(delta(none, [stored(-7, 70), stored(-14, 70)]).deltaReason).toBe(
+      "no_current_score",
+    );
+  });
 
   it("suppresses delta across a composition change", () => {
-    const current = evaluation(
-      [
-        pillar("BLOOD_PRESSURE", 80),
-        pillar("ACTIVITY", 80),
-        pillar("SLEEP", 80),
-        pillar("WELLBEING", 80),
-      ],
-      NOW,
-    );
-    const previous = evaluation(
-      [
-        pillar("BLOOD_PRESSURE", 75),
-        pillar("ACTIVITY", 75),
-        pillar("SLEEP", 75),
-      ],
-      new Date(NOW.getTime() - 7 * 86_400_000),
-    );
-    const report = attachScoreDelta(
-      current,
-      previous,
-      previous,
-      NOW,
-      UNCONFIGURED_SCORE_BOUNDARY,
-    );
+    const report = delta(today([80, 80, 80]), [
+      stored(-7, 75, { composition: [...CORE, "WELLBEING"] }),
+      stored(-14, 75, { composition: [...CORE, "WELLBEING"] }),
+    ]);
     expect(report.delta).toBeNull();
     expect(report.deltaReason).toBe("composition_changed");
   });
 
   it("suppresses the first comparable eligibility window", () => {
-    const current = evaluation(
-      [
-        pillar("BLOOD_PRESSURE", 80),
-        pillar("ACTIVITY", 80),
-        pillar("SLEEP", 80),
-      ],
-      NOW,
-    );
-    const previous = evaluation(
-      [
-        pillar("BLOOD_PRESSURE", 75),
-        pillar("ACTIVITY", 75),
-        pillar("SLEEP", 75),
-      ],
-      new Date(NOW.getTime() - 7 * 86_400_000),
-    );
-    const previousPrevious = evaluation(
-      [pillar("BLOOD_PRESSURE", 70), pillar("ACTIVITY", 70)],
-      new Date(NOW.getTime() - 14 * 86_400_000),
-    );
-    const report = attachScoreDelta(
-      current,
-      previous,
-      previousPrevious,
-      NOW,
-      UNCONFIGURED_SCORE_BOUNDARY,
-    );
+    const report = delta(today([80, 80, 80]), [
+      stored(-7, 75),
+      stored(-14, 70, { composition: ["BLOOD_PRESSURE", "ACTIVITY"] }),
+    ]);
     expect(report.delta).toBeNull();
     expect(report.deltaReason).toBe("first_eligibility_window");
+    expect(delta(today([80, 80, 80]), [stored(-7, 75)]).deltaReason).toBe(
+      "first_eligibility_window",
+    );
   });
 
-  it("suppresses the algorithm boundary and movements below the combined noise floor", () => {
+  it("suppresses a day scored by another method", () => {
     const changedAt = new Date(SCORE_ALGORITHM_CHANGED_AT);
-    const currentAtBoundary = evaluation(
-      [
-        pillar("BLOOD_PRESSURE", 80),
-        pillar("ACTIVITY", 80),
-        pillar("SLEEP", 80),
+    const boundaryToday = changedAt.toISOString().slice(0, 10);
+    const atBoundary = attachScoreDelta({
+      current: today([80, 80, 80]),
+      history: [
+        {
+          ...stored(-7, 75),
+          dayKey: "2026-08-23",
+          computedAt: new Date(changedAt.getTime() - 7 * 86_400_000),
+        },
       ],
-      changedAt,
-    );
-    const beforeBoundary = evaluation(
-      [
-        pillar("BLOOD_PRESSURE", 75),
-        pillar("ACTIVITY", 75),
-        pillar("SLEEP", 75),
-      ],
-      new Date(changedAt.getTime() - 7 * 86_400_000),
-    );
-    const algorithm = attachScoreDelta(
-      currentAtBoundary,
-      beforeBoundary,
-      beforeBoundary,
-      changedAt,
-      UNCONFIGURED_SCORE_BOUNDARY,
-    );
-    expect(algorithm.deltaReason).toBe("algorithm_changed");
+      todayKey: boundaryToday,
+      asOf: changedAt,
+      config: UNCONFIGURED_SCORE_BOUNDARY,
+    });
+    expect(atBoundary.deltaReason).toBe("algorithm_changed");
 
-    const current = evaluation(
-      [
-        pillar("BLOOD_PRESSURE", 81, { noiseFloor: 4 }),
-        pillar("ACTIVITY", 80, { noiseFloor: 4 }),
-        pillar("SLEEP", 80, { noiseFloor: 4 }),
-      ],
-      NOW,
-    );
-    const previous = evaluation(
-      [
-        pillar("BLOOD_PRESSURE", 80, { noiseFloor: 4 }),
-        pillar("ACTIVITY", 80, { noiseFloor: 4 }),
-        pillar("SLEEP", 80, { noiseFloor: 4 }),
-      ],
-      new Date(NOW.getTime() - 7 * 86_400_000),
-    );
-    const stablePrior = evaluation(
-      [
-        pillar("BLOOD_PRESSURE", 80, { noiseFloor: 4 }),
-        pillar("ACTIVITY", 80, { noiseFloor: 4 }),
-        pillar("SLEEP", 80, { noiseFloor: 4 }),
-      ],
-      new Date(NOW.getTime() - 14 * 86_400_000),
-    );
-    const belowNoise = attachScoreDelta(
-      current,
-      previous,
-      stablePrior,
-      NOW,
-      UNCONFIGURED_SCORE_BOUNDARY,
-    );
-    expect(belowNoise.delta).toBeNull();
-    expect(belowNoise.deltaReason).toBe("below_noise_floor");
+    const otherVersion = delta(today([80, 80, 80]), [
+      stored(-7, 75, { scoreVersion: SCORE_VERSION - 1 }),
+      stored(-14, 75, { scoreVersion: SCORE_VERSION - 1 }),
+    ]);
+    expect(otherVersion.deltaReason).toBe("algorithm_changed");
   });
 
-  it("excludes slow pillars from the weekly delta", () => {
-    const current = evaluation(
+  it("suppresses a day scored under another recipe of the person's own", () => {
+    const config = { version: 3, changedAt: "2026-08-16T08:00:00.000Z" };
+    const report = delta(
+      today([80, 80, 80]),
       [
-        pillar("BLOOD_PRESSURE", 90),
-        pillar("ACTIVITY", 90),
-        pillar("SLEEP", 90),
-        pillar("LIPIDS", 20, { deltaEligible: false }),
+        stored(-7, 60, { configVersion: 2 }),
+        stored(-14, 60, { configVersion: 2 }),
       ],
-      NOW,
+      config,
     );
-    const previous = evaluation(
+    expect(report.deltaReason).toBe("config_changed");
+    // A row written before the version was recorded answers by the date.
+    const legacy = delta(
+      today([80, 80, 80]),
       [
-        pillar("BLOOD_PRESSURE", 80),
-        pillar("ACTIVITY", 80),
-        pillar("SLEEP", 80),
-        pillar("LIPIDS", 100, { deltaEligible: false }),
+        stored(-7, 60, { configVersion: null }),
+        stored(-14, 60, { configVersion: null }),
       ],
-      new Date(NOW.getTime() - 7 * 86_400_000),
+      config,
     );
-    const stablePrior = evaluation(
-      [
-        pillar("BLOOD_PRESSURE", 80),
-        pillar("ACTIVITY", 80),
-        pillar("SLEEP", 80),
-        pillar("LIPIDS", 100, { deltaEligible: false }),
-      ],
-      new Date(NOW.getTime() - 14 * 86_400_000),
-    );
-    const report = attachScoreDelta(
-      current,
-      previous,
-      stablePrior,
-      NOW,
-      UNCONFIGURED_SCORE_BOUNDARY,
-      [
-        pillar("BLOOD_PRESSURE", 90),
-        pillar("ACTIVITY", 90),
-        pillar("SLEEP", 90),
-        pillar("LIPIDS", 20, { deltaEligible: false }),
-      ],
-      [
-        pillar("BLOOD_PRESSURE", 80),
-        pillar("ACTIVITY", 80),
-        pillar("SLEEP", 80),
-        pillar("LIPIDS", 100, { deltaEligible: false }),
-      ],
-    );
-    expect(report.delta).toBe(10);
-    expect(report.deltaReason).toBeNull();
+    expect(legacy.deltaReason).toBe("config_changed");
   });
 
-  it("excludes a pillar whose input mode changed from the delta intersection", () => {
-    const currentPillars = [
-      pillar("BLOOD_PRESSURE", 80),
-      pillar("GLYCAEMIA", 100, { deltaIdentity: "hba1c" }),
-      pillar("ACTIVITY", 80),
-      pillar("SLEEP", 80),
-    ];
-    const previousPillars = [
-      pillar("BLOOD_PRESSURE", 80),
-      pillar("GLYCAEMIA", 20, { deltaIdentity: "fasting_glucose" }),
-      pillar("ACTIVITY", 80),
-      pillar("SLEEP", 80),
-    ];
-    const current = evaluation(currentPillars, NOW);
-    const previous = evaluation(
-      previousPillars,
-      new Date(NOW.getTime() - 7 * 86_400_000),
-    );
-    const stablePrior = evaluation(
-      previousPillars,
-      new Date(NOW.getTime() - 14 * 86_400_000),
-    );
-
-    const report = attachScoreDelta(
-      current,
-      previous,
-      stablePrior,
-      NOW,
-      UNCONFIGURED_SCORE_BOUNDARY,
-      currentPillars,
-      previousPillars,
-    );
-
+  it("suppresses movements below the combined noise floor", () => {
+    const report = delta(today([81, 80, 80], 4), [
+      stored(-7, 80),
+      stored(-14, 80),
+    ]);
     expect(report.delta).toBeNull();
     expect(report.deltaReason).toBe("below_noise_floor");
+  });
+
+  it("moves with the number the chart draws, slow pillars included", () => {
+    // A new lipid panel moves the stored score the chart shows, so it moves
+    // the delta too: the two can no longer say different things.
+    const current = evaluation(
+      [
+        ...CORE.map((id) => pillar(id, 80)),
+        pillar("LIPIDS", 20, { deltaEligible: false }),
+      ],
+      NOW,
+    );
+    const composition = [...CORE, "LIPIDS"] as ScorePillarId[];
+    const report = delta(current, [
+      stored(-7, 80, { composition }),
+      stored(-14, 80, { composition }),
+    ]);
+    expect(report).toEqual({ delta: -15, deltaReason: null });
   });
 });
 

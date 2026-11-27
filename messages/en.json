@@ -3239,10 +3239,12 @@
         "missingProfile": "Age or reference profile is missing",
         "missingHeight": "Height is missing",
         "incompletePanel": "A recent complete panel with reference ranges is needed",
-        "crisis": "Safety guidance is shown instead of a score",
+        "crisis": "Not counted after your last check-in",
         "insufficientHistory": "Not enough recent eligible data",
         "unavailable": "This pillar is not currently eligible"
       },
+      "crisisWithheld": "Wellbeing is not counted after your last check-in.",
+      "crisisSupportLink": "Where to find help",
       "tension": "Readiness signals differ. Supportive: {positive}. Under strain: {negative}.",
       "returnToBand": "{metric} has been back inside your usual range for {days, plural, one {# day} other {# days}}.",
       "weightGoal": {
@@ -6833,7 +6835,7 @@
         "state": {
           "counting": "Counting toward your score",
           "waiting": "Selected, waiting for data",
-          "crisis": "Safety guidance is shown instead of a score. Your selection is fine.",
+          "crisis": "Not counted after your last check-in. Your selection is fine.",
           "readFailed": "This pillar could not be read on the last run."
         },
         "presets": {

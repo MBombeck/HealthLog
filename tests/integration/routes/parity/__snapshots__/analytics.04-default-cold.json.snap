@@ -2450,7 +2450,7 @@
           }
         ],
         "delta": null,
-        "deltaReason": "first_eligibility_window",
+        "deltaReason": "no_previous_window",
         "scoreVersion": 4,
         "weightGoal": {
           "status": "insufficient",

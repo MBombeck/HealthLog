@@ -43,6 +43,8 @@ function args(
     tz: TZ,
     profile: vi.fn().mockResolvedValue({ ageYears: 40, sex: null }),
     priorityJson: vi.fn().mockResolvedValue(null),
+    shown: null as
+      (() => Promise<{ day: string; value: number } | null>) | null,
   };
 }
 
@@ -144,6 +146,88 @@ describe("readScoreHistory — health score", () => {
     await readScoreHistory(a);
     expect(a.profile).not.toHaveBeenCalled();
     expect(a.priorityJson).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * 1.50 — the newest point is the number the score's headline shows. A page
+ * that said 74 above a chart reading "no score was recorded in this range"
+ * is the contradiction these pin.
+ */
+describe("readScoreHistory — the headline's day", () => {
+  it("draws today's shown score when no row was stored for today yet", async () => {
+    records.mockResolvedValue([row(-7, 72)]);
+    const out = await readScoreHistory({
+      ...args("HEALTH_SCORE", 30),
+      shown: async () => ({ day: day(0), value: 74 }),
+    });
+    expect(out.points.at(-1)).toEqual({
+      day: day(0),
+      value: 74,
+      seamBreak: false,
+    });
+    expect(out.points.map((p) => p.day)).toEqual([day(-7), day(0)]);
+  });
+
+  it("draws an empty record's first day once the headline shows a score", async () => {
+    records.mockResolvedValue([]);
+    const out = await readScoreHistory({
+      ...args("HEALTH_SCORE", 7),
+      shown: async () => ({ day: day(0), value: 74 }),
+    });
+    expect(out.points).toEqual([{ day: day(0), value: 74, seamBreak: false }]);
+  });
+
+  it("holds today's point at the shown number, keeping the day's seam", async () => {
+    records.mockResolvedValue([row(-1, 70, 1), row(0, 68, 2)]);
+    const out = await readScoreHistory({
+      ...args("HEALTH_SCORE", 7),
+      shown: async () => ({ day: day(0), value: 74.4 }),
+    });
+    expect(out.points.at(-1)).toEqual({
+      day: day(0),
+      value: 74,
+      seamBreak: true,
+    });
+  });
+
+  it("resolves the headline before it reads the stored days", async () => {
+    const order: string[] = [];
+    records.mockImplementation(async () => {
+      order.push("read");
+      return [];
+    });
+    await readScoreHistory({
+      ...args("HEALTH_SCORE", 7),
+      shown: async () => {
+        order.push("shown");
+        return null;
+      },
+    });
+    expect(order).toEqual(["shown", "read"]);
+  });
+
+  it("leaves the series alone when the headline shows nothing", async () => {
+    records.mockResolvedValue([row(-1, 70)]);
+    const out = await readScoreHistory({
+      ...args("HEALTH_SCORE", 7),
+      shown: async () => null,
+    });
+    expect(out.points).toEqual([{ day: day(-1), value: 70, seamBreak: false }]);
+  });
+
+  it("puts a fresh readiness on its own day beside the nightly rows", async () => {
+    measurements.mockResolvedValue([
+      { value: 64.6, measuredAt: new Date(`${day(-3)}T12:00:00Z`) },
+    ]);
+    const out = await readScoreHistory({
+      ...args("READINESS", 7),
+      shown: async () => ({ day: day(0), value: 81 }),
+    });
+    expect(out.points).toEqual([
+      { day: day(-2), value: 65, seamBreak: false },
+      { day: day(0), value: 81, seamBreak: false },
+    ]);
   });
 });
 

@@ -47,7 +47,7 @@ const ROUTE_CASES: RouteCase[] = [
     // The "signals of the day" section is the one whose heading carries the
     // long provenance sentence, so it is also the readiness signal.
     ready: '[data-slot="coincident-deviation-section"]',
-    setup: mockPopulatedInsights,
+    setup: (page) => mockPopulatedInsights(page, { everyState: true }),
   },
   {
     path: "/",

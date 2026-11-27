@@ -385,7 +385,7 @@ export const dashboardScorePillarsExample = [
     id: "WELLBEING",
     label: "Wellbeing",
     value: null,
-    reason: "Safety guidance is shown instead of a score",
+    reason: "Not counted after your last check-in",
     reasonCode: "crisis_signposting",
     weight: null,
   },

@@ -3239,10 +3239,12 @@
         "missingProfile": "Falta la edad o el perfil de referencia",
         "missingHeight": "Falta la altura",
         "incompletePanel": "Se necesita un panel reciente completo con intervalos de referencia",
-        "crisis": "Se muestran indicaciones de seguridad en lugar de una puntuación",
+        "crisis": "No cuenta tras tu último cuestionario",
         "insufficientHistory": "No hay suficientes datos recientes aptos",
         "unavailable": "Este pilar no reúne los requisitos actualmente"
       },
+      "crisisWithheld": "El bienestar no cuenta tras tu último cuestionario.",
+      "crisisSupportLink": "Dónde encontrar ayuda",
       "tension": "Las señales de disposición difieren. Favorables: {positive}. Con tensión: {negative}.",
       "returnToBand": "{metric} lleva {days, plural, one {# día} other {# días}} de nuevo dentro de tu intervalo habitual.",
       "weightGoal": {
@@ -6833,7 +6835,7 @@
         "state": {
           "counting": "Cuenta para tu puntuación",
           "waiting": "Seleccionado, esperando datos",
-          "crisis": "En lugar de una puntuación se muestra orientación de seguridad. Tu selección está bien.",
+          "crisis": "No cuenta tras tu último cuestionario. Tu selección está bien.",
           "readFailed": "Este pilar no se pudo leer en el último cálculo."
         },
         "presets": {

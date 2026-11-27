@@ -16,17 +16,8 @@ export async function readHealthScoreBlock(args: {
   userTz: string;
   clinicalBpTargets: ReturnType<typeof getBpTargets>;
   bpEnvelope: BpInTargetEnvelope | null;
-  bpEnvelopePriorWeek: BpInTargetEnvelope | null;
-  bpEnvelopePriorTwoWeeks: BpInTargetEnvelope | null;
 }) {
-  const {
-    user,
-    userTz,
-    clinicalBpTargets,
-    bpEnvelope,
-    bpEnvelopePriorWeek,
-    bpEnvelopePriorTwoWeeks,
-  } = args;
+  const { user, userTz, clinicalBpTargets, bpEnvelope } = args;
   // The versioned cardiometabolic reference report. The shared reader
   // admits only evidence-backed pillars with their own windows and coverage
   // floors, then applies the three-domain breadth rule. Its BP envelopes come
@@ -66,8 +57,6 @@ export async function readHealthScoreBlock(args: {
     healthScoreConfigJson: user.healthScoreConfigJson,
     bpTargets: clinicalBpTargets,
     bpEnvelope,
-    bpEnvelopePriorWeek,
-    bpEnvelopePriorTwoWeeks,
   });
 
   // Rest Mode annotation. When an illness/condition episode is

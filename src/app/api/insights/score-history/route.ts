@@ -7,8 +7,9 @@
  * (the nightly blend the recovery job persists) and the sleep score
  * (computed per night). The nightly recovery, stress and strain scores are
  * stored readings and chart through the measurement series route like any
- * other metric. What each point means, and why the health score's line can
- * break, is written at `readScoreHistory`.
+ * other metric. What each point means, why the health score's line can
+ * break, and why the newest point is the headline's number, is written at
+ * `readScoreHistory`.
  *
  * `days` is the chart's range tab: 7, 30, 90, or the "All" tab's ten years.
  * Any whole number in between is accepted, so a client is not tied to these
@@ -27,6 +28,7 @@ import { loadBaselineProfile } from "@/lib/insights/derived";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { resolveStoredTimezone } from "@/lib/tz/resolver";
 import { readScoreHistory } from "@/lib/insights/score-history";
+import { shownScoreFor } from "@/lib/insights/score-history-shown";
 import {
   SCORE_HISTORY_IDS,
   SCORE_HISTORY_MAX_DAYS,
@@ -81,6 +83,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     tz: await resolveStoredTimezone(user.timezone),
     profile: () => loadBaselineProfile(prisma, user.id),
     priorityJson: () => loadUserSourcePriority(user.id),
+    shown: shownScoreFor(score, user.id),
   });
 
   annotate({

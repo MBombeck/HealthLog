@@ -196,7 +196,9 @@ describe("<WellnessScores> (the Insights head)", () => {
     expect(tile).not.toMatch(/tabular-nums[^>]*>84</);
   });
 
-  it("keeps the Health score's safety line at rest", () => {
+  it("says nothing on the Health score's tile about a withheld pillar", () => {
+    // A one-line slot cannot carry a safety result without sounding like a
+    // fault; the score's page says it, with the way to support.
     const html = render(
       <WellnessScores
         read={readFrom({})}
@@ -211,8 +213,8 @@ describe("<WellnessScores> (the Insights head)", () => {
       />,
     );
     const tile = html.slice(html.indexOf('data-metric="HEALTH_SCORE"'));
-    expect(tile).toContain('data-slot="wellness-score-note"');
-    expect(tile).toContain("Safety guidance is shown instead of a score");
+    expect(tile).not.toContain("Wellbeing");
+    expect(tile).not.toMatch(/check-in|safety guidance/i);
   });
 
   it("draws each tile's course under its band word, naming the window", () => {

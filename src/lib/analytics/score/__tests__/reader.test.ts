@@ -124,7 +124,10 @@ describe("score reader bounds and source parity", () => {
       // v1.38 — the reader compares today's composition against the last
       // stored day. No stored day here, so there is nothing to compare and
       // no note to raise.
-      healthScoreRecord: { findFirst: vi.fn().mockResolvedValue(null) },
+      healthScoreRecord: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
     } as unknown as PrismaClient;
 
     const report = await computeUserHealthScore({
@@ -148,8 +151,6 @@ describe("score reader bounds and source parity", () => {
       healthScoreConfigJson: null,
       bpTargets: null,
       bpEnvelope: null,
-      bpEnvelopePriorWeek: null,
-      bpEnvelopePriorTwoWeeks: null,
     });
 
     for (const id of ["GLYCAEMIA", "LIPIDS"] as const) {

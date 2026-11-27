@@ -551,7 +551,7 @@ describe("<HealthScoreCard> pillars", () => {
     expect(atRest(html)).toContain("Lipids, Glycemia: Data could not be");
   });
 
-  it("names safety signposting at rest instead of counting it", () => {
+  it("says a withheld wellbeing in one plain sentence, with the way to support", () => {
     const html = render(
       <HealthScoreCard
         report={scoredReport({
@@ -563,11 +563,20 @@ describe("<HealthScoreCard> pillars", () => {
         })}
       />,
     );
-    // Safety copy is content: it is named in full on the surface, not folded
-    // into a count and not hidden behind the toggle.
+    // Safety copy is content: it is said in full on the surface, not folded
+    // into a count and not hidden behind the toggle, and it links to where
+    // the support the questionnaire result named lives.
     const rest = atRest(html);
     expect(rest).toContain('data-slot="health-score-crisis"');
-    expect(rest).toContain("Wellbeing: Safety guidance is shown instead of");
+    expect(rest).toContain(
+      "Wellbeing is not counted after your last check-in.",
+    );
+    const link = rest.match(
+      /<a[^>]*data-slot="health-score-crisis-link"[^>]*>([^<]*)<\/a>/,
+    );
+    expect(link?.[0]).toContain('href="/mental-wellbeing"');
+    expect(link?.[1]).toBe("Where to find help");
+    expect(rest).not.toContain("Safety guidance is shown");
     // …and therefore it is not also one of the anonymous counted absences.
     expect(rest).toContain("Not scored yet (1)");
     expect(rest).toContain('data-count="1"');

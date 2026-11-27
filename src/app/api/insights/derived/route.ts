@@ -26,10 +26,7 @@ import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { checkAnalyticsReadRateLimit } from "@/lib/rate-limit";
 import { requireModuleEnabled, type ModuleKey } from "@/lib/modules/gate";
-import { prisma } from "@/lib/db";
 import {
-  computeDerivedMetric,
-  loadBaselineProfile,
   DERIVED_METRIC_IDS,
   type DerivedMetricId,
 } from "@/lib/insights/derived";
@@ -37,7 +34,7 @@ import { DERIVED_MAX_WINDOW_DAYS } from "@/lib/insights/derived/types";
 import { resolveDerivedAssessment } from "@/lib/insights/derived/derived-assessment-ai";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { aiCapabilityToServe } from "@/lib/ai/capabilities/gate";
-import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
+import { readDerivedSingle } from "@/lib/insights/derived/single-read";
 
 export const dynamic = "force-dynamic";
 
@@ -132,23 +129,12 @@ export const GET = apiHandler(async (request: NextRequest) => {
   // relies on covers it unchanged (measurement writes evict or mark the
   // `${userId}|` prefix stale, mood writes mark it stale). The module gate
   // above and the AI assessment below stay per request.
-  const type = parsed.data.type ?? null;
-  const windowDays = parsed.data.windowDays;
-  const derived = await cachedSwr(
-    caches.insightsDerived as ServerCache<
-      Awaited<ReturnType<typeof computeDerivedMetric>>
-    >,
-    `${user.id}|single|${metric}|${type ?? ""}|${windowDays ?? ""}`,
-    async () =>
-      computeDerivedMetric({
-        metric,
-        userId: user.id,
-        profile: await loadBaselineProfile(prisma, user.id),
-        type,
-        windowDays,
-      }),
-    annotate,
-  );
+  const derived = await readDerivedSingle({
+    userId: user.id,
+    metric,
+    type: parsed.data.type ?? null,
+    windowDays: parsed.data.windowDays,
+  });
 
   annotate({
     action: { name: "insights.derived" },

@@ -79834,7 +79834,7 @@ components:
                     - id: WELLBEING
                       label: Wellbeing
                       value: null
-                      reason: Safety guidance is shown instead of a score
+                      reason: Not counted after your last check-in
                       reasonCode: crisis_signposting
                       weight: null
                 tension:
@@ -80273,8 +80273,8 @@ components:
           description: The pillar's own 0–100 score when it counted toward the health score; null when it did not.
         reason:
           description: Why the pillar did not count, worded as the web panel words it ("Not tracked", "Not enough recent eligible
-            data"). Null when it counted. A WELLBEING pillar held back for safety signposting says so ("Safety guidance
-            is shown instead of a score"); the guidance itself is on the Insights health-score card.
+            data"). Null when it counted. A WELLBEING pillar held back for safety signposting says so in a neutral label
+            ("Not counted after your last check-in"); the support it points to is on the Mental wellbeing page.
           type:
             - string
             - "null"
@@ -81507,7 +81507,9 @@ components:
               - result
             additionalProperties: false
         delta:
-          description: Move against the previous window, or null when none forms.
+          description: "Today's score minus the stored score of the comparison day (the newest stored day in the week that ends
+            seven days back): the move between two points of the score history. Null whenever `deltaReason` explains why
+            there is none."
           type:
             - number
             - "null"
@@ -81966,10 +81968,10 @@ components:
                   description: Score points a weekly move must clear before it is narrated.
                 deltaEligible:
                   type: boolean
-                  description: "False for slow markers: they set the level but never contribute to the weekly delta."
+                  description: "False for slow markers: they set the level and stay out of the score's noise floor."
                 deltaIdentity:
                   type: string
-                  description: Input/scoring-mode identity. Two windows only form a delta when their identities match.
+                  description: Input/scoring-mode identity. Part of the stored day's fingerprint.
               required:
                 - score
                 - observed

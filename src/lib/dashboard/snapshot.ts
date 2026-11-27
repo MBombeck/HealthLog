@@ -659,12 +659,9 @@ async function buildExtras(
   let bpInTargetPctPriorYear: number | null = null;
   let bpInTargetCount90: number | null = null;
   let bpInTargetSpanDays90: number | null = null;
-  // v1.17 — hold the current + prior-week BP envelopes so the shared
-  // Health-Score input builder grades the pillar off the identical shape the
-  // analytics route uses.
+  // v1.17 — hold the BP envelope so the shared Health-Score input builder
+  // grades the pillar off the identical shape the analytics route uses.
   let bpEnvelope: BpInTargetEnvelope | null = null;
-  let bpEnvelopePriorWeek: BpInTargetEnvelope | null = null;
-  let bpEnvelopePriorTwoWeeks: BpInTargetEnvelope | null = null;
 
   const bpTargets = resolveEffectiveBpTargets(
     { ...user, timezone: userTz },
@@ -672,66 +669,26 @@ async function buildExtras(
   );
   const clinicalBpTargets = getBpTargets(user.dateOfBirth, userTz, now);
   if (bpTargets) {
-    // v1.17 — two runs (current + prior-week), identical to the
-    // analytics route, so the dashboard ring's week-over-week delta reflects
-    // BP movement instead of zeroing it out. Both reuse the already-probed
-    // coverage map and share the rollup/live branch decision.
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-    const [windows, windowsPriorWeek, windowsPriorTwoWeeks] = await Promise.all(
-      [
-        computeBpInTargetFastPath({
-          userId: user.id,
-          targets: bpTargets,
-          now,
-          coverage,
-          userTz,
-        }),
-        computeBpInTargetFastPath({
-          userId: user.id,
-          targets: bpTargets,
-          now: sevenDaysAgo,
-          coverage,
-          userTz,
-        }),
-        computeBpInTargetFastPath({
-          userId: user.id,
-          targets: bpTargets,
-          now: fourteenDaysAgo,
-          coverage,
-          userTz,
-        }),
-      ],
-    );
+    // Identical to the analytics route, on the already-probed coverage map.
+    // The week-over-week delta reads the stored days since 1.50, so no
+    // prior-week run is needed here.
+    const windows = await computeBpInTargetFastPath({
+      userId: user.id,
+      targets: bpTargets,
+      now,
+      coverage,
+      userTz,
+    });
     if (bpTargetsEqual(bpTargets, clinicalBpTargets)) {
       bpEnvelope = windows;
-      bpEnvelopePriorWeek = windowsPriorWeek;
-      bpEnvelopePriorTwoWeeks = windowsPriorTwoWeeks;
     } else if (clinicalBpTargets) {
-      [bpEnvelope, bpEnvelopePriorWeek, bpEnvelopePriorTwoWeeks] =
-        await Promise.all([
-          computeBpInTargetFastPath({
-            userId: user.id,
-            targets: clinicalBpTargets,
-            now,
-            coverage,
-            userTz,
-          }),
-          computeBpInTargetFastPath({
-            userId: user.id,
-            targets: clinicalBpTargets,
-            now: sevenDaysAgo,
-            coverage,
-            userTz,
-          }),
-          computeBpInTargetFastPath({
-            userId: user.id,
-            targets: clinicalBpTargets,
-            now: fourteenDaysAgo,
-            coverage,
-            userTz,
-          }),
-        ]);
+      bpEnvelope = await computeBpInTargetFastPath({
+        userId: user.id,
+        targets: clinicalBpTargets,
+        now,
+        coverage,
+        userTz,
+      });
     }
     // v1.17 — the headline standardises on the trailing-90-day
     // window (labelled "· 90 T" in the tile), identical to the analytics
@@ -763,14 +720,12 @@ async function buildExtras(
   // v1.17 — the BP-pillar inputs come from the ONE shared
   // `buildHealthScoreBpInputs` builder the analytics route also uses, so the
   // ring and the insights card grade the pillar off identical inputs (same
-  // 90-day window via W1d, same all-time fallback, same graded score, same
-  // prior-week delta values). Closes the dashboard-vs-insights divergence.
+  // 90-day window via W1d, same all-time fallback, same graded score).
+  // Closes the dashboard-vs-insights divergence.
   const scoreResult = await time("healthScore", () =>
     computeSnapshotScoreReport(prisma, user, userTz, now, modules, {
       targets: clinicalBpTargets,
       envelope: bpEnvelope,
-      priorWeek: bpEnvelopePriorWeek,
-      priorTwoWeeks: bpEnvelopePriorTwoWeeks,
     }),
   );
   const healthScore = await snapshotHealthScore(
