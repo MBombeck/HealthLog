@@ -24,7 +24,7 @@ const WORDS_THE_BAND = [
   // The evidence handed to the arrival line's model.
   /Health score: \$\{/g,
   // The Insights tile's ring drawn in the composite's number band.
-  /band=\{ok \? composite\.value\.numberBand/g,
+  /band(?:=\{|: )ok \? composite\.value\.numberBand/g,
   // The Today ring drawn from the digest's score.
   /score\.numberBand \?\? [\w.]*score\.band\) as ScoreBand/g,
 ];

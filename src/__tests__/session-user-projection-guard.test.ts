@@ -103,7 +103,8 @@ describe("SESSION_USER_SELECT leaves out bytes and secrets", () => {
   );
   const model = schema.match(/^model User \{([\s\S]*?)^\}/m)?.[1] ?? "";
   const columns = [
-    ...model.matchAll(/^\s+(\w+)\s+([A-Z]\w*)(\??)(?:\s|$)/gm),
+    // `Type`, `Type?` or `Type[]`: a list column is a column too.
+    ...model.matchAll(/^\s+(\w+)\s+([A-Z]\w*)(\?|\[\])?(?:\s|$)/gm),
   ].map(([, name, type]) => ({ name, type }));
   const selected = Object.keys(SESSION_USER_SELECT);
 

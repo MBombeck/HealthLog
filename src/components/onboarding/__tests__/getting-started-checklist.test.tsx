@@ -36,6 +36,15 @@ vi.mock("@/hooks/use-auth", () => ({
     user !== null && user.accountSeed !== true,
 }));
 
+// Hidden rows and the hidden card come from the account; nothing hidden here.
+vi.mock("@/hooks/use-dismissed-hints", () => ({
+  useDismissedHints: () => ({
+    ids: [],
+    isDismissed: () => false,
+    dismiss: async () => true,
+  }),
+}));
+
 /** `ai.provider` from `/api/auth/me`, read through `useAiProviderState`. */
 let providerState: AiProviderState = {
   configured: true,

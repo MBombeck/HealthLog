@@ -194,6 +194,7 @@ export const USER_COLUMNS_OUTSIDE_SETTINGS = {
   // The person's no to this host's Wallet ready push; the push is this
   // host's, and so is the answer to it.
   walletReadyPushDismissed: "OPERATIONAL",
+  dismissedHints: "OPERATIONAL",
   // The restore stamps its own: paired clients' cursors from before it must
   // be refused, which a carried value would undo.
   syncResetAt: "OPERATIONAL",

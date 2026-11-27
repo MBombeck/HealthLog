@@ -117,9 +117,6 @@ export const SCORE_SLUGS: readonly string[] = HEALTHLOG_SCORE_IDS.map(
 export const SCORE_RING_SITES: Readonly<
   Record<string, { scores: readonly HealthLogScoreId[]; planned?: true }>
 > = {
-  "src/components/insights/derived/score-ring-tile.tsx": {
-    scores: ["HEALTH_SCORE", "SLEEP_SCORE", "READINESS"],
-  },
   "src/components/dashboard/today-scores.tsx": {
     scores: ["HEALTH_SCORE", "SLEEP_SCORE", "READINESS"],
   },
@@ -132,12 +129,13 @@ export const SCORE_RING_SITES: Readonly<
       "STRAIN_SCORE",
     ],
   },
-  "src/components/insights/derived/wellness-scores.tsx": {
+  // The shared score tile: the start page's row and the Insights row draw
+  // every score through it.
+  "src/components/insights/derived/score-ring-tile.tsx": {
     scores: [
       "READINESS",
       "SLEEP_SCORE",
       "HEALTH_SCORE",
-      "RECOVERY_SCORE",
       "STRESS_SCORE",
       "STRAIN_SCORE",
     ],

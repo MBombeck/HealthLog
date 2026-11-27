@@ -186,7 +186,6 @@
     "components/documents/__tests__/document-coach-launch-wiring.test.ts": 1,
     "components/documents/__tests__/documents-delete-confirm-guard.test.ts": 1,
     "components/forms/__tests__/use-seeded-form-dismissal.test.ts": 1,
-    "components/i18n/__tests__/maintainership-banner.test.tsx": 1,
     "components/insights/__tests__/coach-metric-scope-inventory.test.ts": 1,
     "components/insights/__tests__/correlation-card-skeleton.test.ts": 1,
     "components/insights/__tests__/health-score-card-geometry.test.tsx": 1,
