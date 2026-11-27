@@ -1,14 +1,15 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
+import { StickyNote } from "lucide-react";
+
 import { Checkbox } from "@/components/ui/checkbox";
 import { DayLink, DayLinkAt } from "@/components/day/day-link";
 import { formatDurationMinutes } from "@/lib/i18n/duration";
-import { formatDateOrRelative } from "@/lib/i18n/relative-time";
+import { formatRelativeShort } from "@/lib/i18n/relative-time";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { rawDisplayFractionDigits } from "@/lib/measurements/display-transform";
 import { ListGroup, ListItem } from "@/components/ui/list-row";
-import { measurementUnitMetaLead } from "@/lib/measurements/unit-label";
+import { measurementUnitLabel } from "@/lib/measurements/unit-label";
 import { metricName } from "@/lib/measurements/type-label-keys";
 import { ShortName } from "@/components/ui/short-name";
 
@@ -23,12 +24,7 @@ import {
   rowState,
   type MeasurementRowContext,
 } from "./row-actions";
-import {
-  formatMeasurementSource,
-  sourceBadgeClass,
-  truncateComment,
-  type Measurement,
-} from "./list-model";
+import { formatMeasurementSource, type Measurement } from "./list-model";
 
 /**
  * The phone list: one card, one row per reading, day or night (UI standards
@@ -62,6 +58,7 @@ function MeasurementRow({
 }) {
   const {
     canManage,
+    selecting,
     onToggleRow,
     navigateForType,
     display,
@@ -69,7 +66,7 @@ function MeasurementRow({
     startEdit,
   } = rows;
   const { isGrouped, isSelected, isExpanded } = rowState(m, rows);
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const fmt = useFormatters();
   const { rowDisplay, rowIdentityAttrs } = display;
   const Icon = TYPE_ICONS[m.type];
@@ -77,26 +74,26 @@ function MeasurementRow({
   const drilldownId = `drilldown-mobile-${m.dayKey ?? m.id}`;
   const name = metricName(m.type, t);
   const editable = !isGrouped && !isServerComputed(m) && canManage;
-  // The unit is meta: on a phone a long one ("Atemzüge/min") beside the
-  // value pushed the row's controls, so it leads the meta line instead. A
-  // night reads as a duration and has none.
-  const unitLead = isSleep
+  // Selection is a mode (the list's "⋯" › Select), not a box on every row.
+  const selectable = editable && !!selecting;
+  // The unit stands with its value, muted; a night reads as a duration and
+  // has none.
+  const unit = isSleep
     ? null
-    : measurementUnitMetaLead(
-        m.type,
-        isGrouped ? m.unit : rowDisplay(m).unit,
-        t,
-      );
+    : measurementUnitLabel(m.type, isGrouped ? m.unit : rowDisplay(m).unit, t);
   const value = isSleep
     ? formatDurationMinutes(m.value, t)
     : isGrouped
       ? fmt.integer(m.value)
       : fmt.number(rowDisplay(m).value, rawDisplayFractionDigits(m.type));
+  const when = formatRelativeShort(m.measuredAt, t, locale, fmt);
   const select = isGrouped
     ? { onSelect: () => toggleExpand(m.dayKey as string) }
-    : editable
-      ? { onSelect: () => startEdit(m) }
-      : {};
+    : selectable
+      ? { onSelect: () => onToggleRow(m.id) }
+      : editable
+        ? { onSelect: () => startEdit(m) }
+        : {};
   return (
     <ListItem
       data-state={isSelected ? "selected" : undefined}
@@ -114,8 +111,9 @@ function MeasurementRow({
             : t("measurements.expandDay")
           : undefined
       }
+      chevron={!selectable}
       leading={
-        editable ? (
+        selectable ? (
           // The checkbox owns its 44 px hit area through an `after` hit-slop.
           <div className="-ml-2 flex size-11 items-center justify-center">
             <Checkbox
@@ -149,19 +147,13 @@ function MeasurementRow({
           <ShortName short={name.short} full={name.full} />
         </span>
       }
+      // When, then where from: "vor 7 Std., Withings".
       meta={
         <>
-          {unitLead ? (
-            <span data-slot="measurement-row-unit">{unitLead}</span>
-          ) : null}
           {m.dayKey !== undefined ? (
-            <DayLink date={m.dayKey}>
-              {formatDateOrRelative(m.measuredAt, t, fmt)}
-            </DayLink>
+            <DayLink date={m.dayKey}>{when}</DayLink>
           ) : (
-            <DayLinkAt at={m.measuredAt}>
-              {formatDateOrRelative(m.measuredAt, t, fmt)}
-            </DayLinkAt>
+            <DayLinkAt at={m.measuredAt}>{when}</DayLinkAt>
           )}
           {isGrouped && !isSleep ? (
             <>
@@ -172,25 +164,36 @@ function MeasurementRow({
             </>
           ) : null}
           {isSleep ? <SleepNightCaption m={m} /> : null}
-          {m.source !== "MANUAL" && (
-            <Badge
-              variant="outline"
-              data-testid="measurement-source-badge"
-              className={`ml-1.5 h-4 px-1 text-xs ${sourceBadgeClass(m.source)}`.trim()}
-            >
+          {m.source !== "MANUAL" ? (
+            <span data-testid="measurement-source-badge">
+              {", "}
               {formatMeasurementSource(m.source, t)}
-            </Badge>
-          )}
-          {m.notes ? (
-            // User data is never muted; the table renders the same note in
-            // the foreground colour.
-            <span className="text-foreground">
-              , {truncateComment(m.notes)}
             </span>
+          ) : null}
+          {m.notes ? (
+            // The note is the person's own text; the row says one is there,
+            // the edit sheet shows it.
+            <StickyNote
+              className="text-foreground ml-1 inline size-3 align-[-2px]"
+              aria-label={t("common.note")}
+              role="img"
+            />
           ) : null}
         </>
       }
-      trailing={<span data-slot="measurement-row-value">{value}</span>}
+      trailing={
+        <span className="whitespace-nowrap">
+          <span data-slot="measurement-row-value">{value}</span>
+          {unit ? (
+            <span
+              data-slot="measurement-row-unit"
+              className="text-muted-foreground ml-1 text-xs font-normal"
+            >
+              {unit}
+            </span>
+          ) : null}
+        </span>
+      }
     >
       {isGrouped && isExpanded && (
         <div id={drilldownId} className="px-4 pb-3">

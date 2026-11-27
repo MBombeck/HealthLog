@@ -1,6 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { Slot } from "radix-ui";
 
 import { cn } from "@/lib/utils";
@@ -50,17 +50,52 @@ function ListRow({
  * One group of records: a single card, its rows separated by a line. The
  * group's heading (`SectionHeading`, or a plain heading with a count) stands
  * above it, outside the card. UI standards §20.
+ *
+ * An empty group is not a dashed box with a button in it: pass `empty` and
+ * the card holds one row that adds the first record ("+ Add a custom
+ * metric"), the same height as the rows it will hold.
  */
-function ListGroup({ className, ...props }: React.ComponentProps<"ul">) {
+function ListGroup({
+  className,
+  children,
+  empty,
+  ...props
+}: React.ComponentProps<"ul"> & {
+  /** The one row an empty group shows: what adding the first record says. */
+  empty?: { label: string; onSelect?: () => void; href?: string };
+}) {
+  const hasRows = React.Children.toArray(children).length > 0;
+  if (!hasRows && !empty) return null;
   return (
     <ul
       data-slot="list-group"
+      data-empty={hasRows ? undefined : "true"}
       className={cn(
         "bg-card text-card-foreground divide-border/70 divide-y overflow-hidden rounded-xl border shadow-sm",
         className,
       )}
       {...props}
-    />
+    >
+      {hasRows ? (
+        children
+      ) : empty ? (
+        <ListItem
+          data-slot="list-group-add"
+          icon={
+            <span className="bg-primary/10 text-primary flex size-8 items-center justify-center rounded-lg">
+              <Plus className="size-4" aria-hidden />
+            </span>
+          }
+          title={empty.label}
+          {...(empty.href
+            ? { href: empty.href }
+            : empty.onSelect
+              ? { onSelect: empty.onSelect }
+              : {})}
+          chevron={false}
+        />
+      ) : null}
+    </ul>
   );
 }
 
@@ -90,6 +125,7 @@ function ListItem({
   expanded,
   controls,
   actionLabel,
+  chevron = true,
   className,
   children,
   ...props
@@ -109,6 +145,8 @@ function ListItem({
   controls?: string;
   /** Accessible name of the row's control, when the title alone is not. */
   actionLabel?: string;
+  /** Show the chevron of an interactive row; off while a row selects. */
+  chevron?: boolean;
 }) {
   const interactive = href !== undefined || onSelect !== undefined;
   const actionClass =
@@ -174,7 +212,7 @@ function ListItem({
             {trailing}
           </div>
         ) : null}
-        {interactive ? (
+        {interactive && chevron ? (
           <Chevron
             aria-hidden
             className={cn(

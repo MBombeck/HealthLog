@@ -83,6 +83,7 @@ export function FilterBar({
   isFiltered,
   onReset,
   count,
+  action,
   children,
 }: {
   /** True when at least one dimension is active — shows the reset button. */
@@ -91,6 +92,8 @@ export function FilterBar({
   onReset: () => void;
   /** Result count node (already translated/formatted by the caller). */
   count?: React.ReactNode;
+  /** The list's own "⋯" (select, …), at the end of the count's line. */
+  action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const { t } = useTranslations();
@@ -125,16 +128,21 @@ export function FilterBar({
           many results are left, not only when none are. `ml-auto` keeps it
           on the container's right edge when the pills wrap and it drops to
           a line of its own. */}
-      {count != null && (
-        <span
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-          className="text-muted-foreground text-sm tabular-nums sm:ml-auto"
-        >
-          {count}
-        </span>
-      )}
+      {count != null || action ? (
+        <div className="flex items-center justify-between gap-2 sm:ml-auto">
+          {count != null ? (
+            <span
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              className="text-muted-foreground text-sm tabular-nums"
+            >
+              {count}
+            </span>
+          ) : null}
+          {action}
+        </div>
+      ) : null}
     </div>
   );
 }

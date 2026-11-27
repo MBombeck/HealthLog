@@ -509,14 +509,7 @@ export function MeasurementForm({
         </FieldGroup>
       )}
 
-      <FieldGroup
-        htmlFor="measuredAt"
-        label={t("measurements.timestamp")}
-        // v1.17.1 — surface that the timestamp is editable. The picker
-        // already defaults to now and accepts any earlier instant; many
-        // users never notice they can backdate a reading.
-        hint={t("measurements.timestampBackdateHint")}
-      >
+      <FieldGroup htmlFor="measuredAt" label={t("measurements.timestamp")}>
         <DateTimeField
           id="measuredAt"
           value={measuredAt}
