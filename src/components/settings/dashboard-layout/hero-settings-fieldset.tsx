@@ -2,9 +2,8 @@
 
 import { useId } from "react";
 
-import { Label } from "@/components/ui/label";
-import { NativeSelect } from "@/components/ui/native-select";
 import { SwitchRow } from "@/components/ui/switch-row";
+import { OPTIONAL_ASK_KINDS } from "@/lib/daily/ask-intents";
 import { PRIORITY_ITEM_KINDS } from "@/lib/daily/priority-item";
 import type { DashboardLayout } from "@/lib/dashboard-layout";
 import { useTranslations } from "@/lib/i18n/context";
@@ -13,8 +12,12 @@ import { HERO_ITEM_LABEL_KEYS } from "./layout-model";
 import type { DashboardLayoutDraft } from "./use-dashboard-layout-draft";
 
 /**
- * The top card's settings: whether it shows, what leads it (the health score
- * or the reminders rail), and which highlights may appear in it.
+ * The top of the start page: whether the score row shows, and which
+ * categories may ask in the ask card. One switch per optional category
+ * (`OPTIONAL_ASK_KINDS`); a dose past its time and the admin's setup and
+ * consent questions always ask, and the note under the switches says so.
+ * Stored as the layout's `enabledHeroItemKinds`, which the server's ask
+ * policy reads, so the app follows the same switches.
  */
 export function HeroSettingsFieldset({
   layout,
@@ -26,10 +29,8 @@ export function HeroSettingsFieldset({
   const { t } = useTranslations();
   const heroDescriptionId = useId();
   const heroNotificationNoteId = useId();
-  const heroContentSelectId = useId();
   const todayCardSwitchId = useId();
-  const { saveMutation, setTodayCardVisible, setHeroContent, toggleHeroItem } =
-    draft;
+  const { saveMutation, setTodayCardVisible, toggleHeroItem } = draft;
   return (
     <fieldset
       aria-describedby={`${heroDescriptionId} ${heroNotificationNoteId}`}
@@ -42,40 +43,18 @@ export function HeroSettingsFieldset({
       <p id={heroDescriptionId} className="text-muted-foreground text-xs">
         {t("dashboard.morning.heroItemsDescription")}
       </p>
-      {/* The top card itself can be switched off. Shown is the
-          default; the choices below shape the card while it is shown. */}
+      {/* The score row can be switched off; shown is the default. The ask
+          card cannot: it shows only when something asks. */}
       <SwitchRow
-        label={t("dashboard.todayCardVisible")}
+        label={t("dashboard.scoreRowVisible")}
         id={todayCardSwitchId}
         checked={layout.todayCardVisible !== false}
         onCheckedChange={setTodayCardVisible}
         disabled={saveMutation.isPending}
         data-slot="today-card-switch"
       />
-      {/* Hero primary content — a single labelled select beside the
-          highlight toggles. "score" keeps the morning's order (last night,
-          different today, to do today); "reminders" puts "To do today"
-          first. The kinds below decide which rows that card can carry. */}
-      <div className="space-y-1.5">
-        <Label htmlFor={heroContentSelectId} className="text-sm font-medium">
-          {t("dashboard.heroContentTitle")}
-        </Label>
-        <NativeSelect
-          id={heroContentSelectId}
-          value={layout.hero ?? "score"}
-          onChange={(event) => setHeroContent(event.target.value)}
-          disabled={saveMutation.isPending}
-          data-slot="hero-content-select"
-          className="sm:max-w-xs"
-        >
-          <option value="score">{t("dashboard.heroContentScore")}</option>
-          <option value="reminders">
-            {t("dashboard.morning.heroContentReminders")}
-          </option>
-        </NativeSelect>
-      </div>
       <div className="divide-border divide-y">
-        {PRIORITY_ITEM_KINDS.map((kind) => {
+        {OPTIONAL_ASK_KINDS.map((kind) => {
           const inputId = `hero-item-${kind}`;
           const checked = (
             layout.enabledHeroItemKinds ?? PRIORITY_ITEM_KINDS
@@ -97,6 +76,7 @@ export function HeroSettingsFieldset({
         })}
       </div>
       <p id={heroNotificationNoteId} className="text-foreground text-sm">
+        {t("dashboard.asksAlwaysShown")}{" "}
         {t("dashboard.heroItemsNotificationNote")}
       </p>
     </fieldset>

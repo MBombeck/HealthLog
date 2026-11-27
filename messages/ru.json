@@ -853,8 +853,6 @@
     "customizeTitle": "Раскладка сводки",
     "heroItemsDescription": "Выберите, какие типы пунктов могут появляться в «Главное на сегодня».",
     "heroItemsNotificationNote": "Настройки уведомлений управляются отдельно.",
-    "heroContentTitle": "Верхняя карточка показывает",
-    "heroContentScore": "Балл здоровья и сводка дня",
     "heroItems": {
       "coach_checkin": "Проверки коуча",
       "dose_window": "Дозы лекарств",
@@ -936,7 +934,8 @@
       }
     },
     "quickAddSymptom": "Записать симптом",
-    "todayCardVisible": "Показывать верхнюю карточку",
+    "scoreRowVisible": "Показывать баллы",
+    "asksAlwaysShown": "Просроченные дозы и вопросы о сервере показываются всегда.",
     "recoveryKitBanner": {
       "title": "Сохраните набор восстановления",
       "body": "Без копий ключей, которые использует этот сервер, его данные нельзя восстановить после переустановки. Это займёт несколько минут.",
@@ -948,8 +947,7 @@
     "quickAddSeizure": "Записать приступ",
     "morning": {
       "heroItemsTitle": "На сегодня",
-      "heroItemsDescription": "Выберите, какие типы элементов могут появляться в разделе «На сегодня».",
-      "heroContentReminders": "Сначала «На сегодня»"
+      "heroItemsDescription": "Выберите, какие типы элементов могут появляться в разделе «На сегодня»."
     }
   },
   "measurements": {
@@ -1179,6 +1177,10 @@
     "shortTypeTimeInDaylight": "Время на дневном свете",
     "shortTypeAudioExposureEvent": "Событие громкого прослушивания",
     "shortTypeRespiratoryRate": "Частота дыхания",
+    "shortTypeHealthScore": "Балл здоровья",
+    "shortTypeRestingHeartRate": "ЧСС в покое",
+    "shortTypeBloodPressure": "АД",
+    "shortTypeBloodGlucose": "Глюкоза",
     "shortTypeLeanBodyMass": "Тощая масса тела",
     "shortTypeWalkingHeartRateAverage": "ЧСС при ходьбе (сред.)",
     "shortTypeWalkingDoubleSupport": "Двойная опора при ходьбе",
@@ -9732,6 +9734,8 @@
       },
       "question": {
         "title": "Использовать push-ретранслятор HealthLog?",
+        "askTitle": "Включить push-ретранслятор?",
+        "askBody": "Содержимое остаётся зашифрованным.",
         "body": "Уведомления для приложения из App Store со сквозным шифрованием: ретранслятор видит только, когда уведомление отправлено.",
         "yes": "Да",
         "no": "Нет",
@@ -9824,10 +9828,9 @@
       "notice": {
         "title": "Настроить этот сервер",
         "body": "Пять коротких шагов о регистрации, уведомлениях, ИИ и конфиденциальности; любой можно пропустить или изменить позже.",
+        "bodyShort": "Пять коротких шагов о регистрации, уведомлениях, ИИ и конфиденциальности.",
         "open": "Начать настройку",
-        "dismiss": "Не сейчас",
-        "relayBody": "Напоминания на iPhone и Wallet ждут этого ответа на стартовой странице администрирования.",
-        "relayOpen": "Открыть администрирование"
+        "dismiss": "Не сейчас"
       },
       "accounts": {
         "title": "Кто может пользоваться этим сервером",
@@ -13869,6 +13872,7 @@
       },
       "syncIssue": {
         "title": "Синхронизация требует внимания",
+        "askTitle": "Синхронизация прервана",
         "body": "{integration} не синхронизируется. Переподключите, чтобы данные оставались актуальными."
       },
       "sourceQuiet": {
@@ -13920,10 +13924,14 @@
     },
     "action": {
       "logDose": "Принять",
+      "later": "Позже",
+      "answer": "Ответить",
+      "learnMore": "Подробнее",
+      "open": "Открыть",
+      "setUp": "Настроить",
+      "reconnectShort": "Подключить",
       "reconnect": "Переподключить",
       "viewCheckups": "Открыть профилактику",
-      "viewAppointment": "Показать визит",
-      "viewAppointments": "Показать визиты",
       "checkinKeep": "Оставить",
       "checkinAdjust": "Скорректировать",
       "checkinLetGo": "Отпустить",
@@ -13934,14 +13942,8 @@
       "openSource": "Открыть"
     },
     "today": {
-      "scoreLabel": "Балл здоровья",
-      "deltaVsBaseline": "{delta} к вашему базовому уровню",
-      "deltaFlat": "В соответствии с вашим базовым уровнем",
-      "sleepPending": "Сон прошлой ночи ещё не поступил, поэтому сегодняшняя оценка предварительная.",
-      "worthALook": "Стоит взглянуть",
-      "allClear": "Сегодня ничего не требует вашего внимания.",
-      "ringLink": "Открыть детали {metric}",
-      "heading": "Сегодня",
+      "deltaShort": "{delta} к базовому",
+      "deltaFlatShort": "На базовом уровне",
       "steadyWeeksOne": "Стабильно {count} неделю",
       "steadyWeeksFew": "Стабильно {count} недели",
       "steadyWeeksOther": "Стабильно {count} недель",
@@ -14111,6 +14113,7 @@
       "latestNight": "Последняя ночь: {date}",
       "vitalOutside": "{metric}: сегодня в среднем {value}, обычно {range}",
       "contributor": "{name}: {value} из 100",
+      "contributorShort": "{name} {value}/100",
       "readinessLast": "Последнее значение {score}, {date}",
       "source": {
         "recovery": {

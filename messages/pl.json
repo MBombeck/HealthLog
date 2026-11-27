@@ -853,8 +853,6 @@
     "customizeTitle": "Układ panelu",
     "heroItemsDescription": "Wybierz typy elementów, które mogą pojawiać się w dzisiejszych wyróżnieniach.",
     "heroItemsNotificationNote": "Ustawieniami powiadomień zarządzasz osobno.",
-    "heroContentTitle": "Górna karta pokazuje",
-    "heroContentScore": "Wynik zdrowia i podsumowanie dnia",
     "heroItems": {
       "coach_checkin": "Podsumowania z Coachem",
       "dose_window": "Dawki leków",
@@ -936,7 +934,8 @@
       }
     },
     "quickAddSymptom": "Zapisz objaw",
-    "todayCardVisible": "Pokaż górną kartę",
+    "scoreRowVisible": "Pokaż wyniki",
+    "asksAlwaysShown": "Spóźnione dawki i pytania o serwer są widoczne zawsze.",
     "recoveryKitBanner": {
       "title": "Zapisz zestaw odzyskiwania",
       "body": "Bez kopii kluczy, których używa ten serwer, jego danych nie da się odzyskać po ponownej instalacji. To zajmie kilka minut.",
@@ -948,8 +947,7 @@
     "quickAddSeizure": "Zapisz napad",
     "morning": {
       "heroItemsTitle": "Do zrobienia dziś",
-      "heroItemsDescription": "Wybierz, jakie typy elementów mogą się pojawiać w sekcji „Do zrobienia dziś”.",
-      "heroContentReminders": "Najpierw „Do zrobienia dziś”"
+      "heroItemsDescription": "Wybierz, jakie typy elementów mogą się pojawiać w sekcji „Do zrobienia dziś”."
     }
   },
   "measurements": {
@@ -1179,6 +1177,10 @@
     "shortTypeTimeInDaylight": "Czas w świetle dziennym",
     "shortTypeAudioExposureEvent": "Zdarzenie głośnego słuchania",
     "shortTypeRespiratoryRate": "Częstość oddechów",
+    "shortTypeHealthScore": "Wynik zdrowia",
+    "shortTypeRestingHeartRate": "Tętno spocz.",
+    "shortTypeBloodPressure": "Ciśnienie",
+    "shortTypeBloodGlucose": "Glikemia",
     "shortTypeLeanBodyMass": "Szczupła masa ciała",
     "shortTypeWalkingHeartRateAverage": "Tętno przy chodzeniu (śr.)",
     "shortTypeWalkingDoubleSupport": "Podwójna podpora chodu",
@@ -9732,6 +9734,8 @@
       },
       "question": {
         "title": "Korzystać z przekaźnika push HealthLog?",
+        "askTitle": "Użyć przekaźnika push?",
+        "askBody": "Treść pozostaje zaszyfrowana.",
         "body": "Powiadomienia dla aplikacji z App Store, szyfrowane end-to-end: przekaźnik widzi tylko, kiedy jakieś zostaje wysłane.",
         "yes": "Tak",
         "no": "Nie",
@@ -9824,10 +9828,9 @@
       "notice": {
         "title": "Skonfiguruj ten serwer",
         "body": "Pięć krótkich kroków o rejestracji, powiadomieniach, AI i prywatności; każdy możesz pominąć lub zmienić później.",
+        "bodyShort": "Pięć krótkich kroków o rejestracji, powiadomieniach, AI i prywatności.",
         "open": "Rozpocznij konfigurację",
-        "dismiss": "Nie teraz",
-        "relayBody": "Przypomnienia na iPhonie i Wallet czekają na tę odpowiedź, na stronie startowej administracji.",
-        "relayOpen": "Otwórz administrację"
+        "dismiss": "Nie teraz"
       },
       "accounts": {
         "title": "Kto może korzystać z tego serwera",
@@ -13869,6 +13872,7 @@
       },
       "syncIssue": {
         "title": "Synchronizacja wymaga uwagi",
+        "askTitle": "Synchronizacja przerwana",
         "body": "{integration} się nie synchronizuje. Połącz ponownie, aby dane były aktualne."
       },
       "sourceQuiet": {
@@ -13920,10 +13924,14 @@
     },
     "action": {
       "logDose": "Przyjmij",
+      "later": "Później",
+      "answer": "Odpowiedz",
+      "learnMore": "Więcej",
+      "open": "Otwórz",
+      "setUp": "Skonfiguruj",
+      "reconnectShort": "Połącz",
       "reconnect": "Połącz ponownie",
       "viewCheckups": "Otwórz profilaktykę",
-      "viewAppointment": "Zobacz wizytę",
-      "viewAppointments": "Zobacz wizyty",
       "checkinKeep": "Zachowaj",
       "checkinAdjust": "Dostosuj",
       "checkinLetGo": "Odpuść",
@@ -13934,14 +13942,8 @@
       "openSource": "Otwórz"
     },
     "today": {
-      "scoreLabel": "Wynik zdrowia",
-      "deltaVsBaseline": "{delta} wzgl. Twojej wartości bazowej",
-      "deltaFlat": "Zgodnie z Twoją wartością bazową",
-      "sleepPending": "Sen z ostatniej nocy jeszcze nie dotarł, więc dzisiejszy odczyt jest wstępny.",
-      "worthALook": "Warto sprawdzić",
-      "allClear": "Dziś nic nie wymaga Twojej uwagi.",
-      "ringLink": "Otwórz szczegóły: {metric}",
-      "heading": "Dziś",
+      "deltaShort": "{delta} wzgl. bazowej",
+      "deltaFlatShort": "Na poziomie bazowym",
       "steadyWeeksOne": "Stabilnie od {count} tygodnia",
       "steadyWeeksFew": "Stabilnie od {count} tygodni",
       "steadyWeeksOther": "Stabilnie od {count} tygodni",
@@ -14111,6 +14113,7 @@
       "latestNight": "Ostatnia noc: {date}",
       "vitalOutside": "{metric}: dziś średnio {value}, zwykle {range}",
       "contributor": "{name}: {value} na 100",
+      "contributorShort": "{name} {value}/100",
       "readinessLast": "Ostatnio {score} dnia {date}",
       "source": {
         "recovery": {
