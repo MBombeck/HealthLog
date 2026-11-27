@@ -10,9 +10,8 @@ const captured = vi.hoisted(() => ({
 }));
 
 vi.mock("@/components/links/related-records", () => ({
-  RelatedRecordsList: () => null,
-  RelationLinkPickers: (props: { onSaved: () => void }) => {
-    captured.onSaved = props.onSaved;
+  RelatedRecordsList: (props: { edit?: { onSaved: () => void } }) => {
+    captured.onSaved = props.edit?.onSaved;
     return null;
   },
 }));

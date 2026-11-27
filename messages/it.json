@@ -6050,7 +6050,7 @@
     "sections": {
       "account": {
         "title": "Account",
-        "subtitle": "Il tuo profilo, la tua identità e i dati di accesso."
+        "subtitle": "Il tuo profilo, la visualizzazione e la configurazione."
       },
       "integrations": {
         "title": "Integrazioni",
@@ -6859,10 +6859,8 @@
     },
     "profile": "Profilo",
     "language": "Lingua",
-    "languageDescription": "Scegli la lingua di visualizzazione dell’applicazione.",
     "timeFormat": {
       "title": "Formato orario",
-      "description": "Determina se gli orari vengono mostrati nel formato 24 ore o 12 ore (AM/PM).",
       "auto": "Automatico (lingua)",
       "h24": "24 ore",
       "h12": "12 ore (AM/PM)",
@@ -6871,7 +6869,6 @@
     },
     "dateFormat": {
       "title": "Formato data",
-      "description": "Determina l’ordine di giorno, mese e anno nella visualizzazione delle date.",
       "auto": "Automatico (lingua)",
       "dmy": "GG.MM.AAAA",
       "mdy": "MM/GG/AAAA",
@@ -6909,14 +6906,13 @@
     },
     "avatar": {
       "title": "Foto del profilo",
-      "description": "Carica una foto archiviata sul tuo server.",
       "upload": "Carica foto",
       "replace": "Sostituisci foto",
       "remove": "Rimuovi",
       "removeTitle": "Rimuovere la foto del profilo?",
       "removeBody": "L’immagine viene eliminata dal tuo server e al suo posto compaiono le tue iniziali. Per caricarla di nuovo ti servirà il file originale.",
       "removeConfirm": "Rimuovi foto",
-      "hint": "JPEG, PNG o WebP. Fino a 2 MB e 2048×2048 pixel.",
+      "hint": "JPEG, PNG o WebP, fino a 2 MB e 2048×2048 pixel.",
       "uploaded": "Foto del profilo aggiornata",
       "removed": "Foto del profilo rimossa",
       "invalidType": "Tipo di immagine non supportato. Usa JPEG, PNG o WebP.",
@@ -7378,7 +7374,6 @@
     "dashboard": {
       "units": {
         "title": "Unità",
-        "description": "Scegli come vengono mostrate distanze e velocità nei grafici e nei riquadri.",
         "metric": "Metrico",
         "imperial": "Imperiale",
         "saved": "Preferenza unità salvata",
@@ -7386,7 +7381,6 @@
       },
       "glucoseUnit": {
         "title": "Glicemia",
-        "description": "L'unità in cui vengono mostrate le misurazioni della glicemia.",
         "saved": "Unità della glicemia salvata",
         "saveError": "Impossibile salvare l'unità della glicemia."
       }
@@ -13299,9 +13293,6 @@
       "titlePlaceholder": "Aggiungi un titolo",
       "kindLabel": "Tipo",
       "dateLabel": "Data del documento",
-      "conditionsLabel": "Patologie collegate",
-      "linkCondition": "Collega",
-      "noConditions": "Non collegato a una patologia",
       "previewUnavailable": "Nessuna anteprima integrata per questo tipo di file",
       "uploadedMeta": "Aggiunto il {date}, {size}",
       "importedFrom": "Importato da {system}",
@@ -13311,10 +13302,6 @@
       "sourceReportSchedule": "pianificazione dei referti",
       "share": "Condividi",
       "labValuesLink": "Vedi {count, plural, one {# risultato di laboratorio} other {# risultati di laboratorio}}",
-      "visitsLabel": "Appartiene alla visita",
-      "vaccinationsLabel": "Vaccinazioni",
-      "noVisitsToLink": "Nessuna visita registrata finora.",
-      "noVaccinationsToLink": "Nessuna vaccinazione registrata finora.",
       "saved": "Modifiche salvate",
       "saving": "Salvataggio…",
       "previewNotOnDevice": "Questo browser non può mostrare i PDF nella pagina"
@@ -13338,11 +13325,7 @@
       "linkVisit": "Assegna a una visita"
     },
     "episodeCard": {
-      "title": "Documenti",
-      "link": "Collega",
-      "upload": "Carica",
       "viewAll": "Mostra tutti",
-      "emptyLine": "Nessun documento ancora collegato a questa patologia.",
       "loadError": "Impossibile caricare i documenti collegati"
     },
     "linkPicker": {
@@ -14734,8 +14717,6 @@
       "choose": "A quale visita appartiene?"
     },
     "episodeCard": {
-      "title": "Visite collegate",
-      "emptyLine": "Nessuna visita ancora collegata a questa malattia.",
       "add": "Aggiungi una visita"
     },
     "dashboard": {
@@ -14822,7 +14803,7 @@
       }
     },
     "related": {
-      "title": "Correlati",
+      "title": "Collegamenti",
       "kind": {
         "labResult": "Risultato di laboratorio",
         "encounter": "Visita",
@@ -14844,6 +14825,10 @@
       },
       "nothingToOffer": "Ancora niente da collegare.",
       "saveError": "Non è stato possibile salvare il collegamento."
+    },
+    "row": {
+      "add": "Collega",
+      "uploadDocument": "Carica un documento"
     }
   },
   "bodySites": {

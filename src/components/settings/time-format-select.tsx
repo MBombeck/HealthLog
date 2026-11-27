@@ -92,9 +92,6 @@ export function TimeFormatSelect({
         <option value="H24">{t("settings.timeFormat.h24")}</option>
         <option value="H12">{t("settings.timeFormat.h12")}</option>
       </NativeSelect>
-      <p className="text-muted-foreground text-xs">
-        {t("settings.timeFormat.description")}
-      </p>
     </FieldGroup>
   );
 }
