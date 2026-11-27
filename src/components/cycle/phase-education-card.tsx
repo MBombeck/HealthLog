@@ -5,6 +5,7 @@ import { BookOpen } from "lucide-react";
 
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
+import { Disclosure } from "@/components/ui/disclosure";
 import {
   PHASE_WHATS_HAPPENING_KEY,
   PHASE_CONTEXT_KEY,
@@ -130,7 +131,7 @@ export function PhaseEducationCard({
             className="text-foreground h-4 w-4 shrink-0"
             aria-hidden="true"
           />
-          <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+          <span className="text-muted-foreground text-xs font-medium">
             {t("cycle.phaseEducation.title")}
           </span>
         </div>
@@ -160,9 +161,17 @@ export function PhaseEducationCard({
             <p className="text-muted-foreground mt-1.5 text-sm leading-relaxed">
               {t(PHASE_WHATS_HAPPENING_KEY[phase as CyclePhase])}
             </p>
-            <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-              {t(PHASE_CONTEXT_KEY[phase as CyclePhase])}
-            </p>
+            {/* The deeper context waits behind "Learn more": a heading and
+              one sentence on the page (ui-standards §17). */}
+            <Disclosure
+              summary={t("common.learnMore")}
+              className="text-muted-foreground mt-1 text-sm leading-relaxed"
+              data-slot="cycle-phase-education-more"
+            >
+              <p className="pb-1">
+                {t(PHASE_CONTEXT_KEY[phase as CyclePhase])}
+              </p>
+            </Disclosure>
 
             {/* Zone 3 — the user's OWN clustered symptoms for this phase
               ("you often notice this here"). */}
