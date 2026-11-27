@@ -224,6 +224,7 @@ test.describe("measurement rows at 390 px", () => {
 
     try {
       await page.goto("/measurements", { waitUntil: "domcontentloaded" });
+      await expect(page.locator("main")).toBeVisible({ timeout: 30_000 });
       // Written from the page: a pooled API-context socket can drop a POST
       // (see vaccinations.spec.ts).
       const statuses = await page.evaluate(async () => {
