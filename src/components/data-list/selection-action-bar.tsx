@@ -15,7 +15,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useTranslations } from "@/lib/i18n/context";
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import {
+  useRecordCapabilities,
+  holdsOwnerRights,
+} from "@/hooks/use-record-capabilities";
 import type { ShareDomain } from "@/lib/sharing/scope";
 
 /**
@@ -59,8 +62,10 @@ export function SelectionActionBar({
   confirmBody: string;
 }) {
   const { t } = useTranslations();
-  const { canManageDomain, inSharedRecord } = useRecordCapabilities();
-  const allowed = domain === null ? !inSharedRecord : canManageDomain(domain);
+  const caps = useRecordCapabilities();
+  // A bulk action outside every section takes the owner rule (#1615).
+  const allowed =
+    domain === null ? holdsOwnerRights(caps) : caps.canManageDomain(domain);
 
   if (count <= 0 || !allowed) return null;
 

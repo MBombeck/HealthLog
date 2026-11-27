@@ -36,6 +36,7 @@ import { useAuth } from "@/hooks/use-auth";
 import {
   useRecordCapabilities,
   type RecordCapabilities,
+  holdsOwnerRights,
 } from "@/hooks/use-record-capabilities";
 
 /**
@@ -153,14 +154,16 @@ export function admittedCaptureKind(
  * kind the record allows, the gate's default-on contract.
  */
 export function visibleCaptureKinds(
-  caps: Pick<RecordCapabilities, "canWriteDomain" | "inSharedRecord">,
+  caps: Pick<RecordCapabilities, "canWriteDomain" | "inSharedRecord"> &
+    Parameters<typeof holdsOwnerRights>[0],
   kinds: ReadonlyArray<CaptureKind>,
   modules?: SurfaceModuleMap | null,
 ): CaptureKind[] {
   return kinds.filter((kind) => {
     const domain = CAPTURE_KIND_DOMAIN[kind];
+    // A kind outside every section takes the owner rule (#1615).
     const writable =
-      domain === null ? !caps.inSharedRecord : caps.canWriteDomain(domain);
+      domain === null ? holdsOwnerRights(caps) : caps.canWriteDomain(domain);
     return writable && isSurfaceVisible(`capture:${kind}`, modules);
   });
 }

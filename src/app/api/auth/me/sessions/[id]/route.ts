@@ -7,7 +7,7 @@
  * not-owned id so the surface cannot probe foreign session ids.
  */
 import { NextRequest } from "next/server";
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireSelfAuth } from "@/lib/api-handler";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 export const DELETE = apiHandler(
   async (request: NextRequest, ctx: { params: Promise<{ id: string }> }) => {
-    const { user, session } = await requireAuth();
+    const { user, session } = await requireSelfAuth();
     const { id } = await ctx.params;
 
     const removed = await destroySessionById(user.id, id);

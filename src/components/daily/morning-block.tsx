@@ -41,7 +41,10 @@ import { PriorityCard } from "@/components/daily/priority-card";
 import { MorningCard } from "@/components/daily/morning-card";
 import { useCoachCheckinAction } from "@/hooks/use-coach-checkin";
 import { usePriorityItemDismiss } from "@/hooks/use-priority-item-dismiss";
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import {
+  useRecordCapabilities,
+  holdsOwnerRights,
+} from "@/hooks/use-record-capabilities";
 import { apiGet } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
 import { pluralKey } from "@/lib/i18n/plural";
@@ -434,8 +437,10 @@ function MorningToDoCard({
   // Answering a check-in and dismissing an observation write the CALLER's
   // own record, so inside a shared record neither is offered (the Today
   // hero's rule). Logging a dose follows the record's medication grant.
-  const { inSharedRecord, canWriteDomain } = useRecordCapabilities();
-  const ownRecord = !inSharedRecord;
+  const caps = useRecordCapabilities();
+  const { canWriteDomain } = caps;
+  // #1615 — or a managed profile's guardian, who holds the owner's rights.
+  const ownRecord = holdsOwnerRights(caps);
   const sheetAvailable = Boolean(onLogDose) && canWriteDomain("medications");
 
   const handleAction = (intent: string) => {

@@ -10,7 +10,10 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { MedicationDetailSection } from "@/components/medications/medication-detail-section";
 import { RelatedRecordsList } from "@/components/links/related-records";
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import {
+  useRecordCapabilities,
+  holdsOwnerRights,
+} from "@/hooks/use-record-capabilities";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import type { RelatedLink } from "@/lib/links/related";
@@ -26,8 +29,9 @@ export function MedicationRelatedSection({
 }) {
   const { t } = useTranslations();
   const qc = useQueryClient();
-  const { inSharedRecord } = useRecordCapabilities();
-  if ((related ?? []).length === 0 && inSharedRecord) return null;
+  // Empty and nothing to add: only for someone without the owner's rights.
+  const ownerRights = holdsOwnerRights(useRecordCapabilities());
+  if ((related ?? []).length === 0 && !ownerRights) return null;
   return (
     <MedicationDetailSection
       titleId="medication-uebersicht-related-heading"

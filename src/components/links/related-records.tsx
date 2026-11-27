@@ -56,7 +56,10 @@ import { useVaccinations } from "@/components/vaccinations/use-vaccinations";
 import { TileHeader } from "@/components/insights/tile-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import {
+  useRecordCapabilities,
+  holdsOwnerRights,
+} from "@/hooks/use-record-capabilities";
 import { apiDelete, apiGet, apiPost } from "@/lib/api/api-fetch";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
@@ -357,7 +360,7 @@ function useRelatedLinks({ related, omitKinds = [], edit }: RelatedProps) {
   const format = useFormatters();
   const calendarDate = useCalendarDate();
   const { user } = useAuth();
-  const { inSharedRecord } = useRecordCapabilities();
+  const ownerRights = holdsOwnerRights(useRecordCapabilities());
 
   const direct = useMemo(() => {
     const out = new Map<LinkableKind, RelatedLink[]>();
@@ -385,7 +388,7 @@ function useRelatedLinks({ related, omitKinds = [], edit }: RelatedProps) {
   );
 
   const kinds =
-    edit && !inSharedRecord
+    edit && ownerRights
       ? edit.kinds.filter((kind) => {
           const key = KIND_MODULE[kind];
           return (

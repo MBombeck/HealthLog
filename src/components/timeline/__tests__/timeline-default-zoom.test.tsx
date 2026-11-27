@@ -55,7 +55,10 @@ vi.mock("@/hooks/use-auth", () => ({
     user: { id: "u1", timezone: "Europe/Berlin", modules: {} },
   }),
 }));
-vi.mock("@/hooks/use-record-capabilities", () => ({
+vi.mock("@/hooks/use-record-capabilities", async (importOriginal) => ({
+  holdsOwnerRights: (
+    await importOriginal<typeof import("@/hooks/use-record-capabilities")>()
+  ).holdsOwnerRights,
   useRecordCapabilities: () => ({ inSharedRecord: false }),
 }));
 vi.mock("../use-timeline", () => ({

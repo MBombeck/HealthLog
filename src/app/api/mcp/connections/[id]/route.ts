@@ -7,7 +7,7 @@
  * `revokeConnectionForUser`, so a connection id alone cannot revoke another
  * user's connection.
  */
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireSelfAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -18,7 +18,7 @@ type RouteParams = { params: Promise<{ id: string }> };
 
 export const DELETE = apiHandler(
   async (_request: Request, { params }: RouteParams) => {
-    const { user } = await requireAuth();
+    const { user } = await requireSelfAuth();
     annotate({ action: { name: "mcp.connections.revoke" } });
 
     if (!(await isApiGloballyEnabled())) {

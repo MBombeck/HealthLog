@@ -7,7 +7,9 @@ import {
 } from "@/lib/auth/second-factor";
 import { REPROOF_REQUIRED_CODE, StepUpRequiredError } from "@/lib/api-errors";
 
-import { requireAuth } from "./caller";
+import { requireSelfAuth } from "./caller";
+import { requireAuth } from "./record";
+import type { AuthContext } from "./context";
 import { resolveBearerElevation } from "./elevation";
 import {
   canProveFreshFactor,
@@ -75,23 +77,38 @@ export type RecentProofBearerRule =
  */
 export async function requireRecentProof(options: {
   bearer: RecentProofBearerRule;
+  /**
+   * #1615 — `"owner"` resolves the record by the owner rule (`requireAuth()`),
+   * so a managed profile's guardian reaches the route inside the profile. The
+   * proof is still the person at the keyboard's: the guardian's own session,
+   * factors and token are what is checked. Without it the route is the
+   * caller's own account only (`requireSelfAuth()`), which is what every
+   * identity and credential surface wants.
+   */
+  record?: "owner";
 }): Promise<ErasureAuthContext> {
-  const auth = await requireAuth();
+  const resolved: AuthContext & { actor?: SessionUser } =
+    options.record === "owner" ? await requireAuth() : await requireSelfAuth();
+  // The account whose proof counts: the actor, who is the caller either way.
+  const auth: AuthContext = {
+    ...resolved,
+    user: resolved.actor ?? resolved.user,
+  };
   const noop = async () => {};
 
   if (auth.authMethod === "cookie") {
     await assertRecentCookieProof(auth.user, auth.session.id);
-    return { ...auth, commitElevation: noop };
+    return { ...resolved, commitElevation: noop };
   }
 
   const enrolled = await hasSecondFactorEnrolled(auth.user);
   if (options.bearer === "token") {
     annotate({ meta: { recent_proof: "bearer_token" } });
-    return { ...auth, commitElevation: noop };
+    return { ...resolved, commitElevation: noop };
   }
   if (options.bearer === "elevation-if-enrolled" && !enrolled) {
     annotate({ meta: { recent_proof: "bearer_token" } });
-    return { ...auth, commitElevation: noop };
+    return { ...resolved, commitElevation: noop };
   }
   if (options.bearer === "elevation-if-possession") {
     if (
@@ -99,19 +116,19 @@ export async function requireRecentProof(options: {
       !(await canProveFreshFactor(auth.user, "any-possession"))
     ) {
       annotate({ meta: { recent_proof: "bearer_token" } });
-      return { ...auth, commitElevation: noop };
+      return { ...resolved, commitElevation: noop };
     }
     const commitElevation = await resolveBearerElevation(
       { user: auth.user, apiTokenId: auth.session.id },
       { freshFactor: true, proofSource: "any-possession" },
     );
-    return { ...auth, commitElevation };
+    return { ...resolved, commitElevation };
   }
   const commitElevation = await resolveBearerElevation(
     { user: auth.user, apiTokenId: auth.session.id },
     { freshFactor: enrolled, proofSource: "second-factor" },
   );
-  return { ...auth, commitElevation };
+  return { ...resolved, commitElevation };
 }
 
 /**

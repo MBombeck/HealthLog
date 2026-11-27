@@ -13,7 +13,10 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { useAuth } from "@/hooks/use-auth";
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import {
+  useRecordCapabilities,
+  holdsOwnerRights,
+} from "@/hooks/use-record-capabilities";
 import { apiGet } from "@/lib/api/api-fetch";
 import type {
   DocumentPickerSystem,
@@ -23,7 +26,7 @@ import { queryKeys } from "@/lib/query-keys";
 
 export function useDocumentSourcesStatus() {
   const { user } = useAuth();
-  const { canManageDomain, inSharedRecord } = useRecordCapabilities();
+  const caps = useRecordCapabilities();
   // The status read touches only the person's own rows and never the
   // network, so it runs in one's own record whatever the module says: a
   // connection stored before Documents was switched off, or before the
@@ -31,8 +34,8 @@ export function useDocumentSourcesStatus() {
   const ownRecord =
     user !== null &&
     user !== undefined &&
-    !inSharedRecord &&
-    canManageDomain("documents");
+    holdsOwnerRights(caps) &&
+    caps.canManageDomain("documents");
   const eligible = ownRecord && user?.modules?.inboundDocuments === true;
 
   const query = useQuery({

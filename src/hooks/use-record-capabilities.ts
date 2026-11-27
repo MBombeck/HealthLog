@@ -232,6 +232,27 @@ export function holdsGuardianSurfaces(
 }
 
 /**
+ * #1615 — does the person at the keyboard hold the owner's rights over the
+ * record on screen: the record's owner, or the guardian of a managed profile
+ * by a MANAGE grant over the whole record. That is the server's owner rule
+ * (`requireAuth()`), so a control whose route resolves through it asks this
+ * instead of `!inSharedRecord`. Identity and account surfaces (passkeys,
+ * tokens, devices, grants, account deletion) resolve the caller's own account
+ * and still ask `!inSharedRecord`.
+ */
+export function holdsOwnerRights(
+  caps: Pick<RecordCapabilities, "inSharedRecord"> &
+    Partial<Pick<RecordCapabilities, "recordKind" | "level" | "sections">>,
+): boolean {
+  if (!caps.inSharedRecord) return true;
+  return (
+    caps.recordKind === "managed" &&
+    caps.level === "manage" &&
+    caps.sections === null
+  );
+}
+
+/**
  * The record on screen, and what may be done to it.
  *
  * Reads the same resolved block the banner and the switcher read, so the
