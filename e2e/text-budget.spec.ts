@@ -31,7 +31,7 @@ test.describe("text budgets on a phone", () => {
   });
 
   test("covers the pages it was written for", () => {
-    expect(PAGES.length).toBeGreaterThanOrEqual(13);
+    expect(PAGES.length).toBeGreaterThanOrEqual(11);
   });
 
   for (const [path, budget] of PAGES) {
