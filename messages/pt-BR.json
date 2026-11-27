@@ -8489,7 +8489,8 @@
         "brings": "Traz",
         "delivers": "Entrega em",
         "lastFailure": "Última falha",
-        "lastFailureWith": "{when}, {reason}"
+        "lastFailureWith": "{when}, {reason}",
+        "setup": "Configuração"
       },
       "reason": {
         "dataArriving": "Os dados estão chegando",

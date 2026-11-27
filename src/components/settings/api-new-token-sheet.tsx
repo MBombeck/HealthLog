@@ -412,9 +412,11 @@ function NewTokenFields({
           data-slot="apple-health-mirror-opt-in"
           className="border-t pt-3"
         >
-          <MoreInfo label={t("settings.tokenList.mirrorMoreLabel")}>
-            {t("settings.measurementsToken.appleHealth.createHint")}
-          </MoreInfo>
+          <span className="ml-2">
+            <MoreInfo label={t("settings.tokenList.mirrorMoreLabel")}>
+              {t("settings.measurementsToken.appleHealth.createHint")}
+            </MoreInfo>
+          </span>
         </SwitchRow>
       ) : null}
       {error ? (

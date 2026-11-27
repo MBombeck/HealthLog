@@ -8489,7 +8489,8 @@
         "brings": "Aporta",
         "delivers": "Entrega a",
         "lastFailure": "Último fallo",
-        "lastFailureWith": "{when}, {reason}"
+        "lastFailureWith": "{when}, {reason}",
+        "setup": "Configuración"
       },
       "reason": {
         "dataArriving": "Llegan datos",

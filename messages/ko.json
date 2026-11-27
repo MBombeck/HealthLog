@@ -8489,7 +8489,8 @@
         "brings": "가져오는 데이터",
         "delivers": "전달 대상",
         "lastFailure": "마지막 실패",
-        "lastFailureWith": "{when}, {reason}"
+        "lastFailureWith": "{when}, {reason}",
+        "setup": "설정"
       },
       "reason": {
         "dataArriving": "데이터 수신 중",

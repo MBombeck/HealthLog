@@ -59,6 +59,7 @@ import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { useUrlSearch } from "@/lib/url-state";
 import { cn } from "@/lib/utils";
+import { formatHealthInstant } from "@/components/settings/integrations/integration-health-copy";
 
 interface ApiTokenInfo {
   id: string;
@@ -143,7 +144,7 @@ function TokensCard() {
       return t("settings.tokenExpired");
     }
     return tok.lastUsedAt
-      ? fmt.dateTime(tok.lastUsedAt)
+      ? formatHealthInstant(tok.lastUsedAt, t, fmt)
       : t("settings.tokenNeverUsed");
   };
 
@@ -193,7 +194,7 @@ function TokensCard() {
           aria-labelledby={captionId}
           data-testid="settings-api-tokens-table"
         >
-          <table className="w-full table-fixed text-sm">
+          <table className="w-full text-sm md:table-fixed">
             <caption id={captionId} className="sr-only">
               {t("settings.tokenList.caption")}
             </caption>
@@ -207,7 +208,7 @@ function TokensCard() {
                 </th>
                 <th
                   scope="col"
-                  className="w-36 px-2 py-2 text-left font-medium"
+                  className="w-28 px-2 py-2 text-left font-medium md:w-36"
                 >
                   {t("settings.tokenList.scopeColumn")}
                 </th>
@@ -243,7 +244,7 @@ function TokensCard() {
                 >
                   <th
                     scope="row"
-                    className="min-w-0 px-4 py-3 text-left font-medium md:pl-6"
+                    className="w-full max-w-0 px-4 py-3 text-left font-medium md:w-auto md:max-w-none md:pl-6"
                   >
                     <span className="block truncate">{tok.name}</span>
                     {/* On a phone the two date columns fold into one meta line. */}
@@ -251,7 +252,7 @@ function TokensCard() {
                       {lastUsed(tok)}
                     </span>
                   </th>
-                  <td className="px-2 py-3">
+                  <td className="px-2 py-3 whitespace-nowrap">
                     <TagChip>{scopeLabel(tok.permissions, t)}</TagChip>
                   </td>
                   <td className="text-muted-foreground hidden px-2 py-3 md:table-cell">

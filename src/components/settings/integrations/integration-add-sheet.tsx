@@ -5,8 +5,8 @@
  * of rows, one line each. What the operator has not configured (Telegram off,
  * no mail transport, no document-source origins, the environment module off)
  * is not listed at all. A source that first needs the person's own app
- * credentials says so in its line; it stays listed, because entering those
- * credentials is the setup.
+ * credentials stays listed, because entering those credentials is the setup;
+ * its sheet says so.
  */
 import { ChevronRight } from "lucide-react";
 
@@ -101,9 +101,7 @@ export function IntegrationAddSheet({
                             {t(INTEGRATION_NAME_KEY[item.key])}
                           </span>
                           <span className="text-muted-foreground block truncate text-sm">
-                            {item.setupNote === "own_credentials"
-                              ? t("settings.integrationList.ownCredentials")
-                              : t(INTEGRATION_BRINGS_KEY[item.key])}
+                            {t(INTEGRATION_BRINGS_KEY[item.key])}
                           </span>
                         </span>
                         <ChevronRight

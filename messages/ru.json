@@ -8489,7 +8489,8 @@
         "brings": "Передаёт",
         "delivers": "Доставляет",
         "lastFailure": "Последняя ошибка",
-        "lastFailureWith": "{when}, {reason}"
+        "lastFailureWith": "{when}, {reason}",
+        "setup": "Настройка"
       },
       "reason": {
         "dataArriving": "Данные поступают",

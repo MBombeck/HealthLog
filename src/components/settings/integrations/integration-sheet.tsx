@@ -153,15 +153,23 @@ function IntegrationFacts({ item }: { item: IntegrationOverviewItem }) {
       {item.group === "channel" && item.setUp ? (
         <ChannelFailureRow channelKey={item.key as OverviewChannelKey} />
       ) : null}
-      <FactRow
-        label={
-          channel
-            ? t("settings.integrationList.facts.delivers")
-            : t("settings.integrationList.facts.brings")
-        }
-      >
-        {t(INTEGRATION_BRINGS_KEY[item.key])}
-      </FactRow>
+      {item.setupNote === "own_credentials" ? (
+        <FactRow label={t("settings.integrationList.facts.setup")}>
+          {t("settings.integrationList.ownCredentials")}
+        </FactRow>
+      ) : null}
+      {/* Not set up yet, the card's own first line says what it brings. */}
+      {item.setUp ? (
+        <FactRow
+          label={
+            channel
+              ? t("settings.integrationList.facts.delivers")
+              : t("settings.integrationList.facts.brings")
+          }
+        >
+          {t(INTEGRATION_BRINGS_KEY[item.key])}
+        </FactRow>
+      ) : null}
     </dl>
   );
 }
