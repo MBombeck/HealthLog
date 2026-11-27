@@ -7,7 +7,10 @@ import { toast } from "sonner";
 import { useIllnessEpisodes } from "@/components/illness/use-illness";
 import { useAuth } from "@/hooks/use-auth";
 import { useFencedObjectUrl } from "@/hooks/use-fenced-object-url";
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import {
+  useRecordCapabilities,
+  holdsOwnerRights,
+} from "@/hooks/use-record-capabilities";
 import {
   apiDelete,
   ApiError,
@@ -102,14 +105,15 @@ export function useDocumentDetail({
       (fact) => fact.factType === "OBSERVATION" && fact.status === "APPROVED",
     ).length ?? 0;
   const { user } = useAuth();
-  const { canManageDomain, inSharedRecord } = useRecordCapabilities();
+  const caps = useRecordCapabilities();
+  const { canManageDomain } = caps;
   // Filing, deleting, the AI actions and the staged-facts review: the
   // owner's, and a managed profile's guardian's (#1403), whose AI work runs
   // under the profile's own capability.
   const canManageDocuments = canManageDomain("documents");
-  // What stays with an owner who signs in, a guardian's grant included:
-  // share links and the owner's own automatic-reading preference.
-  const ownsVault = canManageDocuments && !inSharedRecord;
+  // Share links and the automatic-reading preference: the owner's, and since
+  // both routes take the owner rule (#1615), a managed profile's guardian's.
+  const ownsVault = canManageDocuments && holdsOwnerRights(caps);
   const labsModuleEnabled = user?.modules?.labs !== false;
 
   const episodes = useIllnessEpisodes(true);

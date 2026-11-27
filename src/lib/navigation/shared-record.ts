@@ -150,8 +150,40 @@ export function isSharedRecordPathOpen(
   pathname: string,
   viewer: RecordViewer,
 ): boolean {
+  if (viewerHoldsOwnerRights(viewer) && !isCallerOnlyPath(pathname)) {
+    return true;
+  }
   return (
     isSharedRecordPathPresentable(pathname, viewer.sections) ||
     isRecordSurfacePagePresentable(pathname, viewer)
+  );
+}
+
+/**
+ * #1615 — the guardian of a managed profile, by a MANAGE grant over the whole
+ * record, holds the owner's rights there: the server's `requireAuth()` serves
+ * them the profile on every route that is not the caller's own. So every page
+ * opens to them, as it would to the profile's owner, except the ones that are
+ * about the person at the keyboard rather than the record.
+ */
+function viewerHoldsOwnerRights(viewer: RecordViewer): boolean {
+  return (
+    viewer.inSharedRecord &&
+    viewer.recordKind === "managed" &&
+    viewer.level === "manage" &&
+    viewer.sections === null
+  );
+}
+
+/**
+ * Pages no grant opens: the instance's administration, and Settings, whose
+ * sections answer for themselves through the record-settings inventory (the
+ * caller's own security, tokens, devices and sharing stay out of a profile).
+ */
+const CALLER_ONLY_PATH_PREFIXES = ["/admin", "/settings"] as const;
+
+function isCallerOnlyPath(pathname: string): boolean {
+  return CALLER_ONLY_PATH_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
 }

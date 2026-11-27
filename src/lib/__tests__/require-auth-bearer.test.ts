@@ -403,7 +403,14 @@ describe("requireAuth — cookie path remains intact", () => {
     const ctx = await requireAuth("medication:ingest");
 
     // The cookie path carries the session payload plus the derived transport.
-    expect(ctx).toEqual({ ...cookieSession, authMethod: "cookie" });
+    expect(ctx).toEqual({
+      ...cookieSession,
+      authMethod: "cookie",
+      // The owner rule (#1615): on the caller's own record the actor is the
+      // caller and no grant is exercised.
+      actor: cookieSession.user,
+      grantId: null,
+    });
     expect(prisma.apiToken.findUnique).not.toHaveBeenCalled();
     expect(hashToken).not.toHaveBeenCalled();
     expect(auditLog).not.toHaveBeenCalled();

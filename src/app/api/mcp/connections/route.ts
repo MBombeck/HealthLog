@@ -7,14 +7,14 @@
  * refreshes, so revoking it terminates the whole refresh chain. `userId` is
  * always narrowed from the session — never a body field.
  */
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireSelfAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { isApiGloballyEnabled } from "@/lib/app-settings";
 import { listConnectionsForUser } from "@/lib/mcp/oauth/connections";
 
 export const GET = apiHandler(async () => {
-  const { user } = await requireAuth();
+  const { user } = await requireSelfAuth();
   annotate({ action: { name: "mcp.connections.list" } });
 
   if (!(await isApiGloballyEnabled())) {

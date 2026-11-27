@@ -19,7 +19,7 @@
  * to validate the header against.
  */
 import { NextRequest } from "next/server";
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireSelfAuth } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
@@ -37,7 +37,7 @@ interface DeviceDTO {
 }
 
 export const GET = apiHandler(async (request: NextRequest) => {
-  const { user } = await requireAuth();
+  const { user } = await requireSelfAuth();
   const headerDeviceId = request.headers.get("x-device-id");
 
   // Anchor `isCurrent` against a server-trusted credential.
