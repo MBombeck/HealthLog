@@ -6052,7 +6052,7 @@
     "sections": {
       "account": {
         "title": "계정",
-        "subtitle": "프로필과 신원, 로그인 정보예요."
+        "subtitle": "프로필과 표시 방식, 설정이에요."
       },
       "integrations": {
         "title": "연동",
@@ -6861,10 +6861,8 @@
     },
     "profile": "프로필",
     "language": "언어",
-    "languageDescription": "앱에 표시할 언어를 선택하세요.",
     "timeFormat": {
       "title": "시간 형식",
-      "description": "시간을 24시간제로 표시할지 12시간제(AM/PM)로 표시할지 정해요.",
       "auto": "자동 (언어 기준)",
       "h24": "24시간제",
       "h12": "12시간제 (AM/PM)",
@@ -6873,7 +6871,6 @@
     },
     "dateFormat": {
       "title": "날짜 형식",
-      "description": "날짜를 표시할 때 일, 월, 연도의 순서를 정해요.",
       "auto": "자동 (언어 기준)",
       "dmy": "DD.MM.YYYY",
       "mdy": "MM/DD/YYYY",
@@ -6911,14 +6908,13 @@
     },
     "avatar": {
       "title": "프로필 사진",
-      "description": "직접 운영하는 서버에 저장되는 사진을 올려요.",
       "upload": "사진 올리기",
       "replace": "사진 바꾸기",
       "remove": "삭제",
       "removeTitle": "프로필 사진을 삭제할까요?",
       "removeBody": "이미지가 서버에서 삭제되고 그 자리에 이니셜이 표시돼요. 다시 올리려면 원본 파일이 필요해요.",
       "removeConfirm": "사진 삭제",
-      "hint": "JPEG, PNG, WebP. 최대 2MB, 2048×2048픽셀.",
+      "hint": "JPEG, PNG, WebP, 최대 2MB, 2048×2048픽셀.",
       "uploaded": "프로필 사진을 업데이트했어요",
       "removed": "프로필 사진을 삭제했어요",
       "invalidType": "지원하지 않는 이미지 형식이에요. JPEG, PNG, WebP를 써 주세요.",
@@ -7380,7 +7376,6 @@
     "dashboard": {
       "units": {
         "title": "단위",
-        "description": "차트와 타일에서 거리와 속도를 어떻게 보여줄지 고르세요.",
         "metric": "미터법",
         "imperial": "야드파운드법",
         "saved": "단위 설정을 저장했어요",
@@ -7388,7 +7383,6 @@
       },
       "glucoseUnit": {
         "title": "혈당",
-        "description": "혈당 수치를 표시할 단위입니다.",
         "saved": "혈당 단위를 저장했습니다",
         "saveError": "혈당 단위를 저장하지 못했습니다."
       }
@@ -13316,9 +13310,6 @@
       "titlePlaceholder": "제목 입력",
       "kindLabel": "종류",
       "dateLabel": "문서 날짜",
-      "conditionsLabel": "연결된 질환",
-      "linkCondition": "연결",
-      "noConditions": "질환에 연결되지 않음",
       "previewUnavailable": "이 파일 형식은 미리보기를 지원하지 않아요",
       "uploadedMeta": "{date} 추가, {size}",
       "importedFrom": "{system}에서 가져옴",
@@ -13328,10 +13319,6 @@
       "sourceReportSchedule": "보고서 일정",
       "share": "공유",
       "labValuesLink": "검사 결과 {count, plural, other {#개}} 보기",
-      "visitsLabel": "연결된 진료",
-      "vaccinationsLabel": "예방접종",
-      "noVisitsToLink": "아직 기록된 진료가 없습니다.",
-      "noVaccinationsToLink": "아직 기록된 예방접종이 없습니다.",
       "saved": "변경 사항이 저장됨",
       "saving": "저장 중…",
       "previewNotOnDevice": "이 브라우저는 페이지 안에서 PDF를 표시할 수 없습니다"
@@ -13355,11 +13342,7 @@
       "linkVisit": "진료에 연결"
     },
     "episodeCard": {
-      "title": "문서",
-      "link": "연결",
-      "upload": "업로드",
       "viewAll": "전체 보기",
-      "emptyLine": "이 질환에 연결된 문서가 아직 없어요.",
       "loadError": "연결된 문서를 불러오지 못했어요"
     },
     "linkPicker": {
@@ -14752,8 +14735,6 @@
       "choose": "어느 진료에 속하나요?"
     },
     "episodeCard": {
-      "title": "관련 진료",
-      "emptyLine": "아직 이 질환에 연결된 진료가 없어요.",
       "add": "진료 추가"
     },
     "dashboard": {
@@ -14840,7 +14821,7 @@
       }
     },
     "related": {
-      "title": "관련 항목",
+      "title": "연결 항목",
       "kind": {
         "labResult": "검사 결과",
         "encounter": "진료",
@@ -14862,6 +14843,10 @@
       },
       "nothingToOffer": "아직 연결할 항목이 없습니다.",
       "saveError": "연결을 저장하지 못했습니다."
+    },
+    "row": {
+      "add": "연결",
+      "uploadDocument": "문서 업로드"
     }
   },
   "bodySites": {

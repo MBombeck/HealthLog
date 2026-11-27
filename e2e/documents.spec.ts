@@ -552,7 +552,7 @@ test.describe("document vault", () => {
 
   test("the condition page links into the vault and back", async ({ page }) => {
     await page.goto(`/illness/${KNIE_EPISODE_ID}`);
-    const card = page.locator('[data-slot="episode-documents-card"]');
+    const card = page.locator('[data-slot="episode-links-card"]');
     await expect(card).toBeVisible();
     await card.getByRole("link", { name: /MRT Knie/ }).click();
     // Lands on the vault, episode-filtered, with the detail sheet open.
