@@ -44,6 +44,7 @@ function makeDigest(over: Partial<DailyDigest> = {}): DailyDigest {
     restMode: null,
     line: "Sleep looked solid last night.",
     worthALook: [],
+    asks: [],
     justIn: null,
     reactionLine: null,
     ...over,

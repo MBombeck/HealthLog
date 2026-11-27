@@ -858,8 +858,6 @@
     "customizeTitle": "Mise en page du tableau",
     "heroItemsDescription": "Choisissez les types d’éléments qui peuvent apparaître dans les temps forts du jour.",
     "heroItemsNotificationNote": "Les réglages des notifications sont gérés séparément.",
-    "heroContentTitle": "La carte du haut affiche",
-    "heroContentScore": "Score de santé et résumé du jour",
     "heroItems": {
       "coach_checkin": "Bilan avec Coach",
       "dose_window": "Doses de médicaments",
@@ -941,7 +939,8 @@
       }
     },
     "quickAddSymptom": "Noter un symptôme",
-    "todayCardVisible": "Afficher la carte du haut",
+    "scoreRowVisible": "Afficher les scores",
+    "asksAlwaysShown": "Les doses en retard et les questions sur le serveur s’affichent toujours.",
     "recoveryKitBanner": {
       "title": "Sauvegardez votre kit de récupération",
       "body": "Sans copies des clés utilisées par ce serveur, ses données ne peuvent pas être récupérées après une réinstallation. Ça prend quelques minutes.",
@@ -953,8 +952,7 @@
     "quickAddSeizure": "Enregistrer une crise",
     "morning": {
       "heroItemsTitle": "À faire aujourd'hui",
-      "heroItemsDescription": "Choisissez les types d’éléments qui peuvent apparaître dans « À faire aujourd'hui ».",
-      "heroContentReminders": "À faire aujourd'hui en premier"
+      "heroItemsDescription": "Choisissez les types d’éléments qui peuvent apparaître dans « À faire aujourd'hui »."
     }
   },
   "measurements": {
@@ -1184,6 +1182,10 @@
     "shortTypeTimeInDaylight": "Temps à la lumière du jour",
     "shortTypeAudioExposureEvent": "Événement d’écoute forte",
     "shortTypeRespiratoryRate": "Fréquence respiratoire",
+    "shortTypeHealthScore": "Score de santé",
+    "shortTypeRestingHeartRate": "FC au repos",
+    "shortTypeBloodPressure": "Tension",
+    "shortTypeBloodGlucose": "Glycémie",
     "shortTypeLeanBodyMass": "Masse maigre",
     "shortTypeWalkingHeartRateAverage": "Fréquence cardiaque à la marche (moy.)",
     "shortTypeWalkingDoubleSupport": "Double appui à la marche",
@@ -3477,7 +3479,6 @@
       },
       "settingsAriaLabel": "Paramètres du coach",
       "settingsTitle": "Paramètres du coach",
-      "settingsDescription": "Configurez comment le coach vous parle.",
       "settingsToneLabel": "Ton",
       "settingsToneWarm": "Chaleureux",
       "settingsToneNeutral": "Neutre",
@@ -3490,10 +3491,6 @@
       "settingsSourcesSummary": "Le coach voit {count, plural, one {# domaine de données} other {# domaines de données}} sur {total} et remonte sur {window}.",
       "settingsSourcesSummaryAll": "Le coach voit {count, plural, one {# domaine de données} other {# domaines de données}} sur {total} et tout l’historique.",
       "settingsSourcesPointerLink": "Ouvrir les paramètres du coach",
-      "settingsExcludeLabel": "Exclure des métriques",
-      "settingsExcludeHint": "Le coach ne verra pas les données des métriques sélectionnées.",
-      "settingsContextLabel": "Envoyer le contexte",
-      "settingsContextHint": "Blocs optionnels sur lesquels le coach peut s’appuyer. Si vous en désactivez un, il sera omis dans chaque réponse.",
       "settingsEvidenceLabel": "Afficher les preuves par défaut",
       "settingsEvidenceHint": "Ouvrez automatiquement l’encadré preuves sous chaque réponse.",
       "settingsDefaultWindowLabel": "Période d’analyse par défaut",
@@ -3754,7 +3751,6 @@
       },
       "reasoning": {
         "label": "Profondeur de réflexion",
-        "hint": "Réfléchir plus en profondeur donne des réponses plus précises, avec un peu plus d'attente.",
         "off": "Désactivé",
         "minimal": "Minimale",
         "low": "Faible",
@@ -3764,7 +3760,8 @@
         "disabled": "L'administrateur a désactivé la réflexion approfondie."
       },
       "memoryLink": "Mémoire ({count})",
-      "newConversation": "Nouvelle conversation"
+      "newConversation": "Nouvelle conversation",
+      "settingsSeesLabel": "Ce que voit le coach"
     },
     "relativeJustNow": "à l’instant",
     "relativeMinutesAgoOne": "il y a {count} minute",
@@ -4816,6 +4813,7 @@
         "aria": "Score {score} sur 100, {band}",
         "ariaProvisional": "Score pas encore disponible : données insuffisantes",
         "provisionalCaption": "Données encore insuffisantes",
+        "notToday": "pas d'aujourd'hui",
         "band": {
           "green": "bon",
           "yellow": "moyen",
@@ -6021,7 +6019,6 @@
           "autoAiRead": "Lire automatiquement les nouveaux documents avec l'IA",
           "honesty": "Activé, chaque document téléversé dans ce profil est envoyé au fournisseur d'IA choisi ci-dessus pour le profil, pour être lu, décrit et indexé pour la recherche, sans action par document, et les documents déjà présents sans résumé sont aussi envoyés (jusqu'à 200 à chaque activation). L'activer enregistre le consentement de ce profil à la lecture de ses documents. Désactivé par défaut.",
           "pageTitle": "Documents et IA",
-          "pageSubtitle": "Si l'IA lit les documents téléversés dans le profil de {name}.",
           "noProvider": "Aucun fournisseur d'IA capable de lire des documents n'est choisi pour le profil de {name}, l'interrupteur reste donc désactivé. Choisissez-en un ci-dessus.",
           "aiOff": "L'IA est désactivée pour le profil de {name}, aucun document ne serait donc lu."
         },
@@ -6054,17 +6051,14 @@
     },
     "sections": {
       "account": {
-        "title": "Compte",
-        "subtitle": "Votre profil, votre identité et vos identifiants."
+        "title": "Compte"
       },
       "integrations": {
         "title": "Intégrations",
-        "subtitle": "Connectez et gérez vos sources de données et appareils.",
         "channelsHeading": "Canaux de diffusion"
       },
       "notifications": {
         "title": "Notifications",
-        "subtitle": "Choisissez les rappels que vous recevez et où ils sont envoyés.",
         "remindersHeading": "Rappels",
         "matrixLink": "Notifications par canal",
         "channelsLink": "Canaux de diffusion",
@@ -6105,7 +6099,6 @@
           "title": "Analyses",
           "description": "Ordre de la vue d'ensemble et des onglets de navigation."
         },
-        "subtitle": "Choisissez l’ordre et l’affichage du tableau de bord, des analyses et des listes de suivi.",
         "medications": {
           "title": "Médicaments",
           "description": "Vue en liste et ordre manuel."
@@ -6127,12 +6120,8 @@
           "description": "Affichage et disposition des mois."
         }
       },
-      "dashboard": {
-        "subtitle": "Organisez les tuiles de votre tableau de bord."
-      },
       "thresholds": {
-        "title": "Objectifs",
-        "subtitle": "Définissez vos plages cibles personnelles par mesure."
+        "title": "Objectifs"
       },
       "sources": {
         "title": "Priorité des sources",
@@ -6211,7 +6200,6 @@
           "other": "Autre",
           "unknown": "Inconnu"
         },
-        "subtitle": "Choisissez la source prioritaire en cas de doublon de mesure.",
         "nutrients": {
           "title": "Apports en nutriments synchronisés",
           "description": "Totaux quotidiens {days, plural, =1 {sur le dernier jour} other {sur les # derniers jours}} : ce qu’Apple Health ou une appli de suivi alimentaire a synchronisé, plus les compléments que vous avez pris.",
@@ -6226,16 +6214,13 @@
         "noneInUse": "Aucune source à classer pour l'instant. Connectez-en une dans Intégrations ou saisissez une valeur."
       },
       "ai": {
-        "title": "Fournisseur d'IA",
-        "subtitle": "Choisissez votre fournisseur d'IA et utilisez votre propre clé."
+        "title": "Fournisseur d'IA"
       },
       "api": {
-        "title": "API et jetons",
-        "subtitle": "Gérez les points d'accès API et les jetons d'accès."
+        "title": "API et jetons"
       },
       "advanced": {
-        "title": "Avancé",
-        "subtitle": "Réinitialisation des données et suppression du compte."
+        "title": "Avancé"
       },
       "export": {
         "title": "Export et import",
@@ -6250,21 +6235,17 @@
         },
         "cards": {
           "measurementsCsv": {
-            "title": "Mesures",
-            "description": "Toutes les mesures en tableur."
+            "title": "Mesures"
           },
           "medicationsCsv": {
             "title": "Médicaments",
-            "description": "Votre médication, au besoin avec chaque prise.",
             "includeIntake": "Inclure l’historique des prises"
           },
           "moodCsv": {
-            "title": "Humeur",
-            "description": "Chaque entrée d’humeur avec ses tags."
+            "title": "Humeur"
           },
           "fullBackup": {
             "title": "Sauvegarde complète",
-            "description": "L'ensemble de votre dossier dans un fichier JSON.",
             "scopeNote": "Les métadonnées des documents et le résumé IA, s'il existe, sont inclus en texte clair ; les fichiers originaux des documents ainsi que les tracés GPS/données d'échantillons des entraînements ne le sont pas.",
             "encryptToggle": "Chiffrer avec une phrase secrète",
             "passphrasePlaceholder": "Phrase secrète (12 caractères min.)",
@@ -6645,22 +6626,16 @@
             "removeTitle": "Retirer ce dossier ?",
             "removeBody": "HealthLog cesse d'y récupérer quoi que ce soit et oublie le mot de passe. Ce qui a déjà été importé reste."
           }
-        },
-        "subtitle": "Exportez vos données, ou importez mesures et entrées d’autres applis et fichiers."
+        }
       },
       "about": {
-        "title": "À propos de cette app",
-        "subtitle": "Version, licence et liens du projet."
+        "title": "À propos de cette app"
       },
       "sharing": {
         "title": "Partage",
         "subtitle": "Partagez un accès en lecture seule à vos données."
       },
-      "insights": {
-        "subtitle": "Organisez les sections d'aperçu et l'ordre des onglets."
-      },
       "medications": {
-        "subtitle": "Gérez l'affichage et l'ordre de votre liste de médicaments.",
         "registry": {
           "title": "Registre des médicaments",
           "description": "Où « Trouver la notice » cherche les notices officielles, quelle que soit la langue de l’app.",
@@ -6670,18 +6645,6 @@
           "saved": "Registre des médicaments enregistré",
           "saveError": "Impossible d’enregistrer le registre des médicaments."
         }
-      },
-      "mood": {
-        "subtitle": "Organisez vos tags d'humeur, groupes et ordre du sélecteur."
-      },
-      "labs": {
-        "subtitle": "Gérez l’affichage, le tri et les biomarqueurs."
-      },
-      "illness": {
-        "subtitle": "Gérez l’affichage et l’ordre des épisodes."
-      },
-      "vorsorge": {
-        "subtitle": "Gérez l’affichage, l’ordre et les rappels individuels."
       },
       "modules": {
         "title": "Modules",
@@ -6693,21 +6656,17 @@
         },
         "manageIn": "Gérer dans {section}",
         "operatorDisabled": "Désactivé sur tout le serveur",
-        "subtitle": "Choisissez les domaines de suivi affichés par HealthLog.",
         "backToHub": "Retour à Modules",
         "openModuleSettings": "Réglages du module",
         "pages": {
           "medications": {
-            "title": "Médicaments",
-            "description": "Sites d’injection que la rotation laisse de côté."
+            "title": "Médicaments"
           },
           "mood": {
-            "title": "Étiquettes d’humeur",
-            "description": "Groupes, vos propres étiquettes et les étiquettes archivées."
+            "title": "Étiquettes d’humeur"
           },
           "labs": {
-            "title": "Résultats de laboratoire",
-            "description": "Biomarqueurs et reconnaissance de texte sur l’appareil pour les comptes rendus d’analyses."
+            "title": "Résultats de laboratoire"
           },
           "arrangementTitle": "Ordre et affichage",
           "arrangementDescription": "Le tri et l’affichage de cette liste se règlent dans Disposition.",
@@ -6717,32 +6676,25 @@
         }
       },
       "health-record": {
-        "title": "Rapport médical et export",
-        "subtitle": "Créez le rapport médical et exportez un dossier de santé complet, prêt pour le médecin."
+        "title": "Rapport médical et export"
       },
       "coach": {
-        "title": "Coach",
-        "subtitle": "Réglez le Coach, ses suggestions proactives et sa mémoire."
+        "title": "Coach"
       },
       "security": {
-        "title": "Sécurité",
-        "subtitle": "Authentification à deux facteurs, codes de récupération et clés d'accès."
+        "title": "Sécurité"
       },
       "privacy": {
-        "title": "Données et confidentialité",
-        "subtitle": "Vos données, leur conservation, le chiffrement et la sécurité du compte au même endroit."
+        "title": "Données et confidentialité"
       },
       "mcp": {
-        "title": "Connecteur MCP",
-        "subtitle": "Connectez un assistant externe à vos propres données de santé."
+        "title": "Connecteur MCP"
       },
       "anamnesis": {
-        "title": "Antécédents médicaux",
-        "subtitle": "Vos antécédents, votre mode de vie, vos informations d’urgence et ce que l’IA peut lire."
+        "title": "Antécédents médicaux"
       },
       "environment": {
         "title": "Localisation et météo",
-        "subtitle": "Contexte météo, lumière du jour et lieu.",
         "disabledHint": "Activez le module Environnement pour définir un lieu de référence et intégrer la météo et la durée du jour quotidiennes.",
         "searchPlaceholder": "Rechercher une ville",
         "search": "Rechercher",
@@ -6804,7 +6756,6 @@
       },
       "score": {
         "title": "Score de santé",
-        "subtitle": "Choisissez les piliers qui comptent dans votre score.",
         "card": {
           "title": "Ce qui compte dans votre score",
           "description": "Chaque pilier que vous enregistrez compte, sauf indication contraire ici."
@@ -6855,16 +6806,13 @@
         }
       },
       "access": {
-        "title": "Accès partagé",
-        "subtitle": "Qui peut ouvrir votre dossier de santé, et lequel vous pouvez ouvrir."
+        "title": "Accès partagé"
       }
     },
     "profile": "Profil",
     "language": "Langue",
-    "languageDescription": "Choisissez la langue d’affichage de l’application.",
     "timeFormat": {
       "title": "Format horaire",
-      "description": "Détermine si les heures s’affichent au format 24 heures ou 12 heures (AM/PM).",
       "auto": "Automatique (langue)",
       "h24": "24 heures",
       "h12": "12 heures (AM/PM)",
@@ -6873,7 +6821,6 @@
     },
     "dateFormat": {
       "title": "Format de date",
-      "description": "Détermine l’ordre du jour, du mois et de l’année lors de l’affichage des dates.",
       "auto": "Automatique (langue)",
       "dmy": "JJ.MM.AAAA",
       "mdy": "MM/JJ/AAAA",
@@ -6911,14 +6858,13 @@
     },
     "avatar": {
       "title": "Photo de profil",
-      "description": "Téléversez une photo stockée sur votre propre serveur.",
       "upload": "Téléverser une photo",
       "replace": "Remplacer la photo",
       "remove": "Supprimer",
       "removeTitle": "Supprimer la photo de profil ?",
       "removeBody": "L’image est supprimée de votre serveur et vos initiales prennent sa place. Il vous faudra le fichier d’origine pour la téléverser à nouveau.",
       "removeConfirm": "Supprimer la photo",
-      "hint": "JPEG, PNG ou WebP. Jusqu'à 2 Mo et 2048×2048 pixels.",
+      "hint": "JPEG, PNG ou WebP, jusqu'à 2 Mo et 2048×2048 pixels.",
       "uploaded": "Photo de profil mise à jour",
       "removed": "Photo de profil supprimée",
       "invalidType": "Type d'image non pris en charge. Utilisez JPEG, PNG ou WebP.",
@@ -6970,7 +6916,6 @@
     "multiDevice": "Multi-appareils",
     "backedUp": "sauvegardée",
     "telegram": "Telegram Notifications",
-    "telegramDescription": "Get reminders for missed medication intake via Telegram.",
     "botToken": "Jeton du bot",
     "chatId": "ID du chat",
     "enableNotifications": "Activer les notifications",
@@ -6978,14 +6923,12 @@
     "telegramStep2": "Envoyez /start à votre bot pour activer le chat.",
     "telegramStep3": "Trouvez votre ID de chat via @userinfobot ou l’API du bot.",
     "ntfy": "ntfy",
-    "ntfyDescription": "Notifications par ntfy.",
     "ntfyEnable": "Activer ntfy",
     "ntfyServer": "URL du serveur",
     "ntfyTopic": "Topic",
     "ntfyAuthToken": "Jeton d’authentification (facultatif)",
     "ntfyAuthTokenHint": "Nécessaire uniquement pour les sujets privés avec contrôle d’accès.",
     "webhook": "Webhook",
-    "webhookDescription": "Notifications vers toute URL qui accepte du JSON.",
     "webhookEnable": "Activer le webhook",
     "webhookUrl": "URL du webhook",
     "webhookUrlHint": "L’URL complète pour le POST.",
@@ -6997,11 +6940,9 @@
     "webhookFormatGotify": "Gotify",
     "webhookFormatGotifyHint": "Utilisez l’URL se terminant par /message et placez le jeton de l’application dans l’en-tête X-Gotify-Key.",
     "email": "E-mail",
-    "emailDescription": "Recevoir les alertes et les rappels par e-mail.",
     "emailEnable": "Activer l’e-mail",
     "emailRecipient": "Adresse du destinataire",
     "webPush": "Push navigateur",
-    "webPushDescription": "Notifications dans ce navigateur.",
     "webPushNotSupported": "Votre navigateur ne prend pas en charge les notifications push.",
     "webPushInstallFirst": "Sur iPhone et iPad, les notifications push ne fonctionnent que dans l’app installée. Dans Safari, touchez Partager puis « Sur l’écran d’accueil », ouvrez HealthLog depuis l’écran d’accueil et touchez ici « Activer le push ».",
     "webPushDenied": "Les notifications push sont bloquées. Autorisez-les dans les réglages de votre navigateur.",
@@ -7026,9 +6967,6 @@
     "regenerateRateLimit": "Veuillez patienter : vous avez atteint la limite horaire d’analyses.",
     "lastGeneratedAt": "Dernière génération",
     "ai": {
-      "chatgptConnectedBadge": "ChatGPT connecté",
-      "adminAiActiveBadge": "Fournisseur administrateur actif",
-      "connectionExpiredBadge": "Connexion expirée",
       "connectedSince": "Connecté depuis {when}.",
       "deviceCodeHeading": "Terminez la connexion sur chatgpt.com",
       "deviceCodeStep1": "Ouvrez ce lien sur n’importe quel appareil :",
@@ -7148,9 +7086,6 @@
         "apiKeyPlaceholder": "sk-…"
       },
       "codex": {
-        "statusConnected": "Connecté",
-        "statusDisconnected": "Non connecté",
-        "statusExpired": "Connexion expirée",
         "connectButton": "Se connecter avec ChatGPT",
         "disconnectButton": "Déconnecter",
         "disconnectTitle": "Déconnecter ChatGPT ?",
@@ -7177,7 +7112,6 @@
       "testReasonUnreachable": "Impossible de joindre le fournisseur d’IA.",
       "coachMemory": {
         "title": "Ce dont le Coach se souvient",
-        "description": "Les informations durables que vous avez confiées au Coach.",
         "empty": "Le Coach n'a encore enregistré aucune information. Au fil de vos échanges, il retient les détails durables que vous partagez (vos objectifs, vos affections, vos préférences) et vous pouvez les effacer ici à tout moment.",
         "learnedPrefix": "appris {when}",
         "categoryPreference": "Préférences",
@@ -7307,13 +7241,11 @@
       },
       "coachConversations": {
         "title": "Conversations avec le Coach",
-        "description": "Ouvrez une conversation pour la lire, ou supprimez-la.",
         "more": "Afficher plus",
         "openAll": "Ouvrir toutes les conversations"
       },
       "coachPlans": {
         "title": "Plans du Coach",
-        "description": "Les plans convenus avec le Coach, à lire ou à supprimer.",
         "open": "Ouvrir les plans"
       },
       "reasoning": {
@@ -7329,7 +7261,6 @@
         "coachNote": "Dans le Coach, c'est la profondeur de réflexion des réglages du Coach qui s'applique.",
         "backgroundNote": "Les tâches de fond comme le briefing quotidien n'utilisent pas ce réglage : elles réfléchissent au plus en Moyen, moins si l'opérateur fixe une limite plus basse, et pas du tout au niveau Économe."
       },
-      "providerCardDescription": "Configurez la clé et le modèle de chaque fournisseur ; l’ordre ci-dessous décide lequel HealthLog sollicite en premier.",
       "runtimeTitle": "Vérifier et actualiser",
       "usage": {
         "title": "Usage de l'IA",
@@ -7380,7 +7311,6 @@
     "dashboard": {
       "units": {
         "title": "Unités",
-        "description": "Choisissez l'affichage des distances et des vitesses dans les graphiques et les tuiles.",
         "metric": "Métrique",
         "imperial": "Impérial",
         "saved": "Préférence d'unités enregistrée",
@@ -7388,7 +7318,6 @@
       },
       "glucoseUnit": {
         "title": "Glycémie",
-        "description": "L'unité dans laquelle les mesures de glycémie sont affichées.",
         "saved": "Unité de glycémie enregistrée",
         "saveError": "Impossible d'enregistrer l'unité de glycémie."
       }
@@ -7701,11 +7630,6 @@
     },
     "notificationStatus": {
       "title": "Fiabilité des canaux",
-      "description": "État de chaque canal ; « Désactivé automatiquement » signifie arrêté après des erreurs permanentes.",
-      "stateActive": "Actif",
-      "stateAutoDisabled": "Désactivé automatiquement",
-      "stateSendingPaused": "Envoi en pause",
-      "stateManuallyDisabled": "Désactivé",
       "lastSuccess": "Dernier envoi réussi",
       "lastFailure": "Dernier échec",
       "consecutiveFailures": "Échecs consécutifs",
@@ -7903,10 +7827,8 @@
         }
       },
       "state": {
-        "title": "Coach",
-        "description": "Si le bouton et le panneau du Coach s’affichent. L’interrupteur se trouve dans Modules."
+        "title": "Coach"
       },
-      "nudgesMoved": "Se règlent avec vos autres rappels dans Notifications.",
       "openNudges": "Ouvrir dans Notifications"
     },
     "integrationRedirectGuide": {
@@ -7944,8 +7866,6 @@
         "export": "Export de données",
         "other": "Événement de sécurité"
       },
-      "active": "Actif",
-      "inactive": "Inactif",
       "stepUpRequired": "Pour votre sécurité, reconnectez-vous pour modifier votre second facteur.",
       "useRecoveryCode": "Utiliser plutôt un code de récupération",
       "useAuthenticator": "Utiliser plutôt votre application d'authentification",
@@ -8135,7 +8055,6 @@
       "connectionsTitle": "Assistants connectés",
       "connectionsDescription": "Assistants que vous avez autorisés via la connexion.",
       "noConnections": "Aucun assistant connecté.",
-      "connectionConnected": "Connecté",
       "connectionLastUsed": "Dernière utilisation",
       "connectionNeverUsed": "Jamais utilisé",
       "connectionRevoke": "Déconnecter",
@@ -8287,12 +8206,6 @@
       "navCountsDescription": "Affiche, à côté des entrées de la barre latérale et du menu Plus, le nombre de prises et de bilans à faire."
     },
     "integrationCard": {
-      "state": {
-        "ok": "Fonctionne",
-        "limited": "Limitée",
-        "degraded": "Retardée",
-        "actionRequired": "Action requise"
-      },
       "reason": {
         "dataArriving": "Les données arrivent.",
         "dataArrivingHistory": "Les données arrivent. L’historique plus ancien se charge en arrière-plan.",
@@ -8325,7 +8238,6 @@
       "moreValuesOne": "{count} autre valeur",
       "moreValuesFew": "{count} autres valeurs",
       "moreValuesOther": "{count} autres valeurs",
-      "notConnected": "Non connecté.",
       "lastData": "Dernières données : {when}",
       "lastDataNone": "Dernières données : aucune pour l’instant",
       "reconnect": "Reconnecter",
@@ -8405,8 +8317,6 @@
     "integrationDisconnectFailed": "Impossible de déconnecter {provider}.",
     "timezoneSaved": "Fuseau horaire enregistré.",
     "moduleState": {
-      "on": "Activé",
-      "off": "Désactivé",
       "change": "Modifier dans Modules"
     },
     "timezoneUseDevice": "Utiliser le fuseau horaire de cet appareil ({zone})",
@@ -8469,6 +8379,7 @@
     },
     "passkeyRenameFailed": "Impossible de renommer la clé d’accès.",
     "passkeyRemoveFailed": "Impossible de supprimer la clé d’accès.",
+    "apiEndpointsShow": "Afficher les endpoints",
     "integrationList": {
       "channels": "Canaux de diffusion",
       "sources": "Sources de données",
@@ -9799,6 +9710,8 @@
       },
       "question": {
         "title": "Utiliser le relais push HealthLog ?",
+        "askTitle": "Notifications par relais push ?",
+        "askBody": "Le contenu reste chiffré.",
         "body": "Des notifications pour l'app de l'App Store, chiffrées de bout en bout : le relais voit seulement quand l'une d'elles est envoyée.",
         "yes": "Oui",
         "no": "Non",
@@ -9891,10 +9804,9 @@
       "notice": {
         "title": "Configurer ce serveur",
         "body": "Cinq étapes courtes sur les inscriptions, les notifications, l'IA et la confidentialité ; chacune peut être ignorée ou modifiée plus tard.",
+        "bodyShort": "Cinq étapes courtes sur les inscriptions, les notifications, l'IA et la confidentialité.",
         "open": "Commencer la configuration",
-        "dismiss": "Pas maintenant",
-        "relayBody": "Les rappels sur iPhone et Wallet attendent cette réponse, sur la page d’accueil de l’administration.",
-        "relayOpen": "Ouvrir l’administration"
+        "dismiss": "Pas maintenant"
       },
       "accounts": {
         "title": "Qui peut utiliser ce serveur",
@@ -12552,7 +12464,6 @@
       "relatedMetric": "Voir aussi : {metric}",
       "continue": "Continuer à chercher",
       "settingLabel": "Suggérer des questions de suivi",
-      "settingHint": "Affichez jusqu'à trois suggestions sous la dernière réponse du Coach.",
       "changeAssumption": "À la place : {value}"
     },
     "clarify": {
@@ -13393,9 +13304,6 @@
       "titlePlaceholder": "Ajouter un titre",
       "kindLabel": "Type",
       "dateLabel": "Date du document",
-      "conditionsLabel": "Affections liées",
-      "linkCondition": "Lier",
-      "noConditions": "Lié à aucune affection",
       "previewUnavailable": "Pas d'aperçu intégré pour ce type de fichier",
       "uploadedMeta": "Ajouté le {date}, {size}",
       "importedFrom": "Importé depuis {system}",
@@ -13405,10 +13313,6 @@
       "sourceReportSchedule": "votre calendrier de rapports",
       "share": "Partager",
       "labValuesLink": "Voir {count, plural, one {# résultat de laboratoire} other {# résultats de laboratoire}}",
-      "visitsLabel": "Rattaché au rendez-vous",
-      "vaccinationsLabel": "Vaccinations",
-      "noVisitsToLink": "Aucun rendez-vous enregistré pour l’instant.",
-      "noVaccinationsToLink": "Aucune vaccination enregistrée pour l’instant.",
       "saved": "Modifications enregistrées",
       "saving": "Enregistrement…",
       "previewNotOnDevice": "Ce navigateur ne peut pas afficher les PDF dans la page"
@@ -13432,11 +13336,7 @@
       "linkVisit": "Classer sous un rendez-vous"
     },
     "episodeCard": {
-      "title": "Documents",
-      "link": "Lier",
-      "upload": "Téléverser",
       "viewAll": "Tout afficher",
-      "emptyLine": "Aucun document n'est encore lié à cette affection.",
       "loadError": "Impossible de charger les documents liés"
     },
     "linkPicker": {
@@ -13936,6 +13836,7 @@
       },
       "syncIssue": {
         "title": "La synchronisation demande votre attention",
+        "askTitle": "Synchro interrompue",
         "body": "{integration} ne se synchronise pas. Reconnectez-le pour garder vos données à jour."
       },
       "sourceQuiet": {
@@ -13987,10 +13888,14 @@
     },
     "action": {
       "logDose": "Prendre",
+      "later": "Plus tard",
+      "answer": "Répondre",
+      "learnMore": "Plus",
+      "open": "Ouvrir",
+      "setUp": "Configurer",
+      "reconnectShort": "Reconnecter",
       "reconnect": "Reconnecter",
       "viewCheckups": "Voir les examens",
-      "viewAppointment": "Voir le rendez-vous",
-      "viewAppointments": "Voir les rendez-vous",
       "checkinKeep": "Garder",
       "checkinAdjust": "Ajuster",
       "checkinLetGo": "Laisser tomber",
@@ -14001,14 +13906,8 @@
       "openSource": "Ouvrir"
     },
     "today": {
-      "scoreLabel": "Score de santé",
-      "deltaVsBaseline": "{delta} par rapport à votre référence",
-      "deltaFlat": "Conforme à votre référence",
-      "sleepPending": "Le sommeil de la nuit dernière n'est pas encore arrivé : la lecture du jour est provisoire.",
-      "worthALook": "À regarder",
-      "allClear": "Rien ne requiert votre attention aujourd'hui.",
-      "ringLink": "Ouvrir les détails de {metric}",
-      "heading": "Aujourd'hui",
+      "deltaShort": "{delta} vs référence",
+      "deltaFlatShort": "À la référence",
       "steadyWeeksOne": "Stable depuis {count} semaine",
       "steadyWeeksFew": "Stable depuis {count} semaines",
       "steadyWeeksOther": "Stable depuis {count} semaines",
@@ -14178,6 +14077,7 @@
       "latestNight": "Dernière nuit : {date}",
       "vitalOutside": "{metric} : {value} en moyenne aujourd'hui, habituellement {range}",
       "contributor": "{name} : {value} sur 100",
+      "contributorShort": "{name} {value}/100",
       "readinessLast": "Dernière valeur {score} le {date}",
       "source": {
         "recovery": {
@@ -14829,8 +14729,6 @@
       "choose": "À quel rendez-vous cela se rattache-t-il ?"
     },
     "episodeCard": {
-      "title": "Rendez-vous liés",
-      "emptyLine": "Aucun rendez-vous n'est encore rattaché à cette maladie.",
       "add": "Ajouter un rendez-vous"
     },
     "dashboard": {
@@ -14917,7 +14815,7 @@
       }
     },
     "related": {
-      "title": "Liés",
+      "title": "Liens",
       "kind": {
         "labResult": "Résultat de laboratoire",
         "encounter": "Rendez-vous",
@@ -14939,6 +14837,10 @@
       },
       "nothingToOffer": "Rien à lier pour l’instant.",
       "saveError": "Le lien n’a pas pu être enregistré."
+    },
+    "row": {
+      "add": "Lier",
+      "uploadDocument": "Importer un document"
     }
   },
   "bodySites": {
@@ -14971,7 +14873,6 @@
     "errorReaderBusy": "Le lecteur de documents est occupé par d'autres tâches. Réessayez dans une minute.",
     "jobFailure": {
       "title": "IA en arrière-plan interrompue",
-      "description": "Les tâches interrompues récemment et pourquoi ; une entrée disparaît dès que la tâche réussit à nouveau.",
       "line": "{job} : {reason}",
       "repeated": "Échec {count, plural, one {# fois} other {# fois de suite}}, la dernière le {when}.",
       "lastAt": "Dernière tentative le {when}.",

@@ -858,8 +858,6 @@
     "customizeTitle": "Układ panelu",
     "heroItemsDescription": "Wybierz typy elementów, które mogą pojawiać się w dzisiejszych wyróżnieniach.",
     "heroItemsNotificationNote": "Ustawieniami powiadomień zarządzasz osobno.",
-    "heroContentTitle": "Górna karta pokazuje",
-    "heroContentScore": "Wynik zdrowia i podsumowanie dnia",
     "heroItems": {
       "coach_checkin": "Podsumowania z Coachem",
       "dose_window": "Dawki leków",
@@ -941,7 +939,8 @@
       }
     },
     "quickAddSymptom": "Zapisz objaw",
-    "todayCardVisible": "Pokaż górną kartę",
+    "scoreRowVisible": "Pokaż wyniki",
+    "asksAlwaysShown": "Spóźnione dawki i pytania o serwer są widoczne zawsze.",
     "recoveryKitBanner": {
       "title": "Zapisz zestaw odzyskiwania",
       "body": "Bez kopii kluczy, których używa ten serwer, jego danych nie da się odzyskać po ponownej instalacji. To zajmie kilka minut.",
@@ -953,8 +952,7 @@
     "quickAddSeizure": "Zapisz napad",
     "morning": {
       "heroItemsTitle": "Do zrobienia dziś",
-      "heroItemsDescription": "Wybierz, jakie typy elementów mogą się pojawiać w sekcji „Do zrobienia dziś”.",
-      "heroContentReminders": "Najpierw „Do zrobienia dziś”"
+      "heroItemsDescription": "Wybierz, jakie typy elementów mogą się pojawiać w sekcji „Do zrobienia dziś”."
     }
   },
   "measurements": {
@@ -1184,6 +1182,10 @@
     "shortTypeTimeInDaylight": "Czas w świetle dziennym",
     "shortTypeAudioExposureEvent": "Zdarzenie głośnego słuchania",
     "shortTypeRespiratoryRate": "Częstość oddechów",
+    "shortTypeHealthScore": "Wynik zdrowia",
+    "shortTypeRestingHeartRate": "Tętno spocz.",
+    "shortTypeBloodPressure": "Ciśnienie",
+    "shortTypeBloodGlucose": "Glikemia",
     "shortTypeLeanBodyMass": "Szczupła masa ciała",
     "shortTypeWalkingHeartRateAverage": "Tętno przy chodzeniu (śr.)",
     "shortTypeWalkingDoubleSupport": "Podwójna podpora chodu",
@@ -3477,7 +3479,6 @@
       },
       "settingsAriaLabel": "Ustawienia coacha",
       "settingsTitle": "Ustawienia coacha",
-      "settingsDescription": "Ustaw, jak coach do ciebie mówi.",
       "settingsToneLabel": "Ton",
       "settingsToneWarm": "Ciepły",
       "settingsToneNeutral": "Neutralny",
@@ -3490,10 +3491,6 @@
       "settingsSourcesSummary": "Coach widzi {count} z {total} obszarów danych i patrzy {window} wstecz.",
       "settingsSourcesSummaryAll": "Coach widzi {count} z {total} obszarów danych i całą historię.",
       "settingsSourcesPointerLink": "Otwórz ustawienia coacha",
-      "settingsExcludeLabel": "Wyklucz metryki",
-      "settingsExcludeHint": "Coach nie zobaczy danych wybranych metryk.",
-      "settingsContextLabel": "Wysyłaj kontekst",
-      "settingsContextHint": "Opcjonalne bloki, na których coach może się opierać. Wyłączenie pominie blok w każdej odpowiedzi.",
       "settingsEvidenceLabel": "Pokazuj dowody domyślnie",
       "settingsEvidenceHint": "Automatycznie otwiera pole dowodów pod każdą odpowiedzią.",
       "settingsDefaultWindowLabel": "Domyślny okres analizy",
@@ -3754,7 +3751,6 @@
       },
       "reasoning": {
         "label": "Głębokość namysłu",
-        "hint": "Głębszy namysł oznacza dokładniejsze odpowiedzi i trochę dłuższe czekanie.",
         "off": "Wyłączone",
         "minimal": "Minimalna",
         "low": "Niska",
@@ -3764,7 +3760,8 @@
         "disabled": "Administrator wyłączył głębszy namysł."
       },
       "memoryLink": "Pamięć ({count})",
-      "newConversation": "Nowa rozmowa"
+      "newConversation": "Nowa rozmowa",
+      "settingsSeesLabel": "Co widzi coach"
     },
     "relativeJustNow": "przed chwilą",
     "relativeMinutesAgoOne": "{count} minutę temu",
@@ -4816,6 +4813,7 @@
         "aria": "Wynik {score} na 100, {band}",
         "ariaProvisional": "Wynik jeszcze niedostępny, za mało danych",
         "provisionalCaption": "Wciąż za mało danych",
+        "notToday": "nie z dzisiaj",
         "band": {
           "green": "dobry",
           "yellow": "średni",
@@ -6021,7 +6019,6 @@
           "autoAiRead": "Automatycznie czytaj nowe dokumenty przez AI",
           "honesty": "Po włączeniu każdy dokument przesłany do tego profilu trafia do dostawcy AI wybranego powyżej dla profilu, który go czyta, opisuje i indeksuje do wyszukiwania, bez dotykania każdego dokumentu; wysyłane są też dokumenty już zapisane bez podsumowania (do 200 przy każdym włączeniu). Włączenie zapisuje zgodę tego profilu na czytanie jego dokumentów. Domyślnie wyłączone.",
           "pageTitle": "Dokumenty i AI",
-          "pageSubtitle": "Czy AI czyta dokumenty przesłane do profilu {name}.",
           "noProvider": "Dla profilu {name} nie wybrano dostawcy AI, który mógłby czytać dokumenty, więc przełącznik pozostaje wyłączony. Wybierz go powyżej.",
           "aiOff": "AI jest wyłączona dla profilu {name}, więc żaden dokument nie zostałby przeczytany."
         },
@@ -6054,17 +6051,14 @@
     },
     "sections": {
       "account": {
-        "title": "Konto",
-        "subtitle": "Twój profil, tożsamość i dane logowania."
+        "title": "Konto"
       },
       "integrations": {
         "title": "Integracje",
-        "subtitle": "Połącz i zarządzaj źródłami danych oraz urządzeniami.",
         "channelsHeading": "Kanały dostarczania"
       },
       "notifications": {
         "title": "Powiadomienia",
-        "subtitle": "Wybierz, które przypomnienia otrzymujesz i gdzie są dostarczane.",
         "remindersHeading": "Przypomnienia",
         "matrixLink": "Powiadomienia wg kanału",
         "channelsLink": "Kanały dostarczania",
@@ -6105,7 +6099,6 @@
           "title": "Analizy",
           "description": "Kolejność przeglądu i pigułek nawigacyjnych."
         },
-        "subtitle": "Wybierz kolejność i widok pulpitu, analiz i list śledzenia.",
         "medications": {
           "title": "Leki",
           "description": "Widok listy i ręczna kolejność."
@@ -6127,12 +6120,8 @@
           "description": "Widok i układ miesięcy."
         }
       },
-      "dashboard": {
-        "subtitle": "Rozmieść kafelki na pulpicie."
-      },
       "thresholds": {
-        "title": "Cele",
-        "subtitle": "Ustaw osobiste zakresy docelowe dla każdej metryki."
+        "title": "Cele"
       },
       "sources": {
         "title": "Priorytet źródeł",
@@ -6211,7 +6200,6 @@
           "other": "Inne",
           "unknown": "Nieznane"
         },
-        "subtitle": "Zdecyduj, które źródło wygrywa, gdy dwa podają tę samą metrykę.",
         "nutrients": {
           "title": "Zsynchronizowane spożycie składników",
           "description": "Dzienne sumy z {days, plural, one {ostatniego # dnia} few {ostatnich # dni} many {ostatnich # dni} other {ostatnich # dnia}}: dane zsynchronizowane z Apple Health lub aplikacji dietetycznej oraz przyjęte suplementy.",
@@ -6226,16 +6214,13 @@
         "noneInUse": "Nie ma jeszcze źródeł do uszeregowania. Połącz jedno w Integracjach albo wpisz wartość."
       },
       "ai": {
-        "title": "Dostawca AI",
-        "subtitle": "Wybierz dostawcę AI i użyj własnego klucza."
+        "title": "Dostawca AI"
       },
       "api": {
-        "title": "API i tokeny",
-        "subtitle": "Zarządzaj punktami końcowymi API i tokenami dostępu."
+        "title": "API i tokeny"
       },
       "advanced": {
-        "title": "Zaawansowane",
-        "subtitle": "Reset danych i usunięcie konta."
+        "title": "Zaawansowane"
       },
       "export": {
         "title": "Eksport i import",
@@ -6250,21 +6235,17 @@
         },
         "cards": {
           "measurementsCsv": {
-            "title": "Pomiary",
-            "description": "Wszystkie pomiary jako arkusz."
+            "title": "Pomiary"
           },
           "medicationsCsv": {
             "title": "Leki",
-            "description": "Twoje leki, opcjonalnie z każdym przyjęciem.",
             "includeIntake": "Dołącz historię przyjęć"
           },
           "moodCsv": {
-            "title": "Nastrój",
-            "description": "Każdy wpis nastroju z tagami."
+            "title": "Nastrój"
           },
           "fullBackup": {
             "title": "Pełna kopia zapasowa",
-            "description": "Cała dokumentacja w jednym pliku JSON.",
             "scopeNote": "Metadane dokumentów oraz podsumowanie AI, jeśli istnieje, są uwzględnione jako czysty tekst; oryginalne pliki dokumentów oraz dane tras GPS/próbek treningów nie są uwzględnione.",
             "encryptToggle": "Zaszyfruj hasłem-frazą",
             "passphrasePlaceholder": "Hasło-fraza (min. 12 znaków)",
@@ -6645,22 +6626,16 @@
             "removeTitle": "Usunąć ten folder?",
             "removeBody": "HealthLog przestanie z niego pobierać i zapomni hasło. To, co już zaimportowano, zostaje."
           }
-        },
-        "subtitle": "Eksportuj swoje dane albo importuj pomiary i wpisy z innych aplikacji i plików."
+        }
       },
       "about": {
-        "title": "O tej aplikacji",
-        "subtitle": "Wersja, licencja i linki do projektu."
+        "title": "O tej aplikacji"
       },
       "sharing": {
         "title": "Udostępnianie",
         "subtitle": "Udostępnij dostęp tylko do odczytu do swoich danych."
       },
-      "insights": {
-        "subtitle": "Rozmieść sekcje przeglądu i kolejność chipów."
-      },
       "medications": {
-        "subtitle": "Zarządzaj widokiem i kolejnością listy leków.",
         "registry": {
           "title": "Rejestr leków",
           "description": "Gdzie „Znajdź ulotkę” szuka oficjalnych ulotek, niezależnie od języka aplikacji.",
@@ -6670,18 +6645,6 @@
           "saved": "Zapisano rejestr leków",
           "saveError": "Nie udało się zapisać rejestru leków."
         }
-      },
-      "mood": {
-        "subtitle": "Uporządkuj tagi nastroju, grupy i kolejność wyboru."
-      },
-      "labs": {
-        "subtitle": "Zarządzaj widokiem, sortowaniem i biomarkerami."
-      },
-      "illness": {
-        "subtitle": "Zarządzaj widokiem i kolejnością epizodów."
-      },
-      "vorsorge": {
-        "subtitle": "Zarządzaj widokiem, kolejnością i poszczególnymi przypomnieniami."
       },
       "modules": {
         "title": "Moduły",
@@ -6693,21 +6656,17 @@
         },
         "manageIn": "Zarządzaj w {section}",
         "operatorDisabled": "Wyłączone na całym serwerze",
-        "subtitle": "Wybierz, które obszary śledzenia pokazuje HealthLog w aplikacji.",
         "backToHub": "Wróć do Modułów",
         "openModuleSettings": "Ustawienia modułu",
         "pages": {
           "medications": {
-            "title": "Leki",
-            "description": "Miejsca wstrzyknięć pomijane w rotacji."
+            "title": "Leki"
           },
           "mood": {
-            "title": "Tagi nastroju",
-            "description": "Grupy, własne tagi i tagi zarchiwizowane."
+            "title": "Tagi nastroju"
           },
           "labs": {
-            "title": "Wyniki badań",
-            "description": "Biomarkery i rozpoznawanie tekstu na urządzeniu dla wyników badań."
+            "title": "Wyniki badań"
           },
           "arrangementTitle": "Kolejność i widok",
           "arrangementDescription": "Sortowanie i widok tej listy ustawiasz w Układzie.",
@@ -6717,32 +6676,25 @@
         }
       },
       "health-record": {
-        "title": "Raport dla lekarza i eksport",
-        "subtitle": "Przygotuj raport dla lekarza i wyeksportuj kompletną dokumentację zdrowotną gotową dla lekarza."
+        "title": "Raport dla lekarza i eksport"
       },
       "coach": {
-        "title": "Coach",
-        "subtitle": "Dostosuj Coacha, jego proaktywne podpowiedzi i pamięć."
+        "title": "Coach"
       },
       "security": {
-        "title": "Bezpieczeństwo",
-        "subtitle": "Uwierzytelnianie dwuskładnikowe, kody odzyskiwania i klucze dostępu."
+        "title": "Bezpieczeństwo"
       },
       "privacy": {
-        "title": "Dane i prywatność",
-        "subtitle": "Twoje dane, retencja, szyfrowanie i bezpieczeństwo konta w jednym miejscu."
+        "title": "Dane i prywatność"
       },
       "mcp": {
-        "title": "Łącznik MCP",
-        "subtitle": "Połącz zewnętrznego asystenta z własnymi danymi zdrowotnymi."
+        "title": "Łącznik MCP"
       },
       "anamnesis": {
-        "title": "Wywiad medyczny",
-        "subtitle": "Twoja historia zdrowia, styl życia, dane alarmowe i to, co może czytać AI."
+        "title": "Wywiad medyczny"
       },
       "environment": {
         "title": "Lokalizacja i pogoda",
-        "subtitle": "Kontekst pogody, światła dziennego i lokalizacji.",
         "disabledHint": "Włącz moduł Środowisko, aby ustawić lokalizację domową i pobierać dzienną pogodę oraz długość dnia.",
         "searchPlaceholder": "Szukaj miasta",
         "search": "Szukaj",
@@ -6804,7 +6756,6 @@
       },
       "score": {
         "title": "Wynik zdrowia",
-        "subtitle": "Wybierz, które filary liczą się do Twojego wyniku.",
         "card": {
           "title": "Co liczy się do Twojego wyniku",
           "description": "Każdy filar, który zapisujesz, liczy się, dopóki nie powiesz tutaj inaczej."
@@ -6855,16 +6806,13 @@
         }
       },
       "access": {
-        "title": "Udostępniony dostęp",
-        "subtitle": "Kto może otworzyć twoją kartę zdrowia i czyją kartę możesz otworzyć ty."
+        "title": "Udostępniony dostęp"
       }
     },
     "profile": "Profil",
     "language": "Język",
-    "languageDescription": "Wybierz język wyświetlania aplikacji.",
     "timeFormat": {
       "title": "Format godziny",
-      "description": "Określa, czy godziny są wyświetlane w formacie 24-godzinnym czy 12-godzinnym (AM/PM).",
       "auto": "Automatycznie (język)",
       "h24": "24-godzinny",
       "h12": "12-godzinny (AM/PM)",
@@ -6873,7 +6821,6 @@
     },
     "dateFormat": {
       "title": "Format daty",
-      "description": "Określa kolejność dnia, miesiąca i roku przy wyświetlaniu dat.",
       "auto": "Automatycznie (język)",
       "dmy": "DD.MM.RRRR",
       "mdy": "MM/DD/RRRR",
@@ -6911,14 +6858,13 @@
     },
     "avatar": {
       "title": "Zdjęcie profilowe",
-      "description": "Prześlij zdjęcie przechowywane na własnym serwerze.",
       "upload": "Prześlij zdjęcie",
       "replace": "Zmień zdjęcie",
       "remove": "Usuń",
       "removeTitle": "Usunąć zdjęcie profilowe?",
       "removeBody": "Obraz zostanie usunięty z twojego serwera, a jego miejsce zajmą inicjały. Do ponownego wgrania potrzebny będzie oryginalny plik.",
       "removeConfirm": "Usuń zdjęcie",
-      "hint": "JPEG, PNG lub WebP. Do 2 MB i 2048×2048 pikseli.",
+      "hint": "JPEG, PNG lub WebP, do 2 MB i 2048×2048 pikseli.",
       "uploaded": "Zaktualizowano zdjęcie profilowe",
       "removed": "Usunięto zdjęcie profilowe",
       "invalidType": "Nieobsługiwany typ obrazu. Użyj JPEG, PNG lub WebP.",
@@ -6970,7 +6916,6 @@
     "multiDevice": "Wiele urządzeń",
     "backedUp": "z kopią zapasową",
     "telegram": "Telegram Notifications",
-    "telegramDescription": "Get reminders for missed medication intake via Telegram.",
     "botToken": "Token bota",
     "chatId": "ID czatu",
     "enableNotifications": "Włącz powiadomienia",
@@ -6978,14 +6923,12 @@
     "telegramStep2": "Wyślij /start do swojego bota, aby aktywować czat.",
     "telegramStep3": "Znajdź swoje ID czatu przez @userinfobot lub API bota.",
     "ntfy": "ntfy",
-    "ntfyDescription": "Powiadomienia przez ntfy.",
     "ntfyEnable": "Włącz ntfy",
     "ntfyServer": "Adres URL serwera",
     "ntfyTopic": "Topic",
     "ntfyAuthToken": "Token uwierzytelniania (opcjonalny)",
     "ntfyAuthTokenHint": "Wymagany tylko dla prywatnych tematów z kontrolą dostępu.",
     "webhook": "Webhook",
-    "webhookDescription": "Powiadomienia na dowolny adres URL przyjmujący JSON.",
     "webhookEnable": "Włącz webhook",
     "webhookUrl": "Adres URL webhooka",
     "webhookUrlHint": "Pełny adres URL dla żądania POST.",
@@ -6997,11 +6940,9 @@
     "webhookFormatGotify": "Gotify",
     "webhookFormatGotifyHint": "Użyj adresu URL kończącego się na /message, a token aplikacji wpisz w nagłówku X-Gotify-Key.",
     "email": "E-mail",
-    "emailDescription": "Otrzymuj alerty i przypomnienia e-mailem.",
     "emailEnable": "Włącz e-mail",
     "emailRecipient": "Adres odbiorcy",
     "webPush": "Push przeglądarki",
-    "webPushDescription": "Powiadomienia w tej przeglądarce.",
     "webPushNotSupported": "Twoja przeglądarka nie obsługuje powiadomień push.",
     "webPushInstallFirst": "Na iPhonie i iPadzie powiadomienia push działają tylko w zainstalowanej aplikacji. W Safari stuknij Udostępnij, potem „Do ekranu początkowego”, otwórz HealthLog z ekranu początkowego i stuknij tutaj „Włącz push”.",
     "webPushDenied": "Powiadomienia push są zablokowane. Zezwól na nie w ustawieniach przeglądarki.",
@@ -7026,9 +6967,6 @@
     "regenerateRateLimit": "Poczekaj, osiągnięto godzinny limit analiz.",
     "lastGeneratedAt": "Ostatnio wygenerowano",
     "ai": {
-      "chatgptConnectedBadge": "ChatGPT połączony",
-      "adminAiActiveBadge": "Aktywny dostawca administratora",
-      "connectionExpiredBadge": "Połączenie wygasło",
       "connectedSince": "Połączono od {when}.",
       "deviceCodeHeading": "Dokończ łączenie na chatgpt.com",
       "deviceCodeStep1": "Otwórz ten link na dowolnym urządzeniu:",
@@ -7148,9 +7086,6 @@
         "apiKeyPlaceholder": "sk-…"
       },
       "codex": {
-        "statusConnected": "Połączono",
-        "statusDisconnected": "Niepołączono",
-        "statusExpired": "Połączenie wygasło",
         "connectButton": "Połącz z ChatGPT",
         "disconnectButton": "Rozłącz",
         "disconnectTitle": "Odłączyć ChatGPT?",
@@ -7177,7 +7112,6 @@
       "testReasonUnreachable": "Nie udało się połączyć z dostawcą AI.",
       "coachMemory": {
         "title": "Co Coach pamięta",
-        "description": "Trwałe informacje, które przekazałeś Coachowi.",
         "empty": "Coach nie zapisał jeszcze żadnych informacji. Podczas rozmowy zapamiętuje trwałe szczegóły, którymi się dzielisz (Twoje cele, dolegliwości, preferencje), i możesz je tutaj w każdej chwili usunąć.",
         "learnedPrefix": "zapamiętano {when}",
         "categoryPreference": "Preferencje",
@@ -7307,13 +7241,11 @@
       },
       "coachConversations": {
         "title": "Rozmowy z Coachem",
-        "description": "Otwórz rozmowę, aby ją przeczytać, albo ją usuń.",
         "more": "Pokaż więcej",
         "openAll": "Otwórz wszystkie rozmowy"
       },
       "coachPlans": {
         "title": "Plany z Coachem",
-        "description": "Plany uzgodnione z Coachem, do przeczytania lub usunięcia.",
         "open": "Otwórz plany"
       },
       "reasoning": {
@@ -7329,7 +7261,6 @@
         "coachNote": "W Coachu obowiązuje głębokość myślenia z ustawień Coacha.",
         "backgroundNote": "Praca w tle, taka jak codzienne podsumowanie, nie korzysta z tego ustawienia: myśli najwyżej na poziomie Średnie, niżej, gdy operator ustawi niższy limit, a na poziomie Oszczędny wcale."
       },
-      "providerCardDescription": "Skonfiguruj klucz i model każdego dostawcy; kolejność poniżej decyduje, którego HealthLog pyta najpierw.",
       "runtimeTitle": "Sprawdź i odśwież",
       "usage": {
         "title": "Użycie AI",
@@ -7380,7 +7311,6 @@
     "dashboard": {
       "units": {
         "title": "Jednostki",
-        "description": "Wybierz sposób wyświetlania odległości i prędkości na wykresach i kafelkach.",
         "metric": "Metryczne",
         "imperial": "Imperialne",
         "saved": "Zapisano preferencję jednostek",
@@ -7388,7 +7318,6 @@
       },
       "glucoseUnit": {
         "title": "Glikemia",
-        "description": "Jednostka, w której pokazywane są pomiary glukozy.",
         "saved": "Zapisano jednostkę glukozy",
         "saveError": "Nie udało się zapisać jednostki glukozy."
       }
@@ -7701,11 +7630,6 @@
     },
     "notificationStatus": {
       "title": "Niezawodność kanałów",
-      "description": "Stan każdego kanału; „Automatycznie wyłączone” oznacza zatrzymanie po trwałych błędach.",
-      "stateActive": "Aktywne",
-      "stateAutoDisabled": "Automatycznie wyłączone",
-      "stateSendingPaused": "Wysyłanie wstrzymane",
-      "stateManuallyDisabled": "Wyłączone",
       "lastSuccess": "Ostatnia udana wysyłka",
       "lastFailure": "Ostatni błąd",
       "consecutiveFailures": "Kolejne błędy",
@@ -7903,10 +7827,8 @@
         }
       },
       "state": {
-        "title": "Coach",
-        "description": "Czy przycisk i panel Coacha są widoczne. Przełącznik jest w Modułach."
+        "title": "Coach"
       },
-      "nudgesMoved": "Ustawiasz je razem z innymi przypomnieniami w Powiadomieniach.",
       "openNudges": "Otwórz w Powiadomieniach"
     },
     "integrationRedirectGuide": {
@@ -7944,8 +7866,6 @@
         "export": "Eksport danych",
         "other": "Zdarzenie zabezpieczeń"
       },
-      "active": "Aktywne",
-      "inactive": "Nieaktywne",
       "stepUpRequired": "Ze względów bezpieczeństwa zaloguj się ponownie, aby zmienić drugi składnik.",
       "useRecoveryCode": "Użyj zamiast tego kodu odzyskiwania",
       "useAuthenticator": "Użyj zamiast tego aplikacji uwierzytelniającej",
@@ -8135,7 +8055,6 @@
       "connectionsTitle": "Połączeni asystenci",
       "connectionsDescription": "Asystenci autoryzowani podczas logowania.",
       "noConnections": "Brak połączonych asystentów.",
-      "connectionConnected": "Połączono",
       "connectionLastUsed": "Ostatnio użyto",
       "connectionNeverUsed": "Nigdy nie użyto",
       "connectionRevoke": "Rozłącz",
@@ -8287,12 +8206,6 @@
       "navCountsDescription": "Pokazuje przy pozycjach na pasku bocznym i w menu Więcej, ile dawek i badań kontrolnych jest do zrobienia."
     },
     "integrationCard": {
-      "state": {
-        "ok": "Działa",
-        "limited": "Ograniczone",
-        "degraded": "Opóźnione",
-        "actionRequired": "Wymaga działania"
-      },
       "reason": {
         "dataArriving": "Dane napływają.",
         "dataArrivingHistory": "Dane napływają. Starsza historia wczytuje się w tle.",
@@ -8325,7 +8238,6 @@
       "moreValuesOne": "{count} inna wartość",
       "moreValuesFew": "{count} inne wartości",
       "moreValuesOther": "{count} innych wartości",
-      "notConnected": "Nie połączono.",
       "lastData": "Ostatnie dane: {when}",
       "lastDataNone": "Ostatnie dane: jeszcze brak",
       "reconnect": "Połącz ponownie",
@@ -8405,8 +8317,6 @@
     "integrationDisconnectFailed": "Nie udało się rozłączyć {provider}.",
     "timezoneSaved": "Strefa czasowa zapisana.",
     "moduleState": {
-      "on": "Włączone",
-      "off": "Wyłączone",
       "change": "Zmień w Modułach"
     },
     "timezoneUseDevice": "Użyj strefy czasowej tego urządzenia ({zone})",
@@ -8469,6 +8379,7 @@
     },
     "passkeyRenameFailed": "Nie udało się zmienić nazwy klucza dostępu.",
     "passkeyRemoveFailed": "Nie udało się usunąć klucza dostępu.",
+    "apiEndpointsShow": "Pokaż endpointy",
     "integrationList": {
       "channels": "Kanały dostarczania",
       "sources": "Źródła danych",
@@ -9799,6 +9710,8 @@
       },
       "question": {
         "title": "Korzystać z przekaźnika push HealthLog?",
+        "askTitle": "Użyć przekaźnika push?",
+        "askBody": "Treść pozostaje zaszyfrowana.",
         "body": "Powiadomienia dla aplikacji z App Store, szyfrowane end-to-end: przekaźnik widzi tylko, kiedy jakieś zostaje wysłane.",
         "yes": "Tak",
         "no": "Nie",
@@ -9891,10 +9804,9 @@
       "notice": {
         "title": "Skonfiguruj ten serwer",
         "body": "Pięć krótkich kroków o rejestracji, powiadomieniach, AI i prywatności; każdy możesz pominąć lub zmienić później.",
+        "bodyShort": "Pięć krótkich kroków o rejestracji, powiadomieniach, AI i prywatności.",
         "open": "Rozpocznij konfigurację",
-        "dismiss": "Nie teraz",
-        "relayBody": "Przypomnienia na iPhonie i Wallet czekają na tę odpowiedź, na stronie startowej administracji.",
-        "relayOpen": "Otwórz administrację"
+        "dismiss": "Nie teraz"
       },
       "accounts": {
         "title": "Kto może korzystać z tego serwera",
@@ -12552,7 +12464,6 @@
       "relatedMetric": "Sprawdź też: {metric}",
       "continue": "Szukaj dalej",
       "settingLabel": "Proponuj kolejne pytania",
-      "settingHint": "Pokazuje do trzech propozycji pod ostatnią odpowiedzią Coacha.",
       "changeAssumption": "Zamiast tego: {value}"
     },
     "clarify": {
@@ -13393,9 +13304,6 @@
       "titlePlaceholder": "Dodaj tytuł",
       "kindLabel": "Typ",
       "dateLabel": "Data dokumentu",
-      "conditionsLabel": "Powiązane schorzenia",
-      "linkCondition": "Powiąż",
-      "noConditions": "Niepowiązany ze schorzeniem",
       "previewUnavailable": "Brak podglądu dla tego typu pliku",
       "uploadedMeta": "Dodano {date}, {size}",
       "importedFrom": "Zaimportowano z: {system}",
@@ -13405,10 +13313,6 @@
       "sourceReportSchedule": "harmonogramu raportów",
       "share": "Udostępnij",
       "labValuesLink": "Zobacz {count, plural, one {# wynik badania} few {# wyniki badań} many {# wyników badań} other {# wyniku badania}}",
-      "visitsLabel": "Należy do wizyty",
-      "vaccinationsLabel": "Szczepienia",
-      "noVisitsToLink": "Nie zapisano jeszcze żadnych wizyt.",
-      "noVaccinationsToLink": "Nie zapisano jeszcze żadnych szczepień.",
       "saved": "Zmiany zapisane",
       "saving": "Zapisywanie…",
       "previewNotOnDevice": "Ta przeglądarka nie wyświetla plików PDF na stronie"
@@ -13432,11 +13336,7 @@
       "linkVisit": "Przypisz do wizyty"
     },
     "episodeCard": {
-      "title": "Dokumenty",
-      "link": "Powiąż",
-      "upload": "Prześlij",
       "viewAll": "Pokaż wszystkie",
-      "emptyLine": "Brak dokumentów powiązanych z tym schorzeniem.",
       "loadError": "Nie udało się wczytać połączonych dokumentów"
     },
     "linkPicker": {
@@ -13936,6 +13836,7 @@
       },
       "syncIssue": {
         "title": "Synchronizacja wymaga uwagi",
+        "askTitle": "Synchronizacja przerwana",
         "body": "{integration} się nie synchronizuje. Połącz ponownie, aby dane były aktualne."
       },
       "sourceQuiet": {
@@ -13987,10 +13888,14 @@
     },
     "action": {
       "logDose": "Przyjmij",
+      "later": "Później",
+      "answer": "Odpowiedz",
+      "learnMore": "Więcej",
+      "open": "Otwórz",
+      "setUp": "Skonfiguruj",
+      "reconnectShort": "Połącz",
       "reconnect": "Połącz ponownie",
       "viewCheckups": "Otwórz profilaktykę",
-      "viewAppointment": "Zobacz wizytę",
-      "viewAppointments": "Zobacz wizyty",
       "checkinKeep": "Zachowaj",
       "checkinAdjust": "Dostosuj",
       "checkinLetGo": "Odpuść",
@@ -14001,14 +13906,8 @@
       "openSource": "Otwórz"
     },
     "today": {
-      "scoreLabel": "Wynik zdrowia",
-      "deltaVsBaseline": "{delta} wzgl. Twojej wartości bazowej",
-      "deltaFlat": "Zgodnie z Twoją wartością bazową",
-      "sleepPending": "Sen z ostatniej nocy jeszcze nie dotarł, więc dzisiejszy odczyt jest wstępny.",
-      "worthALook": "Warto sprawdzić",
-      "allClear": "Dziś nic nie wymaga Twojej uwagi.",
-      "ringLink": "Otwórz szczegóły: {metric}",
-      "heading": "Dziś",
+      "deltaShort": "{delta} wzgl. bazowej",
+      "deltaFlatShort": "Na poziomie bazowym",
       "steadyWeeksOne": "Stabilnie od {count} tygodnia",
       "steadyWeeksFew": "Stabilnie od {count} tygodni",
       "steadyWeeksOther": "Stabilnie od {count} tygodni",
@@ -14178,6 +14077,7 @@
       "latestNight": "Ostatnia noc: {date}",
       "vitalOutside": "{metric}: dziś średnio {value}, zwykle {range}",
       "contributor": "{name}: {value} na 100",
+      "contributorShort": "{name} {value}/100",
       "readinessLast": "Ostatnio {score} dnia {date}",
       "source": {
         "recovery": {
@@ -14829,8 +14729,6 @@
       "choose": "Do której wizyty to należy?"
     },
     "episodeCard": {
-      "title": "Powiązane wizyty",
-      "emptyLine": "Do tej choroby nie przypisano jeszcze żadnej wizyty.",
       "add": "Dodaj wizytę"
     },
     "dashboard": {
@@ -14917,7 +14815,7 @@
       }
     },
     "related": {
-      "title": "Powiązane",
+      "title": "Powiązania",
       "kind": {
         "labResult": "Wynik badania",
         "encounter": "Wizyta",
@@ -14939,6 +14837,10 @@
       },
       "nothingToOffer": "Na razie nie ma czego powiązać.",
       "saveError": "Nie udało się zapisać powiązania."
+    },
+    "row": {
+      "add": "Powiąż",
+      "uploadDocument": "Prześlij dokument"
     }
   },
   "bodySites": {
@@ -14971,7 +14873,6 @@
     "errorReaderBusy": "Czytnik dokumentów jest zajęty innymi zadaniami. Spróbuj ponownie za minutę.",
     "jobFailure": {
       "title": "Zatrzymana praca AI w tle",
-      "description": "Zadania, które ostatnio się zatrzymały, i powód; wpis znika, gdy zadanie znów się uda.",
       "line": "{job}: {reason}",
       "repeated": "{count, plural, one {# nieudana próba z rzędu} few {# nieudane próby z rzędu} many {# nieudanych prób z rzędu} other {# nieudanej próby z rzędu}}, ostatnia {when}.",
       "lastAt": "Ostatnia próba: {when}.",

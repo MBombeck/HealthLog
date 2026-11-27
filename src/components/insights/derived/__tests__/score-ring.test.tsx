@@ -50,6 +50,24 @@ describe("<ScoreRing>", () => {
     expect(html).toContain('data-slot="score-ring-provisional"');
   });
 
+  it("draws a stale score as a solid track, a centred U+2014 and 'not from today'", () => {
+    const html = render(
+      <ScoreRing score={null} emptyFace label="Readiness" ariaLabel="x" />,
+    );
+    expect(html).toContain('data-stale="true"');
+    expect(html).toContain('aria-label="not from today. x"');
+    expect(html).toContain('stroke="var(--score-track)"');
+    expect(html).not.toContain('stroke-dasharray="0.5 4.2"');
+    expect(html).toContain(">\u2014</span>");
+    expect(html).not.toContain("\u2013");
+    expect(html).not.toContain("Readiness");
+    expect(html).not.toContain('data-slot="score-ring-provisional"');
+    // A score that is about today keeps the tick track.
+    expect(render(<ScoreRing score={74} />)).toContain(
+      'stroke-dasharray="0.5 4.2"',
+    );
+  });
+
   it("carries an aria-label restating the number (not colour-only)", () => {
     const html = render(<ScoreRing score={74} />);
     expect(html).toContain('role="img"');
@@ -63,10 +81,10 @@ describe("<ScoreRing>", () => {
     expect(html).toContain("aria-label");
   });
 
-  it("keeps the band semantic regardless of the arc hue (per-metric or band)", () => {
-    // The arc paints a per-metric / band hue, so the band must still ride the
-    // data attribute + aria-label for the colour-blind/non-visual read.
-    const html = render(<ScoreRing score={82} hue="readiness" label="/100" />);
+  it("says the band in the data attribute and the aria-label, not only in colour", () => {
+    // The arc paints the band (concept B); the band also rides the data
+    // attribute and the aria-label for a colour-blind or non-visual read.
+    const html = render(<ScoreRing score={82} label="/100" />);
     expect(html).toContain('data-band="green"');
     expect(html).toContain('role="img"');
     expect(html).toContain("aria-label");

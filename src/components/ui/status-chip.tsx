@@ -30,7 +30,7 @@ export type StatusChipTone = "active" | "error" | "off";
 const TONE: Record<StatusChipTone, string> = {
   active: "border-success/30 bg-success/15 text-success",
   error: "",
-  off: "border-border bg-muted text-muted-foreground",
+  off: "border-border text-muted-foreground",
 };
 
 export function StatusChip({

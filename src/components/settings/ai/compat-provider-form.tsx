@@ -122,15 +122,19 @@ export function CompatProviderForm({
         <Label htmlFor="ai-compat-key">
           {t("settings.ai.compat.keyLabel")}
         </Label>
-        <PasswordInput
-          id="ai-compat-key"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          placeholder={
-            userProvider?.hasCompatKey ? t("settings.ai.savedShort") : ""
-          }
-          className="mt-1"
-        />
+        <div className="mt-1 flex items-center gap-2 [&>div]:min-w-0 [&>div]:flex-1">
+          <PasswordInput
+            id="ai-compat-key"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            placeholder={
+              userProvider?.hasCompatKey ? t("settings.ai.savedShort") : ""
+            }
+          />
+          {userProvider?.hasCompatKey ? (
+            <RemoveSavedKeyButton field="compatKey" />
+          ) : null}
+        </div>
       </div>
       <div>
         <Label htmlFor="ai-compat-model">{t("settings.ai.modelLabel")}</Label>
@@ -158,9 +162,6 @@ export function CompatProviderForm({
       )}
 
       <SettingsCardActions>
-        {userProvider?.hasCompatKey && (
-          <RemoveSavedKeyButton field="compatKey" />
-        )}
         <Button
           type="submit"
           size="sm"

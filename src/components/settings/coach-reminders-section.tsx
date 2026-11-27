@@ -181,7 +181,7 @@ export function CoachRemindersSection({
         icon={BellRing}
         titleId="settings-ai-coach-reminders-title"
         title={t("settings.ai.coachReminders.title")}
-        description={t("settings.ai.coachReminders.description")}
+        info={t("settings.ai.coachReminders.description")}
       />
       <p className="text-sm" data-slot="coach-reminders-detail">
         {readOnly

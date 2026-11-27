@@ -2,7 +2,7 @@
  * The words an integration card says about a connection's health.
  *
  * The server resolves one `ConnectionHealth` per connection and the card only
- * renders it, so everything here is a projection: a badge word per state, one
+ * renders it, so everything here is a projection: a status tone per state, one
  * sentence per reason, a relative instant, and the plain-text diagnostics a
  * person can paste into a bug report. Nothing in this module decides a state.
  *
@@ -17,6 +17,7 @@ import type {
 import { pluralKey } from "@/lib/i18n/plural";
 import { previousDayLabel } from "@/lib/tz/format";
 import type { Locale } from "@/lib/i18n/config";
+import type { StatusChipTone } from "@/components/ui/status-chip";
 
 type Translate = (
   key: string,
@@ -28,21 +29,9 @@ interface InstantFormatters {
   time: (value: Date) => string;
 }
 
-/** The one word in the status badge. */
-export function healthBadgeLabel(
-  state: ConnectionHealthState,
-  t: Translate,
-): string {
-  switch (state) {
-    case "ok":
-      return t("settings.integrationCard.state.ok");
-    case "limited":
-      return t("settings.integrationCard.state.limited");
-    case "degraded":
-      return t("settings.integrationCard.state.degraded");
-    case "action_required":
-      return t("settings.integrationCard.state.actionRequired");
-  }
+/** The status chip's tone: a limited connection still works, a degraded one does not. */
+export function healthStatusTone(state: ConnectionHealthState): StatusChipTone {
+  return state === "ok" || state === "limited" ? "active" : "error";
 }
 
 /**

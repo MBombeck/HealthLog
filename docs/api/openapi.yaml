@@ -49945,6 +49945,7 @@ components:
               - medication.low-stock-trigger
               - insights.score-origin
               - integrations.overview
+              - daily.asks
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices; since
@@ -50061,31 +50062,39 @@ components:
             (phase, start, end inclusive), read from the timeline lanes, each empty when its module is off or its
             section not shared; optional from/to cut the window. `daily.morning`: GET /api/daily/morning returns the
             morning read: lead (rank 0 to 10, key, one sentence, language) chosen by fixed rules from the day's own
-            readings, and cards night and today_different with ring (score and band null unless fresh, asOfDay), up to
-            three lines and sourceValues (device scores under the vendor's name and scale, no band). The to-do card is
-            DailyDigest.worthALook as before. `measurements.series-kinds`: GET /api/measurements/series takes
-            kinds=a,b,c (at most 8, each once, the same days) in place of kind and answers { series: [...] }, one
-            single-kind answer per kind in the order asked; kind alone keeps the single answer.
-            `devices.ignored-fields`: The POST /api/devices answer carries ignored: [{ field, code }] when it left an
-            optional Live Activity field out instead of failing the registration: field is liveActivityPushToken,
-            liveActivityStart, liveActivityTokens or liveActivityTokens[<index>]; code is devices.register.invalid_field
-            for the shape, else the devices.push.<reason> a push-to-start statement was refused for. Absent when nothing
-            was left out. `insights.briefing-glucose`: The daily briefing's signalsOfDay and keyFindings rows may carry
-            sourceMetric glucose (blood glucose), its figures and delta in the reader's glucose unit; before it the
-            server dropped every such row. `medication.side-effect-headache`: Medication side effects take entry
-            HEADACHE (category COGNITIVE) on POST /api/medications/{id}/side-effects, and the list and the backup carry
-            it. `medication.low-stock-trigger`: GET /api/medications and GET /api/medications/{id} (and the create and
-            edit answers) carry lowStockTriggerDays: max(lowStockRunwayDays, reorderLeadDays + one dose-interval) with
-            the medication's own lead over the account default, null when the alert is off or nothing is consumed on a
+            readings, cards night and today_different with ring (score and band null unless fresh, asOfDay), up to three
+            lines and sourceValues (device scores under the vendor's name and scale, no band), and scores.sleep /
+            scores.readiness (ring, one line, href; null when the record has no such score) for the start page's score
+            tiles beside DailyDigest.score. `measurements.series-kinds`: GET /api/measurements/series takes kinds=a,b,c
+            (at most 8, each once, the same days) in place of kind and answers { series: [...] }, one single-kind answer
+            per kind in the order asked; kind alone keeps the single answer. `devices.ignored-fields`: The POST
+            /api/devices answer carries ignored: [{ field, code }] when it left an optional Live Activity field out
+            instead of failing the registration: field is liveActivityPushToken, liveActivityStart, liveActivityTokens
+            or liveActivityTokens[<index>]; code is devices.register.invalid_field for the shape, else the
+            devices.push.<reason> a push-to-start statement was refused for. Absent when nothing was left out.
+            `insights.briefing-glucose`: The daily briefing's signalsOfDay and keyFindings rows may carry sourceMetric
+            glucose (blood glucose), its figures and delta in the reader's glucose unit; before it the server dropped
+            every such row. `medication.side-effect-headache`: Medication side effects take entry HEADACHE (category
+            COGNITIVE) on POST /api/medications/{id}/side-effects, and the list and the backup carry it.
+            `medication.low-stock-trigger`: GET /api/medications and GET /api/medications/{id} (and the create and edit
+            answers) carry lowStockTriggerDays: max(lowStockRunwayDays, reorderLeadDays + one dose-interval) with the
+            medication's own lead over the account default, null when the alert is off or nothing is consumed on a
             cadence; a row is low on stock when runwayDays <= lowStockTriggerDays. `insights.score-origin`:
             RECOVERY_SCORE, STRESS_SCORE and STRAIN_SCORE values on GET /api/insights/derived carry origin (estimate |
             device | computed) and deviceSource (the measurement source of a device value, else null); the health score
             composite carries weights (one { id, weight } per counted pillar, summing to 1) and each snapshot
-            healthScore.pillars row its weight (null when it did not count). `integrations.overview`: GET
+            healthScore.pillars row its weight (null when it did not count); every scored pillar carries its own band
+            (green | yellow | red), resolved on the server: value.band on the score report's pillars (/api/analytics)
+            and band on each snapshot healthScore.pillars row (null when it did not count). `integrations.overview`: GET
             /api/integrations/overview returns one row per data source and delivery channel: key, group (source |
             channel), setUp, status (active | error | off, null when not set up), reason (a connection-health reason, or
             not_connected | paused | switched_off | auto_disabled | sending_paused | delivery_failing), lastAt, offered
-            and setupNote (own_credentials | null). Render status as it comes."
+            and setupNote (own_credentials | null). Render status as it comes. `daily.asks`: GET /api/daily/digest
+            carries asks: every row the start page asks today, often none (kind, tier safety | decision | due, itemKey,
+            title, body, subject, exactly two actions with the primary first, learnMore), ranked on the server, never
+            capped or folded; render as delivered, no card when empty. Later is dose.snooze:<medicationId> on a dose and
+            ask.later:<dismissKey> on other reminders; the admin rows (push_relay, server_setup) come only to a browser
+            session."
       required:
         - version
         - buildSha
@@ -79842,24 +79851,28 @@ components:
                     - id: BLOOD_PRESSURE
                       label: Blood pressure
                       value: 82
+                      band: green
                       reason: null
                       reasonCode: null
                       weight: 0.5
                     - id: ACTIVITY
                       label: Activity
                       value: 64
+                      band: yellow
                       reason: null
                       reasonCode: null
                       weight: 0.5
                     - id: SLEEP
                       label: Sleep
                       value: null
+                      band: null
                       reason: Not tracked
                       reasonCode: not_tracked
                       weight: null
                     - id: WELLBEING
                       label: Wellbeing
                       value: null
+                      band: null
                       reason: Not counted after your last check-in
                       reasonCode: crisis_signposting
                       weight: null
@@ -80297,6 +80310,17 @@ components:
               maximum: 100
             - type: "null"
           description: The pillar's own 0–100 score when it counted toward the health score; null when it did not.
+        band:
+          description: 1.50 (feature `insights.score-origin`) — the pillar's own band, resolved on the server from its score by
+            the rule every HealthLog score follows (green from 70, yellow from 50). Null when the pillar did not count.
+            Draw the pillar from this, never from thresholds of your own. Optional so older cached snapshots stay valid.
+          anyOf:
+            - type: string
+              enum:
+                - green
+                - yellow
+                - red
+            - type: "null"
         reason:
           description: Why the pillar did not count, worded as the web panel words it ("Not tracked", "Not enough recent eligible
             data"). Null when it counted. A WELLBEING pillar held back for safety signposting says so in a neutral label
@@ -81874,6 +81898,16 @@ components:
               properties:
                 score:
                   type: number
+                band:
+                  description: 1.50 (feature `insights.score-origin`) — the pillar's own band, resolved on the server from its score by
+                    the rule every HealthLog score follows (green from 70, yellow from 50; a pillar score is
+                    higher-better). Draw the pillar from this, never from thresholds of your own. Optional so a payload
+                    from an older server stays valid; this server sets it on every scored pillar.
+                  type: string
+                  enum:
+                    - green
+                    - yellow
+                    - red
                 observed:
                   type: object
                   properties:
@@ -101856,6 +101890,13 @@ components:
           items:
             $ref: "#/components/schemas/DailyPriorityItem"
           description: Bounded 0–3 rail items, never padded.
+        asks:
+          type: array
+          items:
+            $ref: "#/components/schemas/DailyAsk"
+          description: What the start page asks today, in order, never padded. The rules keep it short and empty on most days, and
+            then no ask card is shown. Render every row as delivered; do not re-rank, fold, drop or add rows. Every row
+            has exactly two actions, the primary first. Additive since 1.50.
         justIn:
           anyOf:
             - type: object
@@ -101947,6 +101988,7 @@ components:
         - restMode
         - line
         - worthALook
+        - asks
         - justIn
         - reactionLine
         - ai
@@ -102058,7 +102100,107 @@ components:
         - title
         - actions
       additionalProperties: false
-      description: One 'worth a look' rail item. The single model every daily-value consumer renders through PriorityCard.
+      description: One 'worth a look' rail item. The single model every daily-value consumer reads; the start page renders the
+        rows `asks` selects.
+    DailyAsk:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - dose_window
+            - coach_checkin
+            - preventive_care
+            - upcoming_visit
+            - sync_issue
+            - push_relay
+            - server_setup
+          description: What is asked. `dose_window`, `coach_checkin`, `preventive_care`, `upcoming_visit` and `sync_issue` (a
+            reconnect only, never a quiet source) are the rail's own kinds; `push_relay` and `server_setup` are the
+            admin question the admin start page asks (only on a browser session on the admin's own record, never on a
+            Bearer request).
+        tier:
+          type: string
+          enum:
+            - safety
+            - decision
+            - due
+          description: "Why it is asked, in the order asks are ranked: `safety` (a dose past its on-time window), `decision` (a
+            question only the reader can answer: the admin question, a coach check-in), `due` (a dose takeable now,
+            check-ups due now, a visit today or tomorrow, a source whose sign-in expired or was refused and that has
+            delivered nothing for a day)."
+        itemKey:
+          type: string
+          description: Stable identity, namespaced `<kind>:...`; the rail item's own key for the rail kinds.
+        title:
+          type: string
+          description: Localised headline (resolved server-side).
+        body:
+          description: One sentence, plain text, or null.
+          type:
+            - string
+            - "null"
+        subject:
+          description: The name of what is asked about (a dose's medication), for an action's confirmation; null otherwise.
+          type:
+            - string
+            - "null"
+        actions:
+          minItems: 2
+          maxItems: 2
+          type: array
+          items:
+            type: object
+            properties:
+              labelKey:
+                type: string
+                description: i18n key, resolved client-side.
+              intent:
+                type: string
+                description: "Stable action token. Beside the rail's tokens: `dose.snooze:<medicationId>` (the medication's own snooze,
+                  `POST /api/medications/intake` with status `snoozed`), `relay.yes` / `relay.no` (the relay question),
+                  `admin.notice.later` (sets the admin notice aside), `admin.setup.open` (with `href`),
+                  `ask.later:<dismissKey>` (sets the ask aside until the next local day: `POST
+                  /api/daily/digest/dismiss` with that key, `ask-later:<YYYY-MM-DD>:<itemKey>`). Labels are the short
+                  verbs under `daily.action.*`. A consent row (`push_relay`) carries exactly No and Yes, never a later."
+              href:
+                description: Deep-link when navigational.
+                type: string
+            required:
+              - labelKey
+              - intent
+            additionalProperties: false
+          description: Exactly two actions; the first is the primary one.
+        learnMore:
+          anyOf:
+            - type: object
+              properties:
+                labelKey:
+                  type: string
+                  description: i18n key, resolved client-side.
+                href:
+                  type: string
+                  description: Documentation page.
+              required:
+                - labelKey
+                - href
+              additionalProperties: false
+            - type: "null"
+          description: A link set at the end of `body`, or null.
+      required:
+        - kind
+        - tier
+        - itemKey
+        - title
+        - body
+        - subject
+        - actions
+        - learnMore
+      additionalProperties: false
+      description: "One row of the start page's ask card. The policy is the server's (`resolveDailyAsks`): only what needs an
+        action today and is time-relevant, never an observation; a running snooze, a dismissed notice and Rest mode
+        (check-ups, coach check-in) hold it back; ranked safety, then decision, then due, in the digest's order inside a
+        tier."
     DailyMorningEnvelope:
       type: object
       properties:
@@ -102126,6 +102268,27 @@ components:
           description: Night first, then what is different today; a card without content is absent. The third card of the morning
             ('to do today') is `DailyDigest.worthALook` as delivered, with the digest's medications and cycle facts from
             `today`.
+        scores:
+          type: object
+          properties:
+            sleep:
+              anyOf:
+                - $ref: "#/components/schemas/DailyMorningScore"
+                - type: "null"
+              description: "Last night's sleep score: fresh only for last night. Null when the sleep module is off or no sleep reaches
+                this record."
+            readiness:
+              anyOf:
+                - $ref: "#/components/schemas/DailyMorningScore"
+                - type: "null"
+              description: "Today's readiness: fresh only when every input is from today. Null when the recovery module is off or
+                there is none."
+          required:
+            - sleep
+            - readiness
+          additionalProperties: false
+          description: The start page's score tiles beside the Health score (`DailyDigest.score`). A tile whose score is null is
+            not shown. Additive since 1.50.
         toDo:
           type: object
           properties:
@@ -102151,6 +102314,7 @@ components:
       required:
         - lead
         - cards
+        - scores
         - toDo
         - generatedAt
       additionalProperties: false
@@ -102288,6 +102452,26 @@ components:
       additionalProperties: false
       description: "A score a device computed, shown under its own name. It carries no HealthLog band: the vendor's thresholds
         are not ours to colour."
+    DailyMorningScore:
+      type: object
+      properties:
+        ring:
+          description: "The ring as the cards carry it: no number when not fresh."
+          $ref: "#/components/schemas/DailyMorningRing"
+        line:
+          description: "One line beside the ring, worded on the server: the night's time asleep, the heaviest pull on readiness,
+            or when the last value was."
+          type:
+            - string
+            - "null"
+        href:
+          type: string
+          description: The score's own page.
+      required:
+        - ring
+        - line
+        - href
+      additionalProperties: false
     DismissPriorityItemEnvelope:
       type: object
       properties:

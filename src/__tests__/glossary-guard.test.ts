@@ -64,6 +64,7 @@ import { locales } from "@/lib/i18n/config";
 import glossary from "@/lib/i18n/glossary.json";
 import {
   MEASUREMENT_TYPE_LABEL_KEYS,
+  COMPOSITE_METRIC_LABEL_KEYS,
   MEASUREMENT_TYPE_SHORT_LABEL_KEYS,
 } from "@/lib/measurements/type-label-keys";
 
@@ -745,8 +746,17 @@ describe("short forms", () => {
       .filter((k) => k.startsWith(SHORT_PREFIX))
       .sort();
     expect(bundleKeys).toEqual(glossaryKeys);
-    const helperKeys = Object.values(MEASUREMENT_TYPE_SHORT_LABEL_KEYS).sort();
+    const helperKeys = [
+      ...Object.values(MEASUREMENT_TYPE_SHORT_LABEL_KEYS),
+      ...Object.values(COMPOSITE_METRIC_LABEL_KEYS).map((k) => k.short),
+    ].sort();
     expect(helperKeys).toEqual(glossaryKeys);
+    // A composite metric's short key belongs to the concept anchored on its
+    // full name, the same pairing as the types below.
+    for (const keys of Object.values(COMPOSITE_METRIC_LABEL_KEYS)) {
+      const concept = SHORTENED.find((c) => c.shortKey === keys.short);
+      expect(concept?.anchors.some((a) => a.key === keys.full)).toBe(true);
+    }
     // The helper pairs each type's short key with the concept anchored on
     // that type's full name, so a short form cannot land on another metric.
     const misplaced: string[] = [];

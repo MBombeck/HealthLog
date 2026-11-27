@@ -23,6 +23,8 @@ const WORDS_THE_BAND = [
   /bandWord\("health"|scoreBandWordKey\("health"|insights\.healthScore\.band\./g,
   // The evidence handed to the arrival line's model.
   /Health score: \$\{/g,
+  // The Insights tile's ring drawn in the composite's number band.
+  /band=\{ok \? composite\.value\.numberBand/g,
   // The Today ring drawn from the digest's score.
   /score\.numberBand \?\? [\w.]*score\.band\) as ScoreBand/g,
 ];
@@ -46,9 +48,9 @@ describe("the health score's band is never said without its weakest pillar", () 
   const files = [...new Set(matches.map((m) => m.file))].sort();
 
   it("finds the surfaces it guards", () => {
-    // The push, the evidence, the Insights tile and panel, the morning
-    // block and the Today hero. Fewer means a matcher went blind.
-    expect(files.length).toBeGreaterThanOrEqual(6);
+    // The push, the evidence, the Insights tile and panel, and the start
+    // page's score row. Fewer means a matcher went blind.
+    expect(files.length).toBeGreaterThanOrEqual(5);
   });
 
   it.each(files)("%s reads the setter", (file) => {

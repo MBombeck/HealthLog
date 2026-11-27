@@ -116,9 +116,11 @@ test.describe("visits", () => {
       .first()
       .click();
 
-    // The filing landed: the read-only "belongs to visit" row appears.
+    // The filing landed: the visit is a chip in the document's link row.
     await expect(
-      page.locator('[data-slot="document-visit-links"]').first(),
+      page
+        .locator('[data-slot="document-links-chips"] [data-kind="encounter"]')
+        .first(),
     ).toBeVisible({ timeout: 15_000 });
   });
 

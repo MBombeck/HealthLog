@@ -858,8 +858,6 @@
     "customizeTitle": "Diseño del panel",
     "heroItemsDescription": "Elige qué tipos de elementos pueden aparecer en los destacados de hoy.",
     "heroItemsNotificationNote": "Los ajustes de notificaciones se gestionan por separado.",
-    "heroContentTitle": "La tarjeta superior muestra",
-    "heroContentScore": "Puntuación de salud y resumen del día",
     "heroItems": {
       "coach_checkin": "Seguimiento con Coach",
       "dose_window": "Dosis de medicamentos",
@@ -941,7 +939,8 @@
       }
     },
     "quickAddSymptom": "Registrar síntoma",
-    "todayCardVisible": "Mostrar la tarjeta superior",
+    "scoreRowVisible": "Mostrar las puntuaciones",
+    "asksAlwaysShown": "Las dosis atrasadas y las preguntas sobre el servidor aparecen siempre.",
     "recoveryKitBanner": {
       "title": "Guarda tu kit de recuperación",
       "body": "Sin copias de las claves que usa este servidor, sus datos no se pueden recuperar tras una reinstalación. Es cuestión de unos minutos.",
@@ -953,8 +952,7 @@
     "quickAddSeizure": "Registrar crisis",
     "morning": {
       "heroItemsTitle": "Para hoy",
-      "heroItemsDescription": "Elige qué tipos de elementos pueden aparecer en “Para hoy”.",
-      "heroContentReminders": "Para hoy primero"
+      "heroItemsDescription": "Elige qué tipos de elementos pueden aparecer en “Para hoy”."
     }
   },
   "measurements": {
@@ -1184,6 +1182,10 @@
     "shortTypeTimeInDaylight": "Luz del día",
     "shortTypeAudioExposureEvent": "Evento de escucha alta",
     "shortTypeRespiratoryRate": "Frec. respiratoria",
+    "shortTypeHealthScore": "Puntuación de salud",
+    "shortTypeRestingHeartRate": "FC en reposo",
+    "shortTypeBloodPressure": "Presión",
+    "shortTypeBloodGlucose": "Glucemia",
     "shortTypeLeanBodyMass": "Masa magra",
     "shortTypeWalkingHeartRateAverage": "Pulso al caminar",
     "shortTypeWalkingDoubleSupport": "Doble apoyo",
@@ -3477,7 +3479,6 @@
       },
       "settingsAriaLabel": "Ajustes del coach",
       "settingsTitle": "Ajustes del coach",
-      "settingsDescription": "Configura cómo te habla el coach.",
       "settingsToneLabel": "Tono",
       "settingsToneWarm": "Cálido",
       "settingsToneNeutral": "Neutro",
@@ -3490,10 +3491,6 @@
       "settingsSourcesSummary": "El coach ve {count} de {total} áreas de datos y mira {window} atrás.",
       "settingsSourcesSummaryAll": "El coach ve {count} de {total} áreas de datos y todo el historial.",
       "settingsSourcesPointerLink": "Abrir ajustes del coach",
-      "settingsExcludeLabel": "Excluir métricas",
-      "settingsExcludeHint": "El coach no verá los datos de las métricas seleccionadas.",
-      "settingsContextLabel": "Enviar contexto",
-      "settingsContextHint": "Bloques opcionales en los que el coach puede apoyarse. Si desactivas alguno, se omitirá en cada respuesta.",
       "settingsEvidenceLabel": "Mostrar evidencia por defecto",
       "settingsEvidenceHint": "Abre automáticamente el cuadro de evidencias bajo cada respuesta.",
       "settingsDefaultWindowLabel": "Periodo de análisis por defecto",
@@ -3754,7 +3751,6 @@
       },
       "reasoning": {
         "label": "Profundidad de razonamiento",
-        "hint": "Pensar más a fondo significa respuestas más precisas y un poco más de espera.",
         "off": "Desactivado",
         "minimal": "Mínimo",
         "low": "Bajo",
@@ -3764,7 +3760,8 @@
         "disabled": "El administrador ha desactivado el razonamiento profundo."
       },
       "memoryLink": "Memoria ({count})",
-      "newConversation": "Nueva conversación"
+      "newConversation": "Nueva conversación",
+      "settingsSeesLabel": "Lo que ve el coach"
     },
     "relativeJustNow": "ahora mismo",
     "relativeMinutesAgoOne": "hace {count} minuto",
@@ -4816,6 +4813,7 @@
         "aria": "Puntuación {score} de 100, {band}",
         "ariaProvisional": "Puntuación aún no disponible: datos insuficientes",
         "provisionalCaption": "Datos aún insuficientes",
+        "notToday": "no es de hoy",
         "band": {
           "green": "bueno",
           "yellow": "medio",
@@ -6021,7 +6019,6 @@
           "autoAiRead": "Leer los documentos nuevos automáticamente con IA",
           "honesty": "Si está activado, cada documento subido a este perfil se envía al proveedor de IA elegido arriba para el perfil, para leerlo, describirlo e indexarlo para la búsqueda, sin tocar cada documento, y también se envían los documentos que ya hay sin resumen (hasta 200 cada vez que se activa). Activarlo registra el consentimiento de este perfil para que se lean sus documentos. Desactivado por defecto.",
           "pageTitle": "Documentos e IA",
-          "pageSubtitle": "Si la IA lee los documentos que se suben al perfil de {name}.",
           "noProvider": "No hay ningún proveedor de IA elegido para el perfil de {name} que pueda leer documentos, así que el interruptor sigue desactivado. Elige uno arriba.",
           "aiOff": "La IA está desactivada para el perfil de {name}, así que no se leería ningún documento."
         },
@@ -6054,17 +6051,14 @@
     },
     "sections": {
       "account": {
-        "title": "Cuenta",
-        "subtitle": "Tu perfil, identidad y datos de acceso."
+        "title": "Cuenta"
       },
       "integrations": {
         "title": "Integraciones",
-        "subtitle": "Conecta y gestiona tus fuentes de datos y dispositivos.",
         "channelsHeading": "Canales de entrega"
       },
       "notifications": {
         "title": "Notificaciones",
-        "subtitle": "Elige qué recordatorios recibes y dónde se entregan.",
         "remindersHeading": "Recordatorios",
         "matrixLink": "Notificaciones por canal",
         "channelsLink": "Canales de entrega",
@@ -6105,7 +6099,6 @@
           "title": "Insights",
           "description": "Orden de la vista general y de las pestañas de navegación."
         },
-        "subtitle": "Elige el orden y la vista de tu panel, tus análisis y tus listas de seguimiento.",
         "medications": {
           "title": "Medicamentos",
           "description": "Vista de lista y orden manual."
@@ -6127,12 +6120,8 @@
           "description": "Vista y disposición de los meses."
         }
       },
-      "dashboard": {
-        "subtitle": "Organiza los mosaicos de tu panel."
-      },
       "thresholds": {
-        "title": "Objetivos",
-        "subtitle": "Define tus rangos objetivo personales por métrica."
+        "title": "Objetivos"
       },
       "sources": {
         "title": "Prioridad de fuentes",
@@ -6211,7 +6200,6 @@
           "other": "Otro",
           "unknown": "Desconocido"
         },
-        "subtitle": "Decide qué fuente prevalece cuando dos informan la misma métrica.",
         "nutrients": {
           "title": "Ingesta de nutrientes sincronizada",
           "description": "Totales diarios {days, plural, =1 {del último día} other {de los últimos # días}}: lo que sincronizó Apple Health o una app de nutrición más los suplementos que tomaste.",
@@ -6226,16 +6214,13 @@
         "noneInUse": "Aún no hay fuentes que ordenar. Conecta una en Integraciones o registra un valor."
       },
       "ai": {
-        "title": "Proveedor de IA",
-        "subtitle": "Elige tu proveedor de IA y usa tu propia clave."
+        "title": "Proveedor de IA"
       },
       "api": {
-        "title": "API y tokens",
-        "subtitle": "Gestiona los endpoints de la API y los tokens de acceso."
+        "title": "API y tokens"
       },
       "advanced": {
-        "title": "Avanzado",
-        "subtitle": "Restablecer datos y eliminar cuenta."
+        "title": "Avanzado"
       },
       "export": {
         "title": "Exportar e importar",
@@ -6250,21 +6235,17 @@
         },
         "cards": {
           "measurementsCsv": {
-            "title": "Mediciones",
-            "description": "Todas las mediciones como hoja de cálculo."
+            "title": "Mediciones"
           },
           "medicationsCsv": {
             "title": "Medicamentos",
-            "description": "Tu medicación, si quieres con cada toma.",
             "includeIntake": "Incluir historial de tomas"
           },
           "moodCsv": {
-            "title": "Estado de ánimo",
-            "description": "Cada registro de ánimo con sus etiquetas."
+            "title": "Estado de ánimo"
           },
           "fullBackup": {
             "title": "Copia completa",
-            "description": "Todo tu historial en un archivo JSON.",
             "scopeNote": "Los metadatos de los documentos y el resumen de IA, si existe, se incluyen en texto plano; los archivos originales de los documentos y los datos de rutas GPS/muestras de los entrenamientos no están incluidos.",
             "encryptToggle": "Cifrar con una contraseña",
             "passphrasePlaceholder": "Contraseña (mín. 12 caracteres)",
@@ -6645,22 +6626,16 @@
             "removeTitle": "¿Quitar esta carpeta?",
             "removeBody": "HealthLog deja de recoger de ella y olvida la contraseña. Lo que ya se importó se queda."
           }
-        },
-        "subtitle": "Exporta tus datos o importa mediciones y registros de otras apps y archivos."
+        }
       },
       "about": {
-        "title": "Acerca de esta app",
-        "subtitle": "Versión, licencia y enlaces del proyecto."
+        "title": "Acerca de esta app"
       },
       "sharing": {
         "title": "Compartir",
         "subtitle": "Comparte acceso de solo lectura a tus datos."
       },
-      "insights": {
-        "subtitle": "Organiza las secciones de tu resumen y el orden de las pestañas."
-      },
       "medications": {
-        "subtitle": "Gestiona la vista y el orden de tu lista de medicamentos.",
         "registry": {
           "title": "Registro de medicamentos",
           "description": "Dónde busca «Buscar prospecto» los prospectos oficiales, sea cual sea el idioma de la app.",
@@ -6670,18 +6645,6 @@
           "saved": "Registro de medicamentos guardado",
           "saveError": "No se pudo guardar el registro de medicamentos."
         }
-      },
-      "mood": {
-        "subtitle": "Organiza tus etiquetas de ánimo, grupos y orden del selector."
-      },
-      "labs": {
-        "subtitle": "Gestiona la vista, el orden y los biomarcadores."
-      },
-      "illness": {
-        "subtitle": "Gestiona la vista y el orden de los episodios."
-      },
-      "vorsorge": {
-        "subtitle": "Gestiona la vista, el orden y los recordatorios individuales."
       },
       "modules": {
         "title": "Módulos",
@@ -6693,21 +6656,17 @@
         },
         "manageIn": "Gestionar en {section}",
         "operatorDisabled": "Desactivado en todo el servidor",
-        "subtitle": "Elige qué áreas de seguimiento muestra HealthLog en la app.",
         "backToHub": "Volver a Módulos",
         "openModuleSettings": "Ajustes del módulo",
         "pages": {
           "medications": {
-            "title": "Medicamentos",
-            "description": "Zonas de inyección que la rotación omite."
+            "title": "Medicamentos"
           },
           "mood": {
-            "title": "Etiquetas de ánimo",
-            "description": "Grupos, tus propias etiquetas y las archivadas."
+            "title": "Etiquetas de ánimo"
           },
           "labs": {
-            "title": "Resultados de laboratorio",
-            "description": "Biomarcadores y reconocimiento de texto en el dispositivo para informes de laboratorio."
+            "title": "Resultados de laboratorio"
           },
           "arrangementTitle": "Orden y vista",
           "arrangementDescription": "Cómo se ordena y muestra esta lista se ajusta en Disposición.",
@@ -6717,32 +6676,25 @@
         }
       },
       "health-record": {
-        "title": "Informe médico y exportación",
-        "subtitle": "Crea el informe médico y exporta un historial de salud completo, listo para el médico."
+        "title": "Informe médico y exportación"
       },
       "coach": {
-        "title": "Coach",
-        "subtitle": "Ajusta el Coach, sus avisos proactivos y su memoria."
+        "title": "Coach"
       },
       "security": {
-        "title": "Seguridad",
-        "subtitle": "Autenticación de dos factores, códigos de recuperación y claves de acceso."
+        "title": "Seguridad"
       },
       "privacy": {
-        "title": "Datos y privacidad",
-        "subtitle": "Tus datos, su retención, el cifrado y la seguridad de la cuenta en un solo lugar."
+        "title": "Datos y privacidad"
       },
       "mcp": {
-        "title": "Conector MCP",
-        "subtitle": "Conecta un asistente externo a tus propios datos de salud."
+        "title": "Conector MCP"
       },
       "anamnesis": {
-        "title": "Antecedentes médicos",
-        "subtitle": "Tus antecedentes, tu estilo de vida, tus datos de emergencia y lo que la IA puede leer."
+        "title": "Antecedentes médicos"
       },
       "environment": {
         "title": "Ubicación y clima",
-        "subtitle": "Contexto de tiempo, luz diurna y ubicación.",
         "disabledHint": "Activa el módulo Entorno para definir una ubicación principal e incorporar el tiempo y las horas de luz diarias.",
         "searchPlaceholder": "Buscar una ciudad",
         "search": "Buscar",
@@ -6804,7 +6756,6 @@
       },
       "score": {
         "title": "Puntuación de salud",
-        "subtitle": "Elige qué pilares cuentan para tu puntuación.",
         "card": {
           "title": "Qué cuenta para tu puntuación",
           "description": "Cada pilar que registras cuenta, salvo que digas lo contrario aquí."
@@ -6855,16 +6806,13 @@
         }
       },
       "access": {
-        "title": "Acceso compartido",
-        "subtitle": "Quién puede abrir tu historial de salud y cuál puedes abrir tú."
+        "title": "Acceso compartido"
       }
     },
     "profile": "Perfil",
     "language": "Idioma",
-    "languageDescription": "Elige el idioma de visualización de la aplicación.",
     "timeFormat": {
       "title": "Formato horario",
-      "description": "Determina si las horas se muestran en formato de 24 horas o de 12 horas (AM/PM).",
       "auto": "Automático (idioma)",
       "h24": "24 horas",
       "h12": "12 horas (AM/PM)",
@@ -6873,7 +6821,6 @@
     },
     "dateFormat": {
       "title": "Formato de fecha",
-      "description": "Determina el orden de día, mes y año al mostrar las fechas.",
       "auto": "Automático (idioma)",
       "dmy": "DD.MM.AAAA",
       "mdy": "MM/DD/AAAA",
@@ -6911,14 +6858,13 @@
     },
     "avatar": {
       "title": "Foto de perfil",
-      "description": "Sube una foto que se almacena en tu propio servidor.",
       "upload": "Subir foto",
       "replace": "Reemplazar foto",
       "remove": "Quitar",
       "removeTitle": "¿Eliminar la foto de perfil?",
       "removeBody": "La imagen se elimina de tu servidor y tus iniciales ocupan su lugar. Necesitarás el archivo original para volver a subirla.",
       "removeConfirm": "Eliminar foto",
-      "hint": "JPEG, PNG o WebP. Hasta 2 MB y 2048×2048 píxeles.",
+      "hint": "JPEG, PNG o WebP, hasta 2 MB y 2048×2048 píxeles.",
       "uploaded": "Foto de perfil actualizada",
       "removed": "Foto de perfil eliminada",
       "invalidType": "Tipo de imagen no admitido. Usa JPEG, PNG o WebP.",
@@ -6970,7 +6916,6 @@
     "multiDevice": "Varios dispositivos",
     "backedUp": "con copia de seguridad",
     "telegram": "Telegram Notifications",
-    "telegramDescription": "Get reminders for missed medication intake via Telegram.",
     "botToken": "Token del bot",
     "chatId": "ID del chat",
     "enableNotifications": "Activar notificaciones",
@@ -6978,14 +6923,12 @@
     "telegramStep2": "Envía /start a tu bot para activar el chat.",
     "telegramStep3": "Obtén tu ID del chat con @userinfobot o la API del bot.",
     "ntfy": "ntfy",
-    "ntfyDescription": "Notificaciones con ntfy.",
     "ntfyEnable": "Activar ntfy",
     "ntfyServer": "URL del servidor",
     "ntfyTopic": "Topic",
     "ntfyAuthToken": "Token de autenticación (opcional)",
     "ntfyAuthTokenHint": "Solo necesario para temas privados con control de acceso.",
     "webhook": "Webhook",
-    "webhookDescription": "Notificaciones a cualquier URL que acepte JSON.",
     "webhookEnable": "Activar webhook",
     "webhookUrl": "URL del webhook",
     "webhookUrlHint": "La URL completa para el POST.",
@@ -6997,11 +6940,9 @@
     "webhookFormatGotify": "Gotify",
     "webhookFormatGotifyHint": "Usa la URL que termina en /message y pon el token de la aplicación en la cabecera X-Gotify-Key.",
     "email": "Correo electrónico",
-    "emailDescription": "Recibe alertas y recordatorios por correo electrónico.",
     "emailEnable": "Activar correo electrónico",
     "emailRecipient": "Dirección del destinatario",
     "webPush": "Push del navegador",
-    "webPushDescription": "Notificaciones en este navegador.",
     "webPushNotSupported": "Tu navegador no admite notificaciones push.",
     "webPushInstallFirst": "En iPhone y iPad, las notificaciones push solo funcionan en la app instalada. En Safari, toca Compartir y luego «Añadir a pantalla de inicio», abre HealthLog desde la pantalla de inicio y toca aquí «Activar push».",
     "webPushDenied": "Las notificaciones push están bloqueadas. Permítelas en los ajustes de tu navegador.",
@@ -7026,9 +6967,6 @@
     "regenerateRateLimit": "Espera un momento: has alcanzado el límite por hora de análisis.",
     "lastGeneratedAt": "Generado por última vez",
     "ai": {
-      "chatgptConnectedBadge": "ChatGPT conectado",
-      "adminAiActiveBadge": "Proveedor de administrador activo",
-      "connectionExpiredBadge": "Conexión caducada",
       "connectedSince": "Conectado desde {when}.",
       "deviceCodeHeading": "Termina de conectar en chatgpt.com",
       "deviceCodeStep1": "Abre este enlace en cualquier dispositivo:",
@@ -7148,9 +7086,6 @@
         "apiKeyPlaceholder": "sk-…"
       },
       "codex": {
-        "statusConnected": "Conectado",
-        "statusDisconnected": "No conectado",
-        "statusExpired": "Conexión caducada",
         "connectButton": "Conectar con ChatGPT",
         "disconnectButton": "Desconectar",
         "disconnectTitle": "¿Desconectar ChatGPT?",
@@ -7177,7 +7112,6 @@
       "testReasonUnreachable": "No se pudo contactar con el proveedor de IA.",
       "coachMemory": {
         "title": "Lo que el Coach recuerda",
-        "description": "Datos duraderos que le has contado al Coach.",
         "empty": "El Coach aún no ha guardado ningún dato. A medida que conversas, recuerda detalles duraderos que compartes: tus objetivos, afecciones y preferencias, y puedes borrarlos aquí cuando quieras.",
         "learnedPrefix": "aprendido {when}",
         "categoryPreference": "Preferencias",
@@ -7307,13 +7241,11 @@
       },
       "coachConversations": {
         "title": "Conversaciones con el Coach",
-        "description": "Abre una conversación para leerla o elimínala.",
         "more": "Mostrar más",
         "openAll": "Abrir todas las conversaciones"
       },
       "coachPlans": {
         "title": "Planes del Coach",
-        "description": "Los planes que acordaste con el Coach, para leerlos o eliminarlos.",
         "open": "Abrir planes"
       },
       "reasoning": {
@@ -7329,7 +7261,6 @@
         "coachNote": "En el Coach se aplica la profundidad de pensamiento de los ajustes del Coach.",
         "backgroundNote": "El trabajo en segundo plano, como el resumen diario, no usa este ajuste: piensa como máximo en Medio, menos si el operador fija un límite más bajo, y nada en el nivel Ahorro."
       },
-      "providerCardDescription": "Configura la clave y el modelo de cada proveedor; el orden de abajo decide a cuál pregunta HealthLog primero.",
       "runtimeTitle": "Comprobar y actualizar",
       "usage": {
         "title": "Uso de la IA",
@@ -7380,7 +7311,6 @@
     "dashboard": {
       "units": {
         "title": "Unidades",
-        "description": "Elige cómo se muestran las distancias y velocidades en los gráficos y mosaicos.",
         "metric": "Métrico",
         "imperial": "Imperial",
         "saved": "Preferencia de unidades guardada",
@@ -7388,7 +7318,6 @@
       },
       "glucoseUnit": {
         "title": "Glucemia",
-        "description": "La unidad en la que se muestran las lecturas de glucosa.",
         "saved": "Unidad de glucosa guardada",
         "saveError": "No se pudo guardar la unidad de glucosa."
       }
@@ -7701,11 +7630,6 @@
     },
     "notificationStatus": {
       "title": "Fiabilidad de los canales",
-      "description": "Estado de cada canal; «Desactivado automáticamente» significa detenido tras errores permanentes.",
-      "stateActive": "Activo",
-      "stateAutoDisabled": "Desactivado automáticamente",
-      "stateSendingPaused": "Envío en pausa",
-      "stateManuallyDisabled": "Desactivado",
       "lastSuccess": "Último envío correcto",
       "lastFailure": "Último fallo",
       "consecutiveFailures": "Fallos consecutivos",
@@ -7903,10 +7827,8 @@
         }
       },
       "state": {
-        "title": "Coach",
-        "description": "Si se muestran el botón y el panel del Coach. El interruptor está en Módulos."
+        "title": "Coach"
       },
-      "nudgesMoved": "Se ajustan con tus otros recordatorios en Notificaciones.",
       "openNudges": "Abrir en Notificaciones"
     },
     "integrationRedirectGuide": {
@@ -7944,8 +7866,6 @@
         "export": "Exportación de datos",
         "other": "Evento de seguridad"
       },
-      "active": "Activo",
-      "inactive": "Inactivo",
       "stepUpRequired": "Por tu seguridad, vuelve a iniciar sesión para cambiar tu segundo factor.",
       "useRecoveryCode": "Usar un código de recuperación en su lugar",
       "useAuthenticator": "Usar tu aplicación de autenticación en su lugar",
@@ -8135,7 +8055,6 @@
       "connectionsTitle": "Asistentes conectados",
       "connectionsDescription": "Asistentes que autorizaste mediante el inicio de sesión.",
       "noConnections": "No hay asistentes conectados.",
-      "connectionConnected": "Conectado",
       "connectionLastUsed": "Último uso",
       "connectionNeverUsed": "Nunca usado",
       "connectionRevoke": "Desconectar",
@@ -8287,12 +8206,6 @@
       "navCountsDescription": "Muestra junto a sus entradas, en la barra lateral y en el menú Más, cuántas tomas y revisiones están pendientes."
     },
     "integrationCard": {
-      "state": {
-        "ok": "Funciona",
-        "limited": "Limitada",
-        "degraded": "Con retraso",
-        "actionRequired": "Requiere acción"
-      },
       "reason": {
         "dataArriving": "Están llegando datos.",
         "dataArrivingHistory": "Están llegando datos. El historial más antiguo se carga en segundo plano.",
@@ -8325,7 +8238,6 @@
       "moreValuesOne": "{count} valor más",
       "moreValuesFew": "{count} valores más",
       "moreValuesOther": "{count} valores más",
-      "notConnected": "No conectado.",
       "lastData": "Últimos datos: {when}",
       "lastDataNone": "Últimos datos: todavía ninguno",
       "reconnect": "Volver a conectar",
@@ -8405,8 +8317,6 @@
     "integrationDisconnectFailed": "No se pudo desconectar {provider}.",
     "timezoneSaved": "Zona horaria guardada.",
     "moduleState": {
-      "on": "Activado",
-      "off": "Desactivado",
       "change": "Cambiar en Módulos"
     },
     "timezoneUseDevice": "Usar la zona horaria de este dispositivo ({zone})",
@@ -8469,6 +8379,7 @@
     },
     "passkeyRenameFailed": "No se pudo cambiar el nombre de la clave de acceso.",
     "passkeyRemoveFailed": "No se pudo quitar la clave de acceso.",
+    "apiEndpointsShow": "Mostrar endpoints",
     "integrationList": {
       "channels": "Canales de entrega",
       "sources": "Fuentes de datos",
@@ -9799,6 +9710,8 @@
       },
       "question": {
         "title": "¿Usar el relé push de HealthLog?",
+        "askTitle": "¿Notificaciones por relé push?",
+        "askBody": "El contenido sigue cifrado.",
         "body": "Notificaciones para la app del App Store, cifradas de extremo a extremo: el relé solo ve cuándo se envía una.",
         "yes": "Sí",
         "no": "No",
@@ -9891,10 +9804,9 @@
       "notice": {
         "title": "Configurar este servidor",
         "body": "Cinco pasos cortos sobre registros, notificaciones, IA y privacidad; puedes omitir o cambiar cualquiera más tarde.",
+        "bodyShort": "Cinco pasos cortos sobre registros, notificaciones, IA y privacidad.",
         "open": "Empezar la configuración",
-        "dismiss": "Ahora no",
-        "relayBody": "Los recordatorios en el iPhone y Wallet esperan esta respuesta, en la página de inicio de administración.",
-        "relayOpen": "Abrir administración"
+        "dismiss": "Ahora no"
       },
       "accounts": {
         "title": "Quién puede usar este servidor",
@@ -12552,7 +12464,6 @@
       "relatedMetric": "Ver también: {metric}",
       "continue": "Seguir buscando",
       "settingLabel": "Sugerir preguntas de seguimiento",
-      "settingHint": "Muestra hasta tres sugerencias bajo la última respuesta del Coach.",
       "changeAssumption": "En su lugar: {value}"
     },
     "clarify": {
@@ -13393,9 +13304,6 @@
       "titlePlaceholder": "Añadir un título",
       "kindLabel": "Tipo",
       "dateLabel": "Fecha del documento",
-      "conditionsLabel": "Afecciones vinculadas",
-      "linkCondition": "Vincular",
-      "noConditions": "Sin vincular a una afección",
       "previewUnavailable": "Sin vista previa integrada para este tipo de archivo",
       "uploadedMeta": "Añadido el {date}, {size}",
       "importedFrom": "Importado de {system}",
@@ -13405,10 +13313,6 @@
       "sourceReportSchedule": "tu calendario de informes",
       "share": "Compartir",
       "labValuesLink": "Ver {count, plural, one {# resultado de laboratorio} other {# resultados de laboratorio}}",
-      "visitsLabel": "Pertenece a la cita",
-      "vaccinationsLabel": "Vacunas",
-      "noVisitsToLink": "Aún no hay citas registradas.",
-      "noVaccinationsToLink": "Aún no hay vacunas registradas.",
       "saved": "Cambios guardados",
       "saving": "Guardando…",
       "previewNotOnDevice": "Este navegador no puede mostrar PDF dentro de la página"
@@ -13432,11 +13336,7 @@
       "linkVisit": "Asignar a una cita"
     },
     "episodeCard": {
-      "title": "Documentos",
-      "link": "Vincular",
-      "upload": "Subir",
       "viewAll": "Ver todos",
-      "emptyLine": "Aún no hay documentos vinculados a esta afección.",
       "loadError": "No se pudieron cargar los documentos vinculados"
     },
     "linkPicker": {
@@ -13936,6 +13836,7 @@
       },
       "syncIssue": {
         "title": "La sincronización necesita atención",
+        "askTitle": "Sincronización detenida",
         "body": "{integration} no se está sincronizando: vuelve a conectarlo para mantener tus datos al día."
       },
       "sourceQuiet": {
@@ -13987,10 +13888,14 @@
     },
     "action": {
       "logDose": "Tomar",
+      "later": "Más tarde",
+      "answer": "Responder",
+      "learnMore": "Más",
+      "open": "Abrir",
+      "setUp": "Configurar",
+      "reconnectShort": "Reconectar",
       "reconnect": "Reconectar",
       "viewCheckups": "Ver revisiones",
-      "viewAppointment": "Ver cita",
-      "viewAppointments": "Ver citas",
       "checkinKeep": "Conservar",
       "checkinAdjust": "Ajustar",
       "checkinLetGo": "Dejarlo ir",
@@ -14001,14 +13906,8 @@
       "openSource": "Abrir"
     },
     "today": {
-      "scoreLabel": "Puntuación de salud",
-      "deltaVsBaseline": "{delta} frente a tu valor de referencia",
-      "deltaFlat": "En línea con tu valor de referencia",
-      "sleepPending": "El sueño de anoche aún no ha llegado; la lectura de hoy es provisional.",
-      "worthALook": "Merece un vistazo",
-      "allClear": "Hoy nada necesita tu atención.",
-      "ringLink": "Abrir detalles de {metric}",
-      "heading": "Hoy",
+      "deltaShort": "{delta} vs referencia",
+      "deltaFlatShort": "En la referencia",
       "steadyWeeksOne": "Estable desde hace {count} semana",
       "steadyWeeksFew": "Estable desde hace {count} semanas",
       "steadyWeeksOther": "Estable desde hace {count} semanas",
@@ -14178,6 +14077,7 @@
       "latestNight": "Última noche: {date}",
       "vitalOutside": "{metric}: media de {value} hoy, habitual {range}",
       "contributor": "{name}: {value} de 100",
+      "contributorShort": "{name} {value}/100",
       "readinessLast": "Último {score} el {date}",
       "source": {
         "recovery": {
@@ -14829,8 +14729,6 @@
       "choose": "¿A qué cita pertenece?"
     },
     "episodeCard": {
-      "title": "Citas relacionadas",
-      "emptyLine": "Todavía no hay ninguna cita vinculada a esta enfermedad.",
       "add": "Añadir una cita"
     },
     "dashboard": {
@@ -14917,7 +14815,7 @@
       }
     },
     "related": {
-      "title": "Relacionado",
+      "title": "Vínculos",
       "kind": {
         "labResult": "Resultado de laboratorio",
         "encounter": "Cita",
@@ -14939,6 +14837,10 @@
       },
       "nothingToOffer": "Todavía no hay nada que vincular.",
       "saveError": "No se pudo guardar el vínculo."
+    },
+    "row": {
+      "add": "Vincular",
+      "uploadDocument": "Subir un documento"
     }
   },
   "bodySites": {
@@ -14971,7 +14873,6 @@
     "errorReaderBusy": "El lector de documentos está ocupado con otras tareas. Inténtalo de nuevo en un minuto.",
     "jobFailure": {
       "title": "IA en segundo plano que se detuvo",
-      "description": "Tareas que se detuvieron hace poco y por qué; cada entrada desaparece cuando vuelve a funcionar.",
       "line": "{job}: {reason}",
       "repeated": "{count, plural, one {Falló una vez} other {Falló # veces seguidas}}; la última, el {when}.",
       "lastAt": "Último intento el {when}.",

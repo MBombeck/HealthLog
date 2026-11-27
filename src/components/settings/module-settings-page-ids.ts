@@ -24,12 +24,8 @@ export function isModuleSettingsPageId(
 /** i18n keys of a page's heading, under `settings.sections.modules.pages`. */
 export function moduleSettingsPageKeys(id: ModuleSettingsPageId): {
   titleKey: string;
-  descriptionKey: string;
 } {
-  return {
-    titleKey: `settings.sections.modules.pages.${id}.title`,
-    descriptionKey: `settings.sections.modules.pages.${id}.description`,
-  };
+  return { titleKey: `settings.sections.modules.pages.${id}.title` };
 }
 
 /** The module a page belongs to, from the surface map. */

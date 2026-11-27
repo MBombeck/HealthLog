@@ -76,7 +76,6 @@ export function CoachConversationsMemoryCard({
         icon={MessagesSquare}
         titleId="settings-coach-conversations-title"
         title={t("settings.ai.coachConversations.title")}
-        description={t("settings.ai.coachConversations.description")}
       />
       {history.isError ? (
         <QueryErrorRow
@@ -132,7 +131,7 @@ export function CoachConversationsMemoryCard({
           ))}
         </ul>
       )}
-      <SettingsCardActions align="start">
+      <SettingsCardActions>
         {history.hasNextPage ? (
           <Button
             type="button"

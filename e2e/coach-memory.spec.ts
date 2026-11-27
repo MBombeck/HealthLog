@@ -420,7 +420,8 @@ test.describe("Coach memory and plans", () => {
       if (scenario.block.available) {
         await expect(select).toBeEnabled();
         await expect(select.locator('option[value="high"]')).toBeDisabled();
-        await expect(field).toContainText("a little more waiting");
+        // What thinking depth does is not explained; only a lock is.
+        await expect(field).not.toContainText("deeper thinking off");
       } else {
         await expect(select).toBeDisabled();
         await expect(field).toContainText(

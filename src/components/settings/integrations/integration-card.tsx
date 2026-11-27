@@ -32,9 +32,9 @@ import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { useIntegrationSheetSlots } from "@/components/settings/sheet-surface";
-import { Badge } from "@/components/ui/badge";
 import { Disclosure } from "@/components/ui/disclosure";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatusChip } from "@/components/ui/status-chip";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type {
   ConnectionHealth,
@@ -54,36 +54,23 @@ import { IntegrationSheetBody } from "./integration-sheet-body";
 import {
   diagnosticsText,
   formatHealthInstant,
-  healthBadgeLabel,
   healthSentence,
+  healthStatusTone,
   unavailableItemLabel,
 } from "./integration-health-copy";
 
 /**
- * The three calm states take the status token on a light wash. "Action
- * needed" is the solid destructive badge: red text on a red wash falls below
- * AA in both themes, and this is the one state that should stand out anyway.
+ * The status chip for a connection. `ok` and `limited` read "Active",
+ * `degraded` and `action_required` read "Error"; the sentence under the
+ * header says which and why (`healthSentence`).
  */
-const BADGE_TONE: Record<ConnectionHealthState, string> = {
-  ok: "border-success/30 bg-success/15 text-success",
-  limited: "border-info/30 bg-info/15 text-info",
-  degraded: "border-warning/30 bg-warning/15 text-warning",
-  action_required: "",
-};
-
-/** The status badge: a dot and one word. The word is the accessible name. */
 export function HealthBadge({ state }: { state: ConnectionHealthState }) {
-  const { t } = useTranslations();
   return (
-    <Badge
+    <StatusChip
       data-slot="integration-health-badge"
       data-state={state}
-      variant={state === "action_required" ? "destructive" : "outline"}
-      className={cn("gap-1.5", BADGE_TONE[state])}
-    >
-      <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
-      {healthBadgeLabel(state, t)}
-    </Badge>
+      tone={healthStatusTone(state)}
+    />
   );
 }
 
@@ -170,7 +157,9 @@ export function IntegrationCard(props: IntegrationCardProps) {
       titleAccessory={titleAccessory}
       description={!loading && !connected ? description : undefined}
       status={
-        connected && !loading && health ? (
+        loading ? null : !connected ? (
+          <StatusChip tone="off" data-state="not_connected" />
+        ) : health ? (
           <HealthBadge state={health.state} />
         ) : null
       }
@@ -203,9 +192,6 @@ export function IntegrationCard(props: IntegrationCardProps) {
   if (!connected) {
     return shell(
       <>
-        <p className="text-sm" data-slot="integration-sentence">
-          {t("settings.integrationCard.notConnected")}
-        </p>
         <IntegrationSetupFold>{setup}</IntegrationSetupFold>
         {children}
         {connectAction ? (

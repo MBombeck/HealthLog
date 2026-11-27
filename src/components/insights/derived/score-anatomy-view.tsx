@@ -74,14 +74,12 @@ export interface ScoreAnatomyViewProps {
   /** Stress / strain: the ring bands and words the score as a load. */
   load?: boolean;
   /**
-   * v1.15.12 — the metric's ring hue. When set, the detail card
-   * carries the same gentle per-metric tint the dashboard ring tile wears
-   * (visual continuity from tap to detail) and the ring arc leans the same
-   * hue instead of the generic band gradient. Omitted → plain `--card` surface
-   * + band-coloured ring (the legacy look).
+   * The metric's hue. When set, the detail card carries the gentle
+   * per-metric tint its Insights tile wears (continuity from tap to detail).
+   * The ring itself is always coloured by its band (`ring-color.ts`).
    */
   hue?: RingHue;
-  /** Short caption under the ring (e.g. a band word or a one-line summary). */
+  /** Short caption under the ring (a one-line summary, never a band word). */
   caption?: ReactNode;
   /** Ranked contributors (the caller pre-ranks; the view renders in order). */
   contributors: AnatomyContributor[];
@@ -184,7 +182,6 @@ export function ScoreAnatomyView({
               score={effectiveScore}
               band={band}
               load={load}
-              hue={insufficient ? undefined : hue}
               label={t("insights.derived.anatomy.outOf")}
               size="lg"
               emptyFace={staleLabel !== undefined}

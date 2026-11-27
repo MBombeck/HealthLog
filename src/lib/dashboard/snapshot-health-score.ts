@@ -5,6 +5,7 @@
 import type {
   HealthScoreReport,
   RestModeAnnotation,
+  ScoreBand,
   ScorePillarId,
   ScorePillarResult,
   ScorePillarWeight,
@@ -34,6 +35,8 @@ export interface DashboardSnapshotScorePillar {
   label: string;
   /** The pillar's own 0..100 score (rounded) when it counted, else null. */
   value: number | null;
+  /** The pillar's own band, as the scorer resolved it; null when it did not count. */
+  band: ScoreBand | null;
   /** Why it did not count, worded; null when it counted. */
   reason: string | null;
   /** The machine reason behind `reason`; null when it counted. */
@@ -67,6 +70,10 @@ export function snapshotScorePillars(
       value:
         pillar.result.status === "ok"
           ? clampScore(pillar.result.value.score)
+          : null,
+      band:
+        pillar.result.status === "ok"
+          ? (pillar.result.value.band ?? null)
           : null,
       reason: ok ? null : t(scorePillarReasonKey(reasonCode ?? "")),
       reasonCode: ok ? null : (reasonCode ?? "unavailable"),
