@@ -151,11 +151,11 @@ describe("GET /api/export/measurements", () => {
     await prisma.measurement.createMany({
       data: [
         // 00:30 Berlin on the first day: inside, though 22:30 UTC the day before.
-        { value: 71, measuredAt: new Date("2026-04-30T22:30:00.000Z") },
+        { value: 71, measuredAt: new Date("2024-04-30T22:30:00.000Z") },
         // 21:30 Berlin on the last day: inside.
-        { value: 72, measuredAt: new Date("2026-05-11T19:30:00.000Z") },
+        { value: 72, measuredAt: new Date("2024-05-11T19:30:00.000Z") },
         // 00:30 Berlin the day after: outside.
-        { value: 73, measuredAt: new Date("2026-05-11T22:30:00.000Z") },
+        { value: 73, measuredAt: new Date("2024-05-11T22:30:00.000Z") },
       ].map((r) => ({
         ...r,
         userId: me.id,
@@ -168,7 +168,7 @@ describe("GET /api/export/measurements", () => {
     const { GET } = await import("@/app/api/export/measurements/route");
     const res = await GET(
       new Request(
-        "http://localhost/api/export/measurements?since=2026-05-01&until=2026-05-11",
+        "http://localhost/api/export/measurements?since=2024-05-01&until=2024-05-11",
         { method: "GET" },
       ) as Parameters<typeof GET>[0],
     );
