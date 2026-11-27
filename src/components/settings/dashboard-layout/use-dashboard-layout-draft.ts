@@ -253,19 +253,6 @@ function layoutEdits(
   }
 
   /**
-   * Hero primary content — the server-persisted `hero` field on the layout
-   * blob. The value set is closed ("score" | "reminders"); anything else a
-   * DOM event could carry collapses to the default rather than a cast.
-   */
-  function setHeroContent(value: string) {
-    if (!layout) return;
-    setDraft({
-      ...layout,
-      hero: value === "reminders" ? "reminders" : "score",
-    });
-  }
-
-  /**
    * The arrow buttons now delegate to `reorderWidgets()`
    * so the swap-and-renumber logic lives in exactly one place. The
    * neighbour id is derived from the sorted layout index + delta;
@@ -316,7 +303,6 @@ function layoutEdits(
     togglePin,
     toggleHeroItem,
     setTodayCardVisible,
-    setHeroContent,
     move,
     handleDragEnd,
   };

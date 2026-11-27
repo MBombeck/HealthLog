@@ -9,7 +9,7 @@ import {
   IOS_PIN_ONLY_WIDGET_IDS,
   type DashboardLayout,
 } from "@/lib/dashboard-layout";
-import { PRIORITY_ITEM_KINDS } from "@/lib/daily/priority-item";
+import { OPTIONAL_ASK_KINDS } from "@/lib/daily/ask-intents";
 import { NATIVE_ONLY_WIDGET_LABEL_KEYS } from "@/lib/dashboard/widget-modules";
 
 // v1.11.2 — the web Settings list renders one row per WRITABLE id
@@ -517,13 +517,18 @@ describe("<DashboardLayoutSection> — hero content", () => {
     }
   });
 
-  it("renders one switch for every current priority-item kind", () => {
+  it("renders one switch for every optional ask category, none for the mandatory ones", () => {
     const html = render(<DashboardLayoutSection id="dashboard-layout" />);
     expect(html).toContain('data-slot="hero-content-settings"');
     const switches = html.match(/data-slot="hero-item-switch"/g) ?? [];
-    expect(switches).toHaveLength(PRIORITY_ITEM_KINDS.length);
+    expect(switches).toHaveLength(OPTIONAL_ASK_KINDS.length);
+    // A dose past its time and the server questions cannot be switched off;
+    // the note says so.
+    expect(html).toContain(
+      "Overdue doses and questions about the server always show.",
+    );
 
-    for (const kind of PRIORITY_ITEM_KINDS) {
+    for (const kind of OPTIONAL_ASK_KINDS) {
       const control = html.match(
         new RegExp(
           `<button[^>]*data-slot="hero-item-switch"[^>]*data-kind="${kind}"[^>]*>`,
@@ -543,7 +548,7 @@ describe("<DashboardLayoutSection> — hero content", () => {
     const html = render(<DashboardLayoutSection id="dashboard-layout" />);
     const switches =
       html.match(/<button[^>]*data-slot="hero-item-switch"[^>]*>/g) ?? [];
-    expect(switches).toHaveLength(PRIORITY_ITEM_KINDS.length);
+    expect(switches).toHaveLength(OPTIONAL_ASK_KINDS.length);
     for (const control of switches) {
       expect(control).toContain('data-state="checked"');
     }
@@ -558,7 +563,7 @@ describe("<DashboardLayoutSection> — hero content", () => {
     const switches = html.match(
       /<button[^>]*data-slot="hero-item-switch"[^>]*>/g,
     );
-    expect(switches).toHaveLength(PRIORITY_ITEM_KINDS.length);
+    expect(switches).toHaveLength(OPTIONAL_ASK_KINDS.length);
     for (const control of switches ?? []) {
       expect(control).toContain('data-state="unchecked"');
       expect(control).not.toContain('disabled=""');
@@ -610,14 +615,16 @@ describe("<DashboardLayoutSection> — hero content", () => {
     };
     const html = render(<DashboardLayoutSection id="dashboard-layout" />);
     const switches = html.match(/data-slot="hero-item-switch"/g) ?? [];
-    expect(switches).toHaveLength(PRIORITY_ITEM_KINDS.length);
+    expect(switches).toHaveLength(OPTIONAL_ASK_KINDS.length);
   });
 
   it("renders localized To-do-today labels", () => {
     const html = render(<DashboardLayoutSection id="dashboard-layout" />, "de");
     expect(html).toContain("Heute zu tun");
     expect(html).toContain("Medikamentendosen");
-    expect(html).toContain("Neue EKG-Aufzeichnungen");
+    expect(html).toContain("Termine");
+    // Observations no longer ask on the start page, so they have no switch.
+    expect(html).not.toContain("Neue EKG-Aufzeichnungen");
   });
 
   it("states that notification settings are managed separately", () => {
@@ -639,7 +646,7 @@ describe("<DashboardLayoutSection> — the top card switch", () => {
     expect(control(html)).toContain('data-state="checked"');
     const id = control(html).match(/id="([^"]+)"/)![1];
     expect(html).toContain(`for="${id}"`);
-    expect(html).toContain("Show the top card");
+    expect(html).toContain("Show the scores");
     expect(html).toContain("Using default layout");
   });
 
@@ -663,6 +670,6 @@ describe("<DashboardLayoutSection> — the top card switch", () => {
 
   it("labels it in German", () => {
     const html = render(<DashboardLayoutSection id="dashboard-layout" />, "de");
-    expect(html).toContain("Obere Karte anzeigen");
+    expect(html).toContain("Scores anzeigen");
   });
 });

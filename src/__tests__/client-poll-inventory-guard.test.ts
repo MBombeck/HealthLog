@@ -53,11 +53,11 @@ const INVENTORY: Readonly<Record<string, Poll>> = {
     shape: "standing",
     cadence: "120 s, DASHBOARD_REFETCH_INTERVAL_MS",
   },
-  "components/daily/morning-block.tsx": {
+  "lib/queries/use-daily-morning.ts": {
     sites: 1,
     shape: "standing",
     cadence:
-      "120 s, DASHBOARD_REFETCH_INTERVAL_MS; the morning moves with the digest it is shown beside",
+      "120 s, DASHBOARD_REFETCH_INTERVAL_MS; the score row moves with the digest it is shown beside",
   },
   "components/settings/notification-status-card.tsx": {
     sites: 1,

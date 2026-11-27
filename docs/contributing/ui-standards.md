@@ -211,9 +211,9 @@ The `p-5` / `py-5` / `px-5` / `space-y-5` family does not occur in the app, and 
 A ring's colour says how the score stands today, never which score it is. Rules marked (1.50.0) ship with the start page change in that release.
 
 - **Colour is the band.** A good, fair or low score draws its arc in `--score-good`, `--score-fair` or `--score-low`. A score that carries no band (a device value, Rest mode) draws in the neutral `--score-ink`, and never falls back to a series colour. (1.50.0)
-- **A stale score shows an empty ring.** A score that is not about today shows no number, one solid track in `--score-track` (never the segmented tick track), a centred "—" (U+2014, the placeholder both clients share) and no band word. Its spoken label is "nicht von heute" ("not from today"; `insights.derived.scoreRing.notToday`, glossary `scoreNotToday`). The line under it says when the last value was.
+- **A stale score shows an empty ring.** A score that is not about today shows no number, one solid track in `--score-track` (never the segmented tick track), a centred em dash (U+2014, the placeholder both clients share) and no band word. Its spoken label is "nicht von heute" ("not from today"; `insights.derived.scoreRing.notToday`, glossary `scoreNotToday`). A stale tile's line reads the same "nicht von heute" on every tile size; when the last value was ("Zuletzt 81 am …") is said in the ring's accessible name and on the score's own page, not on the tile. Device lines and the cycle day line stay.
   iOS renders the same rule (wo-17-stufe-g).
-- **The band word stands next to the ring**, with a fill mark (full for good, half for fair, hollow for low) in the band's colour, so colour is never the only carrier (WCAG 1.4.1). Low is "low", never "bad".
+- **No band word under or next to a ring.** Colour and number are enough on screen. The band stays in the ring's accessible name ("score 64 of 100, fair"), so colour is never the only carrier (WCAG 1.4.1); in that name low is "low", never "bad". Lines with other content stay: when the last value was, a device's own reading ("15.8 of 21, device value"), the Health score's setter line. This holds on every surface that draws `ScoreRing` or `ScoreRingTile`: the start page's ring row, the Insights tiles, the score pages.
 - **Identity comes from the icon and the name** and the tile's fixed place. Series colours (`--chart-1..5`) belong to charts, where lines must be told apart.
 - **The tokens** (`globals.css`, tuned for contrast against the card and for deuteranopia; the green leans blue on purpose):
 
@@ -225,7 +225,7 @@ A ring's colour says how the score stands today, never which score it is. Rules 
 | `--score-ink`   | `#c9cdd8` | `#4b4658` |
 | `--score-track` | `#44475a` | `#dad8de` |
 
-Component: `ScoreRing` (`insights/derived/score-ring.tsx`), coloured only through `ringColor()` (`insights/derived/ring-color.ts`), and `ScoreRingTile` (`insights/derived/score-ring-tile.tsx`) with its `BandWord`. A ring takes no hue prop. The medication ring keeps `--primary`; it is a progress ring, not a score. The native app follows the same rule from the band the server sends. Guard: `score-ring-colour-guard.test.tsx` (every band renders its token, no band renders the ink, no source hands a ring a hue). (1.50.0)
+Component: `ScoreRing` (`insights/derived/score-ring.tsx`), coloured only through `ringColor()` (`insights/derived/ring-color.ts`), and `ScoreRingTile` (`insights/derived/score-ring-tile.tsx`). A ring takes no hue prop. The medication ring keeps `--primary`; it is a progress ring, not a score. The native app follows the same rule from the band the server sends. Guard: `score-ring-colour-guard.test.tsx` (every band renders its token, no band renders the ink, no source hands a ring a hue) and `score-ring-no-band-word-guard.test.tsx` (no shared ring surface shows a band word, and only the files that build a ring's accessible name resolve one). (1.50.0)
 
 ## 15. The asks card on the start page
 
@@ -245,7 +245,7 @@ Component: `TodayAsks` (`dashboard/today-asks.tsx`). Guards: `src/lib/daily/__te
 
 - **Start page:** the Health score, sleep score and readiness sit below the asks card as one row. On a wide screen each tile spans 2 of the 6 tile columns, so its edges sit on the metric tile row's gutters; on a phone it is one tile holding three rings. Component: `TodayScores` (`dashboard/today-scores.tsx`) with `ScoreRingTile size="wide"`. (1.50.0)
 - **Insights:** the scores form one compact row at the head of the page, every score with the same tile and the same page order behind it (assessment, contributors, course). Today that tile is `RingTile` (`insights/derived/wellness-scores.tsx`); it moves to `ScoreRingTile size="compact"` (1.50.0).
-- One anatomy, two sizes: the ring, the short name, the band word and one line. No subtitle, no tinted tile.
+- One anatomy, two sizes: the ring, the short name and one line. No subtitle, no tinted tile.
 
 Guards: `today-scores.test.tsx`, `score-ring-tile.test.tsx` (1.50.0), `e2e/insights-score-parity.spec.ts` (head order and labels, both themes).
 

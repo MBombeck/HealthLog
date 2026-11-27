@@ -853,8 +853,6 @@
     "customizeTitle": "Dashboard layout",
     "heroItemsDescription": "Choose which item types can appear in Today highlights.",
     "heroItemsNotificationNote": "Notification settings are managed separately.",
-    "heroContentTitle": "Top card shows",
-    "heroContentScore": "Health score and daily summary",
     "heroItems": {
       "coach_checkin": "Coach check-ins",
       "dose_window": "Medication doses",
@@ -936,7 +934,8 @@
       }
     },
     "quickAddSymptom": "Log symptom",
-    "todayCardVisible": "Show the top card",
+    "scoreRowVisible": "Show the scores",
+    "asksAlwaysShown": "Overdue doses and questions about the server always show.",
     "recoveryKitBanner": {
       "title": "Save your recovery kit",
       "body": "Without copies of the keys this server uses, its data cannot be recovered after a reinstall. It takes a few minutes.",
@@ -948,8 +947,7 @@
     "quickAddSeizure": "Log seizure",
     "morning": {
       "heroItemsTitle": "To do today",
-      "heroItemsDescription": "Choose which item types can appear in “To do today”.",
-      "heroContentReminders": "To do today first"
+      "heroItemsDescription": "Choose which item types can appear in “To do today”."
     }
   },
   "measurements": {
@@ -1179,6 +1177,10 @@
     "shortTypeTimeInDaylight": "Time in Daylight",
     "shortTypeAudioExposureEvent": "Loud audio alert",
     "shortTypeRespiratoryRate": "Respiratory rate",
+    "shortTypeHealthScore": "Health score",
+    "shortTypeRestingHeartRate": "Resting HR",
+    "shortTypeBloodPressure": "BP",
+    "shortTypeBloodGlucose": "Glucose",
     "shortTypeLeanBodyMass": "Lean body mass",
     "shortTypeWalkingHeartRateAverage": "Walking heart rate (avg)",
     "shortTypeWalkingDoubleSupport": "Double support",
@@ -9720,6 +9722,8 @@
       },
       "question": {
         "title": "Use the HealthLog push relay?",
+        "askTitle": "Notifications via push relay?",
+        "askBody": "The content stays encrypted.",
         "body": "Notifications for the App Store app, end-to-end encrypted: the relay only sees when one is sent.",
         "yes": "Yes",
         "no": "No",
@@ -9812,10 +9816,9 @@
       "notice": {
         "title": "Set up this server",
         "body": "Five short steps for sign-ups, notifications, AI and privacy; skip or change any of them later.",
+        "bodyShort": "Five short steps for sign-ups, notifications, AI and privacy.",
         "open": "Start the setup",
-        "dismiss": "Not now",
-        "relayBody": "iPhone reminders and Wallet wait for this answer, on the admin start page.",
-        "relayOpen": "Open admin"
+        "dismiss": "Not now"
       },
       "accounts": {
         "title": "Who can use this server",
@@ -13857,6 +13860,7 @@
       },
       "syncIssue": {
         "title": "Sync needs attention",
+        "askTitle": "Sync stopped",
         "body": "{integration} isn't syncing. Reconnect to keep your data current."
       },
       "sourceQuiet": {
@@ -13908,10 +13912,14 @@
     },
     "action": {
       "logDose": "Take",
+      "later": "Later",
+      "answer": "Answer",
+      "learnMore": "More",
+      "open": "Open",
+      "setUp": "Set up",
+      "reconnectShort": "Reconnect",
       "reconnect": "Reconnect",
       "viewCheckups": "Open Care",
-      "viewAppointment": "View visit",
-      "viewAppointments": "View visits",
       "checkinKeep": "Keep it",
       "checkinAdjust": "Adjust",
       "checkinLetGo": "Let it go",
@@ -13922,14 +13930,8 @@
       "openSource": "Open"
     },
     "today": {
-      "scoreLabel": "Health score",
-      "deltaVsBaseline": "{delta} vs your baseline",
-      "deltaFlat": "In line with your baseline",
-      "sleepPending": "Last night's sleep isn't in yet, so today's read is provisional.",
-      "worthALook": "Worth a look",
-      "allClear": "Nothing needs your attention today.",
-      "ringLink": "Open {metric} details",
-      "heading": "Today",
+      "deltaShort": "{delta} vs baseline",
+      "deltaFlatShort": "At baseline",
       "steadyWeeksOne": "Steady for {count} week",
       "steadyWeeksFew": "Steady for {count} weeks",
       "steadyWeeksOther": "Steady for {count} weeks",
@@ -14099,6 +14101,7 @@
       "latestNight": "Latest night: {date}",
       "vitalOutside": "{metric}: {value} on average today, usual {range}",
       "contributor": "{name}: {value} of 100",
+      "contributorShort": "{name} {value}/100",
       "readinessLast": "Last {score} on {date}",
       "source": {
         "recovery": {

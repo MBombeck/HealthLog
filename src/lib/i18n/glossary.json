@@ -2571,7 +2571,8 @@
       "description": "The 0 to 100 Health score.",
       "terms": {
         "de": {
-          "name": "Gesundheitsscore"
+          "name": "Gesundheitsscore",
+          "short": "Gesundheit"
         },
         "en": {
           "name": "Health score"
@@ -2592,7 +2593,8 @@
           "name": "건강 점수"
         },
         "nl": {
-          "name": "Gezondheidsscore"
+          "name": "Gezondheidsscore",
+          "short": "Gezondheid"
         },
         "pt-BR": {
           "name": "Pontuação de saúde"
@@ -2608,16 +2610,12 @@
           "match": "exact"
         },
         {
-          "key": "daily.today.scoreLabel",
-          "form": "name",
-          "match": "exact"
-        },
-        {
           "key": "insights.healthScore.label",
           "form": "name",
           "match": "exact"
         }
       ],
+      "shortKey": "measurements.shortTypeHealthScore",
       "forbidden": {
         "de": ["Health Score", "Health-Score", "Gesundheits-Score"],
         "en": [
@@ -3769,19 +3767,24 @@
           "name": "Ruhepuls"
         },
         "en": {
-          "name": "Resting heart rate"
+          "name": "Resting heart rate",
+          "short": "Resting HR"
         },
         "fr": {
-          "name": "Fréquence cardiaque au repos"
+          "name": "Fréquence cardiaque au repos",
+          "short": "FC au repos"
         },
         "es": {
-          "name": "Frecuencia cardíaca en reposo"
+          "name": "Frecuencia cardíaca en reposo",
+          "short": "FC en reposo"
         },
         "it": {
-          "name": "Frequenza cardiaca a riposo"
+          "name": "Frequenza cardiaca a riposo",
+          "short": "FC a riposo"
         },
         "pl": {
-          "name": "Tętno spoczynkowe"
+          "name": "Tętno spoczynkowe",
+          "short": "Tętno spocz."
         },
         "ko": {
           "name": "안정 시 심박수"
@@ -3790,7 +3793,8 @@
           "name": "Rusthartslag"
         },
         "pt-BR": {
-          "name": "Frequência cardíaca em repouso"
+          "name": "Frequência cardíaca em repouso",
+          "short": "FC em repouso"
         },
         "ru": {
           "name": "ЧСС в покое"
@@ -3838,6 +3842,7 @@
           "match": "exact"
         }
       ],
+      "shortKey": "measurements.shortTypeRestingHeartRate",
       "forbidden": {
         "de": ["Ruheherzfrequenz"],
         "en": [],
@@ -3941,7 +3946,8 @@
           "name": "Blutzucker"
         },
         "en": {
-          "name": "Blood glucose"
+          "name": "Blood glucose",
+          "short": "Glucose"
         },
         "fr": {
           "name": "Glycémie"
@@ -3959,13 +3965,15 @@
           "name": "혈당"
         },
         "nl": {
-          "name": "Bloedglucose"
+          "name": "Bloedglucose",
+          "short": "Glucose"
         },
         "pt-BR": {
           "name": "Glicemia"
         },
         "ru": {
-          "name": "Глюкоза крови"
+          "name": "Глюкоза крови",
+          "short": "Глюкоза"
         }
       },
       "anchors": [
@@ -4010,6 +4018,7 @@
           "match": "exact"
         }
       ],
+      "shortKey": "measurements.shortTypeBloodGlucose",
       "forbidden": {
         "de": [],
         "en": [],
@@ -7285,19 +7294,24 @@
           "name": "Blutdruck"
         },
         "en": {
-          "name": "Blood pressure"
+          "name": "Blood pressure",
+          "short": "BP"
         },
         "fr": {
-          "name": "Tension artérielle"
+          "name": "Tension artérielle",
+          "short": "Tension"
         },
         "es": {
-          "name": "Presión arterial"
+          "name": "Presión arterial",
+          "short": "Presión"
         },
         "it": {
-          "name": "Pressione arteriosa"
+          "name": "Pressione arteriosa",
+          "short": "Pressione"
         },
         "pl": {
-          "name": "Ciśnienie krwi"
+          "name": "Ciśnienie krwi",
+          "short": "Ciśnienie"
         },
         "ko": {
           "name": "혈압"
@@ -7306,7 +7320,8 @@
           "name": "Bloeddruk"
         },
         "pt-BR": {
-          "name": "Pressão arterial"
+          "name": "Pressão arterial",
+          "short": "Pressão"
         },
         "ru": {
           "name": "АД"
@@ -7324,6 +7339,7 @@
           "match": "exact"
         }
       ],
+      "shortKey": "measurements.shortTypeBloodPressure",
       "forbidden": {
         "de": [],
         "en": [],
