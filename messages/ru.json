@@ -8379,7 +8379,6 @@
     },
     "passkeyRenameFailed": "Не удалось переименовать ключ доступа.",
     "passkeyRemoveFailed": "Не удалось убрать ключ доступа.",
-    "apiEndpointsShow": "Показать эндпоинты",
     "integrationList": {
       "channels": "Каналы доставки",
       "sources": "Источники данных",

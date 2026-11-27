@@ -8379,7 +8379,6 @@
     },
     "passkeyRenameFailed": "Could not rename the passkey.",
     "passkeyRemoveFailed": "Could not remove the passkey.",
-    "apiEndpointsShow": "Show endpoints",
     "integrationList": {
       "channels": "Delivery channels",
       "sources": "Data sources",

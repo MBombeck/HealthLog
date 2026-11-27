@@ -8379,7 +8379,6 @@
     },
     "passkeyRenameFailed": "Der Passkey konnte nicht umbenannt werden.",
     "passkeyRemoveFailed": "Der Passkey konnte nicht entfernt werden.",
-    "apiEndpointsShow": "Endpunkte anzeigen",
     "integrationList": {
       "channels": "Zustellkanäle",
       "sources": "Datenquellen",

@@ -8379,7 +8379,6 @@
     },
     "passkeyRenameFailed": "Nie udało się zmienić nazwy klucza dostępu.",
     "passkeyRemoveFailed": "Nie udało się usunąć klucza dostępu.",
-    "apiEndpointsShow": "Pokaż endpointy",
     "integrationList": {
       "channels": "Kanały dostarczania",
       "sources": "Źródła danych",

@@ -8379,7 +8379,6 @@
     },
     "passkeyRenameFailed": "De naam van de passkey kon niet worden gewijzigd.",
     "passkeyRemoveFailed": "De passkey kon niet worden verwijderd.",
-    "apiEndpointsShow": "Endpoints tonen",
     "integrationList": {
       "channels": "Bezorgkanalen",
       "sources": "Gegevensbronnen",

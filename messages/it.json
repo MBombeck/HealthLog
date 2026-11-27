@@ -8379,7 +8379,6 @@
     },
     "passkeyRenameFailed": "Impossibile rinominare la passkey.",
     "passkeyRemoveFailed": "Impossibile rimuovere la passkey.",
-    "apiEndpointsShow": "Mostra gli endpoint",
     "integrationList": {
       "channels": "Canali di recapito",
       "sources": "Fonti di dati",

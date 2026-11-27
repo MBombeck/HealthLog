@@ -8379,7 +8379,6 @@
     },
     "passkeyRenameFailed": "Impossible de renommer la clé d’accès.",
     "passkeyRemoveFailed": "Impossible de supprimer la clé d’accès.",
-    "apiEndpointsShow": "Afficher les endpoints",
     "integrationList": {
       "channels": "Canaux de diffusion",
       "sources": "Sources de données",

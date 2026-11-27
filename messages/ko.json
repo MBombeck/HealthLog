@@ -8379,7 +8379,6 @@
     },
     "passkeyRenameFailed": "패스키 이름을 변경하지 못했어요.",
     "passkeyRemoveFailed": "패스키를 삭제하지 못했어요.",
-    "apiEndpointsShow": "엔드포인트 보기",
     "integrationList": {
       "channels": "전송 채널",
       "sources": "데이터 소스",

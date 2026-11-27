@@ -17,6 +17,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, RotateCw, Send } from "lucide-react";
 
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
+import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { EmailCard } from "@/components/settings/email-card";
 import { HealthConnectRemoteCard } from "@/components/settings/import-panel/health-connect-remote-card";
 import { NtfyCard } from "@/components/settings/ntfy-card";
@@ -106,11 +107,14 @@ export function IntegrationSheet({
             <IntegrationController item={item} callbackUrls={callbackUrls} />
           </SheetCardContext.Provider>
         </IntegrationSheetSlotsContext.Provider>
-        <div
-          ref={setActionsEl}
-          data-slot="integration-sheet-actions"
-          className="flex flex-wrap items-center justify-end gap-2 border-t pt-4 empty:hidden"
-        />
+        {/* The card's actions land here through a portal; the rule above
+            them shows only once there is one. */}
+        <div className="border-t pt-4 has-[>[data-slot=integration-sheet-actions]:empty]:hidden">
+          <SettingsCardActions
+            ref={setActionsEl}
+            data-slot="integration-sheet-actions"
+          />
+        </div>
       </div>
     </ResponsiveSheet>
   );
