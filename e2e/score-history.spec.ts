@@ -213,7 +213,7 @@ test.describe("score histories", () => {
     await mockScoreHistory(page);
     await page.goto("/insights");
     const link = page.locator(
-      '[data-slot="wellness-score-tile"][data-metric="HEALTH_SCORE"]',
+      '[data-slot="score-ring-tile"][data-score="HEALTH_SCORE"]',
     );
     await expect(link).toHaveAttribute("href", "/insights/scores/health");
     await link.click();
