@@ -1,14 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { findMany, annotate, countReadingsUpTo, readHourCells } = vi.hoisted(
-  () => ({
-    findMany: vi.fn(),
-    annotate: vi.fn(),
-    countReadingsUpTo: vi.fn(),
-    readHourCells: vi.fn(),
-  }),
-);
+const {
+  findMany,
+  annotate,
+  countReadingsUpTo,
+  readHourCells,
+  loadUserSourcePriority,
+} = vi.hoisted(() => ({
+  findMany: vi.fn(),
+  annotate: vi.fn(),
+  countReadingsUpTo: vi.fn(),
+  readHourCells: vi.fn(),
+  loadUserSourcePriority: vi.fn(),
+}));
 vi.mock("@/lib/db", () => ({ prisma: { measurement: { findMany } } }));
+vi.mock("@/lib/rollups/measurement-read", () => ({ loadUserSourcePriority }));
 vi.mock("@/lib/logging/context", () => ({ annotate }));
 vi.mock("@/lib/measurements/dense-bucket-read", () => ({
   countReadingsUpTo,
@@ -30,6 +36,8 @@ beforeEach(() => {
   annotate.mockReset();
   countReadingsUpTo.mockReset();
   readHourCells.mockReset();
+  loadUserSourcePriority.mockReset();
+  loadUserSourcePriority.mockResolvedValue(null);
 });
 
 describe("readRecentReadings", () => {
@@ -85,8 +93,20 @@ describe("readRecentReadings", () => {
     findMany.mockResolvedValueOnce(dense);
     countReadingsUpTo.mockResolvedValueOnce(DENSE_READ_CAP + 1);
     readHourCells.mockResolvedValueOnce([
-      { measuredAt: minutesAgo(120), value: 61.5, n: 1400, source: null },
-      { measuredAt: minutesAgo(60), value: 64, n: 1450, source: null },
+      {
+        measuredAt: minutesAgo(120),
+        value: 61.5,
+        n: 1400,
+        source: "APPLE_HEALTH",
+        deviceType: null,
+      },
+      {
+        measuredAt: minutesAgo(60),
+        value: 64,
+        n: 1450,
+        source: "APPLE_HEALTH",
+        deviceType: null,
+      },
     ]);
     const out = await readRecentReadings("u1", "PULSE", TZ, now);
     // No raw window read: the newest 365 and then the cells.
@@ -96,6 +116,8 @@ describe("readRecentReadings", () => {
       type: "PULSE",
       timeZone: TZ,
       summed: false,
+      // Per source, so the day pick can still choose between them.
+      bySource: true,
     });
     expect(out).toEqual([
       { measuredAt: minutesAgo(120), value: 61.5 },
@@ -121,5 +143,84 @@ describe("readRecentReadings", () => {
     findMany.mockResolvedValueOnce([{ value: 1, measuredAt: minutesAgo(5) }]);
     expect(await readRecentReadings("u1", "PULSE", TZ, now)).toHaveLength(1);
     expect(findMany).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps each day to the source the ladder puts first", async () => {
+    // Withings ranks above a hand-typed reading on the default pulse ladder.
+    findMany.mockResolvedValueOnce([
+      {
+        value: 90,
+        measuredAt: minutesAgo(30),
+        source: "MANUAL",
+        deviceType: null,
+      },
+      {
+        value: 60,
+        measuredAt: minutesAgo(20),
+        source: "WITHINGS",
+        deviceType: null,
+      },
+      {
+        value: 62,
+        measuredAt: minutesAgo(10),
+        source: "WITHINGS",
+        deviceType: null,
+      },
+      // The day before holds only the hand-typed reading, and keeps it.
+      {
+        value: 88,
+        measuredAt: minutesAgo(1440),
+        source: "MANUAL",
+        deviceType: null,
+      },
+    ]);
+    const out = await readRecentReadings("u1", "PULSE", TZ, now);
+    expect(out).toEqual([
+      { value: 88, measuredAt: minutesAgo(1440) },
+      { value: 60, measuredAt: minutesAgo(20) },
+      { value: 62, measuredAt: minutesAgo(10) },
+    ]);
+  });
+
+  it("follows the person's own ladder", async () => {
+    loadUserSourcePriority.mockResolvedValue({
+      metricPriority: { pulse: ["MANUAL", "WITHINGS"] },
+    });
+    findMany.mockResolvedValueOnce([
+      {
+        value: 90,
+        measuredAt: minutesAgo(30),
+        source: "MANUAL",
+        deviceType: null,
+      },
+      {
+        value: 60,
+        measuredAt: minutesAgo(20),
+        source: "WITHINGS",
+        deviceType: null,
+      },
+    ]);
+    const out = await readRecentReadings("u1", "PULSE", TZ, now);
+    expect(out).toEqual([{ value: 90, measuredAt: minutesAgo(30) }]);
+  });
+
+  it("passes a type without a ladder through, every source kept", async () => {
+    findMany.mockResolvedValueOnce([
+      {
+        value: 5.1,
+        measuredAt: minutesAgo(30),
+        source: "MANUAL",
+        deviceType: null,
+      },
+      {
+        value: 5.4,
+        measuredAt: minutesAgo(20),
+        source: "APPLE_HEALTH",
+        deviceType: null,
+      },
+    ]);
+    const out = await readRecentReadings("u1", "BLOOD_GLUCOSE", TZ, now);
+    expect(out).toHaveLength(2);
+    expect(loadUserSourcePriority).not.toHaveBeenCalled();
   });
 });

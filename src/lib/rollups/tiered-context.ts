@@ -39,6 +39,7 @@ import {
   readRollupBuckets,
 } from "./measurement-rollups";
 import { readDayAggregates } from "@/lib/measurements/day-aggregates";
+import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { dayWeightedRowsSql, windowMeanSql } from "@/lib/measurements/day-mean";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 import { Prisma } from "@/generated/prisma/client";
@@ -262,6 +263,7 @@ async function readRecentDaily(
   type: MeasurementType,
   now: number,
   tz: string,
+  userPriorityJson: unknown,
 ): Promise<TieredRawPoint[]> {
   const since = new Date(now - TIERED_BANDS.rawDays * DAY_MS);
   // Folded per local day in SQL: one row per day however densely the type
@@ -271,6 +273,10 @@ async function readRecentDaily(
     type,
     since,
     timeZone: tz,
+    sourcePriority:
+      userPriorityJson !== undefined
+        ? userPriorityJson
+        : await loadUserSourcePriority(userId),
   });
   // A pulse day is the mean of its local hours' means (`dayMean`, see
   // `day-mean.ts`); every other type's day is the mean of its readings.
@@ -547,7 +553,13 @@ export async function buildTieredSeries(
     await Promise.all([
       options.skipRecentDaily || coarseOnly
         ? Promise.resolve<TieredRawPoint[]>([])
-        : readRecentDaily(userId, type, now, options.tz),
+        : readRecentDaily(
+            userId,
+            type,
+            now,
+            options.tz,
+            options.userPriorityJson,
+          ),
       coarseOnly
         ? emptyBand
         : readBand(

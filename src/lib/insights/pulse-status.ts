@@ -38,6 +38,8 @@ import {
 import { binaryReferenceSex } from "@/lib/profile/sex";
 import { ageInYears } from "@/lib/tz/date-only";
 import { userDayKey } from "@/lib/tz/resolver";
+import { pickCanonicalSourceRows } from "@/lib/analytics/source-priority";
+import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 
 /**
  * Public entry — unchanged signature. Prepares the card (cache-read,
@@ -99,18 +101,7 @@ async function buildPulseSnapshot(
   // not the raw PULSE stream (Apple fills PULSE with workout HR). Pull
   // RESTING_HEART_RATE rows; the resolver falls back to a low-percentile
   // PULSE proxy when the user has none.
-  const restingMeasurements = await prisma.measurement
-    .findMany({
-      where: {
-        userId,
-        type: "RESTING_HEART_RATE",
-        deletedAt: null,
-      },
-      orderBy: { measuredAt: "desc" },
-      take: 365,
-      select: { value: true, measuredAt: true },
-    })
-    .then((rows) => rows.reverse());
+  const restingMeasurements = await readRestingRows(userId, userTz);
 
   const now = new Date();
 
@@ -323,3 +314,29 @@ const PULSE_STATUS_CARD: StatusCardPlugin<StatusTextResult, undefined> = {
   emptyMessage: "Pulse-status summary was empty after normalization",
   build: buildPulseSnapshot,
 };
+
+/**
+ * The newest 365 resting-pulse rows, oldest first. A day with resting rows
+ * from two sources keeps the one the person's ladder puts first, as the
+ * resting-pulse chart does.
+ */
+async function readRestingRows(userId: string, userTz: string) {
+  const rows = await prisma.measurement.findMany({
+    where: { userId, type: "RESTING_HEART_RATE", deletedAt: null },
+    orderBy: [{ measuredAt: "desc" }, { id: "desc" }],
+    take: 365,
+    select: {
+      value: true,
+      measuredAt: true,
+      source: true,
+      deviceType: true,
+      type: true,
+    },
+  });
+  return pickCanonicalSourceRows(
+    rows.reverse(),
+    "restingHeartRate",
+    await loadUserSourcePriority(userId),
+    (d) => userDayKey(d, userTz),
+  ).canonicalRows;
+}

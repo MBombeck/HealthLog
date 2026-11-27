@@ -53,6 +53,8 @@ import {
   loadBaselineProfile,
 } from "@/lib/insights/derived/baseline";
 import { scoreDeviation } from "@/lib/insights/derived/readiness";
+import { pickCanonicalSourceRows } from "@/lib/analytics/source-priority";
+import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import type { BaselineProfile } from "@/lib/insights/derived/baseline";
 import {
   scoreDayKey,
@@ -113,7 +115,8 @@ export function stressProxyFromSdnn(
 
 /**
  * The scored day's intra-day SDNN: how many raw `HEART_RATE_VARIABILITY`
- * rows the scored UTC day holds, and their mean, aggregated in Postgres. The
+ * rows the scored UTC day holds, and their mean, aggregated in Postgres per
+ * source and device, of the source the ladder picks for the day. The
  * dense intra-day retention tier keeps these raw within its window, so for a
  * recently-synced day the engine sees the full intra-day set; the aggregate
  * counts every one of them, where a row read used to stop at 2 000.
@@ -127,7 +130,8 @@ async function readIntradaySdnn(
   // eslint-disable-next-line healthlog/no-utc-day-key -- UTC by design: UTC day window of the UTC-day score engines (scoreDayKey)
   const dayStart = new Date(`${dayKey}T00:00:00.000Z`);
   const dayEnd = new Date(dayStart.getTime() + MS_PER_DAY);
-  const agg = await prisma.measurement.aggregate({
+  const groups = await prisma.measurement.groupBy({
+    by: ["source", "deviceType"],
     where: {
       userId,
       type: "HEART_RATE_VARIABILITY" as MeasurementType,
@@ -137,10 +141,30 @@ async function readIntradaySdnn(
       // already-folded `stats:` daily-mean row is one point, not a shape.
       NOT: { externalId: { startsWith: "stats:" } },
     },
+    orderBy: [{ source: "asc" }, { deviceType: "asc" }],
     _count: { _all: true },
-    _avg: { value: true },
+    _sum: { value: true },
   });
-  return { count: agg._count._all, mean: agg._avg.value };
+  // A day with SDNN from two sources scores the one the person's ladder puts
+  // first. The picker decides from which sources and device types are
+  // present, never from the values, so it picks the same over these groups
+  // as over the raw rows.
+  const { canonicalRows } = pickCanonicalSourceRows(
+    groups.map((g) => ({
+      measuredAt: dayStart,
+      source: g.source,
+      deviceType: g.deviceType,
+      type: "HEART_RATE_VARIABILITY" as MeasurementType,
+      n: g._count._all,
+      sum: g._sum.value ?? 0,
+    })),
+    "hrv",
+    await loadUserSourcePriority(userId),
+    () => dayKey,
+  );
+  const count = canonicalRows.reduce((acc, g) => acc + g.n, 0);
+  const total = canonicalRows.reduce((acc, g) => acc + g.sum, 0);
+  return { count, mean: count === 0 ? null : total / count };
 }
 
 export interface StressComputeResult {

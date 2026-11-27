@@ -4,6 +4,7 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     medication: { findMany: vi.fn() },
     measurement: { findMany: vi.fn() },
+    user: { findUnique: vi.fn() },
   },
 }));
 
@@ -14,6 +15,9 @@ import {
 } from "@/lib/insights/glp1-plateau";
 
 const dayMs = 24 * 60 * 60 * 1000;
+
+type MedicationRows = Awaited<ReturnType<typeof prisma.medication.findMany>>;
+type MeasurementRows = Awaited<ReturnType<typeof prisma.measurement.findMany>>;
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -104,6 +108,32 @@ describe("glp1-plateau", () => {
       expect(result?.daysOnDose).toBe(30);
       expect(result?.readingsCount).toBe(3);
       // Rounded to 0.1 kg precision by the helper.
+      expect(result?.weightDeltaKg).toBeCloseTo(-0.2, 5);
+    });
+
+    it("reads one source per day when two report weight on the same day", async () => {
+      const now = new Date("2026-05-14T00:00:00Z");
+      vi.mocked(prisma.medication.findMany).mockResolvedValue([
+        makeMed(30, now),
+      ] as unknown as MedicationRows);
+      // The last day carries the scale (ladder first) and a later relayed
+      // reading from another source. The scale's reading ends the window.
+      const lastDay = now.getTime() - 1 * dayMs;
+      vi.mocked(prisma.measurement.findMany).mockResolvedValue([
+        {
+          value: 90.0,
+          measuredAt: new Date(now.getTime() - 20 * dayMs),
+          source: "WITHINGS",
+        },
+        { value: 89.8, measuredAt: new Date(lastDay), source: "WITHINGS" },
+        {
+          value: 88.0,
+          measuredAt: new Date(lastDay + 60_000),
+          source: "APPLE_HEALTH",
+        },
+      ] as unknown as MeasurementRows);
+      const result = await detectGlp1Plateau("user-1", now);
+      expect(result?.readingsCount).toBe(2);
       expect(result?.weightDeltaKg).toBeCloseTo(-0.2, 5);
     });
 
