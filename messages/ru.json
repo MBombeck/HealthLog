@@ -13805,7 +13805,7 @@
     },
     "ask": {
       "medication": "Лекарство",
-      "overdue": "Просрочено {time}",
+      "overdue": "Просрочка {time}",
       "overdueNow": "Просрочено",
       "due": "В {time}",
       "dueNow": "Пора принять",
