@@ -23,7 +23,6 @@ import {
   Activity,
   CalendarDays,
   FolderOpen,
-  Link2,
   Pill,
   Syringe,
 } from "lucide-react";
@@ -53,8 +52,6 @@ import {
   recordOptions,
 } from "@/components/documents/document-record-links";
 import { useVaccinations } from "@/components/vaccinations/use-vaccinations";
-import { TileHeader } from "@/components/insights/tile-header";
-import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import {
   useRecordCapabilities,
@@ -500,30 +497,5 @@ export function RelatedRecordsList(props: RelatedProps) {
       />
       {sheets}
     </>
-  );
-}
-
-/**
- * The row in its own tile, for a page made of cards. Nothing when the
- * record relates to nothing the surface does not already show and there is
- * nothing to add.
- */
-export function RelatedRecordsCard(props: RelatedProps) {
-  const { t } = useTranslations();
-  const { chips, add, sheets } = useRelatedLinks(props);
-  if (chips.length === 0 && !add) return null;
-  return (
-    <Card data-slot="related-records-card">
-      <CardContent className="space-y-4">
-        <TileHeader icon={Link2} title={t("links.related.title")} />
-        <RecordLinksRow
-          slot="related-records"
-          chips={chips}
-          add={add}
-          labelled={false}
-        />
-        {sheets}
-      </CardContent>
-    </Card>
   );
 }
