@@ -127,7 +127,10 @@ const BUDGET = {
   // between 131 and 132.
   // 130 → 131: last night is read once per user and day (`readLastNight`),
   // shared with the morning, instead of peeking into the morning's cell.
-  dailyDigest: 131,
+  // 131 → 133: the start page's asks read the asks set aside today (one
+  // indexed prefix read of the dismiss ledger) and whether a dose snooze
+  // runs (a bare count; the full snooze read only when one does).
+  dailyDigest: 133,
   // The morning read (1.50.0): the snapshot (its own cell, rebuilt here, 88
   // of them), the coincident engine, readiness and the sleep score in one day
   // cell, the floor ledger, the quiet-source stamps and the day's first

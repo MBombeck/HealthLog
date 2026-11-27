@@ -45,13 +45,17 @@ async function readSnoozedDoseKeys(
   const keys = new Set<string>();
   const candidates = medsToday.dueCandidates ?? [];
   if (candidates.length === 0) return keys;
+  const where = {
+    userId,
+    id: { in: candidates.map((c) => c.medicationId) },
+    snoozedUntil: { gt: now },
+    ...TRACKED_INTAKE_WHERE,
+  };
+  // A bare count first: no snooze runs on almost every day, and the full
+  // read below fans out into a statement per relation.
+  if ((await prisma.medication.count({ where })) === 0) return keys;
   const snoozed = await prisma.medication.findMany({
-    where: {
-      userId,
-      id: { in: candidates.map((c) => c.medicationId) },
-      snoozedUntil: { gt: now },
-      ...TRACKED_INTAKE_WHERE,
-    },
+    where,
     select: {
       id: true,
       snoozedUntil: true,
