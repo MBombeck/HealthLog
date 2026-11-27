@@ -362,6 +362,21 @@ test.describe("the top of the dashboard", () => {
   });
   /** Every title and meta line of the card is one line high. */
   async function lines(page: Page) {
+    // Measure in Inter, never in the fallback face: each script's subset
+    // (Latin, Cyrillic) loads only once text of it is on the page.
+    await page.evaluate(async () => {
+      const texts = [
+        ...document.querySelectorAll<HTMLElement>(
+          '[data-slot="today-ask-title"], [data-slot="today-ask-meta"]',
+        ),
+      ].map((el) => el.textContent ?? "");
+      await Promise.all(
+        ["500 12px Inter", "400 12px Inter", "600 14px Inter"].map((font) =>
+          document.fonts.load(font, texts.join(" ")),
+        ),
+      );
+      await document.fonts.ready;
+    });
     return page
       .locator('[data-slot="today-ask-title"], [data-slot="today-ask-meta"]')
       .evaluateAll((els) =>

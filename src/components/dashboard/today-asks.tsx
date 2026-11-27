@@ -195,7 +195,7 @@ function AskRow({ ask, onLogDose }: { ask: DailyAsk; onLogDose?: () => void }) {
       data-slot="today-ask"
       data-kind={ask.kind}
       data-tier={ask.tier}
-      className="col-span-3 grid grid-cols-subgrid items-center gap-x-2 px-3 py-3 md:gap-x-3 md:px-6"
+      className="col-span-3 grid grid-cols-subgrid items-center gap-x-1.5 px-3 py-3 md:gap-x-3 md:px-6"
     >
       <Icon
         aria-hidden="true"

@@ -37,8 +37,12 @@ import { getServerTranslator } from "@/lib/i18n/server-translator";
 
 /** The narrowest phone less the page's 16 px gutters and a scrollbar. */
 const CARD = ASK_TEXT_BUDGET.phoneCssPx - 2 * 16 - 15;
-/** Card border, row padding (`px-3`), icon (`size-4`), two `gap-x-2`. */
-const ROW_CHROME = 2 + 2 * 12 + 16 + 2 * 8;
+/**
+ * Card border, row padding (`px-3`), icon (`size-4`), two `gap-x-1.5`, and
+ * 2 px of headroom for a rasteriser that sets Inter a hair wider than the
+ * advances say (Linux CI does).
+ */
+const ROW_CHROME = 2 + 2 * 12 + 16 + 2 * 6 + 2;
 /** The compact button's padding (`px-1.5`) and the pair's `gap-2`. */
 const BUTTON_PAD = 2 * 6;
 const PAIR_GAP = 8;
