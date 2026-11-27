@@ -7,7 +7,10 @@ import { I18nProvider } from "@/lib/i18n/context";
 // These fixtures are the caller's own record, which is every kind; the
 // delegation cases are covered in
 // `src/components/__tests__/delegated-write-affordances.test.tsx`.
-vi.mock("@/hooks/use-record-capabilities", () => ({
+vi.mock("@/hooks/use-record-capabilities", async (importOriginal) => ({
+  holdsOwnerRights: (
+    await importOriginal<typeof import("@/hooks/use-record-capabilities")>()
+  ).holdsOwnerRights,
   useRecordCapabilities: () => ({
     inSharedRecord: false,
     canWrite: false,

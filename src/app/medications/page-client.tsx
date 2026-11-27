@@ -1,7 +1,10 @@
 "use client";
 
 import type { MedicationCourseFields } from "@/components/medications/course-fields";
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import {
+  useRecordCapabilities,
+  holdsOwnerRights,
+} from "@/hooks/use-record-capabilities";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -182,7 +185,7 @@ export default function MedicationsPageClient() {
   // to tapping each card in turn — so withholding it made a caregiver with
   // five morning tablets tap five times for nothing. The customize page stays
   // withheld; sharing does not cover it at all.
-  const { canWriteDomain, inSharedRecord } = useRecordCapabilities();
+  const { canWriteDomain, inSharedRecord, ...caps } = useRecordCapabilities();
   const canAddMedication = canWriteDomain("medications");
   // v1.18.1 — medications is an opt-out module. When the account has it
   // turned off the whole page disappears (the nav entry is hidden by the same
@@ -216,9 +219,9 @@ export default function MedicationsPageClient() {
   // button earns its slot only while ≥ 2 medications are currently due.
   const [takeAllOpen, setTakeAllOpen] = useState(false);
   const [manageCategoriesOpen, setManageCategoriesOpen] = useState(false);
-  // Renaming, hiding and deleting a category stay with the owner (the edit
-  // route is owner-only, like the cycle symptom vocabulary's).
-  const canManageCategories = !inSharedRecord;
+  // Renaming, hiding and deleting a category: the owner's rights (#1615),
+  // the edit route's owner rule, like the cycle symptom vocabulary's.
+  const canManageCategories = holdsOwnerRights({ ...caps, inSharedRecord });
   const customCategories = useMedicationCategories({
     enabled: isAuthenticated && medicationsEnabled,
   });

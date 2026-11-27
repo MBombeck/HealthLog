@@ -4,7 +4,10 @@ import { useCallback, useState } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import {
+  useRecordCapabilities,
+  holdsOwnerRights,
+} from "@/hooks/use-record-capabilities";
 import { useMounted } from "@/hooks/use-mounted";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { MoodForm } from "@/components/mood/mood-form";
@@ -26,12 +29,13 @@ import { writeUrlState } from "@/lib/url-state";
 
 export default function MoodPageClient() {
   const { user, isAuthenticated, isLoading } = useAuth();
+  const caps = useRecordCapabilities();
   const {
     canManageDomain,
     inSharedRecord,
     recordSessionPending,
     accessRefused,
-  } = useRecordCapabilities();
+  } = caps;
   // A mood entry is created at MANAGE under the mind section.
   const canAddMood = canManageDomain("mind");
   const mounted = useMounted();
@@ -63,7 +67,9 @@ export default function MoodPageClient() {
     setConsumedAdd(true);
     setAddRequested(true);
   }
-  const ownRecord = !inSharedRecord && !recordSessionPending && !accessRefused;
+  // #1615 — or a managed profile's guardian, who holds the owner's rights.
+  const ownRecord =
+    holdsOwnerRights(caps) && !recordSessionPending && !accessRefused;
   if (addRequested && mounted && !isLoading && !ownRecord) {
     setAddRequested(false);
   }

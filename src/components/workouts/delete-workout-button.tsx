@@ -17,7 +17,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import {
+  useRecordCapabilities,
+  holdsOwnerRights,
+} from "@/hooks/use-record-capabilities";
 import { apiDelete } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
 import {
@@ -31,14 +34,15 @@ import { cn } from "@/lib/utils";
 /**
  * Whether a workout can be deleted from its detail page: one entered by hand,
  * in one's own record. A synced workout would come back with the next sync,
- * and `DELETE /api/workouts/{id}` refuses it (409); the route also resolves
- * the caller, so a delegate is never offered it.
+ * and `DELETE /api/workouts/{id}` refuses it (409). The route takes the owner
+ * rule, so the owner or a managed profile's guardian is offered it (#1615) and
+ * an adult's delegate never is.
  */
 export function canDeleteWorkout(
   workout: { source: string },
-  caps: { inSharedRecord: boolean },
+  caps: Parameters<typeof holdsOwnerRights>[0],
 ): boolean {
-  return workout.source === "MANUAL" && !caps.inSharedRecord;
+  return workout.source === "MANUAL" && holdsOwnerRights(caps);
 }
 
 /**

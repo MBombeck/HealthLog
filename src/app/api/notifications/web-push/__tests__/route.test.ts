@@ -21,7 +21,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/api-handler", () => ({
   apiHandler: (fn: unknown) => fn,
-  requireAuth: vi.fn(),
+  requireSelfAuth: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -53,7 +53,7 @@ import type {
   PushSubscription,
 } from "@/generated/prisma/client";
 import { POST, DELETE } from "../route";
-import { requireAuth } from "@/lib/api-handler";
+import { requireSelfAuth } from "@/lib/api-handler";
 import { prisma } from "@/lib/db";
 
 const USER = { id: "user-1", username: "u" };
@@ -112,7 +112,7 @@ type Handler = (r: Request) => Promise<Response>;
 
 beforeEach(() => {
   vi.resetAllMocks();
-  vi.mocked(requireAuth).mockResolvedValue({ user: USER } as never);
+  vi.mocked(requireSelfAuth).mockResolvedValue({ user: USER } as never);
   vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({
     telegramGlobal: true,
     ntfyGlobal: true,

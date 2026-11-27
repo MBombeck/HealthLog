@@ -503,27 +503,31 @@ describe("a guardian in a managed profile's vault", () => {
     expect(usage.deletedCount).toBe(1);
   });
 
-  it("is still refused the verbs that stay with the owner", async () => {
-    const { profile } = await guardianInside();
+  it("holds the owner's verbs too: delete now, and the document sources (#1615)", async () => {
+    const { guardian, profile } = await guardianInside();
     const r = await routes();
     const id = (await (await r.upload(pdf())).json()).data.id as string;
     await r.remove(id);
 
-    // Delete now: the trash empties itself after the grace window.
+    // Delete now, which the owner reaches from Recently deleted. The rule a
+    // guardian holds is the owner's, so it is theirs as well, and the
+    // document leaves the profile, not the guardian's vault.
     const purge = await r.purge(id);
-    expect(purge.status).toBe(403);
-    expect((await purge.json()).meta.errorCode).toBe("sharing.not_permitted");
+    expect(purge.status).toBe(200);
     expect(
       await getPrismaClient().inboundDocument.count({
         where: { id, userId: profile.id },
       }),
-    ).toBe(1);
+    ).toBe(0);
+    const purged = await getPrismaClient().auditLog.findMany({
+      where: { userId: profile.id, actorUserId: guardian.id },
+      select: { action: true },
+    });
+    expect(purged.length).toBeGreaterThan(0);
 
-    // The document sources (Paperless-ngx, Papra): an integration with
-    // credentials, the owner's alone.
-    const sources = await r.sources();
-    expect(sources.status).toBe(403);
-    expect((await sources.json()).meta.errorCode).toBe("sharing.not_permitted");
+    // The document sources (Paperless-ngx, Papra) are the profile's to set up
+    // as well; the list answers for the profile.
+    expect((await r.sources()).status).toBe(200);
   });
 
   it("asks the profile's own AI capability under the guardian's authority, and queues work for the profile", async () => {

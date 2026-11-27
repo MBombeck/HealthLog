@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireSelfAuth } from "@/lib/api-handler";
 import { isChannelGloballyEnabled } from "@/lib/app-settings";
 import { annotate } from "@/lib/logging/context";
 import { apiSuccess, apiError, returnAllZodIssues } from "@/lib/api-response";
@@ -44,7 +44,7 @@ const unsubscribeSchema = z
  * Save a Web Push subscription for the current user.
  */
 export const POST = apiHandler(async (request: NextRequest) => {
-  const { user } = await requireAuth();
+  const { user } = await requireSelfAuth();
   annotate({ action: { name: "notifications.web-push.subscribe" } });
 
   // Subscribing IS the enable step for this channel — it creates the
@@ -143,7 +143,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
  * Remove a Web Push subscription.
  */
 export const DELETE = apiHandler(async (request: NextRequest) => {
-  const { user } = await requireAuth();
+  const { user } = await requireSelfAuth();
   annotate({ action: { name: "notifications.web-push.unsubscribe" } });
 
   let body: unknown;

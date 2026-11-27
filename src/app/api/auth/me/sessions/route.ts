@@ -23,7 +23,7 @@ import {
   apiHandler,
   AUTH_ERROR_CODES,
   HttpError,
-  requireAuth,
+  requireSelfAuth,
 } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
@@ -54,7 +54,7 @@ export interface SessionDTO {
 }
 
 export const GET = apiHandler(async () => {
-  const { user, session } = await requireAuth();
+  const { user, session } = await requireSelfAuth();
 
   const sessions = await prisma.session.findMany({
     where: { userId: user.id, expiresAt: { gt: new Date() } },
@@ -105,7 +105,7 @@ export const GET = apiHandler(async () => {
 });
 
 export const DELETE = apiHandler(async (request: NextRequest) => {
-  const auth = await requireAuth();
+  const auth = await requireSelfAuth();
   const { user } = auth;
 
   // Name the caller by the transport it actually used. On the Bearer path

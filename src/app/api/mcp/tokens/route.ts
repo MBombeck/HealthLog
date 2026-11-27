@@ -21,7 +21,11 @@
  */
 import { NextRequest } from "next/server";
 
-import { apiHandler, requireAuth, requireRecentProof } from "@/lib/api-handler";
+import {
+  apiHandler,
+  requireSelfAuth,
+  requireRecentProof,
+} from "@/lib/api-handler";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
@@ -37,7 +41,7 @@ import { SCOPE_HEALTH_READ, SCOPE_HEALTH_WRITE } from "@/lib/mcp/oauth/config";
 import { createMcpTokenSchema } from "@/lib/validations/mcp";
 
 export const GET = apiHandler(async () => {
-  const { user } = await requireAuth();
+  const { user } = await requireSelfAuth();
   annotate({ action: { name: "mcp.tokens.list" } });
 
   if (!(await isApiGloballyEnabled())) {

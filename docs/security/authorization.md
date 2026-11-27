@@ -80,19 +80,29 @@ exports, share links, AI requests, sharing itself
 ([the full list](../self-hosting/account-sharing.md#what-the-other-person-can-and-cannot-do)).
 
 **Managed profiles.** A record for somebody with no login. Its guardians hold a
-manage grant and, in addition, run its document vault, its settings and its
-integration connections
+manage grant over the whole record and, with it, everything the profile's owner
+could do, by one rule rather than a list of features. The exceptions are the
+guardian's own identity (passkeys, second factor, sessions, password, email,
+API and MCP tokens, the push registration of their device), deleting or
+erasing an account and deciding who may open it (both done from the guardian's
+own account under the profile's card), and the handover decision that belongs
+to the person once they have a login
 ([details](../self-hosting/account-sharing.md#records-with-no-login)).
 
 **How it is enforced.** A request that acts in another record carries the
 record in a header and is resolved by `requireRecordAuth` (and
 `requireGuardianAuth` for guardian-only acts), which checks the grant, its
-level and its sections on every request. Plain `requireAuth()` refuses any
-request that carries such a header, with 403 `sharing.not_permitted`, so a
-route that never declared how it behaves under a grant cannot silently answer
-with the wrong person's data. Every act a delegate performs is written to the
+level and its sections on every request. Plain `requireAuth()` is the owner
+rule: it serves a managed profile to its guardian (a manage grant over the
+whole record on a record with the managed-profile marker) and refuses every
+other request that carries such a header, with 403 `sharing.not_permitted`, so
+a route that never declared how it behaves under a grant cannot silently answer
+an adult's delegate with the wrong person's data. A route that must stay the
+caller's own under every switch resolves with `requireSelfAuth()` and is listed,
+with its reason, in `managed-profile-owner-rule-guard.test.ts`. Every act a delegate performs is written to the
 owner's trail under the delegate's name; delegated reads are counted per day.
 Guards: `acting-account-boundary-guard.test.ts`, `sharing-surface-guard.test.ts`,
+`managed-profile-owner-rule-guard.test.ts`,
 `record-session-fence-guard.test.ts`, `module-gate-record-scoped.test.ts`.
 
 **URL credentials.** A clinician share link, an emergency card link and the
@@ -132,14 +142,14 @@ Inside a section a grant opens there is no row or field filtering: a grant to
 
 ## Function by role
 
-| Function                                                 | Owner, browser | Owner, app                                                                      | Narrow token | MCP             | Delegate read | Delegate write | Delegate manage / guardian       | Admin, browser | Link holder |
-| -------------------------------------------------------- | -------------- | ------------------------------------------------------------------------------- | ------------ | --------------- | ------------- | -------------- | -------------------------------- | -------------- | ----------- |
-| Read own record                                          | yes            | yes                                                                             | no           | read            | sections      | sections       | yes                              | own only       | selection   |
-| Add entries                                              | yes            | yes                                                                             | its scope    | confirmed tools | no            | sections       | yes                              | own only       | no          |
-| Change or delete entries                                 | yes            | yes                                                                             | no           | no              | no            | no             | yes                              | own only       | no          |
-| Export, encrypted archive, share links, feeds            | yes            | yes                                                                             | no           | no              | no            | no             | doctor report only               | own only       | no          |
-| Credentials, sessions, tokens, integrations, channels    | yes            | yes, with step-up where [required](authentication.md#step-up)                   | no           | no              | no            | no             | guardian: integrations, settings | own only       | no          |
-| Second-factor management                                 | yes            | with elevation                                                                  | no           | no              | no            | no             | no                               | own only       | no          |
-| AI analysis and Coach                                    | yes            | yes                                                                             | no           | no              | no            | no             | insights to read at manage       | own only       | no          |
-| Sharing, managed profiles                                | yes            | read and write invitations; manage offers and managed profiles are browser-only | no           | no              | no            | no             | no                               | own only       | no          |
-| Account administration, instance settings, backups, keys | no             | no                                                                              | no           | no              | no            | no             | no                               | yes            | no          |
+| Function                                                 | Owner, browser | Owner, app                                                                      | Narrow token | MCP             | Delegate read | Delegate write | Delegate manage / guardian                 | Admin, browser | Link holder |
+| -------------------------------------------------------- | -------------- | ------------------------------------------------------------------------------- | ------------ | --------------- | ------------- | -------------- | ------------------------------------------ | -------------- | ----------- |
+| Read own record                                          | yes            | yes                                                                             | no           | read            | sections      | sections       | yes                                        | own only       | selection   |
+| Add entries                                              | yes            | yes                                                                             | its scope    | confirmed tools | no            | sections       | yes                                        | own only       | no          |
+| Change or delete entries                                 | yes            | yes                                                                             | no           | no              | no            | no             | yes                                        | own only       | no          |
+| Export, encrypted archive, share links, feeds            | yes            | yes                                                                             | no           | no              | no            | no             | doctor report only                         | own only       | no          |
+| Credentials, sessions, tokens, integrations, channels    | yes            | yes, with step-up where [required](authentication.md#step-up)                   | no           | no              | no            | no             | guardian: integrations, settings, channels | own only       | no          |
+| Second-factor management                                 | yes            | with elevation                                                                  | no           | no              | no            | no             | no                                         | own only       | no          |
+| AI analysis and Coach                                    | yes            | yes                                                                             | no           | no              | no            | no             | insights to read at manage                 | own only       | no          |
+| Sharing, managed profiles                                | yes            | read and write invitations; manage offers and managed profiles are browser-only | no           | no              | no            | no             | no                                         | own only       | no          |
+| Account administration, instance settings, backups, keys | no             | no                                                                              | no           | no              | no            | no             | no                                         | yes            | no          |

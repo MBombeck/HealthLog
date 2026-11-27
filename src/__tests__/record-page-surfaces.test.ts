@@ -50,6 +50,7 @@ function routeSource(route: string): string {
 function guardCalls(source: string) {
   return {
     owner: /\brequireAuth\(/.test(source),
+    self: /\brequireSelfAuth\(/.test(source),
     guardian: /\brequireGuardianAuth\(/.test(source),
     record: [
       ...source.matchAll(/\brequireRecordAuth\(\s*"([a-z]+)",\s*"([a-z]+)"/g),
@@ -75,6 +76,13 @@ describe("each part's routes resolve the caller with the rule written beside the
     switch (rule.guard) {
       case "owner":
         expect(calls.owner).toBe(true);
+        expect(calls.self).toBe(false);
+        expect(calls.guardian).toBe(false);
+        expect(calls.record).toEqual([]);
+        break;
+      case "self":
+        expect(calls.self).toBe(true);
+        expect(calls.owner).toBe(false);
         expect(calls.guardian).toBe(false);
         expect(calls.record).toEqual([]);
         break;
@@ -204,9 +212,16 @@ describe("the rules read the record the way the server does", () => {
     },
   );
 
-  it("the owner rule admits one's own record only", () => {
+  it("the owner rule admits one's own record and a managed profile's guardian", () => {
+    const admitted = VIEWERS.filter(([, v]) =>
+      recordRuleAdmits({ guard: "owner" }, v),
+    ).map(([label]) => label);
+    expect(admitted).toEqual(["own record", "managed profile, manage"]);
+  });
+
+  it("the self rule admits one's own record only", () => {
     for (const [, viewer] of VIEWERS) {
-      expect(recordRuleAdmits({ guard: "owner" }, viewer)).toBe(
+      expect(recordRuleAdmits({ guard: "self" }, viewer)).toBe(
         !viewer.inSharedRecord,
       );
     }

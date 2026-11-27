@@ -13,7 +13,7 @@ import {
   StepUpRequiredError,
 } from "@/lib/api-errors";
 
-import { requireAuth } from "./caller";
+import { requireSelfAuth } from "./caller";
 import type { AuthContext } from "./context";
 import { resolveBearerElevation } from "./elevation";
 import {
@@ -118,7 +118,7 @@ export async function requireFreshMfa(
 export async function requireFreshMfaIfEnrolled(
   maxAgeSeconds: number,
 ): Promise<AuthContext> {
-  const auth = await requireAuth();
+  const auth = await requireSelfAuth();
   if (await hasSecondFactorEnrolled(auth.user)) {
     await requireFreshMfa(maxAgeSeconds);
   }
@@ -176,7 +176,7 @@ export type ErasureAuthContext = AuthContext & {
 export async function requireFreshMfaOrElevationIfEnrolled(
   maxAgeSeconds: number,
 ): Promise<ErasureAuthContext> {
-  const auth = await requireAuth();
+  const auth = await requireSelfAuth();
   const noop = async () => {};
 
   if (!(await hasSecondFactorEnrolled(auth.user))) {

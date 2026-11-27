@@ -10,7 +10,10 @@ import {
   selectorNamesAnAccount,
   type ActingCarrier,
 } from "@/lib/auth/acting-carrier";
-import { meterAccountWrite } from "@/lib/auth/write-meter";
+import {
+  meterAccountWrite,
+  type WriteMeterOptions,
+} from "@/lib/auth/write-meter";
 import {
   findActiveGrant,
   grantAllows,
@@ -18,7 +21,7 @@ import {
   touchGrantUsage,
   type GrantNeed,
 } from "@/lib/sharing/grant-access";
-import type { ShareScope } from "@/lib/sharing/scope";
+import { ENTIRE_RECORD, type ShareScope } from "@/lib/sharing/scope";
 import { assertRecordSessionFence } from "@/lib/sharing/record-session-fence";
 import {
   SharingAccessDeniedError,
@@ -292,6 +295,90 @@ function escalate(need: GrantNeed): GrantNeed {
 }
 
 /**
+ * The default resolver, and the one rule for a managed profile (#1615).
+ *
+ * Without a switch this is the caller's own account, exactly as before. Under
+ * a switch it admits one person: the guardian of a managed profile, holding a
+ * MANAGE grant over the whole record. For them the route serves the profile
+ * as it would serve the profile's owner, because a managed profile has no
+ * login and therefore no owner who could do anything the guardian cannot.
+ * Every other switched caller (an adult's delegate at any level, a scoped
+ * guardian grant, a narrow single-purpose Bearer, a misplaced selector) is
+ * refused with the same `sharing.not_permitted` the route answered before.
+ *
+ * Why the default and not a declaration: the guardian's rights used to be
+ * granted route by route, and each route that nobody had thought about was a
+ * gap a guardian found in the middle of ordinary work (#1403, #1408, #1615).
+ * Making the owner rule the default turns that around. A new route reaches
+ * the guardian unless it opts out through `requireSelfAuth()`, and that opt-out
+ * is a short list with a reason per entry, frozen by
+ * `managed-profile-owner-rule-guard.test.ts`.
+ *
+ * What the guardian reaches is the profile, never more: `user` is the profile,
+ * `actor` is the guardian, and every audit row filed under `user` names the
+ * guardian as the actor (`auditLog` reads it off the request). The adult
+ * delegate's narrower, per-section rights stay where they were, on
+ * `requireRecordAuth`; this function never reads a grant's level below MANAGE
+ * as anything but a refusal.
+ *
+ * The write meter is charged to the ACTING account after admission, so a
+ * refused request costs what it always cost.
+ */
+export async function requireAuth(
+  requiredPermission?: string,
+  options?: WriteMeterOptions,
+): Promise<RecordAuthContext> {
+  const auth = await authenticateCaller(requiredPermission);
+  // Before the carrier, for the reason `requireRecordAuth` gives. A tab that
+  // still believes it is inside a profile while its session is back on the
+  // caller's own record must not write into the wrong one; a request that
+  // claims nothing (an image, a download link, an older client) is served on
+  // the caller's own record as it always was.
+  await assertRecordSessionFence(auth, { unclaimedOnOwnRecord: "pass" });
+  const carrier = await readActingCarrier(auth);
+
+  if (carrier.kind === "none") {
+    await meterAccountWrite(auth.user.id, options);
+    return { ...auth, actor: auth.user, grantId: null };
+  }
+  if (carrier.kind === "misplaced-header") {
+    throw refuseUndeclaredMode(auth, carrier, "misplaced_selector");
+  }
+  if (isScopedCredential(auth)) {
+    throw refuseUndeclaredMode(auth, carrier, "narrow_scope_selector");
+  }
+
+  const resolved = await resolveSwitchedRecord(
+    auth,
+    carrier,
+    admitManagedProfileOwnerRights,
+    // The refusal a non-guardian always got from this resolver: the same
+    // bytes, the same wide event and the same audit rule as before the rule.
+    () => refuseUndeclaredMode(auth, carrier),
+  );
+  await meterAccountWrite(auth.user.id, options);
+  return resolved;
+}
+
+/**
+ * Who holds the owner's rights over a record they are switched into: the
+ * guardian of a managed profile, by a MANAGE grant over the whole record.
+ *
+ * The marker is read off the owner row, for the reason `requireGuardianAuth`
+ * gives: no change to what MANAGE means can widen this. A MANAGE grant from an
+ * adult reaches none of it, because the adult's record carries no marker.
+ */
+function admitManagedProfileOwnerRights(
+  grant: AccountGrant,
+  owner: SessionUser,
+): string | null {
+  if (!grantAllows(grant, "manage")) return "insufficient_access";
+  if (owner.managedProfileAt === null) return "guardian_only";
+  if (!grantCoversDomain(grant, ENTIRE_RECORD)) return "out_of_scope";
+  return null;
+}
+
+/**
  * A guardian surface: this route administers a managed profile.
  *
  * The other declaration, and a separate function rather than a flag on the one
@@ -362,9 +449,11 @@ async function resolveSwitchedRecord(
   auth: AuthContext,
   carrier: Extract<ActingCarrier, { accountId: string }>,
   admit: (grant: AccountGrant, owner: SessionUser) => string | null,
+  refuse?: (reason: string) => Error,
 ): Promise<RecordAuthContext> {
   /** Every refusal below is this one error, with the reason kept off the wire. */
-  const denied = (reason: string): SharingAccessDeniedError => {
+  const denied = (reason: string): Error => {
+    if (refuse) return refuse(reason);
     annotate({ meta: { sharing_refusal: reason } });
     auditRefusal(auth, carrier, reason);
     return new SharingAccessDeniedError();
