@@ -1238,7 +1238,7 @@
   },
   "mood": {
     "title": "Humeur",
-    "subtitle": "Tendance et entrées d’humeur",
+    "subtitle": "Comment vous vous êtes senti, jour après jour.",
     "mentalWellbeingLink": "Faire un bilan de bien-être mental",
     "addEntry": "Ajouter",
     "editEntry": "Modifier l’entrée",
@@ -1581,7 +1581,7 @@
   },
   "medications": {
     "title": "Médicaments",
-    "subtitle": "Médication, horaires et prises",
+    "subtitle": "Votre médication, ses horaires et chaque prise.",
     "loginRequired": "Connectez-vous pour gérer vos médicaments.",
     "addMedication": "Ajouter",
     "firstMedication": "Ajouter le premier médicament",
@@ -8961,7 +8961,7 @@
         "subtitle": "Créer, suivre et révoquer les liens d'invitation."
       },
       "api-tokens": {
-        "title": "Jetons d'API",
+        "title": "API et jetons",
         "subtitle": "Jetons bearer actifs émis aux clients natifs et aux intégrations."
       },
       "login-overview": {
@@ -11383,7 +11383,7 @@
   },
   "labs": {
     "title": "Résultats de laboratoire",
-    "subtitle": "Analyses sanguines et biomarqueurs",
+    "subtitle": "Vos analyses sanguines et biomarqueurs.",
     "addResult": "Ajouter une valeur",
     "addDescription": "Enregistrez un biomarqueur à partir d'un compte rendu de laboratoire.",
     "addFirst": "Ajouter votre premier résultat",

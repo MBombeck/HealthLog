@@ -1238,7 +1238,7 @@
   },
   "mood": {
     "title": "기분",
-    "subtitle": "기분 추적과 기록",
+    "subtitle": "하루하루 어떤 기분이었는지 보여줘요.",
     "mentalWellbeingLink": "정신 건강 체크인 하기",
     "addEntry": "추가",
     "editEntry": "기록 편집",
@@ -1581,7 +1581,7 @@
   },
   "medications": {
     "title": "복약",
-    "subtitle": "약·일정·복용 기록",
+    "subtitle": "내 약과 복용 일정, 모든 복용 기록이에요.",
     "loginRequired": "복약을 관리하려면 로그인해 주세요.",
     "addMedication": "추가",
     "firstMedication": "첫 약 추가",
@@ -8936,7 +8936,7 @@
         "subtitle": "회원가입 초대 링크를 발급하고 추적하고 폐기해요."
       },
       "api-tokens": {
-        "title": "API 토큰",
+        "title": "API와 토큰",
         "subtitle": "네이티브 클라이언트와 연동에 발급된 활성 bearer 토큰이에요."
       },
       "login-overview": {
@@ -11383,7 +11383,7 @@
   },
   "labs": {
     "title": "검사 결과",
-    "subtitle": "혈액검사와 바이오마커 측정값",
+    "subtitle": "혈액검사와 바이오마커 측정값이에요.",
     "addResult": "값 추가",
     "addDescription": "검사 결과지의 바이오마커 측정값을 기록해요.",
     "addFirst": "첫 결과 추가",

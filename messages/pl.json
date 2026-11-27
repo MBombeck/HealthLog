@@ -1238,7 +1238,7 @@
   },
   "mood": {
     "title": "Nastrój",
-    "subtitle": "Trend i wpisy nastroju",
+    "subtitle": "Jak się czułeś, dzień po dniu.",
     "mentalWellbeingLink": "Wykonaj sprawdzian dobrostanu psychicznego",
     "addEntry": "Dodaj",
     "editEntry": "Edytuj wpis",
@@ -1581,7 +1581,7 @@
   },
   "medications": {
     "title": "Leki",
-    "subtitle": "Leki, harmonogramy i przyjęcia",
+    "subtitle": "Twoje leki, ich harmonogramy i każde przyjęcie.",
     "loginRequired": "Zaloguj się, aby zarządzać lekami.",
     "addMedication": "Dodaj",
     "firstMedication": "Dodaj pierwszy lek",
@@ -8961,7 +8961,7 @@
         "subtitle": "Tworzenie, śledzenie i unieważnianie linków z zaproszeniem."
       },
       "api-tokens": {
-        "title": "Tokeny API",
+        "title": "API i tokeny",
         "subtitle": "Aktywne tokeny bearer wydane klientom natywnym i integracjom."
       },
       "login-overview": {
@@ -11383,7 +11383,7 @@
   },
   "labs": {
     "title": "Wyniki badań",
-    "subtitle": "Badania krwi i biomarkery",
+    "subtitle": "Twoje badania krwi i biomarkery.",
     "addResult": "Dodaj wynik",
     "addDescription": "Zapisz biomarker z wyniku badania.",
     "addFirst": "Dodaj pierwszy wynik",

@@ -1238,7 +1238,7 @@
   },
   "mood": {
     "title": "Mood",
-    "subtitle": "Mood tracker and entries",
+    "subtitle": "How you felt, day by day.",
     "mentalWellbeingLink": "Take a mental-wellbeing check-in",
     "addEntry": "Add",
     "editEntry": "Edit entry",
@@ -1581,7 +1581,7 @@
   },
   "medications": {
     "title": "Medications",
-    "subtitle": "Medications, schedules & intake",
+    "subtitle": "Your medications, their schedules and every dose taken.",
     "loginRequired": "Please sign in to manage medications.",
     "addMedication": "Add",
     "firstMedication": "Add first medication",
@@ -8961,7 +8961,7 @@
         "subtitle": "Mint, track, and revoke registration invite links."
       },
       "api-tokens": {
-        "title": "API tokens",
+        "title": "API & tokens",
         "subtitle": "Active bearer tokens issued to native clients and integrations."
       },
       "login-overview": {
@@ -11383,7 +11383,7 @@
   },
   "labs": {
     "title": "Lab results",
-    "subtitle": "Bloodwork and biomarker readings",
+    "subtitle": "Your blood work and biomarker readings.",
     "addResult": "Add value",
     "addDescription": "Record a biomarker reading from a lab report.",
     "addFirst": "Add your first result",

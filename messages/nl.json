@@ -1238,7 +1238,7 @@
   },
   "mood": {
     "title": "Stemming",
-    "subtitle": "Stemmingstracker en registraties",
+    "subtitle": "Hoe je je voelde, dag na dag.",
     "mentalWellbeingLink": "Doe een check-in voor mentaal welzijn",
     "addEntry": "Toevoegen",
     "editEntry": "Registratie bewerken",
@@ -1581,7 +1581,7 @@
   },
   "medications": {
     "title": "Medicatie",
-    "subtitle": "Medicatie, schema's en inname",
+    "subtitle": "Je medicatie, de schema's en elke inname.",
     "loginRequired": "Log in om je medicatie te beheren.",
     "addMedication": "Toevoegen",
     "firstMedication": "Eerste medicijn toevoegen",
@@ -8961,7 +8961,7 @@
         "subtitle": "Registratie-uitnodigingslinks aanmaken, volgen en intrekken."
       },
       "api-tokens": {
-        "title": "API-tokens",
+        "title": "API en tokens",
         "subtitle": "Actieve bearertokens die zijn uitgegeven aan native clients en koppelingen."
       },
       "login-overview": {
@@ -11383,7 +11383,7 @@
   },
   "labs": {
     "title": "Labuitslagen",
-    "subtitle": "Bloedonderzoek en biomarkerwaarden",
+    "subtitle": "Je bloedonderzoek en biomarkerwaarden.",
     "addResult": "Waarde toevoegen",
     "addDescription": "Leg een biomarkerwaarde uit een labrapport vast.",
     "addFirst": "Je eerste uitslag toevoegen",

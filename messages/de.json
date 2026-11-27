@@ -1238,7 +1238,7 @@
   },
   "mood": {
     "title": "Stimmung",
-    "subtitle": "Stimmungsverlauf und Einträge",
+    "subtitle": "Wie es dir ging, Tag für Tag.",
     "mentalWellbeingLink": "Check-in zum seelischen Wohlbefinden machen",
     "addEntry": "Hinzufügen",
     "editEntry": "Eintrag bearbeiten",
@@ -1581,7 +1581,7 @@
   },
   "medications": {
     "title": "Medikamente",
-    "subtitle": "Medikamente, Zeitpläne & Einnahmen",
+    "subtitle": "Deine Medikamente, ihre Zeitpläne und jede Einnahme.",
     "loginRequired": "Bitte anmelden, um Medikamente zu verwalten.",
     "addMedication": "Hinzufügen",
     "firstMedication": "Erstes Medikament hinzufügen",
@@ -8961,7 +8961,7 @@
         "subtitle": "Einladungslinks erstellen, nachverfolgen und widerrufen."
       },
       "api-tokens": {
-        "title": "API-Tokens",
+        "title": "API & Tokens",
         "subtitle": "Aktive Bearer-Tokens für native Clients und Integrationen."
       },
       "login-overview": {
@@ -11383,7 +11383,7 @@
   },
   "labs": {
     "title": "Laborwerte",
-    "subtitle": "Blutwerte und Biomarker",
+    "subtitle": "Deine Blutwerte und Biomarker.",
     "addResult": "Wert hinzufügen",
     "addDescription": "Erfasse einen Biomarker aus deinem Laborbefund.",
     "addFirst": "Ersten Wert erfassen",

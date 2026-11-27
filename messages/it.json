@@ -1238,7 +1238,7 @@
   },
   "mood": {
     "title": "Umore",
-    "subtitle": "Andamento e voci dell’umore",
+    "subtitle": "Come ti sei sentito, giorno per giorno.",
     "mentalWellbeingLink": "Fai un check-in sul benessere mentale",
     "addEntry": "Aggiungi",
     "editEntry": "Modifica voce",
@@ -1581,7 +1581,7 @@
   },
   "medications": {
     "title": "Farmaci",
-    "subtitle": "Farmaci, orari e assunzioni",
+    "subtitle": "I tuoi farmaci, i loro orari e ogni assunzione.",
     "loginRequired": "Accedi per gestire i farmaci.",
     "addMedication": "Aggiungi",
     "firstMedication": "Aggiungi il primo farmaco",
@@ -8961,7 +8961,7 @@
         "subtitle": "Creare, monitorare e revocare i link di invito."
       },
       "api-tokens": {
-        "title": "Token API",
+        "title": "API e token",
         "subtitle": "Token bearer attivi emessi a client nativi e integrazioni."
       },
       "login-overview": {
@@ -11383,7 +11383,7 @@
   },
   "labs": {
     "title": "Esami di laboratorio",
-    "subtitle": "Analisi del sangue e biomarcatori",
+    "subtitle": "Le tue analisi del sangue e i biomarcatori.",
     "addResult": "Aggiungi valore",
     "addDescription": "Registra un biomarcatore da un referto di laboratorio.",
     "addFirst": "Aggiungi il primo risultato",
