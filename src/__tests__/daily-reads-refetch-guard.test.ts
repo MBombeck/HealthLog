@@ -152,7 +152,6 @@ const DIRECT_NO_REFETCH_ALLOWLIST = [
   // `refetchType: "active"` refetches it immediately — the inactive arm has
   // nothing to cover.
   "components/dashboard/today-asks.tsx",
-  "hooks/use-coach-checkin.ts",
 ].sort();
 
 describe("daily-reads refetch guard", () => {
