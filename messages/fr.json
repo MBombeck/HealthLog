@@ -6261,7 +6261,7 @@
         },
         "import": {
           "heading": "Import",
-          "description": "Les fichiers envoyés sont supprimés du serveur dès la fin de l’importation, et importer à nouveau le même fichier n’ajoute rien en double.",
+          "description": "Le serveur supprime chaque fichier après l’import, et le même fichier deux fois n’ajoute rien en double.",
           "charCount": "{used} / {max, plural, one {# caractère} other {# caractères}}",
           "appleHealth": {
             "title": "Apple Santé",
@@ -6456,11 +6456,11 @@
               "tooManyRows": "Ce fichier contient plus de lignes qu'un import peut en prendre. Découpez-le et importez les parties."
             },
             "detail": "Un fichier couvre tous les médicaments qu'il contient.",
-            "rowMeta": "Depuis une appli de médicaments",
+            "rowMeta": "Depuis une autre appli",
             "fileMeta": ".csv ou .json, jusqu’à 16 Mo"
           },
           "healthConnect": {
-            "title": "Export Health Connect",
+            "title": "Health Connect",
             "description": "Le ZIP que Health Connect écrit sur Android.",
             "uploading": "Envoi en cours…",
             "uploadFailed": "L’envoi a échoué. Réessayez.",
@@ -6562,13 +6562,13 @@
           },
           "recordFile": {
             "gadgetbridge": {
-              "title": "Base de données Gadgetbridge",
+              "title": "Gadgetbridge",
               "description": "La base de données exportée par Gadgetbridge sur Android.",
               "steps": {
                 "export": "Dans Gadgetbridge, ouvrez Paramètres, puis Gestion des données, puis Exporter la base de données.",
                 "upload": "Téléversez ici le fichier nommé Gadgetbridge. Jusqu'à 512 Mo."
               },
-              "fileHint": "Le fichier « Gadgetbridge », 512 Mo maximum"
+              "fileHint": "Base de données, jusqu’à 512 Mo"
             },
             "fhirBundle": {
               "title": "Dossier patient (FHIR)",

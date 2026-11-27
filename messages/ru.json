@@ -6261,7 +6261,7 @@
         },
         "import": {
           "heading": "Импорт",
-          "description": "Загруженные файлы удаляются с сервера сразу после завершения импорта, а повторный импорт того же файла ничего не добавляет дважды.",
+          "description": "Сервер удаляет каждый файл после импорта, а повторная загрузка того же файла ничего не дублирует.",
           "charCount": "{used} / {max, plural, one {# символ} few {# символа} many {# символов} other {# символа}}",
           "appleHealth": {
             "title": "Apple Health",
@@ -6456,11 +6456,11 @@
               "tooManyRows": "В этом файле больше строк, чем может принять один импорт. Разделите его и импортируйте части."
             },
             "detail": "Один файл охватывает все лекарства в нём.",
-            "rowMeta": "Из приложения для лекарств",
+            "rowMeta": "Из другого приложения",
             "fileMeta": ".csv или .json, до 16 МБ"
           },
           "healthConnect": {
-            "title": "Экспорт Health Connect",
+            "title": "Health Connect",
             "description": "ZIP-файл, который создаёт Health Connect на Android.",
             "uploading": "Загрузка…",
             "uploadFailed": "Загрузка не удалась. Попробуйте снова.",
@@ -6562,13 +6562,13 @@
           },
           "recordFile": {
             "gadgetbridge": {
-              "title": "База данных Gadgetbridge",
+              "title": "Gadgetbridge",
               "description": "База данных, которую Gadgetbridge экспортирует на Android.",
               "steps": {
                 "export": "В Gadgetbridge откройте Настройки, затем Управление данными, затем Экспорт базы данных.",
                 "upload": "Загрузите сюда файл с именем Gadgetbridge. До 512 МБ."
               },
-              "fileHint": "Файл «Gadgetbridge», до 512 МБ"
+              "fileHint": "База данных, до 512 МБ"
             },
             "fhirBundle": {
               "title": "Медицинская карта (FHIR)",

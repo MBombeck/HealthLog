@@ -109,6 +109,9 @@ export function ImportPasteBody({
           rows={5}
           maxLength={MAX_PASTE_CHARS}
           spellCheck={false}
+          // One record per line, as in the file: long lines scroll sideways
+          // rather than wrap into something that reads as two records.
+          wrap="off"
           placeholder={placeholder}
           className="font-mono sm:pointer-fine:text-xs"
         />

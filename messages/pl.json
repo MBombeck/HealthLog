@@ -6261,7 +6261,7 @@
         },
         "import": {
           "heading": "Import",
-          "description": "Przesłane pliki są usuwane z serwera zaraz po zakończeniu importu, a ponowny import tego samego pliku niczego nie dodaje podwójnie.",
+          "description": "Serwer usuwa każdy plik po imporcie, a ten sam plik dwa razy nie dodaje niczego podwójnie.",
           "charCount": "{used} / {max, plural, one {# znak} few {# znaki} many {# znaków} other {# znaku}}",
           "appleHealth": {
             "title": "Apple Health",
@@ -6456,11 +6456,11 @@
               "tooManyRows": "Ten plik ma więcej wierszy, niż może przyjąć jeden import. Podziel go i zaimportuj części."
             },
             "detail": "Jeden plik obejmuje wszystkie leki, które zawiera.",
-            "rowMeta": "Z aplikacji do leków",
+            "rowMeta": "Z innej aplikacji",
             "fileMeta": ".csv lub .json, do 16 MB"
           },
           "healthConnect": {
-            "title": "Eksport z Health Connect",
+            "title": "Health Connect",
             "description": "Plik ZIP zapisany przez Health Connect na Androidzie.",
             "uploading": "Przesyłanie…",
             "uploadFailed": "Przesyłanie nie powiodło się. Spróbuj ponownie.",
@@ -6562,13 +6562,13 @@
           },
           "recordFile": {
             "gadgetbridge": {
-              "title": "Baza danych Gadgetbridge",
+              "title": "Gadgetbridge",
               "description": "Baza danych eksportowana przez Gadgetbridge na Androidzie.",
               "steps": {
                 "export": "W Gadgetbridge otwórz Ustawienia, potem Zarządzanie danymi, potem Eksportuj bazę danych.",
                 "upload": "Prześlij tutaj plik o nazwie Gadgetbridge. Do 512 MB."
               },
-              "fileHint": "Plik „Gadgetbridge”, do 512 MB"
+              "fileHint": "Baza danych, do 512 MB"
             },
             "fhirBundle": {
               "title": "Dokumentacja pacjenta (FHIR)",

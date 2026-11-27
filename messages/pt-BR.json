@@ -6261,7 +6261,7 @@
         },
         "import": {
           "heading": "Importar",
-          "description": "Os arquivos enviados são excluídos do servidor assim que a importação termina, e importar o mesmo arquivo de novo não adiciona nada em duplicidade.",
+          "description": "O servidor apaga cada arquivo após a importação, e o mesmo arquivo duas vezes não duplica nada.",
           "charCount": "{used} / {max, plural, one {# caractere} other {# caracteres}}",
           "appleHealth": {
             "title": "Apple Health",
@@ -6456,11 +6456,11 @@
               "tooManyRows": "Esse arquivo tem mais linhas do que uma importação consegue processar. Divida-o e importe as partes."
             },
             "detail": "Um arquivo cobre todos os medicamentos nele contidos.",
-            "rowMeta": "De um app de medicamentos",
+            "rowMeta": "De outro app",
             "fileMeta": ".csv ou .json, até 16 MB"
           },
           "healthConnect": {
-            "title": "Exportação do Health Connect",
+            "title": "Health Connect",
             "description": "O ZIP que o Health Connect gera no Android.",
             "uploading": "Enviando…",
             "uploadFailed": "Falha no envio. Tente novamente.",
@@ -6562,13 +6562,13 @@
           },
           "recordFile": {
             "gadgetbridge": {
-              "title": "Banco de dados do Gadgetbridge",
+              "title": "Gadgetbridge",
               "description": "O banco de dados que o Gadgetbridge exporta no Android.",
               "steps": {
                 "export": "No Gadgetbridge abra Configurações, depois Gerenciamento de dados, depois Exportar banco de dados.",
                 "upload": "Envie aqui o arquivo chamado Gadgetbridge. Até 512 MB."
               },
-              "fileHint": "O arquivo “Gadgetbridge”, até 512 MB"
+              "fileHint": "Banco de dados, até 512 MB"
             },
             "fhirBundle": {
               "title": "Prontuário (FHIR)",
