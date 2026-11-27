@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, Sparkles, Trash2 } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
+import { StatusChip } from "@/components/ui/status-chip";
 import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { ConfirmButton } from "@/components/ui/confirm-button";
@@ -161,19 +161,9 @@ export function CodexProviderForm({
         <span className="font-medium">
           {t("settings.ai.codex.modelSlugLabel")}
         </span>
-        {isConnected ? (
-          <Badge className="border-success/30 bg-success/15 text-success">
-            {t("settings.ai.codex.statusConnected")}
-          </Badge>
-        ) : status === "expired" ? (
-          <Badge className="border-warning/30 bg-warning/15 text-warning">
-            {t("settings.ai.codex.statusExpired")}
-          </Badge>
-        ) : (
-          <Badge variant="outline">
-            {t("settings.ai.codex.statusDisconnected")}
-          </Badge>
-        )}
+        <StatusChip
+          tone={isConnected ? "active" : status === "expired" ? "error" : "off"}
+        />
       </div>
       <p className="text-muted-foreground text-xs">
         {t("settings.ai.codex.modelSlugBody")}

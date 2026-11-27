@@ -20,8 +20,11 @@ import { cn } from "@/lib/utils";
  *
  * What this owns:
  *
- * - **The place of the switch**: right, top-aligned with the name, at every
- *   width. It never drops under the text.
+ * - **The place of the switch**: right, vertically centred on the row, at
+ *   every width, whether the row is one line or carries a description. It
+ *   never drops under the text. (It used to top-align with the name once a
+ *   description was present, so a card mixing both kinds of row had its
+ *   switches on two different lines.)
  * - **The name**: a `Label` bound to the switch, `text-sm font-medium`, no
  *   colon (it names a choice, it does not caption a field).
  * - **The description**: one muted `text-xs` line, announced with the switch.
@@ -54,15 +57,10 @@ export function SwitchRow({
   const generatedId = React.useId();
   const switchId = id ?? generatedId;
   const descriptionId = description ? `${switchId}-description` : undefined;
-  const stacked = Boolean(description) || Boolean(children);
   return (
     <div
       data-slot="switch-row"
-      className={cn(
-        "flex justify-between gap-4",
-        stacked ? "items-start" : "items-center",
-        className,
-      )}
+      className={cn("flex items-center justify-between gap-4", className)}
     >
       <div className="flex min-w-0 items-start gap-3">
         {Icon ? (
@@ -87,7 +85,7 @@ export function SwitchRow({
         id={switchId}
         aria-describedby={descriptionId}
         {...switchProps}
-        className={cn("shrink-0", stacked && "mt-0.5")}
+        className="shrink-0"
       />
     </div>
   );

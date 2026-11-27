@@ -81,7 +81,6 @@ export function CoachSection() {
         enabled={!mounted || moduleSwitchState("coach")}
         icon={MessageCircleHeart}
         title={t("settings.coach.state.title")}
-        description={t("settings.coach.state.description")}
         anchor="coach-activate"
         slot="settings-coach-state-card"
       />
@@ -95,9 +94,8 @@ export function CoachSection() {
           <SettingsCardHeader
             icon={BellRing}
             title={t("notifications.coachNudge.title")}
-            description={t("settings.coach.nudgesMoved")}
           />
-          <SettingsCardActions align="start">
+          <SettingsCardActions>
             <Button asChild variant="outline" size="sm">
               <Link href="/settings/notifications#coach-nudge">
                 {t("settings.coach.openNudges")}

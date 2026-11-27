@@ -26,7 +26,7 @@ export function EmergencyCardEntryCard() {
         title={t("nav.emergencyCard")}
         description={t("emergencyCard.entry.description")}
       />
-      <SettingsCardActions align="start">
+      <SettingsCardActions>
         <Button asChild variant="outline" size="sm">
           <Link href="/emergency-card">{t("records.emergency.cardLink")}</Link>
         </Button>

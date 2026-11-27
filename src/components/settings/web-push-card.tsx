@@ -10,6 +10,7 @@ import { TestConnectionButton } from "@/components/settings/test-connection-butt
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
+import { StatusChip, type StatusChipTone } from "@/components/ui/status-chip";
 import { useTranslations } from "@/lib/i18n/context";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
 import {
@@ -234,12 +235,20 @@ export function WebPushCard() {
     </SettingsCardActions>
   );
 
+  // The browser refused (permission or push service): error, with the reason
+  // as a meta line. Not subscribed in this browser, or unsupported: off.
+  const statusTone: StatusChipTone = isSubscribed
+    ? "active"
+    : isDenied || msgType === "error"
+      ? "error"
+      : "off";
+
   return (
     <SettingsCard>
       <SettingsCardHeader
         icon={BellRing}
         title={t("settings.webPush")}
-        description={t("settings.webPushDescription")}
+        status={loading ? null : <StatusChip tone={statusTone} />}
       />
 
       {(!loading && unsupported) || (!loading && isDenied) || msg ? (
@@ -252,15 +261,16 @@ export function WebPushCard() {
               {t("settings.webPushNotSupported")}
             </p>
           ) : !loading && isDenied ? (
-            <p className="text-destructive text-sm">
+            // The chip says "Error"; the reason is a meta line beside it.
+            <p className="text-muted-foreground text-sm">
               {t("settings.webPushDenied")}
             </p>
           ) : null}
 
-          {msg && (
+          {msg && !(isDenied && msgType === "error") && (
             <p
-              role="alert"
-              className={`text-sm ${msgType === "success" ? "text-success" : "text-destructive"}`}
+              role={msgType === "error" ? "alert" : "status"}
+              className="text-muted-foreground text-sm"
             >
               {msg}
             </p>

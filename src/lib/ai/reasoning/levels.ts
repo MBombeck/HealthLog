@@ -133,7 +133,6 @@ export const REASONING_LEVEL_LABEL_KEYS = {
 /** The Coach settings field around the options. */
 export const REASONING_SETTING_KEYS = {
   label: "insights.coach.reasoning.label",
-  hint: "insights.coach.reasoning.hint",
   capped: "insights.coach.reasoning.capped",
   disabled: "insights.coach.reasoning.disabled",
 } as const;
