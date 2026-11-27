@@ -58,6 +58,7 @@ import { groupEpisodes } from "./group-episodes";
 import { useIllnessEpisodes, useResolveEpisode } from "./use-illness";
 import type { IllnessEpisodeDTO } from "./types";
 import { userDayKey } from "@/lib/tz/format";
+import { recordHref } from "@/lib/links/hrefs";
 
 /**
  * The flares and recurring bouts filed under a condition, inside its card or
@@ -300,7 +301,7 @@ function ResolvedRow({
   return (
     <ListItem
       data-slot="illness-resolved-row"
-      href={`/illness/${episode.id}`}
+      href={recordHref("illness", episode.id)}
       title={episode.label}
       meta={meta.join(", ")}
     />

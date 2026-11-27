@@ -197,17 +197,20 @@ function AchievementRow({ achievement }: { achievement: AchievementProgress }) {
         <div
           id={detailId}
           data-slot="achievement-row-detail"
-          className="space-y-2 px-4 pb-3 pl-15 text-sm"
+          className="px-4 pb-3 text-sm"
         >
-          <p>{t(achievement.descriptionKey)}</p>
-          {unlocked ? null : (
-            <Progress
-              value={achievement.progressPercent}
-              className="h-1.5"
-              aria-label={fraction}
-            />
-          )}
-          <p className="text-muted-foreground text-xs">{points}</p>
+          {/* In line with the title, past the icon (size-8 + gap-3). */}
+          <div className="ms-11 space-y-2">
+            <p>{t(achievement.descriptionKey)}</p>
+            {unlocked ? null : (
+              <Progress
+                value={achievement.progressPercent}
+                className="h-1.5"
+                aria-label={fraction}
+              />
+            )}
+            <p className="text-muted-foreground text-xs">{points}</p>
+          </div>
         </div>
       ) : null}
     </ListItem>

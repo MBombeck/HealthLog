@@ -307,17 +307,13 @@ export function CycleView() {
           ) : null}
         </div>
 
-        {/* On a phone the calendar comes first, the wheel after it. */}
         <Tabs
           value={tab}
           onValueChange={(v) => setTab(v as CycleTab)}
-          className="order-1 lg:order-2"
+          className="order-1 lg:order-2" // a phone: calendar first
         >
-          {/* Four equal cells. Below `sm` the labels drop to `text-xs` with a
-              tighter inset so the four German ones (Kalender, Prognosen,
-              Erkenntnisse, Einstellungen) fit a 390 px phone without the
-              strip scrolling a label out of view; the strip still scrolls
-              should a longer locale need it. */}
+          {/* Four equal cells; below `sm` `text-xs` and a tighter inset fit
+              the German labels at 390 px, longer locales still scroll. */}
           <TabsList className="scroll-touch w-full max-w-full overflow-x-auto">
             <TabsTrigger
               value="calendar"

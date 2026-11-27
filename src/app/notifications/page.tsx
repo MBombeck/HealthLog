@@ -51,8 +51,6 @@ export default function NotificationsPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { t } = useTranslations();
   const queryClient = useQueryClient();
-  // The kind whose channels are open in the phone sheet.
-  const [openEvent, setOpenEvent] = useState<string | null>(null);
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.notificationsPreferences(),
@@ -271,10 +269,56 @@ export default function NotificationsPage() {
         </table>
       </div>
 
-      {/* Phone: one row per kind, its channels in a sheet. */}
+      <PhoneKinds
+        eventTypes={eventTypes}
+        channels={activeChannels}
+        isEnabled={isEnabled}
+        pending={toggleMutation.isPending}
+        onToggle={(channelId, eventType, enabled) =>
+          toggleMutation.mutate({ channelId, eventType, enabled })
+        }
+      />
+
+      {/* Info hint about globally-disabled channels — a full sentence that
+          explains the state, not the bare "(Disabled)" inline tag. */}
+      {channels.some((ch) => !ch.globallyEnabled) && (
+        <div className="flex items-start gap-2 rounded-lg p-3 text-sm">
+          <AlertCircle className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
+          <p className="text-muted-foreground">
+            {t("notifications.someChannelsGloballyDisabled")}
+          </p>
+        </div>
+      )}
+
+      {crossLinks}
+    </div>
+  );
+}
+
+/**
+ * On a phone: one row per kind, naming the channels it reaches; a tap opens
+ * the kind's switches in a sheet. The matrix needs a wider screen.
+ */
+function PhoneKinds({
+  eventTypes,
+  channels,
+  isEnabled,
+  pending,
+  onToggle,
+}: {
+  eventTypes: string[];
+  channels: ChannelInfo[];
+  isEnabled: (channelId: string, eventType: string) => boolean;
+  pending: boolean;
+  onToggle: (channelId: string, eventType: string, enabled: boolean) => void;
+}) {
+  const { t } = useTranslations();
+  const [openEvent, setOpenEvent] = useState<string | null>(null);
+  return (
+    <>
       <ListGroup className="md:hidden" data-slot="notifications-kinds">
         {eventTypes.map((eventType) => {
-          const on = activeChannels.filter(
+          const on = channels.filter(
             (ch) => ch.enabled && isEnabled(ch.id, eventType),
           );
           return (
@@ -304,7 +348,7 @@ export default function NotificationsPage() {
       >
         {openEvent ? (
           <div className="divide-border divide-y">
-            {activeChannels.map((ch) => {
+            {channels.map((ch) => {
               const disabled = !ch.enabled;
               return (
                 <SwitchRow
@@ -316,13 +360,9 @@ export default function NotificationsPage() {
                     disabled ? t("notifications.channelDisabled") : undefined
                   }
                   checked={isEnabled(ch.id, openEvent) && !disabled}
-                  disabled={disabled || toggleMutation.isPending}
+                  disabled={disabled || pending}
                   onCheckedChange={(checked: boolean) =>
-                    toggleMutation.mutate({
-                      channelId: ch.id,
-                      eventType: openEvent,
-                      enabled: checked,
-                    })
+                    onToggle(ch.id, openEvent, checked)
                   }
                 />
               );
@@ -330,20 +370,7 @@ export default function NotificationsPage() {
           </div>
         ) : null}
       </ResponsiveSheet>
-
-      {/* Info hint about globally-disabled channels — a full sentence that
-          explains the state, not the bare "(Disabled)" inline tag. */}
-      {channels.some((ch) => !ch.globallyEnabled) && (
-        <div className="flex items-start gap-2 rounded-lg p-3 text-sm">
-          <AlertCircle className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
-          <p className="text-muted-foreground">
-            {t("notifications.someChannelsGloballyDisabled")}
-          </p>
-        </div>
-      )}
-
-      {crossLinks}
-    </div>
+    </>
   );
 }
 

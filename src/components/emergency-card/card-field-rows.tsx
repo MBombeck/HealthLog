@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { ListGroup, ListItem } from "@/components/ui/list-row";
 import { NativeSelect } from "@/components/ui/native-select";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
@@ -71,9 +72,9 @@ export function CardFieldRows({
         <ListItem
           className={ROW}
           title={
-            <label htmlFor={`${idPrefix}-expiry`} className="cursor-pointer">
+            <Label htmlFor={`${idPrefix}-expiry`} className="cursor-pointer">
               {expiryLabel}
-            </label>
+            </Label>
           }
           trailing={
             <NativeSelect
@@ -114,12 +115,12 @@ export function CardFieldRows({
               }
               title={
                 // The label stretches over the row, so the whole row ticks.
-                <label
+                <Label
                   htmlFor={`${idPrefix}-field-${f}`}
                   className="block cursor-pointer after:absolute after:inset-0 after:content-['']"
                 >
                   {t(`emergencyCard.fields.${f}`)}
-                </label>
+                </Label>
               }
             />
           ))}
