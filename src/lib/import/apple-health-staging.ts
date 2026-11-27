@@ -36,7 +36,7 @@ export const ACTIVE_IMPORT_STATUSES = [
  * expires an import after six hours (`APPLE_HEALTH_IMPORT_SEND_OPTIONS`) and
  * the reconcile pass fails it soon after. It must not block the account.
  */
-const ACTIVE_IMPORT_MAX_AGE_MS = 7 * 60 * 60 * 1000;
+export const ACTIVE_IMPORT_MAX_AGE_MS = 7 * 60 * 60 * 1000;
 
 /** Staged files older than this belong to no running import. */
 export const STAGING_MAX_AGE_MS = ACTIVE_IMPORT_MAX_AGE_MS;
