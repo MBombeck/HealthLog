@@ -3,7 +3,7 @@
  * and stored.
  *
  * The app's own copy joins facts with a comma, a colon or a real phrase,
- * never with a middle dot or a dash (`i18n-no-dot-separator.test.ts`,
+ * never with a middle dot or a dash (`i18n-typography-glyphs.test.ts`,
  * `ui-code-no-dash-separator.test.ts`). Model text is the one source of
  * on-screen prose those guards cannot reach: a briefing headline came back
  * as "Nothing needs fixing — the work now is to keep it up", and the

@@ -119,7 +119,6 @@
     "src/__tests__/i18n-catalog-cache-key.test.ts": 0,
     "src/__tests__/i18n-drift-guard.test.ts": 0,
     "src/__tests__/i18n-english-leak-guard.test.ts": 0.1,
-    "src/__tests__/i18n-no-dot-separator.test.ts": 0,
     "src/__tests__/i18n-reference-matcher.test.ts": 0,
     "src/__tests__/i18n-reverse-coverage.test.ts": 3.2,
     "src/__tests__/idempotency-contract-publication.test.ts": 1,
