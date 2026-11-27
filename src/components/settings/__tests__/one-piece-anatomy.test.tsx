@@ -113,7 +113,7 @@ describe("SettingsCardHeader — one description sentence, one text run", () => 
 });
 
 describe("SettingsCardActions — one row, one shape", () => {
-  it("puts the row at the trailing edge by default", () => {
+  it("puts the row at the trailing edge, its buttons centred on it", () => {
     const html = render(
       <SettingsCardActions>
         <button>Save</button>
@@ -121,16 +121,17 @@ describe("SettingsCardActions — one row, one shape", () => {
     );
     expect(html).toContain('data-slot="settings-card-actions"');
     expect(html).toContain("justify-end");
+    expect(html).toContain("items-center");
   });
 
-  it("spells the link-row exception as a prop rather than a local class", () => {
+  it("has no left-aligned form, not even for a row of links out", () => {
     const html = render(
-      <SettingsCardActions align="start">
+      <SettingsCardActions>
         <a href="/x">Open</a>
       </SettingsCardActions>,
     );
-    expect(html).toContain("justify-start");
-    expect(html).not.toContain("justify-end");
+    expect(html).toContain("justify-end");
+    expect(html).not.toContain("justify-start");
   });
 
   it("sets its buttons' height and width itself", () => {

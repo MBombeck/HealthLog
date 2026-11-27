@@ -108,7 +108,7 @@ export function AiUsageCard() {
         anchor="ai-usage"
         icon={Gauge}
         title={t("settings.ai.usage.title")}
-        description={t("settings.ai.usage.description")}
+        info={t("settings.ai.usage.description")}
       />
 
       <div

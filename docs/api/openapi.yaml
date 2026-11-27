@@ -49981,6 +49981,7 @@ components:
               - insights.score-origin
               - account.dismissed-hints
               - daily.asks
+              - daily.scores-short-labels
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices; since
@@ -50129,7 +50130,10 @@ components:
             subject, exactly two actions with the primary first, learnMore), ranked on the server, never capped or
             folded; render as delivered, no card when empty. Later is dose.snooze:<medicationId> on a dose and
             ask.later:<dismissKey> on other reminders; the admin rows (push_relay, server_setup) come only to a browser
-            session."
+            session. `daily.scores-short-labels`: Each start-page score carries shortLabel, its short name for a tile
+            from the score registry, worded in the response language: GET /api/daily/morning scores.sleep and
+            scores.readiness, and GET /api/daily/digest score (the Health score). Render it as is; the web shows the
+            same words."
       required:
         - version
         - buildSha
@@ -101680,6 +101684,11 @@ components:
                   type:
                     - string
                     - "null"
+                shortLabel:
+                  description: The score's short name for a tile, from the score registry and worded in the response language
+                    ("Gesundheit", "Health score"). Render it as is. Absent on older cached digests. Feature key
+                    `daily.scores-short-labels`.
+                  type: string
               required:
                 - value
                 - band
@@ -102176,7 +102185,9 @@ components:
               description: "The rule by name: floor (a confirmed safety floor in the last 24 hours), rest_mode, coincident (two or
                 more independent signals outside their usual range: blood pressure counts once, resting heart rate and
                 pulse once, weight and glucose never), vital_outside, sleep_pending, source_quiet (first and second
-                quiet day only), readiness (fresh, yellow or red), night_notable, in_range, planned, nothing."
+                quiet day only), readiness (fresh, yellow or red), night_notable, in_range (today's values counted and
+                all in range, or an ordinary night; while the Health score flags a pillar, its `band` below green, that
+                pillar is named instead and the day is never called in range), planned, nothing."
             text:
               type: string
               description: One sentence, a finding and never advice, worded on the server from the day's own readings. No model text.
@@ -102385,6 +102396,10 @@ components:
     DailyMorningScore:
       type: object
       properties:
+        shortLabel:
+          type: string
+          description: The score's short name for the tile, from the score registry and worded in the response language
+            ("Schlafscore", "Bereitschaft"). Render it as is. Feature key `daily.scores-short-labels`.
         ring:
           description: "The ring as the cards carry it: no number when not fresh."
           $ref: "#/components/schemas/DailyMorningRing"
@@ -102398,6 +102413,7 @@ components:
           type: string
           description: The score's own page.
       required:
+        - shortLabel
         - ring
         - line
         - href

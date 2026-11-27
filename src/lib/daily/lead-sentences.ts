@@ -50,6 +50,41 @@ export function sleepDiff(sleep: TodaySleep): number | null {
   return Math.round(sleep.minutes - sleep.usualMinutes);
 }
 
+/**
+ * Last night against the person's usual, read one way by every sentence and
+ * line that compares the two (the morning's night card, the Today facts and
+ * the lead): `plain` without a usual to compare with,
+ * `usual` within {@link SLEEP_CLOSE_DIFF_MINUTES}, else `more` or `less` by
+ * whole minutes.
+ */
+export type SleepVersusUsual =
+  | { kind: "plain" }
+  | { kind: "usual" }
+  | { kind: "more" | "less"; diffMinutes: number };
+
+export function sleepVersusUsual(sleep: TodaySleep): SleepVersusUsual {
+  const diff = sleepDiff(sleep);
+  if (diff === null) return { kind: "plain" };
+  if (Math.abs(diff) <= SLEEP_CLOSE_DIFF_MINUTES) return { kind: "usual" };
+  return { kind: diff > 0 ? "more" : "less", diffMinutes: Math.abs(diff) };
+}
+
+/**
+ * The night as one short line: the duration, and how far it sits from the
+ * usual when it is not close to it ("7 h 20 min, 35 min less than usual").
+ */
+export function sleepFactLine(sleep: TodaySleep, t: Translate): string {
+  const params = { duration: duration(sleep.minutes, t) };
+  const versus = sleepVersusUsual(sleep);
+  if (versus.kind === "plain" || versus.kind === "usual") {
+    return t(`daily.todayFact.sleep.${versus.kind}`, params);
+  }
+  return t(`daily.todayFact.sleep.${versus.kind}`, {
+    ...params,
+    diff: duration(versus.diffMinutes, t),
+  });
+}
+
 export function duration(minutes: number, t: Translate): string {
   return formatDurationMinutes(Math.round(minutes), t);
 }
@@ -98,37 +133,22 @@ export function notableNightSentence(
 }
 
 /**
- * The counting sentence for today's vitals, all inside their range: the
- * number of them, or the one by name. Null when there is none.
+ * The sentence for a night that is in and not notable, or null. Within the
+ * close margin it is "close to your usual"; between that and an hour it says
+ * the difference, so a night 40 minutes short is never called usual.
  */
-export function vitalsInRangeSentence(
-  vitals: readonly TodayVital[],
-  locale: Locale,
-  t: Translate,
-): string | null {
-  if (vitals.length >= 2) {
-    return t(pluralKey("daily.lead.vitalsInRange", vitals.length, locale), {
-      count: vitals.length,
-    });
-  }
-  if (vitals.length === 1) {
-    const v = vitals[0];
-    return t("daily.lead.vitalInRange", {
-      metric: vitalLabel(t, v.type),
-      value: v.valueLabel,
-      range: v.rangeLabel,
-    });
-  }
-  return null;
-}
-
-/** The sentence for an ordinary night that is in, or null. */
 export function ordinaryNightSentence(
   sleep: TodaySleep | null,
   t: Translate,
 ): string | null {
   if (!sleep) return null;
-  return sleepDiff(sleep) !== null
-    ? t("daily.lead.sleep.usual", { duration: duration(sleep.minutes, t) })
-    : t("daily.lead.sleep.plain", { duration: duration(sleep.minutes, t) });
+  const params = { duration: duration(sleep.minutes, t) };
+  const versus = sleepVersusUsual(sleep);
+  if (versus.kind === "plain" || versus.kind === "usual") {
+    return t(`daily.lead.sleep.${versus.kind}`, params);
+  }
+  return t(`daily.lead.sleep.${versus.kind}`, {
+    ...params,
+    diff: duration(versus.diffMinutes, t),
+  });
 }

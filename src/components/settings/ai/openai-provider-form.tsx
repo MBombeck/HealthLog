@@ -130,14 +130,18 @@ export function OpenAIProviderForm({
             </span>
           )}
         </Label>
-        <PasswordInput
-          id="ai-openai-key"
-          data-testid="ai-openai-api-key"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          placeholder={t("settings.ai.openai.apiKeyPlaceholder")}
-          className="mt-1"
-        />
+        <div className="mt-1 flex items-center gap-2 [&>div]:min-w-0 [&>div]:flex-1">
+          <PasswordInput
+            id="ai-openai-key"
+            data-testid="ai-openai-api-key"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            placeholder={t("settings.ai.openai.apiKeyPlaceholder")}
+          />
+          {userProvider?.hasOpenaiKey ? (
+            <RemoveSavedKeyButton field="openaiKey" />
+          ) : null}
+        </div>
       </div>
 
       <div>
@@ -213,9 +217,6 @@ export function OpenAIProviderForm({
       )}
 
       <SettingsCardActions>
-        {userProvider?.hasOpenaiKey && (
-          <RemoveSavedKeyButton field="openaiKey" />
-        )}
         <Button
           type="submit"
           size="sm"
