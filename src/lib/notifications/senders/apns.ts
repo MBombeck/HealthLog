@@ -27,7 +27,7 @@ import { readFileSync } from "node:fs";
 import apn from "@parse/node-apn";
 
 import { prisma } from "@/lib/db";
-import { deleteDeviceRows } from "@/lib/devices/delete-devices";
+import { forgetGoneRegistrations } from "@/lib/notifications/gone-registrations";
 import { getEvent } from "@/lib/logging/context";
 import type { SendOutcome } from "@/lib/notifications/retry-policy";
 import { recordPushAttemptForPayload } from "@/lib/notifications/senders/push-attempt-record";
@@ -826,9 +826,7 @@ export async function sendViaApns(
     lastFailureStatus = result?.status;
   }
 
-  if (deadDeviceIds.length > 0) {
-    await deleteDeviceRows({ id: { in: deadDeviceIds } });
-  }
+  const forgotten = await forgetGoneRegistrations("device", deadDeviceIds);
 
   if (anySuccess) {
     recordPushAttemptForPayload(payload, userId, {
@@ -842,7 +840,7 @@ export async function sendViaApns(
 
   // Every surviving device returned a permanent reason → channel is dead
   // until the user re-registers from a fresh iOS install.
-  if (deadDeviceIds.length === devices.length) {
+  if (forgotten && deadDeviceIds.length === devices.length) {
     const reason = lastFailureReason ?? "apns_all_devices_unregistered";
     recordPushAttemptForPayload(payload, userId, {
       userId,

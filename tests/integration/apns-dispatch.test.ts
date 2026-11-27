@@ -237,6 +237,43 @@ describe("APNs dispatcher integration", () => {
     expect(audit).toBeTruthy();
   });
 
+  it("keeps every device and the channel when APNs calls all of them not for this topic", async () => {
+    const { GONE_LIMIT, readGoneHolds } =
+      await import("@/lib/notifications/gone-registrations");
+    await seedApnsChannel();
+    const count = GONE_LIMIT + 3;
+    for (let i = 0; i < count; i++) {
+      await seedDevice({ apnsToken: `topic-${i}` });
+    }
+    apnsSendMock.mockImplementation(async (_note: unknown, token: string) => ({
+      sent: [],
+      failed: [
+        {
+          device: token,
+          status: 400,
+          response: { reason: "DeviceTokenNotForTopic" },
+        },
+      ],
+    }));
+
+    const { dispatchNotification } =
+      await import("@/lib/notifications/dispatcher");
+    await dispatchNotification({
+      userId: TEST_USER_ID,
+      eventType: "SYSTEM_ALERT",
+      title: "test",
+      message: "test",
+    });
+    apnsSendMock.mockReset();
+
+    expect(await getPrismaClient().device.count()).toBe(count);
+    const ch = await getPrismaClient().notificationChannel.findFirst({
+      where: { userId: TEST_USER_ID, type: "APNS" },
+    });
+    expect(ch?.enabled).toBe(true);
+    expect((await readGoneHolds()).map((h) => h.channel)).toEqual(["apns"]);
+  });
+
   it("bounds a hung APNs provider and falls through to Telegram", async () => {
     const { encrypt } = await import("@/lib/crypto");
     await seedApnsChannel();
