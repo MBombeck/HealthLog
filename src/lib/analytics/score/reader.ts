@@ -19,7 +19,7 @@ import { pickCanonicalSourceRows } from "@/lib/analytics/source-priority";
 import { reconstructNights } from "@/lib/insights/derived/sleep-score";
 import { pickCumulativeDaySum } from "@/lib/measurements/cumulative-day-sum";
 import { ageInYears } from "@/lib/tz/date-only";
-import { shiftDateKey, userDayKey } from "@/lib/tz/format";
+import { userDayKey } from "@/lib/tz/format";
 import { healthScoreNoticeItemKey } from "@/lib/daily/priority-item-key";
 import { annotate, getEvent } from "@/lib/logging/context";
 
@@ -128,8 +128,7 @@ async function capture<T>(
     | "WEIGHT_GOAL"
     | "ALGORITHM_NOTICE"
     | "COMPOSITION_NOTICE"
-    | "SCORE_HISTORY"
-    | ScorePillarId[],
+    | Array<ScorePillarId | "COMPOSITION_NOTICE" | "SCORE_HISTORY">,
 ): Promise<Settled<T>> {
   try {
     return { ok: true, value: await promise };
@@ -862,7 +861,7 @@ export async function computeUserHealthScore(
   // row" would find today's own composition the second time the panel is
   // opened and the note would vanish between two loads of the same page.
   const todayKey = userDayKey(input.now, input.profile.timezone);
-  const [dismissal, priorDay, storedDays] = await Promise.all([
+  const [dismissal, storedDays] = await Promise.all([
     capture(
       db.dismissedPriorityItem.findUnique({
         where: { userId_itemKey: { userId: input.userId, itemKey } },
@@ -871,33 +870,19 @@ export async function computeUserHealthScore(
       null,
       "ALGORITHM_NOTICE",
     ),
-    capture(
-      db.healthScoreRecord.findFirst({
-        where: { userId: input.userId, dayKey: { lt: todayKey } },
-        orderBy: { dayKey: "desc" },
-        select: {
-          composition: true,
-          scoreVersion: true,
-          configVersion: true,
-        },
-      }),
-      null,
-      "COMPOSITION_NOTICE",
-    ),
-    // The days the delta compares: the newest of the week a week back, and
-    // the week before it for the eligibility guard. The history chart reads
-    // these same rows, so the move the panel names is a move between two of
-    // the chart's points. A failed read is no previous window, said as such
-    // on the wide event.
+    // One read for both: the newest stored days before today, newest first.
+    // The first is the composition note's prior day, however old. The delta
+    // compares the newest of the week a week back, and the week before it
+    // for the eligibility guard; one row per day means the newest
+    // `SCORE_DELTA_READ_DAYS` rows hold every day of that span. The history
+    // chart reads these same rows, so the move the panel names is a move
+    // between two of the chart's points. A failed read is no note and no
+    // previous window, said as such on the wide event.
     capture(
       db.healthScoreRecord.findMany({
-        where: {
-          userId: input.userId,
-          dayKey: {
-            gte: shiftDateKey(todayKey, -SCORE_DELTA_READ_DAYS),
-            lt: todayKey,
-          },
-        },
+        where: { userId: input.userId, dayKey: { lt: todayKey } },
+        orderBy: { dayKey: "desc" },
+        take: SCORE_DELTA_READ_DAYS,
         select: {
           dayKey: true,
           composite: true,
@@ -908,9 +893,10 @@ export async function computeUserHealthScore(
         },
       }),
       [],
-      "SCORE_HISTORY",
+      ["COMPOSITION_NOTICE", "SCORE_HISTORY"],
     ),
   ]);
+  const priorDay = storedDays.value[0] ?? null;
   const delta = attachScoreDelta({
     current: current.composite,
     history: storedDays.value,
@@ -927,7 +913,7 @@ export async function computeUserHealthScore(
       current.composite.status === "ok"
         ? current.composite.value.composition
         : [],
-    priorDay: priorDay.value,
+    priorDay,
   });
   return {
     ...current,

@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 313,
-  "total": 97815,
+  "total": 97802,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
@@ -231,7 +231,7 @@
     "lib/analytics/bp-in-target-fast-path.ts :: computeFromRollups": 203,
     "lib/analytics/correlations-fast-path.ts :: computeCorrelationHypothesesFastPath": 252,
     "lib/analytics/intraday-pulse-io.ts :: loadIntradayPulse": 204,
-    "lib/analytics/score/reader.ts :: computeUserHealthScore": 304,
+    "lib/analytics/score/reader.ts :: computeUserHealthScore": 291,
     "lib/analytics/summaries-slice.ts :: computeFromRollups": 355,
     "lib/api-handler.ts :: apiHandler": 205,
     "lib/auth/profile-update.ts :: applyProfileUpdate": 344,
