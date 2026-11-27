@@ -104,11 +104,49 @@ describe("runTreatmentSeriesExpiryTick", () => {
 
   function prismaWith(rows: unknown[]) {
     const findMany = vi.fn().mockResolvedValue(rows);
+    const release = vi.fn().mockResolvedValue({ count: 1 });
     return {
-      prisma: { treatmentSeries: { findMany } } as unknown as PrismaClient,
+      prisma: {
+        treatmentSeries: { findMany },
+        notificationEvent: { deleteMany: release },
+      } as unknown as PrismaClient,
       findMany,
+      release,
     };
   }
+
+  const claimRow = {
+    where: {
+      recordUserId: "u1",
+      eventType: "MEASUREMENT_REMINDER",
+      dedupKey: "series-expiry:s1:2026-12-10",
+    },
+  };
+
+  it("gives the claim back when every channel failed, so the next hour retries", async () => {
+    dispatch.mockResolvedValue({ dispatched: false, channelsAttempted: 2 });
+    const { prisma, release } = prismaWith([row()]);
+    await runTreatmentSeriesExpiryTick(prisma, now, { dispatch });
+    expect(release).toHaveBeenCalledWith(claimRow);
+  });
+
+  it("gives the claim back when the send threw", async () => {
+    dispatch.mockRejectedValue(new Error("dispatcher down"));
+    const { prisma, release } = prismaWith([row()]);
+    const summary = await runTreatmentSeriesExpiryTick(prisma, now, {
+      dispatch,
+    });
+    expect(summary.failed).toBe(1);
+    expect(release).toHaveBeenCalledWith(claimRow);
+  });
+
+  it("keeps the claim when it went out or no channel wants it", async () => {
+    const { prisma, release } = prismaWith([row()]);
+    await runTreatmentSeriesExpiryTick(prisma, now, { dispatch });
+    dispatch.mockResolvedValue({ dispatched: false, channelsAttempted: 0 });
+    await runTreatmentSeriesExpiryTick(prisma, now, { dispatch });
+    expect(release).not.toHaveBeenCalled();
+  });
 
   beforeEach(() => {
     dispatch.mockReset().mockResolvedValue({ dispatched: true });

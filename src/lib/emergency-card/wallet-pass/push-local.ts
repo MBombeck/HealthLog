@@ -10,7 +10,8 @@
  *
  * Every item gets a result in the relay's closed set, so the caller treats
  * both ways the same: `unregistered` drops the registration, `accepted`
- * stamps it, anything else leaves the push owed for the next run. No token,
+ * stamps it, anything else leaves the push owed for the next run (a
+ * `rejected` one also fails the job, so it is seen). No token,
  * certificate or key is ever logged.
  */
 import { createHash, KeyObject } from "node:crypto";
@@ -18,6 +19,7 @@ import { createHash, KeyObject } from "node:crypto";
 import apn from "@parse/node-apn";
 
 import { annotate } from "@/lib/logging/context";
+import { apnsTokenGone } from "@/lib/notifications/senders/apns-token-gone";
 import type {
   WalletNotifyItem,
   WalletNotifyResult,
@@ -27,14 +29,6 @@ import type { LocalWalletIdentity } from "./local-signer";
 
 /** The longest a batch of pushes may take before it counts as unavailable. */
 export const LOCAL_PASS_PUSH_TIMEOUT_MS = 10_000;
-
-/** APNs reasons that mean the token will never take a push again. */
-const GONE = new Set([
-  "Unregistered",
-  "BadDeviceToken",
-  "DeviceTokenNotForTopic",
-  "ExpiredToken",
-]);
 
 let provider: { fingerprint: string; provider: apn.Provider } | null = null;
 
@@ -66,12 +60,17 @@ export function resetLocalPassPushForTesting(): void {
   provider = null;
 }
 
+/**
+ * The relay's reading of Apple's answer (`spec/wallet.md`): `unregistered`
+ * only for a dead token (`apnsTokenGone`), `rejected` for any other refusal
+ * (certificate, topic, payload: nothing is dropped), `unavailable` for an
+ * outage.
+ */
 function classify(failure: apn.ResponseFailure): WalletNotifyResult {
-  const reason = failure.response?.reason ?? "";
   const status = Number(failure.status ?? 0);
-  if (status === 410 || GONE.has(reason)) return "unregistered";
+  if (apnsTokenGone(status, failure.response?.reason)) return "unregistered";
   if (status === 429) return "token_quota";
-  if (status === 400 || status === 403 || status === 413) return "rejected";
+  if (status >= 400 && status < 500) return "rejected";
   return "unavailable";
 }
 

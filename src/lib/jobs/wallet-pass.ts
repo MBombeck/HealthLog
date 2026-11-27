@@ -12,7 +12,10 @@
  *   of it, rebuilt in its ended version and pushed without throttle.
  *
  * A pass that fails is counted and the run carries on; a run that cannot
- * read the table fails and the next tick is the retry.
+ * read the table fails and the next tick is the retry. The refresh of one
+ * pass fails when its rebuild threw or Apple refused a push for a reason
+ * that is not the token's, so the queue's backoff retries it and the worker
+ * report shows it; the retry is idempotent, what is owed is read again.
  */
 import { type Job } from "pg-boss";
 
@@ -48,7 +51,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export const WALLET_VOIDED_RETENTION_DAYS = 365;
 /** How far back the void push looks for devices still to tell. */
 export const WALLET_VOID_PUSH_WINDOW_DAYS = 30;
-/** Passes one sweep or void-push run takes on. */
+/** Passes one void-push run takes on, and one page of the sweep. */
 const PASSES_PER_RUN = 2000;
 
 interface Tally {
@@ -56,6 +59,7 @@ interface Tally {
   changed: number;
   accepted: number;
   dropped: number;
+  rejected: number;
   deferred: number;
   failed: number;
 }
@@ -65,6 +69,7 @@ const emptyTally = (): Tally => ({
   changed: 0,
   accepted: 0,
   dropped: 0,
+  rejected: 0,
   deferred: 0,
   failed: 0,
 });
@@ -83,6 +88,7 @@ async function refreshAndPush(
     const pushed = await pushOwedWalletUpdates(walletPassId, { throttle });
     tally.accepted += pushed.accepted;
     tally.dropped += pushed.dropped;
+    tally.rejected += pushed.rejected;
     if (pushed.deferredUntil) {
       tally.deferred += 1;
       await enqueueWalletPassRefresh(
@@ -115,14 +121,25 @@ export async function handleWalletPassRefresh(
       await refreshAndPush(id, walletPassState(pass) === "live", tally);
     }
     evt.addMeta("wallet_passes_refreshed", tally.refreshed);
-    return jobDone({
+    const did = {
       wallet_passes_refreshed: tally.refreshed,
       wallet_passes_changed: tally.changed,
       wallet_pushes_accepted: tally.accepted,
       wallet_registrations_dropped: tally.dropped,
+      wallet_pushes_rejected: tally.rejected,
       wallet_passes_deferred: tally.deferred,
       items_failed: tally.failed,
-    });
+    };
+    if (tally.failed > 0 || tally.rejected > 0) {
+      return jobFailed(
+        tally.rejected > 0
+          ? "wallet pass push refused by Apple"
+          : "wallet pass refresh failed",
+        undefined,
+        did,
+      );
+    }
+    return jobDone(did);
   });
 }
 
@@ -133,32 +150,41 @@ export async function handleWalletPassSweep(
   return withBackgroundEvent("job.wallet_pass_sweep", async (evt) => {
     const now = new Date();
     try {
-      // account-deletion: a deletion request withdraws the account's passes, so a live pass has an active owner.
-      const live = await prisma.walletPass.findMany({
-        where: livePassWhere(now),
-        select: { id: true, userId: true, createdById: true },
-        orderBy: { contentChangedAt: "asc" },
-        take: PASSES_PER_RUN,
-      });
       const tally = emptyTally();
       let voided = 0;
-      for (const pass of live) {
-        // A guardian's pass rests on the grant and the profile's marker,
-        // the rule the QR link checks on every scan.
-        if (pass.createdById !== pass.userId) {
-          try {
-            if (await guardianMintRefusal(pass)) {
-              if (await voidWalletPassById(pass.id, "GUARDIAN_LOST", now)) {
-                voided += 1;
+      // Every live pass, a page at a time by id: ordering by a column the
+      // sweep never moves would hand back the same oldest page every run.
+      let cursor: string | null = null;
+      for (;;) {
+        const live: Array<{ id: string; userId: string; createdById: string }> =
+          // account-deletion: a deletion request withdraws the account's passes, so a live pass has an active owner.
+          await prisma.walletPass.findMany({
+            where: livePassWhere(now),
+            select: { id: true, userId: true, createdById: true },
+            orderBy: { id: "asc" },
+            take: PASSES_PER_RUN,
+            ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+          });
+        for (const pass of live) {
+          // A guardian's pass rests on the grant and the profile's marker,
+          // the rule the QR link checks on every scan.
+          if (pass.createdById !== pass.userId) {
+            try {
+              if (await guardianMintRefusal(pass)) {
+                if (await voidWalletPassById(pass.id, "GUARDIAN_LOST", now)) {
+                  voided += 1;
+                }
+                continue;
               }
+            } catch {
+              tally.failed += 1;
               continue;
             }
-          } catch {
-            tally.failed += 1;
-            continue;
           }
+          await refreshAndPush(pass.id, true, tally);
         }
-        await refreshAndPush(pass.id, true, tally);
+        if (live.length < PASSES_PER_RUN) break;
+        cursor = live[live.length - 1].id;
       }
       const cutoff = new Date(
         now.getTime() - WALLET_VOIDED_RETENTION_DAYS * DAY_MS,
@@ -180,6 +206,7 @@ export async function handleWalletPassSweep(
         wallet_passes_changed: tally.changed,
         wallet_pushes_accepted: tally.accepted,
         wallet_registrations_dropped: tally.dropped,
+        wallet_pushes_rejected: tally.rejected,
         wallet_passes_deferred: tally.deferred,
         wallet_ready_pushes_sent: ready.sent,
         wallet_passes_voided: voided,
@@ -237,6 +264,7 @@ export async function handleWalletPassVoidPush(
         wallet_passes_changed: tally.changed,
         wallet_pushes_accepted: tally.accepted,
         wallet_registrations_dropped: tally.dropped,
+        wallet_pushes_rejected: tally.rejected,
         wallet_passes_deferred: tally.deferred,
         items_failed: tally.failed,
       });

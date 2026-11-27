@@ -1176,6 +1176,8 @@ export async function buildDashboardSnapshot(
   // the whole strip wait on the slowest read (R-firstpaint §6 —
   // paint-together vs slowest-wins). Unrelated uncovered types do NOT
   // cold the phase (see `isThickPhaseWarm`).
+  // The reader's locale (the route's, else English): its briefing and narrative.
+  const locale = options.locale ?? "en";
   const coverage = await time("coverage", () => probeRollupCoverage(user.id));
   const warm = await isThickPhaseWarm(user.id, coverage);
 
@@ -1208,6 +1210,7 @@ export async function buildDashboardSnapshot(
     modules,
     scoreRings,
     nutrientTiles,
+    heldBack,
   ] = await Promise.all([
     // A5 — reuse the coverage map already probed above so the slice
     // doesn't re-run the identical `probeRollupCoverage` query.
@@ -1226,7 +1229,7 @@ export async function buildDashboardSnapshot(
             now,
             time,
             await modulesPromise,
-            options.locale ?? "en",
+            locale,
           ),
         )
       : Promise.resolve(null),
@@ -1248,6 +1251,12 @@ export async function buildDashboardSnapshot(
     ).catch(() => [] as DashboardScoreRing[]),
     // The nutrient strip tiles (water, opt-in energy): see `./nutrient-tiles`.
     time("nutrientTiles", () => buildNutrientTileBlocks(prisma, user.id)),
+    // A held-back phase reads its score live beside the rest, not after it.
+    warm
+      ? null
+      : time("heldBackScore", () =>
+          heldBackScore(prisma, user, coverage, now, modulesPromise, locale),
+        ),
   ]);
   const { summaries: slimSummaries, lastSeenByType: slimLastSeen } =
     foldNutrientTiles(slimRaw, nutrientTiles, nowMs);
@@ -1276,10 +1285,6 @@ export async function buildDashboardSnapshot(
   // switch, the AI analysis opt-out, provider, consent) is applied per read
   // by `applyBriefingCapability`, after the cache. The Coach opt-out no
   // longer hides it: hiding the Coach hides the Coach.
-  // The reader's locale: the route resolves it from the request; the builder
-  // defaults to English. It decides which cached briefing counts as the
-  // reader's and which narrative row the briefing memory reads.
-  const locale = options.locale ?? "en";
   const briefing = await liftBriefing(
     user,
     options.hasProvider ?? (() => hasAnyConfiguredProvider(user.id)),
@@ -1388,9 +1393,7 @@ export async function buildDashboardSnapshot(
           tension: scoreNarrative?.tension ?? null,
           returnToBand: scoreNarrative?.returnToBand ?? null,
         }
-      : warm
-        ? null
-        : await heldBackScore(prisma, user, coverage, now, modules, locale),
+      : heldBack,
     // The resolved hero score rings (selection order, data-gated); optional
     // on the type so older cached snapshots stay valid.
     scoreRings,

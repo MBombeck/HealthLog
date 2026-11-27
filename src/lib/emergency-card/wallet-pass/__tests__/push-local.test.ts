@@ -103,6 +103,34 @@ describe("local pass pushes", () => {
     expect(apn.options[0]).not.toHaveProperty("token");
   });
 
+  it("drops only a dead token; a certificate, topic or payload refusal is rejected, an outage unavailable", async () => {
+    const cases: Array<[number, string, string]> = [
+      [400, "BadDeviceToken", "unregistered"],
+      [410, "ExpiredToken", "unregistered"],
+      [403, "InvalidProviderToken", "rejected"],
+      [403, "BadCertificate", "rejected"],
+      [413, "PayloadTooLarge", "rejected"],
+      [500, "InternalServerError", "unavailable"],
+      [503, "ServiceUnavailable", "unavailable"],
+    ];
+    const many = cases.map((_, i) => ({
+      ref: `r${i}`,
+      token: (i + 16).toString(16).repeat(64),
+    }));
+    apn.send.mockResolvedValue({
+      sent: [],
+      failed: cases.map(([status, reason], i) => ({
+        device: many[i].token,
+        status,
+        response: { reason },
+      })),
+    });
+    const out = await sendLocalPassPushes(identity, many);
+    expect(cases.map((_, i) => out.get(`r${i}`))).toEqual(
+      cases.map(([, , want]) => want),
+    );
+  });
+
   it("answers unavailable for every item when the provider fails", async () => {
     apn.send.mockRejectedValue(new Error("socket hang up"));
     const out = await sendLocalPassPushes(identity, items.slice(0, 2));

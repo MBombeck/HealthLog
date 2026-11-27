@@ -355,25 +355,30 @@ describe("sendApnsPush — failure classification", () => {
   });
 
   it.each([
-    ["Unregistered", true],
-    ["BadDeviceToken", true],
-    ["DeviceTokenNotForTopic", true],
-    ["TooManyRequests", false],
-    ["InternalServerError", false],
-  ])("reason %s → shouldDisable=%s", async (reason, shouldDisable) => {
-    sendMock.mockResolvedValueOnce({
-      sent: [],
-      failed: [{ device: "abc", status: 410, response: { reason } }],
-    });
-    const r = await sendApnsPush({
-      deviceToken: "abc",
-      environment: "sandbox",
-      payload: { alert: { title: "t", body: "b" } },
-    });
-    expect(r.ok).toBe(false);
-    expect(r.shouldDisable).toBe(shouldDisable);
-    expect(r.reason).toBe(reason);
-  });
+    ["Unregistered", 410, true],
+    ["BadDeviceToken", 400, true],
+    ["DeviceTokenNotForTopic", 400, true],
+    ["InvalidProviderToken", 403, false],
+    ["BadTopic", 400, false],
+    ["TooManyRequests", 429, false],
+    ["InternalServerError", 500, false],
+  ])(
+    "reason %s (%s) → shouldDisable=%s",
+    async (reason, status, shouldDisable) => {
+      sendMock.mockResolvedValueOnce({
+        sent: [],
+        failed: [{ device: "abc", status, response: { reason } }],
+      });
+      const r = await sendApnsPush({
+        deviceToken: "abc",
+        environment: "sandbox",
+        payload: { alert: { title: "t", body: "b" } },
+      });
+      expect(r.ok).toBe(false);
+      expect(r.shouldDisable).toBe(shouldDisable);
+      expect(r.reason).toBe(reason);
+    },
+  );
 
   it("network throw returns soft failure", async () => {
     sendMock.mockRejectedValueOnce(new Error("ECONNRESET"));

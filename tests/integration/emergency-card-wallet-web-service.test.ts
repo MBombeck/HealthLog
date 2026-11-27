@@ -373,6 +373,44 @@ describe("keeping the pass current", () => {
     expect(listed.serialNumbers).toEqual([serial]);
   });
 
+  it("keeps a registration Apple refused for the certificate, drops one whose token is dead", async () => {
+    const fake = await relayWithWallet();
+    const { owner, serial, auth, passId } = await ownerWithPass();
+    await register("DEVICEA", serial, auth, token(30));
+    await register("DEVICEB", serial, auth, token(31));
+    await pause();
+    fake.walletAnswer.set(token(30), "rejected");
+    fake.walletAnswer.set(token(31), "unregistered");
+    await prisma.allergy.updateMany({
+      where: { userId: owner.id },
+      data: { substance: "Latex" },
+    });
+
+    const outcome = await handleWalletPassRefresh(
+      asJobs({ walletPassId: passId }),
+    );
+
+    // The refusal fails the job (the queue retries it, the worker report
+    // shows it); only the dead token's registration went.
+    expect(outcome.ok).toBe(false);
+    const left = await prisma.walletPassRegistration.findMany({
+      where: { walletPassId: passId },
+      select: { lastPushAt: true },
+    });
+    expect(left).toHaveLength(1);
+    expect(left[0].lastPushAt).toBeNull();
+
+    // Once Apple takes it again, the owed push goes out and the job is green.
+    fake.walletAnswer.clear();
+    const retried = await handleWalletPassRefresh(
+      asJobs({ walletPassId: passId }),
+    );
+    expect(retried.ok).toBe(true);
+    expect(fake.walletPushes.filter((p) => p.token === token(30))).toHaveLength(
+      2,
+    );
+  });
+
   it("pushes a withdrawal at once and serves the withdrawn version", async () => {
     const fake = await relayWithWallet();
     const { session, serial, auth } = await ownerWithPass();
