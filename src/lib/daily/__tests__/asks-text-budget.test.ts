@@ -97,6 +97,20 @@ describe(`asks text budget at ${ASK_TEXT_BUDGET.phoneCssPx} px`, () => {
     );
   });
 
+  it("every button label fits the compact face in every language", () => {
+    const over: string[] = [];
+    for (const locale of locales) {
+      const { t } = getServerTranslator(locale);
+      for (const key of LABEL_KEYS) {
+        const w = width(t(key), 12, "500");
+        if (w > ASK_TEXT_BUDGET.labelPx) {
+          over.push(`${locale} ${key} "${t(key)}" ${w.toFixed(1)} px`);
+        }
+      }
+    }
+    expect(over).toEqual([]);
+  });
+
   it("the width table matches Inter (a known label)", () => {
     // "Einnehmen" at 12 px medium measured 63.9 px in Chromium.
     expect(width("Einnehmen", 12, "500")).toBeCloseTo(63.9, 0);

@@ -86,6 +86,11 @@ export const ASK_TEXT_BUDGET = {
   titleChars: 14,
   metaChars: 16,
   phoneCssPx: 360,
+  /**
+   * Widest button label, Inter 12 px medium: the compact face is 76 px with
+   * its 6 px padding, so no label widens the card's shared button column.
+   */
+  labelPx: 64,
 } as const;
 
 /** Characters as a reader counts them (code points, not UTF-16 units). */
