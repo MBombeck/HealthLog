@@ -177,12 +177,7 @@ export interface AuthUser {
    * default) against a stale /me payload.
    */
   showNavCounts: boolean;
-  /**
-   * The one-time hints this account has put away, by id
-   * (`src/lib/hints/dismissible-hints.ts`). Read through `useDismissedHint`.
-   * Coerced to `[]` against a stale /me payload; optional so existing
-   * `AuthUser` fixtures stay valid.
-   */
+  /** Hints this account closed; absent on a stale payload (`useDismissedHints`). */
   dismissedHints?: string[];
   /**
    * v1.4.47 — the signed-in person's own stored Coach opt-out. It is
@@ -550,9 +545,6 @@ export function adoptMePayload(
     // #1113 — on unless the payload says off, so a stale payload keeps the
     // counts the way they were before the switch existed.
     showNavCounts: data.showNavCounts !== false,
-    dismissedHints: Array.isArray(data.dismissedHints)
-      ? data.dismissedHints.filter((id) => typeof id === "string")
-      : [],
     // v1.15.0 — coerce against a stale /me payload so the cycle nav entry
     // stays hidden by default when the field is absent.
     cycleTrackingEnabled: data.cycleTrackingEnabled === true,

@@ -11,13 +11,11 @@
  * appears anywhere in `src/` outside the files listed below, each with its
  * reason; and every registered hint family has a reader.
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { DISMISSIBLE_HINTS } from "@/lib/hints/dismissible-hints";
 
-const ROOT = join(process.cwd(), "src");
+import { readSourceFolder } from "./helpers/source-files";
 
 const ALLOWED: Record<string, string> = {
   "lib/hints/legacy-dismissals.ts":
@@ -36,22 +34,13 @@ const LEGACY_ONLY = [
   "lib/onboarding/checklist-storage.ts",
 ];
 
-function walk(dir: string, out: string[] = []): string[] {
-  for (const name of readdirSync(dir)) {
-    const full = join(dir, name);
-    if (name === "__tests__" || name === "generated") continue;
-    if (statSync(full).isDirectory()) walk(full, out);
-    else if (/\.(ts|tsx)$/.test(name) && !/\.test\.tsx?$/.test(name)) {
-      out.push(full);
-    }
-  }
-  return out;
-}
-
-const FILES = walk(ROOT).map((full) => ({
-  path: relative(ROOT, full),
-  text: readFileSync(full, "utf8"),
-}));
+const FILES = readSourceFolder("src", {
+  floor: 500,
+  include: (rel) =>
+    !rel.includes("__tests__/") &&
+    !rel.startsWith("generated/") &&
+    !/\.test\.tsx?$/.test(rel),
+}).map(([path, text]) => ({ path, text }));
 
 const DISMISSAL_KEY = /["'`]healthlog[^"'`\n]*dismiss/i;
 

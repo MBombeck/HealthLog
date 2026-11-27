@@ -1,7 +1,7 @@
 {
   "$comment": "tests that read a source file by path, per test file under src/. Maintained by src/__tests__/test-realism-ratchet.test.ts.",
-  "count": 329,
-  "total": 329,
+  "count": 328,
+  "total": 328,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 1,
     "__tests__/admin-data-wipe-completeness.test.ts": 1,
@@ -188,7 +188,6 @@
     "components/documents/__tests__/document-coach-launch-wiring.test.ts": 1,
     "components/documents/__tests__/documents-delete-confirm-guard.test.ts": 1,
     "components/forms/__tests__/use-seeded-form-dismissal.test.ts": 1,
-    "components/i18n/__tests__/maintainership-banner.test.tsx": 1,
     "components/insights/__tests__/coach-metric-scope-inventory.test.ts": 1,
     "components/insights/__tests__/correlation-card-skeleton.test.ts": 1,
     "components/insights/__tests__/health-score-card-geometry.test.tsx": 1,
