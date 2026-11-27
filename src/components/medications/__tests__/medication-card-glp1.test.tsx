@@ -279,7 +279,7 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
 
     // Default card shows the localised category label, not the
     // GLP-1 badge.
-    expect(html).toContain("Blood Pressure");
+    expect(html).toContain("Blood pressure");
     expect(html).not.toContain("GLP-1 injection");
     expect(html).not.toMatch(/lucide-syringe/i);
     // The dose-history disclosure is GLP-1-only; default card omits it.

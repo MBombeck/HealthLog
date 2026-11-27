@@ -7485,7 +7485,7 @@
     "googleHealthDescription": "Collega Fitbit, Pixel Watch e Fitbit Air tramite il tuo account Google: peso, frequenza cardiaca, sonno e attività.",
     "googleHealthCredentials": "Credenziali API",
     "googleHealthClientId": "ID client",
-    "googleHealthClientSecret": "Client secret",
+    "googleHealthClientSecret": "Secret client",
     "googleHealthCredentialsSaved": "Credenziali salvate",
     "googleHealthCredentialsSavedPlaceholder": "Salvate. Inseriscine di nuove per sostituirle",
     "googleHealthCredentialsSavedPlaceholderSecret": "Salvate. Inseriscine di nuove per sostituirle",

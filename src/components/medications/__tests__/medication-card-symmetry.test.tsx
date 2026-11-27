@@ -267,8 +267,8 @@ describe("medication card symmetry — Ramipril vs Mounjaro", () => {
       client,
     );
 
-    // Ramipril → BLOOD_PRESSURE → "Blood Pressure".
-    expect(ramiprilHtml).toContain("Blood Pressure");
+    // Ramipril → BLOOD_PRESSURE → "Blood pressure".
+    expect(ramiprilHtml).toContain("Blood pressure");
     // Mounjaro → HORMONE → "Hormones".  The card must NOT hard-code
     // the treatment-class label into the slot any more.
     expect(mounjaroHtml).toContain("Hormones");
