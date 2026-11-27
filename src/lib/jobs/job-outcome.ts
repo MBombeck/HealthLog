@@ -403,6 +403,7 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "wallet_passes_refreshed",
   "wallet_passes_voided",
   "wallet_pushes_accepted",
+  "wallet_pushes_rejected",
   // The Wallet ready push: people told their pass is ready for Wallet.
   "wallet_ready_pushes_sent",
   "wallet_registrations_dropped",
