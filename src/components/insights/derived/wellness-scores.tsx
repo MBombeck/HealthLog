@@ -21,7 +21,7 @@ import { CycleRing } from "@/components/cycle/cycle-ring";
 import { useCycleCalendar, useCycleWindow } from "@/components/cycle/use-cycle";
 import { ScoreRingTile, type ScoreRingTileProps } from "./score-ring-tile";
 import type { DerivedBatchRead } from "./use-derived-metric";
-import { scoreBandWordKey, scoreOriginLabelKey } from "./band-tokens";
+import { scoreOriginLabelKey } from "./band-tokens";
 // Type-only — the compute payloads never drag the server graph into the bundle.
 import type { ReadinessValue } from "@/lib/insights/derived/readiness";
 import type { SleepScoreValue } from "@/lib/insights/derived/sleep-score";
@@ -45,8 +45,8 @@ import type { HealthScoreReport } from "@/lib/analytics/score/types";
  * hidden. Each ring opens its own page.
  *
  * A readiness that rests on values from before today is not a statement about
- * today: its ring shows the bare track, no number, no band, and the line says
- * "Last 81 on Nov 24".
+ * today: its ring shows the stale face, no number, no band, the line says
+ * "not from today" and the ring's accessible name "Last 81 on Nov 24".
  *
  * Readiness, sleep, stress and strain read from the ONE batched derived
  * request the page owns; the Health score from the analytics payload the page
@@ -123,7 +123,6 @@ function useCycleTile(enabled: boolean): {
       score: null,
       band: undefined,
       stale: false,
-      bandWord: null,
       line: phaseName,
       ring: (
         <CycleRing
@@ -207,7 +206,6 @@ export function WellnessScores({
       score: stale ? null : v.score,
       band: stale ? undefined : v.band,
       stale,
-      bandWord: stale ? null : t(scoreBandWordKey(tile.kind, v.band)),
       line: stale
         ? t("insights.scores.staleLast", {
             score: Math.round(v.score),
@@ -234,9 +232,6 @@ export function WellnessScores({
       score: ok ? composite.value.score : null,
       band: ok ? composite.value.numberBand : undefined,
       stale: !ok,
-      bandWord: ok
-        ? t(scoreBandWordKey("health", composite.value.numberBand))
-        : null,
       line:
         healthScoreSetterLine(healthScore, t) ??
         (ok ? null : t("insights.derived.scoreRing.provisionalCaption")),
@@ -269,7 +264,6 @@ export function WellnessScores({
       band: v.device ? undefined : v.band,
       load: true,
       stale: false,
-      bandWord: v.device ? null : t(scoreBandWordKey(tile.kind, v.band)),
       line:
         [deviceValue, originLabel].filter((part) => part !== null).join(", ") ||
         null,

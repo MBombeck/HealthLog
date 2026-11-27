@@ -242,15 +242,14 @@ test.describe("wellness scores", () => {
     expect(new Set(boxes.map((b) => b.top)).size).toBe(1);
     expect(new Set(boxes.map((b) => b.width)).size).toBe(1);
     for (const tile of await tiles.all()) {
-      await expect(tile.locator('[data-slot="score-ring"]')).toHaveCount(1);
-      // The band word or the line says how the score stands; a fresh score
-      // with nothing to add leaves the line blank under its band word.
-      const said = await tile
-        .locator(
-          '[data-slot="score-ring-tile-band"], [data-slot="score-ring-tile-line"]',
-        )
-        .allInnerTexts();
-      expect(said.join("").trim()).not.toBe("");
+      const ring = tile.locator('[data-slot="score-ring"]');
+      await expect(ring).toHaveCount(1);
+      // The ring's name says how the score stands; the line keeps its slot
+      // even when a fresh score has nothing to add, so the row lines up.
+      await expect(ring).toHaveAttribute("aria-label", /\S/);
+      await expect(
+        tile.locator('[data-slot="score-ring-tile-line"]'),
+      ).toHaveCount(1);
     }
     // The course lives on the score's page, not on the row.
     await expect(

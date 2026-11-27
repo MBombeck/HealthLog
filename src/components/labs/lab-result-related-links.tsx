@@ -10,10 +10,7 @@
  */
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import {
-  RelatedRecordsBlock,
-  RelationLinkPickers,
-} from "@/components/links/related-records";
+import { RelatedRecordsBlock } from "@/components/links/related-records";
 import { apiGet } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -40,26 +37,27 @@ export function LabResultRelatedLinks({
   if (!detail.data) return null;
   const related = detail.data.related;
   return (
-    <div className="space-y-4 border-t pt-4" data-slot="lab-result-related">
-      <RelatedRecordsBlock related={related} />
-      <RelationLinkPickers
+    <div className="border-t pt-4 empty:hidden" data-slot="lab-result-related">
+      <RelatedRecordsBlock
         key={labResultId}
-        linksPath={`/api/labs/${encodeURIComponent(labResultId)}/links`}
-        kinds={["document", "encounter"]}
         related={related}
-        anchor={takenAt}
-        onSaved={() => {
-          // The other ends list the reading too: the document's and the
-          // visit's sheets seed their pickers from their cached reads, and a
-          // condition reaches the reading through the visit.
-          for (const queryKey of [
-            queryKeys.labResult(labResultId),
-            queryKeys.documents(),
-            queryKeys.encounters(),
-            queryKeys.illness(),
-          ]) {
-            void qc.invalidateQueries({ queryKey });
-          }
+        edit={{
+          linksPath: `/api/labs/${encodeURIComponent(labResultId)}/links`,
+          kinds: ["document", "encounter"],
+          anchor: takenAt,
+          onSaved: () => {
+            // The other ends list the reading too: the document's and the
+            // visit's sheets seed their pickers from their cached reads, and
+            // a condition reaches the reading through the visit.
+            for (const queryKey of [
+              queryKeys.labResult(labResultId),
+              queryKeys.documents(),
+              queryKeys.encounters(),
+              queryKeys.illness(),
+            ]) {
+              void qc.invalidateQueries({ queryKey });
+            }
+          },
         }}
       />
     </div>

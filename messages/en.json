@@ -4818,6 +4818,7 @@
         "aria": "Score {score} out of 100, {band}",
         "ariaProvisional": "Score not available yet, not enough data",
         "provisionalCaption": "Not enough data yet",
+        "notToday": "not from today",
         "band": {
           "green": "good",
           "yellow": "fair",
@@ -6048,7 +6049,7 @@
     "sections": {
       "account": {
         "title": "Account",
-        "subtitle": "Your profile, identity, and sign-in details."
+        "subtitle": "Your profile, display, and setup."
       },
       "integrations": {
         "title": "Integrations",
@@ -6857,10 +6858,8 @@
     },
     "profile": "Profile",
     "language": "Language",
-    "languageDescription": "Choose the display language of the application.",
     "timeFormat": {
       "title": "Hour format",
-      "description": "Controls whether times render on the 24-hour or the 12-hour (AM/PM) clock.",
       "auto": "Automatic (language)",
       "h24": "24-hour",
       "h12": "12-hour (AM/PM)",
@@ -6869,7 +6868,6 @@
     },
     "dateFormat": {
       "title": "Date format",
-      "description": "Controls the order of day, month and year when dates are shown.",
       "auto": "Automatic (language)",
       "dmy": "DD.MM.YYYY",
       "mdy": "MM/DD/YYYY",
@@ -6907,14 +6905,13 @@
     },
     "avatar": {
       "title": "Profile photo",
-      "description": "Upload a photo stored on your own server.",
       "upload": "Upload photo",
       "replace": "Replace photo",
       "remove": "Remove",
       "removeTitle": "Remove the profile photo?",
       "removeBody": "The image is deleted from your server and your initials take its place. You would need the original file to upload it again.",
       "removeConfirm": "Remove photo",
-      "hint": "JPEG, PNG, or WebP. Up to 2 MB and 2048×2048 pixels.",
+      "hint": "JPEG, PNG, or WebP, up to 2 MB and 2048×2048 pixels.",
       "uploaded": "Profile photo updated",
       "removed": "Profile photo removed",
       "invalidType": "Unsupported image type. Use JPEG, PNG, or WebP.",
@@ -7376,7 +7373,6 @@
     "dashboard": {
       "units": {
         "title": "Units",
-        "description": "Choose how distances and speeds are shown across charts and tiles.",
         "metric": "Metric",
         "imperial": "Imperial",
         "saved": "Unit preference saved",
@@ -7384,7 +7380,6 @@
       },
       "glucoseUnit": {
         "title": "Blood glucose",
-        "description": "Which unit blood-glucose readings are shown in.",
         "saved": "Glucose unit saved",
         "saveError": "Could not save your glucose unit."
       }
@@ -13312,9 +13307,6 @@
       "titlePlaceholder": "Add a title",
       "kindLabel": "Type",
       "dateLabel": "Document date",
-      "conditionsLabel": "Linked conditions",
-      "linkCondition": "Link",
-      "noConditions": "Not linked to a condition",
       "previewUnavailable": "No inline preview for this file type",
       "uploadedMeta": "Added {date}, {size}",
       "importedFrom": "Imported from {system}",
@@ -13324,10 +13316,6 @@
       "sourceReportSchedule": "the report schedule",
       "share": "Share",
       "labValuesLink": "View {count, plural, one {# lab result} other {# lab results}}",
-      "visitsLabel": "Belongs to visit",
-      "vaccinationsLabel": "Vaccinations",
-      "noVisitsToLink": "No visits recorded yet.",
-      "noVaccinationsToLink": "No vaccinations recorded yet.",
       "saved": "Changes saved",
       "saving": "Saving…",
       "previewNotOnDevice": "This browser cannot show PDFs inside the page"
@@ -13351,11 +13339,7 @@
       "linkVisit": "File against visit"
     },
     "episodeCard": {
-      "title": "Documents",
-      "link": "Link",
-      "upload": "Upload",
       "viewAll": "Show all",
-      "emptyLine": "No documents linked to this condition yet.",
       "loadError": "Could not load the linked documents"
     },
     "linkPicker": {
@@ -14748,8 +14732,6 @@
       "choose": "Which visit does this belong to?"
     },
     "episodeCard": {
-      "title": "Visits about this",
-      "emptyLine": "No visit linked to this condition yet.",
       "add": "Add a visit"
     },
     "dashboard": {
@@ -14836,7 +14818,7 @@
       }
     },
     "related": {
-      "title": "Related",
+      "title": "Links",
       "kind": {
         "labResult": "Lab result",
         "encounter": "Visit",
@@ -14858,6 +14840,10 @@
       },
       "nothingToOffer": "Nothing to link yet.",
       "saveError": "The link could not be saved."
+    },
+    "row": {
+      "add": "Link",
+      "uploadDocument": "Upload a document"
     }
   },
   "bodySites": {

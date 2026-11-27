@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { I18nProvider } from "@/lib/i18n/context";
 import type { RelatedLink } from "@/lib/links/related";
@@ -35,12 +36,14 @@ const RELATED: RelatedLink[] = [
 
 function render(node: React.ReactNode): string {
   return renderToStaticMarkup(
-    <I18nProvider initialLocale="en">{node}</I18nProvider>,
+    <QueryClientProvider client={new QueryClient()}>
+      <I18nProvider initialLocale="en">{node}</I18nProvider>
+    </QueryClientProvider>,
   );
 }
 
 describe("<RelatedRecordsList>", () => {
-  it("links every row to the path the server resolved", () => {
+  it("links every chip to the path the server resolved", () => {
     const html = render(<RelatedRecordsList related={RELATED} />);
     expect(html).toContain('href="/illness/c1"');
     expect(html).toContain('href="/checkups?visit=e1"');

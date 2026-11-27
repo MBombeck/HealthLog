@@ -7,7 +7,11 @@ import { describe, expect, it } from "vitest";
 import { snapshotScorePillars } from "@/lib/dashboard/snapshot-health-score";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { locales } from "@/lib/i18n/config";
-import type { ScorePillarResult } from "@/lib/analytics/score/types";
+import type {
+  PillarValue,
+  ScorePillarResult,
+} from "@/lib/analytics/score/types";
+import { okPillar } from "@/lib/analytics/score/shared";
 import { SCORE_PILLAR_DOMAINS } from "@/lib/analytics/score/types";
 import {
   SCORE_PILLAR_REASON_KEYS,
@@ -46,13 +50,16 @@ function pillarResults(): ScorePillarResult[] {
     domain: SCORE_PILLAR_DOMAINS[entry.id],
     result:
       "score" in entry
-        ? ({
-            status: "ok",
-            value: { score: entry.score },
+        ? // Through the scorer's own `okPillar`, so the band the row carries
+          // is the one the scorer resolved.
+          okPillar({
+            id: entry.id,
+            source: "DAY",
+            asOf: new Date(provenance.computedAt),
+            windowDays: 90,
             coverage,
-            confidence: { score: 90, band: "high" },
-            provenance,
-          } as unknown as ScorePillarResult["result"])
+            value: { score: entry.score } as unknown as PillarValue,
+          })
         : {
             status: "insufficient",
             coverage: { ...coverage, presentInputs: 0 },

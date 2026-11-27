@@ -4818,6 +4818,7 @@
         "aria": "Wynik {score} na 100, {band}",
         "ariaProvisional": "Wynik jeszcze niedostępny, za mało danych",
         "provisionalCaption": "Wciąż za mało danych",
+        "notToday": "nie z dzisiaj",
         "band": {
           "green": "dobry",
           "yellow": "średni",
@@ -6048,7 +6049,7 @@
     "sections": {
       "account": {
         "title": "Konto",
-        "subtitle": "Twój profil, tożsamość i dane logowania."
+        "subtitle": "Twój profil, wygląd i konfiguracja."
       },
       "integrations": {
         "title": "Integracje",
@@ -6857,10 +6858,8 @@
     },
     "profile": "Profil",
     "language": "Język",
-    "languageDescription": "Wybierz język wyświetlania aplikacji.",
     "timeFormat": {
       "title": "Format godziny",
-      "description": "Określa, czy godziny są wyświetlane w formacie 24-godzinnym czy 12-godzinnym (AM/PM).",
       "auto": "Automatycznie (język)",
       "h24": "24-godzinny",
       "h12": "12-godzinny (AM/PM)",
@@ -6869,7 +6868,6 @@
     },
     "dateFormat": {
       "title": "Format daty",
-      "description": "Określa kolejność dnia, miesiąca i roku przy wyświetlaniu dat.",
       "auto": "Automatycznie (język)",
       "dmy": "DD.MM.RRRR",
       "mdy": "MM/DD/RRRR",
@@ -6907,14 +6905,13 @@
     },
     "avatar": {
       "title": "Zdjęcie profilowe",
-      "description": "Prześlij zdjęcie przechowywane na własnym serwerze.",
       "upload": "Prześlij zdjęcie",
       "replace": "Zmień zdjęcie",
       "remove": "Usuń",
       "removeTitle": "Usunąć zdjęcie profilowe?",
       "removeBody": "Obraz zostanie usunięty z twojego serwera, a jego miejsce zajmą inicjały. Do ponownego wgrania potrzebny będzie oryginalny plik.",
       "removeConfirm": "Usuń zdjęcie",
-      "hint": "JPEG, PNG lub WebP. Do 2 MB i 2048×2048 pikseli.",
+      "hint": "JPEG, PNG lub WebP, do 2 MB i 2048×2048 pikseli.",
       "uploaded": "Zaktualizowano zdjęcie profilowe",
       "removed": "Usunięto zdjęcie profilowe",
       "invalidType": "Nieobsługiwany typ obrazu. Użyj JPEG, PNG lub WebP.",
@@ -7376,7 +7373,6 @@
     "dashboard": {
       "units": {
         "title": "Jednostki",
-        "description": "Wybierz sposób wyświetlania odległości i prędkości na wykresach i kafelkach.",
         "metric": "Metryczne",
         "imperial": "Imperialne",
         "saved": "Zapisano preferencję jednostek",
@@ -7384,7 +7380,6 @@
       },
       "glucoseUnit": {
         "title": "Glikemia",
-        "description": "Jednostka, w której pokazywane są pomiary glukozy.",
         "saved": "Zapisano jednostkę glukozy",
         "saveError": "Nie udało się zapisać jednostki glukozy."
       }
@@ -13312,9 +13307,6 @@
       "titlePlaceholder": "Dodaj tytuł",
       "kindLabel": "Typ",
       "dateLabel": "Data dokumentu",
-      "conditionsLabel": "Powiązane schorzenia",
-      "linkCondition": "Powiąż",
-      "noConditions": "Niepowiązany ze schorzeniem",
       "previewUnavailable": "Brak podglądu dla tego typu pliku",
       "uploadedMeta": "Dodano {date}, {size}",
       "importedFrom": "Zaimportowano z: {system}",
@@ -13324,10 +13316,6 @@
       "sourceReportSchedule": "harmonogramu raportów",
       "share": "Udostępnij",
       "labValuesLink": "Zobacz {count, plural, one {# wynik badania} few {# wyniki badań} many {# wyników badań} other {# wyniku badania}}",
-      "visitsLabel": "Należy do wizyty",
-      "vaccinationsLabel": "Szczepienia",
-      "noVisitsToLink": "Nie zapisano jeszcze żadnych wizyt.",
-      "noVaccinationsToLink": "Nie zapisano jeszcze żadnych szczepień.",
       "saved": "Zmiany zapisane",
       "saving": "Zapisywanie…",
       "previewNotOnDevice": "Ta przeglądarka nie wyświetla plików PDF na stronie"
@@ -13351,11 +13339,7 @@
       "linkVisit": "Przypisz do wizyty"
     },
     "episodeCard": {
-      "title": "Dokumenty",
-      "link": "Powiąż",
-      "upload": "Prześlij",
       "viewAll": "Pokaż wszystkie",
-      "emptyLine": "Brak dokumentów powiązanych z tym schorzeniem.",
       "loadError": "Nie udało się wczytać połączonych dokumentów"
     },
     "linkPicker": {
@@ -14748,8 +14732,6 @@
       "choose": "Do której wizyty to należy?"
     },
     "episodeCard": {
-      "title": "Powiązane wizyty",
-      "emptyLine": "Do tej choroby nie przypisano jeszcze żadnej wizyty.",
       "add": "Dodaj wizytę"
     },
     "dashboard": {
@@ -14836,7 +14818,7 @@
       }
     },
     "related": {
-      "title": "Powiązane",
+      "title": "Powiązania",
       "kind": {
         "labResult": "Wynik badania",
         "encounter": "Wizyta",
@@ -14858,6 +14840,10 @@
       },
       "nothingToOffer": "Na razie nie ma czego powiązać.",
       "saveError": "Nie udało się zapisać powiązania."
+    },
+    "row": {
+      "add": "Powiąż",
+      "uploadDocument": "Prześlij dokument"
     }
   },
   "bodySites": {

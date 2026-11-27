@@ -1929,7 +1929,8 @@
                 },
                 "noiseFloor": 1,
                 "deltaEligible": true,
-                "deltaIdentity": "graded_bp_pair_series"
+                "deltaIdentity": "graded_bp_pair_series",
+                "band": "green"
               },
               "coverage": {
                 "requiredInputs": 12,
@@ -2000,7 +2001,8 @@
                 },
                 "noiseFloor": 5,
                 "deltaEligible": true,
-                "deltaIdentity": "ACTIVITY_STEPS"
+                "deltaIdentity": "ACTIVITY_STEPS",
+                "band": "green"
               },
               "coverage": {
                 "requiredInputs": 21,

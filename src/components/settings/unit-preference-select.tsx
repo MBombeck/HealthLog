@@ -86,9 +86,6 @@ export function UnitPreferenceSelect({
           {t("settings.dashboard.units.imperial")}
         </option>
       </NativeSelect>
-      <p className="text-muted-foreground text-xs">
-        {t("settings.dashboard.units.description")}
-      </p>
     </FieldGroup>
   );
 }
