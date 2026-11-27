@@ -42,3 +42,21 @@ export function databaseDumpProblems(
   const isTheUpload = offhost !== null && failure?.at === offhost.at;
   return { failure: sinceGood && !isTheUpload ? failure : null, offhost };
 }
+
+/**
+ * The majors in a failure `clientServerMismatch` (dump-core.mjs) wrote: the
+ * server is newer than this image's `pg_dump` or `pg_restore` (#1431). Null
+ * for any other failure. Read here rather than in the dump module, which
+ * runs client tools and cannot be bundled for the browser.
+ */
+export function clientTooOldIn(
+  text: string | null | undefined,
+): { tool: string; client: number; server: number } | null {
+  const match =
+    /This image's PostgreSQL client \((pg_dump|pg_restore)\) is (\d+); your server is (\d+)\./.exec(
+      text ?? "",
+    );
+  return match
+    ? { tool: match[1], client: Number(match[2]), server: Number(match[3]) }
+    : null;
+}

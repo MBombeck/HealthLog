@@ -30,7 +30,10 @@ import {
   type OffhostBackupFreshness,
 } from "@/lib/jobs/offhost-backup-freshness";
 import type { LifecycleVerdict } from "@/lib/jobs/offhost-lifecycle";
-import { databaseDumpProblems } from "@/lib/database-backup/dump-problems";
+import {
+  clientTooOldIn,
+  databaseDumpProblems,
+} from "@/lib/database-backup/dump-problems";
 import type { DatabaseBackupHealth } from "@/lib/recovery/database-dump-health";
 import type { KitEntry } from "@/lib/recovery/kit-rules";
 
@@ -216,6 +219,20 @@ export function evaluateDatabaseDump(
       dump.localDirWritable ? "not_persistent" : "nowhere_to_write",
       lastGoodAt,
       { directory: dump.directory },
+    );
+  }
+  // A server newer than the image's `pg_dump` fails every run until the
+  // image or the server changes (#1431): failing from the first run, not
+  // "the last one failed", and the sentence names both majors.
+  const tooOld = clientTooOldIn(failureReason);
+  if (tooOld) {
+    return signal(
+      id,
+      "failing",
+      "client_too_old",
+      lastGoodAt,
+      { client: tooOld.client, server: tooOld.server },
+      failureReason,
     );
   }
   const limitMs = DUMP_FAILING_AFTER_HOURS * HOUR_MS;

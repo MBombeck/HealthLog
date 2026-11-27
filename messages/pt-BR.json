@@ -9617,6 +9617,7 @@
           "first_pending": "O primeiro dump do banco de dados ainda não foi executado.",
           "stale": "O dump do banco de dados mais recente tem {hours, plural, one {# hora} other {# horas}}.",
           "last_failed": "O último dump do banco de dados falhou. O anterior ainda é recente.",
+          "client_too_old": "O cliente PostgreSQL desta imagem é a versão {client}, mas o servidor do banco de dados roda a {server}, então nenhum dump pode ser feito. Use uma imagem do HealthLog com cliente {server} ou mais novo, ou mantenha o servidor na {client} ou anterior.",
           "fresh": "O dump do banco de dados mais recente está em dia.",
           "nowhere_to_write": "Não é possível gravar no diretório de dumps {directory} e nenhum bucket externo está configurado, então nenhum dump pode ser guardado.",
           "not_persistent": "A pasta de dumps {directory} não está em armazenamento persistente e nenhum bucket externo está configurado, então cada dump se perde na próxima atualização. Monte o volume de backups.",

@@ -124,6 +124,10 @@ Compose starts two services and one short-lived step:
 - `db-upgrade` — moves a Postgres 16 database from v1.45 or earlier into
   the new one, once, and exits; on a new install it has nothing to do. See
   [Moving to a newer Postgres major](../ops/postgres-major-upgrade.md).
+  Pointing `DATABASE_URL` at your own server instead works for any major up
+  to the PostgreSQL client major in the image (19 today); the app refuses a
+  newer one, see
+  [the highest supported major](../ops/postgres-major-upgrade.md#the-highest-server-major-this-image-supports).
 - `app` — HealthLog itself, listening on `localhost:3000`. The image
   runs `prisma migrate deploy` on boot so the schema lands
   automatically; subsequent restarts no-op when the database is
