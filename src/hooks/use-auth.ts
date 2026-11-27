@@ -173,13 +173,11 @@ export interface AuthUser {
    */
   medicineRegistry: MedicineRegistryChoice;
   /**
-   * #1113 — whether the sidebar and the More sheet show their counts. Off
-   * means no count and no `/api/nav/counts` read. Coerced to `true` (the
-   * default) against a stale /me payload.
+   * #1113 — whether the sidebar and the More sheet show their counts (off: no
+   * count, no `/api/nav/counts` read). `true` against a stale /me payload.
    */
   showNavCounts: boolean;
-  /** Hints this account closed; absent on a stale payload (`useDismissedHints`). */
-  dismissedHints?: string[];
+  dismissedHints?: string[]; // closed hints, read via `useDismissedHints`
   /**
    * v1.4.47 — the signed-in person's own stored Coach opt-out. It is
    * the value the Activate-Coach switch and the module toggle edit, and
