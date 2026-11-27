@@ -29,6 +29,7 @@ import {
   type IntegrationBackfillAdmissionPayload,
 } from "@/lib/jobs/integration-backfill-admission";
 import { withIntegrationBackfillLock } from "@/lib/jobs/integration-backfill-lock";
+import { handleBackfillFailure } from "@/lib/jobs/integration-backfill-retry";
 import { jobBudget } from "@/lib/jobs/job-budget";
 import { jobDone, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { workerLog } from "@/lib/jobs/reminder/shared";
@@ -182,8 +183,16 @@ async function runObserved(
     event.addMeta("identity", identity);
     event.addMeta("job_id", job.id);
     event.addMeta("slice", job.data.data.slice ?? 0);
+    if (job.data.data.retry) event.addMeta("retry", job.data.data.retry);
     const before = { ...totals };
-    await runAdmitted(job.data, shouldStop, totals);
+    try {
+      await runAdmitted(job.data, shouldStop, totals);
+    } catch (err) {
+      // A provider outage sends the slice again later; see the module.
+      const outcome = await handleBackfillFailure(job, err);
+      if (!outcome.handled) throw outcome.error;
+      event.elevateLevel("warn");
+    }
     event.setBackground({
       task_name: INTEGRATION_BACKFILL_RUN_TASK,
       result: {
@@ -201,7 +210,9 @@ async function runObserved(
 
 /**
  * Drain a batch of admission jobs. There is no per-job error isolation: a
- * runner that throws fails the job and the admission retry policy applies. So
+ * runner that throws fails the job and the admission retry policy applies,
+ * unless the throw was a transient provider error, which sends the slice again
+ * after a backoff (`integration-backfill-retry.ts`). So
  * reaching the end means every admitted job either did its work or found its
  * import already running, and the counts each runner returns are what the
  * pass reports.

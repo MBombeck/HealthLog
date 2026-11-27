@@ -208,6 +208,7 @@ describe("shared full-history backfill admission", () => {
     expect(drain.work).toEqual({
       localConcurrency: INTEGRATION_BACKFILL_GLOBAL_CONCURRENCY,
       groupConcurrency: INTEGRATION_BACKFILL_GLOBAL_CONCURRENCY,
+      includeMetadata: true,
     });
     expect(drain.policy?.policy).toBe("exclusive");
 

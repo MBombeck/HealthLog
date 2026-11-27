@@ -149,6 +149,8 @@ const jobs: readonly JobDefinition[] = [
     work: {
       localConcurrency: INTEGRATION_BACKFILL_GLOBAL_CONCURRENCY,
       groupConcurrency: INTEGRATION_BACKFILL_GLOBAL_CONCURRENCY,
+      // The retry count tells a give-up's first delivery from its retries.
+      includeMetadata: true,
     },
     lane: true,
     load: async () =>
