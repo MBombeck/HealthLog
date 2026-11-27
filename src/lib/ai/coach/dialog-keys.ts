@@ -217,7 +217,6 @@ export const COACH_FOLLOW_UP_KEYS: Readonly<Record<CoachFollowUpKind, string>> =
 export const COACH_FOLLOW_UP_UI_KEYS = {
   groupLabel: "coach.followUp.groupLabel",
   settingLabel: "coach.followUp.settingLabel",
-  settingHint: "coach.followUp.settingHint",
 } as const;
 
 // ── Clarification ─────────────────────────────────────────────────────────

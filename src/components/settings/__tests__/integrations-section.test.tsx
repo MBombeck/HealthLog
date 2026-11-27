@@ -173,9 +173,10 @@ describe("IntegrationsSection — one status display per card", () => {
     expect(html).not.toContain('data-testid="integration-status-banner"');
     expect(html).not.toContain("Last successful sync");
     expect(html).not.toContain("Last attempt");
-    // The seven other providers and Apple Health are not connected and say so
-    // once each.
-    expect(count(html, ">Not connected.<")).toBe(8);
+    // The seven other providers and Apple Health are not connected: each
+    // says so with the off chip, not with a sentence.
+    expect(html).not.toContain(">Not connected.<");
+    expect(count(html, 'data-tone="off"')).toBeGreaterThanOrEqual(8);
   });
 
   it("never shows the stored provider error or a failure counter", () => {

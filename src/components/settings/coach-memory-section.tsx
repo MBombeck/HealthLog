@@ -311,7 +311,6 @@ export function CoachMemorySection({
         icon={Brain}
         titleId="settings-ai-coach-memory-title"
         title={t("settings.ai.coachMemory.title")}
-        description={t("settings.ai.coachMemory.description")}
       />
       <p className="text-sm">{t("settings.ai.coachMemory.detail")}</p>
 

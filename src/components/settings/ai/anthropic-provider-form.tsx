@@ -122,13 +122,17 @@ export function AnthropicProviderForm({
             </span>
           )}
         </Label>
-        <PasswordInput
-          id="ai-anthropic-key"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          placeholder="sk-ant-…"
-          className="mt-1"
-        />
+        <div className="mt-1 flex items-center gap-2 [&>div]:min-w-0 [&>div]:flex-1">
+          <PasswordInput
+            id="ai-anthropic-key"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            placeholder="sk-ant-…"
+          />
+          {userProvider?.hasAnthropicKey ? (
+            <RemoveSavedKeyButton field="anthropicKey" />
+          ) : null}
+        </div>
       </div>
 
       <div>
@@ -175,9 +179,6 @@ export function AnthropicProviderForm({
       )}
 
       <SettingsCardActions>
-        {userProvider?.hasAnthropicKey && (
-          <RemoveSavedKeyButton field="anthropicKey" />
-        )}
         <Button
           type="submit"
           size="sm"

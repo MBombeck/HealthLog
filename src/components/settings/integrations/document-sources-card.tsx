@@ -30,7 +30,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
+import { StatusChip } from "@/components/ui/status-chip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -86,13 +86,7 @@ export function DocumentSourcesCard() {
         icon={Archive}
         title={t("settings.documentSources.title")}
         description={t("settings.documentSources.description")}
-        status={
-          connections.length > 0 ? (
-            <Badge variant="outline">
-              {t("settings.documentSources.statusConnected")}
-            </Badge>
-          ) : null
-        }
+        status={<StatusChip tone={connections.length > 0 ? "active" : "off"} />}
       />
 
       <p className="text-sm">

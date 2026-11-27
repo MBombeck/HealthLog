@@ -30,6 +30,7 @@
 import * as React from "react";
 import type { LucideIcon } from "lucide-react";
 
+import { InfoPopover } from "@/components/ui/info-popover";
 import { cn } from "@/lib/utils";
 
 export interface SettingsCardHeaderProps {
@@ -55,6 +56,14 @@ export interface SettingsCardHeaderProps {
    *  broken. Multi-sentence prose goes in the body as
    *  `<p className="text-sm">` (foreground). */
   description?: React.ReactNode;
+  /**
+   * Optional explanation behind the (i) beside the title. For a card whose
+   * name does not say enough on its own but whose explanation is not a
+   * caution either: the sentence stays one tap away instead of standing as a
+   * grey line under every visit. A caution (data leaves the server,
+   * something is deleted) stays a `description`.
+   */
+  info?: React.ReactNode;
   /** Optional deep-link anchor: the header carries it as its `id` (with the
    *  shell's `scroll-mt-28`), so `/settings/<section>#<anchor>` lands on this
    *  card. The command palette links every card it lists this way; the
@@ -73,6 +82,7 @@ export function SettingsCardHeader({
   titleId,
   titleAccessory,
   description,
+  info,
   status,
   anchor,
   className,
@@ -99,6 +109,13 @@ export function SettingsCardHeader({
             <h2 id={titleId} className="text-lg font-semibold">
               {title}
             </h2>
+            {info ? (
+              <InfoPopover
+                content={info}
+                align="start"
+                triggerDataSlot="settings-card-info"
+              />
+            ) : null}
             {titleAccessory}
           </div>
           {status ? (

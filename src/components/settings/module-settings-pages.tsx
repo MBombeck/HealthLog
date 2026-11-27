@@ -42,7 +42,7 @@ function ArrangementLinkCard({ id }: { id: ModuleSettingsPageId }) {
           "settings.sections.modules.pages.arrangementDescription",
         )}
       />
-      <SettingsCardActions align="start">
+      <SettingsCardActions>
         <Button asChild variant="outline" size="sm">
           <Link href={`/settings/layout/${id}`}>
             {t("settings.sections.modules.pages.openArrangement")}

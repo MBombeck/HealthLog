@@ -18,7 +18,7 @@ import { useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
+import { StatusChip } from "@/components/ui/status-chip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MedicalDisclaimer } from "@/components/common/medical-disclaimer";
 import { Label } from "@/components/ui/label";
@@ -164,9 +164,8 @@ export function AiInsightsCard({
           anchor="ai-provider"
           icon={Sparkles}
           title={t("settings.ai.activeProviderHeading")}
-          description={t("settings.ai.providerCardDescription")}
           status={
-            <ProviderStatusBadges
+            <ProviderStatusChip
               settings={insightsSettings}
               activeProvider={chainData?.activeProvider ?? null}
             />
@@ -254,35 +253,23 @@ export function AiInsightsCard({
   );
 }
 
-function ProviderStatusBadges({
+function ProviderStatusChip({
   settings,
   activeProvider,
 }: {
   settings: InsightsSettings | null | undefined;
   activeProvider: ProviderType | null;
 }) {
-  const { t } = useTranslations();
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      {settings?.codexStatus === "connected" && activeProvider === "codex" && (
-        <Badge className="border-success/30 bg-success/15 text-success">
-          {t("settings.ai.chatgptConnectedBadge")}
-        </Badge>
-      )}
-      {settings?.codexStatus !== "connected" &&
-        settings?.hasAdminKey &&
-        activeProvider !== "codex" && (
-          <Badge className="border-primary/30 bg-primary/15 text-primary">
-            {t("settings.ai.adminAiActiveBadge")}
-          </Badge>
-        )}
-      {settings?.codexStatus === "expired" && (
-        <Badge className="border-warning/30 bg-warning/15 text-warning">
-          {t("settings.ai.connectionExpiredBadge")}
-        </Badge>
-      )}
-    </div>
-  );
+  if (!settings) return null;
+  // An expired ChatGPT sign-in on the provider in use is the one error this
+  // card can see; any other provider in use, or the operator's, is active.
+  const tone =
+    activeProvider === "codex" && settings.codexStatus === "expired"
+      ? "error"
+      : activeProvider !== null || settings.hasAdminKey
+        ? "active"
+        : "off";
+  return <StatusChip tone={tone} data-slot="ai-provider-status" />;
 }
 
 /**

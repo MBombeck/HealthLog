@@ -233,14 +233,12 @@ describe("<AiSection> — dropdown-driven UX (B2)", () => {
     // It never wrote anything, yet read "Primary provider" under a card
     // that said it held "the provider HealthLog asks first": a person who
     // picked one expected it to answer first, and the chain order, which is
-    // what decides that, stayed as it was. The copy now points at the chain.
+    // what decides that, stayed as it was. The chain card below says what
+    // its order decides (behind its info button).
     activeProviderQuery = "codex";
     const html = render();
     expect(html).not.toContain("Primary provider");
     expect(html).toContain("Set up a provider");
-    expect(html).toContain(
-      "the order below decides which one HealthLog asks first",
-    );
   });
 
   // v1.18.0 — the Coach preference cards (disable toggle, preferences,

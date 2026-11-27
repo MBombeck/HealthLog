@@ -68,7 +68,12 @@
     "savedNamed": "{label} 저장됨",
     "entryUndone": "항목을 삭제했습니다",
     "entryUndoFailed": "항목을 삭제하지 못했습니다.",
-    "note": "메모"
+    "note": "메모",
+    "status": {
+      "active": "사용 중",
+      "error": "오류",
+      "off": "꺼짐"
+    }
   },
   "apiErrors": {
     "measurement": {
@@ -3464,7 +3469,6 @@
       },
       "settingsAriaLabel": "코치 설정",
       "settingsTitle": "코치 설정",
-      "settingsDescription": "코치가 대화하는 방식을 조절해요.",
       "settingsToneLabel": "말투",
       "settingsToneWarm": "다정함",
       "settingsToneNeutral": "중립",
@@ -3477,10 +3481,6 @@
       "settingsSourcesSummary": "코치는 데이터 영역 {total}개 중 {count}개를 {window} 전까지 봐요.",
       "settingsSourcesSummaryAll": "코치는 데이터 영역 {total}개 중 {count}개를 처음 기록부터 봐요.",
       "settingsSourcesPointerLink": "코치 설정 열기",
-      "settingsExcludeLabel": "제외할 지표",
-      "settingsExcludeHint": "선택한 지표의 데이터는 코치가 보지 않아요.",
-      "settingsContextLabel": "포함할 맥락",
-      "settingsContextHint": "코치가 참고할 수 있는 선택 블록이에요. 끄면 모든 대화에서 그 블록이 빠져요.",
       "settingsEvidenceLabel": "근거 기본으로 보기",
       "settingsEvidenceHint": "모든 답변 아래의 근거를 자동으로 펼쳐요.",
       "settingsDefaultWindowLabel": "기본 분석 기간",
@@ -3741,7 +3741,6 @@
       },
       "reasoning": {
         "label": "생각 깊이",
-        "hint": "더 깊이 생각할수록 답변이 정확해지고 조금 더 기다리게 돼요.",
         "off": "끄기",
         "minimal": "최소",
         "low": "낮음",
@@ -3751,7 +3750,8 @@
         "disabled": "관리자가 깊은 생각을 꺼 두었어요."
       },
       "memoryLink": "기억 ({count})",
-      "newConversation": "새 대화"
+      "newConversation": "새 대화",
+      "settingsSeesLabel": "코치가 보는 데이터"
     },
     "relativeJustNow": "방금",
     "relativeMinutesAgoOne": "{count}분 전",
@@ -6009,7 +6009,6 @@
           "autoAiRead": "새 문서를 AI로 자동으로 읽기",
           "honesty": "켜면 이 프로필에 올린 문서마다 위에서 프로필용으로 고른 AI 제공자에게 보내져 문서별로 누를 필요 없이 읽히고 설명되고 검색용으로 색인돼요. 요약이 없는 기존 문서도 함께 보내져요(켤 때마다 최대 200개). 켜면 이 프로필의 문서를 읽어도 된다는 동의가 기록돼요. 기본값은 꺼짐이에요.",
           "pageTitle": "문서와 AI",
-          "pageSubtitle": "{name}님의 프로필에 올린 문서를 AI가 읽을지 정해요.",
           "noProvider": "{name}님의 프로필에 문서를 읽을 수 있는 AI 제공자가 선택되지 않아 스위치를 켤 수 없어요. 위에서 하나를 골라요.",
           "aiOff": "{name}님의 프로필에서 AI가 꺼져 있어 문서를 읽지 않아요."
         },
@@ -6042,20 +6041,16 @@
     },
     "sections": {
       "account": {
-        "title": "계정",
-        "subtitle": "프로필과 표시 방식, 설정이에요."
+        "title": "계정"
       },
       "integrations": {
         "title": "연동",
-        "subtitle": "데이터 소스와 기기를 연결하고 관리해요.",
         "connectionsHeading": "연결",
         "channelsHeading": "전송 채널",
-        "channelsDescription": "알림과 경고가 전달되는 곳이에요.",
         "matrixLink": "채널별 알림"
       },
       "notifications": {
         "title": "알림",
-        "subtitle": "받을 알림과 전달될 곳을 골라요.",
         "remindersHeading": "알림",
         "matrixLink": "채널별 알림",
         "channelsLink": "전송 채널",
@@ -6096,7 +6091,6 @@
           "title": "인사이트",
           "description": "개요 섹션과 내비게이션 칩 순서."
         },
-        "subtitle": "대시보드, 인사이트, 기록 목록의 순서와 보기를 정하세요.",
         "medications": {
           "title": "복약",
           "description": "목록 보기와 수동 순서."
@@ -6118,12 +6112,8 @@
           "description": "보기 방식과 월 배치."
         }
       },
-      "dashboard": {
-        "subtitle": "대시보드의 타일을 배치해요."
-      },
       "thresholds": {
-        "title": "목표",
-        "subtitle": "지표별 목표 범위를 직접 정해요."
+        "title": "목표"
       },
       "sources": {
         "title": "소스 우선순위",
@@ -6202,7 +6192,6 @@
           "other": "기타",
           "unknown": "알 수 없음"
         },
-        "subtitle": "같은 지표를 두 소스가 보낼 때 어느 쪽을 쓸지 정해요.",
         "nutrients": {
           "title": "동기화된 영양 섭취",
           "description": "최근 {days, plural, other {#일간의}} 하루 합계예요. Apple Health나 식단 기록 앱에서 동기화한 값에 복용한 보충제가 더해져요.",
@@ -6217,16 +6206,13 @@
         "noneInUse": "아직 순위를 정할 소스가 없어요. 연동에서 연결하거나 값을 기록해 보세요."
       },
       "ai": {
-        "title": "AI 제공자",
-        "subtitle": "AI 제공자를 고르고 직접 키를 등록해요."
+        "title": "AI 제공자"
       },
       "api": {
-        "title": "API와 토큰",
-        "subtitle": "API 엔드포인트와 액세스 토큰을 관리해요."
+        "title": "API와 토큰"
       },
       "advanced": {
-        "title": "고급",
-        "subtitle": "데이터 초기화와 계정 삭제."
+        "title": "고급"
       },
       "export": {
         "title": "내보내기와 불러오기",
@@ -6241,21 +6227,17 @@
         },
         "cards": {
           "measurementsCsv": {
-            "title": "측정",
-            "description": "모든 측정값을 스프레드시트로."
+            "title": "측정"
           },
           "medicationsCsv": {
             "title": "복약",
-            "description": "내 약 목록, 원하면 모든 복용 기록까지.",
             "includeIntake": "복용 기록 포함"
           },
           "moodCsv": {
-            "title": "기분",
-            "description": "모든 기분 기록과 태그."
+            "title": "기분"
           },
           "fullBackup": {
             "title": "전체 백업",
-            "description": "모든 기록을 JSON 파일 하나에.",
             "scopeNote": "문서 메타데이터와 AI가 만든 요약이 있으면 일반 텍스트로 들어가요.",
             "encryptToggle": "암호문구로 암호화",
             "passphrasePlaceholder": "암호문구 (12자 이상)",
@@ -6636,22 +6618,16 @@
             "removeTitle": "이 폴더를 제거할까요?",
             "removeBody": "HealthLog가 더 이상 이 폴더에서 가져오지 않고 비밀번호를 잊어요. 이미 가져온 항목은 그대로 남아요."
           }
-        },
-        "subtitle": "데이터를 내보내거나, 다른 앱과 파일에서 측정값과 기록을 가져와요."
+        }
       },
       "about": {
-        "title": "앱 정보",
-        "subtitle": "버전, 라이선스, 프로젝트 링크."
+        "title": "앱 정보"
       },
       "sharing": {
         "title": "공유",
         "subtitle": "데이터를 읽기 전용으로 공유해요."
       },
-      "insights": {
-        "subtitle": "개요 섹션과 칩 순서를 배치해요."
-      },
       "medications": {
-        "subtitle": "약 목록 보기와 순서를 관리해요.",
         "registry": {
           "title": "의약품 등록부",
           "description": "앱 언어와 관계없이 ‘첨부문서 찾기’가 공식 첨부문서를 검색하는 곳입니다.",
@@ -6661,18 +6637,6 @@
           "saved": "의약품 등록부를 저장했습니다",
           "saveError": "의약품 등록부를 저장하지 못했습니다."
         }
-      },
-      "mood": {
-        "subtitle": "기분 태그와 그룹, 선택기 순서를 정리해요."
-      },
-      "labs": {
-        "subtitle": "보기, 정렬 순서, 바이오마커를 관리해요."
-      },
-      "illness": {
-        "subtitle": "아픈 기간의 보기와 순서를 관리해요."
-      },
-      "vorsorge": {
-        "subtitle": "보기, 순서, 개별 알림을 관리해요."
       },
       "modules": {
         "title": "모듈",
@@ -6684,21 +6648,17 @@
         },
         "manageIn": "{section}에서 관리",
         "operatorDisabled": "서버 전체에서 꺼짐",
-        "subtitle": "HealthLog가 앱 전체에서 보여 줄 기록 영역을 골라요.",
         "backToHub": "모듈로 돌아가기",
         "openModuleSettings": "모듈 설정",
         "pages": {
           "medications": {
-            "title": "약",
-            "description": "순환에서 제외할 주사 부위입니다."
+            "title": "약"
           },
           "mood": {
-            "title": "기분 태그",
-            "description": "그룹, 직접 만든 태그, 보관된 태그입니다."
+            "title": "기분 태그"
           },
           "labs": {
-            "title": "검사 결과",
-            "description": "바이오마커와 검사 보고서용 기기 내 텍스트 인식입니다."
+            "title": "검사 결과"
           },
           "arrangementTitle": "순서와 보기",
           "arrangementDescription": "이 목록의 정렬과 보기는 배치에서 설정합니다.",
@@ -6708,32 +6668,25 @@
         }
       },
       "health-record": {
-        "title": "진료용 리포트 및 내보내기",
-        "subtitle": "진료용 리포트를 만들고, 임상의에게 바로 건넬 수 있는 완전한 건강 기록을 내보내요."
+        "title": "진료용 리포트 및 내보내기"
       },
       "coach": {
-        "title": "코치",
-        "subtitle": "코치의 말투, 먼저 건네는 알림, 기억을 조정해요."
+        "title": "코치"
       },
       "security": {
-        "title": "보안",
-        "subtitle": "2단계 인증, 복구 코드, 패스키."
+        "title": "보안"
       },
       "privacy": {
-        "title": "데이터와 개인정보",
-        "subtitle": "데이터, 보관 기간, 암호화, 계정 보안을 한곳에서."
+        "title": "데이터와 개인정보"
       },
       "mcp": {
-        "title": "MCP 커넥터",
-        "subtitle": "외부 어시스턴트를 내 건강 데이터에 연결해요."
+        "title": "MCP 커넥터"
       },
       "anamnesis": {
-        "title": "병력",
-        "subtitle": "병력, 생활 습관, 응급 정보와 AI가 읽을 수 있는 범위를 관리해요."
+        "title": "병력"
       },
       "environment": {
         "title": "위치 및 날씨",
-        "subtitle": "날씨, 일조 시간, 위치 정보예요.",
         "disabledHint": "환경 모듈을 켜면 기본 위치를 설정하고 매일 날씨와 일조 시간을 가져올 수 있어요.",
         "searchPlaceholder": "도시 검색",
         "search": "검색",
@@ -6795,7 +6748,6 @@
       },
       "score": {
         "title": "건강 점수",
-        "subtitle": "어떤 항목을 점수에 반영할지 고르세요.",
         "card": {
           "title": "점수에 반영되는 항목",
           "description": "여기서 따로 끄지 않으면, 기록하는 모든 항목이 점수에 반영돼요."
@@ -6846,8 +6798,7 @@
         }
       },
       "access": {
-        "title": "공유 접근",
-        "subtitle": "내 건강 기록을 누가 열 수 있고, 내가 누구의 기록을 열 수 있는지예요."
+        "title": "공유 접근"
       }
     },
     "profile": "프로필",
@@ -6957,7 +6908,6 @@
     "multiDevice": "다중 기기",
     "backedUp": "백업됨",
     "telegram": "Telegram",
-    "telegramDescription": "봇으로 보내는 복약 알림이에요.",
     "botToken": "봇 토큰",
     "chatId": "채팅 ID",
     "enableNotifications": "알림 켜기",
@@ -6965,14 +6915,12 @@
     "telegramStep2": "봇에게 /start를 보내 채팅을 활성화하세요.",
     "telegramStep3": "@userinfobot이나 Bot API로 채팅 ID를 확인하세요.",
     "ntfy": "ntfy",
-    "ntfyDescription": "ntfy로 받는 알림.",
     "ntfyEnable": "ntfy 켜기",
     "ntfyServer": "서버 URL",
     "ntfyTopic": "토픽",
     "ntfyAuthToken": "인증 토큰 (선택)",
     "ntfyAuthTokenHint": "접근 제어가 걸린 비공개 토픽에만 필요해요.",
     "webhook": "웹훅",
-    "webhookDescription": "JSON을 받는 모든 URL로 알림 전송.",
     "webhookEnable": "웹훅 켜기",
     "webhookUrl": "웹훅 URL",
     "webhookUrlHint": "POST를 보낼 전체 URL이에요.",
@@ -6984,11 +6932,9 @@
     "webhookFormatGotify": "Gotify",
     "webhookFormatGotifyHint": "/message로 끝나는 URL을 쓰고, 앱 토큰은 X-Gotify-Key 헤더에 넣어 주세요.",
     "email": "이메일",
-    "emailDescription": "경고와 알림을 이메일로 받아요.",
     "emailEnable": "이메일 켜기",
     "emailRecipient": "받는 주소",
     "webPush": "브라우저 푸시",
-    "webPushDescription": "이 브라우저로 받는 알림.",
     "webPushNotSupported": "이 브라우저는 푸시 알림을 지원하지 않아요.",
     "webPushInstallFirst": "iPhone과 iPad에서는 설치한 앱에서만 푸시 알림을 받을 수 있어요. Safari에서 공유를 누른 다음 '홈 화면에 추가'를 선택하고, 홈 화면에서 HealthLog를 연 뒤 여기서 '푸시 켜기'를 눌러 주세요.",
     "webPushDenied": "푸시 알림이 차단돼 있어요. 브라우저 설정에서 허용해 주세요.",
@@ -7013,9 +6959,6 @@
     "regenerateRateLimit": "잠시만 기다려 주세요. 시간당 분석 한도에 도달했어요.",
     "lastGeneratedAt": "마지막 생성",
     "ai": {
-      "chatgptConnectedBadge": "ChatGPT 연결됨",
-      "adminAiActiveBadge": "관리자 제공자 사용 중",
-      "connectionExpiredBadge": "연결 만료됨",
       "connectedSince": "{when}부터 연결되어 있어요.",
       "deviceCodeHeading": "chatgpt.com에서 연결을 마무리하세요",
       "deviceCodeStep1": "아무 기기에서나 이 링크를 여세요:",
@@ -7135,9 +7078,6 @@
         "apiKeyPlaceholder": "sk-…"
       },
       "codex": {
-        "statusConnected": "연결됨",
-        "statusDisconnected": "연결 안 됨",
-        "statusExpired": "연결 만료됨",
         "connectButton": "ChatGPT로 연결",
         "disconnectButton": "연결 해제",
         "disconnectTitle": "ChatGPT 연결을 해제할까요?",
@@ -7164,7 +7104,6 @@
       "testReasonUnreachable": "AI 제공자에 연결하지 못했어요.",
       "coachMemory": {
         "title": "코치가 기억하는 것",
-        "description": "코치에게 알려준, 오래 유지되는 정보예요.",
         "empty": "코치가 아직 기억하는 정보가 없어요. 대화하면서 알려준 목표, 질환, 선호처럼 오래 유지되는 내용을 기억하고, 여기서 언제든 지울 수 있어요.",
         "learnedPrefix": "학습: {when}",
         "categoryPreference": "선호",
@@ -7294,13 +7233,11 @@
       },
       "coachConversations": {
         "title": "코치 대화",
-        "description": "대화를 열어 읽거나 삭제하세요.",
         "more": "더 보기",
         "openAll": "모든 대화 열기"
       },
       "coachPlans": {
         "title": "코치 계획",
-        "description": "코치와 합의한 계획을 읽거나 삭제할 수 있습니다.",
         "open": "계획 열기"
       },
       "reasoning": {
@@ -7316,7 +7253,6 @@
         "coachNote": "코치에서는 코치 설정의 사고 깊이가 적용됩니다.",
         "backgroundNote": "일일 브리핑 같은 백그라운드 작업은 이 설정을 쓰지 않습니다. 최대 보통 수준으로 생각하며, 운영자가 더 낮은 한도를 정하면 그보다 낮게, 절약 단계에서는 전혀 생각하지 않습니다."
       },
-      "providerCardDescription": "제공자마다 키와 모델을 설정하고, 아래 순서로 HealthLog가 먼저 쓸 제공자를 정해요.",
       "runtimeTitle": "확인 및 새로고침",
       "usage": {
         "title": "AI 사용량",
@@ -7387,7 +7323,6 @@
     "withingsCredentialsSavedPlaceholder": "저장됨: 바꾸려면 새로 입력",
     "withingsCredentialsSavedPlaceholderSecret": "저장됨: 바꾸려면 새로 입력",
     "withingsSaveCredentials": "저장",
-    "configured": "설정됨",
     "withingsSync": "지금 동기화",
     "withingsFullSync": "전체 데이터 동기화",
     "withingsFullSyncTitle": "전체 동기화할까요?",
@@ -7589,11 +7524,9 @@
     "whoopViewData": "회복도 보기",
     "googleHealthViewData": "걸음 수 보기",
     "apiTokens": "API 토큰",
-    "apiTokensDescription": "측정값, 운동, 문서, 복용 기록용 토큰을 확인하고 폐기해요.",
     "measurementsToken": {
       "title": "측정 토큰",
       "description": "체중계나 시계, 식단 기록 앱, 홈 오토메이션이 측정값, 사용자 지표 값, 하루 영양소 합계를 기록할 수 있도록 토큰을 만들어요.",
-      "detail": "토큰은 한 번만 표시돼요.",
       "scopeNote": "본인 기록에 측정값을, 이미 만든 사용자 지표에 값을, 영양소 모듈이 켜져 있는 동안 하루 영양소 합계를 추가하는 것만 할 수 있어요. 무엇도 읽거나 고치거나 지울 수 없어요. 측정값과 영양소 합계는 외부에서 온 것으로 표시돼요. 사용자 지표의 ID는 지표 페이지 주소에서 /custom-metrics/ 뒤에 오는 부분이에요.",
       "nutrientsLink": "영양소 섭취 보기",
       "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요.",
@@ -7609,7 +7542,6 @@
     "workoutsToken": {
       "title": "운동 토큰",
       "description": "시계 연동 브리지나 동기화 스크립트가 운동 기록을 추가할 수 있도록 토큰을 만들어요.",
-      "detail": "토큰은 한 번만 표시돼요.",
       "scopeNote": "본인 기록에 새 운동을 추가하는 것만 할 수 있어요. 데이터를 읽거나, 무언가를 고치거나 지우거나, 다른 토큰을 만들 수는 없어요. 이 토큰으로 추가된 운동은 외부 기기에서 온 것으로 표시되고, 휴대폰이 같은 운동을 기록했다면 휴대폰의 기록이 보여요.",
       "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요.",
       "namePlaceholder": "이름 (예: Garmin)"
@@ -7617,12 +7549,10 @@
     "documentsToken": {
       "title": "문서 토큰",
       "description": "Paperless-ngx, Papra 또는 가져오기 스크립트가 문서함에 문서를 추가할 수 있도록 토큰을 만들어요.",
-      "detail": "토큰은 한 번만 표시돼요.",
       "scopeNote": "본인 문서함에 새 문서를 추가하는 것만 할 수 있어요. 목록을 보거나, 열거나, 내려받거나, 고치거나 지울 수 없고, 다른 토큰을 만들 수도 없어요. 파일이 저장됐는지만 알 수 있고, 어떻게 정리했는지는 알 수 없어요.",
       "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요.",
       "namePlaceholder": "이름 (예: Paperless-ngx)"
     },
-    "tokenMintMovedDescription": "토큰은 쓰이는 곳에서 발급돼요. 측정값, 운동, 문서는 위에서, 특정 약은 그 약의 API 엔드포인트에서 만들 수 있어요.",
     "tokenCreated": "토큰을 만들었어요. 지금 복사하세요! 다시 보여주지 않아요.",
     "tokenCopy": "토큰 복사",
     "tokenCopied": "토큰을 클립보드에 복사했어요",
@@ -7645,7 +7575,6 @@
     "noActiveTokens": "사용 중인 토큰이 없어요.",
     "tokenNeverUsed": "없음",
     "apiEndpointsTitle": "API 엔드포인트",
-    "apiEndpointsDescription": "토큰으로 데이터를 보낼 때 쓸 수 있는 외부 엔드포인트 목록이에요.",
     "apiEndpointMethod": "메서드",
     "apiEndpointPath": "경로",
     "apiEndpointAuth": "인증",
@@ -7716,11 +7645,6 @@
     },
     "notificationStatus": {
       "title": "발송 상태",
-      "description": "채널별 상태이며, '자동 비활성화'는 영구 오류가 이어져 재시도를 멈췄다는 뜻이에요.",
-      "stateActive": "사용 중",
-      "stateAutoDisabled": "자동 비활성화",
-      "stateSendingPaused": "발송 일시중지",
-      "stateManuallyDisabled": "사용 안 함",
       "lastSuccess": "마지막 성공 발송",
       "lastFailure": "마지막 실패",
       "consecutiveFailures": "연속 실패",
@@ -7918,10 +7842,8 @@
         }
       },
       "state": {
-        "title": "코치",
-        "description": "코치 버튼과 패널 표시 여부입니다. 스위치는 모듈에 있습니다."
+        "title": "코치"
       },
-      "nudgesMoved": "알림에서 다른 리마인더와 함께 설정합니다.",
       "openNudges": "알림에서 열기"
     },
     "integrationRedirectGuide": {
@@ -7959,8 +7881,6 @@
         "export": "데이터 내보내기",
         "other": "보안 이벤트"
       },
-      "active": "활성",
-      "inactive": "비활성",
       "stepUpRequired": "보안을 위해 2단계 인증을 바꾸려면 다시 로그인해 주세요.",
       "useRecoveryCode": "복구 코드로 대신 인증하기",
       "useAuthenticator": "인증 앱으로 대신 인증하기",
@@ -8150,7 +8070,6 @@
       "connectionsTitle": "연결된 어시스턴트",
       "connectionsDescription": "로그인 절차로 승인한 어시스턴트예요.",
       "noConnections": "연결된 어시스턴트가 없어요.",
-      "connectionConnected": "연결됨",
       "connectionLastUsed": "마지막 사용",
       "connectionNeverUsed": "사용한 적 없음",
       "connectionRevoke": "연결 해제",
@@ -8302,12 +8221,6 @@
       "navCountsDescription": "사이드바와 더 보기 메뉴의 항목 옆에 복용할 약과 받아야 할 검진이 몇 개인지 보여줘요."
     },
     "integrationCard": {
-      "state": {
-        "ok": "작동 중",
-        "limited": "제한됨",
-        "degraded": "지연됨",
-        "actionRequired": "조치 필요"
-      },
       "reason": {
         "dataArriving": "데이터가 들어오고 있어요.",
         "dataArrivingHistory": "데이터가 들어오고 있어요. 이전 기록은 백그라운드에서 불러오는 중이에요.",
@@ -8340,7 +8253,6 @@
       "moreValuesOne": "그 외 {count}개",
       "moreValuesFew": "그 외 {count}개",
       "moreValuesOther": "그 외 {count}개",
-      "notConnected": "연결되지 않음.",
       "lastData": "마지막 데이터: {when}",
       "lastDataNone": "마지막 데이터: 아직 없음",
       "reconnect": "다시 연결",
@@ -8420,8 +8332,6 @@
     "integrationDisconnectFailed": "{provider} 연결을 해제하지 못했어요.",
     "timezoneSaved": "시간대를 저장했습니다.",
     "moduleState": {
-      "on": "켜짐",
-      "off": "꺼짐",
       "change": "모듈에서 변경"
     },
     "timezoneUseDevice": "이 기기의 시간대 사용 ({zone})",
@@ -8483,7 +8393,8 @@
       "cycle": "생리 주기"
     },
     "passkeyRenameFailed": "패스키 이름을 변경하지 못했어요.",
-    "passkeyRemoveFailed": "패스키를 삭제하지 못했어요."
+    "passkeyRemoveFailed": "패스키를 삭제하지 못했어요.",
+    "apiEndpointsShow": "엔드포인트 보기"
   },
   "admin": {
     "title": "관리자",
@@ -12457,7 +12368,6 @@
       "relatedMetric": "함께 보기: {metric}",
       "continue": "계속 찾아보기",
       "settingLabel": "후속 질문 추천",
-      "settingHint": "코치의 가장 최근 답변 아래에 후속 질문을 최대 세 개까지 보여줘요.",
       "changeAssumption": "대신: {value}"
     },
     "clarify": {
@@ -14882,7 +14792,6 @@
     "errorReaderBusy": "문서 판독기가 다른 작업으로 바빠요. 1분 후에 다시 시도하세요.",
     "jobFailure": {
       "title": "멈춘 백그라운드 AI 작업",
-      "description": "최근에 멈춘 작업과 그 이유예요. 작업이 다시 성공하면 항목이 사라져요.",
       "line": "{job}: {reason}",
       "repeated": "연속 {count, plural, other {#번}} 실패했어요. 마지막: {when}.",
       "lastAt": "마지막 시도: {when}.",
