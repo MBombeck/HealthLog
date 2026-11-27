@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { showEntrySavedToast } from "@/components/forms/entry-saved-toast";
 import { removeSavedMeasurements } from "@/components/forms/entry-undo";
-import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { useTranslations } from "@/lib/i18n/context";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 import { useAuth } from "@/hooks/use-auth";
 import { resolveGlucoseUnit } from "@/lib/glucose";
@@ -43,16 +43,12 @@ import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
 
 import { DurationReadAs } from "./duration-read-as";
 import { useEntryType } from "./entry/use-entry-type";
-import {
-  LastValueDeviation,
-  lastValuePlaceholder,
-} from "./entry/last-value-line";
+import { LastValueDeviation } from "./entry/last-value-line";
 import { MeasurementEntryFields } from "./entry/measurement-entry-fields";
 import {
   canonicalEntryValue,
   useMeasurementEntryAssist,
 } from "./entry/use-measurement-entry-assist";
-import { useMeasurementRowDisplay } from "./list/use-measurement-row-display";
 import {
   MEASUREMENT_TYPES,
   measurementFormTypes,
@@ -114,9 +110,7 @@ export function MeasurementForm({
   autoFocus = true,
 }: MeasurementFormProps) {
   const { t } = useTranslations();
-  const fmt = useFormatters();
   const { canManageDomain } = useRecordCapabilities();
-  const { rowDisplay } = useMeasurementRowDisplay();
   const recordName = useActiveRecordName();
   const queryClient = useQueryClient();
   const post = useIdempotentPost();
@@ -190,7 +184,6 @@ export function MeasurementForm({
     pickedGlucoseContext ??
     defaultGlucoseContext(new Date(measuredAt), assist.history);
   const nextType = chain ? nextUsualType(assist.recent, type) : null;
-  const placeholder = lastValuePlaceholder(assist.last, rowDisplay, fmt.number);
 
   const typeInfo = MEASUREMENT_TYPES.find((t) => t.value === type);
   const isBpMode = type === "BLOOD_PRESSURE";
@@ -425,12 +418,6 @@ export function MeasurementForm({
               onSys={setSysBp}
               onDia={setDiaBp}
               onPulse={setPulse}
-              placeholders={{
-                sys: placeholder,
-                dia: assist.lastDia
-                  ? lastValuePlaceholder(assist.lastDia, rowDisplay, fmt.number)
-                  : undefined,
-              }}
               autoFocus={autoFocus}
               invalid={!!error}
               describedBy={errorDescriptor}
@@ -448,8 +435,6 @@ export function MeasurementForm({
         // A duration also takes "7:30" and "7h 30m", which the decimal
         // keypad cannot type.
         inputMode={durationUnit !== null ? "text" : "decimal"}
-        // The person's own last reading, never a stranger's example.
-        placeholder={placeholder}
         autoFocus={autoFocus}
         glucoseContext={
           isGlucoseMode || (isKetoneMode && pairedGlucose.trim() !== "")

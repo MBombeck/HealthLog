@@ -16,6 +16,7 @@ import { readSource, stripComments } from "@/__tests__/helpers/source-files";
 import { I18nProvider } from "@/lib/i18n/context";
 
 import { MeasurementEntryFields } from "../entry/measurement-entry-fields";
+import { BloodPressureFields } from "../measurement-form-parts";
 
 const FIELD =
   /<(FieldGroup|Input|DateTimeField|Textarea|Label|GlucoseContextSelect)\b/g;
@@ -26,13 +27,13 @@ function ownFields(rel: string): string[] {
   return [...text.matchAll(FIELD)].map((m) => m[1]);
 }
 
-function labels(idPrefix: string): string[] {
-  const html = renderToStaticMarkup(
+function body(idPrefix: string, value = "88"): string {
+  return renderToStaticMarkup(
     <I18nProvider initialLocale="en">
       <MeasurementEntryFields
         idPrefix={idPrefix}
         unit="cm"
-        value="88"
+        value={value}
         onValueChange={() => {}}
         measuredAt="2026-11-27T09:00"
         onMeasuredAtChange={() => {}}
@@ -43,6 +44,10 @@ function labels(idPrefix: string): string[] {
       />
     </I18nProvider>,
   );
+}
+
+function labels(idPrefix: string): string[] {
+  const html = body(idPrefix);
   return [
     ...html.matchAll(/<label[^>]*for="([^"]+)"[^>]*>(.*?)<\/label>/g),
   ].map((m) => `${m[1].slice(idPrefix.length)}: ${m[2]}`);
@@ -73,5 +78,45 @@ describe("add and edit render one measurement form body", () => {
     expect(add.length).toBeGreaterThanOrEqual(3);
     expect(labels("edit-")).toEqual(add);
     expect(add[0]).toContain("Value (cm)");
+  });
+
+  it("leaves the value empty in add and edit: no last reading as a placeholder", () => {
+    // The add sheet showed the last reading ("88") in grey in an empty
+    // field, which read as a value already there. Both modes now open the
+    // field empty; the body takes no placeholder to pass one through.
+    for (const prefix of ["", "edit-"]) {
+      const input = new RegExp(`<input[^>]*id="${prefix}value"[^>]*>`).exec(
+        body(prefix, ""),
+      )?.[0];
+      expect(input, prefix || "add").toBeDefined();
+      expect(input).not.toMatch(/placeholder=/);
+      expect(input).toMatch(/value=""/);
+    }
+    const bp = renderToStaticMarkup(
+      <I18nProvider initialLocale="en">
+        <BloodPressureFields
+          sys=""
+          dia=""
+          pulse=""
+          onSys={() => {}}
+          onDia={() => {}}
+          onPulse={() => {}}
+          autoFocus={false}
+          invalid={false}
+        />
+      </I18nProvider>,
+    );
+    for (const id of ["sys", "dia"]) {
+      const input = new RegExp(`<input[^>]*id="${id}"[^>]*>`).exec(bp)?.[0];
+      expect(input, id).toBeDefined();
+      expect(input).not.toMatch(/placeholder=/);
+    }
+    for (const rel of [
+      "src/components/measurements/measurement-form.tsx",
+      "src/components/measurements/list/measurement-edit-sheet.tsx",
+    ]) {
+      const text = stripComments(readSource(rel, "<MeasurementEntryFields"));
+      expect(text, rel).not.toMatch(/lastValuePlaceholder|placeholders?=\{/);
+    }
   });
 });

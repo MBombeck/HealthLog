@@ -153,8 +153,9 @@ function UnitLabel({ htmlFor, label }: { htmlFor: string; label: string }) {
 }
 
 /**
- * The blood pressure row: systolic, diastolic and an optional pulse, each
- * placeholder the person's own last reading. Systolic takes the focus when the form opens.
+ * The blood pressure row: systolic, diastolic and an optional pulse, empty
+ * until typed in (no last reading as a placeholder, the same as the edit
+ * sheet). Systolic takes the focus when the form opens.
  */
 export function BloodPressureFields({
   sys,
@@ -163,7 +164,6 @@ export function BloodPressureFields({
   onSys,
   onDia,
   onPulse,
-  placeholders,
   autoFocus,
   invalid,
   describedBy,
@@ -174,7 +174,6 @@ export function BloodPressureFields({
   onSys: (next: string) => void;
   onDia: (next: string) => void;
   onPulse: (next: string) => void;
-  placeholders: { sys?: string; dia?: string };
   autoFocus: boolean;
   invalid: boolean;
   describedBy?: string;
@@ -192,7 +191,6 @@ export function BloodPressureFields({
           step="1"
           value={sys}
           onChange={(e) => onSys(e.target.value)}
-          placeholder={placeholders.sys}
           autoFocus={autoFocus}
           required
           aria-required="true"
@@ -212,7 +210,6 @@ export function BloodPressureFields({
           step="1"
           value={dia}
           onChange={(e) => onDia(e.target.value)}
-          placeholder={placeholders.dia}
           required
           aria-required="true"
           aria-invalid={invalid || undefined}

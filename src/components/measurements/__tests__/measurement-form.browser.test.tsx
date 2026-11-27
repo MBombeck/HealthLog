@@ -341,7 +341,7 @@ describe("<MeasurementForm> the person's own habits", () => {
     await expect.element(bp.screen.getByLabelText(/^Systolic/)).toHaveFocus();
   });
 
-  it("shows the last reading as the placeholder, and a check only when far off", async () => {
+  it("leaves the field empty, and checks a value only when far off the last", async () => {
     api.on("GET", /^\/api\/measurements\?type=WEIGHT/, {
       data: {
         measurements: [
@@ -351,8 +351,9 @@ describe("<MeasurementForm> the person's own habits", () => {
     });
     const { screen } = await mount({ defaultType: "WEIGHT" });
     const field = screen.getByLabelText("Value (kg)");
-    await expect.element(field).toHaveAttribute("placeholder", "82.3");
-    // No line of its own under the field: add and edit look the same.
+    // Empty, as in edit: the last reading is no grey placeholder, and no
+    // line of its own under the field.
+    await expect.element(field).not.toHaveAttribute("placeholder");
     await expect
       .element(screen.getByText(/Last 82\.3 kg/))
       .not.toBeInTheDocument();
