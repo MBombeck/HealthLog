@@ -15,7 +15,12 @@ import {
   DAILY_ASK_KINDS,
   resolveDailyAsks,
   type AskCandidate,
+  type DailyAsk,
 } from "@/lib/daily/asks";
+import {
+  asksFixtureInput,
+  serverAsks,
+} from "../../../../e2e/setup/asks-fixture";
 import { buildDailyDigest, type DailyDigestInput } from "@/lib/daily/digest";
 import {
   PRIORITY_ITEM_KINDS,
@@ -694,6 +699,25 @@ describe("an ask says the thing in its title and its state in the body", () => {
     for (const ask of asks) {
       expect(ask.body).not.toMatch(/\.$/);
       expect(ask.body).not.toContain(ask.title);
+    }
+  });
+});
+
+describe("the browser test's asks are the builder's", () => {
+  it("serverAsks equals buildDailyDigest for the same input, every language", () => {
+    const pick = (asks: DailyAsk[]) =>
+      asks.map((a) => [
+        a.kind,
+        a.tier,
+        a.title,
+        a.body,
+        a.actions.map((x) => x.labelKey),
+      ]);
+    for (const locale of ["de", "en", "ru"] as const) {
+      const input = asksFixtureInput(locale);
+      const built = buildDailyDigest(input, getServerTranslator(locale).t).asks;
+      expect(pick(serverAsks(locale))).toEqual(pick(built));
+      expect(built).toHaveLength(6);
     }
   });
 });

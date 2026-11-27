@@ -402,7 +402,10 @@ test.describe("the top of the dashboard", () => {
           asks.length,
         );
         for (const line of await lines(page)) {
-          if (line.height > line.lineHeight + 0.5 || line.cut) {
+          // A title may end in an ellipsis (a name the person typed); a
+          // meta never: the server words it to fit.
+          const cutWrongly = line.cut && line.slot === "today-ask-meta";
+          if (line.height > line.lineHeight + 0.5 || cutWrongly) {
             failures.push(
               `${locale}/${timeFormat} ${line.slot} "${line.text}": ${line.height}px (line ${line.lineHeight}px)${line.cut ? ", cut" : ""}`,
             );
