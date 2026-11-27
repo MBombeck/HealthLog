@@ -12733,11 +12733,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PatchDismissedHintsEnvelope"
-        "400": *a28
+        "400": *a31
         "401": *a1
         "403": *a9
-        "413": *a29
-        "415": *a30
+        "413": *a32
+        "415": *a33
         "422": *a4
         "429": *a5
   /api/auth/me/show-nav-counts:
