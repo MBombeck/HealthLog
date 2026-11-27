@@ -4,7 +4,8 @@
  * A device registered with Apple's web service (`web-service.ts`) is owed a
  * push when the pass changed after the device last heard from us: after its
  * registration and after its last push, the pass's content moved on
- * (`contentChangedAt`) or the pass was withdrawn. The push itself carries
+ * (`contentChangedAt`), the pass was withdrawn, or its link expired. The
+ * push itself carries
  * nothing; Wallet then asks which passes changed and fetches them.
  *
  * The push goes out the way the pass is signed: over the relay's notify
@@ -59,7 +60,7 @@ interface PushablePass {
   teamIdentifier: string;
   contentChangedAt: Date;
   voidedAt: Date | null;
-  link: { revokedAt: Date | null };
+  link: { revokedAt: Date | null; expiresAt: Date | null };
   registrations: Array<{
     id: string;
     pushTokenEncrypted: string;
@@ -70,15 +71,26 @@ interface PushablePass {
 
 const later = (a: Date, b: Date | null) => (b && b > a ? b : a);
 
-/** When the pass last changed for its devices. */
-export function walletPassChangedAt(pass: {
-  contentChangedAt: Date;
-  voidedAt: Date | null;
-  link: { revokedAt: Date | null };
-}): Date {
+/**
+ * When the pass last changed for its devices: its content, its withdrawal,
+ * or the moment its link expired (from then on it builds in its ended
+ * version, `walletPassEndedAt`).
+ */
+export function walletPassChangedAt(
+  pass: {
+    contentChangedAt: Date;
+    voidedAt: Date | null;
+    link: { revokedAt: Date | null; expiresAt: Date | null };
+  },
+  now: Date = new Date(),
+): Date {
+  const expired =
+    pass.link.expiresAt && pass.link.expiresAt <= now
+      ? pass.link.expiresAt
+      : null;
   return later(
-    later(pass.contentChangedAt, pass.voidedAt),
-    pass.link.revokedAt,
+    later(later(pass.contentChangedAt, pass.voidedAt), pass.link.revokedAt),
+    expired,
   );
 }
 
@@ -122,7 +134,7 @@ const PUSHABLE_SELECT = {
   teamIdentifier: true,
   contentChangedAt: true,
   voidedAt: true,
-  link: { select: { revokedAt: true } },
+  link: { select: { revokedAt: true, expiresAt: true } },
   registrations: {
     select: {
       id: true,
@@ -154,7 +166,10 @@ export async function pushOwedWalletUpdates(
     select: PUSHABLE_SELECT,
   });
   if (!pass) return { ...outcome, skipped: "none_owed" };
-  const owed = owedRegistrations(walletPassChangedAt(pass), pass.registrations);
+  const owed = owedRegistrations(
+    walletPassChangedAt(pass, now),
+    pass.registrations,
+  );
   outcome.owed = owed.length;
   if (owed.length === 0) return { ...outcome, skipped: "none_owed" };
   // With the operator's external-access switch off, Wallet's fetch would be

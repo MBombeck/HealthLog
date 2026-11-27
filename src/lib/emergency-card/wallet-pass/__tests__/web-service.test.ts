@@ -49,12 +49,23 @@ describe("the pass web service's small rules", () => {
     ).toBe(false);
   });
 
+  it("counts a link's expiry as a change once it has passed", () => {
+    const t = (s: number) => new Date(1_700_000_000_000 + s * 1000);
+    const pass = (expiresAt: Date) => ({
+      contentChangedAt: t(10),
+      voidedAt: null,
+      link: { revokedAt: null, expiresAt },
+    });
+    expect(walletPassChangedAt(pass(t(30)), t(40))).toEqual(t(30));
+    expect(walletPassChangedAt(pass(t(50)), t(40))).toEqual(t(10));
+  });
+
   it("owes a push to a device that has not heard of the last change", () => {
     const t = (s: number) => new Date(1_700_000_000_000 + s * 1000);
     const changedAt = walletPassChangedAt({
       contentChangedAt: t(10),
       voidedAt: t(20),
-      link: { revokedAt: null },
+      link: { revokedAt: null, expiresAt: null },
     });
     expect(changedAt).toEqual(t(20));
     const regs = [

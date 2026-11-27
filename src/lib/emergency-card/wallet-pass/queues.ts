@@ -27,6 +27,8 @@ import { prisma } from "@/lib/db";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { annotate } from "@/lib/logging/context";
 
+import { livePassWhere } from "./void";
+
 export const WALLET_PASS_REFRESH_QUEUE = "wallet-pass-refresh";
 export const WALLET_PASS_SWEEP_QUEUE = "wallet-pass-sweep";
 export const WALLET_PASS_SWEEP_CRON = "41 */6 * * *";
@@ -66,7 +68,7 @@ export async function enqueueWalletRefresh(userId: string): Promise<void> {
   try {
     if (!getGlobalBoss()) return;
     const passes = await prisma.walletPass.findMany({
-      where: { userId, voidedAt: null, link: { revokedAt: null } },
+      where: { userId, ...livePassWhere() },
       select: { id: true },
     });
     for (const pass of passes) await enqueueWalletPassRefresh(pass.id);

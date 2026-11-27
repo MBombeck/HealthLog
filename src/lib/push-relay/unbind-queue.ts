@@ -26,7 +26,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { queueRelayUnbindsWhere } from "@/lib/push-relay/unbind-rows";
 import { relayConfig, type RelayConfig } from "@/lib/push-relay/config";
-import { isCircuitOpen } from "@/lib/push-relay/circuit";
+import { relayUsable } from "@/lib/push-relay/relay-state";
 import { loadRegistration, relayCall } from "@/lib/push-relay/registration";
 
 const GIVE_UP_MS = 7 * 24 * 3600 * 1000;
@@ -112,7 +112,7 @@ export async function drainRelayUnbinds(
     // Without a registration this config can use, the row waits for one.
     const fresh = row ? await loadRegistration(config) : null;
     const result =
-      fresh?.instanceId && !isCircuitOpen(fresh)
+      fresh && relayUsable(fresh, "upkeep", now)
         ? await relayCall(
             fresh,
             "DELETE",

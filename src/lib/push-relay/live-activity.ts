@@ -88,6 +88,7 @@ import {
 } from "@/lib/push-relay/live-activity-relay-end";
 import { newUlid } from "@/lib/push-relay/plaintext";
 import { passPageOffset } from "@/lib/push-relay/pass-window";
+import { relayRoutes } from "@/lib/push-relay/relay-state";
 import {
   loadPushContext,
   ROUTABLE_DEVICE_SELECT,
@@ -701,7 +702,7 @@ export async function runLiveActivityRelayPass(
 ): Promise<LaPassFacts> {
   const facts: LaPassFacts = { devices: 0, started: 0, updated: 0, failed: 0 };
   const ctx = await loadPushContext();
-  if (!ctx.registration?.instanceId) return facts;
+  if (!relayRoutes(ctx.registration)) return facts;
   const where = LA_PASS_DEVICE_WHERE;
   // Capped per tick; the page rotates with the tick, so a device past the
   // first page is reached within a bounded number of passes.

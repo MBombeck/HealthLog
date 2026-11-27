@@ -27,6 +27,7 @@ import {
   WALLET_FETCH_LIMIT_PER_HOUR,
   WALLET_WINDOW_MS,
 } from "@/lib/emergency-card/wallet-pass/service";
+import { walletPassState } from "@/lib/emergency-card/wallet-pass/void";
 import {
   authenticateWalletPass,
   bare,
@@ -66,8 +67,7 @@ export const GET = apiHandler(
     // What a live pass rests on, read again on every fetch: the owner's
     // deletion request and, for a guardian's pass, the grant.
     let pass = authed;
-    const live = pass.voidedAt === null && pass.link.revokedAt === null;
-    if (live) {
+    if (walletPassState(pass) === "live") {
       const reason = pass.ownerPendingDeletion
         ? "ACCOUNT_DELETION"
         : pass.createdById !== pass.userId &&

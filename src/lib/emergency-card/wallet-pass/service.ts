@@ -34,7 +34,14 @@ import { WALLET_DOWNLOAD_PATH } from "./constants";
 import { buildPassContent, type WalletSignerIdentity } from "./content";
 import { openWalletLinkToken, walletAuthToken } from "./link-token";
 import { enqueueWalletVoidPush } from "./queues";
-import { voidWalletPassesWhere, type WalletPassVoidReason } from "./void";
+import {
+  livePassWhere,
+  voidWalletPassesWhere,
+  walletPassState,
+  walletPassVoidedAt,
+  type WalletPassState,
+  type WalletPassVoidReason,
+} from "./void";
 import { signWalletManifest, walletSigningMode } from "./sign";
 
 /** Downloads per pass and hour, shared with Wallet's own fetches. */
@@ -42,8 +49,6 @@ export const WALLET_FETCH_LIMIT_PER_HOUR = 30;
 /** Passes made per person and hour. */
 export const WALLET_MINT_LIMIT_PER_HOUR = 10;
 export const WALLET_WINDOW_MS = 60 * 60 * 1000;
-
-export type WalletPassState = "live" | "voided" | "expired";
 
 export const WALLET_PASS_SELECT = {
   id: true,
@@ -106,26 +111,6 @@ export interface WalletPassSummary {
   voidReason: Lowercase<WalletPassVoidReason> | null;
   lastFetchedAt: string | null;
   downloadPath: typeof WALLET_DOWNLOAD_PATH;
-}
-
-/**
- * When the pass stopped counting: its own stamp, else its link's. A link
- * ended by a credential remediation ends the pass with it, so the pass is
- * withdrawn from that moment even before its own row is stamped.
- */
-export function walletPassVoidedAt(
-  row: Pick<WalletPassRow, "voidedAt" | "link">,
-): Date | null {
-  return row.voidedAt ?? row.link.revokedAt;
-}
-
-export function walletPassState(
-  row: Pick<WalletPassRow, "voidedAt" | "link">,
-  now: Date = new Date(),
-): WalletPassState {
-  if (walletPassVoidedAt(row)) return "voided";
-  const expires = row.link.expiresAt;
-  return expires && expires.getTime() <= now.getTime() ? "expired" : "live";
 }
 
 export function toWalletPassSummary(
@@ -221,10 +206,13 @@ export function latestWalletPassById(
   });
 }
 
-/** Whether the record has a pass whose link still works or waits to expire. */
-export async function hasLiveWalletLink(userId: string): Promise<boolean> {
-  const live = await prisma.emergencyCardLink.findFirst({
-    where: { userId, revokedAt: null, purpose: "WALLET" },
+/** Whether the record has a live pass (`walletPassState` is `live`). */
+export async function hasLiveWalletPass(
+  userId: string,
+  now: Date = new Date(),
+): Promise<boolean> {
+  const live = await prisma.walletPass.findFirst({
+    where: { userId, ...livePassWhere(now) },
     select: { id: true },
   });
   return live !== null;
@@ -443,7 +431,7 @@ export async function buildSignedPass(
   return signSyncedPass(row, await syncWalletPassContent(row, now), now);
 }
 
-export type { WalletPassVoidReason };
+export type { WalletPassState, WalletPassVoidReason };
 
 /**
  * Withdraw the record's live pass: its link stops answering and the pass is
