@@ -3640,6 +3640,7 @@
       "queue": "integration-backfill-admission",
       "options": {
         "groupConcurrency": 1,
+        "includeMetadata": true,
         "localConcurrency": 1
       }
     },
