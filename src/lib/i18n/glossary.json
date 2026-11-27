@@ -4506,6 +4506,62 @@
       }
     },
     {
+      "id": "scoreNotFromToday",
+      "description": "What a score ring announces when its score is not about today: no number, a dash, and this label.",
+      "wire": "Not on the wire; the label of a stale score ring, shared with the native app.",
+      "terms": {
+        "de": {
+          "name": "Nicht von heute"
+        },
+        "en": {
+          "name": "Not from today"
+        },
+        "fr": {
+          "name": "Pas d'aujourd'hui"
+        },
+        "es": {
+          "name": "No es de hoy"
+        },
+        "it": {
+          "name": "Non di oggi"
+        },
+        "pl": {
+          "name": "Nie z dzisiaj"
+        },
+        "ko": {
+          "name": "오늘 값 아님"
+        },
+        "nl": {
+          "name": "Niet van vandaag"
+        },
+        "pt-BR": {
+          "name": "Não é de hoje"
+        },
+        "ru": {
+          "name": "Не за сегодня"
+        }
+      },
+      "anchors": [
+        {
+          "key": "insights.derived.scoreRing.notFromToday",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
       "id": "morningDifferentToday",
       "description": "The morning card about what is different today.",
       "wire": "DailyMorningCard titleKey daily.morningCard.title.todayDifferent",

@@ -50,6 +50,23 @@ describe("<ScoreRing>", () => {
     expect(html).toContain('data-slot="score-ring-provisional"');
   });
 
+  it("draws a stale score as a solid track, a centred dash and 'Not from today'", () => {
+    const html = render(
+      <ScoreRing score={null} emptyFace label="Readiness" ariaLabel="x" />,
+    );
+    expect(html).toContain('data-stale="true"');
+    expect(html).toContain('aria-label="Not from today"');
+    expect(html).toContain('stroke="var(--score-track, var(--muted))"');
+    expect(html).not.toContain('stroke-dasharray="0.5 4.2"');
+    expect(html).toContain(">–</span>");
+    expect(html).not.toContain("Readiness");
+    expect(html).not.toContain('data-slot="score-ring-provisional"');
+    // A score that is about today keeps the tick track.
+    expect(render(<ScoreRing score={74} />)).toContain(
+      'stroke-dasharray="0.5 4.2"',
+    );
+  });
+
   it("carries an aria-label restating the number (not colour-only)", () => {
     const html = render(<ScoreRing score={74} />);
     expect(html).toContain('role="img"');

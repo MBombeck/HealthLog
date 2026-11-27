@@ -4811,6 +4811,7 @@
         "aria": "점수 100점 만점에 {score}점, {band}",
         "ariaProvisional": "아직 점수를 낼 수 없어요. 데이터가 부족해요",
         "provisionalCaption": "아직 데이터가 부족해요",
+        "notFromToday": "오늘 값 아님",
         "band": {
           "green": "좋음",
           "yellow": "보통",

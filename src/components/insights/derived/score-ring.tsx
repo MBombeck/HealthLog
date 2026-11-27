@@ -136,10 +136,12 @@ export interface ScoreRingProps {
    */
   baseline?: number | null;
   /**
-   * With `score === null`: the bare track and nothing else, for a score that
-   * exists but is not about today (a readiness resting on yesterday's
-   * values). No dash, no "not enough data" caption, both of which would say
-   * something untrue; the caller says what the ring is instead.
+   * With `score === null`: the stale face, for a score that exists but is not
+   * about today (a readiness resting on yesterday's values). A solid
+   * `--score-track` ring, no number, a centred "–" and the label "Not from
+   * today", as the native app draws it. No "not enough data" caption, which
+   * would say something untrue; the caller's line says when the last value
+   * was.
    */
   emptyFace?: boolean;
   /**
@@ -183,6 +185,7 @@ export function ScoreRing({
   const gid = useId();
 
   const hasScore = score != null && Number.isFinite(score);
+  const stale = emptyFace && !hasScore;
   const clamped = hasScore ? clampScore(score) : 0;
   const resolvedBand: ScoreBand =
     band ?? bandForScore(load ? 100 - clamped : clamped);
@@ -223,20 +226,22 @@ export function ScoreRing({
   });
   const displayedRounded = Math.round(displayed);
 
-  const ariaLabel =
-    ariaLabelOverride ??
-    (hasScore
-      ? t("insights.derived.scoreRing.aria", {
-          score: Math.round(clamped),
-          band: t(bandWordKey(resolvedBand, load)),
-        })
-      : t("insights.derived.scoreRing.ariaProvisional"));
+  const ariaLabel = stale
+    ? t("insights.derived.scoreRing.notFromToday")
+    : (ariaLabelOverride ??
+      (hasScore
+        ? t("insights.derived.scoreRing.aria", {
+            score: Math.round(clamped),
+            band: t(bandWordKey(resolvedBand, load)),
+          })
+        : t("insights.derived.scoreRing.ariaProvisional")));
 
   return (
     <div
       data-slot="score-ring"
       data-band={hasScore ? resolvedBand : "none"}
       data-provisional={hasScore ? undefined : "true"}
+      data-stale={stale ? "true" : undefined}
       role="img"
       aria-label={ariaLabel}
       className={cn("relative shrink-0", dims.boxClass, className)}
@@ -264,17 +269,32 @@ export function ScoreRing({
             <stop offset="100%" stopColor={to} />
           </linearGradient>
         </defs>
-        {/* Segmented same-hue tick track — reads as an instrument, not a bar. */}
-        <circle
-          cx={CX}
-          cy={CX}
-          r={R}
-          fill="none"
-          stroke={`url(#${gid})`}
-          strokeOpacity={0.16}
-          strokeWidth={STROKE}
-          strokeDasharray="0.5 4.2"
-        />
+        {stale ? (
+          // The stale face: one solid neutral track, never the tick track,
+          // so a score that is not about today reads as empty, not as zero.
+          <circle
+            data-slot="score-ring-track"
+            cx={CX}
+            cy={CX}
+            r={R}
+            fill="none"
+            stroke="var(--score-track, var(--muted))"
+            strokeWidth={STROKE}
+          />
+        ) : (
+          // Segmented same-hue tick track — reads as an instrument, not a bar.
+          <circle
+            data-slot="score-ring-track"
+            cx={CX}
+            cy={CX}
+            r={R}
+            fill="none"
+            stroke={`url(#${gid})`}
+            strokeOpacity={0.16}
+            strokeWidth={STROKE}
+            strokeDasharray="0.5 4.2"
+          />
+        )}
         {/* "vs your baseline" ghost arc — thinner, faint, under the live arc. */}
         {hasBaseline ? (
           <circle
@@ -324,15 +344,15 @@ export function ScoreRing({
             hasScore ? "text-foreground" : "text-muted-foreground",
           )}
         >
-          {hasScore ? (valueText ?? displayedRounded) : emptyFace ? "" : "—"}
+          {hasScore ? (valueText ?? displayedRounded) : stale ? "–" : "—"}
         </span>
-        {label && !(emptyFace && !hasScore) ? (
+        {label && !stale ? (
           <span className={cn("text-muted-foreground", dims.labelClass)}>
             {label}
           </span>
         ) : null}
       </div>
-      {!hasScore && !emptyFace && (
+      {!hasScore && !stale && (
         <span
           data-slot="score-ring-provisional"
           className="text-muted-foreground text-2xs absolute inset-x-0 bottom-0 line-clamp-1 px-1 text-center leading-tight"

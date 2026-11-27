@@ -4811,6 +4811,7 @@
         "aria": "Puntuación {score} de 100, {band}",
         "ariaProvisional": "Puntuación aún no disponible: datos insuficientes",
         "provisionalCaption": "Datos aún insuficientes",
+        "notFromToday": "No es de hoy",
         "band": {
           "green": "bueno",
           "yellow": "medio",

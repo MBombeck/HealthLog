@@ -211,7 +211,7 @@ The `p-5` / `py-5` / `px-5` / `space-y-5` family does not occur in the app, and 
 A ring's colour says how the score stands today, never which score it is. Rules marked (1.50.0) ship with the start page change in that release.
 
 - **Colour is the band.** A good, fair or low score draws its arc in `--score-good`, `--score-fair` or `--score-low`. A score that carries no band (a device value, Rest mode) draws in the neutral `--score-ink`, and never falls back to a series colour. (1.50.0)
-- **A stale score shows an empty ring.** A score that is not about today shows the bare track (`--score-track`), no number in the ring and no band word; the line under it says when the last value was.
+- **A stale score shows an empty ring.** A score that is not about today shows one solid track in `--score-track` (never the segmented tick track), no number, a centred "–" and no band word; the ring is announced "Not from today" (glossary `scoreNotFromToday`), as the native app draws it. The line under it says when the last value was.
 - **The band word stands next to the ring**, with a fill mark (full for good, half for fair, hollow for low) in the band's colour, so colour is never the only carrier (WCAG 1.4.1). Low is "low", never "bad".
 - **Identity comes from the icon and the name** and the tile's fixed place. Series colours (`--chart-1..5`) belong to charts, where lines must be told apart.
 - **The tokens** (`globals.css`, tuned for contrast against the card and for deuteranopia; the green leans blue on purpose):

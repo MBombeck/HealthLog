@@ -4811,6 +4811,7 @@
         "aria": "Wynik {score} na 100, {band}",
         "ariaProvisional": "Wynik jeszcze niedostępny, za mało danych",
         "provisionalCaption": "Wciąż za mało danych",
+        "notFromToday": "Nie z dzisiaj",
         "band": {
           "green": "dobry",
           "yellow": "średni",
