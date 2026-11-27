@@ -61,15 +61,11 @@ export interface ResponsiveSheetProps {
   subheader?: React.ReactNode;
   /**
    * Footer slot. Pass the action `<Button>`s directly (a fragment is
-   * fine) — never a wrapper `<div className="flex …">`. The two
-   * branches deliberately stack differently and both rely on owning
-   * the flex context: the Sheet branch pins a `flex-row justify-end`
-   * bar so Cancel/Save sit side by side above the keyboard, while the
-   * Dialog branch defers to `DialogFooter`'s `flex-col-reverse
-   * sm:flex-row` so narrow dialogs stack the primary action on top.
-   * A consumer-supplied wrapper div collapses both into a single flex
-   * child and breaks that responsive stacking. This split is a
-   * decision, not drift — don't unify the two branches.
+   * fine): at most two, the primary last, and an `ActionMenu` ("⋯") for
+   * anything else. Both branches lay them out through `ActionPair` (equal
+   * width, at the right edge, stacked only when they do not fit). A form
+   * that portals its own actions in passes a lone host `<div>` here and
+   * renders an `ActionPair` into it.
    *
    * Both branches keep the footer reachable once the body scrolls:
    * the Sheet branch sticky-pins it to the bottom of the bottom-sheet,
@@ -387,7 +383,7 @@ export function ResponsiveSheet({
             {footer ? (
               <SheetFooter
                 data-slot="responsive-sheet-footer"
-                className="border-border/70 bg-background/95 supports-[backdrop-filter]:bg-background/80 keyboard-open:pb-4 sticky bottom-0 mt-0 flex-row justify-end gap-2 border-t p-4 pb-[calc(var(--safe-area-bottom)+1rem)] backdrop-blur"
+                className="border-border/70 bg-background/95 supports-[backdrop-filter]:bg-background/80 keyboard-open:pb-4 sticky bottom-0 mt-0 border-t p-4 pb-[calc(var(--safe-area-bottom)+1rem)] backdrop-blur"
               >
                 {footer}
               </SheetFooter>

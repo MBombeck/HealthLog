@@ -4,6 +4,7 @@ import { localDateTimeValue } from "@/components/day/prefill";
 import { useId, useState } from "react";
 import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { ActionMenu, ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -15,25 +16,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DateTimeField } from "@/components/ui/date-time-field";
 import { FieldGroup } from "@/components/ui/field-group";
 import { Label } from "@/components/ui/label";
-import {
-  ListChecks,
-  Loader2,
-  MoreHorizontal,
-  Plus,
-  RotateCcw,
-  StickyNote,
-} from "lucide-react";
+import { ListChecks, Loader2, RotateCcw, StickyNote } from "lucide-react";
 import { toast } from "sonner";
 import { showEntrySavedToast } from "@/components/forms/entry-saved-toast";
 import {
@@ -634,48 +623,29 @@ function MoodFormFooter({
 }) {
   const { t } = useTranslations();
   return (
-    <div className="flex w-full items-center justify-between gap-2">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-11 w-11"
-            disabled={loading}
-            aria-label={t("common.moreOptions")}
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          <DropdownMenuItem onClick={onReset}>
-            <RotateCcw className="mr-2 h-4 w-4" />
-            {t("mood.formReset")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <div className="flex items-center gap-2">
-        {onCancel && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={loading}
-          >
-            {t("common.cancel")}
-          </Button>
-        )}
-        <Button type="submit" form={formId} disabled={loading || !canSave}>
-          {loading ? (
-            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <Plus className="h-4 w-4" />
-          )}
-          {t("common.save")}
+    <ActionPair>
+      <ActionMenu disabled={loading}>
+        <DropdownMenuItem onClick={onReset}>
+          <RotateCcw className="mr-2 h-4 w-4" />
+          {t("mood.formReset")}
+        </DropdownMenuItem>
+      </ActionMenu>
+      {onCancel && (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={loading}
+        >
+          {t("common.cancel")}
         </Button>
-      </div>
-    </div>
+      )}
+      <Button type="submit" form={formId} disabled={loading || !canSave}>
+        {loading ? (
+          <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+        ) : null}
+        {t("common.save")}
+      </Button>
+    </ActionPair>
   );
 }

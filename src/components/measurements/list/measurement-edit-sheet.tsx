@@ -1,7 +1,7 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { Loader2, MoreHorizontal, Trash2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 
 import { FieldError } from "@/components/forms/field-error";
 import { SeededFormDiscardDialog } from "@/components/forms/use-seeded-form-dismissal";
@@ -16,14 +16,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { ActionMenu, ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
 import { DateTimeField } from "@/components/ui/date-time-field";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
@@ -241,52 +237,32 @@ function EditSheetFooter({ edit }: { edit: MeasurementEdit }) {
     closeEdit,
     editFormId,
   } = edit;
+  const busy = updateMutation.isPending || deleteMutation.isPending;
   return (
-    <div className="flex w-full items-center justify-between gap-2">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon-lg"
-            disabled={updateMutation.isPending || deleteMutation.isPending}
-            aria-label={t("common.moreOptions")}
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          <DropdownMenuItem onClick={() => setEditDeleteDialogOpen(true)}>
-            <Trash2 className="mr-2 h-4 w-4" />
-            {t("common.delete")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
+    <ActionPair>
+      <ActionMenu disabled={busy}>
+        <DropdownMenuItem onClick={() => setEditDeleteDialogOpen(true)}>
+          <Trash2 className="mr-2 h-4 w-4" />
+          {t("common.delete")}
+        </DropdownMenuItem>
+      </ActionMenu>
       {/* `[Cancel] [Save]`, primary rightmost, per Apple's HIG: iOS is the
           load-bearing phone target and the web shell renders desktop and the
-          iOS PWA from one component. Do not flip it for "Android parity";
-          fork a platform shell if Android becomes a real audience. */}
-      <div className="flex items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={closeEdit}
-          disabled={updateMutation.isPending || deleteMutation.isPending}
-        >
-          {t("common.cancel")}
-        </Button>
-        <Button
-          type="submit"
-          form={editFormId}
-          disabled={updateMutation.isPending || deleteMutation.isPending}
-        >
-          {updateMutation.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-          ) : null}
-          {t("common.save")}
-        </Button>
-      </div>
-    </div>
+          iOS PWA from one component. */}
+      <Button
+        type="button"
+        variant="outline"
+        onClick={closeEdit}
+        disabled={busy}
+      >
+        {t("common.cancel")}
+      </Button>
+      <Button type="submit" form={editFormId} disabled={busy}>
+        {updateMutation.isPending ? (
+          <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+        ) : null}
+        {t("common.save")}
+      </Button>
+    </ActionPair>
   );
 }

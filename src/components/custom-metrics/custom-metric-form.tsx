@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -168,7 +169,7 @@ export function CustomMetricForm({
   }
 
   const footerNode = (
-    <>
+    <ActionPair>
       {onCancel ? (
         <Button
           type="button"
@@ -185,7 +186,7 @@ export function CustomMetricForm({
         ) : null}
         {t("customMetrics.form.save")}
       </Button>
-    </>
+    </ActionPair>
   );
 
   return (

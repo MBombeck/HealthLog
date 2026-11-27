@@ -2,21 +2,11 @@
 
 import type { ReactNode } from "react";
 
-import {
-  ChevronsRight,
-  Loader2,
-  MoreHorizontal,
-  Plus,
-  RotateCcw,
-} from "lucide-react";
+import { Loader2, RotateCcw } from "lucide-react";
 
+import { ActionMenu, ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { FieldGroup } from "@/components/ui/field-group";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,12 +14,11 @@ import { glucoseFractionDigits, type GlucoseUnit } from "@/lib/glucose";
 import { useTranslations } from "@/lib/i18n/context";
 
 /**
- * The measurement form's action row: the reset menu, Cancel, "Save and next
- * value" when the form offers it, and Save. Both submit buttons name the form
- * by id, so they still submit it when the row is portalled into a sheet's
- * footer slot; `onSaveNext` runs on the click, before the submit it starts.
- * With the second button on a phone, Cancel gives way to it: the sheet's
- * close button and a swipe still cancel.
+ * The measurement form's action row: the "⋯" with reset (and Cancel, when
+ * the pair is taken by "Save and next value"), then the pair. Both submit
+ * buttons name the form by id, so they still submit it when the row is
+ * portalled into a sheet's footer slot; `onSaveNext` runs on the click,
+ * before the submit it starts.
  */
 export function MeasurementFormFooter({
   loading,
@@ -49,69 +38,47 @@ export function MeasurementFormFooter({
 }) {
   const { t } = useTranslations();
   return (
-    <div className="flex w-full items-center justify-between gap-2">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="size-11"
-            disabled={loading}
-            aria-label={t("common.moreOptions")}
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          <DropdownMenuItem onClick={onReset}>
-            <RotateCcw className="mr-2 h-4 w-4" />
-            {t("measurements.formReset")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <div className="flex items-center gap-2">
-        {onCancel && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={loading}
-            className={onSaveNext ? "max-sm:hidden" : undefined}
-          >
-            {t("common.cancel")}
-          </Button>
-        )}
-        {onSaveNext && (
-          <Button
-            type="submit"
-            form={formId}
-            variant="outline"
-            disabled={loading}
-            onClick={onSaveNext}
-            data-testid="measurement-save-next"
-          >
-            <ChevronsRight className="size-4" aria-hidden="true" />
-            {t("measurements.saveAndNext")}
-          </Button>
-        )}
+    <ActionPair>
+      <ActionMenu disabled={loading}>
+        <DropdownMenuItem onClick={onReset}>
+          <RotateCcw className="mr-2 h-4 w-4" />
+          {t("measurements.formReset")}
+        </DropdownMenuItem>
+      </ActionMenu>
+      {onSaveNext ? (
         <Button
           type="submit"
           form={formId}
+          variant="outline"
           disabled={loading}
-          onClick={onSave}
-          data-testid="measurement-save"
+          onClick={onSaveNext}
+          data-testid="measurement-save-next"
         >
-          {loading ? (
-            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <Plus className="h-4 w-4" />
-          )}
-          {t("common.save")}
+          {t("measurements.saveAndNext")}
         </Button>
-      </div>
-    </div>
+      ) : onCancel ? (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={loading}
+        >
+          {t("common.cancel")}
+        </Button>
+      ) : null}
+      <Button
+        type="submit"
+        form={formId}
+        disabled={loading}
+        onClick={onSave}
+        data-testid="measurement-save"
+      >
+        {loading ? (
+          <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+        ) : null}
+        {t("common.save")}
+      </Button>
+    </ActionPair>
   );
 }
 

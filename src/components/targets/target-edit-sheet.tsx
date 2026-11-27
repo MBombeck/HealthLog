@@ -7,8 +7,10 @@ import { showErrorToast } from "@/lib/errors/error-toast";
 import { RotateCcw } from "lucide-react";
 
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
+import { ActionMenu } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
-import { ConfirmButton } from "@/components/ui/confirm-button";
+import { ConfirmDialog } from "@/components/ui/confirm-button";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTranslations } from "@/lib/i18n/context";
@@ -204,6 +206,7 @@ function TargetEditSheetBody({
   // useEffect dance needed. When `thresholdsData` arrives async, we
   // use it as the *displayed* fallback whenever the user hasn't typed
   // anything yet, via the `??` chain below.
+  const [confirmReset, setConfirmReset] = useState(false);
   const [minStr, setMinStr] = useState<string | null>(null);
   const [maxStr, setMaxStr] = useState<string | null>(null);
   const [diaMinStr, setDiaMinStr] = useState<string | null>(null);
@@ -433,48 +436,34 @@ function TargetEditSheetBody({
       }
       className="sm:max-w-md"
       footer={
-        <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+        <>
           {hasOverride ? (
-            <ConfirmButton
-              slot="target-edit-reset"
-              variant="ghost"
-              size="sm"
-              icon={<RotateCcw className="h-3.5 w-3.5" />}
-              label={t("targets.edit.resetToDefault")}
-              title={t("targets.edit.resetTitle")}
-              body={
-                isBp
-                  ? t("targets.edit.resetBodyBp")
-                  : t("targets.edit.resetBody")
-              }
-              confirmLabel={t("targets.edit.resetConfirm")}
+            <ActionMenu
               disabled={busy && !resetMutation.isPending}
-              pending={resetMutation.isPending}
-              onConfirm={() => resetMutation.mutate()}
-            />
-          ) : (
-            <span aria-hidden="true" />
-          )}
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-              disabled={busy}
+              slot="target-edit-more"
             >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              type="submit"
-              form={formId}
-              size="sm"
-              disabled={!canSave}
-              data-slot="target-edit-save"
-            >
-              {t("common.save")}
-            </Button>
-          </div>
-        </div>
+              <DropdownMenuItem onClick={() => setConfirmReset(true)}>
+                <RotateCcw className="mr-2 h-4 w-4" />
+                {t("targets.edit.resetToDefault")}
+              </DropdownMenuItem>
+            </ActionMenu>
+          ) : null}
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={busy}
+          >
+            {t("common.cancel")}
+          </Button>
+          <Button
+            type="submit"
+            form={formId}
+            disabled={!canSave}
+            data-slot="target-edit-save"
+          >
+            {t("common.save")}
+          </Button>
+        </>
       }
     >
       <form
@@ -602,6 +591,20 @@ function TargetEditSheetBody({
           </div>
         )}
       </form>
+      {hasOverride ? (
+        <ConfirmDialog
+          open={confirmReset}
+          onOpenChange={setConfirmReset}
+          slot="target-edit-reset"
+          title={t("targets.edit.resetTitle")}
+          body={
+            isBp ? t("targets.edit.resetBodyBp") : t("targets.edit.resetBody")
+          }
+          confirmLabel={t("targets.edit.resetConfirm")}
+          pending={resetMutation.isPending}
+          onConfirm={() => resetMutation.mutate()}
+        />
+      ) : null}
     </ResponsiveSheet>
   );
 }

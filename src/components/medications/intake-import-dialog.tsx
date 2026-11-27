@@ -19,21 +19,17 @@
 
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, MoreHorizontal, RotateCcw, Upload } from "lucide-react";
+import { Loader2, RotateCcw, Upload } from "lucide-react";
 
 import {
   IntakeImportResultView,
   type IntakeImportResultState,
 } from "@/components/medications/intake-import-result";
 
+import { ActionMenu } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslations } from "@/lib/i18n/context";
@@ -161,39 +157,19 @@ export function IntakeImportDialog({
       contentWidth="lg"
       footer={
         <>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="mr-auto h-9 w-9"
-                disabled={importing}
-                aria-label={t("common.moreOptions")}
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={resetImportForm}>
-                <RotateCcw className="mr-2 h-4 w-4" />
-                {t("common.reset")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button
-            variant="outline"
-            onClick={handleClose}
-            disabled={importing}
-            className="min-h-11 sm:min-h-9"
-          >
+          <ActionMenu disabled={importing}>
+            <DropdownMenuItem onClick={resetImportForm}>
+              <RotateCcw className="mr-2 h-4 w-4" />
+              {t("common.reset")}
+            </DropdownMenuItem>
+          </ActionMenu>
+          <Button variant="outline" onClick={handleClose} disabled={importing}>
             {t("common.cancel")}
           </Button>
           <Button
             onClick={handleImport}
             disabled={importing || !jsonText.trim()}
             aria-busy={importing || undefined}
-            className="min-h-11 sm:min-h-9"
           >
             {importing ? (
               <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
