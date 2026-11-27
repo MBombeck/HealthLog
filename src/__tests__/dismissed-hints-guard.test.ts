@@ -10,9 +10,17 @@
  * The guard: no storage key named for a dismissal (`healthlog…dismiss…`)
  * appears anywhere in `src/` outside the files listed below, each with its
  * reason; and every registered hint family has a reader.
+ *
+ * Two ledgers, one job each. `dismissedHints` closes a fixed piece of UI for
+ * good. The digest's dismiss ledger (`POST /api/daily/digest/dismiss`,
+ * `DismissedPriorityItem`) sets aside an item the server derived from the
+ * record: one milestone, one score-notice version, an ask until the next local
+ * day ("Later"). The last block keeps them apart: no hint family is a
+ * dismiss-ledger key, and no file writes to both.
  */
 import { describe, expect, it } from "vitest";
 
+import { isDismissibleItemKey } from "@/lib/daily/priority-item";
 import { DISMISSIBLE_HINTS } from "@/lib/hints/dismissible-hints";
 
 import { readSourceFolder } from "./helpers/source-files";
@@ -89,5 +97,30 @@ describe("dismissed hints live on the account", () => {
       (f) => f.path.startsWith("components/") && reader.test(f.text),
     );
     expect(readers.length).toBeGreaterThan(0);
+  });
+});
+
+describe("a hint and a digest item never share a ledger", () => {
+  it.each(DISMISSIBLE_HINTS)(
+    "hint %s is not a dismiss-ledger key",
+    (family) => {
+      expect(isDismissibleItemKey(`${family}:x`)).toBe(false);
+      expect(isDismissibleItemKey(family)).toBe(false);
+    },
+  );
+
+  it("no file writes to both ledgers", () => {
+    const hintWriters = FILES.filter((f) =>
+      /\buseDismissedHints\(/.test(f.text),
+    );
+    const ledgerWriters = FILES.filter((f) =>
+      f.text.includes("/api/daily/digest/dismiss"),
+    );
+    expect(hintWriters.length).toBeGreaterThan(0);
+    expect(ledgerWriters.length).toBeGreaterThan(0);
+    const both = hintWriters
+      .filter((f) => ledgerWriters.some((l) => l.path === f.path))
+      .map((f) => f.path);
+    expect(both).toEqual([]);
   });
 });
