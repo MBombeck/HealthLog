@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import {
   CartesianGrid,
   ComposedChart,
-  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -44,7 +43,7 @@ import {
   verticalMarkerLayers,
 } from "./health-chart/chart-layers";
 import { makeTooltipContent } from "./health-chart/chart-tooltip-content";
-import { ChartContextParts } from "./health-chart/context-rail";
+import { ChartLegend, legendSeriesFor } from "./health-chart/chart-legend";
 import { useChartContextMarks } from "./health-chart/context-scope";
 import {
   axisValueFormatters,
@@ -104,6 +103,7 @@ export function HealthChart({
   dayLinks = false,
   partOfDay,
   sourceEq,
+  headerControls,
 }: HealthChartProps) {
   const { isAuthenticated, user } = useAuth();
   // Never a fixed Berlin: a mount without the prop cuts the profile's days.
@@ -289,9 +289,16 @@ export function HealthChart({
   const openDayPoint =
     openDayIndex !== undefined ? chartData?.[openDayIndex] : undefined;
 
-  const showContextDetails = drawMA || showTrend || showBands;
-  const animationsEnabled = !prefersReducedMotion();
   const label = (type: string) => getTypeLabel(type, valueMode, t);
+  const legendSeries = legendSeriesFor({
+    types,
+    colors,
+    label,
+    showMA: drawMA,
+    showTrend,
+    t,
+  });
+  const animationsEnabled = !prefersReducedMotion();
 
   // Mini mode fits the rationale card: tighter padding, no tabs or toggles.
   const containerClass = mini
@@ -327,6 +334,7 @@ export function HealthChart({
           }}
           overlayPrefs={overlayPrefs}
           showOverlayControls={Boolean(chartKey && overlayControls)}
+          controls={headerControls}
         />
       )}
 
@@ -464,15 +472,6 @@ export function HealthChart({
                       tooltipAction: chartDays.tooltipAction,
                     })}
                   />
-                  {showContextDetails && (
-                    <Legend
-                      wrapperStyle={{
-                        fontSize: "0.875rem",
-                        fontFamily: "inherit",
-                        fontWeight: "normal",
-                      }}
-                    />
-                  )}
                   {seriesLayers({
                     types,
                     colors,
@@ -507,12 +506,10 @@ export function HealthChart({
               insetRight={plotInsetRight}
             />
           ) : null}
-          {context.marks ? (
-            <ChartContextParts
-              marks={context.marks}
-              maxIndex={maxPointIndex}
-              insetLeft={plotInsetLeft}
-              insetRight={plotInsetRight}
+          {!mini ? (
+            <ChartLegend
+              series={legendSeries}
+              marks={context.marks ?? null}
               formatDate={tzFmt.date}
               showCycle={context.showCycle}
               onShowCycleChange={context.setShowCycle}

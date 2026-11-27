@@ -5393,7 +5393,6 @@
       }
     },
     "scores": {
-      "historyWindow": "Andamento di {days} giorni",
       "staleLast": "Ultimo: {score} il {date}",
       "valuesFrom": "Valori del {date}",
       "loadError": "Al momento non è stato possibile caricare i tuoi punteggi.",
@@ -16502,7 +16501,6 @@
     "expiryPushBody": "{title}: valido fino al {date}, {count, plural, one {resta # seduta} other {restano # sedute}}."
   },
   "chartContext": {
-    "listLabel": "Farmaci e malattie in questo periodo",
     "start": "{name}: inizio",
     "startDose": "{name}: inizio con {dose}",
     "startEstimated": "{name}: prima assunzione registrata",

@@ -5393,7 +5393,6 @@
       }
     },
     "scores": {
-      "historyWindow": "{days}-day history",
       "staleLast": "Last {score} on {date}",
       "valuesFrom": "Values from {date}",
       "loadError": "Your scores could not be loaded right now.",
@@ -16502,7 +16501,6 @@
     "expiryPushBody": "{title}: valid until {date}, {count, plural, one {# session} other {# sessions}} left."
   },
   "chartContext": {
-    "listLabel": "Medication and illness in this range",
     "start": "{name} started",
     "startDose": "{name} started at {dose}",
     "startEstimated": "{name}: first logged dose",

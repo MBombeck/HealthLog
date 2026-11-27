@@ -5393,7 +5393,6 @@
       }
     },
     "scores": {
-      "historyWindow": "Verloop {days} dagen",
       "staleLast": "Laatst {score} op {date}",
       "valuesFrom": "Waarden van {date}",
       "loadError": "Je scores konden nu niet worden geladen.",
@@ -16502,7 +16501,6 @@
     "expiryPushBody": "{title}: geldig tot {date}, nog {count, plural, one {# sessie} other {# sessies}} over."
   },
   "chartContext": {
-    "listLabel": "Medicatie en ziekte in deze periode",
     "start": "{name} gestart",
     "startDose": "{name} gestart met {dose}",
     "startEstimated": "{name}: eerste vastgelegde inname",

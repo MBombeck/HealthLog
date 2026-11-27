@@ -1,6 +1,7 @@
 /**
  * The blood-pressure time-of-day card in a real browser (#1331): the server's
- * numbers rendered as given, the narrowing control as a keyboard radiogroup,
+ * numbers rendered as given, the narrowing control (in the chart's header) as
+ * a keyboard radiogroup,
  * and the narrowed part in the address bar, so it survives a reload and a
  * shared link while the whole day keeps a bare URL.
  */
@@ -14,7 +15,7 @@ import {
   recordHistory,
   setSearch,
 } from "../../../../../tests/browser/url";
-import { BpTimeOfDayCard } from "../bp-time-of-day-card";
+import { BpPartOfDayControl, BpTimeOfDayCard } from "../bp-time-of-day-card";
 import { useBpTimeOfDayState } from "../use-bp-time-of-day-state";
 
 const SUMMARY = {
@@ -59,17 +60,20 @@ const SUMMARY = {
   morningEveningDifference: { systolic: 9, diastolic: 8 },
 };
 
-/** The page's wiring: the state hook feeding the card, the chart's part shown. */
+/**
+ * The page's wiring: the state hook feeding the chart header's part control
+ * and the card, the chart's part shown.
+ */
 function Probe() {
   const state = useBpTimeOfDayState();
   return (
     <>
       <p data-testid="chart-part">{state.partOfDay ?? "all"}</p>
-      <BpTimeOfDayCard
-        days={state.days}
-        chartPart={state.partOfDay ?? "all"}
-        onChartPartChange={state.setChartPart}
+      <BpPartOfDayControl
+        value={state.partOfDay ?? "all"}
+        onChange={state.setChartPart}
       />
+      <BpTimeOfDayCard days={state.days} />
     </>
   );
 }
@@ -167,10 +171,13 @@ describe("BpTimeOfDayCard", () => {
     await expect.poll(currentSearch).toBe("?partOfDay=evening");
   });
 
-  it("names the control for assistive technology", async () => {
+  it("names the control for assistive technology, with no caption on screen", async () => {
     const { screen } = await mount();
     await expect
       .element(screen.getByRole("radiogroup", { name: "Show in the chart" }))
       .toBeVisible();
+    // The group's name is for assistive tech only: the card carries no
+    // "Show in the chart" caption any more.
+    expect(screen.getByText("Show in the chart").elements()).toHaveLength(0);
   });
 });

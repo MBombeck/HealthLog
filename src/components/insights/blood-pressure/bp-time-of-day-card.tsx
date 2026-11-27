@@ -40,21 +40,18 @@ function hourRange(part: BpPartSummary): { start: string; end: string } {
 
 /**
  * Blood pressure by part of the day (#1331): the morning, midday and evening
- * means side by side, the morning-minus-evening difference, and the control
- * that narrows the chart above to one part. Every number is the server's
+ * means side by side and the morning-minus-evening difference. The control
+ * that narrows the chart to one part sits in the chart's header
+ * (`BpPartOfDayControl`), beside the range tabs it works with. Every number is the server's
  * (`/api/measurements/blood-pressure/time-of-day`); a part below the reading
  * floor shows its count and says so rather than a mean one reading can swing.
  * The card is its own text equivalent: there is no graphic to describe.
  */
 export function BpTimeOfDayCard({
   days,
-  chartPart,
-  onChartPartChange,
 }: {
   /** The chart's range, in days, so both read the same window. */
   days: number;
-  chartPart: BpChartPart;
-  onChartPartChange: (next: BpChartPart) => void;
 }) {
   const { t, locale } = useTranslations();
   const fmt = useFormatters();
@@ -185,33 +182,37 @@ export function BpTimeOfDayCard({
             </p>
           </div>
         ) : null}
-
-        <div className="space-y-1.5">
-          <p
-            className="text-muted-foreground text-xs"
-            id="bp-time-of-day-filter-label"
-          >
-            {t("insights.bpTimeOfDay.filterLabel")}
-          </p>
-          <Segmented<BpChartPart>
-            label={t("insights.bpTimeOfDay.filterLabel")}
-            slot="bp-time-of-day-filter"
-            stretch
-            size="sm"
-            // Full width on a phone, where four parts share 343 px; beside
-            // the text from `md` up rather than stretched across the card.
-            className="md:inline-flex md:w-auto"
-            value={chartPart}
-            onChange={onChartPartChange}
-            options={[
-              { value: "all", label: t("insights.bpTimeOfDay.filterAll") },
-              { value: "morning", label: t(PART_KEYS.morning) },
-              { value: "midday", label: t(PART_KEYS.midday) },
-              { value: "evening", label: t(PART_KEYS.evening) },
-            ]}
-          />
-        </div>
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * The chart's part-of-day choice, top right in the blood pressure chart's
+ * header before the range tabs. The segments name themselves; the group's
+ * name is for assistive tech only.
+ */
+export function BpPartOfDayControl({
+  value,
+  onChange,
+}: {
+  value: BpChartPart;
+  onChange: (next: BpChartPart) => void;
+}) {
+  const { t } = useTranslations();
+  return (
+    <Segmented<BpChartPart>
+      label={t("insights.bpTimeOfDay.filterLabel")}
+      slot="bp-time-of-day-filter"
+      size="sm"
+      value={value}
+      onChange={onChange}
+      options={[
+        { value: "all", label: t("insights.bpTimeOfDay.filterAll") },
+        { value: "morning", label: t(PART_KEYS.morning) },
+        { value: "midday", label: t(PART_KEYS.midday) },
+        { value: "evening", label: t(PART_KEYS.evening) },
+      ]}
+    />
   );
 }

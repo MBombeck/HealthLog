@@ -5393,7 +5393,6 @@
       }
     },
     "scores": {
-      "historyWindow": "История за {days} дн.",
       "staleLast": "Последнее: {score}, {date}",
       "valuesFrom": "Значения за {date}",
       "loadError": "Сейчас не удалось загрузить ваши баллы.",
@@ -16502,7 +16501,6 @@
     "expiryPushBody": "{title}: действует до {date}, {count, plural, one {остался # сеанс} few {осталось # сеанса} many {осталось # сеансов} other {осталось # сеанса}}."
   },
   "chartContext": {
-    "listLabel": "Лекарства и болезни за этот период",
     "start": "{name}: начат приём",
     "startDose": "{name}: начат приём, {dose}",
     "startEstimated": "{name}: первый записанный приём",

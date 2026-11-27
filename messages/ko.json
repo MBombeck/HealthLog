@@ -5393,7 +5393,6 @@
       }
     },
     "scores": {
-      "historyWindow": "{days}일 추이",
       "staleLast": "{date} 마지막 값 {score}",
       "valuesFrom": "{date} 값",
       "loadError": "지금은 점수를 불러올 수 없어요.",
@@ -16502,7 +16501,6 @@
     "expiryPushBody": "{title}: {date}까지 유효, {count, plural, other {#회}} 남음."
   },
   "chartContext": {
-    "listLabel": "이 기간의 약물과 질병",
     "start": "{name} 복용 시작",
     "startDose": "{name} 복용 시작({dose})",
     "startEstimated": "{name}: 첫 기록된 복용",

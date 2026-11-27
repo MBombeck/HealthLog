@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { Pill, Thermometer } from "lucide-react";
+import { Droplets, Pill, Thermometer } from "lucide-react";
 
 import { PHASE_HUE } from "@/components/cycle/phase-tokens";
 import { InlineAction } from "@/components/ui/inline-action";
@@ -11,7 +11,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { SwitchRow } from "@/components/ui/switch-row";
 import {
   CHART_CONTEXT_CYCLE_PHASES,
   type ChartContextMedicationKind,
@@ -20,6 +19,16 @@ import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
 import type { ContextMarkEntry, ResolvedContextMarks } from "./context-marks";
+
+/**
+ * The chart's legend: one row under the plot that names every line on it
+ * and every piece of context the window holds, in one shape. A series is a
+ * swatch of its stroke and its name; an illness episode or a medication is
+ * its glyph and its name, and opens the dates on a hover or a tap; the cycle
+ * phases are a glyph that switches the ribbon on and, while on, name their
+ * colours in the same row. Nothing about the context sits on a row of its
+ * own any more.
+ */
 
 type Translate = (key: string, params?: Record<string, string>) => string;
 
@@ -82,12 +91,53 @@ export function contextEntryLine(
 /** Close a hover-opened popover only after the pointer has left both parts. */
 const HOVER_CLOSE_MS = 150;
 
-function ContextMarkButton({
-  entries,
+/** One legend item's box: the same height and gap for every kind. */
+const ITEM_CLASS =
+  "inline-flex h-6 items-center gap-1.5 text-xs text-foreground";
+
+/** A button among the items: the item's box, a hover wash, a finger's 44 px. */
+const BUTTON_CLASS = cn(
+  ITEM_CLASS,
+  "relative -mx-1.5 rounded-md px-1.5",
+  "pointer-coarse:before:absolute pointer-coarse:before:-inset-y-2.5 pointer-coarse:before:inset-x-0 pointer-coarse:before:content-['']",
+  "hover:bg-muted focus-visible:ring-ring/50 focus-visible:ring-[3px] focus-visible:outline-none",
+);
+
+/** The context entries of one record (an episode, a medication), in x order. */
+interface ContextLegendItem {
+  key: string;
+  label: string;
+  kind: ContextMarkEntry["kind"];
+  entries: ContextMarkEntry[];
+}
+
+/** The window's marks, one item per episode or medication, first seen first. */
+export function contextLegendItems(
+  marks: ResolvedContextMarks,
+): ContextLegendItem[] {
+  const items = new Map<string, ContextLegendItem>();
+  for (const group of marks.groups) {
+    for (const entry of group.entries) {
+      const key =
+        entry.kind === "illness"
+          ? `illness:${entry.span.id}`
+          : `medication:${entry.mark.medicationId}`;
+      const label =
+        entry.kind === "illness" ? entry.span.label : entry.mark.name;
+      const item = items.get(key);
+      if (item) item.entries.push(entry);
+      else items.set(key, { key, label, kind: entry.kind, entries: [entry] });
+    }
+  }
+  return [...items.values()];
+}
+
+function ContextLegendButton({
+  item,
   t,
   formatDate,
 }: {
-  entries: ContextMarkEntry[];
+  item: ContextLegendItem;
   t: Translate;
   formatDate: (date: Date) => string;
 }) {
@@ -97,9 +147,9 @@ function ContextMarkButton({
   const openedByHover = useRef(false);
   // A click or a tap pins it open until it is dismissed.
   const pinned = useRef(false);
-  const lines = entries.map((e) => contextEntryLine(e, t, formatDate));
-  const onlyIllness = entries.every((e) => e.kind === "illness");
-  const Icon = onlyIllness ? Thermometer : Pill;
+  const lines = item.entries.map((e) => contextEntryLine(e, t, formatDate));
+  const illness = item.kind === "illness";
+  const Icon = illness ? Thermometer : Pill;
   // A mouse opens on hover; a finger or a key opens on activation (Radix).
   const hoverOpen = (event: React.PointerEvent) => {
     if (event.pointerType !== "mouse") return;
@@ -129,6 +179,7 @@ function ContextMarkButton({
         <button
           type="button"
           data-slot="chart-context-mark"
+          data-kind={item.kind}
           aria-label={lines.map((l) => `${l.date}, ${l.text}`).join("; ")}
           onPointerEnter={hoverOpen}
           onPointerLeave={hoverClose}
@@ -137,21 +188,16 @@ function ContextMarkButton({
             openedByHover.current = false;
             pinned.current = true;
           }}
-          className={cn(
-            "relative flex size-6 items-center justify-center rounded-full",
-            // A finger gets 44 px around the 24 px mark, taking no room.
-            "pointer-coarse:before:absolute pointer-coarse:before:-inset-2.5 pointer-coarse:before:content-['']",
-            "hover:bg-muted focus-visible:ring-ring/50 focus-visible:ring-[3px] focus-visible:outline-none",
-            onlyIllness ? "text-warning" : "text-muted-foreground",
-          )}
+          className={BUTTON_CLASS}
         >
-          {entries.length > 1 ? (
-            <span className="text-2xs font-semibold tabular-nums">
-              {entries.length}
-            </span>
-          ) : (
-            <Icon className="size-3.5" aria-hidden="true" />
-          )}
+          <Icon
+            className={cn(
+              "size-3.5 shrink-0",
+              illness ? "text-warning" : "text-muted-foreground",
+            )}
+            aria-hidden="true"
+          />
+          <span className="max-w-48 truncate">{item.label}</span>
         </button>
       </PopoverTrigger>
       <PopoverContent
@@ -179,119 +225,156 @@ function ContextMarkButton({
   );
 }
 
+/** A drawn line's legend entry: its stroke as a swatch, its name. */
+export interface ChartLegendSeries {
+  key: string;
+  label: string;
+  color: string;
+  /** The stroke's dash, as on the line ("5 5"); solid without. */
+  dash?: string;
+}
+
 /**
- * The marks a reader can open, in a row under the plot at their days.
- * Rendered only when there is at least one (see `resolveContextMarks`).
+ * The legend's line entries: every series, and with an overlay on, its 7-day
+ * average and its trend, each in the stroke the plot draws it with
+ * (`seriesLayers` in `chart-layers.tsx`).
  */
-function ChartContextRail({
+export function legendSeriesFor({
+  types,
+  colors,
+  label,
+  showMA,
+  showTrend,
+  t,
+}: {
+  types: readonly string[];
+  colors: readonly string[];
+  label: (type: string) => string;
+  showMA: boolean;
+  showTrend: boolean;
+  t: (key: string) => string;
+}): ChartLegendSeries[] {
+  const color = (i: number) => colors[i % colors.length];
+  return [
+    ...types.map((type, i) => ({
+      key: type,
+      label: label(type),
+      color: color(i),
+    })),
+    ...(showMA
+      ? types.map((type, i) => ({
+          key: `${type}_ma`,
+          label: `${label(type)} (${t("charts.movingAverage7d")})`,
+          color: color(i),
+          dash: "5 5",
+        }))
+      : []),
+    ...(showTrend
+      ? types.map((type) => ({
+          key: `${type}_trend`,
+          label: `${label(type)} (${t("charts.trend")})`,
+          color: "var(--muted-foreground)",
+          dash: "8 4",
+        }))
+      : []),
+  ];
+}
+
+function SeriesSwatch({ color, dash }: { color: string; dash?: string }) {
+  return (
+    <svg
+      width="16"
+      height="8"
+      viewBox="0 0 16 8"
+      aria-hidden="true"
+      className="shrink-0"
+    >
+      <line
+        x1="1"
+        y1="4"
+        x2="15"
+        y2="4"
+        stroke={color}
+        strokeWidth={2}
+        strokeDasharray={dash}
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+/**
+ * The row under the plot. Rendered only when it has something to say: more
+ * than one line, an overlay, or context in the window.
+ */
+export function ChartLegend({
+  series,
   marks,
-  maxIndex,
-  insetLeft,
-  insetRight,
   formatDate,
-}: {
-  marks: ResolvedContextMarks;
-  maxIndex: number;
-  insetLeft: number;
-  insetRight: number;
-  formatDate: (date: Date) => string;
-}) {
-  const { t } = useTranslations();
-  if (marks.groups.length === 0) return null;
-  return (
-    <ul
-      data-slot="chart-context"
-      aria-label={t("chartContext.listLabel")}
-      className="relative mt-1 h-6"
-      style={{ marginLeft: insetLeft, marginRight: insetRight }}
-    >
-      {marks.groups.map((group) => (
-        <li
-          key={`${group.x}-${group.entries.length}`}
-          className="absolute top-0 -translate-x-1/2"
-          style={{
-            left: `${maxIndex > 0 ? (group.x / maxIndex) * 100 : 0}%`,
-          }}
-        >
-          <ContextMarkButton
-            entries={group.entries}
-            t={t}
-            formatDate={formatDate}
-          />
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-/**
- * The cycle-phase switch under a chart whose window holds observed cycles,
- * and, while on, what each colour of the ribbon means.
- */
-function ChartCycleSwitch({
-  checked,
-  onCheckedChange,
-}: {
-  checked: boolean;
-  onCheckedChange: (next: boolean) => void;
-}) {
-  const { t } = useTranslations();
-  return (
-    <SwitchRow
-      label={t("chartContext.cyclePhases")}
-      checked={checked}
-      onCheckedChange={onCheckedChange}
-      data-slot="chart-context-cycle-switch"
-      className="mt-3"
-    >
-      {checked ? (
-        <ul
-          className="text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 pt-1 text-xs"
-          data-slot="chart-context-cycle-legend"
-        >
-          {CHART_CONTEXT_CYCLE_PHASES.map((phase) => (
-            <li key={phase} className="flex items-center gap-1.5">
-              <span
-                aria-hidden="true"
-                className="size-2 rounded-full"
-                style={{ background: PHASE_HUE[phase] }}
-              />
-              {t(`cycle.phase.${phase}`)}
-            </li>
-          ))}
-        </ul>
-      ) : null}
-    </SwitchRow>
-  );
-}
-
-/**
- * What a chart shows under its plot about the context: the row of marks,
- * then the cycle switch when the window holds cycles.
- */
-export function ChartContextParts({
-  marks,
   showCycle,
   onShowCycleChange,
-  ...rail
 }: {
-  marks: ResolvedContextMarks;
-  maxIndex: number;
-  insetLeft: number;
-  insetRight: number;
+  series: ChartLegendSeries[];
+  marks: ResolvedContextMarks | null;
   formatDate: (date: Date) => string;
   showCycle: boolean;
   onShowCycleChange: (next: boolean) => void;
 }) {
+  const { t } = useTranslations();
+  const context = marks ? contextLegendItems(marks) : [];
+  const hasCycle = marks?.hasCycle ?? false;
+  if (series.length < 2 && context.length === 0 && !hasCycle) return null;
+  const cycleLabel = t("chartContext.cyclePhases");
   return (
-    <>
-      <ChartContextRail marks={marks} {...rail} />
-      {marks.hasCycle ? (
-        <ChartCycleSwitch
-          checked={showCycle}
-          onCheckedChange={onShowCycleChange}
-        />
+    <ul
+      data-slot="chart-legend"
+      className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1"
+    >
+      {series.map((s) => (
+        <li key={s.key} data-slot="chart-legend-series" className={ITEM_CLASS}>
+          <SeriesSwatch color={s.color} dash={s.dash} />
+          {s.label}
+        </li>
+      ))}
+      {context.map((item) => (
+        <li key={item.key} className="inline-flex">
+          <ContextLegendButton item={item} t={t} formatDate={formatDate} />
+        </li>
+      ))}
+      {hasCycle ? (
+        <li className="inline-flex">
+          <button
+            type="button"
+            data-slot="chart-context-cycle-toggle"
+            aria-pressed={showCycle}
+            aria-label={cycleLabel}
+            title={cycleLabel}
+            onClick={() => onShowCycleChange(!showCycle)}
+            className={cn(
+              BUTTON_CLASS,
+              showCycle ? "bg-muted" : "text-muted-foreground",
+            )}
+          >
+            <Droplets className="size-3.5 shrink-0" aria-hidden="true" />
+          </button>
+        </li>
       ) : null}
-    </>
+      {hasCycle && showCycle
+        ? CHART_CONTEXT_CYCLE_PHASES.map((phase) => (
+            <li
+              key={phase}
+              data-slot="chart-context-cycle-legend"
+              className={ITEM_CLASS}
+            >
+              <span
+                aria-hidden="true"
+                className="size-2 shrink-0 rounded-full"
+                style={{ background: PHASE_HUE[phase] }}
+              />
+              {t(`cycle.phase.${phase}`)}
+            </li>
+          ))
+        : null}
+    </ul>
   );
 }

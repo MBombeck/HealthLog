@@ -5393,7 +5393,6 @@
       }
     },
     "scores": {
-      "historyWindow": "Historia z {days} dni",
       "staleLast": "Ostatnio {score} dnia {date}",
       "valuesFrom": "Wartości z {date}",
       "loadError": "Nie udało się teraz wczytać Twoich wyników.",
@@ -16502,7 +16501,6 @@
     "expiryPushBody": "{title}: ważna do {date}, {count, plural, one {pozostał # zabieg} few {pozostały # zabiegi} many {pozostało # zabiegów} other {pozostało # zabiegu}}."
   },
   "chartContext": {
-    "listLabel": "Leki i choroby w tym okresie",
     "start": "{name}: rozpoczęto",
     "startDose": "{name}: rozpoczęto od {dose}",
     "startEstimated": "{name}: pierwsza zapisana dawka",
