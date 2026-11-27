@@ -526,6 +526,10 @@
           "example": "false"
         },
         {
+          "name": "IMPORT_RATE_LIMIT_PER_HOUR",
+          "purpose": "Per-account hourly ceiling for the buffered imports (JSON, CSV, labs and medications CSV, dose history; one shared bucket). Default 5, a whole number from 1 to 1000; anything else falls back to 5 with a warning in the log."
+        },
+        {
           "name": "SESSION_IDLE_TIMEOUT_DAYS",
           "purpose": "Days a browser session lasts without use (30 by default, 1 to 90). Each use slides it, never past SESSION_MAX_LIFETIME_DAYS.",
           "example": "30"

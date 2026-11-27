@@ -156,7 +156,7 @@ export function Segmented<T extends string>({
               onChange(option.value);
             }}
             className={cn(
-              "focus-visible:ring-ring/50 inline-flex items-center justify-center gap-1.5 rounded-md font-medium transition-colors outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none",
+              "focus-visible:ring-ring/50 inline-flex items-center justify-center gap-1.5 rounded-md font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none",
               size === "sm" ? "text-xs" : "text-sm",
               iconOnly
                 ? "size-9 pointer-coarse:size-11"

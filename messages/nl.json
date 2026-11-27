@@ -3590,8 +3590,11 @@
         "steadyLatestBelow": "Je metingen liggen meestal rond {low} {unit}; je laatste meting ({date}) was {value}, lager dan dat.",
         "componentLine": "{component}: {line}",
         "insufficient": "Je gebruikelijke bereik wordt nog bepaald. Blijf nog een paar dagen metingen vastleggen.",
-        "driver": "{note}",
-        "loadError": "Je gebruikelijke bereik kon niet worden geladen."
+        "loadError": "Je gebruikelijke bereik kon niet worden geladen.",
+        "range": "Bereik",
+        "todayValue": "vandaag {value}",
+        "latestValue": "{date}: {value}",
+        "soFarValue": "vandaag tot nu {value}"
       },
       "scope": {
         "prefix": "De Coach kijkt al naar {metric}"
@@ -3953,7 +3956,9 @@
       },
       "bpDerived": {
         "pulsePressure": "De polsdruk (het verschil tussen je meetwaarden) is ongeveer {value} mmHg; in rust is ongeveer 40 gebruikelijk.",
-        "meanArterialPressure": "De gemiddelde arteriële druk (het gemiddelde dat je organen ervaren) is ongeveer {value} mmHg, normaal rond 70–100."
+        "meanArterialPressure": "De gemiddelde arteriële druk (het gemiddelde dat je organen ervaren) is ongeveer {value} mmHg, normaal rond 70–100.",
+        "pulsePressureLabel": "Polsdruk",
+        "meanArterialPressureLabel": "Gemiddelde druk"
       },
       "stats": {
         "label": "Samenvattende statistieken",
@@ -5361,7 +5366,6 @@
     },
     "bpTimeOfDay": {
       "title": "Per moment van de dag",
-      "description": "Je gemiddelde bloeddruk per moment van de dag, over de periode van de grafiek.",
       "part": {
         "morning": "Ochtend",
         "midday": "Middag",
@@ -5369,14 +5373,7 @@
       },
       "filterAll": "Hele dag",
       "filterLabel": "Tonen in de grafiek",
-      "readingsOne": "{count} meting",
-      "readingsFew": "{count} metingen",
-      "readingsOther": "{count} metingen",
       "notEnough": "Te weinig metingen",
-      "pulse": "Hartslag {value} bpm",
-      "difference": "Ochtend min avond: {systolic}/{diastolic} mmHg.",
-      "differencePending": "Ochtend en avond worden vergeleken zodra elk minstens {min, plural, one {# meting} other {# metingen}} heeft.",
-      "hours": "Ochtend {morning}, middag {midday}, avond {evening}, in je eigen tijdzone.",
       "hourRange": "{start}–{end}",
       "emptyTitle": "Geen volledige metingen in deze periode",
       "emptyDescription": "Metingen met zowel een systolische als een diastolische waarde verschijnen hier.",
@@ -5394,7 +5391,6 @@
       }
     },
     "scores": {
-      "historyWindow": "Verloop {days} dagen",
       "staleLast": "Laatst {score} op {date}",
       "valuesFrom": "Waarden van {date}",
       "loadError": "Je scores konden nu niet worden geladen.",
@@ -6407,7 +6403,7 @@
             "import": "Importeren",
             "empty": "Plak eerst de export of kies een bestand.",
             "readFailed": "Dat bestand kon niet worden gelezen.",
-            "rateLimited": "Maximaal 5 imports per uur. Probeer het later opnieuw.",
+            "rateLimited": "De limiet voor imports per uur is bereikt. Probeer het later opnieuw.",
             "tooLarge": "Dat bestand is groter dan de limiet van 16 MB.",
             "inProgress": "Er loopt al een import van doseringsgeschiedenis. Wacht tot die klaar is.",
             "workerUnavailable": "De achtergrondverwerking is niet beschikbaar, dus er is niets geïmporteerd.",
@@ -16409,7 +16405,6 @@
     "expiryPushBody": "{title}: geldig tot {date}, nog {count, plural, one {# sessie} other {# sessies}} over."
   },
   "chartContext": {
-    "listLabel": "Medicatie en ziekte in deze periode",
     "start": "{name} gestart",
     "startDose": "{name} gestart met {dose}",
     "startEstimated": "{name}: eerste vastgelegde inname",

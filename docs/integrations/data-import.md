@@ -69,7 +69,7 @@ arrays:
 ```
 
 Each array holds at most **10 000** entries and the file at most 16 MB.
-The endpoint is rate-limited to **5 imports per hour per account**.
+The endpoint is rate-limited to **5 imports per hour per account** by default; an operator can change that with `IMPORT_RATE_LIMIT_PER_HOUR` (1 to 1000).
 Existing rows (matched on the type + timestamp uniqueness, or on
 `externalId` for mood entries) are skipped and counted under `skipped` in
 the response.
@@ -321,7 +321,8 @@ BLOOD_GLUCOSE,5.9,mmol/L,2024-04-03T13:30:00+1100,,,sensor-2
 ```
 
 Limits: 16 MB per upload, 10 000 valid rows per import, 5 imports per
-hour (shared with the JSON import). `?dryRun=1` validates and previews
+hour by default (shared with the JSON import; the operator sets it with
+`IMPORT_RATE_LIMIT_PER_HOUR`). `?dryRun=1` validates and previews
 without writing anything — the **Preview** button uses it.
 
 The response carries per-row outcomes alongside the counts, and the card

@@ -9,11 +9,13 @@ import type { CoachReadStripData } from "@/lib/insights/derived/coach-read-shape
 /**
  * A cached strip belongs to ONE language.
  *
- * The strip's second line is prose the server writes in the reader's language.
- * The browser cache used to key it by metric alone, so after a language switch
- * the page re-used the sentence written for the previous language and the
- * server-side fix would have been invisible to anyone who switched rather than
- * reloaded. `/api/analytics` carries the same warning in its own cache key.
+ * The read carries prose the server writes in the reader's language (the
+ * lagged-association note, which iOS shows). The browser cache used to key it
+ * by metric alone, so after a language switch the page re-used the answer
+ * written for the previous language. `/api/analytics` carries the same
+ * warning in its own cache key. The web strip shows the range, so each entry
+ * here carries its own range: which one the strip paints says which entry it
+ * read.
  *
  * Both entries are seeded, so a key that has stopped separating them shows up
  * as the WRONG sentence rather than as an empty page — a test that only proved
@@ -33,20 +35,30 @@ vi.mock("@/hooks/use-mounted", () => ({ useMounted: () => true }));
 
 import { CoachReadStrip } from "../coach-read-strip";
 
-const GERMAN_NOTE =
-  "Wenn die Symptomstärke höher liegt, scheint die Schlafdauer am Folgetag " +
-  "nach bisheriger Datenlage eher niedriger auszufallen — ein Muster, das " +
-  "Beachtung verdient, keine Ursache.";
-const ENGLISH_NOTE =
-  "Higher symptom severity looks like it goes with lower next-day sleep " +
-  "duration in your data, on the evidence so far — a pattern worth watching, " +
-  "not a cause.";
+// The range each entry carries, as the strip paints it ("6.1–7.4" in
+// English, "6,1–7,4" in German): the two languages' entries differ by figure,
+// not only by decimal mark, so a key that stopped separating them shows the
+// wrong range rather than the same one in another spelling.
+const GERMAN_RANGE = "6,1\u20137,4";
+const ENGLISH_RANGE = "8.2\u20139.3";
 
-function payload(note: string): CoachReadStripData {
+function payload(low: number, high: number): CoachReadStripData {
   return {
-    baseline: null,
-    learning: true,
-    driver: { note, behaviour: "symptom severity", outcome: "sleep duration" },
+    baseline: {
+      low,
+      high,
+      latest: low,
+      latestDate: "2026-11-27",
+      latestIsToday: true,
+      placement: "within",
+      sampleDays: 30,
+    },
+    learning: false,
+    driver: {
+      note: "a note",
+      behaviour: "symptom severity",
+      outcome: "sleep duration",
+    },
   };
 }
 
@@ -62,11 +74,11 @@ function seededClient(): QueryClient {
   });
   client.setQueryData(
     queryKeys.insightsCoachRead(METRIC, "de"),
-    payload(GERMAN_NOTE),
+    payload(6.1, 7.4),
   );
   client.setQueryData(
     queryKeys.insightsCoachRead(METRIC, "en"),
-    payload(ENGLISH_NOTE),
+    payload(8.2, 9.3),
   );
   return client;
 }
@@ -84,14 +96,14 @@ function renderStrip(client: QueryClient, locale: "de" | "en"): string {
 describe("CoachReadStrip — a cached strip is not served to another language", () => {
   it("reads the German entry for a German reader", () => {
     const markup = renderStrip(seededClient(), "de");
-    expect(markup).toContain(GERMAN_NOTE);
-    expect(markup).not.toContain(ENGLISH_NOTE);
+    expect(markup).toContain(GERMAN_RANGE);
+    expect(markup).not.toContain("8,2");
   });
 
   it("reads the English entry for an English reader", () => {
     const markup = renderStrip(seededClient(), "en");
-    expect(markup).toContain(ENGLISH_NOTE);
-    expect(markup).not.toContain(GERMAN_NOTE);
+    expect(markup).toContain(ENGLISH_RANGE);
+    expect(markup).not.toContain("6.1");
   });
 
   it("does not carry one language's cached sentence into the other on a switch", () => {
@@ -101,8 +113,8 @@ describe("CoachReadStrip — a cached strip is not served to another language", 
     const german = renderStrip(client, "de");
     const english = renderStrip(client, "en");
 
-    expect(german).toContain(GERMAN_NOTE);
-    expect(english).toContain(ENGLISH_NOTE);
-    expect(english).not.toContain(GERMAN_NOTE);
+    expect(german).toContain(GERMAN_RANGE);
+    expect(english).toContain(ENGLISH_RANGE);
+    expect(english).not.toContain("6.1");
   });
 });

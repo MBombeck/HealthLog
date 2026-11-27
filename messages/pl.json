@@ -3590,8 +3590,11 @@
         "steadyLatestBelow": "Twoje pomiary zwykle wynoszą {low} {unit}; ostatni pomiar, z {date}, wyniósł {value} i był niższy.",
         "componentLine": "{component}: {line}",
         "insufficient": "Wciąż poznaję twój zwykły zakres. Rejestruj jeszcze przez kilka dni.",
-        "driver": "{note}",
-        "loadError": "Nie udało się załadować twojego typowego zakresu."
+        "loadError": "Nie udało się załadować twojego typowego zakresu.",
+        "range": "Zakres",
+        "todayValue": "dziś {value}",
+        "latestValue": "{date}: {value}",
+        "soFarValue": "dziś do tej pory {value}"
       },
       "scope": {
         "prefix": "Coach jest już przy {metric}"
@@ -3953,7 +3956,9 @@
       },
       "bpDerived": {
         "pulsePressure": "Ciśnienie tętna (różnica między Twoimi wartościami) wynosi około {value} mmHg; około 40 jest typowe w spoczynku.",
-        "meanArterialPressure": "Średnie ciśnienie tętnicze (średnia, jaką widzą Twoje narządy) wynosi około {value} mmHg, zwykle w okolicy 70–100."
+        "meanArterialPressure": "Średnie ciśnienie tętnicze (średnia, jaką widzą Twoje narządy) wynosi około {value} mmHg, zwykle w okolicy 70–100.",
+        "pulsePressureLabel": "Ciśnienie tętna",
+        "meanArterialPressureLabel": "Ciśnienie średnie"
       },
       "stats": {
         "label": "Statystyki podsumowujące",
@@ -5361,7 +5366,6 @@
     },
     "bpTimeOfDay": {
       "title": "Według pory dnia",
-      "description": "Twoje średnie ciśnienie w każdej porze dnia, w zakresie wykresu.",
       "part": {
         "morning": "Rano",
         "midday": "W południe",
@@ -5369,14 +5373,7 @@
       },
       "filterAll": "Cały dzień",
       "filterLabel": "Pokaż na wykresie",
-      "readingsOne": "{count} pomiar",
-      "readingsFew": "{count} pomiary",
-      "readingsOther": "{count} pomiarów",
       "notEnough": "Za mało pomiarów",
-      "pulse": "Tętno {value} bpm",
-      "difference": "Rano minus wieczór: {systolic}/{diastolic} mmHg.",
-      "differencePending": "Rano i wieczór zostaną porównane, gdy każda z tych pór będzie mieć co najmniej {min, plural, one {# pomiar} few {# pomiary} many {# pomiarów} other {# pomiaru}}.",
-      "hours": "Rano {morning}, w południe {midday}, wieczorem {evening}, w Twojej strefie czasowej.",
       "hourRange": "{start}–{end}",
       "emptyTitle": "Brak pełnych pomiarów w tym zakresie",
       "emptyDescription": "Tutaj pojawią się pomiary z wartością skurczową i rozkurczową.",
@@ -5394,7 +5391,6 @@
       }
     },
     "scores": {
-      "historyWindow": "Historia z {days} dni",
       "staleLast": "Ostatnio {score} dnia {date}",
       "valuesFrom": "Wartości z {date}",
       "loadError": "Nie udało się teraz wczytać Twoich wyników.",
@@ -6407,7 +6403,7 @@
             "import": "Importuj",
             "empty": "Najpierw wklej eksport albo wybierz plik.",
             "readFailed": "Nie udało się odczytać tego pliku.",
-            "rateLimited": "Maksymalnie 5 importów na godzinę. Spróbuj później.",
+            "rateLimited": "Osiągnięto godzinny limit importów. Spróbuj później.",
             "tooLarge": "Ten plik przekracza limit 16 MB.",
             "inProgress": "Import historii dawek już trwa. Poczekaj, aż się zakończy.",
             "workerUnavailable": "Proces w tle jest niedostępny, więc nic nie zostało zaimportowane.",
@@ -16409,7 +16405,6 @@
     "expiryPushBody": "{title}: ważna do {date}, {count, plural, one {pozostał # zabieg} few {pozostały # zabiegi} many {pozostało # zabiegów} other {pozostało # zabiegu}}."
   },
   "chartContext": {
-    "listLabel": "Leki i choroby w tym okresie",
     "start": "{name}: rozpoczęto",
     "startDose": "{name}: rozpoczęto od {dose}",
     "startEstimated": "{name}: pierwsza zapisana dawka",

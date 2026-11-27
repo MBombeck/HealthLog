@@ -55,6 +55,8 @@ export interface ScoreRingTileProps {
   line: string | null;
   /** Replaces the ScoreRing. */
   ring?: ReactNode;
+  /** A load (stress, strain): the ring's spoken band reads high, not low. */
+  load?: boolean;
   titleAs?: "h2" | "h3";
 }
 
@@ -70,6 +72,7 @@ export function ScoreRingTile({
   stale,
   line,
   ring,
+  load = false,
   titleAs = "h3",
 }: ScoreRingTileProps) {
   const { t } = useTranslations();
@@ -78,6 +81,7 @@ export function ScoreRingTile({
     <ScoreRing
       score={stale ? null : score}
       band={band ?? null}
+      load={load}
       size={size === "wide" ? "dashboard" : "row"}
       flat
       emptyFace={stale}

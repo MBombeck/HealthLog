@@ -8,7 +8,10 @@ import {
   returnAllZodIssues,
 } from "@/lib/api-response";
 import { csvImportQuerySchema } from "@/lib/validations/record-import";
-import { checkRateLimit } from "@/lib/rate-limit";
+import {
+  checkImportRateLimit,
+  importRateLimitMessage,
+} from "@/lib/import/import-rate-limit";
 import { NextRequest } from "next/server";
 
 import {
@@ -52,11 +55,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
   if (!queryParse.success) return returnAllZodIssues(queryParse.error, 422);
   const dryRun = queryParse.data.dryRun;
 
-  // Same blast-radius reasoning as the JSON import — share the bucket so a
-  // CSV upload counts against the same 5/hour quota.
-  const rl = await checkRateLimit(`import:${user.id}`, 5, 60 * 60 * 1000);
+  // Same blast-radius reasoning as the JSON import: a CSV upload spends the
+  // same shared hourly import bucket.
+  const rl = await checkImportRateLimit(user.id);
   if (!rl.allowed) {
-    return apiError("Maximum 5 imports per hour", 429);
+    return apiError(importRateLimitMessage(rl.limit), 429);
   }
 
   // Raw text read with an explicit byte cap — `safeJson` is JSON-only, so we

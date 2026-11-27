@@ -1,7 +1,6 @@
 "use client";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { TileHeader } from "@/components/insights/tile-header";
 import {
@@ -126,69 +125,33 @@ export function InsightStatusCard({
     assessment?.kind === "preparing" ||
     (!assessment && preparing && hasProvider && !displayText);
 
-  // v1.8.3 — preparing: the read-only route enqueued a generation and the
-  // client is polling. Render the loading skeleton geometry with a
-  // preparing caption so the card reads as "assembling", not stuck. Only
-  // shown when a provider is configured (the route returns the no-key
-  // fallback otherwise).
+  // While the assessment is on its way the page shows no card for it: a
+  // card of skeleton bars at the foot of the page read as a fault, and the
+  // numbers above already stand on their own. A generation the route queued
+  // says so in one quiet line; a plain load holds only a status for
+  // assistive tech. The text takes its place once it lands.
   if (isPreparing) {
     return (
-      <Card
-        aria-busy="true"
+      <p
         aria-live="polite"
         data-testid="insight-status-card-preparing"
-        density="compact"
+        className="text-muted-foreground text-xs"
       >
-        <CardHeader>
-          <TileHeader icon={nodeIcon(icon)} title={title} />
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <Skeleton className="bg-muted h-3.5 w-full rounded" />
-          <Skeleton className="bg-muted h-3.5 w-11/12 rounded" />
-          <Skeleton className="bg-muted h-3.5 w-9/12 rounded" />
-          <p className="text-muted-foreground text-xs">
-            {t("insights.assessmentPreparing")}
-          </p>
-        </CardContent>
-      </Card>
+        {t("insights.assessmentPreparing")}
+      </p>
     );
   }
 
   if (loading) {
-    // v1.4.37 — structured skeleton over the centred spinner. When the
-    // per-metric status route had to fall back to the 20 s provider
-    // race the user used to stare at a single centred spinner with
-    // "Lade…" copy, which gave no sense of progress and pinned the
-    // card to a flat dot. The skeleton paints the actual rendered
-    // geometry (icon dot, title bar, three text lines, footer) so the
-    // loading state previews where the assessment will land. Heights
-    // mirror `<CardTitle>` (`text-base` → 1 rem) and the prose
-    // (`text-sm` → 0.875 rem) so the post-load swap reflows by less
-    // than a row.
     return (
-      <Card
+      <span
+        role="status"
         aria-busy="true"
-        aria-live="polite"
         data-testid="insight-status-card-loading"
-        // Compact card density — the same tier the populated / preparing /
-        // empty states use, so the heading and the first skeleton line sit
-        // on the same baseline across every assessment-card state.
-        density="compact"
+        className="sr-only"
       >
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Skeleton className="bg-muted h-5 w-5 rounded" />
-            <Skeleton className="bg-muted h-4 w-32 rounded" />
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <Skeleton className="bg-muted h-3.5 w-full rounded" />
-          <Skeleton className="bg-muted h-3.5 w-11/12 rounded" />
-          <Skeleton className="bg-muted h-3.5 w-9/12 rounded" />
-          <Skeleton className="bg-muted/70 h-3 w-1/3 rounded" />
-          <span className="sr-only">{t("common.loading")}</span>
-        </CardContent>
-      </Card>
+        {t("common.loading")}
+      </span>
     );
   }
 

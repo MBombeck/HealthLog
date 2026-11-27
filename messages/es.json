@@ -3590,8 +3590,11 @@
         "steadyLatestBelow": "Tus valores suelen estar en {low} {unit}; tu última medición, del {date}, fue {value}, por debajo.",
         "componentLine": "{component}: {line}",
         "insufficient": "Todavía estoy aprendiendo tu rango habitual. Sigue registrando unos días más.",
-        "driver": "{note}",
-        "loadError": "No se pudo cargar tu rango habitual."
+        "loadError": "No se pudo cargar tu rango habitual.",
+        "range": "Rango",
+        "todayValue": "hoy {value}",
+        "latestValue": "{date}: {value}",
+        "soFarValue": "hoy hasta ahora {value}"
       },
       "scope": {
         "prefix": "El Coach ya está en {metric}"
@@ -3953,7 +3956,9 @@
       },
       "bpDerived": {
         "pulsePressure": "La presión de pulso (la diferencia entre tus valores) es de unos {value} mmHg; alrededor de 40 es lo típico en reposo.",
-        "meanArterialPressure": "La presión arterial media (el promedio que ven tus órganos) es de unos {value} mmHg, normalmente entre 70 y 100."
+        "meanArterialPressure": "La presión arterial media (el promedio que ven tus órganos) es de unos {value} mmHg, normalmente entre 70 y 100.",
+        "pulsePressureLabel": "Presión de pulso",
+        "meanArterialPressureLabel": "Presión media"
       },
       "stats": {
         "label": "Estadísticas resumidas",
@@ -5361,7 +5366,6 @@
     },
     "bpTimeOfDay": {
       "title": "Por momento del día",
-      "description": "Tu tensión arterial media en cada momento del día, en el periodo del gráfico.",
       "part": {
         "morning": "Mañana",
         "midday": "Mediodía",
@@ -5369,14 +5373,7 @@
       },
       "filterAll": "Todo el día",
       "filterLabel": "Mostrar en el gráfico",
-      "readingsOne": "{count} medición",
-      "readingsFew": "{count} mediciones",
-      "readingsOther": "{count} mediciones",
       "notEnough": "Muy pocas mediciones",
-      "pulse": "Pulso {value} bpm",
-      "difference": "Mañana menos noche: {systolic}/{diastolic} mmHg.",
-      "differencePending": "La mañana y la noche se comparan cuando cada una tiene al menos {min, plural, one {# medición} other {# mediciones}}.",
-      "hours": "Mañana {morning}, mediodía {midday}, noche {evening}, en tu zona horaria.",
       "hourRange": "{start}–{end}",
       "emptyTitle": "No hay mediciones completas en este periodo",
       "emptyDescription": "Aquí aparecen las mediciones con valor sistólico y diastólico.",
@@ -5394,7 +5391,6 @@
       }
     },
     "scores": {
-      "historyWindow": "Historial de {days} días",
       "staleLast": "Último: {score} el {date}",
       "valuesFrom": "Valores del {date}",
       "loadError": "No se pudieron cargar tus puntuaciones en este momento.",
@@ -6407,7 +6403,7 @@
             "import": "Importar",
             "empty": "Pega la exportación o elige un archivo primero.",
             "readFailed": "No se pudo leer ese archivo.",
-            "rateLimited": "Máximo 5 importaciones por hora. Inténtalo más tarde.",
+            "rateLimited": "Se alcanzó el límite de importaciones por hora. Inténtalo más tarde.",
             "tooLarge": "Ese archivo supera el límite de 16 MB.",
             "inProgress": "Ya hay una importación de historial en curso. Espera a que termine.",
             "workerUnavailable": "El proceso en segundo plano no está disponible, así que no se importó nada.",
@@ -16409,7 +16405,6 @@
     "expiryPushBody": "{title}: válida hasta el {date}, {count, plural, one {queda # sesión} other {quedan # sesiones}}."
   },
   "chartContext": {
-    "listLabel": "Medicación y enfermedades en este periodo",
     "start": "{name}: inicio",
     "startDose": "{name}: inicio con {dose}",
     "startEstimated": "{name}: primera toma registrada",
