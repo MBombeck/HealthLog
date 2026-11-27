@@ -14013,6 +14013,14 @@
       "vitalsInRangeFew": "Tutti i {count} valori di oggi sono nel loro intervallo abituale.",
       "vitalsInRangeOther": "Tutti i {count} valori di oggi sono nel loro intervallo abituale.",
       "vitalInRange": "{metric} è in media a {value} oggi, nel tuo intervallo abituale ({range}).",
+      "pillarFlagged": {
+        "yellow": "{pillar} richiede attenzione nel tuo punteggio di salute oggi.",
+        "red": "{pillar} è fuori dall'intervallo di riferimento nel tuo punteggio di salute oggi."
+      },
+      "scoreFlagged": {
+        "yellow": "Il tuo punteggio di salute segnala oggi un'area che richiede attenzione.",
+        "red": "Il tuo punteggio di salute segnala oggi un'area fuori dal suo intervallo di riferimento."
+      },
       "floor": {
         "bpHigh": "La pressione arteriosa ha raggiunto {value} nelle ultime 24 ore.",
         "bpLow": "La pressione arteriosa è scesa a {value} nelle ultime 24 ore.",
@@ -14083,6 +14091,9 @@
         "allInOne": "{count} controllato, nel tuo intervallo",
         "allInFew": "{count} controllati, tutti nel tuo intervallo",
         "allInOther": "{count} controllati, tutti nel tuo intervallo",
+        "checkedOne": "{count} controllato",
+        "checkedFew": "{count} controllati",
+        "checkedOther": "{count} controllati",
         "oneOut": {
           "above": "{metric} sopra il tuo intervallo",
           "below": "{metric} sotto il tuo intervallo"

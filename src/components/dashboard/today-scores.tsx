@@ -37,7 +37,7 @@ import type { Locale } from "@/lib/i18n/config";
 import { useTranslations } from "@/lib/i18n/context";
 import { pluralKey } from "@/lib/i18n/plural";
 import { metricHref, pageHref } from "@/lib/links/hrefs";
-import { metricName } from "@/lib/measurements/type-label-keys";
+import { scoreShortLabel } from "@/lib/scores/registry";
 import { cn } from "@/lib/utils";
 import type { DailyDigest } from "@/lib/daily/digest";
 import type { DailyMorning, DailyMorningScore } from "@/lib/daily/morning";
@@ -102,12 +102,15 @@ function morningTile(
   id: "sleep" | "readiness",
   tile: DailyMorningScore,
   label: string,
+  fallbackShort: string,
 ): ScoreTileView {
   const fresh = tile.ring.fresh && tile.ring.score !== null;
   return {
     id,
     label,
-    shortLabel: label,
+    // The server's short name; a morning cached before it falls back to
+    // the registry, which is where the server takes it from.
+    shortLabel: tile.shortLabel ?? fallbackShort,
     icon: id === "sleep" ? Moon : Gauge,
     href: tile.href,
     score: fresh ? tile.ring.score : null,
@@ -130,7 +133,7 @@ export function scoreTiles(
     {
       id: "health",
       label: t("insights.healthScore.label"),
-      shortLabel: metricName("HEALTH_SCORE", t).short,
+      shortLabel: score?.shortLabel ?? scoreShortLabel("HEALTH_SCORE", t),
       icon: HeartPulse,
       href: metricHref("health_score") ?? pageHref("insights"),
       score: score?.value ?? null,
@@ -148,6 +151,7 @@ export function scoreTiles(
         "sleep",
         scores.sleep,
         t("insights.derived.composite.SLEEP_SCORE.title"),
+        scoreShortLabel("SLEEP_SCORE", t),
       ),
     );
   }
@@ -157,6 +161,7 @@ export function scoreTiles(
         "readiness",
         scores.readiness,
         t("insights.derived.composite.READINESS.title"),
+        scoreShortLabel("READINESS", t),
       ),
     );
   }
