@@ -57,7 +57,7 @@ interface TileEscape {
 function collectTileEscapes(): TileEscape[] {
   const escapes: TileEscape[] = [];
   const tiles = document.querySelectorAll(
-    '[data-slot="card"], [data-slot="today-hero"], [data-slot="morning-block"], [data-slot="list-row"]',
+    '[data-slot="card"], [data-slot="today-scores-compact"], [data-slot="list-row"]',
   );
   const TOLERANCE = 1;
   for (const tile of tiles) {
@@ -122,9 +122,9 @@ test.describe("phone-width density guard", () => {
           briefing: LONG_HEADLINE_BRIEFING,
           scoreRings: MOCK_SCORE_RINGS,
         });
-        // The Today hero reads the unified daily digest from
-        // `/api/daily/digest`. Mock it with a deterministic digest (a
-        // score + one worth-a-look item) so the hero paints without
+        // The top of the dashboard reads the unified daily digest from
+        // `/api/daily/digest`. Mock it with a deterministic digest (a score
+        // and one ask) so the ask card and the score row paint without
         // reaching the real route — mirror of the dashboard.spec mock.
         await page.route(/\/api\/daily\/digest(\?|$)/, (route) =>
           route.fulfill({
@@ -139,17 +139,21 @@ test.describe("phone-width density guard", () => {
                 topSignal: null,
                 briefingLead: "Your week is trending steady.",
                 line: "Your week is trending steady.",
-                worthALook: [
+                worthALook: [],
+                asks: [
                   {
-                    kind: "sync_issue",
-                    title: "Sync needs attention",
-                    body: "Withings isn't syncing.",
-                    status: "warning",
+                    kind: "preventive_care",
+                    tier: "due",
+                    itemKey: "preventive_care:e2e",
+                    title: "Check-ups due",
+                    body: "Dental check-up, eye exam and a long list of further names",
+                    subject: null,
+                    learnMore: null,
                     actions: [
                       {
-                        labelKey: "daily.action.reconnect",
-                        intent: "sync.reconnect",
-                        href: "/settings/integrations",
+                        labelKey: "daily.action.viewCheckups",
+                        intent: "checkup.view",
+                        href: "/checkups",
                       },
                     ],
                   },
@@ -175,13 +179,11 @@ test.describe("phone-width density guard", () => {
         }
 
         if (route === "/") {
-          // The guard must not pass vacuously — the morning block and its
-          // health score have to actually render.
+          // The guard must not pass vacuously — the ask card and the score
+          // row have to actually render.
+          await expect(page.locator('[data-slot="today-asks"]')).toBeVisible();
           await expect(
-            page.locator('[data-slot="morning-block"]'),
-          ).toBeVisible();
-          await expect(
-            page.locator('[data-slot="morning-score"]'),
+            page.locator('[data-slot="today-scores-compact"]'),
           ).toBeVisible();
         }
 

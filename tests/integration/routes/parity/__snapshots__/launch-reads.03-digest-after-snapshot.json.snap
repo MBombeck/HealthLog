@@ -67,6 +67,7 @@
       },
       "line": "Your health score for today is ready.",
       "worthALook": [],
+      "asks": [],
       "justIn": null,
       "reactionLine": null,
       "ai": {

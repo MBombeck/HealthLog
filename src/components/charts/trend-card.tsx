@@ -232,10 +232,6 @@ export function TrendCard({
     .flatMap((d) => (d == null ? [] : [formatDelta(d)]))
     .join("/");
 
-  // "7d" names a mean; with a delta beside it the label reads "7d trend".
-  const avg7LabelKey =
-    trend7Delta != null ? "charts.trend7dShort" : "charts.avg7dShort";
-
   const renderPair = (
     primary: number | null,
     secondaryValue: number | null | undefined,
@@ -273,29 +269,20 @@ export function TrendCard({
     <TrendTile data-slot="trend-card">
       {/* The heading is the tile header every other metric tile uses
           (`TileHeader`, UI standards §1): foreground icon on the left,
-          title beside it. The strip used to set its own uppercase muted
-          label with the icon on the right, so the same reading looked
-          different on the dashboard and on Insights. The header reserves
-          two lines (`reserveLines`), so the value row below sits at the
-          same baseline across the strip whether a label takes one line or
-          two ("Herzfrequenzvariabilität", "Glukose, vor dem Schlafen"); a
-          rare third line clamps with its full text in `title`. */}
+          title beside it, on ONE line (`reserveLines={1}`). The strip passes
+          the glossary's short form (`MetricName`: "Resting HR", "BP",
+          "HRV (SDNN)"), the full name stays the tooltip and the accessible
+          name, and a title that still does not fit ends in an ellipsis. One
+          line in every tile keeps the value rows on one baseline. */}
       <TileHeader
         icon={Icon}
         title={label}
-        reserveLines={2}
+        reserveLines={1}
         className="min-w-0"
       />
-      {/* v1.4.25 — baseline-aligned value row. The headline value,
-          unit, and trend arrow share a single flex line with
-          `items-baseline` so the digits line up at the same y-coordinate
-          across every tile in the strip (Weight 80 kg vs. BP 122 mmHg used
-          to land at different heights when one tile had a one-line heading
-          and another had a two-line wrap). The arrow slot is always
-          present; when there is no signal yet it stays empty at the same
-          width, so the value row keeps a deterministic width. The maintainer's
-          ask: "rechts neben der Zahl … der Pfeil [ist], wie gerade der
-          Trend ist". */}
+      {/* The value row: value, unit and the trend arrow on one baseline,
+          the same in every tile, so the digits line up across the strip.
+          The arrow slot keeps its width when there is no signal yet. */}
       <div
         className="mt-3 flex items-baseline gap-x-1.5"
         data-slot="trend-card-value-row"
@@ -313,28 +300,31 @@ export function TrendCard({
             {emptyHint}
           </span>
         ) : (
-          <>
+          // The reading: the value, then the unit, on one line. The unit
+          // never shows as a fragment: when value and unit do not both fit
+          // beside the arrow, the unit wraps to a second line that this box
+          // clips away, whole (`overflow-y: clip`). It stays in the DOM, so
+          // the accessible name still reads "120/77 mmHg". One rule for
+          // every tile; the value itself never wraps or clips.
+          <span
+            data-slot="trend-card-reading"
+            className={cn(
+              "flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1.5 overflow-y-clip",
+              // One line high, so a wrapped unit is clipped whole. A pair
+              // (120/77) is a font step smaller; the top inset puts its
+              // baseline where a single value's sits (Inter at
+              // `leading-none`: the baseline is 0.864 em down, so the 6 px
+              // smaller font sits about 0.37 rem higher, measured).
+              secondary ? "h-7.5 pt-[0.375rem]" : "h-7.5",
+            )}
+          >
             <span
               className={cn(
                 "shrink-0 font-semibold tracking-tight whitespace-nowrap tabular-nums",
-                // v1.8.7 — the value NEVER truncates, clips, or wraps
-                // mid-number. The maintainer is emphatic: every digit of
-                // the reading must render in full ("130 mmHg" must read as
-                // "130", never "13" then "3 mmHg"). The headline value span
-                // is `shrink-0 whitespace-nowrap` so it keeps its full
-                // intrinsic width and wins the horizontal-space contest
-                // against the unit. When the strip is dense (many tiles →
-                // narrow column) the UNIT yields — it shrinks (`min-w-0
-                // truncate`) and may ellipsis — rather than losing any
-                // digit of the number. The earlier `min-w-0 truncate` on
-                // this span was the bug: it let the value shrink below its
-                // content width and clip the number.
-                //
-                // v1.4.49.4 — paired values (BP systolic/diastolic) render
-                // as `131/85` and outgrow the `text-3xl` footprint on the
-                // narrowest grid columns. Paired tiles drop one font step
-                // (text-3xl → text-2xl) so the full pair fits; single-value
-                // tiles (weight, pulse, glucose, …) keep text-3xl.
+                // The value never truncates, clips or wraps mid-number: it
+                // keeps its full width, and the unit yields whole when both
+                // do not fit (the reading box above). A pair (131/85) is one
+                // font step smaller than a single value.
                 secondary ? "text-2xl" : "text-3xl",
                 // `leading-none` must come AFTER the font-size class in the
                 // cn() arg list. Tailwind v4 `text-3xl` / `text-2xl` ship
@@ -349,7 +339,10 @@ export function TrendCard({
             >
               {latest !== null ? renderPair(latest, secondary?.latest) : "—"}
             </span>
-            <span className="text-muted-foreground min-w-0 truncate text-sm tabular-nums">
+            <span
+              data-slot="trend-card-unit"
+              className="text-muted-foreground shrink-0 text-sm leading-none whitespace-nowrap tabular-nums"
+            >
               {unit}
             </span>
             {/* v1.28.x — optional inline adornment (e.g. the sleep tile's
@@ -364,7 +357,7 @@ export function TrendCard({
                 {valueAdornment}
               </span>
             ) : null}
-          </>
+          </span>
         )}
         <span
           className="ml-auto inline-flex h-4 w-4 shrink-0 items-center justify-center"
@@ -445,20 +438,27 @@ export function TrendCard({
           </span>
         )}
       </div>
-      {/* v1.4.29 — sub-row pair clips rather than wraps at `<sm`
-            so a narrow tile cannot grow vertically beyond the
-            140-px contract. `sm:` releases back to the original
-            wrap behaviour. */}
-      <div className="text-muted-foreground mt-auto flex min-w-0 flex-nowrap items-baseline gap-x-3 overflow-hidden pt-1 text-xs leading-snug sm:flex-wrap sm:gap-y-1">
-        <span className="max-w-full min-w-0 [overflow-wrap:anywhere]">
-          {t(avg7LabelKey)}:{" "}
+      {/* The two means, one row each and the same in every tile, so the
+          rows line up across the strip: "7d 82.5 (+0.2)" and "30d 83.0".
+          The short window label is the chart tabs' own; the long one
+          ("7-day trend") is the accessible name. A row that still does not
+          fit ends in an ellipsis rather than wrapping. */}
+      <div className="text-muted-foreground mt-auto flex min-w-0 flex-col gap-0.5 pt-1 text-xs leading-snug">
+        <span
+          className="min-w-0 truncate whitespace-nowrap"
+          data-slot="trend-card-mean-7"
+        >
+          <span aria-hidden="true">{t("charts.avg7dShort")} </span>
+          <span className="sr-only">
+            {t(
+              trend7Delta != null ? "charts.trend7dShort" : "charts.days7Title",
+            )}
+            :{" "}
+          </span>
           {mean(avg7, secondary?.avg7, avg7ColorClass, avg7Hint)}
           {trend7Delta != null && (
             <span
-              className={cn(
-                "ml-1 font-medium [overflow-wrap:anywhere] tabular-nums",
-                deltaColor,
-              )}
+              className={cn("ml-1 font-medium tabular-nums", deltaColor)}
               data-slot="trend7-delta"
               aria-label={`${t("charts.trend7dShort")} ${trendText}`}
             >
@@ -466,16 +466,14 @@ export function TrendCard({
             </span>
           )}
         </span>
-        <span className="max-w-full min-w-0 [overflow-wrap:anywhere]">
-          {t("charts.avg30dShort")}:{" "}
+        <span
+          className="min-w-0 truncate whitespace-nowrap"
+          data-slot="trend-card-mean-30"
+        >
+          <span aria-hidden="true">{t("charts.avg30dShort")} </span>
+          <span className="sr-only">{t("charts.days30Title")}: </span>
           {mean(avg30, secondary?.avg30, avg30ColorClass, avg30Hint)}
         </span>
-        {/* v1.4.28 — the all-time third sub-value retired
-              alongside the `avgAllTime*` props. The BD-Zielbereich
-              tile was the only consumer; the same number stays
-              visible on the Insights blood-pressure target panel with
-              full context. Every dashboard tile now ships the same two
-              sub-rows. */}
       </div>
     </TrendTile>
   );

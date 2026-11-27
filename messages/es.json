@@ -858,8 +858,6 @@
     "customizeTitle": "Diseño del panel",
     "heroItemsDescription": "Elige qué tipos de elementos pueden aparecer en los destacados de hoy.",
     "heroItemsNotificationNote": "Los ajustes de notificaciones se gestionan por separado.",
-    "heroContentTitle": "La tarjeta superior muestra",
-    "heroContentScore": "Puntuación de salud y resumen del día",
     "heroItems": {
       "coach_checkin": "Seguimiento con Coach",
       "dose_window": "Dosis de medicamentos",
@@ -941,7 +939,8 @@
       }
     },
     "quickAddSymptom": "Registrar síntoma",
-    "todayCardVisible": "Mostrar la tarjeta superior",
+    "scoreRowVisible": "Mostrar las puntuaciones",
+    "asksAlwaysShown": "Las dosis atrasadas y las preguntas sobre el servidor aparecen siempre.",
     "recoveryKitBanner": {
       "title": "Guarda tu kit de recuperación",
       "body": "Sin copias de las claves que usa este servidor, sus datos no se pueden recuperar tras una reinstalación. Es cuestión de unos minutos.",
@@ -953,8 +952,7 @@
     "quickAddSeizure": "Registrar crisis",
     "morning": {
       "heroItemsTitle": "Para hoy",
-      "heroItemsDescription": "Elige qué tipos de elementos pueden aparecer en “Para hoy”.",
-      "heroContentReminders": "Para hoy primero"
+      "heroItemsDescription": "Elige qué tipos de elementos pueden aparecer en “Para hoy”."
     }
   },
   "measurements": {
@@ -1184,6 +1182,10 @@
     "shortTypeTimeInDaylight": "Luz del día",
     "shortTypeAudioExposureEvent": "Evento de escucha alta",
     "shortTypeRespiratoryRate": "Frec. respiratoria",
+    "shortTypeHealthScore": "Puntuación de salud",
+    "shortTypeRestingHeartRate": "FC en reposo",
+    "shortTypeBloodPressure": "Presión",
+    "shortTypeBloodGlucose": "Glucemia",
     "shortTypeLeanBodyMass": "Masa magra",
     "shortTypeWalkingHeartRateAverage": "Pulso al caminar",
     "shortTypeWalkingDoubleSupport": "Doble apoyo",
@@ -9630,6 +9632,8 @@
       },
       "question": {
         "title": "¿Usar el relé push de HealthLog?",
+        "askTitle": "¿Notificaciones por relé push?",
+        "askBody": "El contenido sigue cifrado.",
         "body": "Notificaciones para la app del App Store, cifradas de extremo a extremo: el relé solo ve cuándo se envía una.",
         "yes": "Sí",
         "no": "No",
@@ -9722,10 +9726,9 @@
       "notice": {
         "title": "Configurar este servidor",
         "body": "Cinco pasos cortos sobre registros, notificaciones, IA y privacidad; puedes omitir o cambiar cualquiera más tarde.",
+        "bodyShort": "Cinco pasos cortos sobre registros, notificaciones, IA y privacidad.",
         "open": "Empezar la configuración",
-        "dismiss": "Ahora no",
-        "relayBody": "Los recordatorios en el iPhone y Wallet esperan esta respuesta, en la página de inicio de administración.",
-        "relayOpen": "Abrir administración"
+        "dismiss": "Ahora no"
       },
       "accounts": {
         "title": "Quién puede usar este servidor",
@@ -13766,6 +13769,7 @@
       },
       "syncIssue": {
         "title": "La sincronización necesita atención",
+        "askTitle": "Sincronización detenida",
         "body": "{integration} no se está sincronizando: vuelve a conectarlo para mantener tus datos al día."
       },
       "sourceQuiet": {
@@ -13817,10 +13821,14 @@
     },
     "action": {
       "logDose": "Tomar",
+      "later": "Más tarde",
+      "answer": "Responder",
+      "learnMore": "Más",
+      "open": "Abrir",
+      "setUp": "Configurar",
+      "reconnectShort": "Reconectar",
       "reconnect": "Reconectar",
       "viewCheckups": "Ver revisiones",
-      "viewAppointment": "Ver cita",
-      "viewAppointments": "Ver citas",
       "checkinKeep": "Conservar",
       "checkinAdjust": "Ajustar",
       "checkinLetGo": "Dejarlo ir",
@@ -13831,14 +13839,8 @@
       "openSource": "Abrir"
     },
     "today": {
-      "scoreLabel": "Puntuación de salud",
-      "deltaVsBaseline": "{delta} frente a tu valor de referencia",
-      "deltaFlat": "En línea con tu valor de referencia",
-      "sleepPending": "El sueño de anoche aún no ha llegado; la lectura de hoy es provisional.",
-      "worthALook": "Merece un vistazo",
-      "allClear": "Hoy nada necesita tu atención.",
-      "ringLink": "Abrir detalles de {metric}",
-      "heading": "Hoy",
+      "deltaShort": "{delta} vs referencia",
+      "deltaFlatShort": "En la referencia",
       "steadyWeeksOne": "Estable desde hace {count} semana",
       "steadyWeeksFew": "Estable desde hace {count} semanas",
       "steadyWeeksOther": "Estable desde hace {count} semanas",
@@ -14008,6 +14010,7 @@
       "latestNight": "Última noche: {date}",
       "vitalOutside": "{metric}: media de {value} hoy, habitual {range}",
       "contributor": "{name}: {value} de 100",
+      "contributorShort": "{name} {value}/100",
       "readinessLast": "Último {score} el {date}",
       "source": {
         "recovery": {
