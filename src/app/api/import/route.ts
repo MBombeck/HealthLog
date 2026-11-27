@@ -14,7 +14,10 @@ import {
   safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
-import { checkRateLimit } from "@/lib/rate-limit";
+import {
+  checkImportRateLimit,
+  importRateLimitMessage,
+} from "@/lib/import/import-rate-limit";
 import { NextRequest } from "next/server";
 
 import { droppedLinkKeysForWire } from "@/lib/mood/tag-links";
@@ -29,12 +32,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
   annotate({ action: { name: "import.upload" } });
 
-  // V3 audit: bulk-injection vector unchecked. 5/hour matches the export
-  // limit (10/hour) but is tighter because import writes have a higher
-  // blast radius (DB writes vs. read-only export).
-  const rl = await checkRateLimit(`import:${user.id}`, 5, 60 * 60 * 1000);
+  // Import writes have a higher blast radius than the read-only export, so
+  // the shared import bucket is tighter than the export one by default.
+  const rl = await checkImportRateLimit(user.id);
   if (!rl.allowed) {
-    return apiError("Maximum 5 imports per hour", 429);
+    return apiError(importRateLimitMessage(rl.limit), 429);
   }
 
   const { data: body, error: jsonError } = await safeJson(request, {

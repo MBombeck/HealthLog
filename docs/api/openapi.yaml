@@ -10139,8 +10139,10 @@ paths:
         taken, and inferring one from the scheduled time would manufacture an on-time history the file never claimed.
         Body capped at 16 MB and 30 000 importable rows. `?dryRun=1` parses, matches, and returns the file verdict
         WITHOUT writing. A real submission queues the write onto the same background job the per-medication import uses
-        (chunked, heartbeated, resumable) and returns 202 with a `statusUrl` to poll. Shares the 5/hour `import:` rate
-        bucket with every other bulk import surface. Auth via cookie or Bearer."
+        (chunked, heartbeated, resumable) and returns 202 with a `statusUrl` to poll. Shares the `import:` rate bucket
+        with every other bulk import surface, 5 an hour by default, set by the operator through
+        `IMPORT_RATE_LIMIT_PER_HOUR` (a whole number from 1 to 1000; anything else falls back to 5); the 429 message
+        names the value in force. Auth via cookie or Bearer."
       parameters:
         - name: dryRun
           in: query
@@ -18694,8 +18696,9 @@ paths:
         reason `duplicate` and not written. Without it a row is deduplicated on `(type, measuredAt)` and a repeat is
         `skipped` / `duplicate`. Writes commit in chunks rather than as one transaction; a failure part-way leaves
         earlier chunks written, and re-uploading the same file completes the rest. `?dryRun=1` validates + previews
-        without writing. Shares the 5/hour `import:` rate bucket. An unknown query parameter is refused with 422, so a
-        misspelt `dryRun` never writes."
+        without writing. Shares the `import:` rate bucket, 5 an hour by default, set by the operator through
+        `IMPORT_RATE_LIMIT_PER_HOUR` (a whole number from 1 to 1000; anything else falls back to 5); the 429 message
+        names the value in force. An unknown query parameter is refused with 422, so a misspelt `dryRun` never writes."
       parameters:
         - in: query
           name: dryRun
@@ -18747,14 +18750,16 @@ paths:
         own and a refused row is reported by line with a reason, never guessed (a number or date that reads two ways is
         refused). Re-uploading the same file writes nothing: every row is reported as a duplicate. `dryRun=1` checks the
         whole file without writing and returns the first rows as they would be stored; it spends a separate bucket of 30
-        checks an hour, the import itself the shared 5-an-hour `import:` bucket. Owner only; refused with
-        `module.disabled` when the module is switched off. An unknown query parameter is refused with 422, so a misspelt
-        `dryRun` never writes. Each row's name resolves to the account's marker the way a scanned report's rows do
-        (name, alias, catalog name); a new analyte mints one marker from its first row. A numeric result needs a unit:
-        an empty unit cell is refused with `missing_unit`, and `1` (the UCUM unity) states a value without a unit, such
-        as a ratio or INR. A result in another unit is converted when the conversion is known and keeps the printed
-        value beside it, otherwise the row is refused with `unit_mismatch`. Any other text in the value column is a
-        qualitative result. A date without a time is stored as that calendar date. At most 20 000 data rows."
+        checks an hour, the import itself the shared `import:` bucket, 5 an hour by default, set by the operator through
+        `IMPORT_RATE_LIMIT_PER_HOUR` (a whole number from 1 to 1000; anything else falls back to 5); the 429 message
+        names the value in force. Owner only; refused with `module.disabled` when the module is switched off. An unknown
+        query parameter is refused with 422, so a misspelt `dryRun` never writes. Each row's name resolves to the
+        account's marker the way a scanned report's rows do (name, alias, catalog name); a new analyte mints one marker
+        from its first row. A numeric result needs a unit: an empty unit cell is refused with `missing_unit`, and `1`
+        (the UCUM unity) states a value without a unit, such as a ratio or INR. A result in another unit is converted
+        when the conversion is known and keeps the printed value beside it, otherwise the row is refused with
+        `unit_mismatch`. Any other text in the value column is a qualitative result. A date without a time is stored as
+        that calendar date. At most 20 000 data rows."
       parameters:
         - in: query
           name: dryRun
@@ -18956,13 +18961,14 @@ paths:
         own and a refused row is reported by line with a reason, never guessed (a number or date that reads two ways is
         refused). Re-uploading the same file writes nothing: every row is reported as a duplicate. `dryRun=1` checks the
         whole file without writing and returns the first rows as they would be stored; it spends a separate bucket of 30
-        checks an hour, the import itself the shared 5-an-hour `import:` bucket. Owner only; refused with
-        `module.disabled` when the module is switched off. An unknown query parameter is refused with 422, so a misspelt
-        `dryRun` never writes. Maps name, dose (as written), daily intake times, an as-needed mark and a start and end
-        date; every other rhythm is set up afterwards in the app. A row needs times unless it is marked as needed. Each
-        row is checked against the create route's own schema; a dated window opens a course. Reminders stay off unless
-        `reminders=1`. A medication the record holds under the same name and dose is a duplicate. At most 500 data
-        rows."
+        checks an hour, the import itself the shared `import:` bucket, 5 an hour by default, set by the operator through
+        `IMPORT_RATE_LIMIT_PER_HOUR` (a whole number from 1 to 1000; anything else falls back to 5); the 429 message
+        names the value in force. Owner only; refused with `module.disabled` when the module is switched off. An unknown
+        query parameter is refused with 422, so a misspelt `dryRun` never writes. Maps name, dose (as written), daily
+        intake times, an as-needed mark and a start and end date; every other rhythm is set up afterwards in the app. A
+        row needs times unless it is marked as needed. Each row is checked against the create route's own schema; a
+        dated window opens a course. Reminders stay off unless `reminders=1`. A medication the record holds under the
+        same name and dose is a duplicate. At most 500 data rows."
       parameters:
         - in: query
           name: dryRun
@@ -19154,8 +19160,9 @@ paths:
         not transactional: on a mid-file write failure the response is 503 (`meta.errorCode` = `import.write_failed`,
         `meta.retryable` = true) with `meta.stats` carrying what landed — rows already written stay written, and a retry
         is only safe against duplication for rows that carry an `externalId`. Validation is fail-fast (the 422 carries
-        the first issue's message, not the multi-issue envelope). Rate-limited 5/hour per user (shared `import:` bucket
-        with the CSV importer)."
+        the first issue's message, not the multi-issue envelope). Rate-limited per user through the `import:` bucket it
+        shares with the CSV importers, 5 an hour by default, set by the operator through `IMPORT_RATE_LIMIT_PER_HOUR` (a
+        whole number from 1 to 1000; anything else falls back to 5); the 429 message names the value in force."
       requestBody:
         required: true
         content:

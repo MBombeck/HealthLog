@@ -6409,7 +6409,7 @@
             "import": "Importar",
             "empty": "Pega la exportación o elige un archivo primero.",
             "readFailed": "No se pudo leer ese archivo.",
-            "rateLimited": "Máximo 5 importaciones por hora. Inténtalo más tarde.",
+            "rateLimited": "Se alcanzó el límite de importaciones por hora. Inténtalo más tarde.",
             "tooLarge": "Ese archivo supera el límite de 16 MB.",
             "inProgress": "Ya hay una importación de historial en curso. Espera a que termine.",
             "workerUnavailable": "El proceso en segundo plano no está disponible, así que no se importó nada.",

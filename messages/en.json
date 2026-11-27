@@ -6409,7 +6409,7 @@
             "import": "Import",
             "empty": "Paste the export or choose a file first.",
             "readFailed": "That file could not be read.",
-            "rateLimited": "Maximum 5 imports per hour. Try again later.",
+            "rateLimited": "The hourly import limit is reached. Try again later.",
             "tooLarge": "That file is over the 16 MB limit.",
             "inProgress": "A dose-history import is already running. Wait for it to finish.",
             "workerUnavailable": "The background worker is not available, so nothing was imported.",

@@ -6,7 +6,7 @@
  *
  * Buckets: a dry run spends `import-preview:<id>` (30 an hour), because the
  * mapping screen re-checks the file whenever a column choice changes; the
- * real import spends the `import:<id>` bucket (5 an hour) it shares with the
+ * real import spends the `import:<id>` bucket it shares with the
  * other buffered imports: the measurements CSV, the JSON import and the dose
  * history import. The staged file uploads (Apple Health, Health Connect, FIT,
  * Gadgetbridge, FHIR Bundle) spend their own per-kind bucket instead
@@ -24,6 +24,10 @@ import {
 } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { CsvTooLargeError } from "@/lib/import/csv-stream";
+import {
+  checkImportRateLimit,
+  importRateLimitMessage,
+} from "@/lib/import/import-rate-limit";
 import { annotate } from "@/lib/logging/context";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import type { ModuleKey } from "@/lib/modules/registry";
@@ -33,7 +37,6 @@ import type { RecordImportResult } from "@/lib/validations/record-import";
 
 export const RECORD_IMPORT_MAX_BYTES = 16 * 1024 * 1024;
 const PREVIEW_PER_HOUR = 30;
-const IMPORT_PER_HOUR = 5;
 const HOUR_MS = 60 * 60 * 1000;
 
 export async function handleRecordImport<
@@ -70,17 +73,20 @@ export async function handleRecordImport<
   const query = parsed.data;
 
   const rl = query.dryRun
-    ? await checkRateLimit(
-        `import-preview:${user.id}`,
-        PREVIEW_PER_HOUR,
-        HOUR_MS,
-      )
-    : await checkRateLimit(`import:${user.id}`, IMPORT_PER_HOUR, HOUR_MS);
+    ? {
+        ...(await checkRateLimit(
+          `import-preview:${user.id}`,
+          PREVIEW_PER_HOUR,
+          HOUR_MS,
+        )),
+        limit: PREVIEW_PER_HOUR,
+      }
+    : await checkImportRateLimit(user.id);
   if (!rl.allowed) {
     return apiError(
       query.dryRun
-        ? `Maximum ${PREVIEW_PER_HOUR} checks per hour`
-        : `Maximum ${IMPORT_PER_HOUR} imports per hour`,
+        ? `Maximum ${rl.limit} checks per hour`
+        : importRateLimitMessage(rl.limit),
       429,
       { errorCode: "import.rate_limited" },
     );
