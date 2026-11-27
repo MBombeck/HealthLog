@@ -5238,7 +5238,8 @@
       "statusInRange": "im Normbereich",
       "statusBelow": "unter dem Bereich",
       "statusAbove": "über dem Bereich",
-      "directionFlat": "keine Änderung"
+      "directionFlat": "keine Änderung",
+      "dismiss": "Bis zum nächsten Befund ausblenden"
     },
     "navGripStrength": "Griffkraft",
     "navPainNrs": "Schmerz",

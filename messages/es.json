@@ -5238,7 +5238,8 @@
       "statusInRange": "dentro del rango",
       "statusBelow": "por debajo del rango",
       "statusAbove": "por encima del rango",
-      "directionFlat": "sin cambios"
+      "directionFlat": "sin cambios",
+      "dismiss": "Ocultar hasta el próximo análisis"
     },
     "navGripStrength": "Fuerza de agarre",
     "navPainNrs": "Dolor",
