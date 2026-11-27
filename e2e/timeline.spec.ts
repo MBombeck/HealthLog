@@ -142,6 +142,10 @@ test("switching it on opens the readiness inventory, which leads to the timeline
 }) => {
   await mockTimeline(page, "ready", TODAY);
   await page.goto("/settings/modules");
+  const toggle = page.locator("#module-toggle-timeline");
+  await expect(toggle).toHaveAttribute("aria-checked", "false", {
+    timeout: 20_000,
+  });
   // The card's dismissal lives on the account, which every project and
   // worker shares: start from it open, and answer the close below locally so
   // no other test meets the card already put away.
@@ -165,10 +169,6 @@ test("switching it on opens the readiness inventory, which leads to the timeline
         error: null,
       }),
     });
-  });
-  const toggle = page.locator("#module-toggle-timeline");
-  await expect(toggle).toHaveAttribute("aria-checked", "false", {
-    timeout: 20_000,
   });
   await toggle.click();
 
