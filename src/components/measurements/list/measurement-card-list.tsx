@@ -184,7 +184,7 @@ function MeasurementRow({
       trailing={
         // A long unit ("Atemzüge/min") drops under its value rather than
         // cut the meta line short.
-        <span className="flex max-w-24 flex-wrap items-baseline justify-end gap-x-1 text-right">
+        <span className="flex max-w-[5.25rem] flex-wrap items-baseline justify-end gap-x-1 text-right">
           <span data-slot="measurement-row-value" className="whitespace-nowrap">
             {value}
           </span>

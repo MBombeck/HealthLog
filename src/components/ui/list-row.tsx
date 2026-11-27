@@ -180,7 +180,7 @@ function ListItem({
     <li data-slot="list-item" className={className} {...props}>
       <div
         className={cn(
-          "relative flex min-h-14 items-center gap-3 px-4 py-2",
+          "relative flex min-h-14 items-center gap-2.5 px-4 py-2",
           interactive &&
             "hover:bg-muted/40 has-[[data-slot=list-item-action]:focus-visible]:ring-ring/50 transition-colors has-[[data-slot=list-item-action]:focus-visible]:ring-[3px] has-[[data-slot=list-item-action]:focus-visible]:ring-inset",
         )}
