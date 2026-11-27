@@ -94,9 +94,6 @@ export function DateFormatSelect({
           </option>
         ))}
       </NativeSelect>
-      <p className="text-muted-foreground text-xs">
-        {t("settings.dateFormat.description")}
-      </p>
     </FieldGroup>
   );
 }

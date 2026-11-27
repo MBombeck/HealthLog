@@ -1,7 +1,7 @@
 {
   "$comment": "Route literals for a page src/lib/links/hrefs.ts owns, per file under src outside the registry and tests. Maintained by src/__tests__/route-literal-guard.test.ts.",
-  "count": 138,
-  "total": 280,
+  "count": 137,
+  "total": 278,
   "entries": {
     "app/coach/page-client.tsx": 1,
     "app/custom-metrics/[id]/page.tsx": 1,
@@ -42,10 +42,9 @@
     "components/day/day-nutrients.tsx": 1,
     "components/day/day-sections.tsx": 1,
     "components/day/day-view.tsx": 2,
-    "components/documents/detail/detail-sections.tsx": 2,
+    "components/documents/detail/detail-sections.tsx": 1,
     "components/documents/document-record-links.tsx": 1,
     "components/documents/documents-view.tsx": 1,
-    "components/documents/episode-documents-card.tsx": 1,
     "components/documents/trash/recently-deleted-view.tsx": 3,
     "components/documents/trash/use-recently-deleted.ts": 1,
     "components/documents/vault/vault-page-actions.tsx": 1,

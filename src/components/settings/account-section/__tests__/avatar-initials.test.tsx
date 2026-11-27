@@ -24,13 +24,13 @@ vi.mock("@/hooks/use-auth", () => ({
 }));
 
 import { I18nProvider } from "@/lib/i18n/context";
-import { AvatarSection } from "../avatar-section";
+import { AvatarField } from "../avatar-section";
 
 describe("the settings avatar fallback", () => {
   it("builds its initials from the display name, not the login", () => {
     const html = renderToStaticMarkup(
       <I18nProvider initialLocale="en">
-        <AvatarSection />
+        <AvatarField />
       </I18nProvider>,
     );
     expect(html).toContain(">RE<");

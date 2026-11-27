@@ -6050,7 +6050,7 @@
     "sections": {
       "account": {
         "title": "Conta",
-        "subtitle": "Seu perfil, identidade e dados de login."
+        "subtitle": "Seu perfil, a exibição e a configuração."
       },
       "integrations": {
         "title": "Integrações",
@@ -6859,10 +6859,8 @@
     },
     "profile": "Perfil",
     "language": "Idioma",
-    "languageDescription": "Escolha o idioma de exibição do aplicativo.",
     "timeFormat": {
       "title": "Formato de hora",
-      "description": "Controla se os horários são exibidos no relógio de 24 horas ou de 12 horas (AM/PM).",
       "auto": "Automático (idioma)",
       "h24": "24 horas",
       "h12": "12 horas (AM/PM)",
@@ -6871,7 +6869,6 @@
     },
     "dateFormat": {
       "title": "Formato de data",
-      "description": "Controla a ordem de dia, mês e ano quando as datas são exibidas.",
       "auto": "Automático (idioma)",
       "dmy": "DD.MM.AAAA",
       "mdy": "MM/DD/AAAA",
@@ -6909,14 +6906,13 @@
     },
     "avatar": {
       "title": "Foto do perfil",
-      "description": "Envie uma foto armazenada no seu próprio servidor.",
       "upload": "Enviar foto",
       "replace": "Substituir foto",
       "remove": "Remover",
       "removeTitle": "Remover a foto do perfil?",
       "removeBody": "A imagem é excluída do seu servidor e suas iniciais tomam seu lugar. Você precisaria do arquivo original para enviá-la novamente.",
       "removeConfirm": "Remover foto",
-      "hint": "JPEG, PNG ou WebP. Até 2 MB e 2048×2048 pixels.",
+      "hint": "JPEG, PNG ou WebP, até 2 MB e 2048×2048 pixels.",
       "uploaded": "Foto do perfil atualizada",
       "removed": "Foto do perfil removida",
       "invalidType": "Tipo de imagem não compatível. Use JPEG, PNG ou WebP.",
@@ -7378,7 +7374,6 @@
     "dashboard": {
       "units": {
         "title": "Unidades",
-        "description": "Escolha como distâncias e velocidades são exibidas nos gráficos e blocos.",
         "metric": "Métrico",
         "imperial": "Imperial",
         "saved": "Preferência de unidade salva",
@@ -7386,7 +7381,6 @@
       },
       "glucoseUnit": {
         "title": "Glicemia",
-        "description": "Em qual unidade as leituras de glicemia são exibidas.",
         "saved": "Unidade de glicose salva",
         "saveError": "Não foi possível salvar sua unidade de glicose."
       }
@@ -13313,9 +13307,6 @@
       "titlePlaceholder": "Adicionar um título",
       "kindLabel": "Tipo",
       "dateLabel": "Data do documento",
-      "conditionsLabel": "Condições vinculadas",
-      "linkCondition": "Vincular",
-      "noConditions": "Não vinculado a uma condição",
       "previewUnavailable": "Sem pré-visualização embutida para este tipo de arquivo",
       "uploadedMeta": "Adicionado {date}, {size}",
       "importedFrom": "Importado de {system}",
@@ -13325,10 +13316,6 @@
       "sourceReportSchedule": "seu agendamento de relatórios",
       "share": "Compartilhar",
       "labValuesLink": "Ver {count, plural, one {# resultado laboratorial} other {# resultados laboratoriais}}",
-      "visitsLabel": "Pertence à consulta",
-      "vaccinationsLabel": "Vacinas",
-      "noVisitsToLink": "Nenhuma consulta registrada ainda.",
-      "noVaccinationsToLink": "Nenhuma vacina registrada ainda.",
       "saved": "Alterações salvas",
       "saving": "Salvando…",
       "previewNotOnDevice": "Este navegador não consegue exibir PDFs dentro da página"
@@ -13352,11 +13339,7 @@
       "linkVisit": "Arquivar contra consulta"
     },
     "episodeCard": {
-      "title": "Documentos",
-      "link": "Vincular",
-      "upload": "Enviar",
       "viewAll": "Mostrar tudo",
-      "emptyLine": "Nenhum documento vinculado a esta condição ainda.",
       "loadError": "Não foi possível carregar os documentos vinculados"
     },
     "linkPicker": {
@@ -14749,8 +14732,6 @@
       "choose": "A qual consulta isso pertence?"
     },
     "episodeCard": {
-      "title": "Consultas sobre isso",
-      "emptyLine": "Nenhuma consulta vinculada a esta condição ainda.",
       "add": "Adicionar uma consulta"
     },
     "dashboard": {
@@ -14837,7 +14818,7 @@
       }
     },
     "related": {
-      "title": "Relacionados",
+      "title": "Vínculos",
       "kind": {
         "labResult": "Resultado laboratorial",
         "encounter": "Consulta",
@@ -14859,6 +14840,10 @@
       },
       "nothingToOffer": "Nada para vincular ainda.",
       "saveError": "Não foi possível salvar o vínculo."
+    },
+    "row": {
+      "add": "Vincular",
+      "uploadDocument": "Enviar um documento"
     }
   },
   "bodySites": {

@@ -9,10 +9,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 
 import { MedicationDetailSection } from "@/components/medications/medication-detail-section";
-import {
-  RelatedRecordsList,
-  RelationLinkPickers,
-} from "@/components/links/related-records";
+import { RelatedRecordsList } from "@/components/links/related-records";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
@@ -37,15 +34,14 @@ export function MedicationRelatedSection({
       title={t("links.related.title")}
       dataSlot="medication-uebersicht-related"
     >
-      <div className="space-y-4">
-        <RelatedRecordsList related={related} />
-        <RelationLinkPickers
-          key={medicationId}
-          linksPath={`/api/medications/${encodeURIComponent(medicationId)}/links`}
-          kinds={["conditionEpisode", "document", "encounter"]}
-          related={related}
-          anchor={startsOn}
-          onSaved={() => {
+      <RelatedRecordsList
+        key={medicationId}
+        related={related}
+        edit={{
+          linksPath: `/api/medications/${encodeURIComponent(medicationId)}/links`,
+          kinds: ["conditionEpisode", "document", "encounter"],
+          anchor: startsOn,
+          onSaved: () => {
             // The other end lists the medication too: every kind the
             // pickers file (episode, document, visit) reads it back on its
             // own detail, so each one's prefix goes stale.
@@ -57,9 +53,9 @@ export function MedicationRelatedSection({
             ]) {
               void qc.invalidateQueries({ queryKey });
             }
-          }}
-        />
-      </div>
+          },
+        }}
+      />
     </MedicationDetailSection>
   );
 }

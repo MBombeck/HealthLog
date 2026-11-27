@@ -112,7 +112,12 @@ export function useDocumentDetail({
   const ownsVault = canManageDocuments && !inSharedRecord;
   const labsModuleEnabled = user?.modules?.labs !== false;
 
-  const episodes = useIllnessEpisodes(true);
+  // The condition picker's options: only for someone who may file the
+  // document, and only while the illness module is on.
+  const episodes = useIllnessEpisodes(
+    true,
+    canManageDocuments && user?.modules?.illness !== false,
+  );
 
   const [mutationError, setMutationError] = useState<string | null>(null);
   /** Bumped on a failed write; remounts the link block onto server state. */
@@ -158,15 +163,6 @@ export function useDocumentDetail({
     const current = doc.title ?? "";
     if (next === current) return;
     patch.mutate({ title: next === "" ? null : next });
-  };
-
-  const toggleEpisode = (episodeId: string) => {
-    if (!doc) return;
-    const current = doc.conditionLinks.map((l) => l.episodeId);
-    const next = current.includes(episodeId)
-      ? current.filter((id) => id !== episodeId)
-      : [...current, episodeId];
-    patch.mutate({ episodeIds: next });
   };
 
   /**
@@ -231,7 +227,6 @@ export function useDocumentDetail({
     patch,
     remove,
     commitTitle,
-    toggleEpisode,
     setSuggestedEncounter,
     title,
     sourceSystemName,
