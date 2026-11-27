@@ -3,13 +3,13 @@
   "body": {
     "data": {
       "greeting": {
-        "salutation": "Hi, Sam",
+        "salutation": "Hallo, Sam",
         "date": "anchor+0d+12:00:00"
       },
       "streak": {
         "currentDays": 120,
         "longest": 120,
-        "label": "days in a row"
+        "label": "Tage in Folge"
       },
       "compliance": {
         "scheduledToday": 2,
@@ -371,8 +371,18 @@
         "name": "dashboard.summary"
       },
       "meta": {
-        "cache.analytics.key_hash": 3272136333,
-        "cache.analytics.outcome": "hit",
+        "cache.analytics.key_hash": 3148907570,
+        "cache.analytics.outcome": "miss",
+        "dashboard.sub_allTime_ms": 0,
+        "dashboard.sub_bmi_ms": 0,
+        "dashboard.sub_latestEver_ms": 0,
+        "dashboard.sub_medsToday_ms": 0,
+        "dashboard.sub_monthTrend_ms": 0,
+        "dashboard.sub_moodSeries_ms": 0,
+        "dashboard.sub_sleepNights_ms": 0,
+        "dashboard.sub_sparkline_ms": 0,
+        "dashboard.sub_streakDays_ms": 0,
+        "dashboard.sub_streakIntakes_ms": 0,
         "metrics_emitted": 10,
         "metrics_gated": 0
       },

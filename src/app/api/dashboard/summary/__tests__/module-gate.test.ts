@@ -15,6 +15,7 @@
  * filter in the route turns them red.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { NextRequest } from "next/server";
 
 vi.mock("@/lib/dashboard/summary/month-trend", () => ({
   withMonthTrends: async (_userId: string, cards: unknown[]) => cards,
@@ -123,7 +124,9 @@ function setDisabledModules(disabled: string[]): void {
 }
 
 async function emittedKinds(): Promise<string[]> {
-  const res = await GET();
+  const res = await GET(
+    new NextRequest("http://localhost/api/dashboard/summary"),
+  );
   expect(res.status).toBe(200);
   const body = (await res.json()) as {
     data: { metrics: Array<{ kind: string }> };

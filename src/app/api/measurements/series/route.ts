@@ -28,6 +28,7 @@ import { annotate } from "@/lib/logging/context";
 import { redactForExcerpt } from "@/lib/observability/redact-payload";
 import { kindEnum } from "@/lib/measurements/series/kinds";
 import { readSeries } from "@/lib/measurements/series/read-series";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 
 const querySchema = z.object({
   kind: kindEnum,
@@ -90,6 +91,14 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
   const { kind, days } = parsed.data;
   return apiSuccess(
-    await readSeries({ userId: user.id, actorId: actor.id, kind, days }),
+    await readSeries({
+      userId: user.id,
+      locale: await resolveServerLocale({
+        request,
+        userLocale: actor.locale ?? null,
+      }),
+      kind,
+      days,
+    }),
   );
 });
