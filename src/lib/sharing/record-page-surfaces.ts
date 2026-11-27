@@ -52,7 +52,6 @@ export type RecordRouteRule =
     };
 
 export const OWNER_RULE = { guard: "owner" } as const;
-export const SELF_RULE = { guard: "self" } as const;
 export const GUARDIAN_RULE = { guard: "guardian" } as const;
 
 /** The record on screen, as the server resolved it for this session. */
