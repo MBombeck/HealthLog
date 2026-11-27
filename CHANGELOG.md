@@ -95,8 +95,12 @@
 
 ### Updating
 
+- Take a backup first. With the `backups` volume the container writes a pre-migration dump before it migrates; without it, run `pg_dump` yourself.
+- One migration, 0571. It adds the table `medication_snoozes`, which keeps the time a medication's snooze was set, so an edit or a low-stock notice later in the day no longer carries the snooze over to the next dose. It only adds a table: no existing table, column or row changes, and nothing is rewritten. A snooze that is running when you update works as before until it ends.
+- Going back to 1.49.0 means restoring the pre-migration dump with the 1.49.0 image (`HEALTHLOG_IMAGE_REF=:v1.49.0`; `docs/ops/disaster-recovery.md`, "Going back to before a migration"), not starting the old image on the migrated database.
 - A new password longer than 1024 characters is refused when you register, claim a profile or change your password. A password you already have keeps working whatever its length: signing in and confirming your current password are not capped.
-- If you run HealthLog against your own PostgreSQL server, keep its major at or below the client major in the image (`docker run --rm --entrypoint pg_dump ghcr.io/mbombeck/healthlog:latest --version`). See `docs/ops/postgres-major-upgrade.md`.
+- If you run HealthLog against your own PostgreSQL server, keep its major at or below the client major in the image (`docker run --rm --entrypoint pg_dump ghcr.io/mbombeck/healthlog:latest --version`). See `docs/ops/postgres-major-upgrade.md`. If the server is newer, the container now refuses to migrate, names both versions in the log and waits ten minutes before it exits, so a health check or a restart policy sees it stay up without serving for that long. With no migration pending it starts and logs a warning.
+- A history import from Garmin, Oura or Strava that stopped after a provider outage before the update picks up again from where it stopped on the first start. Nothing to do.
 
 ## [1.49.0] — 2026-11-23
 
