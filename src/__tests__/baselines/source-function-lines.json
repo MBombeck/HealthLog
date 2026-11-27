@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 313,
-  "total": 97802,
+  "total": 97790,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
@@ -77,7 +77,7 @@
     "components/cycle/cycle-calendar.tsx :: CycleCalendar": 292,
     "components/cycle/cycle-settings.tsx :: CycleSettings": 228,
     "components/cycle/cycle-view.tsx :: CycleView": 403,
-    "components/cycle/log-day-sheet.tsx :: LogDaySheet": 753,
+    "components/cycle/log-day-sheet.tsx :: LogDaySheet": 756,
     "components/daily/today-hero.tsx :: TodayHero": 506,
     "components/dashboard/dashboard-header.tsx :: DashboardHeader": 214,
     "components/dashboard/medication-intake-quick-add.tsx :: MedicationIntakeQuickAdd": 226,
@@ -156,7 +156,7 @@
     "components/mood/manage/tag-groups-card.tsx :: TagGroupsCard": 252,
     "components/mood/manage/tag-manager-card.tsx :: TagManagerCard": 261,
     "components/mood/mood-form.tsx :: MoodForm": 498,
-    "components/mood/mood-list.tsx :: MoodList": 973,
+    "components/mood/mood-list.tsx :: MoodList": 958,
     "components/mood/mood-tag-picker.tsx :: MoodTagPicker": 257,
     "components/onboarding/confirm-screen.tsx :: ConfirmScreen": 251,
     "components/onboarding/getting-started-checklist.tsx :: GettingStartedChecklist": 395,

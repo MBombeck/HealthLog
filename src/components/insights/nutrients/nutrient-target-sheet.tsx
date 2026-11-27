@@ -197,18 +197,16 @@ export function NutrientTargetSheet({
           </p>
         ) : null}
       </form>
-      {current ? (
-        <ConfirmDialog
-          open={confirmReset}
-          onOpenChange={setConfirmReset}
-          slot="nutrients-target-reset"
-          title={t("nutrients.macros.removeTitle")}
-          body={t("nutrients.macros.removeBody")}
-          confirmLabel={t("nutrients.macros.clearTarget")}
-          pending={busy && mutation.variables === null}
-          onConfirm={() => mutation.mutate(null)}
-        />
-      ) : null}
+      <ConfirmDialog
+        open={confirmReset}
+        onOpenChange={setConfirmReset}
+        slot="nutrients-target-reset"
+        title={t("nutrients.macros.removeTitle")}
+        body={t("nutrients.macros.removeBody")}
+        confirmLabel={t("nutrients.macros.clearTarget")}
+        pending={busy && mutation.variables === null}
+        onConfirm={() => mutation.mutate(null)}
+      />
     </ResponsiveSheet>
   );
 }

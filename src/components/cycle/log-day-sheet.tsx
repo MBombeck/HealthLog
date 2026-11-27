@@ -1352,23 +1352,21 @@ export function LogDaySheet({
           {t("cycle.sheet.saveError")}
         </p>
       ) : null}
-      {currentRowId ? (
-        <ConfirmDialog
-          open={confirmDelete}
-          onOpenChange={setConfirmDelete}
-          slot="cycle-day-delete"
-          destructive
-          title={t("cycle.sheet.deleteTitle")}
-          body={
-            startsCycle
-              ? t("cycle.sheet.deleteBodyCycleStart")
-              : t("cycle.sheet.deleteBody")
-          }
-          confirmLabel={t("cycle.sheet.deleteConfirm")}
-          pending={deleteDay.isPending}
-          onConfirm={handleDelete}
-        />
-      ) : null}
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        slot="cycle-day-delete"
+        destructive
+        title={t("cycle.sheet.deleteTitle")}
+        body={
+          startsCycle
+            ? t("cycle.sheet.deleteBodyCycleStart")
+            : t("cycle.sheet.deleteBody")
+        }
+        confirmLabel={t("cycle.sheet.deleteConfirm")}
+        pending={deleteDay.isPending}
+        onConfirm={handleDelete}
+      />
     </ResponsiveSheet>
   );
 }

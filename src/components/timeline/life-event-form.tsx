@@ -471,19 +471,17 @@ export function LifeEventForm({
       )}
 
       {footerSlot ? createPortal(footer, footerSlot) : footer}
-      {event ? (
-        <ConfirmDialog
-          open={confirmDelete}
-          onOpenChange={setConfirmDelete}
-          title={t("lifeEvents.deleteConfirm.title")}
-          body={t("lifeEvents.deleteConfirm.body")}
-          confirmLabel={t("lifeEvents.delete")}
-          onConfirm={() => void destroy()}
-          pending={remove.isPending}
-          slot="life-event-delete"
-          destructive
-        />
-      ) : null}
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title={t("lifeEvents.deleteConfirm.title")}
+        body={t("lifeEvents.deleteConfirm.body")}
+        confirmLabel={t("lifeEvents.delete")}
+        onConfirm={() => void destroy()}
+        pending={remove.isPending}
+        slot="life-event-delete"
+        destructive
+      />
     </form>
   );
 }

@@ -22,13 +22,16 @@
  * The one `<div>` a footer may hold is an empty portal host with a `ref`,
  * into which a form renders its own `ActionPair`.
  */
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-import { requireFloor, walkSourceFiles } from "./helpers/source-files";
+import {
+  readSourceText,
+  requireFloor,
+  walkSourceFiles,
+} from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 const FOOTER_ELEMENTS = new Set([
@@ -169,7 +172,7 @@ function sweep(): Finding[] {
     extensions: [".tsx"],
   })) {
     if (rel.includes("__tests__/") || rel.startsWith("generated/")) continue;
-    const text = readFileSync(join(SRC, rel), "utf8");
+    const text = readSourceText(join(SRC, rel));
     if (
       !/<(DialogFooter|SheetFooter|AlertDialogFooter|ActionPair)\b|\bfooter=\{/.test(
         text,

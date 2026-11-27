@@ -29,12 +29,13 @@
  * shows is the booster the person confirmed themselves — the reminder planned
  * when a dose was logged — resolved server-side into a renewal state
  * (`src/lib/vaccinations/renewal.ts`) and rendered on the antigen's heading,
- * tinted only when it has passed or is close. Dose cards stay neutral —
- * content in foreground, meta in muted, no tint.
+ * tinted only when it has passed or is close. Dose rows stay neutral —
+ * content in foreground, meta in muted, no tint. One card per antigen, one
+ * row per dose (`ListGroup` / `ListItem`).
  */
 import { AlarmClock, Syringe } from "lucide-react";
 
-import { Card, CardContent } from "@/components/ui/card";
+import { ListGroup, ListItem } from "@/components/ui/list-row";
 import { Badge } from "@/components/ui/badge";
 import { InfoPopover } from "@/components/ui/info-popover";
 import {
@@ -44,7 +45,6 @@ import {
 } from "@/lib/i18n/context";
 import type { SeriesPosition } from "@/lib/vaccinations/series";
 import type { VaccinationRenewalDTO } from "@/lib/vaccinations/renewal";
-import { cn } from "@/lib/utils";
 import type { Vaccination } from "./use-vaccinations";
 import { CatalogInfo, catalogInfoAvailable } from "./catalog-info";
 import { formatDate as formatCalendarDate } from "@/lib/date-format";
@@ -174,66 +174,48 @@ function DoseRow({
   const showIdentity =
     position !== null && record.catalogEntry?.slug !== position.antigen;
 
+  // Content in the foreground, meta muted (UI standards §3): the dose's
+  // place in the series names the row. A free-text group has no series; its
+  // heading is the name, so the date names the row.
+  // A date, stored at UTC midnight: render the calendar date, not the
+  // instant (the previous evening west of UTC).
+  const date = formatCalendarDate(
+    record.occurredAt.slice(0, 10),
+    dateFormat,
+    locale,
+  );
+  const lot = record.lotNumber
+    ? t("vaccinations.row.lot", { lot: record.lotNumber })
+    : null;
+  const meta = [
+    { key: "date", text: series ? date : null },
+    { key: "identity", text: showIdentity ? identity : null },
+    { key: "lot", text: lot, slot: "vaccination-lot" },
+    { key: "practitioner", text: record.practitioner?.name ?? null },
+  ].filter((part) => !!part.text);
   return (
-    <Card
-      className="hover:bg-muted/40 gap-0 transition-colors"
+    <ListItem
       data-slot="vaccination-row"
       // A second, stable marker for the state rather than for the row: the
-      // `role` is markup that could legitimately change, and a guard matching
-      // on it would pass the day a real `<button>` replaced the card.
+      // control is markup that could legitimately change, and a guard
+      // matching on it would pass the day it did.
       data-slot-open={onEdit ? "vaccination-row-open" : undefined}
       data-vaccination-id={record.id}
-      onClick={onEdit ? () => onEdit(record) : undefined}
-      role={onEdit ? "button" : undefined}
-      tabIndex={onEdit ? 0 : undefined}
-      onKeyDown={
-        onEdit
-          ? (event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                onEdit(record);
-              }
-            }
+      onSelect={onEdit ? () => onEdit(record) : undefined}
+      title={
+        series ? <span data-slot="vaccination-series">{series}</span> : date
+      }
+      meta={
+        meta.length > 0
+          ? meta.map((part, index) => (
+              <span key={part.key} data-slot={part.slot}>
+                {index > 0 ? " · " : null}
+                <span>{part.text}</span>
+              </span>
+            ))
           : undefined
       }
-    >
-      <CardContent className="flex items-center justify-between gap-3 px-4 py-3">
-        <div className="min-w-0 space-y-0.5">
-          <div className="flex flex-wrap items-center gap-x-2 text-sm">
-            {series ? (
-              <span
-                className="text-foreground font-medium"
-                data-slot="vaccination-series"
-              >
-                {series}
-              </span>
-            ) : null}
-            {showIdentity && identity ? (
-              <span className="text-muted-foreground">{identity}</span>
-            ) : null}
-          </div>
-          <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
-            <span>
-              {/* A date, stored at UTC midnight: render the calendar date,
-                  not the instant (the previous evening west of UTC). */}
-              {formatCalendarDate(
-                record.occurredAt.slice(0, 10),
-                dateFormat,
-                locale,
-              )}
-            </span>
-            {record.lotNumber ? (
-              <span data-slot="vaccination-lot">
-                {t("vaccinations.row.lot", { lot: record.lotNumber })}
-              </span>
-            ) : null}
-            {record.practitioner?.name ? (
-              <span>{record.practitioner.name}</span>
-            ) : null}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    />
   );
 }
 
@@ -264,7 +246,7 @@ function RenewalBadge({ renewal }: { renewal: VaccinationRenewalDTO }) {
       variant="outline"
       data-slot="vaccination-renewal"
       data-state={renewal.state}
-      className={cn("tracking-normal normal-case", tone)}
+      className={tone}
     >
       <AlarmClock aria-hidden />
       {text}
@@ -297,12 +279,14 @@ export function VaccinationList({
           data-slot="vaccination-group"
           data-antigen={group.antigen ?? "free"}
         >
-          <h2 className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs font-medium tracking-wide uppercase">
-            <Syringe className="size-3.5" aria-hidden />
+          <h2 className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+            <Syringe className="text-muted-foreground size-4" aria-hidden />
             {group.antigen
               ? t(`vaccinations.catalog.${group.antigen}`)
               : group.freeName}
-            <span className="normal-case">({group.rows.length})</span>
+            <span className="text-muted-foreground font-normal">
+              {group.rows.length}
+            </span>
             {group.antigen && catalogInfoAvailable(group.antigen) ? (
               <InfoPopover
                 label={t("vaccinations.info.affordanceLabel")}
@@ -315,7 +299,7 @@ export function VaccinationList({
               <RenewalBadge renewal={renewalByAntigen.get(group.antigen)!} />
             ) : null}
           </h2>
-          <div className="space-y-2">
+          <ListGroup>
             {group.rows.map((row, index) => (
               <DoseRow
                 key={`${row.record.id}:${index}`}
@@ -323,7 +307,7 @@ export function VaccinationList({
                 onEdit={onEdit}
               />
             ))}
-          </div>
+          </ListGroup>
         </section>
       ))}
     </div>

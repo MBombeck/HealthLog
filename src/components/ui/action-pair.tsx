@@ -28,7 +28,9 @@ import { cn } from "@/lib/utils";
  * a long locale) the two buttons stack, each the full width, the primary
  * last. It is measured, not guessed from a breakpoint: "Speichern" and
  * "Abbrechen" sit side by side on a 320 px phone, "Enregistrer et suivant"
- * does not. Guard: `action-pair-guard.test.ts` (two buttons per footer).
+ * does not. The row owns the buttons' height: 44 px on a phone, the
+ * button's own size above it. Guard: `action-pair-guard.test.ts` (two
+ * buttons per footer).
  */
 function ActionPair({
   className,
@@ -86,7 +88,7 @@ function ActionPair({
       <div
         ref={pairRef}
         data-slot="action-pair"
-        className="ml-auto grid w-max shrink-0 auto-cols-fr grid-flow-col gap-2 data-[stacked=true]:w-auto data-[stacked=true]:min-w-0 data-[stacked=true]:flex-1 data-[stacked=true]:auto-cols-auto data-[stacked=true]:grid-flow-row [&>*]:w-full"
+        className="ml-auto grid w-max shrink-0 auto-cols-fr grid-flow-col gap-2 *:w-full data-[stacked=true]:w-auto data-[stacked=true]:min-w-0 data-[stacked=true]:flex-1 data-[stacked=true]:auto-cols-auto data-[stacked=true]:grid-flow-row max-sm:*:min-h-11"
       >
         {actions}
       </div>
@@ -119,6 +121,7 @@ function ActionMenu({
           type="button"
           variant="outline"
           size="icon"
+          className="max-sm:size-11"
           data-slot={slot}
           disabled={disabled}
           aria-label={label ?? t("common.moreOptions")}

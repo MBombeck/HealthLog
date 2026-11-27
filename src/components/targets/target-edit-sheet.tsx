@@ -591,20 +591,18 @@ function TargetEditSheetBody({
           </div>
         )}
       </form>
-      {hasOverride ? (
-        <ConfirmDialog
-          open={confirmReset}
-          onOpenChange={setConfirmReset}
-          slot="target-edit-reset"
-          title={t("targets.edit.resetTitle")}
-          body={
-            isBp ? t("targets.edit.resetBodyBp") : t("targets.edit.resetBody")
-          }
-          confirmLabel={t("targets.edit.resetConfirm")}
-          pending={resetMutation.isPending}
-          onConfirm={() => resetMutation.mutate()}
-        />
-      ) : null}
+      <ConfirmDialog
+        open={confirmReset}
+        onOpenChange={setConfirmReset}
+        slot="target-edit-reset"
+        title={t("targets.edit.resetTitle")}
+        body={
+          isBp ? t("targets.edit.resetBodyBp") : t("targets.edit.resetBody")
+        }
+        confirmLabel={t("targets.edit.resetConfirm")}
+        pending={resetMutation.isPending}
+        onConfirm={() => resetMutation.mutate()}
+      />
     </ResponsiveSheet>
   );
 }
