@@ -8,8 +8,8 @@
  * - sweep: the same for every live pass, the guardian check of the passes a
  *   guardian made, and the retention of withdrawn passes (a year, so a
  *   device that was away can still fetch the withdrawn version).
- * - void push: every withdrawn pass whose devices have not heard of it,
- *   rebuilt in its withdrawn version and pushed without throttle.
+ * - void push: every withdrawn or expired pass whose devices have not heard
+ *   of it, rebuilt in its ended version and pushed without throttle.
  *
  * A pass that fails is counted and the run carries on; a run that cannot
  * read the table fails and the next tick is the retry.
@@ -35,6 +35,10 @@ import {
   refreshWalletPass,
   voidWalletPassById,
 } from "@/lib/emergency-card/wallet-pass/service";
+import {
+  livePassWhere,
+  walletPassState,
+} from "@/lib/emergency-card/wallet-pass/void";
 import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import { guardianMintRefusal } from "@/lib/sharing/guardian-minted";
@@ -101,12 +105,14 @@ export async function handleWalletPassRefresh(
       if (typeof id !== "string" || id.length === 0) continue;
       const pass = await prisma.walletPass.findUnique({
         where: { id },
-        select: { voidedAt: true, link: { select: { revokedAt: true } } },
+        select: {
+          voidedAt: true,
+          link: { select: { revokedAt: true, expiresAt: true } },
+        },
       });
       if (!pass) continue;
-      // A withdrawn pass is the void push's; nothing to throttle there.
-      const live = pass.voidedAt === null && pass.link.revokedAt === null;
-      await refreshAndPush(id, live, tally);
+      // An ended pass is the void push's; nothing to throttle there.
+      await refreshAndPush(id, walletPassState(pass) === "live", tally);
     }
     evt.addMeta("wallet_passes_refreshed", tally.refreshed);
     return jobDone({
@@ -129,7 +135,7 @@ export async function handleWalletPassSweep(
     try {
       // account-deletion: a deletion request withdraws the account's passes, so a live pass has an active owner.
       const live = await prisma.walletPass.findMany({
-        where: { voidedAt: null, link: { revokedAt: null } },
+        where: livePassWhere(now),
         select: { id: true, userId: true, createdById: true },
         orderBy: { contentChangedAt: "asc" },
         take: PASSES_PER_RUN,
@@ -192,7 +198,10 @@ export async function handleWalletPassVoidPush(
 ): Promise<JobOutcome> {
   void jobs;
   return withBackgroundEvent("job.wallet_pass_void_push", async (evt) => {
-    const since = new Date(Date.now() - WALLET_VOID_PUSH_WINDOW_DAYS * DAY_MS);
+    const now = new Date();
+    const since = new Date(
+      now.getTime() - WALLET_VOID_PUSH_WINDOW_DAYS * DAY_MS,
+    );
     try {
       // account-deletion: a pending account's withdrawn pass is exactly what its devices must hear of.
       const voided = await prisma.walletPass.findMany({
@@ -201,13 +210,14 @@ export async function handleWalletPassVoidPush(
           OR: [
             { voidedAt: { gte: since } },
             { link: { revokedAt: { gte: since } } },
+            { link: { expiresAt: { gte: since, lte: now } } },
           ],
         },
         select: {
           id: true,
           contentChangedAt: true,
           voidedAt: true,
-          link: { select: { revokedAt: true } },
+          link: { select: { revokedAt: true, expiresAt: true } },
           registrations: { select: { createdAt: true, lastPushAt: true } },
         },
         take: PASSES_PER_RUN,
@@ -216,7 +226,7 @@ export async function handleWalletPassVoidPush(
       for (const pass of voided) {
         // Most runs find every device told already: skip without a rebuild.
         const owed = owedRegistrations(
-          walletPassChangedAt(pass),
+          walletPassChangedAt(pass, now),
           pass.registrations,
         );
         if (owed.length > 0) await refreshAndPush(pass.id, false, tally);

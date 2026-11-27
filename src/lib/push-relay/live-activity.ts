@@ -84,6 +84,7 @@ import {
 import { endActivitiesOverRelay } from "@/lib/push-relay/medication-pushes";
 import { newUlid } from "@/lib/push-relay/plaintext";
 import { passPageOffset } from "@/lib/push-relay/pass-window";
+import { relayRoutes } from "@/lib/push-relay/relay-state";
 import {
   loadPushContext,
   ROUTABLE_DEVICE_SELECT,
@@ -742,7 +743,7 @@ export async function runLiveActivityRelayPass(
   const facts: LaPassFacts = { devices: 0, started: 0, updated: 0, failed: 0 };
   if (!liveActivityRelayEnabled()) return facts;
   const ctx = await loadPushContext();
-  if (!ctx.registration?.instanceId) return facts;
+  if (!relayRoutes(ctx.registration)) return facts;
   const where = {
     relayState: "bound",
     relayConsentAt: { not: null },

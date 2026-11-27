@@ -25,7 +25,7 @@ import { prisma } from "@/lib/db";
 import { loadApnsConfig } from "@/lib/notifications/senders/apns";
 import { relayConfig } from "@/lib/push-relay/config";
 import { OPERATOR_ACTION_REASONS } from "@/lib/push-relay/invite";
-import { isCircuitOpen, probeDue } from "@/lib/push-relay/circuit";
+import { probeDue } from "@/lib/push-relay/circuit";
 import {
   ensureInstanceRegistered,
   finishRelayDisable,
@@ -33,7 +33,11 @@ import {
   relayCall,
 } from "@/lib/push-relay/registration";
 import { expireRelayConflicts } from "@/lib/push-relay/binding";
-import { statusCheckDue } from "@/lib/push-relay/relay-status";
+import {
+  relayRoutes,
+  relayUsable,
+  statusCheckDue,
+} from "@/lib/push-relay/relay-state";
 import { attemptDeliveries } from "@/lib/push-relay/relay-send";
 import {
   markReceiptsReported,
@@ -106,7 +110,7 @@ export async function runRelayMaintenance(
     facts.registered = await ensureInstanceRegistered(row, config);
     row = await loadRegistration(config);
   }
-  if (row?.instanceId && isCircuitOpen(row) && probeDue(row, now)) {
+  if (row && relayRoutes(row) && probeDue(row, now)) {
     await relayCall(row, "GET", "/v1/status", undefined, config);
     facts.probed = true;
     row = await loadRegistration(config);
@@ -122,7 +126,7 @@ export async function runRelayMaintenance(
     row = await loadRegistration(config);
   }
 
-  if (row?.instanceId && !isCircuitOpen(row)) {
+  if (row && relayUsable(row, "push", now)) {
     const due = await prisma.pushRelayDelivery.findMany({
       where: { status: "pending", nextAttemptAt: { lte: now } },
       orderBy: { nextAttemptAt: "asc" },
@@ -143,7 +147,7 @@ export async function runRelayMaintenance(
   facts.unbinds_given_up = unbinds.givenUp;
   facts.unbinds_moot = unbinds.moot;
 
-  if (row?.instanceId && !isCircuitOpen(row) && instanceKeyDue(row, now)) {
+  if (row && relayUsable(row, "upkeep", now) && instanceKeyDue(row, now)) {
     facts.instance_key_rotated =
       (await rotateInstanceKey(row, config)) === "rotated";
   }
@@ -155,8 +159,8 @@ export async function runRelayMaintenance(
   }
 
   if (
-    row?.instanceId &&
-    !isCircuitOpen(row) &&
+    row &&
+    relayUsable(row, "upkeep", now) &&
     (!row.receiptsSentAt ||
       now.getTime() - row.receiptsSentAt.getTime() >= RECEIPT_INTERVAL_MS)
   ) {

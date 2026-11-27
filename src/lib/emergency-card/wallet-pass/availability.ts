@@ -6,9 +6,11 @@
  *
  * Available = the operator's external-access switch is on, the instance is
  * reached over https, and a signer is ready: `WALLET_APPLE_*` holds
- * together, or the relay is on, its state is `ok` and its last status said
- * it signs passes for this instance. Read from stored state only; nothing
- * here calls the relay.
+ * together, or the relay is usable for signing (`relayUsable(row,
+ * "wallet_sign")`, the rule the signer itself reads: registered, not ended or
+ * suspended, and its last status said it signs passes for this instance).
+ * A push pause or an open breaker does not hold Wallet. Read from stored
+ * state only; nothing here calls the relay.
  *
  * `state` is the same answer, split for rendering: `relay_off` is the case a
  * server without its own `WALLET_APPLE_*` is in until the relay is switched
@@ -22,6 +24,7 @@ import {
   WALLET_RELAY_CONSENT_TEXT_VERSION,
 } from "@/lib/push-relay/config";
 import { loadRegistration } from "@/lib/push-relay/registration";
+import { relayRefusal } from "@/lib/push-relay/relay-state";
 import { storedRelayStatus } from "@/lib/push-relay/relay-status";
 
 import {
@@ -33,6 +36,7 @@ import { walletSigningMode } from "./sign";
 import {
   latestWalletPass,
   toWalletPassSummary,
+  type WalletPassRow,
   type WalletPassSummary,
 } from "./service";
 
@@ -90,11 +94,10 @@ export async function walletSignerReadiness(): Promise<WalletSignerReadiness> {
   if (!config.available) return { reason: "signer_off", ...none };
   const row = await loadRegistration(config);
   const wallet = storedRelayStatus(row?.relayStatus ?? null)?.wallet ?? null;
-  const ready =
-    Boolean(row?.instanceId) && row?.state === "ok" && wallet?.sign === true;
+  const refusal = relayRefusal(row, "wallet_sign");
   return {
-    reason: ready ? "ok" : "relay_not_ready",
-    relayOff: !row?.instanceId,
+    reason: refusal === null ? "ok" : "relay_not_ready",
+    relayOff: refusal === "not_registered",
     signer: "RELAY",
     passTypeIdentifier: wallet?.passTypeIdentifier ?? null,
     teamIdentifier: wallet?.teamIdentifier ?? null,
@@ -110,6 +113,24 @@ export function isHttpsOrigin(origin: string | null): boolean {
   }
 }
 
+/**
+ * Why a new pass cannot be made at `origin`, or null when it can: the
+ * signer's readiness first, then the https origin. The status below and the
+ * creating POST both read it.
+ */
+export function walletUnavailableReason(
+  readiness: Pick<WalletSignerReadiness, "reason">,
+  origin: string | null,
+): "signer_off" | "relay_not_ready" | "no_https_origin" | null {
+  if (readiness.reason !== "ok") return readiness.reason;
+  return isHttpsOrigin(origin) ? null : "no_https_origin";
+}
+
+/**
+ * The one resolution of the record's Wallet state. The ready push reads it
+ * too (`ready-push.ts`), handing in the pass it already read, so what the app
+ * shows and when it is told "ready" never part.
+ */
 export async function resolveEmergencyWalletApple(input: {
   /** The record on screen. */
   recordUserId: string;
@@ -122,6 +143,8 @@ export async function resolveEmergencyWalletApple(input: {
   callerIsAdmin: boolean;
   /** The caller dismissed the relay prompt. */
   relayHintDismissed: boolean;
+  /** The record's newest pass, when the caller read it already. */
+  pass?: WalletPassRow | null;
   now?: Date;
 }): Promise<EmergencyWalletApple> {
   const base = {
@@ -145,15 +168,13 @@ export async function resolveEmergencyWalletApple(input: {
   const [apiOn, readiness, row] = await Promise.all([
     isApiGloballyEnabled(),
     walletSignerReadiness(),
-    latestWalletPass(input.recordUserId),
+    input.pass !== undefined
+      ? input.pass
+      : latestWalletPass(input.recordUserId),
   ]);
   const reason: WalletAvailabilityReason = !apiOn
     ? "api_disabled"
-    : readiness.reason !== "ok"
-      ? readiness.reason
-      : !isHttpsOrigin(input.origin)
-        ? "no_https_origin"
-        : "ok";
+    : (walletUnavailableReason(readiness, input.origin) ?? "ok");
   const available = reason === "ok";
   const state: WalletState =
     reason === "ok"

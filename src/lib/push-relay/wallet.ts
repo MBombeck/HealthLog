@@ -21,6 +21,7 @@ import { annotate } from "@/lib/logging/context";
 import { relayConfig } from "@/lib/push-relay/config";
 import { fromBase64Url, toBase64Url } from "@/lib/push-relay/encoding";
 import { loadRegistration, relayCall } from "@/lib/push-relay/registration";
+import { relayUsable } from "@/lib/push-relay/relay-state";
 
 export const WALLET_SIGN_PATH = "/v1/wallet/apple/sign";
 export const WALLET_NOTIFY_PATH = "/v1/wallet/apple/notify";
@@ -29,9 +30,6 @@ export const WALLET_NOTIFY_PATH = "/v1/wallet/apple/notify";
 export const WALLET_RELAY_RETRY_S = 60;
 /** At most this many pushes per notify request. */
 export const WALLET_NOTIFY_MAX = 50;
-
-/** Registrations that cannot sign or push at all. */
-const UNUSABLE_STATES = new Set(["revoked", "suspended", "deleting"]);
 
 export type RelayWalletSignResult =
   | {
@@ -50,11 +48,11 @@ export type RelayWalletSignResult =
       retryAfter: number;
     };
 
-async function usableRegistration() {
+async function usableRegistration(purpose: "wallet_sign" | "wallet_notify") {
   const config = relayConfig();
   if (!config.available) return null;
   const row = await loadRegistration(config);
-  if (!row?.instanceId || UNUSABLE_STATES.has(row.state)) return null;
+  if (!row || !relayUsable(row, purpose)) return null;
   return { row, config };
 }
 
@@ -71,7 +69,7 @@ function failure(reason: string, retryAfter: number | null) {
 export async function signManifestViaRelay(
   manifest: Uint8Array,
 ): Promise<RelayWalletSignResult> {
-  const registered = await usableRegistration();
+  const registered = await usableRegistration("wallet_sign");
   if (!registered) return failure("relay_not_registered", null);
   const result = await relayCall(
     registered.row,
@@ -150,7 +148,7 @@ export async function notifyWalletPasses(
     seen.add(item.ref);
     out.set(item.ref, "unavailable");
   }
-  const registered = await usableRegistration();
+  const registered = await usableRegistration("wallet_notify");
   if (!registered) return out;
   const result = await relayCall(
     registered.row,

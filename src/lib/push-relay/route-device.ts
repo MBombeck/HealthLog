@@ -32,6 +32,7 @@ import {
   loadRegistration,
   type RegistrationRow,
 } from "@/lib/push-relay/registration";
+import { relayRoutes } from "@/lib/push-relay/relay-state";
 import {
   overRelay,
   sendRelayItems,
@@ -103,7 +104,7 @@ export function routeFor(
   device: RoutableDevice,
   ctx: {
     apnsConfigured: boolean;
-    registration: Pick<RegistrationRow, "instanceId"> | null;
+    registration: Pick<RegistrationRow, "instanceId" | "state"> | null;
     /** The sender keys are there to seal with. */
     canSeal: boolean;
   },
@@ -113,7 +114,7 @@ export function routeFor(
   if (!ctx.canSeal) return "none";
   if (ctx.apnsConfigured) return "direct";
   if (
-    ctx.registration?.instanceId &&
+    relayRoutes(ctx.registration) &&
     device.relayConsentAt &&
     device.relayState === "bound"
   ) {

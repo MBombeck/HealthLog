@@ -9,6 +9,8 @@
  *            the instance key, because every update draws the QR code again),
  *            the ticked items and the expiry frozen on it, and the pass row.
  *            Returns where to download it; never the token, never the URL.
+ *            An expired pass is replaced: withdrawn in the same transaction,
+ *            so its devices fetch the withdrawn version. A live one is 409.
  *            Cookie only, with a fresh proof of the person at the keyboard.
  *   DELETE → withdraw it: the link stops answering, the pass is stamped and
  *            from then on downloads in its withdrawn version. Cookie only.
@@ -39,13 +41,13 @@ import {
 import { cardCookieOnlyRefusal } from "@/lib/emergency-card/manage";
 import { mintCardToken } from "@/lib/emergency-card/token";
 import {
-  isHttpsOrigin,
   resolveEmergencyWalletApple,
   walletSignerReadiness,
+  walletUnavailableReason,
 } from "@/lib/emergency-card/wallet-pass/availability";
 import {
   buildWalletPassFiles,
-  hasLiveWalletLink,
+  hasLiveWalletPass,
   latestWalletPass,
   signerIdentityFor,
   toWalletPassSummary,
@@ -54,7 +56,11 @@ import {
   WALLET_WINDOW_MS,
 } from "@/lib/emergency-card/wallet-pass/service";
 import { WALLET_DOWNLOAD_PATH } from "@/lib/emergency-card/wallet-pass/constants";
-import { enqueueWalletReadyPush } from "@/lib/emergency-card/wallet-pass/queues";
+import {
+  enqueueWalletReadyPush,
+  enqueueWalletVoidPush,
+} from "@/lib/emergency-card/wallet-pass/queues";
+import { voidExpiredWalletPasses } from "@/lib/emergency-card/wallet-pass/void";
 import { createWalletPass } from "@/lib/emergency-card/wallet-pass/store";
 import { resolveOrigin } from "@/lib/http/origin";
 import { coerceLocale } from "@/lib/i18n/config";
@@ -127,12 +133,7 @@ export const POST = apiHandler(
 
     const origin = resolveOrigin(request);
     const readiness = await walletSignerReadiness();
-    const unavailable =
-      readiness.reason !== "ok"
-        ? readiness.reason
-        : !isHttpsOrigin(origin)
-          ? "no_https_origin"
-          : null;
+    const unavailable = walletUnavailableReason(readiness, origin);
     if (
       unavailable ||
       !readiness.signer ||
@@ -160,10 +161,10 @@ export const POST = apiHandler(
       });
     }
 
-    if (await hasLiveWalletLink(user.id)) return walletExists();
+    const now = new Date();
+    if (await hasLiveWalletPass(user.id, now)) return walletExists();
 
     const fields = normaliseFields(parsed.data.fields);
-    const now = new Date();
     const expiresAt =
       typeof parsed.data.expiresInDays === "number"
         ? new Date(now.getTime() + parsed.data.expiresInDays * DAY_MS)
@@ -188,9 +189,11 @@ export const POST = apiHandler(
     });
 
     let created;
+    let replaced = 0;
     try {
-      created = await prisma.$transaction((tx) =>
-        createWalletPass(tx, {
+      created = await prisma.$transaction(async (tx) => {
+        replaced = await voidExpiredWalletPasses(tx, user.id, now);
+        return createWalletPass(tx, {
           userId: user.id,
           createdById: actor.id,
           token: minted,
@@ -207,8 +210,8 @@ export const POST = apiHandler(
             readiness.signer === "RELAY"
               ? WALLET_RELAY_CONSENT_TEXT_VERSION
               : "local",
-        }),
-      );
+        });
+      });
     } catch (err) {
       // A second mint racing this one lost to the one-live-link index.
       if (isP2002(err)) return walletExists();
@@ -226,6 +229,8 @@ export const POST = apiHandler(
       },
     });
 
+    // The expired pass this one replaced reaches its devices withdrawn.
+    if (replaced > 0) await enqueueWalletVoidPush();
     // "Ready for Wallet" on the iPhone, unless a device has it by then.
     await enqueueWalletReadyPush(user.id);
     const pass = await latestWalletPass(user.id);
