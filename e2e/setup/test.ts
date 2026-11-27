@@ -70,29 +70,17 @@ const OBSERVED_PAGE_EVENTS = [
  * budget spec does to count the page as a reader first meets it.
  */
 const OPEN_FOLDS_SCRIPT = () => {
-  // Batched to one sweep per frame, and only when a mutation added a fold:
-  // a chart-heavy page mutates thousands of nodes and must not pay a
-  // document-wide query for each.
-  let queued = false;
+  // One selector query every 100 ms rather than a MutationObserver: a
+  // chart-heavy page adds thousands of nodes while it renders, and a
+  // per-mutation check slowed it enough to time out a layout spec.
   const sweep = () => {
-    queued = false;
     for (const el of document.querySelectorAll<HTMLDetailsElement>(
       "details[data-fold]:not([open])",
     )) {
       el.open = true;
     }
   };
-  const hasFold = (node: Node) =>
-    node instanceof Element &&
-    (node.matches("details[data-fold]") ||
-      node.querySelector("details[data-fold]") !== null);
-  new MutationObserver((records) => {
-    if (queued) return;
-    if (records.some((r) => Array.from(r.addedNodes).some(hasFold))) {
-      queued = true;
-      requestAnimationFrame(sweep);
-    }
-  }).observe(document, { childList: true, subtree: true });
+  setInterval(sweep, 100);
   document.addEventListener("DOMContentLoaded", sweep);
 };
 
