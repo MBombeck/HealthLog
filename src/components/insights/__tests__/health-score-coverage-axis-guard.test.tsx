@@ -60,6 +60,11 @@ const CARD_FILE = join(
   process.cwd(),
   "src/components/insights/health-score-card.tsx",
 );
+/** The panel's pillar rows, split out of the card file in 1.50. */
+const PILLARS_FILE = join(
+  process.cwd(),
+  "src/components/insights/health-score-pillars.tsx",
+);
 
 function parse(path: string, text?: string): ts.SourceFile {
   return ts.createSourceFile(
@@ -221,10 +226,14 @@ describe("the domain count is never described as a pillar count", () => {
 });
 
 describe("the composite's coverage meter names its own axis", () => {
-  const meters = coverageMeters(parse(CARD_FILE));
+  const meters = [
+    ...coverageMeters(parse(CARD_FILE)),
+    ...coverageMeters(parse(PILLARS_FILE)),
+  ];
 
   it("finds every meter on the panel", () => {
-    // Three: the composite's, each scored pillar's, and the weight goal's.
+    // Three: the composite's, each scored pillar's (in its row), and the
+    // weight goal's.
     expect(meters).toHaveLength(3);
   });
 

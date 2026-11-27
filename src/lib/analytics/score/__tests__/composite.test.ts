@@ -554,3 +554,63 @@ describe("reference-score composite", () => {
     expect(report.deltaReason).toBe("below_noise_floor");
   });
 });
+
+/**
+ * 1.50 — the weights published beside the number are the ones the number
+ * was made with. The score is the plain mean of the counted pillars, so a
+ * client that multiplies each pillar by its published weight must land on
+ * the published score; a weight a scorer change left behind fails here.
+ */
+describe("the published pillar weights are the mean's own", () => {
+  const SETS: number[][] = [
+    [82, 64],
+    [20, 100, 99],
+    [71, 58, 90, 43, 66],
+    [12.5, 87.25, 50, 61, 70, 33, 99],
+  ];
+  const IDS: ScorePillarId[] = [
+    "BLOOD_PRESSURE",
+    "ACTIVITY",
+    "SLEEP",
+    "ADIPOSITY",
+    "WELLBEING",
+    "GLYCAEMIA",
+    "LIPIDS",
+  ];
+
+  for (const scores of SETS) {
+    it(`weighs ${scores.length} counted pillars so they sum to the score`, () => {
+      const entries = scores.map((score, index) => pillar(IDS[index], score));
+      const result = evaluation(entries, NOW);
+      expect(result.status).toBe("ok");
+      if (result.status !== "ok") return;
+      const weights = result.value.weights ?? [];
+      expect(weights.map((w) => w.id)).toEqual(result.value.composition);
+      expect(weights.reduce((sum, w) => sum + w.weight, 0)).toBeCloseTo(1, 10);
+      const weighted = weights.reduce((sum, w) => {
+        const row = entries.find((entry) => entry.id === w.id)!;
+        if (row.result.status !== "ok") throw new Error("uncounted pillar");
+        return sum + w.weight * row.result.value.score;
+      }, 0);
+      expect(Math.round(weighted)).toBe(result.value.score);
+    });
+  }
+
+  it("gives a pillar that did not count no weight", () => {
+    const counted = pillar("ACTIVITY", 80);
+    const gated: ScorePillarResult = {
+      id: "SLEEP",
+      domain: "sleep",
+      result: {
+        status: "insufficient",
+        coverage: counted.result.coverage,
+        provenance: counted.result.provenance,
+        reason: "not_tracked",
+      },
+    };
+    const result = evaluation([counted, gated], NOW);
+    expect(result.status).toBe("ok");
+    if (result.status !== "ok") return;
+    expect(result.value.weights).toEqual([{ id: "ACTIVITY", weight: 1 }]);
+  });
+});

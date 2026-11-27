@@ -18,6 +18,7 @@ import {
   SCORE_PILLARS_EXAMPLE_INPUT,
 } from "@/lib/openapi/examples";
 import { dashboardScorePillar } from "@/lib/openapi/routes/insights/schemas";
+import { compositeWeights } from "@/lib/analytics/score/composite";
 
 const provenance = {
   inputs: [],
@@ -31,6 +32,13 @@ const coverage = {
   historyDays: 90,
   missing: [],
 };
+
+/** The composite's weights for the example: the two pillars that counted. */
+const WEIGHTS = compositeWeights(
+  SCORE_PILLARS_EXAMPLE_INPUT.filter((entry) => "score" in entry).map(
+    (entry) => entry.id,
+  ),
+);
 
 function pillarResults(): ScorePillarResult[] {
   return SCORE_PILLARS_EXAMPLE_INPUT.map((entry) => ({
@@ -56,7 +64,7 @@ function pillarResults(): ScorePillarResult[] {
 
 describe("snapshot score pillars", () => {
   it("the published example is what the builder returns, and parses", () => {
-    const built = snapshotScorePillars(pillarResults(), "en");
+    const built = snapshotScorePillars(pillarResults(), WEIGHTS, "en");
     expect(built).toEqual(dashboardScorePillarsExample);
     for (const row of dashboardScorePillarsExample) {
       expect(
@@ -67,12 +75,16 @@ describe("snapshot score pillars", () => {
 
   it("words every pillar and reason in every shipped language", () => {
     for (const locale of locales) {
-      for (const row of snapshotScorePillars(pillarResults(), locale)) {
+      for (const row of snapshotScorePillars(
+        pillarResults(),
+        WEIGHTS,
+        locale,
+      )) {
         expect(row.label).not.toMatch(/^insights\./);
         if (row.reason !== null) expect(row.reason).not.toMatch(/^insights\./);
       }
     }
-    const de = snapshotScorePillars(pillarResults(), "de");
+    const de = snapshotScorePillars(pillarResults(), WEIGHTS, "de");
     expect(de[2]).toMatchObject({ value: null, reason: "Nicht erfasst" });
   });
 

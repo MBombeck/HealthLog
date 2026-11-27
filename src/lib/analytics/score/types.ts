@@ -197,6 +197,12 @@ export interface ScoreBasis {
   physiological: boolean;
 }
 
+/** One counted pillar's share of the Health score, 0..1. */
+export interface ScorePillarWeight {
+  id: ScorePillarId;
+  weight: number;
+}
+
 export interface CompositeValue {
   score: number;
   /**
@@ -232,6 +238,13 @@ export interface CompositeValue {
    * sets it on the ok arm.
    */
   scoreBasis?: ScoreBasis;
+  /**
+   * 1.50 — each counted pillar's share of the number, in `composition`
+   * order, from `compositeWeights` (the rule the mean itself follows).
+   * Optional on the type for the same reason as `scoreBasis`;
+   * `computeComposite` always sets it on the ok arm.
+   */
+  weights?: ScorePillarWeight[];
   /** Equal-weighted floor across delta-eligible pillars. */
   noiseFloor: number;
   scoreVersion: typeof SCORE_VERSION;

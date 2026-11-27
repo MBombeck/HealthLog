@@ -5416,16 +5416,18 @@
         "green": "baixo",
         "yellow": "moderado",
         "red": "alto"
-      }
+      },
+      "origin": {
+        "estimate": "Estimativa",
+        "device": "Valor do dispositivo"
+      },
+      "estimateNoFactors": "Calculado a partir dos seus dados cardíacos, não informado por um dispositivo.",
+      "deviceNoFactors": "Este valor chega pronto do seu dispositivo. Ele não informa fatores individuais."
     },
     "deviceScores": {
       "title": "Pontuações do dispositivo",
       "description": "O que seu wearable informa, com os nomes dele.",
-      "valueOfScale": "{value} de {max}",
-      "estimatesTitle": "Estimativas do HealthLog",
-      "estimatesSubtitle": "Calculadas a partir dos seus dados cardíacos, não informadas por um dispositivo.",
-      "stress": "Estresse (estimativa)",
-      "strain": "Tensão (estimativa)"
+      "valueOfScale": "{value} de {max}"
     }
   },
   "thresholds": {

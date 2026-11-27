@@ -13,6 +13,7 @@ import {
   type ScoreBand,
   type ScorePillarId,
   type ScorePillarResult,
+  type ScorePillarWeight,
 } from "./types";
 import { bandForScoreKind, provenance, scoreBand } from "./shared";
 import { evaluateScoreBreadth, SCORE_RECOMMENDED_DOMAINS } from "./breadth";
@@ -44,6 +45,21 @@ export interface CompositeInput {
    * cannot stay silent and publish `false` for a configured account.
    */
   configured: boolean;
+}
+
+/**
+ * How much each counted pillar weighs in the number: the same for every one,
+ * because the score is their plain mean (`mean` below, nothing else). The
+ * weights are published beside the number so a client can say how the
+ * pillars count without knowing the rule; a test pins that the weighted sum
+ * of the pillar scores is the number.
+ */
+export function compositeWeights(
+  composition: readonly ScorePillarId[],
+): ScorePillarWeight[] {
+  if (composition.length === 0) return [];
+  const weight = 1 / composition.length;
+  return composition.map((id) => ({ id, weight }));
 }
 
 export function computeComposite(
@@ -169,6 +185,7 @@ export function computeComposite(
         tier: breadth.tier,
         physiological: breadth.physiological,
       },
+      weights: compositeWeights(composition),
       noiseFloor,
       scoreVersion: SCORE_VERSION,
     },

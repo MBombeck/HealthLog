@@ -5416,16 +5416,18 @@
         "green": "niedrig",
         "yellow": "mittel",
         "red": "hoch"
-      }
+      },
+      "origin": {
+        "estimate": "Schätzwert",
+        "device": "Gerätewert"
+      },
+      "estimateNoFactors": "Aus deinen Herzdaten berechnet, nicht von einem Gerät gemeldet.",
+      "deviceNoFactors": "Dieser Wert kommt fertig von deinem Gerät. Einzelne Faktoren liefert es nicht mit."
     },
     "deviceScores": {
       "title": "Gerätewerte",
       "description": "Was dein Wearable meldet, unter seinen eigenen Namen.",
-      "valueOfScale": "{value} von {max}",
-      "estimatesTitle": "Schätzwerte von HealthLog",
-      "estimatesSubtitle": "Aus deinen Herzdaten berechnet, nicht von einem Gerät gemeldet.",
-      "stress": "Stress (Schätzwert)",
-      "strain": "Belastung (Schätzwert)"
+      "valueOfScale": "{value} von {max}"
     }
   },
   "thresholds": {

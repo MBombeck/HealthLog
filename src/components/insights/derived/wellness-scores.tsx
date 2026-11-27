@@ -4,7 +4,7 @@ import { useState, type ComponentType, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Gauge, HeartPulse, Moon } from "lucide-react";
+import { Activity, Flame, Gauge, HeartPulse, Moon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { apiGet } from "@/lib/api/api-fetch";
@@ -20,18 +20,27 @@ import {
 import { ScoreRing } from "./score-ring";
 import { RING_GRADIENT, TILE_HUE, type RingHue } from "./ring-hues";
 import type { DerivedBatchRead } from "./use-derived-metric";
-import { scoreBandWordKey, type ScoreBand } from "./band-tokens";
+import {
+  scoreBandWordKey,
+  scoreOriginLabelKey,
+  type ScoreBand,
+} from "./band-tokens";
 // Type-only — the compute payloads never drag the server graph into the bundle.
 import type { ReadinessValue } from "@/lib/insights/derived/readiness";
 import type { SleepScoreValue } from "@/lib/insights/derived/sleep-score";
+import type { WellnessScoreValue } from "@/lib/insights/derived/wellness-scores";
 import type { HealthScoreReport } from "@/lib/analytics/score/types";
 import { TileHeader } from "@/components/insights/tile-header";
 import { Card } from "@/components/ui/card";
+import { TagChip } from "@/components/ui/tag-chip";
+import { metricHref } from "@/lib/links/hrefs";
 
 /**
- * The three score rings at the head of Insights: Readiness ("today"), Sleep
- * score ("last night") and the Health score ("the long view"), in that
- * order, above every customisable section.
+ * The score rings at the head of Insights: Readiness ("today"), Sleep score
+ * ("last night"), the Health score ("the long view"), then Stress and Strain,
+ * in that order, above every customisable section. Every 0..100 score wears
+ * the same tile; whose number it is (an estimate, a device's value) is a
+ * label on the tile from the server's `origin`, not a section of its own.
  *
  * Not a section on purpose. A section id a saved layout has hidden would
  * take the rings with it, and a layout that has never seen an id merges it
@@ -93,6 +102,7 @@ export function RingTile({
   baseline,
   history,
   titleAs = "h2",
+  originLabel = null,
 }: {
   /** The 0..100 score; null draws the bare track (see `note`). */
   score: number | null;
@@ -124,6 +134,8 @@ export function RingTile({
   history?: { series: number[]; windowDays: number } | null;
   /** The tile title's heading level: `h3` inside a section with its own. */
   titleAs?: "h2" | "h3";
+  /** Whose number it is ("Estimate", "Device value"), from `value.origin`. */
+  originLabel?: string | null;
 }) {
   const Icon = icon;
   const delayMs = index * 75;
@@ -147,7 +159,16 @@ export function RingTile({
         animate && "wellness-tile-rise",
       )}
     >
-      <TileHeader icon={Icon} title={label} titleAs={titleAs} />
+      <TileHeader
+        icon={Icon}
+        title={label}
+        titleAs={titleAs}
+        right={
+          originLabel ? (
+            <TagChip data-slot="wellness-score-origin">{originLabel}</TagChip>
+          ) : undefined
+        }
+      />
       <div className="flex items-center gap-4 md:flex-col md:items-stretch">
         <div className="flex shrink-0 flex-col items-center gap-1.5">
           <ScoreRing
@@ -316,6 +337,60 @@ const DAY_SCORES = [
   { id: "SLEEP_SCORE", kind: "sleep", icon: Moon },
 ] as const;
 
+/** The two loads, after the Health score: a heavy one reads "high". */
+const LOAD_SCORES = [
+  { id: "STRESS_SCORE", kind: "stress", slug: "stress-score", icon: Activity },
+  { id: "STRAIN_SCORE", kind: "strain", slug: "strain-score", icon: Flame },
+] as const;
+
+/**
+ * A stress or strain tile, labelled by the server's `origin`. A strain the
+ * device served (no computed strain yet) shows the device's own reading in
+ * place of a band word.
+ */
+function loadTile(
+  tile: (typeof LOAD_SCORES)[number],
+  v: WellnessScoreValue,
+  history: ReturnType<typeof historyOf>,
+  ctx: {
+    t: ReturnType<typeof useTranslations>["t"];
+    fmt: ReturnType<typeof useFormatters>;
+    index: number;
+    play: boolean;
+  },
+): ReactNode {
+  const { t, fmt } = ctx;
+  const title = t(`insights.derived.scores.${tile.kind}`);
+  const word = v.device ? null : t(scoreBandWordKey(tile.kind, v.band));
+  const deviceLine = v.device
+    ? t("insights.derived.composite.STRAIN_SCORE.deviceCaption", {
+        value: fmt.number(v.device.value, 1),
+        max: v.device.scaleMax,
+      })
+    : null;
+  const originKey = scoreOriginLabelKey(v.origin);
+  return (
+    <RingTile
+      key={tile.id}
+      score={v.score}
+      band={v.band}
+      label={title}
+      bandWord={word}
+      note={deviceLine}
+      ariaLabel={`${title}: ${v.score}, ${word ?? deviceLine}`}
+      href={metricHref(tile.slug) ?? ""}
+      metricSlot={tile.id}
+      hue={tile.kind}
+      icon={tile.icon}
+      history={history}
+      index={ctx.index}
+      animate={ctx.play}
+      baseline={baselineOf(v.series)}
+      originLabel={originKey ? t(originKey) : null}
+    />
+  );
+}
+
 export function WellnessScores({
   read,
   isLoading,
@@ -452,6 +527,20 @@ export function WellnessScores({
     );
   }
 
+  for (const tile of LOAD_SCORES) {
+    const r = read<WellnessScoreValue>({ metric: tile.id });
+    if (r?.status === "ok" && r.value) {
+      tiles.push(
+        loadTile(tile, r.value, historyOf(r), {
+          t,
+          fmt,
+          index: tiles.length,
+          play,
+        }),
+      );
+    }
+  }
+
   // A failed shared batch reads as an error, not as "no scores". The Health
   // score comes from another read and still shows beside it.
   const errorRow = isError ? (
@@ -467,11 +556,13 @@ export function WellnessScores({
   if (tiles.length === 0 && !errorRow) return null;
 
   // The row fills its width whatever the count: two scores take half each
-  // rather than leaving an empty third cell that reads as a missing tile.
+  // rather than leaving an empty third cell that reads as a missing tile, and
+  // four stand two by two so none hangs alone under three.
   const MD_COLS: Record<number, string> = {
     1: "md:grid-cols-1",
     2: "md:grid-cols-2",
     3: "md:grid-cols-3",
+    4: "md:grid-cols-2",
   };
 
   return (
@@ -489,7 +580,7 @@ export function WellnessScores({
           data-revealed={play ? "true" : undefined}
           className={cn(
             "grid grid-cols-1 gap-3",
-            MD_COLS[Math.min(tiles.length, 3)],
+            MD_COLS[tiles.length] ?? MD_COLS[3],
           )}
         >
           {tiles}
