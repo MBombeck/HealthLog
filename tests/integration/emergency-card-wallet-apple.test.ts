@@ -447,6 +447,59 @@ describe("with the operator's own Pass Type ID", () => {
     expect(response.headers.get("hl-wallet-state")).toBe("expired");
   });
 
+  it("replaces an expired pass, and the old serial is withdrawn for good", async () => {
+    const owner = await makeUser();
+    await seedCard(owner.id);
+    const session = await makeSession(owner);
+    const first = await create(session, { ...CREATE, expiresInDays: 30 });
+    expect(first.status).toBe(201);
+    await prisma.emergencyCardLink.updateMany({
+      where: { userId: owner.id, purpose: "WALLET" },
+      data: { expiresAt: new Date(Date.now() - 60_000) },
+    });
+    expect((await walletStatus(session)).data.apple.pass?.state).toBe(
+      "expired",
+    );
+
+    // The card offers "make a new one" for an expired pass: it works.
+    const second = await create(session);
+    expect(second.status).toBe(201);
+    expect(second.data.pass.state).toBe("live");
+    expect(second.data.pass.serialNumber).not.toBe(
+      first.data.pass.serialNumber,
+    );
+    expect((await walletStatus(session)).data.apple.pass).toMatchObject({
+      state: "live",
+      serialNumber: second.data.pass.serialNumber,
+    });
+
+    // The old serial is stamped, its link ended, and it builds empty.
+    const old = await prisma.walletPass.findUniqueOrThrow({
+      where: { serialNumber: first.data.pass.serialNumber },
+      select: { id: true, voidedAt: true, voidReason: true, linkId: true },
+    });
+    expect(old.voidedAt).not.toBeNull();
+    expect(old.voidReason).toBe("OWNER");
+    const oldLink = await prisma.emergencyCardLink.findUniqueOrThrow({
+      where: { id: old.linkId },
+      select: { revokedAt: true },
+    });
+    expect(oldLink.revokedAt).not.toBeNull();
+    const { latestWalletPassById, syncWalletPassContent } =
+      await import("@/lib/emergency-card/wallet-pass/service");
+    const synced = await syncWalletPassContent(
+      (await latestWalletPassById(old.id))!,
+    );
+    const oldJson = new TextDecoder().decode(synced.files.get("pass.json"));
+    expect(JSON.parse(oldJson).voided).toBe(true);
+    expect(oldJson).not.toContain("Alex Example");
+
+    // A live pass still refuses a second one.
+    expect((await create(session)).meta?.errorCode).toBe(
+      "emergency-card.wallet.exists",
+    );
+  });
+
   it("answers 503 with Retry-After when the pass's signer is gone", async () => {
     const owner = await makeUser();
     await seedCard(owner.id);
@@ -613,6 +666,26 @@ describe("with the project's signing service", () => {
     const reg = await prisma.pushRelayRegistration.findFirstOrThrow();
     expect(reg.circuitOpenedAt).toBeNull();
     expect(reg.pausedUntil).toBeNull();
+  });
+
+  it("stays available while the relay paused pushes", async () => {
+    await relayWithWallet();
+    const owner = await makeUser();
+    const session = await makeSession(owner);
+    // A 429 with Retry-After on the push path: degraded and paused. The
+    // signer still signs, so Wallet says what the signer does.
+    await prisma.pushRelayRegistration.updateMany({
+      data: {
+        state: "degraded",
+        stateReason: "rate_limited",
+        pausedUntil: new Date(Date.now() + 10 * 60_000),
+      },
+    });
+    expect((await walletStatus(session)).data.apple).toMatchObject({
+      available: true,
+      reason: "ok",
+      signer: "relay",
+    });
   });
 
   it("is not offered while the relay does not sign passes", async () => {

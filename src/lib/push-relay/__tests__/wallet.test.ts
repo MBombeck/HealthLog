@@ -24,7 +24,23 @@ import {
   WALLET_SIGN_PATH,
 } from "@/lib/push-relay/wallet";
 
-const ROW = { id: "reg", instanceId: "inst", state: "ok" };
+// The relay's last status says it signs passes for this instance.
+const ROW = {
+  id: "reg",
+  instanceId: "inst",
+  state: "ok",
+  circuitOpenedAt: null,
+  pausedUntil: null,
+  relayStatus: {
+    at: "2026-11-27T12:00:00.000Z",
+    state: "ok",
+    wallet: {
+      sign: true,
+      passTypeIdentifier: "pass.dev.healthlog.emergency",
+      teamIdentifier: "ABCDE12345",
+    },
+  },
+};
 const MANIFEST = new TextEncoder().encode(
   '{"pass.json":"' + "a".repeat(40) + '"}',
 );
@@ -133,11 +149,12 @@ describe("signManifestViaRelay", () => {
     }
   });
 
-  it("does not call a relay this server is not registered at", async () => {
+  it("does not call a relay this server cannot sign through", async () => {
     for (const row of [
       null,
       { ...ROW, instanceId: null },
       { ...ROW, state: "suspended" },
+      { ...ROW, relayStatus: null },
     ]) {
       loadRegistration.mockResolvedValueOnce(row);
       expect(await signManifestViaRelay(MANIFEST)).toMatchObject({

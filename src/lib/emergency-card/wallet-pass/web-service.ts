@@ -210,7 +210,7 @@ export async function updatedWalletSerials(
           serialNumber: true,
           contentChangedAt: true,
           voidedAt: true,
-          link: { select: { revokedAt: true } },
+          link: { select: { revokedAt: true, expiresAt: true } },
         },
       },
     },

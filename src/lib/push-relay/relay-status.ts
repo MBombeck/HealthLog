@@ -16,8 +16,6 @@
  * breaker's own probe is the same request, every one to five minutes), while
  * the relay asked this server to pause, or for a revoked instance.
  */
-import { isCircuitOpen } from "@/lib/push-relay/circuit";
-import type { RegistrationRow } from "@/lib/push-relay/registration";
 
 export const STATUS_INTERVAL_MS = 60 * 60_000;
 
@@ -146,17 +144,6 @@ export function anyItemAccepted(body: Record<string, unknown> | null): boolean {
         (r as { status?: unknown; result?: unknown })?.status === 200 &&
         (r as { result?: unknown }).result === "accepted",
     )
-  );
-}
-
-/** Whether the hourly status is due for `row`. */
-export function statusCheckDue(row: RegistrationRow, now: Date): boolean {
-  if (!row.instanceId || isCircuitOpen(row)) return false;
-  if (row.state === "revoked" || row.state === "deleting") return false;
-  if (row.pausedUntil && row.pausedUntil > now) return false;
-  return (
-    !row.statusCheckedAt ||
-    now.getTime() - row.statusCheckedAt.getTime() >= STATUS_INTERVAL_MS
   );
 }
 

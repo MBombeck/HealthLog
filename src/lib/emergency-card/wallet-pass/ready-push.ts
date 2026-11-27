@@ -13,7 +13,9 @@
  * only while all of these hold:
  *
  *   1. the card shows something with the items the pass carries;
- *   2. the resolved Wallet state is `available`, so the pass downloads;
+ *   2. the resolved Wallet state (`resolveEmergencyWalletApple`, the one
+ *      `/api/auth/me` publishes) is `available` and its pass is `live`, so
+ *      the pass downloads and counts;
  *   3. no device has registered the pass with the pass web service: a
  *      registration means it is in Wallet already;
  *   4. the person has not said no (`walletReadyPushDismissed`, per person,
@@ -42,7 +44,8 @@ import { dispatchNotification } from "@/lib/notifications/dispatcher";
 import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 
 import { resolveEmergencyWalletApple } from "./availability";
-import { latestWalletPass, walletPassState } from "./service";
+import { latestWalletPass } from "./service";
+import { livePassWhere } from "./void";
 
 export const WALLET_READY_EVENT = "EMERGENCY_CARD_WALLET_READY";
 /** The first pass, and one more after a withdrawn pass was made again. */
@@ -99,7 +102,20 @@ export async function sendWalletReadyPush(
   if (user.walletReadyPushDismissed) return skip("dismissed");
 
   const pass = await latestWalletPass(userId);
-  if (!pass || walletPassState(pass, now) !== "live") return skip("no_pass");
+  if (!pass) return skip("no_pass");
+  // The state `/api/auth/me` publishes for this record, from the pass read
+  // above. The origin is the one the pass was made on: it downloads there.
+  const apple = await resolveEmergencyWalletApple({
+    recordUserId: userId,
+    allowed: true,
+    origin: pass.webServiceOrigin,
+    authMethod: "bearer",
+    callerIsAdmin: false,
+    relayHintDismissed: false,
+    pass,
+    now,
+  });
+  if (apple.pass?.state !== "live") return skip("no_pass");
   const [claim, sends] = await Promise.all([
     prisma.walletPass.findUnique({
       where: { id: pass.id },
@@ -111,17 +127,6 @@ export async function sendWalletReadyPush(
   ]);
   if (claim?.readyPushSentAt) return skip("already_sent");
   if (sends >= WALLET_READY_MAX_SENDS) return skip("limit");
-
-  const apple = await resolveEmergencyWalletApple({
-    recordUserId: userId,
-    allowed: true,
-    // The origin the pass was made on, which is the one it downloads from.
-    origin: pass.webServiceOrigin,
-    authMethod: "bearer",
-    callerIsAdmin: false,
-    relayHintDismissed: false,
-    now,
-  });
   if (apple.state !== "available") return skip("not_available");
 
   const [registrations, devices, card] = await Promise.all([
@@ -189,8 +194,7 @@ export async function runWalletReadyPushPass(
   const candidates = await prisma.walletPass.findMany({
     where: {
       readyPushSentAt: null,
-      voidedAt: null,
-      link: { revokedAt: null },
+      ...livePassWhere(now),
       user: activeAccount({
         managedProfileAt: null,
         walletReadyPushDismissed: false,

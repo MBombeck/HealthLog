@@ -5,10 +5,10 @@ import {
   RELAY_REPORTED_REASONS,
   relayStatusOf,
   stateForReported,
-  statusCheckDue,
   STATUS_INTERVAL_MS,
   storedRelayStatus,
 } from "@/lib/push-relay/relay-status";
+import { statusCheckDue } from "@/lib/push-relay/relay-state";
 import type { RegistrationRow } from "@/lib/push-relay/registration";
 
 const now = new Date("2026-11-22T12:00:00.000Z");

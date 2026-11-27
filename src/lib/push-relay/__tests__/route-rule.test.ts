@@ -24,7 +24,7 @@ const bound: RoutableDevice = {
   relayState: "bound",
   relayConsentAt: new Date("2026-11-01T00:00:00Z"),
 };
-const relay = { instanceId: "inst-1" };
+const relay = { instanceId: "inst-1", state: "ok" };
 
 describe("routeFor", () => {
   it.each([

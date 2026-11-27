@@ -69,7 +69,7 @@ describe("adminRelayStatus ownApnsKey", () => {
     expect(
       routeFor(boundDevice, {
         apnsConfigured: status.ownApnsKey,
-        registration: { instanceId: "i1" },
+        registration: { instanceId: "i1", state: "ok" },
         canSeal: true,
       }),
     ).toBe("direct");
@@ -82,7 +82,7 @@ describe("adminRelayStatus ownApnsKey", () => {
     expect(
       routeFor(boundDevice, {
         apnsConfigured: status.ownApnsKey,
-        registration: { instanceId: "i1" },
+        registration: { instanceId: "i1", state: "ok" },
         canSeal: true,
       }),
     ).toBe("relay");

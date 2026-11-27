@@ -41,14 +41,13 @@ import {
   relayDocumentUrls,
   type RelayConfig,
 } from "@/lib/push-relay/config";
-import { isCircuitOpen } from "@/lib/push-relay/circuit";
 import {
   operatorDecisionOf,
   storedRelayDecisionOf,
   type RelayOperatorDecision,
 } from "@/lib/push-relay/operator-decision";
 import { readOperatorRow } from "@/lib/settings/operator-row";
-import { relayStateAt } from "@/lib/push-relay/relay-state";
+import { relayRefusal, relayStateAt } from "@/lib/push-relay/relay-state";
 import {
   liveActivityStartsState,
   type LiveActivityStart,
@@ -125,7 +124,7 @@ export function relayHealth(row: RegistrationRow | null): {
   reason: string | null;
 } {
   if (!row) return { state: "off", since: null, reason: null };
-  if (isCircuitOpen(row)) {
+  if (relayRefusal(row, "push") === "circuit_open") {
     return {
       state: "down",
       since: row.circuitOpenedAt,

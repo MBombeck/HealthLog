@@ -47,7 +47,7 @@ import { prisma } from "@/lib/db";
 import { deleteDeviceRows } from "@/lib/devices/delete-devices";
 import { getEvent } from "@/lib/logging/context";
 import { relayConfig, type RelayConfig } from "@/lib/push-relay/config";
-import { isCircuitOpen } from "@/lib/push-relay/circuit";
+import { relayRefusal } from "@/lib/push-relay/relay-state";
 import type { EnvelopeMessage } from "@/lib/push-relay/envelope";
 import { settleLiveActivityPush } from "@/lib/push-relay/live-activity-settle";
 import {
@@ -578,17 +578,18 @@ async function attemptInto(
     }
   }
   if (live.length === 0) return;
-  if (!registration?.instanceId || isCircuitOpen(registration)) {
+  const refusal = relayRefusal(registration, "push", now);
+  if (refusal === "paused" && registration?.pausedUntil) {
+    await holdAll(live, registration.pausedUntil, "relay_paused", summary);
+    return;
+  }
+  if (refusal || !registration) {
     await holdAll(
       live,
       registration?.nextProbeAt ?? new Date(now.getTime() + 60 * SECOND),
       "relay_unavailable",
       summary,
     );
-    return;
-  }
-  if (registration.pausedUntil && registration.pausedUntil > now) {
-    await holdAll(live, registration.pausedUntil, "relay_paused", summary);
     return;
   }
   for (let i = 0; i < live.length; i += BATCH) {
