@@ -188,6 +188,10 @@
     "/admin/integrations": {
       "budget": 1200,
       "target": 1200
+    },
+    "/settings/export": {
+      "budget": 1500,
+      "target": 1500
     }
   }
 }
