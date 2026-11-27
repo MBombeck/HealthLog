@@ -80,6 +80,10 @@ const SIZE: Record<
     numberClass: "text-2xl md:text-5xl",
     labelClass: "hidden text-xs md:block",
   },
+  // The dashboard's score tiles: 104 px in the wide tile (one tile column of
+  // the strip below), 88 px three to a row in the phone's single tile.
+  dashboard: { px: 104, numberClass: "text-3xl", labelClass: "text-2xs" },
+  compact: { px: 88, numberClass: "text-2xl", labelClass: "text-2xs" },
   // The Insights score tiles: 80 px beside the tile's text on a phone, the
   // `sm` 120 px dial from the md breakpoint up.
   tile: {
@@ -108,7 +112,7 @@ export interface ScoreRingProps {
    * Render size. `sm` in a grid tile, `md`/`lg` on the anatomy view,
    * `responsive` on the dashboard hero (compact on a phone, `md` above).
    */
-  size?: "sm" | "md" | "lg" | "responsive" | "tile";
+  size?: "sm" | "md" | "lg" | "responsive" | "tile" | "dashboard" | "compact";
   /** Disable the sweep + count-up (e.g. when already revealed this session). */
   animate?: boolean;
   /**

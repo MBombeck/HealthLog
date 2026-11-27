@@ -11,7 +11,7 @@
  *   - letGo → guilt-free retirement: status `abandoned`, a terminal, respected
  *             outcome (the calm inversion of a streak). The card never nags.
  *
- * "Adjust" is navigation (an `href` into the coach) handled by `PriorityCard`
+ * "Adjust" is navigation (an `href` into the coach) handled by the ask card (`today-asks.tsx`)
  * as a `<Link>` — it never reaches this hook.
  *
  * Both invalidate the daily digest (so the acted-on card leaves the rail) and

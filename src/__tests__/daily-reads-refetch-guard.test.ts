@@ -147,12 +147,12 @@ const DIRECT_NO_REFETCH_ALLOWLIST = [
   // integration cards in the bundle allowlist: the user is configuring, not
   // acting on the hero; poll/focus convergence is intended.
   "components/settings/integrations/google-health-card.tsx",
-  // The check-in card and the priority-item dismissal both render INSIDE the
-  // Today digest, so the digest query is mounted and the default
+  // The coach check-in and the dashboard's ask card both act INSIDE the
+  // Today digest's own rows, so the digest query is mounted and the default
   // `refetchType: "active"` refetches it immediately — the inactive arm has
   // nothing to cover.
+  "components/dashboard/today-asks.tsx",
   "hooks/use-coach-checkin.ts",
-  "hooks/use-priority-item-dismiss.ts",
 ].sort();
 
 describe("daily-reads refetch guard", () => {

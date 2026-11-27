@@ -9815,9 +9815,7 @@
         "title": "Configurar este servidor",
         "body": "Cinco passos curtos sobre cadastros, notificações, IA e privacidade; você pode pular ou mudar qualquer um depois.",
         "open": "Começar a configuração",
-        "dismiss": "Agora não",
-        "relayBody": "Lembretes no iPhone e a Wallet aguardam esta resposta, na página inicial da administração.",
-        "relayOpen": "Abrir administração"
+        "dismiss": "Agora não"
       },
       "accounts": {
         "title": "Quem pode usar este servidor",
@@ -13918,6 +13916,7 @@
     },
     "action": {
       "logDose": "Tomar",
+      "later": "Mais tarde",
       "reconnect": "Reconectar",
       "viewCheckups": "Ver prevenção",
       "viewAppointment": "Ver consulta",
@@ -13932,14 +13931,8 @@
       "openSource": "Abrir"
     },
     "today": {
-      "scoreLabel": "Pontuação de saúde",
       "deltaVsBaseline": "{delta} vs. seu baseline",
       "deltaFlat": "Em linha com seu baseline",
-      "sleepPending": "O sono de ontem à noite ainda não chegou, então a leitura de hoje é provisória.",
-      "worthALook": "Vale uma olhada",
-      "allClear": "Nada precisa da sua atenção hoje.",
-      "ringLink": "Abrir detalhes de {metric}",
-      "heading": "Hoje",
       "steadyWeeksOne": "Estável por {count} semana",
       "steadyWeeksFew": "Estável por {count} semanas",
       "steadyWeeksOther": "Estável por {count} semanas",

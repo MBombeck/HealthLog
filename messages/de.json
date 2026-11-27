@@ -9815,9 +9815,7 @@
         "title": "Diesen Server einrichten",
         "body": "Fünf kurze Schritte zu Registrierung, Benachrichtigungen, KI und Datenschutz; jeden kannst du überspringen oder später ändern.",
         "open": "Einrichtung starten",
-        "dismiss": "Nicht jetzt",
-        "relayBody": "Erinnerungen auf dem iPhone und Wallet warten auf diese Antwort, auf der Admin-Startseite.",
-        "relayOpen": "Admin öffnen"
+        "dismiss": "Nicht jetzt"
       },
       "accounts": {
         "title": "Wer diesen Server nutzen kann",
@@ -13918,6 +13916,7 @@
     },
     "action": {
       "logDose": "Einnehmen",
+      "later": "Später",
       "reconnect": "Neu verbinden",
       "viewCheckups": "Vorsorge ansehen",
       "viewAppointment": "Termin ansehen",
@@ -13932,14 +13931,8 @@
       "openSource": "Öffnen"
     },
     "today": {
-      "scoreLabel": "Gesundheitsscore",
       "deltaVsBaseline": "{delta} ggü. deinem Ausgangswert",
       "deltaFlat": "Im Bereich deines Ausgangswerts",
-      "sleepPending": "Der Schlaf von letzter Nacht fehlt noch, der heutige Wert ist vorläufig.",
-      "worthALook": "Einen Blick wert",
-      "allClear": "Heute braucht nichts deine Aufmerksamkeit.",
-      "ringLink": "{metric}-Details öffnen",
-      "heading": "Heute",
       "steadyWeeksOne": "Seit {count} Woche stabil",
       "steadyWeeksFew": "Seit {count} Wochen stabil",
       "steadyWeeksOther": "Seit {count} Wochen stabil",

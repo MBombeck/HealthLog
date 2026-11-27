@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
-  "count": 2824,
-  "total": 8731,
+  "count": 2820,
+  "total": 8726,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -779,10 +779,6 @@
     "components/cycle/symptom-catalog.ts": 2,
     "components/cycle/types.ts": 1,
     "components/cycle/use-cycle.ts": 3,
-    "components/daily/__tests__/priority-card.test.tsx": 1,
-    "components/daily/__tests__/today-hero.test.tsx": 2,
-    "components/daily/priority-card.tsx": 1,
-    "components/daily/today-hero.tsx": 1,
     "components/dashboard/__tests__/environment-chip.test.tsx": 1,
     "components/dashboard/__tests__/medication-intake-quick-add.test.tsx": 3,
     "components/dashboard/__tests__/recent-workouts-tile.test.tsx": 2,

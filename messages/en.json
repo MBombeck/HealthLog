@@ -9815,9 +9815,7 @@
         "title": "Set up this server",
         "body": "Five short steps for sign-ups, notifications, AI and privacy; skip or change any of them later.",
         "open": "Start the setup",
-        "dismiss": "Not now",
-        "relayBody": "iPhone reminders and Wallet wait for this answer, on the admin start page.",
-        "relayOpen": "Open admin"
+        "dismiss": "Not now"
       },
       "accounts": {
         "title": "Who can use this server",
@@ -13918,6 +13916,7 @@
     },
     "action": {
       "logDose": "Take",
+      "later": "Later",
       "reconnect": "Reconnect",
       "viewCheckups": "Open Care",
       "viewAppointment": "View visit",
@@ -13932,14 +13931,8 @@
       "openSource": "Open"
     },
     "today": {
-      "scoreLabel": "Health score",
       "deltaVsBaseline": "{delta} vs your baseline",
       "deltaFlat": "In line with your baseline",
-      "sleepPending": "Last night's sleep isn't in yet, so today's read is provisional.",
-      "worthALook": "Worth a look",
-      "allClear": "Nothing needs your attention today.",
-      "ringLink": "Open {metric} details",
-      "heading": "Today",
       "steadyWeeksOne": "Steady for {count} week",
       "steadyWeeksFew": "Steady for {count} weeks",
       "steadyWeeksOther": "Steady for {count} weeks",

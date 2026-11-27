@@ -38,6 +38,7 @@ const NARRATIVE_DIGEST: DailyDigest = {
   restMode: null,
   line: LONG_HEADLINE_BRIEFING.paragraph,
   worthALook: [],
+  asks: [],
   justIn: null,
   reactionLine: null,
 };
@@ -77,14 +78,9 @@ test.describe("v1.34.1 deterministic UI evidence", () => {
     await mkdir(EVIDENCE_DIR, { recursive: true });
 
     await page.setViewportSize({ width: 1440, height: 900 });
-    let dailyDigest = NARRATIVE_DIGEST;
-    // TodayHero reads the unified digest endpoint, not the dashboard
-    // snapshot's legacy briefing field. Keep a mutable, deterministic reader
-    // so this evidence covers both the narrative composition captured below
-    // and the compact score-only fallback through the exact production seam.
-    // This spec pins the Today hero, which stands in when the morning read
-    // is missing (a server without it, a failed read); the morning block
-    // has its own spec (`morning-block.spec.ts`).
+    // The top of the dashboard reads the unified digest endpoint; a
+    // deterministic reader keeps the capture stable. Without a morning read
+    // the score row shows the Health score alone.
     await page.route(/\/api\/daily\/morning(\?|$)/, (route) =>
       route.fulfill({
         status: 404,
@@ -96,7 +92,7 @@ test.describe("v1.34.1 deterministic UI evidence", () => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ data: dailyDigest, error: null }),
+        body: JSON.stringify({ data: NARRATIVE_DIGEST, error: null }),
       }),
     );
     await mockDashboardSnapshot(page, {
@@ -104,46 +100,16 @@ test.describe("v1.34.1 deterministic UI evidence", () => {
     });
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect(page.locator("#main-content")).toBeVisible();
-    const hero = page.locator('[data-slot="today-hero"]');
-    await expect(hero).toHaveAttribute("data-layout", "narrative");
-    await expect(hero.locator('[data-slot="today-hero-lead"]')).toContainText(
-      "Dein systolischer Blutdruck",
-    );
-    await expect(hero.locator('[data-slot="score-ring"]')).toHaveCSS(
-      "width",
-      "168px",
-    );
+    const scores = page.locator('[data-slot="today-scores"]');
+    await expect(scores).toHaveAttribute("data-tile-count", "1");
+    await expect(
+      scores
+        .locator('[data-slot="today-score-tile"] [data-slot="score-ring"]')
+        .getByText("84", { exact: true }),
+    ).toHaveCount(1);
     await settleAndCapture(page, testInfo, "dashboard-desktop.png");
 
-    dailyDigest = {
-      ...NARRATIVE_DIGEST,
-      topSignal: null,
-      briefingLead: null,
-      lead: null,
-      line: "Dein Gesundheitsscore liegt heute bei 84.",
-      reactionLine: null,
-    };
-    await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(hero).toHaveAttribute("data-layout", "compact-all-clear");
-    await expect(hero.locator('[data-slot="today-hero-lead"]')).toHaveCount(0);
-    await expect(
-      hero.locator('[data-slot="today-hero-all-clear"]'),
-    ).toBeVisible();
-    await expect(hero.locator('[data-slot="score-ring"]')).toHaveCSS(
-      "width",
-      "120px",
-    );
-    await expect(
-      hero.locator('[data-slot="score-ring"]').getByText("84", { exact: true }),
-    ).toHaveCount(1);
-    await settleAndCapture(page, testInfo, "dashboard-score-only-desktop.png");
-
     await page.setViewportSize({ width: 390, height: 844 });
-    const compactHeroBox = await hero.boundingBox();
-    expect(compactHeroBox).not.toBeNull();
-    expect(
-      compactHeroBox?.width ?? Number.POSITIVE_INFINITY,
-    ).toBeLessThanOrEqual(390);
     expect(
       await page.evaluate(
         () =>

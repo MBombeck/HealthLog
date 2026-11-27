@@ -6,14 +6,14 @@
  * Vorsorge nudge, a failed-sync retry, a durable milestone, a new-ECG pointer,
  * and an elevated-at-rest tension window. Later slices (Today rail S2, coach
  * check-in S3, ECG weave S10, milestones S12, tension S11) each add ONE `kind`
- * plus a server-side item builder — never a new component. `PriorityCard`
- * renders it; `buildDailyDigest` emits it.
+ * plus a server-side item builder — never a new component. `buildDailyDigest`
+ * emits it; the asks (`asks.ts`) pick the rows the start page shows.
  *
  * The type is deliberately WIRE-SERIALISABLE: the digest DTO crosses the
  * `GET /api/daily/digest` boundary (and, later, a native-client / iOS-widget
  * boundary), so an item carries no React component. The card derives its
  * Lucide glyph deterministically from `kind` (see `KIND_ICON` in
- * `src/components/daily/priority-card.tsx`) — the icon lives with the
+ * `src/components/dashboard/today-asks.tsx`) — the icon lives with the
  * renderer, the closed `kind` enum with the model. This is the one intentional
  * departure from the Fable §1.2 code block (which sketched `icon: LucideIcon`
  * inline); a serialisable single-source-of-truth DTO cannot hold a component.
@@ -140,7 +140,7 @@ export type PriorityItemStatus = "success" | "warning" | "info" | "destructive";
  * action is pure navigation.
  */
 export interface PriorityItemAction {
-  /** i18n key under `daily.action.*`, resolved by `PriorityCard`. */
+  /** i18n key under `daily.action.*`, resolved by the client. */
   labelKey: string;
   /** Stable action token (`dose.log`, `sync.reconnect`, …). */
   intent: string;

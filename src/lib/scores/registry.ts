@@ -93,7 +93,9 @@ export const SCORE_SLUGS: readonly string[] = HEALTHLOG_SCORE_IDS.map(
 export const SCORE_RING_SITES: Readonly<
   Record<string, { scores: readonly HealthLogScoreId[]; planned?: true }>
 > = {
-  "src/components/daily/today-hero.tsx": { scores: ["HEALTH_SCORE"] },
+  "src/components/dashboard/today-scores.tsx": {
+    scores: ["HEALTH_SCORE", "SLEEP_SCORE", "READINESS"],
+  },
   "src/components/insights/derived/score-anatomy-view.tsx": {
     scores: [
       "READINESS",
@@ -115,14 +117,6 @@ export const SCORE_RING_SITES: Readonly<
   },
   "src/components/insights/derived/hero-strip.tsx": {
     scores: ["READINESS", "SLEEP_SCORE", "HEALTH_SCORE"],
-    planned: true,
-  },
-  "src/components/daily/morning-block.tsx": {
-    scores: ["HEALTH_SCORE", "READINESS", "SLEEP_SCORE"],
-    planned: true,
-  },
-  "src/components/daily/morning-card.tsx": {
-    scores: ["READINESS", "SLEEP_SCORE"],
     planned: true,
   },
 };

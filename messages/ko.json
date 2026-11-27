@@ -9815,9 +9815,7 @@
         "title": "이 서버 설정하기",
         "body": "가입, 알림, AI, 개인정보에 관한 짧은 다섯 단계이며, 어느 단계든 건너뛰거나 나중에 바꿀 수 있습니다.",
         "open": "설정 시작",
-        "dismiss": "나중에",
-        "relayBody": "iPhone 알림과 Wallet은 관리자 시작 페이지에서 이 답변을 기다려요.",
-        "relayOpen": "관리자 열기"
+        "dismiss": "나중에"
       },
       "accounts": {
         "title": "이 서버를 사용할 수 있는 사람",
@@ -13918,6 +13916,7 @@
     },
     "action": {
       "logDose": "복용",
+      "later": "나중에",
       "reconnect": "다시 연결",
       "viewCheckups": "건강검진 보기",
       "viewAppointment": "진료 보기",
@@ -13932,14 +13931,8 @@
       "openSource": "열기"
     },
     "today": {
-      "scoreLabel": "건강 점수",
       "deltaVsBaseline": "기준값 대비 {delta}",
       "deltaFlat": "기준값과 비슷해요",
-      "sleepPending": "어젯밤 수면이 아직 들어오지 않아 오늘 결과는 잠정치예요.",
-      "worthALook": "살펴볼 만한 것",
-      "allClear": "오늘은 신경 쓸 일이 없어요.",
-      "ringLink": "{metric} 자세히 보기",
-      "heading": "오늘",
       "steadyWeeksOne": "{count}주째 안정적",
       "steadyWeeksFew": "{count}주째 안정적",
       "steadyWeeksOther": "{count}주째 안정적",

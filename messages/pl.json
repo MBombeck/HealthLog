@@ -9815,9 +9815,7 @@
         "title": "Skonfiguruj ten serwer",
         "body": "Pięć krótkich kroków o rejestracji, powiadomieniach, AI i prywatności; każdy możesz pominąć lub zmienić później.",
         "open": "Rozpocznij konfigurację",
-        "dismiss": "Nie teraz",
-        "relayBody": "Przypomnienia na iPhonie i Wallet czekają na tę odpowiedź, na stronie startowej administracji.",
-        "relayOpen": "Otwórz administrację"
+        "dismiss": "Nie teraz"
       },
       "accounts": {
         "title": "Kto może korzystać z tego serwera",
@@ -13918,6 +13916,7 @@
     },
     "action": {
       "logDose": "Przyjmij",
+      "later": "Później",
       "reconnect": "Połącz ponownie",
       "viewCheckups": "Otwórz profilaktykę",
       "viewAppointment": "Zobacz wizytę",
@@ -13932,14 +13931,8 @@
       "openSource": "Otwórz"
     },
     "today": {
-      "scoreLabel": "Wynik zdrowia",
       "deltaVsBaseline": "{delta} wzgl. Twojej wartości bazowej",
       "deltaFlat": "Zgodnie z Twoją wartością bazową",
-      "sleepPending": "Sen z ostatniej nocy jeszcze nie dotarł, więc dzisiejszy odczyt jest wstępny.",
-      "worthALook": "Warto sprawdzić",
-      "allClear": "Dziś nic nie wymaga Twojej uwagi.",
-      "ringLink": "Otwórz szczegóły: {metric}",
-      "heading": "Dziś",
       "steadyWeeksOne": "Stabilnie od {count} tygodnia",
       "steadyWeeksFew": "Stabilnie od {count} tygodni",
       "steadyWeeksOther": "Stabilnie od {count} tygodni",

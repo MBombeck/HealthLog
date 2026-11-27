@@ -9815,9 +9815,7 @@
         "title": "Configura questo server",
         "body": "Cinque brevi passaggi su registrazioni, notifiche, IA e privacy; puoi saltarli o cambiarli più tardi.",
         "open": "Inizia la configurazione",
-        "dismiss": "Non ora",
-        "relayBody": "I promemoria su iPhone e Wallet aspettano questa risposta, nella pagina iniziale dell’amministrazione.",
-        "relayOpen": "Apri amministrazione"
+        "dismiss": "Non ora"
       },
       "accounts": {
         "title": "Chi può usare questo server",
@@ -13918,6 +13916,7 @@
     },
     "action": {
       "logDose": "Assumi",
+      "later": "Più tardi",
       "reconnect": "Riconnetti",
       "viewCheckups": "Vedi controlli",
       "viewAppointment": "Vedi visita",
@@ -13932,14 +13931,8 @@
       "openSource": "Apri"
     },
     "today": {
-      "scoreLabel": "Punteggio di salute",
       "deltaVsBaseline": "{delta} rispetto al tuo valore di riferimento",
       "deltaFlat": "In linea con il tuo valore di riferimento",
-      "sleepPending": "Il sonno di stanotte non è ancora arrivato: la lettura di oggi è provvisoria.",
-      "worthALook": "Da tenere d'occhio",
-      "allClear": "Oggi nulla richiede la tua attenzione.",
-      "ringLink": "Apri i dettagli di {metric}",
-      "heading": "Oggi",
       "steadyWeeksOne": "Stabile da {count} settimana",
       "steadyWeeksFew": "Stabile da {count} settimane",
       "steadyWeeksOther": "Stabile da {count} settimane",

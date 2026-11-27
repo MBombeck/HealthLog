@@ -9815,9 +9815,7 @@
         "title": "Configurer ce serveur",
         "body": "Cinq étapes courtes sur les inscriptions, les notifications, l'IA et la confidentialité ; chacune peut être ignorée ou modifiée plus tard.",
         "open": "Commencer la configuration",
-        "dismiss": "Pas maintenant",
-        "relayBody": "Les rappels sur iPhone et Wallet attendent cette réponse, sur la page d’accueil de l’administration.",
-        "relayOpen": "Ouvrir l’administration"
+        "dismiss": "Pas maintenant"
       },
       "accounts": {
         "title": "Qui peut utiliser ce serveur",
@@ -13918,6 +13916,7 @@
     },
     "action": {
       "logDose": "Prendre",
+      "later": "Plus tard",
       "reconnect": "Reconnecter",
       "viewCheckups": "Voir les examens",
       "viewAppointment": "Voir le rendez-vous",
@@ -13932,14 +13931,8 @@
       "openSource": "Ouvrir"
     },
     "today": {
-      "scoreLabel": "Score de santé",
       "deltaVsBaseline": "{delta} par rapport à votre référence",
       "deltaFlat": "Conforme à votre référence",
-      "sleepPending": "Le sommeil de la nuit dernière n'est pas encore arrivé : la lecture du jour est provisoire.",
-      "worthALook": "À regarder",
-      "allClear": "Rien ne requiert votre attention aujourd'hui.",
-      "ringLink": "Ouvrir les détails de {metric}",
-      "heading": "Aujourd'hui",
       "steadyWeeksOne": "Stable depuis {count} semaine",
       "steadyWeeksFew": "Stable depuis {count} semaines",
       "steadyWeeksOther": "Stable depuis {count} semaines",

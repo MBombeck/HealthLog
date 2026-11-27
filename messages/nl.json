@@ -9815,9 +9815,7 @@
         "title": "Deze server inrichten",
         "body": "Vijf korte stappen over aanmeldingen, meldingen, AI en privacy; elke stap kun je overslaan of later wijzigen.",
         "open": "Inrichting starten",
-        "dismiss": "Niet nu",
-        "relayBody": "Herinneringen op de iPhone en Wallet wachten op dit antwoord, op de beheerstartpagina.",
-        "relayOpen": "Beheer openen"
+        "dismiss": "Niet nu"
       },
       "accounts": {
         "title": "Wie deze server kan gebruiken",
@@ -13918,6 +13916,7 @@
     },
     "action": {
       "logDose": "Innemen",
+      "later": "Later",
       "reconnect": "Opnieuw verbinden",
       "viewCheckups": "Controles bekijken",
       "viewAppointment": "Bezoek bekijken",
@@ -13932,14 +13931,8 @@
       "openSource": "Openen"
     },
     "today": {
-      "scoreLabel": "Gezondheidsscore",
       "deltaVsBaseline": "{delta} t.o.v. je basislijn",
       "deltaFlat": "In lijn met je basislijn",
-      "sleepPending": "De slaap van afgelopen nacht is nog niet binnen, dus het beeld van vandaag is voorlopig.",
-      "worthALook": "Het bekijken waard",
-      "allClear": "Er vraagt vandaag niets om je aandacht.",
-      "ringLink": "Details van {metric} openen",
-      "heading": "Vandaag",
       "steadyWeeksOne": "Al {count} week stabiel",
       "steadyWeeksFew": "Al {count} weken stabiel",
       "steadyWeeksOther": "Al {count} weken stabiel",

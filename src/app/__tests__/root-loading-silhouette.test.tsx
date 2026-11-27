@@ -29,7 +29,7 @@ import {
  */
 
 const GRID_TRACK =
-  "[grid-template-columns:repeat(auto-fit,minmax(min(100%,11rem),1fr))]";
+  "[grid-template-columns:repeat(auto-fit,minmax(min(100%,10.5rem),1fr))]";
 
 // Same expression the fallback (and, per-user, the page) uses to size
 // the silhouette strip: web-known widget ids, tileVisible falling back
@@ -63,7 +63,7 @@ describe("RootLoading — structured dashboard silhouette (SSR markup)", () => {
   it("uses the same auto-fit grid track as the in-page tile strip", () => {
     const markup = renderMarkup();
     expect(markup).toContain(
-      "grid-template-columns:repeat(auto-fit,minmax(min(100%,11rem),1fr))",
+      "grid-template-columns:repeat(auto-fit,minmax(min(100%,10.5rem),1fr))",
     );
   });
 

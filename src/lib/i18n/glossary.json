@@ -2608,11 +2608,6 @@
           "match": "exact"
         },
         {
-          "key": "daily.today.scoreLabel",
-          "form": "name",
-          "match": "exact"
-        },
-        {
           "key": "insights.healthScore.label",
           "form": "name",
           "match": "exact"

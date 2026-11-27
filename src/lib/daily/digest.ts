@@ -24,7 +24,7 @@ import type { DailyBriefing, DailyBriefingSignal } from "@/lib/ai/schema";
 import type { AiCapabilityState } from "@/lib/ai/capabilities/types";
 import type { ArrivalKind } from "@/lib/arrivals/types";
 import { encounterKindLabelKey } from "@/lib/encounters/kind-label";
-import { CARE_WIRE_PATH, visitsPath } from "@/lib/encounters/visit-links";
+import { CARE_WIRE_PATH } from "@/lib/encounters/visit-links";
 import type { MedsTodayBlock } from "@/lib/dashboard/meds-today";
 import type { ModuleKey } from "@/lib/modules/registry";
 import type { ServerTranslator } from "@/lib/i18n/server-translator";
@@ -48,8 +48,13 @@ import {
   sameTimeBaselineItemKey,
   syncIssueItemKey,
   tensionWindowItemKey,
-  upcomingVisitItemKey,
 } from "@/lib/daily/priority-item-key";
+import { buildUpcomingVisitItems } from "@/lib/daily/upcoming-visit-items";
+import {
+  asksFromDigest,
+  type AdminAskKind,
+  type DailyAsk,
+} from "@/lib/daily/asks";
 import {
   milestoneCopy,
   milestoneHref,
@@ -108,7 +113,7 @@ export const COACH_CHECKIN_RESURFACE_DAYS = 14;
 
 /**
  * Closed allowlist of the check-in card's two MUTATING intents (§2.3.2). The
- * generic, id-less `PriorityCard` forwards only a single `intent` string, so
+ * generic, id-less ask card (`today-asks.tsx`) forwards only a single `intent` string, so
  * the target plan id is appended after the ":" — the Today handler recovers it
  * and PATCHes the existing plan-lifecycle route. "Adjust" is navigation (an
  * `href` into the coach), so it carries no plan id and never mutates here.
@@ -441,6 +446,10 @@ export interface DailyDigestInput {
   cycle?: TodayCycle | null;
   /** How long the score has held; see `DailyDigestScore.steadyWeeks`. */
   scoreSteady?: SteadyRun | null;
+  /** The admin question open for this reader (`load-digest.ts`), if any. */
+  adminAsk?: AdminAskKind | null;
+  /** Dose item keys whose snooze is running (`load-digest.ts`). */
+  snoozedDoseItemKeys?: ReadonlySet<string>;
 }
 
 export interface DailyDigest {
@@ -489,6 +498,8 @@ export interface DailyDigest {
   line: string;
   /** Bounded 0–3 rail items, never padded. */
   worthALook: PriorityItem[];
+  /** What the start page asks today: 0 to 2 rows (`asks.ts`), often none. */
+  asks: DailyAsk[];
   /**
    * The day's newest arrival while it is still news (< `JUST_IN_WINDOW_MS`
    * old), else null. Drives the hero's calm "just in" chip.
@@ -692,82 +703,6 @@ function buildPreventiveCareItem(
         href: CARE_WIRE_PATH,
       },
     ],
-  };
-}
-
-/**
- * Booked visits as rail lines: one item for everything booked today, and one
- * for the next day that has a visit within the two-day horizon.
- *
- * Today's item stays for the whole local day, also after the visit's start
- * time: the visit's reminder fires at that time, and the rail used to drop the
- * visit at exactly that moment. Several visits on one day share one item and
- * are named together, so a busy day cannot fill the three-item rail with
- * appointments alone.
- *
- * No module gate: a visit is core, like the checkups page it lives on. No
- * action beyond opening the visit either — there is nothing to do about an
- * appointment except keep it, and a "mark done" here would duplicate the
- * visit's own status field with a second place to set it.
- *
- * The action opens where the appointment lives: the visit itself, or the
- * visits list for a day with several. The bare `/checkups` it used to carry
- * sent every tap on an appointment to the preventive-care list the
- * appointment is not on.
- */
-function buildUpcomingVisitItems(
-  visits: readonly DailyDigestUpcomingVisit[],
-  t: Translate,
-): { today: PriorityItem | null; next: PriorityItem | null } {
-  const item = (group: readonly DailyDigestUpcomingVisit[]): PriorityItem => {
-    // Through the key resolver, never `encounters.kind.${kind}`: the enum is
-    // `ROUTINE` and the bundle leaf is `routine`, so the interpolated form put
-    // raw dot notation on a lock screen.
-    const names = group.map(
-      (visit) =>
-        visit.practitionerName ??
-        t(encounterKindLabelKey(visit.kind as EncounterKind)),
-    );
-    const what = Array.from(new Set(names)).join(", ");
-    const offset = group[0].dayOffset;
-    return {
-      kind: "upcoming_visit",
-      itemKey: upcomingVisitItemKey(offset, group[0].id),
-      title: t("daily.item.upcomingVisit.title"),
-      body:
-        offset <= 0
-          ? t("daily.item.upcomingVisit.bodyToday", { what })
-          : offset === 1
-            ? t("daily.item.upcomingVisit.bodyTomorrow", { what })
-            : t("daily.item.upcomingVisit.bodyDayAfterTomorrow", { what }),
-      status: "info",
-      actions: [
-        {
-          // The wire keeps the check-up item's label and intent: the shipped
-          // iOS app routes `checkup.view` and knows no other token for this
-          // item, so a new intent would leave its tap inert. The web card
-          // relabels it from the kind (`actionLabelKey` in
-          // `priority-card.tsx`); the switch to `visit.view` waits for an
-          // app that understands it.
-          labelKey: "daily.action.viewCheckups",
-          intent: "checkup.view",
-          href: visitsPath(group.map((visit) => visit.id)),
-        },
-      ],
-    };
-  };
-
-  const valid = visits.filter(
-    (visit) => !Number.isNaN(new Date(visit.occurredAt).getTime()),
-  );
-  const today = valid.filter((visit) => visit.dayOffset <= 0);
-  const later = valid.filter((visit) => visit.dayOffset > 0);
-  const nextOffset =
-    later.length > 0 ? Math.min(...later.map((v) => v.dayOffset)) : null;
-  const next = later.filter((visit) => visit.dayOffset === nextOffset);
-  return {
-    today: today.length > 0 ? item(today) : null,
-    next: next.length > 0 ? item(next) : null,
   };
 }
 
@@ -1273,9 +1208,8 @@ export function buildDailyDigest(
     item.actions = item.actions.slice(0, MAX_PRIORITY_ACTIONS);
   }
 
-  // Drop anything the user already dismissed (observational kinds only).
-  // This also runs before the bounded slice so a dismissal makes room for the
-  // next enabled candidate.
+  // Drop what the user dismissed (observational kinds only), before the
+  // bounded slice, so a dismissal makes room for the next candidate.
   const visible =
     input.dismissedItemKeys.size === 0
       ? enabled
@@ -1349,6 +1283,7 @@ export function buildDailyDigest(
       : null,
     line: composeLine(overview, topSignal, input.score, t),
     worthALook: rail,
+    asks: asksFromDigest(input, visible, t), // read before the rail's cap
     justIn,
     reactionLine,
     ai: input.ai,
