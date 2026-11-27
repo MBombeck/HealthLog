@@ -13909,6 +13909,14 @@
       "vitalsInRangeFew": "오늘 값 {count}개가 모두 평소 범위 안에 있어요.",
       "vitalsInRangeOther": "오늘 값 {count}개가 모두 평소 범위 안에 있어요.",
       "vitalInRange": "{metric}이(가) 오늘 평균 {value}로 평소 범위({range}) 안에 있어요.",
+      "pillarFlagged": {
+        "yellow": "오늘 건강 점수에서 {pillar} 항목에 주의가 필요해요.",
+        "red": "오늘 건강 점수에서 {pillar} 항목이 참고 범위를 벗어났어요."
+      },
+      "scoreFlagged": {
+        "yellow": "오늘 건강 점수에 주의가 필요한 항목이 있어요.",
+        "red": "오늘 건강 점수에 참고 범위를 벗어난 항목이 있어요."
+      },
       "floor": {
         "bpHigh": "지난 24시간 동안 혈압이 {value}까지 올랐어요.",
         "bpLow": "지난 24시간 동안 혈압이 {value}까지 내려갔어요.",
@@ -13979,6 +13987,9 @@
         "allInOne": "{count}개 확인, 범위 안",
         "allInFew": "{count}개 확인, 모두 범위 안",
         "allInOther": "{count}개 확인, 모두 범위 안",
+        "checkedOne": "{count}개 확인",
+        "checkedFew": "{count}개 확인",
+        "checkedOther": "{count}개 확인",
         "oneOut": {
           "above": "{metric} 범위보다 높음",
           "below": "{metric} 범위보다 낮음"

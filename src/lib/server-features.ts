@@ -55,6 +55,7 @@ export const SERVER_FEATURES = [
   "insights.score-origin",
   "daily.asks",
   "daily.asks-compact",
+  "daily.scores-short-labels",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -157,4 +158,6 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "GET /api/daily/digest carries asks: every row the start page asks today, often none (kind, tier safety | decision | due, itemKey, title, body, subject, exactly two actions with the primary first, learnMore), ranked on the server, never capped or folded; render as delivered, no card when empty. Later is dose.snooze:<medicationId> on a dose and ask.later:<dismissKey> on other reminders; the admin rows (push_relay, server_setup) come only to a browser session.",
   "daily.asks-compact":
     "DailyAsk.title is the thing asked about (a medication's name, a check-up, who a visit is with, a source, the plan) and DailyAsk.body its state in a few words (Overdue 8:00 AM; Visit tomorrow; Disconnected): a server-worded title at most 14 characters and a state at most 16 in every language, one line each beside the icon and the button pair on a 360 px phone; learnMore is always null. The web renders each ask as one list row: icon, title over the state line, Later and the primary at the row's end. A consent row (kind push_relay, CONSENT_ASK_KINDS) carries exactly No and Yes and is never set aside.",
+  "daily.scores-short-labels":
+    "Each start-page score carries shortLabel, its short name for a tile from the score registry, worded in the response language: GET /api/daily/morning scores.sleep and scores.readiness, and GET /api/daily/digest score (the Health score). Render it as is; the web shows the same words.",
 };

@@ -13909,6 +13909,14 @@
       "vitalsInRangeFew": "Alle {count} waarden van vandaag liggen binnen hun gebruikelijke bereik.",
       "vitalsInRangeOther": "Alle {count} waarden van vandaag liggen binnen hun gebruikelijke bereik.",
       "vitalInRange": "{metric}: vandaag gemiddeld {value}, binnen je gebruikelijke bereik ({range}).",
+      "pillarFlagged": {
+        "yellow": "{pillar} vraagt vandaag aandacht in je gezondheidsscore.",
+        "red": "{pillar} valt vandaag buiten het referentiebereik in je gezondheidsscore."
+      },
+      "scoreFlagged": {
+        "yellow": "Je gezondheidsscore markeert vandaag een onderdeel dat aandacht vraagt.",
+        "red": "Je gezondheidsscore markeert vandaag een onderdeel buiten het referentiebereik."
+      },
       "floor": {
         "bpHigh": "De bloeddruk bereikte {value} in de afgelopen 24 uur.",
         "bpLow": "De bloeddruk daalde tot {value} in de afgelopen 24 uur.",
@@ -13979,6 +13987,9 @@
         "allInOne": "{count} gecontroleerd, binnen je bereik",
         "allInFew": "{count} gecontroleerd, alle binnen je bereik",
         "allInOther": "{count} gecontroleerd, alle binnen je bereik",
+        "checkedOne": "{count} gecontroleerd",
+        "checkedFew": "{count} gecontroleerd",
+        "checkedOther": "{count} gecontroleerd",
         "oneOut": {
           "above": "{metric} boven je bereik",
           "below": "{metric} onder je bereik"

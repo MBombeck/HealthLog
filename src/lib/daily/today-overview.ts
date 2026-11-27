@@ -22,7 +22,6 @@ import type { DailyBriefing, DailyBriefingSignal } from "@/lib/ai/schema";
 import type { CyclePhase } from "@/lib/cycle/types";
 import type { MedsTodayBlock } from "@/lib/dashboard/meds-today";
 import type { Locale } from "@/lib/i18n/config";
-import { pluralKey } from "@/lib/i18n/plural";
 import { isFromToday } from "@/lib/insights/measurement-freshness";
 import type { ModuleKey } from "@/lib/modules/registry";
 import type { PriorityItem } from "@/lib/daily/priority-item";
@@ -30,14 +29,16 @@ import { visitsPath } from "@/lib/encounters/visit-links";
 import { withoutLeadingName } from "@/lib/daily/today-lead-name";
 import { medicationsFact } from "@/lib/daily/today-medications-fact";
 import {
-  duration,
+  vitalsAllInFact,
+  vitalsInRangeSentence,
+  type HealthScoreFlag,
+} from "@/lib/daily/in-range-claim";
+import {
   notableNightSentence,
   ordinaryNightSentence,
   outsideVitals,
-  sleepDiff,
-  SLEEP_CLOSE_DIFF_MINUTES,
+  sleepFactLine,
   vitalLabel,
-  vitalsInRangeSentence,
   vitalsOutsideSentence,
 } from "@/lib/daily/lead-sentences";
 
@@ -158,6 +159,11 @@ export interface TodayOverviewInput {
   briefing: DailyBriefing | null;
   /** The number inside the ring, so a lead never repeats it. */
   scoreValue: number | null;
+  /**
+   * What the Health score flags (`healthScoreFlag`), so no sentence calls
+   * the day in range beside a flagged pillar. Null when nothing is.
+   */
+  scoreFlag: HealthScoreFlag | null;
   medsToday: MedsTodayBlock;
   visits: readonly TodayVisit[];
   /** The rail as it will be published, for the appointment de-duplication. */
@@ -562,7 +568,12 @@ function signalLead(
   }
   const notable = notableNightSentence(sleep, t);
   if (notable) return { text: notable, consumes: "sleep" };
-  const inRange = vitalsInRangeSentence(vitals, input.locale, t);
+  const inRange = vitalsInRangeSentence(
+    vitals,
+    input.scoreFlag,
+    input.locale,
+    t,
+  );
   if (inRange) return { text: inRange, consumes: "vitals" };
   const night = ordinaryNightSentence(sleep, t);
   return night ? { text: night, consumes: "sleep" } : null;
@@ -618,17 +629,7 @@ function appointmentFact(
 
 function sleepFact(sleep: TodaySleep | null, t: Translate): TodayFact | null {
   if (!sleep) return null;
-  const diff = sleepDiff(sleep);
-  const params = { duration: duration(sleep.minutes, t) };
-  const value =
-    diff === null
-      ? t("daily.todayFact.sleep.plain", params)
-      : Math.abs(diff) <= SLEEP_CLOSE_DIFF_MINUTES
-        ? t("daily.todayFact.sleep.usual", params)
-        : t(`daily.todayFact.sleep.${diff > 0 ? "more" : "less"}`, {
-            ...params,
-            diff: duration(Math.abs(diff), t),
-          });
+  const value = sleepFactLine(sleep, t);
   return {
     kind: "sleep",
     label: t("daily.todayFact.sleep.label"),
@@ -644,10 +645,7 @@ function vitalsFact(input: TodayOverviewInput, t: Translate): TodayFact | null {
   const outside = outsideVitals(vitals);
   let value: string;
   if (outside.length === 0) {
-    value = t(
-      pluralKey("daily.todayFact.vitals.allIn", vitals.length, input.locale),
-      { count: vitals.length },
-    );
+    value = vitalsAllInFact(vitals.length, input.scoreFlag, input.locale, t);
   } else if (outside.length === 1) {
     value = t(`daily.todayFact.vitals.oneOut.${outside[0].direction}`, {
       metric: vitalLabel(t, outside[0].type),

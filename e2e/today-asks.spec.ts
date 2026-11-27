@@ -33,11 +33,13 @@ const MORNING: DailyMorning = {
   cards: [],
   scores: {
     sleep: {
+      shortLabel: "Sleep score",
       ring: { score: 76, band: "green", fresh: true, asOfDay: "2026-11-25" },
       line: "7h 20m",
       href: "/insights/scores/sleep",
     },
     readiness: {
+      shortLabel: "Readiness",
       ring: { score: null, band: null, fresh: false, asOfDay: "2026-11-24" },
       line: "Last 81 on Nov 24",
       href: "/insights/scores/readiness",

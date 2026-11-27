@@ -245,6 +245,12 @@ export const dailyDigestResponse = z
           .describe(
             "The line naming that pillar, worded in the response language. Shown under the score wherever the score is shown; null when there is no setter.",
           ),
+        shortLabel: z
+          .string()
+          .optional()
+          .describe(
+            'The score\'s short name for a tile, from the score registry and worded in the response language ("Gesundheit", "Health score"). Render it as is. Absent on older cached digests. Feature key `daily.scores-short-labels`.',
+          ),
       })
       .nullable()
       .describe(
@@ -451,6 +457,11 @@ const morningRingSchema = z
 
 const morningScoreSchema = z
   .object({
+    shortLabel: z
+      .string()
+      .describe(
+        'The score\'s short name for the tile, from the score registry and worded in the response language ("Schlafscore", "Bereitschaft"). Render it as is. Feature key `daily.scores-short-labels`.',
+      ),
     ring: morningRingSchema.describe(
       "The ring as the cards carry it: no number when not fresh.",
     ),
@@ -522,7 +533,7 @@ export const dailyMorningResponse = z
         key: z
           .enum([...MORNING_LEAD_KEYS])
           .describe(
-            "The rule by name: floor (a confirmed safety floor in the last 24 hours), rest_mode, coincident (two or more independent signals outside their usual range: blood pressure counts once, resting heart rate and pulse once, weight and glucose never), vital_outside, sleep_pending, source_quiet (first and second quiet day only), readiness (fresh, yellow or red), night_notable, in_range, planned, nothing.",
+            "The rule by name: floor (a confirmed safety floor in the last 24 hours), rest_mode, coincident (two or more independent signals outside their usual range: blood pressure counts once, resting heart rate and pulse once, weight and glucose never), vital_outside, sleep_pending, source_quiet (first and second quiet day only), readiness (fresh, yellow or red), night_notable, in_range (today's values counted and all in range, or an ordinary night; while the Health score flags a pillar, its `band` below green, that pillar is named instead and the day is never called in range), planned, nothing.",
           ),
         text: z
           .string()

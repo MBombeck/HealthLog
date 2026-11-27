@@ -7,6 +7,7 @@ import { isLastNight } from "@/lib/sleep/last-night";
 import { formatDurationMinutes } from "@/lib/i18n/duration";
 import { metricHref, pageHref } from "@/lib/links/hrefs";
 import { metricName } from "@/lib/measurements/type-label-keys";
+import { scoreShortLabel } from "@/lib/scores/registry";
 import type {
   DailyMorning,
   DailyMorningRing,
@@ -114,6 +115,7 @@ function sleepScoreTile(
     });
   }
   return {
+    shortLabel: scoreShortLabel("SLEEP_SCORE", t),
     ring,
     line,
     href: metricHref("sleep_score") ?? pageHref("insights"),
@@ -128,8 +130,10 @@ function readinessScoreTile(
   const readiness = facts.readiness;
   if (!readiness) return null;
   const href = metricHref("readiness") ?? pageHref("insights");
+  const shortLabel = scoreShortLabel("READINESS", t);
   if (!readiness.fresh) {
     return {
+      shortLabel,
       ring: {
         score: null,
         band: null,
@@ -161,6 +165,7 @@ function readinessScoreTile(
       ? t(`daily.morningCard.readinessBand.${readiness.band}`)
       : null;
   return {
+    shortLabel,
     ring: {
       score: Math.round(readiness.score),
       band: banded ? readiness.band : null,
