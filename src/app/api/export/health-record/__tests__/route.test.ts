@@ -12,7 +12,7 @@
  * reads what comes out, with a positive control beside each exclusion so
  * nothing can pass on an empty fixture.
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import { unzipSync } from "fflate";
 
@@ -175,6 +175,13 @@ async function pdfText(res: Response): Promise<string> {
 function pdfBytesText(bytes: Uint8Array): Promise<string> {
   return readPdfText(bytes);
 }
+
+// The route pulls in the PDF, FHIR and zip writers. Loading that graph cold
+// takes seconds on a loaded machine, so it happens once here, on a hook's
+// budget, instead of inside whichever test happens to run first.
+beforeAll(async () => {
+  await import("../route");
+}, 60_000);
 
 beforeEach(() => {
   vi.clearAllMocks();

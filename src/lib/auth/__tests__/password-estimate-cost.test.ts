@@ -16,6 +16,11 @@ import {
   estimatePasswordStrength,
   passwordEstimateInput,
 } from "@/lib/auth/password";
+import {
+  changePasswordSchema,
+  loginPasswordSchema,
+  newAccountPasswordSchema,
+} from "@/lib/validations/auth";
 import { PASSWORD_STRENGTH_MAX_LENGTH } from "@/lib/zxcvbn-i18n";
 import { readSourceFolder } from "@/__tests__/helpers/source-files";
 
@@ -117,5 +122,38 @@ describe("zxcvbn has one caller", () => {
       .map(([rel]) => rel);
     // A non-empty match set: the matcher still finds the one real caller.
     expect(callers).toEqual(["lib/auth/password.ts"]);
+  });
+});
+
+describe("new password length cap", () => {
+  const ok = "Xq7#vLp2!mRt".padEnd(1024, "z");
+  const tooLong = ok + "z";
+
+  it("accepts 1024 characters and refuses 1025 on every new-password schema", () => {
+    expect(newAccountPasswordSchema.safeParse(ok).success).toBe(true);
+    expect(newAccountPasswordSchema.safeParse(tooLong).success).toBe(false);
+    const change = (pw: string) =>
+      changePasswordSchema.safeParse({
+        currentPassword: "current",
+        newPassword: pw,
+        confirmPassword: pw,
+      }).success;
+    expect(change(ok)).toBe(true);
+    expect(change(tooLong)).toBe(false);
+  });
+
+  it("leaves sign-in and the current password uncapped", () => {
+    const existing = "y".repeat(4096);
+    expect(
+      loginPasswordSchema.safeParse({ email: "someone", password: existing })
+        .success,
+    ).toBe(true);
+    expect(
+      changePasswordSchema.safeParse({
+        currentPassword: existing,
+        newPassword: ok,
+        confirmPassword: ok,
+      }).success,
+    ).toBe(true);
   });
 });

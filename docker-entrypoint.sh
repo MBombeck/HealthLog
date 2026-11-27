@@ -106,7 +106,25 @@ node scripts/pending-migrations.mjs || true
 # without the backups volume): a warning, and the boot goes on. A kept
 # directory and a failed dump: the boot stops here, before anything is
 # migrated.
-if ! node scripts/db-dump.mjs pre-migration; then
+#
+# Exit 3 is the dump that cannot be taken at all: the database server's major
+# is newer than this image's pg_dump (#1431). A restart does not change that,
+# and with `restart: unless-stopped` an immediate exit came straight back into
+# the same error every few seconds. So the reason is said once, and the
+# entrypoint waits ten minutes (inside the healthcheck's start period) before
+# it exits; `docker stop` ends the wait at once.
+dump_status=0
+node scripts/db-dump.mjs pre-migration || dump_status=$?
+if [ "$dump_status" -eq 3 ]; then
+  echo "HealthLog: ERROR — not migrating: this image's PostgreSQL client cannot dump this database server (see above). Nothing was changed." >&2
+  echo "HealthLog: to migrate without a dump this once, set DB_BACKUP_BEFORE_MIGRATE=false; the nightly dumps fail until the client and the server match." >&2
+  echo "HealthLog: waiting 10 minutes before exiting, so a restart policy does not restart into the same error. docker stop ends the wait." >&2
+  trap 'kill "$wait_pid" 2>/dev/null; exit 1' TERM INT
+  sleep 600 &
+  wait_pid=$!
+  wait "$wait_pid" || true
+  exit 1
+elif [ "$dump_status" -ne 0 ]; then
   echo "HealthLog: ERROR — not migrating without the dump. Free disk space or fix the error above and start again." >&2
   echo "HealthLog: to migrate without a dump this once, set DB_BACKUP_BEFORE_MIGRATE=false." >&2
   exit 1

@@ -221,15 +221,15 @@ before you touch it.
 Until the catalog app is listed, install HealthLog with Apps, Discover Apps,
 the menu next to Custom App, Install via YAML, using these values:
 
-| Setting      | Value                                                                                  |
-| ------------ | -------------------------------------------------------------------------------------- |
-| Image        | `ghcr.io/mbombeck/healthlog`, tag `X.Y.Z` (amd64 and arm64)                            |
-| Port         | `3000` (HTTP)                                                                          |
-| User         | runs as uid `1001` by default; no extra capabilities, `no-new-privileges` is fine      |
-| Health check | `GET /api/health`, `200` when ready                                                    |
-| Start period | 10 min, like the image: migrations run at every boot and wait out a held lock          |
-| Database     | PostgreSQL 18 (16 works too), no extensions, in its own container with its own dataset |
-| Volumes      | `/var/lib/healthlog/backups` for the database dumps (uid `1001`); the database its own |
+| Setting      | Value                                                                                                                                                                               |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Image        | `ghcr.io/mbombeck/healthlog`, tag `X.Y.Z` (amd64 and arm64)                                                                                                                         |
+| Port         | `3000` (HTTP)                                                                                                                                                                       |
+| User         | runs as uid `1001` by default; no extra capabilities, `no-new-privileges` is fine                                                                                                   |
+| Health check | `GET /api/health`, `200` when ready                                                                                                                                                 |
+| Start period | 10 min, like the image: migrations run at every boot and wait out a held lock                                                                                                       |
+| Database     | PostgreSQL 18 (16 and 19 work too, nothing newer than the image's client major, see `docs/ops/postgres-major-upgrade.md`), no extensions, in its own container with its own dataset |
+| Volumes      | `/var/lib/healthlog/backups` for the database dumps (uid `1001`); the database its own                                                                                              |
 
 | Variable                | Required | Notes                                                                                    |
 | ----------------------- | -------- | ---------------------------------------------------------------------------------------- |

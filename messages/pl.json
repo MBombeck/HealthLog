@@ -9615,6 +9615,7 @@
           "first_pending": "Pierwszy zrzut bazy danych jeszcze się nie odbył.",
           "stale": "Najnowszy zrzut bazy danych ma {hours, plural, one {# godzinę} few {# godziny} many {# godzin} other {# godziny}}.",
           "last_failed": "Ostatni zrzut bazy danych nie powiódł się. Poprzedni jest jeszcze aktualny.",
+          "client_too_old": "Klient PostgreSQL w tym obrazie ma wersję {client}, a serwer bazy danych działa na {server}, więc nie da się wykonać zrzutu bazy. Użyj obrazu HealthLog z klientem {server} lub nowszym albo zostaw serwer na {client} lub starszym.",
           "fresh": "Najnowszy zrzut bazy danych jest aktualny.",
           "nowhere_to_write": "Katalog zrzutów {directory} nie jest zapisywalny i nie skonfigurowano zewnętrznego bucketu, więc żaden zrzut nie może zostać zachowany.",
           "not_persistent": "Katalog zrzutów {directory} nie leży na trwałym nośniku, a zewnętrzny bucket nie jest ustawiony, więc każdy zrzut przepadnie przy następnej aktualizacji. Podłącz wolumin kopii.",

@@ -9615,6 +9615,7 @@
           "first_pending": "De eerste databasedump is nog niet uitgevoerd.",
           "stale": "De nieuwste databasedump is {hours, plural, one {# uur} other {# uur}} oud.",
           "last_failed": "De laatste databasedump is mislukt. De dump daarvoor is nog recent.",
+          "client_too_old": "De PostgreSQL-client van dit image is versie {client}, maar de databaseserver draait {server}, dus er kan geen databasedump worden gemaakt. Gebruik een HealthLog-image met client {server} of nieuwer, of houd de server op {client} of ouder.",
           "fresh": "De nieuwste databasedump is recent.",
           "nowhere_to_write": "De dumpmap {directory} is niet beschrijfbaar en er is geen externe bucket ingesteld, dus er kan geen dump worden bewaard.",
           "not_persistent": "De dumpmap {directory} staat niet op blijvende opslag en er is geen externe bucket ingesteld, dus elke dump gaat bij de volgende update verloren. Koppel het back-upvolume.",

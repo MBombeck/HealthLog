@@ -34,7 +34,9 @@
  *      fingerprints; each one missing or different is named, and a mismatch
  *      of the active encryption key refuses (`--ignore-key-mismatch` restores
  *      anyway, for an operator who knows the key is lost);
- *   4. the target database must hold no table at all. This never overwrites.
+ *   4. the target database must hold no table at all. This never overwrites;
+ *   5. the target server's major must not be newer than this image's
+ *      `pg_restore` (#1431): the refusal names both majors and the way out.
  * Then `pg_restore` in one transaction, `ANALYZE`, and a count of every table
  * against the manifest. A count that differs empties the database again and
  * fails, so the app is never started on a restore that does not match.
@@ -48,6 +50,8 @@ import { basename, dirname, isAbsolute, join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import {
+  assertClientServesServer,
+  ClientTooOldError,
   compareKeyFingerprints,
   compareRowCounts,
   connect,
@@ -435,6 +439,22 @@ async function restoreCommand(arg, flags, env) {
           `the target database already holds ${tables.length} ${tables.length === 1 ? "table" : "tables"} (${tables.slice(0, 3).join(", ")}${tables.length > 3 ? ", …" : ""}). ` +
             "A restore goes only into an empty database: start it on a new, empty database volume, and do not start the app before the restore.",
         );
+      }
+
+      // 5. The image's client can work with this server.
+      try {
+        await assertClientServesServer(client, "pg_restore", {
+          versionLine: () =>
+            runTool("pg_restore", ["--version"], { capture: true }).then(
+              (line) => line.trim(),
+              () => null,
+            ),
+        });
+      } catch (error) {
+        if (error instanceof ClientTooOldError) {
+          throw new Refusal(error.message);
+        }
+        throw error;
       }
 
       say("restoring (one transaction)...");
