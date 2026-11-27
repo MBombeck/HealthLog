@@ -1,6 +1,9 @@
 import { hash, verify } from "@node-rs/argon2";
 import zxcvbn from "zxcvbn-typescript";
-import { getZxcvbnTranslations } from "@/lib/zxcvbn-i18n";
+import {
+  getZxcvbnTranslations,
+  PASSWORD_STRENGTH_MAX_LENGTH,
+} from "@/lib/zxcvbn-i18n";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { defaultLocale, type Locale } from "@/lib/i18n/config";
 // The Argon2id params live in a plain `.mjs` module so the operator
@@ -117,10 +120,44 @@ export interface PasswordStrengthEstimate {
   suggestions: string[];
 }
 
+/**
+ * The characters zxcvbn's l33t matcher reads as substituted letters. It tries
+ * every combination of the substitutions present, so its work multiplies with
+ * each distinct one: twenty of them make 800 combinations, each a full
+ * dictionary pass over the password.
+ */
+const L33T_CHARACTERS = new Set("4@8({[<369!|170$5+%2");
+const MAX_DISTINCT_L33T_CHARACTERS = 6;
+
+/**
+ * The part of a password the estimator scores: at most
+ * `PASSWORD_STRENGTH_MAX_LENGTH` characters, cut before the seventh distinct
+ * l33t character. Both bounds keep one call in the low milliseconds on any
+ * input (`password-estimate-cost.test.ts` measures the worst shapes found).
+ * A password that reaches either bound with a strong prefix is strong; one
+ * that is cut early reads weaker than it is, which errs on the safe side.
+ */
+export function passwordEstimateInput(password: string): string {
+  const seen = new Set<string>();
+  const limit = Math.min(password.length, PASSWORD_STRENGTH_MAX_LENGTH);
+  for (let i = 0; i < limit; i++) {
+    const ch = password[i];
+    if (!L33T_CHARACTERS.has(ch) || seen.has(ch)) continue;
+    if (seen.size === MAX_DISTINCT_L33T_CHARACTERS) return password.slice(0, i);
+    seen.add(ch);
+  }
+  return password.slice(0, limit);
+}
+
+/** The one call into zxcvbn; every estimate goes through the bound above. */
+function scorePassword(password: string, userInputs: string[] = []) {
+  return zxcvbn(passwordEstimateInput(password), userInputs);
+}
+
 export function estimatePasswordStrength(
   password: string,
 ): PasswordStrengthEstimate {
-  const result = zxcvbn(password);
+  const result = scorePassword(password);
   return {
     score: result.score,
     warning: result.feedback.warning ?? "",
@@ -154,7 +191,7 @@ export function checkPasswordStrength(
     };
   }
 
-  const result = zxcvbn(password, userInputs);
+  const result = scorePassword(password, userInputs);
   const feedback: string[] = [];
 
   if (result.feedback.warning) {

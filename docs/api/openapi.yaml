@@ -4846,9 +4846,9 @@ paths:
         - Auth
       summary: Score a password for the strength meter
       description: Anonymous. Runs the same estimator the registration and password routes run on submit and answers its score
-        and untranslated feedback; stores nothing and compares against no account. The account-specific check (the
-        password against the username and e-mail) happens only on submit. Rate-limited to 60 requests a minute per
-        address.
+        and untranslated feedback; stores nothing and compares against no account. Scores at most the first 32
+        characters, on submit as here. The account-specific check (the password against the username and e-mail) happens
+        only on submit. Rate-limited to 20 requests a minute per address.
       requestBody:
         required: true
         content:
@@ -33501,7 +33501,7 @@ components:
         password:
           type: string
           minLength: 1
-          maxLength: 256
+          maxLength: 32
       required:
         - password
       description: The password as typed, at most 256 characters (every longer one scores 4).
@@ -33531,6 +33531,7 @@ components:
         password:
           type: string
           minLength: 12
+          maxLength: 1024
         timezone:
           type: string
           maxLength: 64
@@ -33557,6 +33558,7 @@ components:
         newPassword:
           type: string
           minLength: 12
+          maxLength: 1024
         confirmPassword:
           type: string
           minLength: 1
