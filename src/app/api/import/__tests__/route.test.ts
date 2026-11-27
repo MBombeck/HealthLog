@@ -620,8 +620,10 @@ describe("POST /api/import — measurement externalId dedup (v1.17.1)", () => {
         value: 80,
         sleepStage: null,
       },
-    ] as never);
-    vi.mocked(prisma.measurement.create).mockResolvedValue({} as never);
+    ] as unknown as Awaited<ReturnType<typeof prisma.measurement.findMany>>);
+    vi.mocked(prisma.measurement.create).mockResolvedValue(
+      {} as Awaited<ReturnType<typeof prisma.measurement.create>>,
+    );
 
     const response = await POST(
       new NextRequest("http://localhost/api/import", {
