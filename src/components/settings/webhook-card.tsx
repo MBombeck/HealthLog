@@ -14,6 +14,8 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
+import { useChannelStatusTone } from "@/components/settings/notification-status-card";
+import { StatusChip } from "@/components/ui/status-chip";
 import { TestConnectionButton } from "@/components/settings/test-connection-button";
 import { isWebhookFormDirty } from "@/components/settings/channel-form-dirty";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
@@ -100,12 +102,18 @@ export function WebhookCard({ isAuthenticated }: { isAuthenticated: boolean }) {
     },
   });
 
+  const statusTone = useChannelStatusTone(
+    null,
+    isAuthenticated,
+    Boolean(settings && settings.enabled && Boolean(settings.url)),
+  );
+
   return (
     <SettingsCard>
       <SettingsCardHeader
         icon={Webhook}
         title={t("settings.webhook")}
-        description={t("settings.webhookDescription")}
+        status={settings ? <StatusChip tone={statusTone} /> : null}
       />
 
       <div className="space-y-4">

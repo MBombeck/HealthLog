@@ -43,6 +43,8 @@ export interface TimezonePickerProps {
   id?: string;
   /** Optional override of the hint copy under the picker. */
   hint?: string;
+  /** The label without the trailing colon. */
+  noColon?: boolean;
 }
 
 export function TimezonePicker({
@@ -50,6 +52,7 @@ export function TimezonePicker({
   onChange,
   id = "timezone",
   hint,
+  noColon = false,
 }: TimezonePickerProps) {
   const { t } = useTranslations();
   // `listSupportedTimezones()` is engine-side; memoise so the list
@@ -61,7 +64,7 @@ export function TimezonePicker({
   if (zones.length === 0) {
     // Older engine — free-text fallback.
     return (
-      <FieldGroup htmlFor={id} label={t("settings.timezone")}>
+      <FieldGroup htmlFor={id} label={t("settings.timezone")} noColon={noColon}>
         <Input
           id={id}
           value={value}
@@ -75,7 +78,7 @@ export function TimezonePicker({
   }
 
   return (
-    <FieldGroup htmlFor={id} label={t("settings.timezone")}>
+    <FieldGroup htmlFor={id} label={t("settings.timezone")} noColon={noColon}>
       <NativeSelect
         id={id}
         value={value}

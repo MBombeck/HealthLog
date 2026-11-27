@@ -23,7 +23,7 @@
  *     check → the ask-card legs go red, printing the check-in button.
  *   - `VorsorgeDashboardCard` dropping its `canManageDomain` bail → the
  *     mark-done leg goes red.
- *   - `EpisodeDocumentsCard` dropping its `canManageDomain` bail → the link +
+ *   - `EpisodeLinksCard` dropping its `canManageDomain` bail → the link +
  *     upload leg goes red, on the MANAGE arm.
  *   - `delegatedDomains` ignoring the record kind → the guardian legs (the
  *     vault's row delete and the episode card's link + upload inside a
@@ -166,7 +166,7 @@ vi.mock("@/hooks/use-auth", () => ({
       email: null,
       role: "USER",
       avatarUrl: null,
-      // The episode-documents card renders only for an account with the
+      // The episode links card lists documents only for an account with the
       // vault switched on; every other surface here ignores the map.
       modules: { inboundDocuments: true },
       accountAccess: mockAccessRef.value,
@@ -207,7 +207,7 @@ import {
 import { admittedQuickEntry } from "@/components/dashboard/quick-entry-sheets";
 import { TodayAsks } from "@/components/dashboard/today-asks";
 import { VorsorgeDashboardCard } from "@/components/measurement-reminders/vorsorge-dashboard-card";
-import { EpisodeDocumentsCard } from "@/components/documents/episode-documents-card";
+import { EpisodeLinksCard } from "@/components/illness/episode-links-card";
 import { LedgerRowItem } from "@/components/medications/dose-history/ledger-row-item";
 import { VaccinationsView } from "@/components/vaccinations/vaccinations-view";
 import { VisitsSection } from "@/components/encounters/visits-section";
@@ -516,18 +516,23 @@ describe("the Vorsorge summary's mark-done", () => {
 /* -------------------------------------------------------------------------- */
 
 describe("linking a document to an illness episode", () => {
-  const node = <EpisodeDocumentsCard episodeId="ep-1" />;
+  const node = <EpisodeLinksCard episodeId="ep-1" related={[]} />;
+  // Linking and uploading are the two entries of one "Link" menu: with
+  // both offered the button opens a menu, with neither it is absent.
+  const ADD = 'data-slot="episode-links-add"';
+  const MENU = 'aria-haspopup="menu"';
 
   it("offers the link and the upload in the caller's own record", () => {
     const html = render(OWN_RECORD, node);
+    expect(html).toContain(ADD);
     expect(html).toContain(">Link<");
-    expect(html).toContain("Upload");
+    expect(html).toContain(MENU);
   });
 
   it("offers both to a managed profile's guardian (#1403)", () => {
     const html = render(GUARDING, node);
-    expect(html).toContain(">Link<");
-    expect(html).toContain("Upload");
+    expect(html).toContain(ADD);
+    expect(html).toContain(MENU);
   });
 
   it("offers neither inside an adult's record, at every level", () => {
@@ -539,8 +544,8 @@ describe("linking a document to an illness episode", () => {
     // way.
     for (const access of [READ_ONLY, WRITABLE, MANAGING]) {
       const html = render(access, node);
+      expect(html).not.toContain(ADD);
       expect(html).not.toContain(">Link<");
-      expect(html).not.toContain("Upload");
       // The card itself stays — reading the episode's documents is a read.
       // v1.36.x — and the resolver agrees now. This line was true of the
       // intent and false of the route: the card's list query hit
@@ -548,7 +553,7 @@ describe("linking a document to an illness episode", () => {
       // the card that "stays" rendered a query-error tile. That GET is
       // delegable; `sharing-surface-guard.test.ts` freezes it and
       // `sharing-delegable-routes.test.ts` drives it.
-      expect(html).toContain('data-slot="episode-documents-card"');
+      expect(html).toContain('data-slot="episode-links-card"');
     }
   });
 });

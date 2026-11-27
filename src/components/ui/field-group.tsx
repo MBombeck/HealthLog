@@ -25,6 +25,7 @@ export function FieldGroup({
   labelAccessory,
   className,
   labelClassName,
+  noColon = false,
   children,
 }: {
   htmlFor: string;
@@ -34,19 +35,21 @@ export function FieldGroup({
   labelAccessory?: ReactNode;
   className?: string;
   labelClassName?: string;
+  /** The field name without the trailing colon (the setup flow's rule). */
+  noColon?: boolean;
   children: ReactNode;
 }) {
   return (
     <div className={cn("space-y-2", className)}>
       {labelAccessory ? (
         <div className="flex items-center justify-between gap-3">
-          <Label htmlFor={htmlFor} className={labelClassName}>
+          <Label htmlFor={htmlFor} className={labelClassName} noColon={noColon}>
             {label}
           </Label>
           {labelAccessory}
         </div>
       ) : (
-        <Label htmlFor={htmlFor} className={labelClassName}>
+        <Label htmlFor={htmlFor} className={labelClassName} noColon={noColon}>
           {label}
         </Label>
       )}

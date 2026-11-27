@@ -79,7 +79,7 @@ export interface ScoreAnatomyViewProps {
    * The ring itself is always coloured by its band (`ring-color.ts`).
    */
   hue?: RingHue;
-  /** Short caption under the ring (e.g. a band word or a one-line summary). */
+  /** Short caption under the ring (a one-line summary, never a band word). */
   caption?: ReactNode;
   /** Ranked contributors (the caller pre-ranks; the view renders in order). */
   contributors: AnatomyContributor[];

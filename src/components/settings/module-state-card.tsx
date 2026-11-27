@@ -17,8 +17,8 @@ import { ChevronRight, type LucideIcon } from "lucide-react";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { StatusChip } from "@/components/ui/status-chip";
 import { useTranslations } from "@/lib/i18n/context";
 import type { ModuleKey } from "@/lib/modules/registry";
 
@@ -36,7 +36,8 @@ export function ModuleStateCard({
   enabled: boolean;
   icon: LucideIcon;
   title: string;
-  description: string;
+  /** Only for a module whose state is a caution (data leaves the server). */
+  description?: string;
   anchor: string;
   slot: string;
   /** Body copy between the header and the link, e.g. what "off" keeps. */
@@ -50,16 +51,10 @@ export function ModuleStateCard({
         icon={icon}
         title={title}
         description={description}
-        status={
-          <Badge variant={enabled ? "secondary" : "outline"}>
-            {enabled
-              ? t("settings.moduleState.on")
-              : t("settings.moduleState.off")}
-          </Badge>
-        }
+        status={<StatusChip tone={enabled ? "active" : "off"} />}
       />
       {children}
-      <SettingsCardActions align="start">
+      <SettingsCardActions>
         <Button asChild variant="outline" size="sm">
           <Link href={`/settings/modules#module-${moduleKey}`}>
             {t("settings.moduleState.change")}

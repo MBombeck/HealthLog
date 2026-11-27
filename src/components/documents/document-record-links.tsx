@@ -1,8 +1,12 @@
 "use client";
 
 /**
- * "What is this page filed against?" — the document side of the visit and
- * vaccination links, on the vault's detail sheet.
+ * "What is this page filed against?": the document's one link row on the
+ * vault's detail sheet. Its conditions, its visits, its doses and whatever
+ * the server relates it to (lab results read from it, the medications it
+ * belongs to) are one row of chips, each opening its record. Someone who may
+ * manage the vault gets one "Link" button that picks the family and opens
+ * its picker.
  *
  * Both links already existed as tables, but only one end could write them:
  * a visit's form picked its documents, a dose's form picked its pages, and
@@ -24,13 +28,19 @@
  * an empty one that would claim the page records none.
  */
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import { CalendarDays, Syringe } from "lucide-react";
+import { Activity, CalendarDays, Syringe } from "lucide-react";
 
 import {
   EntityLinkPicker,
   serverPagingFrom,
 } from "@/components/links/entity-link-picker";
+import {
+  RecordLinkAddButton,
+  RecordLinksRow,
+  type RecordLinkAddOption,
+  relatedChips,
+  type RecordLinkChipData,
+} from "@/components/links/record-links";
 import type { EntityLinkOption } from "@/components/links/entity-link-picker";
 import { isNearAnchor } from "@/components/links/vault-document-options";
 import { encounterPickerUrl } from "@/components/links/picker-requests";
@@ -51,7 +61,10 @@ import { queryKeys } from "@/lib/query-keys";
 import type { EncounterDTO, EncounterListDTO } from "@/lib/encounters/dto";
 import type { EncounterKind } from "@/generated/prisma/client";
 import type { InboundDocumentDetailDto } from "@/lib/validations/inbound-documents";
+import type { IllnessEpisodeDTO } from "@/lib/illness/dto";
+import type { RelatedLink } from "@/lib/links/related";
 import { careVisitPath } from "@/lib/encounters/visit-links";
+import { recordHref } from "@/lib/links/hrefs";
 
 type Translate = ReturnType<typeof useTranslations>["t"];
 
@@ -129,19 +142,109 @@ function doseName(
   return vaccineName ?? t("vaccinations.suggestion.unnamed");
 }
 
+/** The families a document files against itself; the rest come from `related[]`. */
+const OWN_KINDS = ["conditionEpisode", "encounter", "vaccination"] as const;
+
+type PickerKind = (typeof OWN_KINDS)[number];
+
+/** What each picker offers: the records near the document first. */
+function pickerOptions(
+  t: Translate,
+  format: ReturnType<typeof useFormatters>,
+  calendarDate: (iso: string) => string,
+  anchor: string | null,
+  visits: readonly EncounterDTO[],
+  doses: ReadonlyArray<{
+    id: string;
+    occurredAt: string;
+    catalogEntry?: { slug: string } | null;
+    vaccineName: string | null;
+  }>,
+  conditions: readonly IllnessEpisodeDTO[],
+) {
+  const suggested = t("links.picker.suggested");
+
+  const visitOptions = recordOptions(
+    [...visits]
+      // Two arms per page arrive in two orders; the list reads newest first.
+      .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
+      .map((visit) => ({
+        id: visit.id,
+        label: encounterKindText(t, visit.kind as EncounterKind),
+        meta: visit.practitioner?.name ?? null,
+        occurredAt: visit.occurredAt,
+        href: visitHref(visit.id),
+      })),
+    anchor,
+    { suggested, date: format.date },
+  );
+  const doseOptions = recordOptions(
+    doses.map((dose) => ({
+      id: dose.id,
+      label: doseName(t, dose.catalogEntry?.slug ?? null, dose.vaccineName),
+      occurredAt: dose.occurredAt,
+      href: doseHref(dose.id),
+    })),
+    anchor,
+    { suggested, date: calendarDate }, // a dose date is a calendar date
+  );
+  const conditionOptions = conditions.map((episode) => ({
+    id: episode.id,
+    label: episode.label,
+    dateLabel: episode.onsetAt ? format.date(episode.onsetAt) : null,
+    href: recordHref("illness", episode.id),
+  }));
+
+  return { visitOptions, doseOptions, conditionOptions };
+}
+
+/** Everything the document is filed against, as one row of chips. */
+function documentChips(
+  t: Translate,
+  format: ReturnType<typeof useFormatters>,
+  calendarDate: (iso: string) => string,
+  doc: InboundDocumentDetailDto,
+  showDoses: boolean,
+): RecordLinkChipData[] {
+  return [
+    ...doc.conditionLinks.map((link) => ({
+      kind: "conditionEpisode" as const,
+      id: link.episodeId,
+      label: link.name,
+      href: recordHref("illness", link.episodeId),
+    })),
+    ...doc.encounterLinks.map((link) => ({
+      kind: "encounter" as const,
+      id: link.encounterId,
+      label: encounterKindText(t, link.kind as EncounterKind),
+      dateLabel: link.occurredAt ? format.date(link.occurredAt) : null,
+      href: visitHref(link.encounterId),
+    })),
+    ...(showDoses ? (doc.vaccinationLinks ?? []) : []).map((link) => ({
+      kind: "vaccination" as const,
+      id: link.vaccinationId,
+      label: doseName(t, link.catalogSlug, link.vaccineName),
+      dateLabel: link.occurredAt ? calendarDate(link.occurredAt) : null,
+      href: doseHref(link.vaccinationId),
+    })),
+    // The lab results read from this page and the medications it belongs
+    // to; the three families above are the document's own.
+    ...relatedChips(
+      t,
+      format,
+      calendarDate,
+      (doc as { related?: RelatedLink[] }).related,
+      OWN_KINDS,
+    ),
+  ];
+}
+
 /**
  * The caller mounts this keyed on the document and on its write-failure
  * count, so the local selection below starts over from the server's answer
  * whenever the sheet moves to another document or a write fails.
  */
-export function DocumentRecordLinks({
-  doc,
-  canManage,
-  seedFresh,
-  seedError = false,
-  onRetrySeed,
-  onChange,
-}: {
+export interface DocumentRecordLinksProps {
   doc: InboundDocumentDetailDto;
   canManage: boolean;
   /**
@@ -155,17 +258,37 @@ export function DocumentRecordLinks({
   /** That fresh read failed; the pickers show the retry row instead. */
   seedError?: boolean;
   onRetrySeed?: () => void;
+  /** The person's conditions, for the condition picker. */
+  episodes?: {
+    data: IllnessEpisodeDTO[] | undefined;
+    isPending: boolean;
+    error: unknown;
+    refetch: () => unknown;
+  };
   onChange: (part: {
+    episodeIds?: string[];
     encounterIds?: string[];
     vaccinationIds?: string[];
   }) => void;
-}) {
+}
+
+export function DocumentRecordLinks({
+  doc,
+  canManage,
+  seedFresh,
+  seedError = false,
+  onRetrySeed,
+  episodes,
+  onChange,
+}: DocumentRecordLinksProps) {
   const { t } = useTranslations();
   const format = useFormatters();
   const calendarDate = useCalendarDate();
   const { user } = useAuth();
   const vaccinationsOn = user?.modules?.vaccinations !== false;
+  const illnessOn = user?.modules?.illness !== false;
   const anchor = doc.documentDate ?? doc.reportDate;
+  const [picking, setPicking] = useState<PickerKind | null>(null);
 
   // The visits around the document's date, paged older and newer from
   // there. The visit route has no text search (its free text is ciphertext
@@ -185,34 +308,18 @@ export function DocumentRecordLinks({
   // The selection the person is editing, ahead of the server. Each change is
   // sent as the whole set (a replace-set PATCH), so a quick second tap never
   // computes from a list the first tap has not refreshed yet.
+  const [conditionIds, setConditionIds] = useState<string[] | null>(null);
   const [visitIds, setVisitIds] = useState<string[] | null>(null);
   const [doseIds, setDoseIds] = useState<string[] | null>(null);
 
-  const suggested = t("links.picker.suggested");
-
-  const visitOptions = recordOptions(
-    [...encounters.items]
-      // Two arms per page arrive in two orders; the list reads newest first.
-      .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
-      .map((visit) => ({
-        id: visit.id,
-        label: encounterKindText(t, visit.kind as EncounterKind),
-        meta: visit.practitioner?.name ?? null,
-        occurredAt: visit.occurredAt,
-        href: visitHref(visit.id),
-      })),
+  const { visitOptions, doseOptions, conditionOptions } = pickerOptions(
+    t,
+    format,
+    calendarDate,
     anchor,
-    { suggested, date: format.date },
-  );
-  const doseOptions = recordOptions(
-    (vaccinations.data?.vaccinations ?? []).map((dose) => ({
-      id: dose.id,
-      label: doseName(t, dose.catalogEntry?.slug ?? null, dose.vaccineName),
-      occurredAt: dose.occurredAt,
-      href: doseHref(dose.id),
-    })),
-    anchor,
-    { suggested, date: calendarDate }, // a dose date is a calendar date
+    encounters.items,
+    vaccinations.data?.vaccinations ?? [],
+    episodes?.data ?? [],
   );
 
   const showDoses = vaccinationsOn && doc.vaccinationLinks !== null;
@@ -229,17 +336,98 @@ export function DocumentRecordLinks({
       })),
     [doc.encounterLinks, t, format],
   );
+  const knownConditions = useMemo(
+    () =>
+      doc.conditionLinks.map((link) => ({
+        id: link.episodeId,
+        label: link.name,
+        href: recordHref("illness", link.episodeId),
+      })),
+    [doc.conditionLinks],
+  );
+
+  const chips = documentChips(t, format, calendarDate, doc, showDoses);
+
+  const addOptions: RecordLinkAddOption[] = [];
+  if (canManage) {
+    if (illnessOn && episodes) {
+      addOptions.push({
+        kind: "conditionEpisode",
+        onSelect: () => setPicking("conditionEpisode"),
+      });
+    }
+    addOptions.push({
+      kind: "encounter",
+      onSelect: () => setPicking("encounter"),
+    });
+    if (showDoses) {
+      addOptions.push({
+        kind: "vaccination",
+        onSelect: () => setPicking("vaccination"),
+      });
+    }
+  }
+
+  const sheetProps = (kind: PickerKind) => ({
+    sheetOnly: true,
+    open: picking === kind,
+    onOpenChange: (open: boolean) => setPicking(open ? kind : null),
+    searchPlaceholder: t("links.picker.searchPlaceholder"),
+    emptyLabel: t("links.related.nothingToOffer"),
+    errorLabel: t("links.picker.loadError"),
+  });
 
   return (
     <>
+      <RecordLinksRow
+        slot="document-links"
+        chips={chips}
+        add={
+          addOptions.length > 0 ? (
+            <RecordLinkAddButton
+              options={addOptions}
+              slot="document-links"
+              // Every pick is a replace-set write seeded from `doc`; until
+              // the sheet has read it fresh, a pick could drop a link made
+              // elsewhere. A failed read opens through to its retry row.
+              disabled={!seedFresh && !seedError}
+            />
+          ) : null
+        }
+      />
+
+      {canManage && illnessOn && episodes ? (
+        <EntityLinkPicker
+          {...sheetProps("conditionEpisode")}
+          icon={Activity}
+          title={t("links.related.pick.conditionEpisode")}
+          slot="document-condition-links"
+          pending={episodes.isPending || !seedFresh}
+          error={episodes.error || seedError}
+          onRetry={() => {
+            if (episodes.error) void episodes.refetch();
+            if (seedError) onRetrySeed?.();
+          }}
+          selected={
+            conditionIds ?? doc.conditionLinks.map((link) => link.episodeId)
+          }
+          onChange={(ids) => {
+            setConditionIds(ids);
+            onChange({ episodeIds: ids });
+          }}
+          options={conditionOptions}
+          knownOptions={knownConditions}
+        />
+      ) : null}
+
       {canManage ? (
         <EntityLinkPicker
+          {...sheetProps("encounter")}
           icon={CalendarDays}
-          title={t("documents.detail.visitsLabel")}
+          title={t("links.related.pick.encounter")}
           slot="document-visit-links"
           pending={encounters.pending || !seedFresh}
           error={encounters.error || seedError}
-          errorLabel={t("links.picker.loadError")}
           onRetry={() => {
             if (encounters.error) encounters.retry();
             if (seedError) onRetrySeed?.();
@@ -252,43 +440,17 @@ export function DocumentRecordLinks({
           options={visitOptions}
           server={serverPagingFrom(encounters)}
           knownOptions={knownVisits}
-          searchPlaceholder={t("links.picker.searchPlaceholder")}
-          emptyLabel={t("documents.detail.noVisitsToLink")}
         />
-      ) : doc.encounterLinks.length > 0 ? (
-        <div className="space-y-1.5" data-slot="document-visit-links">
-          <p className="text-sm leading-none font-medium">
-            {t("documents.detail.visitsLabel")}
-          </p>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {doc.encounterLinks.map((link) => (
-              <Link
-                key={link.encounterId}
-                href={visitHref(link.encounterId)}
-                className="bg-muted text-foreground hover:bg-muted/70 focus-visible:ring-ring/50 inline-flex max-w-64 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs focus-visible:ring-[3px] focus-visible:outline-none"
-              >
-                <span className="truncate">
-                  {encounterKindText(t, link.kind as EncounterKind)}
-                </span>
-                {link.occurredAt ? (
-                  <span className="text-muted-foreground shrink-0">
-                    {format.date(link.occurredAt)}
-                  </span>
-                ) : null}
-              </Link>
-            ))}
-          </div>
-        </div>
       ) : null}
 
       {showDoses && canManage ? (
         <EntityLinkPicker
+          {...sheetProps("vaccination")}
           icon={Syringe}
-          title={t("documents.detail.vaccinationsLabel")}
+          title={t("links.related.pick.vaccination")}
           slot="document-vaccination-links"
           pending={vaccinations.isPending || !seedFresh}
           error={vaccinations.error || seedError}
-          errorLabel={t("links.picker.loadError")}
           onRetry={() => {
             if (vaccinations.isError) void vaccinations.refetch();
             if (seedError) onRetrySeed?.();
@@ -302,34 +464,7 @@ export function DocumentRecordLinks({
             onChange({ vaccinationIds: ids });
           }}
           options={doseOptions}
-          searchPlaceholder={t("links.picker.searchPlaceholder")}
-          emptyLabel={t("documents.detail.noVaccinationsToLink")}
         />
-      ) : showDoses && (doc.vaccinationLinks?.length ?? 0) > 0 ? (
-        <div className="space-y-1.5" data-slot="document-vaccination-links">
-          <p className="text-sm leading-none font-medium">
-            {t("documents.detail.vaccinationsLabel")}
-          </p>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {(doc.vaccinationLinks ?? []).map((link) => (
-              <Link
-                key={link.vaccinationId}
-                href={doseHref(link.vaccinationId)}
-                data-slot="document-vaccination-link"
-                className="bg-muted text-foreground hover:bg-muted/70 focus-visible:ring-ring/50 inline-flex max-w-64 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs focus-visible:ring-[3px] focus-visible:outline-none"
-              >
-                <span className="truncate">
-                  {doseName(t, link.catalogSlug, link.vaccineName)}
-                </span>
-                {link.occurredAt ? (
-                  <span className="text-muted-foreground shrink-0">
-                    {calendarDate(link.occurredAt)}
-                  </span>
-                ) : null}
-              </Link>
-            ))}
-          </div>
-        </div>
       ) : null}
     </>
   );

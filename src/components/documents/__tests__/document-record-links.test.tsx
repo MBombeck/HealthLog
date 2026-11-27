@@ -116,7 +116,21 @@ describe("recordOptions", () => {
 });
 
 describe("<DocumentRecordLinks>", () => {
-  it("lets a manager link the page to doses and visits", () => {
+  const ADD = 'data-slot="document-links-add"';
+
+  it("writes nothing at all for a reader of a page filed against nothing", () => {
+    const html = render(
+      <DocumentRecordLinks
+        doc={doc()}
+        canManage={false}
+        seedFresh
+        onChange={() => undefined}
+      />,
+    );
+    expect(html).toBe("");
+  });
+
+  it("gives a manager one link button, without any empty line", () => {
     const html = render(
       <DocumentRecordLinks
         doc={doc()}
@@ -125,15 +139,25 @@ describe("<DocumentRecordLinks>", () => {
         onChange={() => undefined}
       />,
     );
-    expect(html).toContain('data-slot="document-vaccination-links"');
-    expect(html).toContain('data-slot="document-vaccination-links-add"');
-    expect(html).toContain('data-slot="document-visit-links"');
+    expect(html).toContain(ADD);
+    // Visits and doses: the button asks which family first.
+    expect(html).toContain('aria-haspopup="menu"');
+    expect(html).not.toContain("Nothing to link yet");
+    expect(html).not.toContain("No vaccinations recorded");
   });
 
-  it("shows a read-only reader the doses the page is filed against", () => {
+  it("shows every link as one row of chips, conditions, visits and doses alike", () => {
     const html = render(
       <DocumentRecordLinks
         doc={doc({
+          conditionLinks: [{ episodeId: "ep-1", name: "Knee pain" }],
+          encounterLinks: [
+            {
+              encounterId: "enc-1",
+              kind: "CHECKUP",
+              occurredAt: "2026-03-01T09:00:00.000Z",
+            },
+          ],
           vaccinationLinks: [
             {
               vaccinationId: "dose-1",
@@ -148,12 +172,14 @@ describe("<DocumentRecordLinks>", () => {
         onChange={() => undefined}
       />,
     );
-    expect(html).toContain('data-slot="document-vaccination-link"');
-    expect(html).toContain("DTP");
-    expect(html).not.toContain('data-slot="document-vaccination-links-add"');
+    expect(html.match(/data-slot="document-links-chips"/g)?.length).toBe(1);
+    expect(html).toContain('href="/illness/ep-1"');
+    expect(html).toContain('href="/care?visit=enc-1"');
+    expect(html).toContain('href="/vaccinations?dose=dose-1"');
+    expect(html).not.toContain(ADD);
   });
 
-  it("shows no dose block at all when the grant withholds the doses", () => {
+  it("shows no dose chip and offers no dose picker when the grant withholds the doses", () => {
     const html = render(
       <DocumentRecordLinks
         doc={doc({ vaccinationLinks: null })}
@@ -162,14 +188,17 @@ describe("<DocumentRecordLinks>", () => {
         onChange={() => undefined}
       />,
     );
-    expect(html).not.toContain("document-vaccination-links");
+    expect(html).not.toContain('data-kind="vaccination"');
+    // Visits alone: the button opens that picker straight away, no menu.
+    expect(html).toContain(ADD);
+    expect(html).not.toContain('aria-haspopup="menu"');
   });
 
-  it("offers no picker until the document has been read since the sheet opened", () => {
+  it("holds the link button until the document has been read since the sheet opened", () => {
     // Each change is a replace-set write seeded from the document's links.
     // Seeded from a cached copy that predates a link made on the dose's or
     // the visit's own form, the first tap would silently delete that link.
-    const html = render(
+    const stale = render(
       <DocumentRecordLinks
         doc={doc()}
         canManage
@@ -177,12 +206,26 @@ describe("<DocumentRecordLinks>", () => {
         onChange={() => undefined}
       />,
     );
-    expect(html).not.toContain('data-slot="document-vaccination-links-add"');
-    expect(html).not.toContain('data-slot="document-visit-links-add"');
+    expect(stale).toMatch(
+      /<button[^>]*disabled=""[^>]*data-slot="document-links-add"|<button[^>]*data-slot="document-links-add"[^>]*disabled=""/,
+    );
+    // A failed fresh read lets the picker open on its retry row.
+    const failed = render(
+      <DocumentRecordLinks
+        doc={doc()}
+        canManage
+        seedFresh={false}
+        seedError
+        onChange={() => undefined}
+      />,
+    );
+    expect(failed).not.toMatch(
+      /<button[^>]*disabled=""[^>]*data-slot="document-links-add"|<button[^>]*data-slot="document-links-add"[^>]*disabled=""/,
+    );
   });
 
   describe("chips open the record they point at (#1024)", () => {
-    it("a manager's dose chip carries the dose date and opens the dose", () => {
+    it("a dose chip carries the dose date and opens the dose", () => {
       const html = render(
         <DocumentRecordLinks
           doc={doc({
@@ -200,41 +243,13 @@ describe("<DocumentRecordLinks>", () => {
           onChange={() => undefined}
         />,
       );
-      const open = html.match(
-        /<a[^>]*data-slot="document-vaccination-links-chip-open"[^>]*>/,
-      );
+      const open = html.match(/<a[^>]*data-kind="vaccination"[^>]*>/);
       expect(open?.[0]).toContain('href="/vaccinations?dose=dose-1"');
       // The date tells two doses of one vaccine apart.
-      expect(open?.[0]).toBeDefined();
-      expect(html).toMatch(/>Tetanus<\/span><span[^>]*>04\/02\/1991</);
-      // The label is not the unlink control; the X is.
-      expect(html).toContain(
-        'data-slot="document-vaccination-links-chip-remove"',
-      );
+      expect(html).toMatch(/>Tetanus<\/span>.*04\/02\/1991/);
     });
 
-    it("a reader's dose chip opens that dose, not the whole list", () => {
-      const html = render(
-        <DocumentRecordLinks
-          doc={doc({
-            vaccinationLinks: [
-              {
-                vaccinationId: "dose-1",
-                occurredAt: "1991-04-02T00:00:00.000Z",
-                catalogSlug: null,
-                vaccineName: "DTP",
-              },
-            ],
-          })}
-          canManage={false}
-          seedFresh
-          onChange={() => undefined}
-        />,
-      );
-      expect(html).toContain('href="/vaccinations?dose=dose-1"');
-    });
-
-    it("a reader's visit chip opens the visit", () => {
+    it("a visit chip opens the visit", () => {
       const html = render(
         <DocumentRecordLinks
           doc={doc({

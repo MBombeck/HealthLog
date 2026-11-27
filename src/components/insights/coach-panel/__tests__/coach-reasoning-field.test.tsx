@@ -69,15 +69,15 @@ describe("the resolved block", () => {
 });
 
 describe("<CoachReasoningSelect>", () => {
-  it("offers Off, Low, Medium and High with the label and hint", () => {
+  it("offers Off, Low, Medium and High under its label, without an explainer", () => {
     const html = render(OPEN);
     expect(html).toContain(">Thinking depth<");
     for (const label of ["Off", "Low", "Medium", "High"]) {
       expect(html).toContain(`>${label}</option>`);
     }
-    expect(html).toContain(
-      "Deeper thinking means more precise answers and a little more waiting.",
-    );
+    // What thinking depth does is not explained: the name says it.
+    expect(html).not.toContain("more waiting");
+    expect(html).not.toContain("aria-describedby");
     expect(html).not.toMatch(/<select[^>]*\sdisabled=""/);
   });
 
@@ -86,7 +86,7 @@ describe("<CoachReasoningSelect>", () => {
     expect(html).toMatch(/<select[^>]*\sdisabled=""/);
     expect(html).toContain('data-locked="true"');
     expect(html).toContain("The admin has turned deeper thinking off.");
-    expect(html).not.toContain("a little more waiting");
+    expect(html).toMatch(/<select[^>]*aria-describedby="[^"]*-hint"/);
   });
 
   it("shows the admin's cap: levels above it are disabled and say why", () => {
@@ -139,23 +139,25 @@ describe("the two homes of the field", () => {
     expect(selectClass(html)).toMatch(/\bmt-1\b/);
   });
 
-  it("takes the shape of Tone and Reply length in Settings → Coach", () => {
+  it("is one row like Tone and Reply length in Settings → Coach", () => {
     const html = renderToStaticMarkup(
       <CoachReasoningSelect
         id="r"
-        variant="card"
+        variant="row"
+        rowControlClassName="w-44"
         value="medium"
         state={OPEN}
         onChange={() => {}}
       />,
     );
-    // Their small label with its colon, a content-wide select, the card's
-    // own gap instead of margins.
-    expect(html).toMatch(/data-slot="coach-reasoning-field" class="[^"]*gap-2/);
-    expect(html).toContain('data-no-colon="false"');
-    expect(html).toMatch(/<label[^>]*class="[^"]*\btext-xs\b/);
-    expect(selectClass(html)).toMatch(/\bw-fit\b/);
-    expect(selectClass(html)).not.toMatch(/\bw-full\b|\bmt-1\b/);
+    // Name on the left, the select on the right at its neighbours' width,
+    // centred on one row.
+    expect(html).toMatch(
+      /class="flex min-h-11 items-center justify-between gap-4"><label/,
+    );
+    expect(html).toContain('data-no-colon="true"');
+    expect(selectClass(html)).toMatch(/\bw-44\b/);
+    expect(selectClass(html)).not.toMatch(/\bmt-1\b/);
   });
 
   it("looks locked when the operator switched reasoning off", () => {

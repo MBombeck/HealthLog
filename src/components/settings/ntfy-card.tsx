@@ -13,6 +13,8 @@ import { SwitchRow } from "@/components/ui/switch-row";
 import { PasswordInput } from "@/components/ui/password-input";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
+import { useChannelStatusTone } from "@/components/settings/notification-status-card";
+import { StatusChip } from "@/components/ui/status-chip";
 import { TestConnectionButton } from "@/components/settings/test-connection-button";
 import { isNtfyFormDirty } from "@/components/settings/channel-form-dirty";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
@@ -91,12 +93,18 @@ export function NtfyCard({ isAuthenticated }: { isAuthenticated: boolean }) {
     },
   });
 
+  const statusTone = useChannelStatusTone(
+    "NTFY",
+    isAuthenticated,
+    Boolean(settings && settings.enabled && Boolean(settings.topic)),
+  );
+
   return (
     <SettingsCard>
       <SettingsCardHeader
         icon={Bell}
         title={t("settings.ntfy")}
-        description={t("settings.ntfyDescription")}
+        status={settings ? <StatusChip tone={statusTone} /> : null}
       />
 
       <div className="space-y-4">

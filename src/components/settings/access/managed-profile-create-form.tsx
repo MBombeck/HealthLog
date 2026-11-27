@@ -84,6 +84,7 @@ export function ManagedProfileCreateForm({
   submitLabel,
   onCreated,
   renderActions,
+  noColons = false,
 }: {
   /** The button's label when the form sits somewhere other than the panel. */
   submitLabel?: string;
@@ -97,6 +98,8 @@ export function ManagedProfileCreateForm({
    * 1.50 — the setup flow paints its own action pair in place of the
    * form's button, inside the form; its primary is a submit button.
    */
+  /** 1.50 — field names without colons, as in the setup flow. */
+  noColons?: boolean;
   renderActions?: (args: {
     disabled: boolean;
     pending: boolean;
@@ -174,6 +177,7 @@ export function ManagedProfileCreateForm({
         className="space-y-3"
       >
         <FieldGroup
+          noColon={noColons}
           htmlFor="managed-profile-name"
           label={t("recordSharing.managed.nameLabel")}
         >
@@ -206,6 +210,7 @@ export function ManagedProfileCreateForm({
         </FieldGroup>
 
         <FieldGroup
+          noColon={noColons}
           htmlFor="managed-profile-dob"
           label={t("recordSharing.managed.dobLabel")}
         >
@@ -226,6 +231,7 @@ export function ManagedProfileCreateForm({
         </FieldGroup>
 
         <FieldGroup
+          noColon={noColons}
           htmlFor="managed-profile-locale"
           label={t("recordSharing.managed.localeLabel")}
           hint={t("recordSharing.managed.localeHint")}
@@ -246,6 +252,7 @@ export function ManagedProfileCreateForm({
         </FieldGroup>
 
         <FieldGroup
+          noColon={noColons}
           htmlFor="managed-profile-gender"
           label={t("recordSharing.managed.genderLabel")}
           hint={t("recordSharing.managed.genderHint")}
@@ -267,6 +274,7 @@ export function ManagedProfileCreateForm({
 
         <div className="space-y-1.5">
           <TimezonePicker
+            noColon={noColons}
             id="managed-profile-timezone"
             value={timezone}
             onChange={(next) => {

@@ -13,6 +13,7 @@ import { useAnswerPushRelayQuestion } from "@/components/admin/use-push-relay";
 import { ChoiceChip } from "@/components/onboarding/choice-chip";
 import { StepActions } from "@/components/onboarding/step-actions";
 import { StepHeading } from "@/components/onboarding/step-heading";
+import { Disclosure } from "@/components/ui/disclosure";
 import { InlineAction } from "@/components/ui/inline-action";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -138,9 +139,16 @@ export function RelayStep() {
       <StepHeading
         id="server-setup-relay-title"
         title={t("admin.pushRelay.question.title")}
-        description={t("admin.pushRelay.question.body")}
+        description={t("setup.server.relay.body")}
         tone="foreground"
       />
+      <Disclosure
+        summary={t("setup.server.relay.more")}
+        className="-mt-4 mb-4 [&>summary]:w-fit [&>summary]:justify-start"
+        data-slot="server-setup-relay-more"
+      >
+        <p className="text-foreground">{t("setup.server.relay.detail")}</p>
+      </Disclosure>
       <fieldset className="grid gap-2">
         <legend className="sr-only">
           {t("admin.pushRelay.question.title")}

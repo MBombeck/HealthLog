@@ -163,7 +163,7 @@ export function SetupHealthCard({
         </ul>
       )}
       {showSetupLink && setup.data?.offered ? (
-        <SettingsCardActions align="start">
+        <SettingsCardActions>
           <Button asChild variant="outline" size="sm">
             <Link href="/onboarding/server" data-slot="setup-health-open-setup">
               {t("admin.setupHealth.openSetup")}

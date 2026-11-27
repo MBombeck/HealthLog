@@ -30,10 +30,7 @@ import { useMounted } from "@/hooks/use-mounted";
 import { useTranslations } from "@/lib/i18n/context";
 import { isSurfaceVisible } from "@/lib/modules/surface";
 import { isSettingsDestinationListedForRecord } from "@/lib/record-settings/classification";
-import {
-  accountLabel,
-  type AccountAccessEntry,
-} from "@/lib/sharing/account-access-view";
+import type { AccountAccessEntry } from "@/lib/sharing/account-access-view";
 import {
   SETTINGS_SECTION_SLUGS,
   isSettingsSectionSlug,
@@ -268,28 +265,24 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
 /**
  * Inside a managed profile the AI page carries only the profile's
  * document-reading switch (the provider is the instance's, not something a
- * guardian picks), so "Choose your AI provider and bring your own key"
- * promised a page that is not there. The caller passes the record only
- * after hydration, for the reason the module filter in `SettingsShell` gives.
+ * guardian picks), so it is titled for what is there. The caller passes the
+ * record only after hydration, for the reason the module filter in
+ * `SettingsShell` gives.
+ *
+ * A Settings page has a title and no subtitle: the subtitles mostly said the
+ * title again ("API & Tokens: manage API endpoints and access tokens").
  */
 function headingText(
   section: SettingsSection,
   activeRecord: AccountAccessEntry | null,
   t: ReturnType<typeof useTranslations>["t"],
-): { title: string; subtitle: string } {
+): { title: string } {
   if (section.slug === "ai" && activeRecord?.recordKind === "managed") {
     return {
       title: t("settings.sharedRecord.managedSettings.documents.pageTitle"),
-      subtitle: t(
-        "settings.sharedRecord.managedSettings.documents.pageSubtitle",
-        { name: accountLabel(activeRecord) },
-      ),
     };
   }
-  return {
-    title: t(section.titleKey),
-    subtitle: t(`settings.sections.${section.slug}.subtitle`),
-  };
+  return { title: t(section.titleKey) };
 }
 
 export interface SettingsShellProps {
@@ -300,11 +293,11 @@ export interface SettingsShellProps {
    */
   active?: SettingsSectionSlug;
   /**
-   * v1.18.6.1 — the page heading + subtitle now live in the shell, not in
+   * v1.18.6.1 — the page heading now lives in the shell, not in
    * the section body. The shell places them in their own grid row that
    * spans ONLY the content column, so the left nav's first item lines up
    * with the top of the first card by construction — no fixed-height
-   * spacer to drift across locales or subtitle line-wraps.
+   * spacer to drift across locales or title line-wraps.
    *
    * Title comes from `settings.sections.<active>.title` when omitted; pass
    * an explicit value for the per-module pages (Vorsorge / Illness / Labs)
@@ -314,7 +307,6 @@ export interface SettingsShellProps {
    */
   heading?: {
     title: string;
-    subtitle: string;
     headingId: string;
     /** Rendered above the heading (e.g. a "← back to hub" link). */
     topSlot?: React.ReactNode;
@@ -466,7 +458,6 @@ export function SettingsShell({
             : resolvedHeading.headingId
         }
         title={resolvedHeading.title}
-        description={resolvedHeading.subtitle}
         topSlot={resolvedHeading.topSlot}
         actions={resolvedHeading.headingAccessory}
       />
@@ -508,7 +499,7 @@ export function SettingsShell({
             row 2 / col 1 = nav     row 2 / col 2 = cards
           The nav's first item lines up with the top of the first card BY
           CONSTRUCTION — both start the grid's second row — so the alignment
-          holds across locales and however the title or subtitle wraps. No
+          holds across locales and however the title wraps. No
           fixed-height spacer to guess. The `gap-6` between rows reproduces
           the `space-y-6` the heading-to-first-card gap used to carry. */}
       <div
@@ -587,7 +578,7 @@ export function SettingsShell({
           </ul>
         </aside>
 
-        {/* Main column — page renders its own h1 + subtitle.
+        {/* Main column — page renders its own h1.
 
             v1.25.11 (#154) — the column no longer carries its own
             `min-h-[calc(100dvh-12rem)]`. That reserve was tuned without

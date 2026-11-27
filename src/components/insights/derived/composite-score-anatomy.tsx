@@ -20,7 +20,6 @@ import {
 } from "./score-anatomy-view";
 import { RING_GRADIENT, type RingHue } from "./ring-hues";
 import {
-  scoreBandWordKey,
   scoreNoFactorsKey,
   scoreOriginLabelKey,
   type ScoreBand,
@@ -237,7 +236,6 @@ export function CompositeScoreAnatomy({
     if (metric === "SLEEP_SCORE") {
       const v = data.value as SleepScoreValue;
       score = v.score;
-      caption = t(scoreBandWordKey("sleep", v.band));
       contributors = v.subScores
         .map((s) => ({
           key: s.key,
@@ -282,7 +280,7 @@ export function CompositeScoreAnatomy({
       // READINESS component keys verbatim. STRESS / STRAIN stay row-less.
       const v = data.value as WellnessScoreValue;
       score = v.score;
-      caption = persistedCaption(metric, v, t, resolveIntlLocale(locale));
+      caption = persistedCaption(v, t, resolveIntlLocale(locale));
       if (metric === "RECOVERY_SCORE" && v.components) {
         contributors = v.components
           .map((c) => ({
@@ -439,14 +437,14 @@ function readinessHead(
   formatDay: (day: string) => string,
 ): {
   score: number | null;
-  caption: string;
+  caption: string | undefined;
   staleLabel: string | undefined;
   contributorsHeading: string | undefined;
 } {
   if (v.fresh !== false) {
     return {
       score: v.score,
-      caption: t(scoreBandWordKey("readiness", v.band)),
+      caption: undefined,
       staleLabel: undefined,
       contributorsHeading: undefined,
     };
@@ -466,34 +464,22 @@ function readinessHead(
 
 /**
  * The caption under a stored score's ring: the device's own reading on its
- * own scale for a strain the device served, the load words for stress and
- * strain (a heavy stress is "high", never "low"), the band word otherwise.
+ * own scale for a strain the device served, otherwise none. No band word
+ * stands under a ring; the ring's accessible name says the band.
  */
 function persistedCaption(
-  metric: AnatomyMetricId,
   v: WellnessScoreValue,
   t: (key: string, vars?: Record<string, string | number>) => string,
   intlLocale: string,
-): string {
-  if (v.device) {
-    return t("insights.derived.composite.STRAIN_SCORE.deviceCaption", {
-      value: v.device.value.toLocaleString(intlLocale, {
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1,
-      }),
-      max: v.device.scaleMax,
-    });
-  }
-  return t(
-    scoreBandWordKey(
-      metric === "STRESS_SCORE"
-        ? "stress"
-        : metric === "STRAIN_SCORE"
-          ? "strain"
-          : "recovery",
-      v.band,
-    ),
-  );
+): string | undefined {
+  if (!v.device) return undefined;
+  return t("insights.derived.composite.STRAIN_SCORE.deviceCaption", {
+    value: v.device.value.toLocaleString(intlLocale, {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    }),
+    max: v.device.scaleMax,
+  });
 }
 
 /** Rank contributors by impact: present-and-higher-weight first. */

@@ -23,7 +23,10 @@
  *    5  a source went quiet, on its first and second day only
  *    6  readiness is fresh and yellow or red
  *    7  last night is an hour or more off the usual
- *    8  today's values are all in range (counted), or an ordinary night is in
+ *    8  today's values are all in range (counted), or an ordinary night is in;
+ *       while the Health score flags a pillar, that pillar is named instead
+ *       of the count (`in-range-claim.ts`), so the day is never called in
+ *       range beside "Blood pressure: needs attention"
  *    9  no values today, but doses or a visit are planned
  *   10  nothing at all
  *
@@ -34,7 +37,6 @@
 import type { Locale } from "@/lib/i18n/config";
 import { pluralKey } from "@/lib/i18n/plural";
 import { resolveIntlLocale } from "@/lib/format-locale";
-import { formatDurationMinutes } from "@/lib/i18n/duration";
 import { dayDiff } from "@/lib/cycle/day-math";
 import {
   coincidentFamilies,
@@ -53,11 +55,15 @@ import {
   notableNightSentence,
   ordinaryNightSentence,
   outsideVitals,
-  SLEEP_CLOSE_DIFF_MINUTES,
+  sleepFactLine,
   vitalLabel,
-  vitalsInRangeSentence,
   vitalsOutsideSentence,
 } from "@/lib/daily/lead-sentences";
+import {
+  flaggedScoreSentence,
+  vitalsInRangeSentence,
+  type HealthScoreFlag,
+} from "@/lib/daily/in-range-claim";
 import {
   buildMorningScores,
   CONTRIBUTOR_LABEL_KEY,
@@ -171,6 +177,11 @@ export interface DailyMorningLead {
  * (no number when not fresh) and one meta line, worded here.
  */
 export interface DailyMorningScore {
+  /**
+   * The score's short name for the tile ("Schlafscore", "Bereitschaft"),
+   * from the score registry (`scoreShortLabel`). Additive since 1.50.
+   */
+  shortLabel: string;
   ring: DailyMorningRing;
   /** One line beside the ring, or null. */
   line: string | null;
@@ -273,6 +284,11 @@ export interface MorningInput {
   visitToday: { timeLabel: string } | null;
   /** Short local date of `readiness.asOfDay` ("Nov 24"), for "Last 81 on". */
   readinessAsOfLabel: string | null;
+  /**
+   * What the Health score flags (`healthScoreFlag`), read from the fields
+   * that word its `bandSetterLine`. Null when nothing is.
+   */
+  scoreFlag: HealthScoreFlag | null;
 }
 
 function moduleOn(
@@ -537,7 +553,9 @@ export function buildMorningLead(
   const notable = notableNightSentence(facts.sleep, t);
   if (notable) return lead("night_notable", notable);
   const inRange =
-    vitalsInRangeSentence(facts.vitals, locale, t) ??
+    (input.scoreFlag && facts.vitals.length > 0
+      ? flaggedScoreSentence(input.scoreFlag, t)
+      : vitalsInRangeSentence(facts.vitals, input.scoreFlag, locale, t)) ??
     ordinaryNightSentence(facts.sleep, t);
   if (inRange) return lead("in_range", inRange);
   const planned = plannedSentence(
@@ -558,23 +576,6 @@ function cardTitle(
   return { titleKey, title: t(titleKey) };
 }
 
-function sleepLine(sleep: TodaySleep, t: Translate): string {
-  const params = {
-    duration: formatDurationMinutes(Math.round(sleep.minutes), t),
-  };
-  if (sleep.usualMinutes === null) {
-    return t("daily.todayFact.sleep.plain", params);
-  }
-  const diff = Math.round(sleep.minutes - sleep.usualMinutes);
-  if (Math.abs(diff) <= SLEEP_CLOSE_DIFF_MINUTES) {
-    return t("daily.todayFact.sleep.usual", params);
-  }
-  return t(`daily.todayFact.sleep.${diff > 0 ? "more" : "less"}`, {
-    ...params,
-    diff: formatDurationMinutes(Math.abs(diff), t),
-  });
-}
-
 function nightCard(
   input: MorningInput,
   facts: Facts,
@@ -585,7 +586,7 @@ function nightCard(
   const score = input.sleepScore;
   const lines: DailyMorningLine[] = [];
   if (facts.sleep) {
-    lines.push({ text: sleepLine(facts.sleep, t), href: null });
+    lines.push({ text: sleepFactLine(facts.sleep, t), href: null });
   } else {
     lines.push({ text: t("daily.morningCard.nightPending"), href: null });
     if (input.latestNightLabel) {

@@ -71,7 +71,7 @@ function report(
   return {
     composite: {
       status: "ok",
-      value: { score, band },
+      value: { score, band, numberBand: band },
     },
     pillars,
   } as unknown as HealthScoreReport;
@@ -99,7 +99,7 @@ describe("<WellnessScores> (the Insights head)", () => {
     expect(
       html.match(/data-slot="wellness-score-tile-skeleton"/g),
     ).toHaveLength(3);
-    expect(html).not.toContain('data-slot="wellness-score-tile"');
+    expect(html).not.toContain('data-slot="score-ring-tile"');
   });
 
   it("holds the skeleton while the Health score is still on its way", () => {
@@ -129,7 +129,7 @@ describe("<WellnessScores> (the Insights head)", () => {
         healthPending={false}
       />,
     );
-    const order = [...html.matchAll(/data-metric="([A-Z_]+)"/g)].map(
+    const order = [...html.matchAll(/data-score="([A-Z_]+)"/g)].map(
       (m) => m[1],
     );
     // Recovery has no ring on the web: the device's own recovery lives on
@@ -141,10 +141,15 @@ describe("<WellnessScores> (the Insights head)", () => {
       "STRESS_SCORE",
       "STRAIN_SCORE",
     ]);
-    expect(html).toContain("wellness-tile");
+    // One row of the shared compact tile, every tile with its one line.
+    expect(html.match(/data-slot="score-ring-tile"/g)).toHaveLength(5);
+    expect(html.match(/data-size="compact"/g)).toHaveLength(5);
+    expect(html.match(/data-slot="score-ring-tile-line"/g)).toHaveLength(5);
+    expect(html).toContain('data-tile-count="5"');
     expect(html).toContain('data-band="green"');
     expect(html).toContain('href="/insights/scores/health"');
-    expect(html).toContain('data-slot="wellness-score-band-word"');
+    // No band word beside a ring: its colour, its number and its name say it.
+    expect(html).not.toContain('data-slot="score-band-word"');
   });
 
   it("gives a readiness from before today no number, no band and no word", () => {
@@ -162,14 +167,18 @@ describe("<WellnessScores> (the Insights head)", () => {
         {...none}
       />,
     );
-    const tile = html.slice(html.indexOf('data-metric="READINESS"'));
+    const tile = html.slice(html.indexOf('data-score="READINESS"'));
+    expect(tile).toContain('data-stale="true"');
+    expect(tile).toMatch(/aria-label="not from today\. Last 81 on 11\/24"/);
     expect(tile).toContain('data-provisional="true"');
     expect(tile).toContain('data-band="none"');
-    expect(tile).not.toContain('data-slot="wellness-score-band-word"');
+    expect(tile).not.toMatch(/>good</);
     expect(tile).not.toContain('data-slot="score-ring-provisional"');
-    expect(tile).toContain('data-slot="wellness-score-note"');
-    expect(tile).toMatch(/Last 81 on 11\/24/);
-    // The last value is in the note, never in the ring's centre.
+    expect(tile).toMatch(
+      /data-slot="score-ring-tile-line"[^>]*>not from today</,
+    );
+    expect(tile.match(/Last 81 on 11\/24/g)).toHaveLength(1);
+    // The last value is in the ring's name, never in its centre.
     expect(tile).not.toMatch(/tabular-nums[^>]*>81</);
   });
 
@@ -188,11 +197,14 @@ describe("<WellnessScores> (the Insights head)", () => {
         {...none}
       />,
     );
-    const tile = html.slice(html.indexOf('data-metric="SLEEP_SCORE"'));
+    const tile = html.slice(html.indexOf('data-score="SLEEP_SCORE"'));
     expect(tile).toContain('data-provisional="true"');
     expect(tile).toContain('data-band="none"');
-    expect(tile).not.toContain('data-slot="wellness-score-band-word"');
-    expect(tile).toMatch(/Last 84 on 11\/21/);
+    expect(tile).not.toMatch(/>good</);
+    expect(tile).toMatch(
+      /data-slot="score-ring-tile-line"[^>]*>not from today</,
+    );
+    expect(tile).toMatch(/aria-label="not from today\. Last 84 on 11\/21"/);
     expect(tile).not.toMatch(/tabular-nums[^>]*>84</);
   });
 
@@ -212,30 +224,25 @@ describe("<WellnessScores> (the Insights head)", () => {
         healthPending={false}
       />,
     );
-    const tile = html.slice(html.indexOf('data-metric="HEALTH_SCORE"'));
+    const tile = html.slice(html.indexOf('data-score="HEALTH_SCORE"'));
     expect(tile).not.toContain("Wellbeing");
     expect(tile).not.toMatch(/check-in|safety guidance/i);
   });
 
-  it("draws each tile's course under its band word, naming the window", () => {
+  it("keeps a tile to its ring, its name and one line: no course on the row", () => {
     const html = render(
       <WellnessScores
         read={readFrom({
           READINESS: ok({ score: 70, band: "green", series: [60, 64, 70] }),
-          SLEEP_SCORE: ok({ score: 30, band: "red", series: [] }),
         })}
         isLoading={false}
         {...none}
       />,
     );
-    const readiness = html.slice(
-      html.indexOf('data-metric="READINESS"'),
-      html.indexOf('data-metric="SLEEP_SCORE"'),
-    );
-    expect(readiness).toContain('data-slot="wellness-score-history"');
-    expect(readiness).toContain("30-day history");
-    const sleep = html.slice(html.indexOf('data-metric="SLEEP_SCORE"'));
-    expect(sleep).not.toContain('data-slot="wellness-score-history"');
+    expect(html).not.toContain('data-slot="wellness-score-history"');
+    // The band is the ring's name, not a word beside it.
+    expect(html).not.toContain(">good<");
+    expect(html).toContain('aria-label="Score 70 out of 100, good"');
   });
 
   it("labels a load by the server's origin, the same tile for each", () => {
@@ -261,18 +268,20 @@ describe("<WellnessScores> (the Insights head)", () => {
       />,
     );
     const stress = html.slice(
-      html.indexOf('data-metric="STRESS_SCORE"'),
-      html.indexOf('data-metric="STRAIN_SCORE"'),
+      html.indexOf('data-score="STRESS_SCORE"'),
+      html.indexOf('data-score="STRAIN_SCORE"'),
     );
-    expect(stress).toContain('data-slot="wellness-score-origin"');
-    expect(stress).toContain(">Estimate<");
-    expect(stress).toContain(">high<");
+    // Whose number it is rides the line; the band is said by the ring's
+    // name, never as a word beside it, and a load reads high, not low.
+    expect(stress).toMatch(/data-slot="score-ring-tile-line"[^>]*>Estimate</);
+    expect(stress).not.toContain(">high<");
+    expect(stress).toMatch(/role="img" aria-label="[^"]*high/);
     expect(stress).toContain('href="/insights/scores/stress"');
-    const strain = html.slice(html.indexOf('data-metric="STRAIN_SCORE"'));
-    expect(strain).toContain(">Device value<");
-    // The device's own reading stands in for a band word.
-    expect(strain).toContain("12.4 of 21");
-    expect(strain).not.toContain('data-slot="wellness-score-band-word"');
+    const strain = html.slice(html.indexOf('data-score="STRAIN_SCORE"'));
+    // A device's own reading has no band: a neutral ring and the reading on
+    // the line.
+    expect(strain).toContain(">12.4 of 21, Device value<");
+    expect(strain).toMatch(/data-slot="score-ring" data-band="none"/);
     // No section of their own any more.
     expect(html).not.toContain("Estimates from HealthLog");
   });
@@ -289,6 +298,7 @@ describe("<WellnessScores> (the Insights head)", () => {
       />,
     );
     // An older payload without `origin` gets no label rather than a guess.
-    expect(html).not.toContain('data-slot="wellness-score-origin"');
+    expect(html).not.toContain("Estimate");
+    expect(html).not.toContain("Device value");
   });
 });
