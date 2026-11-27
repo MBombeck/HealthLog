@@ -70,17 +70,30 @@ const OBSERVED_PAGE_EVENTS = [
  * budget spec does to count the page as a reader first meets it.
  */
 const OPEN_FOLDS_SCRIPT = () => {
-  const open = () => {
-    for (const el of document.querySelectorAll("details[data-fold]")) {
-      if (!(el as HTMLDetailsElement).open)
-        (el as HTMLDetailsElement).open = true;
+  // Batched to one sweep per frame, and only when a mutation added a fold:
+  // a chart-heavy page mutates thousands of nodes and must not pay a
+  // document-wide query for each.
+  let queued = false;
+  const sweep = () => {
+    queued = false;
+    for (const el of document.querySelectorAll<HTMLDetailsElement>(
+      "details[data-fold]:not([open])",
+    )) {
+      el.open = true;
     }
   };
-  new MutationObserver(open).observe(document, {
-    childList: true,
-    subtree: true,
-  });
-  document.addEventListener("DOMContentLoaded", open);
+  const hasFold = (node: Node) =>
+    node instanceof Element &&
+    (node.matches("details[data-fold]") ||
+      node.querySelector("details[data-fold]") !== null);
+  new MutationObserver((records) => {
+    if (queued) return;
+    if (records.some((r) => Array.from(r.addedNodes).some(hasFold))) {
+      queued = true;
+      requestAnimationFrame(sweep);
+    }
+  }).observe(document, { childList: true, subtree: true });
+  document.addEventListener("DOMContentLoaded", sweep);
 };
 
 export const test = base.extend<{ routeCleanup: void; openFolds: boolean }>({
