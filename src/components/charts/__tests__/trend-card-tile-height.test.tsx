@@ -57,9 +57,30 @@ describe("<TrendCard> mobile tile equal-height contract", () => {
     expect(html).toContain('data-slot="tile-compare-delta"');
   });
 
-  it("renders the sub-row pair with flex-nowrap + overflow-hidden", () => {
+  it("renders each mean on one line that never wraps", () => {
     const html = render(<TrendCard {...baseProps} />);
-    expect(html).toContain("flex-nowrap");
-    expect(html).toContain("overflow-hidden");
+    for (const slot of ["trend-card-mean-7", "trend-card-mean-30"]) {
+      const tag = html.match(
+        new RegExp(`<span class="([^"]*)" data-slot="${slot}"`),
+      );
+      expect(tag?.[1]).toContain("whitespace-nowrap");
+      expect(tag?.[1]).toContain("truncate");
+    }
+  });
+
+  it("drops the unit whole, never as a fragment, and keeps it in the DOM", () => {
+    const html = render(<TrendCard {...baseProps} />);
+    const reading = html.match(
+      /<span data-slot="trend-card-reading" class="([^"]*)"/,
+    )?.[1];
+    // The unit wraps out of a one-line, vertically clipped box.
+    expect(reading).toContain("flex-wrap");
+    expect(reading).toContain("overflow-y-clip");
+    const unit = html.match(
+      /<span data-slot="trend-card-unit" class="([^"]*)">([^<]*)</,
+    );
+    expect(unit?.[1]).toContain("whitespace-nowrap");
+    expect(unit?.[1]).not.toContain("truncate");
+    expect(unit?.[2]).toBe("bpm");
   });
 });

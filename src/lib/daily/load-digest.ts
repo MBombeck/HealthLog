@@ -621,7 +621,7 @@ export async function loadDailyDigest(
     resolveJobLocale(user.locale),
     prisma.integrationStatus.findMany({
       where: { userId: user.id, state: { in: [...SYNC_ISSUE_STATES] } },
-      select: { integration: true, state: true },
+      select: { integration: true, state: true, lastSuccessAt: true },
       orderBy: { integration: "asc" },
     }),
     loadQuietSources(user.id, now).catch(() => []),
@@ -784,8 +784,8 @@ export async function loadDailyDigest(
   });
 
   const syncIssues: DailyDigestSyncIssue[] = syncRows.map((row) => ({
-    integration: row.integration,
-    state: row.state,
+    ...row,
+    lastSuccessAt: row.lastSuccessAt?.toISOString() ?? null,
   }));
 
   /**

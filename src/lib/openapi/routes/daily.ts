@@ -13,11 +13,7 @@ import type { ZodOpenApiObject } from "zod-openapi";
 
 import { ARRIVAL_KINDS } from "@/lib/arrivals/types";
 import { PRIORITY_ITEM_KINDS } from "@/lib/daily/priority-item";
-import {
-  DAILY_ASK_KINDS,
-  DAILY_ASK_TIERS,
-  MAX_DAILY_ASKS,
-} from "@/lib/daily/asks";
+import { DAILY_ASK_KINDS, DAILY_ASK_TIERS } from "@/lib/daily/asks";
 import {
   MAX_TODAY_FACTS,
   MAX_TODAY_FACTS_NARROW,
@@ -92,7 +88,7 @@ const dailyAskSchema = z
     tier: z
       .enum([...DAILY_ASK_TIERS])
       .describe(
-        "Why it is asked, in the order asks are ranked: `safety` (a dose past its on-time window), `decision` (a question only the reader can answer: the admin question, a coach check-in), `due` (a dose takeable now, check-ups due today, a visit starting within 24 hours, a connection that needs a reconnect).",
+        "Why it is asked, in the order asks are ranked: `safety` (a dose past its on-time window), `decision` (a question only the reader can answer: the admin question, a coach check-in), `due` (a dose takeable now, check-ups due now, a visit today or tomorrow, a source whose sign-in expired or was refused and that has delivered nothing for a day).",
       ),
     itemKey: z
       .string()
@@ -114,14 +110,13 @@ const dailyAskSchema = z
           intent: z
             .string()
             .describe(
-              "Stable action token. Beside the rail's tokens: `dose.snooze:<medicationId>` (the medication's own snooze, `POST /api/medications/intake` with status `snoozed`), `relay.yes` / `relay.no` (the relay question), `admin.notice.later` (sets the admin notice aside), `admin.setup.open` (with `href`).",
+              "Stable action token. Beside the rail's tokens: `dose.snooze:<medicationId>` (the medication's own snooze, `POST /api/medications/intake` with status `snoozed`), `relay.yes` / `relay.no` (the relay question), `admin.notice.later` (sets the admin notice aside), `admin.setup.open` (with `href`), `ask.later:<dismissKey>` (sets the ask aside until the next local day: `POST /api/daily/digest/dismiss` with that key, `ask-later:<YYYY-MM-DD>:<itemKey>`). Labels are the short verbs under `daily.action.*`. A consent row (`push_relay`) carries exactly No and Yes, never a later.",
             ),
           href: z.string().optional().describe("Deep-link when navigational."),
         }),
       )
-      .min(1)
-      .max(3)
-      .describe("1 to 3 actions; the first is the primary one."),
+      .length(2)
+      .describe("Exactly two actions; the first is the primary one."),
     learnMore: z
       .object({
         labelKey: z.string().describe("i18n key, resolved client-side."),
@@ -332,9 +327,8 @@ export const dailyDigestResponse = z
       .describe("Bounded 0–3 rail items, never padded."),
     asks: z
       .array(dailyAskSchema)
-      .max(MAX_DAILY_ASKS)
       .describe(
-        `What the start page asks today: 0 to ${MAX_DAILY_ASKS} rows, never padded. Empty on most days, and then no ask card is shown. Render as delivered; do not re-rank or add rows. Additive since 1.50.`,
+        `What the start page asks today, in order, never padded. The rules keep it short and empty on most days, and then no ask card is shown. Render every row as delivered; do not re-rank, fold, drop or add rows. Every row has exactly two actions, the primary first. Additive since 1.50.`,
       ),
     justIn: z
       .object({

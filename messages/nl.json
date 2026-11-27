@@ -853,8 +853,6 @@
     "customizeTitle": "Dashboardindeling",
     "heroItemsDescription": "Kies welke soorten items in Hoogtepunten van vandaag kunnen verschijnen.",
     "heroItemsNotificationNote": "Meldingsinstellingen worden apart beheerd.",
-    "heroContentTitle": "Bovenste kaart toont",
-    "heroContentScore": "Gezondheidsscore en dagoverzicht",
     "heroItems": {
       "coach_checkin": "Check-ins van de Coach",
       "dose_window": "Medicatiedoses",
@@ -936,7 +934,8 @@
       }
     },
     "quickAddSymptom": "Symptoom vastleggen",
-    "todayCardVisible": "Bovenste kaart tonen",
+    "scoreRowVisible": "Scores tonen",
+    "asksAlwaysShown": "Te late doses en vragen over de server verschijnen altijd.",
     "recoveryKitBanner": {
       "title": "Bewaar je herstelkit",
       "body": "Zonder kopieën van de sleutels die deze server gebruikt, kunnen de gegevens na een herinstallatie niet worden hersteld. Het kost een paar minuten.",
@@ -948,8 +947,7 @@
     "quickAddSeizure": "Aanval vastleggen",
     "morning": {
       "heroItemsTitle": "Vandaag te doen",
-      "heroItemsDescription": "Kies welke soorten items in “Vandaag te doen” kunnen verschijnen.",
-      "heroContentReminders": "Eerst “Vandaag te doen”"
+      "heroItemsDescription": "Kies welke soorten items in “Vandaag te doen” kunnen verschijnen."
     }
   },
   "measurements": {
@@ -1179,6 +1177,10 @@
     "shortTypeTimeInDaylight": "Tijd in daglicht",
     "shortTypeAudioExposureEvent": "Melding hard geluid",
     "shortTypeRespiratoryRate": "Ademfrequentie",
+    "shortTypeHealthScore": "Gezondheid",
+    "shortTypeRestingHeartRate": "Rusthartslag",
+    "shortTypeBloodPressure": "Bloeddruk",
+    "shortTypeBloodGlucose": "Glucose",
     "shortTypeLeanBodyMass": "Magere massa",
     "shortTypeWalkingHeartRateAverage": "Wandelhartslag",
     "shortTypeWalkingDoubleSupport": "Dubbele steun",
@@ -9722,6 +9724,8 @@
       },
       "question": {
         "title": "De HealthLog-pushrelay gebruiken?",
+        "askTitle": "Meldingen via pushrelay?",
+        "askBody": "De inhoud blijft versleuteld.",
         "body": "Meldingen voor de app uit de App Store, end-to-end versleuteld: de relay ziet alleen wanneer er een wordt verstuurd.",
         "yes": "Ja",
         "no": "Nee",
@@ -9814,6 +9818,7 @@
       "notice": {
         "title": "Deze server inrichten",
         "body": "Vijf korte stappen over aanmeldingen, meldingen, AI en privacy; elke stap kun je overslaan of later wijzigen.",
+        "bodyShort": "Vijf korte stappen over aanmeldingen, meldingen, AI en privacy.",
         "open": "Inrichting starten",
         "dismiss": "Niet nu"
       },
@@ -13865,6 +13870,7 @@
       },
       "syncIssue": {
         "title": "Synchronisatie vraagt aandacht",
+        "askTitle": "Synchronisatie gestopt",
         "body": "{integration} synchroniseert niet. Maak opnieuw verbinding om je gegevens actueel te houden."
       },
       "sourceQuiet": {
@@ -13917,10 +13923,13 @@
     "action": {
       "logDose": "Innemen",
       "later": "Later",
+      "answer": "Antwoorden",
+      "learnMore": "Meer",
+      "open": "Openen",
+      "setUp": "Instellen",
+      "reconnectShort": "Verbinden",
       "reconnect": "Opnieuw verbinden",
       "viewCheckups": "Controles bekijken",
-      "viewAppointment": "Bezoek bekijken",
-      "viewAppointments": "Bezoeken bekijken",
       "checkinKeep": "Aanhouden",
       "checkinAdjust": "Aanpassen",
       "checkinLetGo": "Loslaten",
@@ -13931,8 +13940,8 @@
       "openSource": "Openen"
     },
     "today": {
-      "deltaVsBaseline": "{delta} t.o.v. je basislijn",
-      "deltaFlat": "In lijn met je basislijn",
+      "deltaShort": "{delta} t.o.v. basislijn",
+      "deltaFlatShort": "Op basislijn",
       "steadyWeeksOne": "Al {count} week stabiel",
       "steadyWeeksFew": "Al {count} weken stabiel",
       "steadyWeeksOther": "Al {count} weken stabiel",
@@ -14102,6 +14111,7 @@
       "latestNight": "Laatste nacht: {date}",
       "vitalOutside": "{metric}: vandaag gemiddeld {value}, gebruikelijk {range}",
       "contributor": "{name}: {value} van 100",
+      "contributorShort": "{name} {value}/100",
       "readinessLast": "Laatst {score} op {date}",
       "source": {
         "recovery": {

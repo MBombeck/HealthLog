@@ -153,5 +153,5 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
   "insights.score-origin":
     "RECOVERY_SCORE, STRESS_SCORE and STRAIN_SCORE values on GET /api/insights/derived carry origin (estimate | device | computed) and deviceSource (the measurement source of a device value, else null); the health score composite carries weights (one { id, weight } per counted pillar, summing to 1) and each snapshot healthScore.pillars row its weight (null when it did not count).",
   "daily.asks":
-    "GET /api/daily/digest carries asks: 0 to 2 rows the start page asks today (kind, tier safety | decision | due, itemKey, title, body, subject, 1 to 3 actions with the primary first, learnMore), ranked and capped on the server; render as delivered, no card when empty. A dose row adds dose.snooze:<medicationId>; the admin rows (push_relay, server_setup) come only to a browser session.",
+    "GET /api/daily/digest carries asks: every row the start page asks today, often none (kind, tier safety | decision | due, itemKey, title, body, subject, exactly two actions with the primary first, learnMore), ranked on the server, never capped or folded; render as delivered, no card when empty. Later is dose.snooze:<medicationId> on a dose and ask.later:<dismissKey> on other reminders; the admin rows (push_relay, server_setup) come only to a browser session.",
 };

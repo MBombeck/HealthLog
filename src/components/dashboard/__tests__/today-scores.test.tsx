@@ -46,7 +46,7 @@ describe("scoreTiles", () => {
   it("orders Health, sleep, readiness and says one line each", () => {
     const tiles = scoreTiles(DIGEST, MORNING, t, "en");
     expect(tiles.map((x) => [x.id, x.score, x.line])).toEqual([
-      ["health", 82, "-4 vs your baseline"],
+      ["health", 82, "\u22124 vs baseline"],
       ["sleep", 76, "7h 20m"],
       ["readiness", null, "Last 81 on Nov 24"],
     ]);

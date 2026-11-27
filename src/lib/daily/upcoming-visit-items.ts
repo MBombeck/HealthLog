@@ -62,10 +62,9 @@ export function buildUpcomingVisitItems(
         {
           // The wire keeps the check-up item's label and intent: the shipped
           // iOS app routes `checkup.view` and knows no other token for this
-          // item, so a new intent would leave its tap inert. The web card
-          // relabels it from the kind (`actionLabelKeyFor` in
-          // `today-asks.tsx`); the switch to `visit.view` waits for an
-          // app that understands it.
+          // item, so a new intent would leave its tap inert. As an ask it
+          // reads "Open" (`asks.ts` gives every action a short verb); the
+          // switch to `visit.view` waits for an app that understands it.
           labelKey: "daily.action.viewCheckups",
           intent: "checkup.view",
           href: visitsPath(group.map((visit) => visit.id)),

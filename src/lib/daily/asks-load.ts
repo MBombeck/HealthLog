@@ -8,6 +8,8 @@ import type { SessionUser } from "@/lib/auth/session-user";
 import { prisma } from "@/lib/db";
 import { readServerSetupState } from "@/lib/admin/server-setup-store";
 import type { AdminAskKind } from "@/lib/daily/asks";
+import { askLaterKey } from "@/lib/daily/ask-intents";
+import { userDayKey } from "@/lib/tz/format";
 import { doseWindowItemKey } from "@/lib/daily/priority-item-key";
 import type { MedsTodayBlock } from "@/lib/dashboard/meds-today";
 import { annotate } from "@/lib/logging/context";
@@ -92,6 +94,23 @@ async function readSnoozedDoseKeys(
  * caller passed `adminAsks` (a browser session on its own record, where the
  * cookie-only answers can be given) and the reader is an admin.
  */
+/**
+ * The asks set aside today ("Later"), as their item keys: the dismiss
+ * ledger rows `ask-later:<today>:<itemKey>`. Yesterday's rows no longer
+ * match, so a "later" lasts for the rest of the local day.
+ */
+async function readAskLaterKeys(
+  userId: string,
+  today: string,
+): Promise<string[]> {
+  const prefix = askLaterKey(today, "");
+  const rows = await prisma.dismissedPriorityItem.findMany({
+    where: { userId, itemKey: { startsWith: prefix } },
+    select: { itemKey: true },
+  });
+  return rows.map((row) => row.itemKey.slice(prefix.length));
+}
+
 export async function readAskInputs(
   user: SessionUser,
   medsToday: MedsTodayBlock,
@@ -101,18 +120,22 @@ export async function readAskInputs(
   adminAsk: AdminAskKind | null;
   snoozedDoseItemKeys: Set<string>;
 }> {
-  const [snoozedDoseItemKeys, adminAsk] = await Promise.all([
+  const [snoozedDoseItemKeys, adminAsk, laterKeys] = await Promise.all([
     readSnoozedDoseKeys(user.id, user.timezone, medsToday, now).catch(
       () => new Set<string>(),
     ),
     options.adminAsks && user.role === "ADMIN"
       ? readAdminAsk(user.id).catch(() => null)
       : Promise.resolve(null),
+    readAskLaterKeys(user.id, userDayKey(now, user.timezone)).catch(
+      () => [] as string[],
+    ),
   ]);
+  for (const key of laterKeys) snoozedDoseItemKeys.add(key);
   annotate({
     meta: {
       daily_digest_admin_ask: adminAsk,
-      daily_digest_snoozed_doses: snoozedDoseItemKeys.size,
+      daily_digest_held_asks: snoozedDoseItemKeys.size,
     },
   });
   return { adminAsk, snoozedDoseItemKeys };

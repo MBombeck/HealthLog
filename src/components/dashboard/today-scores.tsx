@@ -6,10 +6,10 @@
  *
  * Wide (the tile strip below fits four or more columns): one tile per score,
  * each two strip columns wide, so at six columns its edges sit on the strip's
- * gutters. The ring stands at the tile's content edge, nearly centred over
- * the tile below it, with the title and one meta line beside it in the
- * metric tile's anatomy. Narrow (the strip is two or three columns): one tile
- * with the three rings side by side and their names under them, no dividers.
+ * gutters; each is a `ScoreRingTile` (wide): the ring, the short name, the
+ * band word and one line. Narrow (the strip is two or three columns): one
+ * tile with the three rings side by side, their names and band words under
+ * them, no dividers. Every ring is coloured by its band (concept B).
  * Both faces are in the markup; the one not shown is `display: none`, out of
  * the accessibility tree.
  *
@@ -22,16 +22,22 @@
 import Link from "next/link";
 import { Gauge, HeartPulse, Moon, type LucideIcon } from "lucide-react";
 
-import { TileHeader } from "@/components/insights/tile-header";
 import { ScoreRing } from "@/components/insights/derived/score-ring";
-import type { ScoreBand } from "@/components/insights/derived/band-tokens";
-import type { RingHue } from "@/components/insights/derived/ring-hues";
+import {
+  BandWord,
+  ScoreRingTile,
+} from "@/components/insights/derived/score-ring-tile";
+import {
+  bandWordKey,
+  type ScoreBand,
+} from "@/components/insights/derived/band-tokens";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrendTile } from "@/components/ui/trend-tile";
 import type { Locale } from "@/lib/i18n/config";
 import { useTranslations } from "@/lib/i18n/context";
 import { pluralKey } from "@/lib/i18n/plural";
 import { metricHref, pageHref } from "@/lib/links/hrefs";
+import { metricName } from "@/lib/measurements/type-label-keys";
 import { cn } from "@/lib/utils";
 import type { DailyDigest } from "@/lib/daily/digest";
 import type { DailyMorning, DailyMorningScore } from "@/lib/daily/morning";
@@ -40,14 +46,17 @@ import type { DailyMorning, DailyMorningScore } from "@/lib/daily/morning";
 export interface ScoreTileView {
   id: "health" | "sleep" | "readiness";
   label: string;
+  /** The name under a ring in the narrow tile, three to a row. */
+  shortLabel: string;
   icon: LucideIcon;
-  hue: RingHue;
   href: string;
   /** Null: no number (not fresh, or not enough data yet). */
   score: number | null;
   band: ScoreBand | undefined;
   /** A past value exists: the bare track instead of the provisional dash. */
   stale: boolean;
+  /** The band in words; null without a number or a band. */
+  bandWord: string | null;
   line: string | null;
 }
 
@@ -65,9 +74,9 @@ function healthLine(
   if (score.bandSetterLine) return score.bandSetterLine;
   if (score.delta !== null && score.deltaReason === null) {
     const rounded = Math.round(score.delta);
-    if (rounded === 0) return t("daily.today.deltaFlat");
-    return t("daily.today.deltaVsBaseline", {
-      delta: rounded > 0 ? `+${rounded}` : `${rounded}`,
+    if (rounded === 0) return t("daily.today.deltaFlatShort");
+    return t("daily.today.deltaShort", {
+      delta: rounded > 0 ? `+${rounded}` : `\u2212${Math.abs(rounded)}`,
     });
   }
   const weeks = score.steadyWeeks ?? null;
@@ -98,12 +107,13 @@ function morningTile(
   return {
     id,
     label,
+    shortLabel: label,
     icon: id === "sleep" ? Moon : Gauge,
-    hue: id,
     href: tile.href,
     score: fresh ? tile.ring.score : null,
     band: fresh && tile.ring.band ? (tile.ring.band as ScoreBand) : undefined,
     stale: !fresh && tile.ring.asOfDay !== null,
+    bandWord: null,
     line: tile.line,
   };
 }
@@ -120,12 +130,13 @@ export function scoreTiles(
     {
       id: "health",
       label: t("insights.healthScore.label"),
+      shortLabel: metricName("HEALTH_SCORE", t).short,
       icon: HeartPulse,
-      hue: "health",
       href: metricHref("health_score") ?? pageHref("insights"),
       score: score?.value ?? null,
       band: score ? ((score.numberBand ?? score.band) as ScoreBand) : undefined,
       stale: false,
+      bandWord: null,
       line: healthLine(score, t, locale),
     },
   ];
@@ -149,7 +160,13 @@ export function scoreTiles(
       ),
     );
   }
-  return tiles;
+  // The band in words beside each ring (concept B): the ring's colour is
+  // the band, and the word says it too.
+  return tiles.map((tile) => ({
+    ...tile,
+    bandWord:
+      tile.score !== null && tile.band ? t(bandWordKey(tile.band)) : null,
+  }));
 }
 
 /** The grid span of one wide tile: the row is six strip columns. */
@@ -166,13 +183,12 @@ const COMPACT_COLS: Record<number, string> = {
   3: "grid-cols-3",
 };
 
-function ring(tile: ScoreTileView, size: "dashboard" | "compact") {
+function compactRing(tile: ScoreTileView) {
   return (
     <ScoreRing
       score={tile.score}
-      band={tile.band}
-      hue={tile.hue}
-      size={size}
+      band={tile.band ?? null}
+      size="compact"
       flat
       emptyFace={tile.stale}
       ariaLabel={
@@ -204,36 +220,27 @@ export function TodayScores({
       {/* Wide: one tile per score on the strip's six columns. */}
       <div className="hidden gap-3 @min-[44.25rem]:grid @min-[44.25rem]:grid-cols-6">
         {tiles.map((tile) => (
-          <Link
+          <div
             key={tile.id}
-            href={tile.href}
             data-slot="today-score-tile"
             data-score={tile.id}
             data-fresh={tile.score !== null ? "true" : "false"}
-            className={cn(
-              "focus-visible:ring-ring/50 hover:ring-ring/30 min-w-0 rounded-xl transition-[box-shadow] hover:ring-2 focus-visible:ring-2 focus-visible:outline-none",
-              WIDE_SPAN[tiles.length],
-            )}
+            className={cn("min-w-0", WIDE_SPAN[tiles.length])}
           >
-            {/* The metric tile's own frame and inset. The ring stands at the
-                tile's content edge, close to centred over the tile below it;
-                the title and its line take the rest, so a long name or a
-                long line still reads on one or two lines. */}
-            <TrendTile className="flex-row items-center gap-4 md:py-4">
-              {ring(tile, "dashboard")}
-              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                <TileHeader icon={tile.icon} title={tile.label} titleAs="h3" />
-                {tile.line ? (
-                  <p
-                    data-slot="today-score-line"
-                    className="text-muted-foreground text-sm"
-                  >
-                    {tile.line}
-                  </p>
-                ) : null}
-              </div>
-            </TrendTile>
-          </Link>
+            <ScoreRingTile
+              size="wide"
+              id={tile.id}
+              href={tile.href}
+              icon={tile.icon}
+              label={tile.label}
+              shortLabel={tile.shortLabel}
+              score={tile.score}
+              band={tile.band}
+              stale={tile.stale}
+              bandWord={tile.bandWord}
+              line={tile.line}
+            />
+          </div>
         ))}
       </div>
 
@@ -253,10 +260,17 @@ export function TodayScores({
             data-score={tile.id}
             className="focus-visible:ring-ring/50 flex min-w-0 flex-col items-center gap-2 rounded-lg text-center focus-visible:ring-2 focus-visible:outline-none"
           >
-            {ring(tile, "compact")}
+            {compactRing(tile)}
             <span className="text-foreground text-sm leading-tight font-medium break-words hyphens-auto">
-              {tile.label}
+              {tile.shortLabel}
             </span>
+            {tile.bandWord && tile.band ? (
+              <BandWord
+                band={tile.band}
+                word={tile.bandWord}
+                className="text-muted-foreground -mt-1 text-xs"
+              />
+            ) : null}
           </Link>
         ))}
       </TrendTile>

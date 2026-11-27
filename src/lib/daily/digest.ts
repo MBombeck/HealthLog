@@ -180,10 +180,9 @@ export interface DailyDigestScore {
 
 /** A broken integration, deterministically derived from `IntegrationStatus`. */
 export interface DailyDigestSyncIssue {
-  /** Integration token (`withings`, `whoop`, …). */
-  integration: string;
-  /** The failure state the row carries (`error_reauth`, `disconnected`, …). */
-  state: string;
+  integration: string; // `withings`, `whoop`, …
+  state: string; // `error_reauth`, `disconnected`, …
+  lastSuccessAt?: string | null; // ISO; null when no sync ever landed
 }
 
 /**
@@ -1283,7 +1282,7 @@ export function buildDailyDigest(
       : null,
     line: composeLine(overview, topSignal, input.score, t),
     worthALook: rail,
-    asks: asksFromDigest(input, visible, t), // read before the rail's cap
+    asks: asksFromDigest(input, worthALook, t), // own opt-out, own cap
     justIn,
     reactionLine,
     ai: input.ai,

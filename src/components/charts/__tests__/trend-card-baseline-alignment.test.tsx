@@ -56,15 +56,14 @@ describe("<TrendCard> W20a baseline alignment", () => {
       />,
     );
 
-    // The header is the shared TileHeader with its two reserved lines;
-    // h-10 keeps the value row below at the same y-coordinate whether the
-    // label takes one line or two.
+    // The header is the shared TileHeader on one line at a fixed h-5, so
+    // the value row below sits at the same y-coordinate in every tile.
     expect(html).toMatch(
-      /data-slot="tile-header" data-reserve-lines="2" class="flex [^"]*h-10/,
+      /data-slot="tile-header" data-reserve-lines="1" class="flex [^"]*h-5/,
     );
   });
 
-  it("wraps a long label inside the reserve instead of cutting it", () => {
+  it("keeps a long label on one line, ending in an ellipsis with its full name in title", () => {
     const html = render(
       <TrendCard
         // Stress test — the live tile uses dashboard.*Short keys but
@@ -84,13 +83,11 @@ describe("<TrendCard> W20a baseline alignment", () => {
     expect(tag, "tile title not found").toBeDefined();
     const classes = tag!.match(/class="([^"]*)"/)?.[1] ?? "";
     const title = tag!.match(/title="([^"]*)"/)?.[1];
-    // Wraps at a syllable, clamps only past the two reserved lines, and the
-    // clamp keeps the whole name reachable.
-    expect(classes).toContain("hyphens-auto");
-    expect(classes).toContain("break-words");
-    expect(classes).toContain("line-clamp-2");
-    expect(classes).not.toContain("truncate");
-    expect(classes).not.toContain("whitespace-nowrap");
+    // One line; a name that does not fit ends in an ellipsis (the last
+    // resort; the strip passes short names), and the clamp keeps the whole
+    // name reachable.
+    expect(classes).toContain("line-clamp-1");
+    expect(classes).not.toContain("line-clamp-2");
     expect(title).toBe("A really long blood pressure metric name");
   });
 
@@ -203,9 +200,9 @@ describe("<TrendCard> W20a baseline alignment", () => {
         />,
       );
 
-      // Same heading-row height contract — two reserved label lines.
+      // Same heading-row height contract: one line at h-5.
       expect(html).toMatch(
-        /data-slot="tile-header" data-reserve-lines="2" class="flex [^"]*h-10/,
+        /data-slot="tile-header" data-reserve-lines="1" class="flex [^"]*h-5/,
       );
       // Same value-row baseline contract — `items-baseline` + `text-3xl`
       // + `leading-none`. Identical font geometry across all five tiles

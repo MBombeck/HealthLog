@@ -6,6 +6,7 @@
 import { isLastNight } from "@/lib/sleep/last-night";
 import { formatDurationMinutes } from "@/lib/i18n/duration";
 import { metricHref, pageHref } from "@/lib/links/hrefs";
+import { metricName } from "@/lib/measurements/type-label-keys";
 import type {
   DailyMorning,
   DailyMorningRing,
@@ -66,6 +67,23 @@ export function lastNightScored(input: MorningInput): boolean {
       input.todayKey,
     )
   );
+}
+
+/** A readiness part's name in the tile's one-line form. */
+function contributorShortName(
+  key: MorningReadinessComponent["key"],
+  t: Translate,
+): string {
+  switch (key) {
+    case "rhr":
+      return metricName("RESTING_HEART_RATE", t).short;
+    case "respiratory":
+      return metricName("RESPIRATORY_RATE", t).short;
+    case "mood":
+      return t("dashboard.moodShort");
+    default:
+      return t(CONTRIBUTOR_LABEL_KEY[key]);
+  }
 }
 
 function sleepScoreTile(
@@ -133,9 +151,10 @@ function readinessScoreTile(
   const pull = heaviestDeductions(readiness.components).find(
     (c) => !(lastNightScored(input) && c.key === "sleep"),
   );
+  // Compact, one line on the tile: the short name and the part score.
   const line = pull
-    ? t("daily.morningCard.contributor", {
-        name: t(CONTRIBUTOR_LABEL_KEY[pull.key]),
+    ? t("daily.morningCard.contributorShort", {
+        name: contributorShortName(pull.key, t),
         value: Math.round(pull.value as number),
       })
     : banded

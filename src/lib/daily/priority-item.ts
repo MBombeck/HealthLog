@@ -19,6 +19,7 @@
  * inline); a serialisable single-source-of-truth DTO cannot hold a component.
  */
 import type { ModuleKey } from "@/lib/modules/registry";
+import { ASK_LATER_KEY_PREFIX } from "@/lib/daily/ask-intents";
 
 /**
  * Closed set of rail-item kinds. A new kind also needs its server builder and
@@ -118,6 +119,8 @@ export function isScoreNoticeItemKey(itemKey: string): boolean {
 
 export function isDismissibleItemKey(itemKey: string): boolean {
   return (
+    // An ask set aside for the day (`ask-intents.ts`).
+    itemKey.startsWith(`${ASK_LATER_KEY_PREFIX}:`) ||
     DISMISSIBLE_PRIORITY_ITEM_KINDS.some((kind) =>
       itemKey.startsWith(`${kind}:`),
     ) ||

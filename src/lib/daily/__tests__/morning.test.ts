@@ -752,7 +752,7 @@ describe("morning scores: the start page's sleep and readiness tiles", () => {
     );
     expect(m.scores.readiness).toMatchObject({
       ring: { score: 58, band: "yellow", fresh: true },
-      line: "Resting heart rate: 40 of 100",
+      line: "Resting HR 40/100",
     });
   });
 

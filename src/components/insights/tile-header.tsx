@@ -78,7 +78,13 @@ interface TileHeaderProps {
    * text in `title` when it is a string. The dashboard trend strip does the
    * same for its labels (`trend-card.tsx`).
    */
-  reserveLines?: 2;
+  /**
+   * `1`: one line at a fixed height, for a row of narrow tiles (the
+   * dashboard strip). The title should be the short form (`MetricName`);
+   * a title that still does not fit ends in an ellipsis, with its full text
+   * in `title`, as the last resort.
+   */
+  reserveLines?: 1 | 2;
 }
 
 export function TileHeader({
@@ -103,10 +109,12 @@ export function TileHeader({
   // single-line header is the height it was. There is no class override:
   // every caller used one to add `truncate`.
   const reserve = reserveLines === 2;
+  const oneLine = reserveLines === 1;
   const titleClassNames = cn(
     "min-w-0 leading-tight break-words hyphens-auto",
     size === "sm" ? "text-sm" : "text-base",
     reserve && "line-clamp-2",
+    oneLine && "line-clamp-1 break-all tracking-tight hyphens-none",
   );
   const text = isMetricName(title) ? (
     <ShortName short={title.short} full={title.full} />
@@ -115,13 +123,13 @@ export function TileHeader({
   );
   const fullTitle = isMetricName(title)
     ? title.full
-    : reserve && typeof title === "string"
+    : (reserve || oneLine) && typeof title === "string"
       ? title
       : undefined;
   return (
     <div
       data-slot="tile-header"
-      data-reserve-lines={reserve ? 2 : undefined}
+      data-reserve-lines={reserve ? 2 : oneLine ? 1 : undefined}
       className={cn(
         "flex gap-2",
         // Two `leading-tight` lines: 2 × 20 px at `text-base`, 2 × 17.5 px
@@ -129,6 +137,7 @@ export function TileHeader({
         reserve
           ? cn("items-start", size === "sm" ? "h-9" : "h-10")
           : "items-center",
+        oneLine && (size === "sm" ? "h-4.5" : "h-5"),
         className,
       )}
     >

@@ -69,12 +69,13 @@ const CHECKIN: DailyAsk = {
   learnMore: null,
   actions: [
     {
-      labelKey: "daily.action.checkinKeep",
-      intent: "coach.checkin.keep:e2e-plan",
+      labelKey: "daily.action.answer",
+      intent: "coach.checkin.adjust",
+      href: "/coach?ask=e2e",
     },
     {
-      labelKey: "daily.action.checkinLetGo",
-      intent: "coach.checkin.letGo:e2e-plan",
+      labelKey: "daily.action.later",
+      intent: "ask.later:ask-later:2026-11-27:coach_checkin:e2e-plan",
     },
   ],
 };
@@ -208,6 +209,48 @@ test.describe("the top of the dashboard", () => {
     });
   }
 
+  test("five asks all show, nothing folds, one button width", async ({
+    page,
+  }) => {
+    const more = (n: number): DailyAsk => ({
+      kind: "preventive_care",
+      tier: "due",
+      itemKey: `preventive_care:e2e-${n}`,
+      title: `Check-up ${n} due`,
+      body: "Dental check-up is due.",
+      subject: null,
+      learnMore: null,
+      actions: [
+        {
+          labelKey: "daily.action.open",
+          intent: "checkup.view",
+          href: "/checkups",
+        },
+        {
+          labelKey: "daily.action.later",
+          intent: `ask.later:ask-later:2026-11-27:preventive_care:e2e-${n}`,
+        },
+      ],
+    });
+    await serveToday(page, {
+      asks: [DOSE, CHECKIN, more(1), more(2), more(3)],
+    });
+    await page.goto("/");
+    const card = page.locator('[data-slot="today-asks"]');
+    await expect(card).toBeVisible({ timeout: 20_000 });
+    await expect(card.locator('[data-slot="today-ask"]:visible')).toHaveCount(
+      5,
+    );
+    await expect(card.locator("details")).toHaveCount(0);
+    // Every button in the card is one width.
+    const widths = await card
+      .locator('[data-slot="today-ask-action"]:visible')
+      .evaluateAll((els) => [
+        ...new Set(els.map((e) => Math.round(e.getBoundingClientRect().width))),
+      ]);
+    expect(widths).toHaveLength(1);
+  });
+
   test("a due dose opens the intake sheet in one tap", async ({ page }) => {
     await serveToday(page, { asks: [DOSE] });
     await page.goto("/");
@@ -221,15 +264,17 @@ test.describe("the top of the dashboard", () => {
     expect(new URL(page.url()).pathname).toBe("/");
   });
 
-  test("answers a coach check-in in place", async ({ page }) => {
+  test("Later sets the ask aside through the dismiss ledger", async ({
+    page,
+  }) => {
     await serveToday(page, { asks: [CHECKIN] });
-    const patched: string[] = [];
-    await page.route(/\/api\/coach\/plans\/e2e-plan$/, async (route) => {
-      patched.push(route.request().postData() ?? "");
+    const dismissed: string[] = [];
+    await page.route(/\/api\/daily\/digest\/dismiss$/, async (route) => {
+      dismissed.push(route.request().postData() ?? "");
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ data: { id: "e2e-plan" }, error: null }),
+        body: JSON.stringify({ data: { dismissed: true }, error: null }),
       });
     });
     await page.goto("/");
@@ -237,8 +282,19 @@ test.describe("the top of the dashboard", () => {
       '[data-slot="today-ask"][data-kind="coach_checkin"]',
     );
     await expect(checkin).toBeVisible({ timeout: 20_000 });
-    await checkin.getByRole("button", { name: "Keep it" }).click();
-    await expect.poll(() => patched.length).toBeGreaterThan(0);
+    // Two actions: Later, then the primary that opens the Coach.
+    await expect(checkin.locator('[data-slot="today-ask-action"]')).toHaveCount(
+      2,
+    );
+    await expect(checkin.getByRole("link", { name: "Answer" })).toHaveAttribute(
+      "href",
+      "/coach?ask=e2e",
+    );
+    await checkin.getByRole("button", { name: "Later" }).click();
+    await expect.poll(() => dismissed.length).toBeGreaterThan(0);
+    expect(dismissed[0]).toContain(
+      "ask-later:2026-11-27:coach_checkin:e2e-plan",
+    );
   });
 
   test("on a phone: the card full width, the scores in one tile", async ({

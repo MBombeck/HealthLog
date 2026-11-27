@@ -404,8 +404,13 @@ const ASKS: DailyAsk[] = [
     learnMore: null,
     actions: [
       {
-        labelKey: "daily.action.checkinKeep",
-        intent: "coach.checkin.keep:plan-1",
+        labelKey: "daily.action.answer",
+        intent: "coach.checkin.adjust",
+        href: "/coach?ask=plan-1",
+      },
+      {
+        labelKey: "daily.action.later",
+        intent: "ask.later:ask-later:2026-08-03:coach_checkin:plan-1",
       },
     ],
   },
@@ -430,9 +435,10 @@ const ASKS: DailyAsk[] = [
 describe("the ask card's mutating affordances", () => {
   const node = <TodayAsks asks={ASKS} />;
 
-  it("offers the check-in answer in the caller's own record", () => {
+  it("offers Later on the check-in in the caller's own record", () => {
     const html = render(OWN_RECORD, node);
-    expect(html).toContain("Keep it");
+    expect(html).toContain(">Later<");
+    expect(html).toContain('href="/coach?ask=plan-1"');
     expect(html).toContain('href="/checkups"');
   });
 
@@ -443,7 +449,7 @@ describe("the ask card's mutating affordances", () => {
     // gets a 403 because it does not. A MANAGE grant changes nothing here.
     for (const access of [READ_ONLY, WRITABLE, MANAGING]) {
       const html = render(access, node);
-      expect(html).not.toContain("Keep it");
+      expect(html).not.toContain(">Later<");
       // The card itself stays, with its navigation: reading what is due is
       // the point of opening somebody's record.
       expect(html).toContain('data-slot="today-asks"');

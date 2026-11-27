@@ -50062,10 +50062,11 @@ components:
             device | computed) and deviceSource (the measurement source of a device value, else null); the health score
             composite carries weights (one { id, weight } per counted pillar, summing to 1) and each snapshot
             healthScore.pillars row its weight (null when it did not count). `daily.asks`: GET /api/daily/digest carries
-            asks: 0 to 2 rows the start page asks today (kind, tier safety | decision | due, itemKey, title, body,
-            subject, 1 to 3 actions with the primary first, learnMore), ranked and capped on the server; render as
-            delivered, no card when empty. A dose row adds dose.snooze:<medicationId>; the admin rows (push_relay,
-            server_setup) come only to a browser session."
+            asks: every row the start page asks today, often none (kind, tier safety | decision | due, itemKey, title,
+            body, subject, exactly two actions with the primary first, learnMore), ranked on the server, never capped or
+            folded; render as delivered, no card when empty. Later is dose.snooze:<medicationId> on a dose and
+            ask.later:<dismissKey> on other reminders; the admin rows (push_relay, server_setup) come only to a browser
+            session."
       required:
         - version
         - buildSha
@@ -101705,12 +101706,12 @@ components:
             $ref: "#/components/schemas/DailyPriorityItem"
           description: Bounded 0–3 rail items, never padded.
         asks:
-          maxItems: 2
           type: array
           items:
             $ref: "#/components/schemas/DailyAsk"
-          description: "What the start page asks today: 0 to 2 rows, never padded. Empty on most days, and then no ask card is
-            shown. Render as delivered; do not re-rank or add rows. Additive since 1.50."
+          description: What the start page asks today, in order, never padded. The rules keep it short and empty on most days, and
+            then no ask card is shown. Render every row as delivered; do not re-rank, fold, drop or add rows. Every row
+            has exactly two actions, the primary first. Additive since 1.50.
         justIn:
           anyOf:
             - type: object
@@ -101941,7 +101942,8 @@ components:
             - due
           description: "Why it is asked, in the order asks are ranked: `safety` (a dose past its on-time window), `decision` (a
             question only the reader can answer: the admin question, a coach check-in), `due` (a dose takeable now,
-            check-ups due today, a visit starting within 24 hours, a connection that needs a reconnect)."
+            check-ups due now, a visit today or tomorrow, a source whose sign-in expired or was refused and that has
+            delivered nothing for a day)."
         itemKey:
           type: string
           description: Stable identity, namespaced `<kind>:...`; the rail item's own key for the rail kinds.
@@ -101959,8 +101961,8 @@ components:
             - string
             - "null"
         actions:
-          minItems: 1
-          maxItems: 3
+          minItems: 2
+          maxItems: 2
           type: array
           items:
             type: object
@@ -101972,7 +101974,10 @@ components:
                 type: string
                 description: "Stable action token. Beside the rail's tokens: `dose.snooze:<medicationId>` (the medication's own snooze,
                   `POST /api/medications/intake` with status `snoozed`), `relay.yes` / `relay.no` (the relay question),
-                  `admin.notice.later` (sets the admin notice aside), `admin.setup.open` (with `href`)."
+                  `admin.notice.later` (sets the admin notice aside), `admin.setup.open` (with `href`),
+                  `ask.later:<dismissKey>` (sets the ask aside until the next local day: `POST
+                  /api/daily/digest/dismiss` with that key, `ask-later:<YYYY-MM-DD>:<itemKey>`). Labels are the short
+                  verbs under `daily.action.*`. A consent row (`push_relay`) carries exactly No and Yes, never a later."
               href:
                 description: Deep-link when navigational.
                 type: string
@@ -101980,7 +101985,7 @@ components:
               - labelKey
               - intent
             additionalProperties: false
-          description: 1 to 3 actions; the first is the primary one.
+          description: Exactly two actions; the first is the primary one.
         learnMore:
           anyOf:
             - type: object
