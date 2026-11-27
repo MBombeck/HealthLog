@@ -2,22 +2,18 @@
 
 import { Clock } from "lucide-react";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { InfoPopover } from "@/components/ui/info-popover";
 import { EmptyState } from "@/components/ui/empty-state";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Segmented } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TileHeader } from "@/components/insights/tile-header";
+import { ValueRow, type ValueRowItem } from "@/components/insights/value-row";
 import type {
   BpPartOfDay,
   BpPartSummary,
 } from "@/lib/analytics/bp-time-of-day";
-import { pluralKey } from "@/lib/i18n/plural";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { useBpTimeOfDay } from "@/lib/queries/use-bp-time-of-day";
 import type { BpChartPart } from "./use-bp-time-of-day-state";
@@ -44,7 +40,10 @@ function hourRange(part: BpPartSummary): { start: string; end: string } {
  * that narrows the chart to one part sits in the chart's header
  * (`BpPartOfDayControl`), beside the range tabs it works with. Every number is the server's
  * (`/api/measurements/blood-pressure/time-of-day`); a part below the reading
- * floor shows its count and says so rather than a mean one reading can swing.
+ * floor shows a dash (with the reason as its hover and accessible text)
+ * rather than a mean one reading can swing. The card is the three values;
+ * what it means, the hours of each part and the morning-minus-evening
+ * difference sit behind its (i).
  * The card is its own text equivalent: there is no graphic to describe.
  */
 export function BpTimeOfDayCard({
@@ -53,7 +52,7 @@ export function BpTimeOfDayCard({
   /** The chart's range, in days, so both read the same window. */
   days: number;
 }) {
-  const { t, locale } = useTranslations();
+  const { t } = useTranslations();
   const fmt = useFormatters();
   const query = useBpTimeOfDay(days);
   const data = query.data;
@@ -61,20 +60,73 @@ export function BpTimeOfDayCard({
   // A signed difference: `+` spelled out, the minus from the formatter.
   const signed = (n: number) => (n > 0 ? `+${fmt.integer(n)}` : fmt.integer(n));
 
+  // What the card means and how its parts are cut sits behind the (i): the
+  // card itself is the three values.
+  const about = data
+    ? [
+        t("insights.bpTimeOfDay.description"),
+        t("insights.bpTimeOfDay.hours", {
+          morning: t(
+            "insights.bpTimeOfDay.hourRange",
+            hourRange(data.parts[0]),
+          ),
+          midday: t("insights.bpTimeOfDay.hourRange", hourRange(data.parts[1])),
+          evening: t(
+            "insights.bpTimeOfDay.hourRange",
+            hourRange(data.parts[2]),
+          ),
+        }),
+        data.morningEveningDifference
+          ? t("insights.bpTimeOfDay.difference", {
+              systolic: signed(data.morningEveningDifference.systolic),
+              diastolic: signed(data.morningEveningDifference.diastolic),
+            })
+          : t("insights.bpTimeOfDay.differencePending", {
+              min: fmt.integer(data.minReadings),
+            }),
+      ].join(" ")
+    : t("insights.bpTimeOfDay.description");
+
+  const items: ValueRowItem[] = (data?.parts ?? []).map((part) => {
+    const label = t(PART_KEYS[part.part]);
+    const enough = part.systolic !== null && part.diastolic !== null;
+    return {
+      key: part.part,
+      label,
+      value: enough ? (
+        `${fmt.integer(part.systolic!)}/${fmt.integer(part.diastolic!)}`
+      ) : (
+        <>
+          <span aria-hidden="true">{"\u2014"}</span>
+          <span className="sr-only">{t("insights.bpTimeOfDay.notEnough")}</span>
+        </>
+      ),
+      unit: enough ? "mmHg" : undefined,
+      title: enough ? undefined : t("insights.bpTimeOfDay.notEnough"),
+    };
+  });
+
   return (
-    <Card data-slot="bp-time-of-day" aria-busy={query.isFetching || undefined}>
+    <Card
+      data-slot="bp-time-of-day"
+      density="compact"
+      aria-busy={query.isFetching || undefined}
+    >
       <CardHeader>
         <TileHeader
           icon={Clock}
           title={t("insights.bpTimeOfDay.title")}
           titleAs="h2"
           id="bp-time-of-day-title"
+          right={
+            <InfoPopover
+              content={about}
+              triggerDataSlot="bp-time-of-day-info"
+            />
+          }
         />
-        <CardDescription>
-          {t("insights.bpTimeOfDay.description")}
-        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent>
         {query.isPending ? (
           <div className="grid grid-cols-3 gap-x-3 gap-y-2">
             {[0, 1, 2].map((i) => (
@@ -99,88 +151,14 @@ export function BpTimeOfDayCard({
             description={t("insights.bpTimeOfDay.emptyDescription")}
           />
         ) : data ? (
-          <div
+          <ValueRow
+            items={items}
+            slot="bp-time-of-day-values"
             className={cn(
-              "space-y-3 transition-opacity",
+              "transition-opacity",
               query.isPlaceholderData && "opacity-60",
             )}
-          >
-            <ul
-              aria-labelledby="bp-time-of-day-title"
-              className="grid grid-cols-3 gap-x-3 gap-y-2"
-            >
-              {data.parts.map((part) => (
-                <li
-                  key={part.part}
-                  data-slot={`bp-time-of-day-${part.part}`}
-                  className="min-w-0 space-y-0.5"
-                >
-                  <p className="text-muted-foreground text-xs tracking-wide uppercase">
-                    {t(PART_KEYS[part.part])}
-                  </p>
-                  {part.systolic !== null && part.diastolic !== null ? (
-                    <p className="flex flex-wrap items-baseline gap-x-1 text-base font-semibold tabular-nums">
-                      <span>{`${fmt.integer(part.systolic)}/${fmt.integer(part.diastolic)}`}</span>
-                      <span className="text-muted-foreground text-xs font-normal">
-                        mmHg
-                      </span>
-                    </p>
-                  ) : (
-                    <p className="text-sm">
-                      {t("insights.bpTimeOfDay.notEnough")}
-                    </p>
-                  )}
-                  <p className="text-muted-foreground text-xs tabular-nums">
-                    {t(
-                      pluralKey(
-                        "insights.bpTimeOfDay.readings",
-                        part.readingCount,
-                        locale,
-                      ),
-                      { count: fmt.integer(part.readingCount) },
-                    )}
-                  </p>
-                  {part.pulse !== null ? (
-                    <p className="text-muted-foreground text-xs tabular-nums">
-                      {t("insights.bpTimeOfDay.pulse", {
-                        value: fmt.integer(part.pulse),
-                      })}
-                    </p>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-            {data.morningEveningDifference ? (
-              <p className="text-sm" data-slot="bp-time-of-day-difference">
-                {t("insights.bpTimeOfDay.difference", {
-                  systolic: signed(data.morningEveningDifference.systolic),
-                  diastolic: signed(data.morningEveningDifference.diastolic),
-                })}
-              </p>
-            ) : (
-              <p className="text-sm" data-slot="bp-time-of-day-difference">
-                {t("insights.bpTimeOfDay.differencePending", {
-                  min: fmt.integer(data.minReadings),
-                })}
-              </p>
-            )}
-            <p className="text-muted-foreground text-xs">
-              {t("insights.bpTimeOfDay.hours", {
-                morning: t(
-                  "insights.bpTimeOfDay.hourRange",
-                  hourRange(data.parts[0]),
-                ),
-                midday: t(
-                  "insights.bpTimeOfDay.hourRange",
-                  hourRange(data.parts[1]),
-                ),
-                evening: t(
-                  "insights.bpTimeOfDay.hourRange",
-                  hourRange(data.parts[2]),
-                ),
-              })}
-            </p>
-          </div>
+          />
         ) : null}
       </CardContent>
     </Card>

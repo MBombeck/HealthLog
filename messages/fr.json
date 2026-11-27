@@ -3590,8 +3590,11 @@
         "steadyLatestBelow": "Vos valeurs sont habituellement à {low} {unit} ; votre dernière mesure, du {date}, était de {value}, en dessous.",
         "componentLine": "{component} : {line}",
         "insufficient": "J'apprends encore votre plage habituelle. Continuez à enregistrer quelques jours de plus.",
-        "driver": "{note}",
-        "loadError": "Impossible de charger votre plage habituelle."
+        "loadError": "Impossible de charger votre plage habituelle.",
+        "range": "Plage",
+        "todayValue": "aujourd'hui {value}",
+        "latestValue": "{date}: {value}",
+        "soFarValue": "aujourd'hui jusqu'ici {value}"
       },
       "scope": {
         "prefix": "Le Coach est déjà sur {metric}"
@@ -3953,7 +3956,9 @@
       },
       "bpDerived": {
         "pulsePressure": "La pression pulsée (l'écart entre vos valeurs) est d'environ {value} mmHg ; environ 40 est typique au repos.",
-        "meanArterialPressure": "La pression artérielle moyenne (la moyenne que voient vos organes) est d'environ {value} mmHg, normalement autour de 70–100."
+        "meanArterialPressure": "La pression artérielle moyenne (la moyenne que voient vos organes) est d'environ {value} mmHg, normalement autour de 70–100.",
+        "pulsePressureLabel": "Pression pulsée",
+        "meanArterialPressureLabel": "Pression moyenne"
       },
       "stats": {
         "label": "Statistiques récapitulatives",
@@ -5368,11 +5373,7 @@
       },
       "filterAll": "Toute la journée",
       "filterLabel": "Afficher dans le graphique",
-      "readingsOne": "{count} mesure",
-      "readingsFew": "{count} mesures",
-      "readingsOther": "{count} mesures",
       "notEnough": "Trop peu de mesures",
-      "pulse": "Pouls {value} bpm",
       "difference": "Matin moins soir : {systolic}/{diastolic} mmHg.",
       "differencePending": "Le matin et le soir sont comparés dès que chacun compte au moins {min, plural, one {# mesure} other {# mesures}}.",
       "hours": "Matin {morning}, midi {midday}, soir {evening}, dans votre fuseau horaire.",

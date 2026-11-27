@@ -10,7 +10,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { useInsightsLayoutPrefs } from "@/hooks/use-insights-layout-prefs";
 import { useChartDomainStats } from "@/hooks/use-chart-domain-stats";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { DerivedValuesCard } from "@/components/insights/value-row";
 import { HealthChartDynamic } from "@/components/charts/health-chart-dynamic";
 import { SlugInsightStatusCard } from "@/components/insights/slug-insight-status-card";
 import { MeasurementDiversityNudge } from "@/components/insights/measurement-diversity-nudge";
@@ -208,32 +208,10 @@ export default function InsightsBlutdruckPage() {
           mean arterial pressure ((SBP + 2·DBP)/3), computed from the most
           recent reading. Pure derivation of stored BP — no schema, no extra
           fetch. Calm, cited, non-alarming. */}
-      {(() => {
-        const sbp = sysSummary?.latest ?? null;
-        const dbp = diaSummary?.latest ?? null;
-        if (sbp == null || dbp == null || sbp <= dbp) return null;
-        const pp = Math.round(sbp - dbp);
-        const map = Math.round((sbp + 2 * dbp) / 3);
-        return (
-          // Card shell at the compact density so the explainer shares the
-          // spine's left text edge (the bare paragraph sat at the container
-          // edge, ~16–24 px left of every neighbouring card's text) — and
-          // foreground, not muted: multi-sentence explainer prose is
-          // content, muted stays reserved for meta.
-          <Card data-slot="bp-derived-caption" density="compact">
-            <CardContent>
-              <p className="text-sm leading-relaxed">
-                {t("insights.subPage.bpDerived.pulsePressure", {
-                  value: pp,
-                })}{" "}
-                {t("insights.subPage.bpDerived.meanArterialPressure", {
-                  value: map,
-                })}
-              </p>
-            </CardContent>
-          </Card>
-        );
-      })()}
+      <BpDerivedValues
+        sbp={sysSummary?.latest ?? null}
+        dbp={diaSummary?.latest ?? null}
+      />
 
       {/* v1.12.4 — Einschätzung is the last content block; the stat strip
           (rendered by the shell) closes the spine below it. */}
@@ -244,5 +222,48 @@ export default function InsightsBlutdruckPage() {
       {/* v1.44 (#1204) — where these values come from. */}
       <SourceProvenanceLink type="BLOOD_PRESSURE_SYS" />
     </SubPageShell>
+  );
+}
+
+/**
+ * Free derived BP context from the most recent reading: pulse
+ * pressure (SBP − DBP) and mean arterial pressure ((SBP + 2·DBP)/3). Pure
+ * derivation of stored BP, no schema, no extra fetch. Two values in one row;
+ * what they mean behind the (i).
+ */
+function BpDerivedValues({
+  sbp,
+  dbp,
+}: {
+  sbp: number | null;
+  dbp: number | null;
+}) {
+  const { t } = useTranslations();
+  if (sbp == null || dbp == null || sbp <= dbp) return null;
+  const pp = Math.round(sbp - dbp);
+  const map = Math.round((sbp + 2 * dbp) / 3);
+  return (
+    <DerivedValuesCard
+      slot="bp-derived-caption"
+      items={[
+        {
+          key: "pulse-pressure",
+          label: t("insights.subPage.bpDerived.pulsePressureLabel"),
+          value: pp,
+          unit: "mmHg",
+        },
+        {
+          key: "mean-arterial-pressure",
+          label: t("insights.subPage.bpDerived.meanArterialPressureLabel"),
+          value: map,
+          unit: "mmHg",
+        },
+      ]}
+      about={`${t("insights.subPage.bpDerived.pulsePressure", {
+        value: pp,
+      })} ${t("insights.subPage.bpDerived.meanArterialPressure", {
+        value: map,
+      })}`}
+    />
   );
 }

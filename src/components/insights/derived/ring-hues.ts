@@ -41,7 +41,10 @@ export type RingHue =
  * whisper of depth, not a neon sweep. Values are CSS var references resolved
  * per theme — consumed straight by the SVG `<linearGradient>` stops.
  */
-export const RING_GRADIENT: Record<RingHue | ScoreBand, [string, string]> = {
+export const RING_GRADIENT: Record<
+  RingHue | ScoreBand | "none",
+  [string, string]
+> = {
   readiness: ["var(--ring-readiness-from)", "var(--ring-readiness-to)"],
   recovery: ["var(--ring-recovery-from)", "var(--ring-recovery-to)"],
   sleep: ["var(--ring-sleep-from)", "var(--ring-sleep-to)"],
@@ -58,6 +61,9 @@ export const RING_GRADIENT: Record<RingHue | ScoreBand, [string, string]> = {
   green: ["var(--ring-green-from)", "var(--ring-green-to)"],
   yellow: ["var(--ring-yellow-from)", "var(--ring-yellow-to)"],
   red: ["var(--ring-red-from)", "var(--ring-red-to)"],
+  // A value without a band (a device's own number on its own scale): no
+  // band colour to give, so the arc is ink, never a band it does not have.
+  none: ["var(--muted-foreground)", "var(--muted-foreground)"],
 };
 
 /**

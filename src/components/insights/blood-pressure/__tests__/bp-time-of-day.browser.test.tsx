@@ -98,19 +98,31 @@ async function mount(search = "") {
 }
 
 describe("BpTimeOfDayCard", () => {
-  it("renders the server's figures for the chart's range", async () => {
+  it("renders the server's figures for the chart's range, the rest behind the (i)", async () => {
     const { screen, net } = await mount();
     await expect.element(screen.getByText("140/90")).toBeVisible();
     await expect.element(screen.getByText("131/82")).toBeVisible();
-    await expect.element(screen.getByText("Too few readings")).toBeVisible();
-    await expect.element(screen.getByText("Pulse 72 bpm")).toBeVisible();
+    // A part below the floor is a dash; the reason is its hover and its
+    // accessible text, not a line on the card.
+    const midday = document.querySelector(
+      '[data-slot="bp-time-of-day-values"] [data-key="midday"]',
+    );
+    expect(midday?.getAttribute("title")).toBe("Too few readings");
+    // No counts, pulse or explanation lines on the card itself.
+    expect(screen.getByText("Pulse 72 bpm").elements()).toHaveLength(0);
+    expect(
+      screen
+        .getByText("Morning minus evening: +9/+8 mmHg.", { exact: false })
+        .elements(),
+    ).toHaveLength(0);
+    await screen.getByRole("button", { name: "More information" }).click();
     await expect
-      .element(screen.getByText("Morning minus evening: +9/+8 mmHg."))
+      .element(screen.getByText(/Morning minus evening: \+9\/\+8 mmHg\./))
       .toBeVisible();
     await expect
       .element(
         screen.getByText(
-          "Morning 04:00–11:59, midday 12:00–17:59, evening 18:00–03:59, in your time zone.",
+          /Morning 04:00–11:59, midday 12:00–17:59, evening 18:00–03:59, in your time zone\./,
         ),
       )
       .toBeVisible();

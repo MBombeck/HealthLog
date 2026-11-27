@@ -282,7 +282,7 @@ export function WellnessScores({
       label: title,
       shortLabel: title,
       score: v.score,
-      band: v.device ? undefined : v.band,
+      band: v.device ? null : v.band,
       load: true,
       stale: false,
       bandWord: word,

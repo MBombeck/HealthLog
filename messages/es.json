@@ -3590,8 +3590,11 @@
         "steadyLatestBelow": "Tus valores suelen estar en {low} {unit}; tu última medición, del {date}, fue {value}, por debajo.",
         "componentLine": "{component}: {line}",
         "insufficient": "Todavía estoy aprendiendo tu rango habitual. Sigue registrando unos días más.",
-        "driver": "{note}",
-        "loadError": "No se pudo cargar tu rango habitual."
+        "loadError": "No se pudo cargar tu rango habitual.",
+        "range": "Rango",
+        "todayValue": "hoy {value}",
+        "latestValue": "{date}: {value}",
+        "soFarValue": "hoy hasta ahora {value}"
       },
       "scope": {
         "prefix": "El Coach ya está en {metric}"
@@ -3953,7 +3956,9 @@
       },
       "bpDerived": {
         "pulsePressure": "La presión de pulso (la diferencia entre tus valores) es de unos {value} mmHg; alrededor de 40 es lo típico en reposo.",
-        "meanArterialPressure": "La presión arterial media (el promedio que ven tus órganos) es de unos {value} mmHg, normalmente entre 70 y 100."
+        "meanArterialPressure": "La presión arterial media (el promedio que ven tus órganos) es de unos {value} mmHg, normalmente entre 70 y 100.",
+        "pulsePressureLabel": "Presión de pulso",
+        "meanArterialPressureLabel": "Presión media"
       },
       "stats": {
         "label": "Estadísticas resumidas",
@@ -5368,11 +5373,7 @@
       },
       "filterAll": "Todo el día",
       "filterLabel": "Mostrar en el gráfico",
-      "readingsOne": "{count} medición",
-      "readingsFew": "{count} mediciones",
-      "readingsOther": "{count} mediciones",
       "notEnough": "Muy pocas mediciones",
-      "pulse": "Pulso {value} bpm",
       "difference": "Mañana menos noche: {systolic}/{diastolic} mmHg.",
       "differencePending": "La mañana y la noche se comparan cuando cada una tiene al menos {min, plural, one {# medición} other {# mediciones}}.",
       "hours": "Mañana {morning}, mediodía {midday}, noche {evening}, en tu zona horaria.",

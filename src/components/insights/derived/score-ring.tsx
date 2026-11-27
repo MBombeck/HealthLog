@@ -93,8 +93,12 @@ const SIZE: Record<
 export interface ScoreRingProps {
   /** The 0..100 score, or `null` for the provisional/empty state. */
   score: number | null;
-  /** Band override; when omitted it is derived from the score via thresholds. */
-  band?: ScoreBand;
+  /**
+   * Band override; when omitted it is derived from the score via thresholds.
+   * `null`: the value has no band (a device's own number), so the arc is
+   * neutral ink and the ring names no band word.
+   */
+  band?: ScoreBand | null;
   /**
    * The score measures a load (stress, strain): lower is better. The band
    * then reads on `100 - score`, as the server bands it, and its word is
@@ -184,9 +188,10 @@ export function ScoreRing({
 
   const hasScore = score != null && Number.isFinite(score);
   const clamped = hasScore ? clampScore(score) : 0;
+  const bandless = band === null;
   const resolvedBand: ScoreBand =
     band ?? bandForScore(load ? 100 - clamped : clamped);
-  const hueKey = hue ?? resolvedBand;
+  const hueKey = bandless ? "none" : (hue ?? resolvedBand);
 
   // Near-flat single-hue arc. The two stops sit a hair apart for a whisper of
   // depth; the per-metric `hue` leans the colour, with no `hue` the anatomy
@@ -225,17 +230,19 @@ export function ScoreRing({
 
   const ariaLabel =
     ariaLabelOverride ??
-    (hasScore
-      ? t("insights.derived.scoreRing.aria", {
-          score: Math.round(clamped),
-          band: t(bandWordKey(resolvedBand, load)),
-        })
-      : t("insights.derived.scoreRing.ariaProvisional"));
+    (hasScore && bandless
+      ? String(Math.round(clamped))
+      : hasScore
+        ? t("insights.derived.scoreRing.aria", {
+            score: Math.round(clamped),
+            band: t(bandWordKey(resolvedBand, load)),
+          })
+        : t("insights.derived.scoreRing.ariaProvisional"));
 
   return (
     <div
       data-slot="score-ring"
-      data-band={hasScore ? resolvedBand : "none"}
+      data-band={hasScore && !bandless ? resolvedBand : "none"}
       data-provisional={hasScore ? undefined : "true"}
       role="img"
       aria-label={ariaLabel}

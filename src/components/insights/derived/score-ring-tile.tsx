@@ -36,7 +36,8 @@ export interface ScoreRingTileProps {
   shortLabel: string;
   /** Null: no number (not fresh, or not enough data yet). */
   score: number | null;
-  band: ScoreBand | undefined;
+  /** Null: the value has no band (a device's own number); the ring is neutral. */
+  band: ScoreBand | null | undefined;
   /** A past value exists: the bare track instead of the provisional dash. */
   stale: boolean;
   /** The band in words; null without a band. */
