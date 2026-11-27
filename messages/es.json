@@ -4813,6 +4813,7 @@
         "aria": "Puntuación {score} de 100, {band}",
         "ariaProvisional": "Puntuación aún no disponible: datos insuficientes",
         "provisionalCaption": "Datos aún insuficientes",
+        "notToday": "no es de hoy",
         "band": {
           "green": "bueno",
           "yellow": "medio",
@@ -6052,7 +6053,7 @@
     "sections": {
       "account": {
         "title": "Cuenta",
-        "subtitle": "Tu perfil, identidad y datos de acceso."
+        "subtitle": "Tu perfil, la visualización y la configuración inicial."
       },
       "integrations": {
         "title": "Integraciones",
@@ -6861,10 +6862,8 @@
     },
     "profile": "Perfil",
     "language": "Idioma",
-    "languageDescription": "Elige el idioma de visualización de la aplicación.",
     "timeFormat": {
       "title": "Formato horario",
-      "description": "Determina si las horas se muestran en formato de 24 horas o de 12 horas (AM/PM).",
       "auto": "Automático (idioma)",
       "h24": "24 horas",
       "h12": "12 horas (AM/PM)",
@@ -6873,7 +6872,6 @@
     },
     "dateFormat": {
       "title": "Formato de fecha",
-      "description": "Determina el orden de día, mes y año al mostrar las fechas.",
       "auto": "Automático (idioma)",
       "dmy": "DD.MM.AAAA",
       "mdy": "MM/DD/AAAA",
@@ -6911,14 +6909,13 @@
     },
     "avatar": {
       "title": "Foto de perfil",
-      "description": "Sube una foto que se almacena en tu propio servidor.",
       "upload": "Subir foto",
       "replace": "Reemplazar foto",
       "remove": "Quitar",
       "removeTitle": "¿Eliminar la foto de perfil?",
       "removeBody": "La imagen se elimina de tu servidor y tus iniciales ocupan su lugar. Necesitarás el archivo original para volver a subirla.",
       "removeConfirm": "Eliminar foto",
-      "hint": "JPEG, PNG o WebP. Hasta 2 MB y 2048×2048 píxeles.",
+      "hint": "JPEG, PNG o WebP, hasta 2 MB y 2048×2048 píxeles.",
       "uploaded": "Foto de perfil actualizada",
       "removed": "Foto de perfil eliminada",
       "invalidType": "Tipo de imagen no admitido. Usa JPEG, PNG o WebP.",
@@ -7380,7 +7377,6 @@
     "dashboard": {
       "units": {
         "title": "Unidades",
-        "description": "Elige cómo se muestran las distancias y velocidades en los gráficos y mosaicos.",
         "metric": "Métrico",
         "imperial": "Imperial",
         "saved": "Preferencia de unidades guardada",
@@ -7388,7 +7384,6 @@
       },
       "glucoseUnit": {
         "title": "Glucemia",
-        "description": "La unidad en la que se muestran las lecturas de glucosa.",
         "saved": "Unidad de glucosa guardada",
         "saveError": "No se pudo guardar la unidad de glucosa."
       }
@@ -13316,9 +13311,6 @@
       "titlePlaceholder": "Añadir un título",
       "kindLabel": "Tipo",
       "dateLabel": "Fecha del documento",
-      "conditionsLabel": "Afecciones vinculadas",
-      "linkCondition": "Vincular",
-      "noConditions": "Sin vincular a una afección",
       "previewUnavailable": "Sin vista previa integrada para este tipo de archivo",
       "uploadedMeta": "Añadido el {date}, {size}",
       "importedFrom": "Importado de {system}",
@@ -13328,10 +13320,6 @@
       "sourceReportSchedule": "tu calendario de informes",
       "share": "Compartir",
       "labValuesLink": "Ver {count, plural, one {# resultado de laboratorio} other {# resultados de laboratorio}}",
-      "visitsLabel": "Pertenece a la cita",
-      "vaccinationsLabel": "Vacunas",
-      "noVisitsToLink": "Aún no hay citas registradas.",
-      "noVaccinationsToLink": "Aún no hay vacunas registradas.",
       "saved": "Cambios guardados",
       "saving": "Guardando…",
       "previewNotOnDevice": "Este navegador no puede mostrar PDF dentro de la página"
@@ -13355,11 +13343,7 @@
       "linkVisit": "Asignar a una cita"
     },
     "episodeCard": {
-      "title": "Documentos",
-      "link": "Vincular",
-      "upload": "Subir",
       "viewAll": "Ver todos",
-      "emptyLine": "Aún no hay documentos vinculados a esta afección.",
       "loadError": "No se pudieron cargar los documentos vinculados"
     },
     "linkPicker": {
@@ -14763,8 +14747,6 @@
       "choose": "¿A qué cita pertenece?"
     },
     "episodeCard": {
-      "title": "Citas relacionadas",
-      "emptyLine": "Todavía no hay ninguna cita vinculada a esta enfermedad.",
       "add": "Añadir una cita"
     },
     "dashboard": {
@@ -14851,7 +14833,7 @@
       }
     },
     "related": {
-      "title": "Relacionado",
+      "title": "Vínculos",
       "kind": {
         "labResult": "Resultado de laboratorio",
         "encounter": "Cita",
@@ -14873,6 +14855,10 @@
       },
       "nothingToOffer": "Todavía no hay nada que vincular.",
       "saveError": "No se pudo guardar el vínculo."
+    },
+    "row": {
+      "add": "Vincular",
+      "uploadDocument": "Subir un documento"
     }
   },
   "bodySites": {

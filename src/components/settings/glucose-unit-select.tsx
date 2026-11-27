@@ -99,9 +99,6 @@ export function GlucoseUnitSelect({
         <option value="mg/dL">mg/dL</option>
         <option value="mmol/L">mmol/L</option>
       </NativeSelect>
-      <p className="text-muted-foreground text-xs">
-        {t("settings.dashboard.glucoseUnit.description")}
-      </p>
     </FieldGroup>
   );
 }

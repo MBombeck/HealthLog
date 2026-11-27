@@ -36,8 +36,6 @@ const SRC = join(__dirname, "..");
  */
 const REMAINING = [
   "components/cycle/cycle-phase-crosstab.tsx: cycle.insights.headline.empty",
-  "components/documents/episode-documents-card.tsx: documents.episodeCard.emptyLine",
-  "components/illness/episode-visits-card.tsx: encounters.episodeCard.emptyLine",
   "components/insights/workout-detail/day-context.tsx: insights.workouts.detail.dayMoodNone",
   "components/insights/workout-detail/day-context.tsx: insights.workouts.detail.daySleepNone",
   "components/labs/biomarker-aliases.tsx: labs.aliases.empty",

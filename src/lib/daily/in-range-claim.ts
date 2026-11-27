@@ -16,7 +16,7 @@
  * bundle that is not registered. Pure.
  */
 import { scoreBand } from "@/lib/analytics/score/shared";
-import type { ScorePillarId } from "@/lib/analytics/score/types";
+import type { ScoreBand, ScorePillarId } from "@/lib/analytics/score/types";
 import type { Locale } from "@/lib/i18n/config";
 import { pluralKey } from "@/lib/i18n/plural";
 import {
@@ -49,8 +49,15 @@ export interface HealthScoreFlagSource {
   band: string;
   bandSetter?: ScorePillarId | null;
   bandSetterBand?: "yellow" | "red" | null;
-  /** The snapshot's pillar rows, when the caller has them. */
-  pillars?: readonly { id: ScorePillarId; value: number | null }[];
+  /**
+   * The snapshot's pillar rows, when the caller has them: the served band,
+   * else (a payload cached before it) the band of the value.
+   */
+  pillars?: readonly {
+    id: ScorePillarId;
+    value: number | null;
+    band?: ScoreBand | null;
+  }[];
 }
 
 /** What the Health score flags: the pillar when it is known, and its band. */
@@ -66,9 +73,8 @@ function worstPillar(
 ): { id: ScorePillarId; band: "yellow" | "red" } | null {
   let worst: { id: ScorePillarId; band: "yellow" | "red" } | null = null;
   for (const p of pillars ?? []) {
-    if (p.value === null) continue;
-    const band = scoreBand(p.value);
-    if (band === "green") continue;
+    const band = p.band ?? (p.value === null ? null : scoreBand(p.value));
+    if (band === null || band === "green") continue;
     if (!worst || BAND_RANK[band] < BAND_RANK[worst.band]) {
       worst = { id: p.id, band };
     }

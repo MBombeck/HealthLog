@@ -1,34 +1,30 @@
 "use client";
 
 /**
- * "Verwandt": the records related to the one on screen, and the pickers that
- * file the v1.43 relation links.
+ * The records related to the one on screen, as the shared link row
+ * (`RecordLinksRow`), and the pickers that file the v1.43 relation links.
  *
- * Every row comes from the detail read's `related[]`, resolved on the server:
- * the label, the date, the web path and how the relation runs (a stored link,
- * a visit both are filed against, or a medication's efficacy target). The
- * client renders it and never re-derives it, so the web, iOS and a push link
- * all open the same place.
+ * Every chip comes from the detail read's `related[]`, resolved on the
+ * server: the label, the date, the web path and how the relation runs (a
+ * stored link, a visit both are filed against, or a medication's efficacy
+ * target). The client renders it and never re-derives it, so the web, iOS
+ * and a push link all open the same place.
  *
- * The pickers write through the record's own links route
- * (`POST/DELETE /api/<record>/{id}/links`) one change at a time and refresh
- * the detail read afterwards. Those routes are own-account only, so the
- * pickers render only in the caller's own record. A module that is off leaves
- * no picker behind, the same rule the visit form follows.
+ * With `edit`, the row carries the one "Link" button: it picks a family and
+ * opens that family's picker, which writes through the record's own links
+ * route (`POST/DELETE /api/<record>/{id}/links`) one change at a time and
+ * refreshes the detail read afterwards. Those routes are own-account only,
+ * so the button renders only in the caller's own record. A module that is
+ * off leaves no entry behind, the same rule the visit form follows.
  */
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
   CalendarDays,
-  ChevronRight,
-  FlaskConical,
   FolderOpen,
-  Link2,
   Pill,
   Syringe,
-  type LucideIcon,
 } from "lucide-react";
 
 import {
@@ -36,6 +32,13 @@ import {
   serverPagingFrom,
   type EntityLinkOption,
 } from "@/components/links/entity-link-picker";
+import {
+  RecordLinkAddButton,
+  RecordLinksRow,
+  relatedChips,
+  relatedRowLabel,
+  type RecordLinkChipData,
+} from "@/components/links/record-links";
 import { useVaultDocumentOptions } from "@/components/links/vault-document-options";
 import { useCalendarDate } from "@/hooks/use-calendar-date";
 import {
@@ -43,17 +46,12 @@ import {
   useLinkPickerPages,
 } from "@/components/links/use-link-picker-pages";
 import { fetchEpisodePage } from "@/components/encounters/encounter-link-pickers";
-import {
-  ENCOUNTER_KINDS,
-  encounterKindText,
-} from "@/components/encounters/encounter-labels";
+import { encounterKindText } from "@/components/encounters/encounter-labels";
 import {
   fetchEncounterPage,
   recordOptions,
 } from "@/components/documents/document-record-links";
 import { useVaccinations } from "@/components/vaccinations/use-vaccinations";
-import { TileHeader } from "@/components/insights/tile-header";
-import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import {
   useRecordCapabilities,
@@ -67,173 +65,9 @@ import type { EncounterDTO } from "@/lib/encounters/dto";
 import type { IllnessEpisodeDTO } from "@/lib/illness/dto";
 import type { RelatedLink } from "@/lib/links/related";
 import type { EncounterKind } from "@/generated/prisma/client";
-import { translateOrNull } from "@/lib/i18n/translate-code";
 import { careVisitPath } from "@/lib/encounters/visit-links";
 
-type Translate = ReturnType<typeof useTranslations>["t"];
 type RelatedKind = RelatedLink["kind"];
-
-const KIND_ICONS: Record<RelatedKind, LucideIcon> = {
-  labResult: FlaskConical,
-  encounter: CalendarDays,
-  document: FolderOpen,
-  conditionEpisode: Activity,
-  medication: Pill,
-  vaccination: Syringe,
-};
-
-/** Literal calls, so the i18n coverage guard sees every key. */
-function kindText(t: Translate, kind: RelatedKind): string {
-  switch (kind) {
-    case "labResult":
-      return t("links.related.kind.labResult");
-    case "encounter":
-      return t("links.related.kind.encounter");
-    case "document":
-      return t("links.related.kind.document");
-    case "conditionEpisode":
-      return t("links.related.kind.conditionEpisode");
-    case "medication":
-      return t("links.related.kind.medication");
-    case "vaccination":
-      return t("links.related.kind.vaccination");
-  }
-}
-
-function viaText(t: Translate, via: RelatedLink["via"]): string | null {
-  if (via === "encounter") return t("links.related.via.encounter");
-  if (via === "efficacyTarget") return t("links.related.via.efficacyTarget");
-  return null;
-}
-
-/**
- * A visit without a reason or a practitioner is labelled by its kind, sent as
- * the enum constant so each reader names it from their own bundle.
- */
-function rowLabel(t: Translate, row: RelatedLink): string {
-  if (
-    row.kind === "encounter" &&
-    (ENCOUNTER_KINDS as string[]).includes(row.label)
-  ) {
-    return encounterKindText(t, row.label as EncounterKind);
-  }
-  // A dose without a written name arrives as its catalogue slug ("tetanus"),
-  // named here from the reader's bundle the way the dose picker names it.
-  if (row.kind === "vaccination" && /^[a-z0-9_-]+$/.test(row.label)) {
-    const name = translateOrNull(t, `vaccinations.catalog.${row.label}`);
-    if (name !== null) return name;
-  }
-  return row.label;
-}
-
-/** The related rows, grouped in the server's order. Nothing when empty. */
-export function RelatedRecordsList({
-  related,
-  omitKinds = [],
-}: {
-  related: readonly RelatedLink[] | undefined;
-  /** Kinds this surface already lists in a block of its own. */
-  omitKinds?: readonly RelatedKind[];
-}) {
-  const { t } = useTranslations();
-  const format = useFormatters();
-  const calendarDate = useCalendarDate();
-  const rows = (related ?? []).filter((row) => !omitKinds.includes(row.kind));
-  if (rows.length === 0) return null;
-  return (
-    <ul className="divide-y" data-slot="related-records">
-      {rows.map((row) => {
-        const Icon = KIND_ICONS[row.kind];
-        const via = viaText(t, row.via);
-        const meta = [
-          kindText(t, row.kind),
-          row.date
-            ? // A dose date is a calendar date at UTC midnight.
-              row.kind === "vaccination"
-              ? calendarDate(row.date)
-              : format.date(row.date)
-            : null,
-          via,
-        ]
-          .filter(Boolean)
-          .join(", ");
-        return (
-          <li key={`${row.kind}:${row.id}`}>
-            <Link
-              href={row.href}
-              data-slot="related-record"
-              className="hover:bg-muted/50 focus-visible:ring-ring/50 -mx-2 flex min-h-11 items-center gap-3 rounded-md px-2 py-2 focus-visible:ring-[3px] focus-visible:outline-none"
-            >
-              <Icon
-                className="text-muted-foreground size-4 shrink-0"
-                aria-hidden
-              />
-              <span className="min-w-0 flex-1">
-                <span className="text-foreground block truncate text-sm">
-                  {rowLabel(t, row)}
-                </span>
-                <span className="text-muted-foreground block truncate text-xs">
-                  {meta}
-                </span>
-              </span>
-              <ChevronRight
-                className="text-muted-foreground size-4 shrink-0"
-                aria-hidden
-              />
-            </Link>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
-/**
- * The list in its own tile, for a page made of cards. Nothing when the
- * record relates to nothing the surface does not already show.
- */
-export function RelatedRecordsCard({
-  related,
-  omitKinds = [],
-}: {
-  related: readonly RelatedLink[] | undefined;
-  omitKinds?: readonly RelatedKind[];
-}) {
-  const { t } = useTranslations();
-  if (!(related ?? []).some((row) => !omitKinds.includes(row.kind))) {
-    return null;
-  }
-  return (
-    <Card data-slot="related-records-card">
-      <CardContent className="space-y-4">
-        <TileHeader icon={Link2} title={t("links.related.title")} />
-        <RelatedRecordsList related={related} omitKinds={omitKinds} />
-      </CardContent>
-    </Card>
-  );
-}
-
-/** The list under a field-style label, for a sheet. */
-export function RelatedRecordsBlock({
-  related,
-  omitKinds = [],
-}: {
-  related: readonly RelatedLink[] | undefined;
-  omitKinds?: readonly RelatedKind[];
-}) {
-  const { t } = useTranslations();
-  if (!(related ?? []).some((row) => !omitKinds.includes(row.kind))) {
-    return null;
-  }
-  return (
-    <div className="space-y-1.5" data-slot="related-records-block">
-      <p className="text-sm leading-none font-medium">
-        {t("links.related.title")}
-      </p>
-      <RelatedRecordsList related={related} omitKinds={omitKinds} />
-    </div>
-  );
-}
 
 /* ── pickers ──────────────────────────────────────────────────────────── */
 
@@ -244,9 +78,18 @@ interface PickerProps {
   onChange: (ids: string[]) => void;
   anchor: string | null;
   known: EntityLinkOption[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-function ConditionPicker({ selected, onChange, anchor, known }: PickerProps) {
+function ConditionPicker({
+  selected,
+  onChange,
+  anchor,
+  known,
+  open,
+  onOpenChange,
+}: PickerProps) {
   const { t } = useTranslations();
   const format = useFormatters();
   const pages = useLinkPickerPages<IllnessEpisodeDTO>({
@@ -263,6 +106,9 @@ function ConditionPicker({ selected, onChange, anchor, known }: PickerProps) {
   }));
   return (
     <EntityLinkPicker
+      sheetOnly
+      open={open}
+      onOpenChange={onOpenChange}
       icon={Activity}
       title={t("links.related.pick.conditionEpisode")}
       slot="related-link-conditionEpisode"
@@ -281,11 +127,21 @@ function ConditionPicker({ selected, onChange, anchor, known }: PickerProps) {
   );
 }
 
-function DocumentPicker({ selected, onChange, anchor, known }: PickerProps) {
+function DocumentPicker({
+  selected,
+  onChange,
+  anchor,
+  known,
+  open,
+  onOpenChange,
+}: PickerProps) {
   const { t } = useTranslations();
   const documents = useVaultDocumentOptions({ enabled: true, anchor });
   return (
     <EntityLinkPicker
+      sheetOnly
+      open={open}
+      onOpenChange={onOpenChange}
       icon={FolderOpen}
       title={t("links.related.pick.document")}
       slot="related-link-document"
@@ -304,7 +160,14 @@ function DocumentPicker({ selected, onChange, anchor, known }: PickerProps) {
   );
 }
 
-function VisitPicker({ selected, onChange, anchor, known }: PickerProps) {
+function VisitPicker({
+  selected,
+  onChange,
+  anchor,
+  known,
+  open,
+  onOpenChange,
+}: PickerProps) {
   const { t } = useTranslations();
   const format = useFormatters();
   const pages = useLinkPickerPages<EncounterDTO>({
@@ -332,6 +195,9 @@ function VisitPicker({ selected, onChange, anchor, known }: PickerProps) {
   );
   return (
     <EntityLinkPicker
+      sheetOnly
+      open={open}
+      onOpenChange={onOpenChange}
       icon={CalendarDays}
       title={t("links.related.pick.encounter")}
       slot="related-link-encounter"
@@ -357,7 +223,14 @@ interface MedicationListRow {
   active: boolean;
 }
 
-function MedicationPicker({ selected, onChange, known }: PickerProps) {
+function MedicationPicker({
+  selected,
+  onChange,
+
+  known,
+  open,
+  onOpenChange,
+}: PickerProps) {
   const { t } = useTranslations();
   const list = useQuery({
     queryKey: queryKeys.medications(),
@@ -372,6 +245,9 @@ function MedicationPicker({ selected, onChange, known }: PickerProps) {
   }));
   return (
     <EntityLinkPicker
+      sheetOnly
+      open={open}
+      onOpenChange={onOpenChange}
       icon={Pill}
       title={t("links.related.pick.medication")}
       slot="related-link-medication"
@@ -389,7 +265,14 @@ function MedicationPicker({ selected, onChange, known }: PickerProps) {
   );
 }
 
-function DosePicker({ selected, onChange, anchor, known }: PickerProps) {
+function DosePicker({
+  selected,
+  onChange,
+  anchor,
+  known,
+  open,
+  onOpenChange,
+}: PickerProps) {
   const { t } = useTranslations();
   const calendarDate = useCalendarDate();
   const doses = useVaccinations(null, true);
@@ -407,6 +290,9 @@ function DosePicker({ selected, onChange, anchor, known }: PickerProps) {
   );
   return (
     <EntityLinkPicker
+      sheetOnly
+      open={open}
+      onOpenChange={onOpenChange}
       icon={Syringe}
       title={t("links.related.pick.vaccination")}
       slot="related-link-vaccination"
@@ -441,31 +327,35 @@ const KIND_MODULE: Record<LinkableKind, string | null> = {
   vaccination: "vaccinations",
 };
 
-/**
- * One picker per kind the record may file, each writing through `linksPath`.
- *
- * The caller mounts it keyed on the record so the local selection starts from
- * the server's answer whenever the record changes; a failed write puts the
- * selection back and says so.
- */
-export function RelationLinkPickers({
-  linksPath,
-  kinds,
-  related,
-  anchor,
-  onSaved,
-}: {
+/** What a record may file from its own sheet, and where it writes. */
+export interface RelationEdit {
   /** `/api/medications/{id}/links` and the like. */
   linksPath: string;
   kinds: readonly LinkableKind[];
-  related: readonly RelatedLink[] | undefined;
   /** The record's own date, where the pickers open. */
   anchor: string | null;
   /** Refresh the detail read after a write. */
   onSaved: () => void;
-}) {
+}
+
+interface RelatedProps {
+  related: readonly RelatedLink[] | undefined;
+  /** Kinds this surface already lists in a block of its own. */
+  omitKinds?: readonly RelatedKind[];
+  /**
+   * The link button and its pickers. The caller mounts the component keyed
+   * on the record, so the local selection starts from the server's answer
+   * whenever the record changes; a failed write puts the selection back and
+   * says so.
+   */
+  edit?: RelationEdit;
+}
+
+/** The chips, the add button and the open picker for one record. */
+function useRelatedLinks({ related, omitKinds = [], edit }: RelatedProps) {
   const { t } = useTranslations();
   const format = useFormatters();
+  const calendarDate = useCalendarDate();
   const { user } = useAuth();
   const ownerRights = holdsOwnerRights(useRecordCapabilities());
 
@@ -481,19 +371,33 @@ export function RelationLinkPickers({
   const [selection, setSelection] = useState<
     Partial<Record<LinkableKind, string[]>>
   >({});
+  const [picking, setPicking] = useState<LinkableKind | null>(null);
+  // A picker stays mounted once opened, so its sheet can animate closed;
+  // one that was never opened fetches nothing.
+  const [opened, setOpened] = useState<ReadonlySet<LinkableKind>>(new Set());
 
-  if (!ownerRights) return null;
+  const chips: RecordLinkChipData[] = relatedChips(
+    t,
+    format,
+    calendarDate,
+    related,
+    omitKinds,
+  );
 
-  const visible = kinds.filter((kind) => {
-    const key = KIND_MODULE[kind];
-    return (
-      key === null ||
-      (user?.modules as Record<string, boolean> | undefined)?.[key] !== false
-    );
-  });
-  if (visible.length === 0) return null;
+  const kinds =
+    edit && ownerRights
+      ? edit.kinds.filter((kind) => {
+          const key = KIND_MODULE[kind];
+          return (
+            key === null ||
+            (user?.modules as Record<string, boolean> | undefined)?.[key] !==
+              false
+          );
+        })
+      : [];
 
   const write = async (kind: LinkableKind, next: string[]) => {
+    if (!edit) return;
     const before =
       selection[kind] ?? (direct.get(kind) ?? []).map((row) => row.id);
     setSelection((current) => ({ ...current, [kind]: next }));
@@ -501,42 +405,97 @@ export function RelationLinkPickers({
     const removed = before.filter((id) => !next.includes(id));
     try {
       if (added.length > 0) {
-        await apiPost(linksPath, { targetKind: kind, targetIds: added });
+        await apiPost(edit.linksPath, { targetKind: kind, targetIds: added });
       }
       if (removed.length > 0) {
-        await apiDelete(linksPath, { targetKind: kind, targetIds: removed });
+        await apiDelete(edit.linksPath, {
+          targetKind: kind,
+          targetIds: removed,
+        });
       }
-      onSaved();
+      edit.onSaved();
     } catch (cause) {
       setSelection((current) => ({ ...current, [kind]: before }));
       showErrorToast(t("links.related.saveError"), { cause });
     }
   };
 
+  const add =
+    kinds.length > 0 ? (
+      <RecordLinkAddButton
+        slot="related-links"
+        options={kinds.map((kind) => ({
+          kind,
+          onSelect: () => {
+            setOpened((current) => new Set(current).add(kind));
+            setPicking(kind);
+          },
+        }))}
+      />
+    ) : null;
+
+  const sheets =
+    kinds.length > 0 ? (
+      <>
+        {kinds
+          .filter((kind) => opened.has(kind))
+          .map((kind) => {
+            const Picker = PICKERS[kind];
+            const known: EntityLinkOption[] = (direct.get(kind) ?? []).map(
+              (row) => ({
+                id: row.id,
+                label: relatedRowLabel(t, row),
+                dateLabel: row.date ? format.date(row.date) : null,
+                href: row.href,
+              }),
+            );
+            return (
+              <Picker
+                key={kind}
+                selected={
+                  selection[kind] ??
+                  (direct.get(kind) ?? []).map((row) => row.id)
+                }
+                onChange={(ids) => void write(kind, ids)}
+                anchor={edit?.anchor ?? null}
+                known={known}
+                open={picking === kind}
+                onOpenChange={(open) => setPicking(open ? kind : null)}
+              />
+            );
+          })}
+      </>
+    ) : null;
+
+  return { chips, add, sheets };
+}
+
+/** The row under a field-style label, for a sheet. Nothing when empty. */
+export function RelatedRecordsBlock(props: RelatedProps) {
+  const { chips, add, sheets } = useRelatedLinks(props);
   return (
-    <div className="space-y-4" data-slot="relation-link-pickers">
-      {visible.map((kind) => {
-        const Picker = PICKERS[kind];
-        const known: EntityLinkOption[] = (direct.get(kind) ?? []).map(
-          (row) => ({
-            id: row.id,
-            label: rowLabel(t, row),
-            dateLabel: row.date ? format.date(row.date) : null,
-            href: row.href,
-          }),
-        );
-        return (
-          <Picker
-            key={kind}
-            selected={
-              selection[kind] ?? (direct.get(kind) ?? []).map((row) => row.id)
-            }
-            onChange={(ids) => void write(kind, ids)}
-            anchor={anchor}
-            known={known}
-          />
-        );
-      })}
-    </div>
+    <>
+      <RecordLinksRow slot="related-records" chips={chips} add={add} />
+      {sheets}
+    </>
+  );
+}
+
+/**
+ * The row without its label, for a section whose own heading already says
+ * what it is. Nothing when empty.
+ */
+export function RelatedRecordsList(props: RelatedProps) {
+  const { chips, add, sheets } = useRelatedLinks(props);
+  return (
+    <>
+      <RecordLinksRow
+        slot="related-records"
+        chips={chips}
+        add={add}
+        labelled={false}
+      />
+      {sheets}
+    </>
   );
 }

@@ -280,9 +280,9 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: [],
     unconfirmed: [
       {
-        control: "remove a chip in a relation link picker",
+        control: "untick a record in a relation link picker",
         reason:
-          "Removing a chip deletes one join row and nothing the person wrote: both records stay untouched, the unlink toast names what was unlinked, and the same picker re-files it with one tap. This is the shape every link picker in the app already has (the visit form, the document sheet, the dose form), and a dialog on one of them alone would make the same act cost two different amounts.",
+          "Unticking deletes one join row and nothing the person wrote: both records stay untouched, the chip leaves the link row, and the same picker re-files it with one tap. This is the shape every link picker in the app already has (the visit form, the document sheet, the dose form), and a dialog on one of them alone would make the same act cost two different amounts.",
       },
     ],
   },

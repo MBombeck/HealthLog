@@ -11,10 +11,7 @@
  */
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import {
-  RelatedRecordsBlock,
-  RelationLinkPickers,
-} from "@/components/links/related-records";
+import { RelatedRecordsBlock } from "@/components/links/related-records";
 import { apiGet } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
 import type { RelatedLink } from "@/lib/links/related";
@@ -39,26 +36,25 @@ export function EncounterRelatedLinks({
   if (!detail.data) return null;
   const related = detail.data.related;
   return (
-    <div className="space-y-4 border-t pt-4" data-slot="encounter-related">
+    <div className="border-t pt-4 empty:hidden" data-slot="encounter-related">
       <RelatedRecordsBlock
+        key={encounterId}
         related={related}
         omitKinds={["document", "labResult", "conditionEpisode"]}
-      />
-      <RelationLinkPickers
-        key={encounterId}
-        linksPath={`/api/encounters/${encodeURIComponent(encounterId)}/links`}
-        kinds={["medication", "vaccination"]}
-        related={related}
-        anchor={occurredAt}
-        onSaved={() => {
-          // The other end lists the visit too.
-          for (const queryKey of [
-            queryKeys.encounter(encounterId),
-            queryKeys.medications(),
-            queryKeys.vaccinations(),
-          ]) {
-            void qc.invalidateQueries({ queryKey });
-          }
+        edit={{
+          linksPath: `/api/encounters/${encodeURIComponent(encounterId)}/links`,
+          kinds: ["medication", "vaccination"],
+          anchor: occurredAt,
+          onSaved: () => {
+            // The other end lists the visit too.
+            for (const queryKey of [
+              queryKeys.encounter(encounterId),
+              queryKeys.medications(),
+              queryKeys.vaccinations(),
+            ]) {
+              void qc.invalidateQueries({ queryKey });
+            }
+          },
         }}
       />
     </div>
