@@ -172,6 +172,7 @@
 
 ### Updating
 
+- Take a backup first. With the `backups` volume the container writes a pre-migration dump before it migrates; without it, run `pg_dump` yourself.
 - Migration 0569 adds the audit log's trigger and its three functions, and the next start takes the app role's delete right on the table back. Nothing stored changes. The demo seed and a restore run as the owner and are not affected.
 - Apple Wallet passes need the server reached over HTTPS and either the push relay on or the `WALLET_APPLE_*` variables set (all six are on the compose `environment:` list). A reverse proxy in front of the server has to let `/api/wallet/apple/v1/` through without a login of its own: Wallet calls it from the phone. Migrations 0563 and 0564 add the name item and the pass tables.
 - Nothing changes for an install that keeps its secrets in `.env`. To move them into files, follow `docs/self-hosting/secrets.md`; on the bundled compose file the password then moves too, so `DATABASE_URL` comes from a file as a whole and `POSTGRES_PASSWORD_FILE` goes to the `db` and `db-upgrade` services. `APNS_KEY_FILE` keeps its meaning, a path to the `.p8` file.
@@ -187,7 +188,8 @@
 - Migration 0573 adds one column to `users`: whether the person said no to the emergency card's prompt that Wallet needs the push relay. It only adds a column with a default; nothing stored changes.
 - Migration 0574 adds the time the "ready for Wallet" push went out for each Wallet pass (`wallet_passes.ready_push_sent_at`) and whether the person turned that push down (`users.wallet_ready_push_dismissed`). It only adds two columns; nothing stored changes.
 - A new password longer than 1024 characters is refused when you register, claim a profile or change your password. A password you already have keeps working whatever its length: signing in and confirming your current password are not capped.
-- If you run HealthLog against your own PostgreSQL server, keep its major at or below the client major in the image (`docker run --rm --entrypoint pg_dump ghcr.io/mbombeck/healthlog:latest --version`). See `docs/ops/postgres-major-upgrade.md`.
+- If you run HealthLog against your own PostgreSQL server, keep its major at or below the client major in the image (`docker run --rm --entrypoint pg_dump ghcr.io/mbombeck/healthlog:latest --version`). See `docs/ops/postgres-major-upgrade.md`. If the server is newer, the container now refuses to migrate, names both versions in the log and waits ten minutes before it exits, so a health check or a restart policy sees it stay up without serving for that long. With no migration pending it starts and logs a warning.
+- A history import from Garmin, Oura or Strava that stopped after a provider outage before the update picks up again from where it stopped on the first start. Nothing to do.
 - Going back to 1.49 after the update is not supported: the migrations above do not reverse. To return, restore the database dump you took before updating together with the previous image.
 
 ### Thanks
