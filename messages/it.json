@@ -6266,7 +6266,7 @@
           "fullBackup": {
             "title": "Backup completo",
             "description": "L'intera cartella in un unico file JSON.",
-            "scopeNote": "I metadati dei documenti e il riepilogo IA, se presente, sono inclusi in chiaro; i file originali dei documenti e i dati di percorso GPS/campionamento degli allenamenti non lo sono. Scaricali separatamente dall'archivio documenti o dall'esportazione degli allenamenti.",
+            "scopeNote": "I metadati dei documenti e il riepilogo IA, se presente, sono inclusi in chiaro; i file originali dei documenti e i dati di percorso GPS/campionamento degli allenamenti non lo sono.",
             "encryptToggle": "Cifra con una passphrase",
             "passphrasePlaceholder": "Passphrase (min. 12 caratteri)",
             "passphraseHelp": "Deriva la chiave dell'archivio con Argon2id e lo sigilla con AES-256-GCM. Salva il file con estensione .hlx.",
@@ -6370,7 +6370,7 @@
             "keptLabels": "Questo account ha già tag o gruppi con queste chiavi e con il proprio nome, quindi sono stati mantenuti: {keys}",
             "resultNothing": "Non è stato importato nulla. {skipped, plural, one {# voce è stata saltata} other {Tutte le # voci sono state saltate}}.",
             "resultEmpty": "Questo file non conteneva né misurazioni né voci dell'umore.",
-            "limitsHint": "Fino a {mb} MB e fino a {rows, plural, one {# voce} other {# voci}} per elenco. Aggiunge voci alla tua cartella; non ripristina un backup completo."
+            "limitsHint": "Fino a {mb} MB e fino a {rows, plural, one {# voce} other {# voci}} per elenco."
           },
           "csv": {
             "title": "File CSV",
@@ -6492,7 +6492,7 @@
             },
             "steps": {
               "export": "Sul tuo telefono Android apri Health Connect, vai su Gestisci dati, poi Esporta e importa, e avvia un'esportazione.",
-              "cloud": "Health Connect salva l'esportazione solo in un'app di archiviazione cloud come Google Drive, Dropbox o Nextcloud, mai sul telefono stesso. Scegline una.",
+              "cloud": "Health Connect salva l'esportazione solo in un'app di archiviazione cloud come Google Drive, Dropbox o Nextcloud, mai sul telefono stesso.",
               "upload": "Scarica il file ZIP da quel cloud su questo dispositivo e caricalo qui."
             },
             "dropLabel": "Trascina qui lo ZIP di Health Connect",
@@ -6531,7 +6531,7 @@
             "dropLabel": "Trascina qui il file di attività",
             "dropHint": "oppure fai clic per sceglierlo: un file .fit, .fit.gz o .zip fino a 10 MB.",
             "fileInputLabel": "File di attività",
-            "privacyNote": "Un allenamento già presente da Garmin, Apple Salute o un’altra app non viene aggiunto due volte: riceve la curva della frequenza cardiaca dal file se non ne aveva una. Il tracciato GPS viene conservato solo se Percorsi degli allenamenti è attivo.",
+            "privacyNote": "Il tracciato GPS viene conservato solo se Percorsi degli allenamenti è attivo.",
             "steps": {
               "garmin": "Garmin Connect: apri l’attività sul sito, scegli il menu a forma di ingranaggio e poi Esporta originale. Carica il file ZIP così com’è.",
               "other": "Altre app e dispositivi: esporta l’attività come file FIT (.fit o .fit.gz) e caricalo qui."
@@ -7733,7 +7733,6 @@
     "notificationStatus": {
       "title": "Affidabilità dei canali",
       "description": "Stato di ogni canale; «Disattivato automaticamente» significa fermato dopo errori permanenti.",
-      "emptyDescription": "Aggiungi un canale in Impostazioni › Integrazioni › Canali di recapito.",
       "stateActive": "Attivo",
       "stateAutoDisabled": "Disattivato automaticamente",
       "stateSendingPaused": "Invio in pausa",
@@ -7943,7 +7942,7 @@
       "openNudges": "Apri in Notifiche"
     },
     "integrationRedirectGuide": {
-      "intro": "Questa connessione passa dalla tua app sviluppatore {provider} (circa 5 minuti di configurazione):",
+      "intro": "Configura la tua app sviluppatore {provider} (circa 5 minuti)",
       "step1": "Crea un'app nel portale sviluppatori {provider}.",
       "step2": "Imposta il suo URL di reindirizzamento/callback su:",
       "step3": "Incolla qui sopra l'ID client e il client secret ricevuti."
@@ -10319,7 +10318,7 @@
       "daysAria": "Seleziona la soglia delle scorte in giorni",
       "leadLabel": "Tempo di riordino (giorni)",
       "leadAria": "Tempo di riordino in giorni",
-      "leadHelp": "L’avviso arriva questo numero di giorni più un intervallo di dose in anticipo, così la fornitura arriva prima dell’ultima dose. Un singolo farmaco può sovrascrivere questo valore nella sua scheda scorte.",
+      "leadHelp": "L’avviso arriva questo numero di giorni più un intervallo di dose in anticipo, così la fornitura arriva prima dell’ultima dose.",
       "leadSavedToast": "Tempo di riordino salvato",
       "savedToast": "Soglia delle scorte salvata",
       "enabledToast": "Avvisi di scorte basse attivati.",
@@ -10420,7 +10419,7 @@
     "content": {
       "title": "Valori di salute nelle notifiche",
       "description": "Se una notifica può mostrare valori come il tuo punteggio del mattino.",
-      "detail": "Disattivato, una notifica dice solo di cosa si tratta, quindi la schermata di blocco non mostra valori di salute. Attivato, aggiunge i valori, per esempio il punteggio del mattino nel riepilogo. Toccando una notifica si apre il punto giusto dell'app in entrambi i casi.",
+      "detail": "Disattivato, una notifica dice solo di cosa si tratta, quindi la schermata di blocco non mostra valori di salute. Attivato, aggiunge i valori, per esempio il punteggio del mattino nel riepilogo.",
       "toggleAria": "Mostra i valori di salute nelle notifiche",
       "statusDetailed": "Con valori",
       "statusGeneric": "Senza valori",
@@ -15710,7 +15709,7 @@
   "recordImport": {
     "title": "Esami di laboratorio e farmaci da un foglio di calcolo",
     "description": "Porta dentro anni di esami o un elenco di farmaci da un file CSV.",
-    "detail": "Scegli tu quale colonna contiene cosa; HealthLog controlla ogni riga prima e non importa nulla finché non confermi. Le righe già presenti vengono saltate.",
+    "detail": "Scegli tu quale colonna contiene cosa; HealthLog controlla ogni riga prima e non importa nulla finché non confermi.",
     "kind": {
       "labs": "Esami di laboratorio",
       "medications": "Farmaci"

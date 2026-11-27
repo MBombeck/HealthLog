@@ -6266,7 +6266,7 @@
           "fullBackup": {
             "title": "Pełna kopia zapasowa",
             "description": "Cała dokumentacja w jednym pliku JSON.",
-            "scopeNote": "Metadane dokumentów oraz podsumowanie AI, jeśli istnieje, są uwzględnione jako czysty tekst; oryginalne pliki dokumentów oraz dane tras GPS/próbek treningów nie są uwzględnione. Pobierz je osobno z archiwum dokumentów lub eksportu treningów.",
+            "scopeNote": "Metadane dokumentów oraz podsumowanie AI, jeśli istnieje, są uwzględnione jako czysty tekst; oryginalne pliki dokumentów oraz dane tras GPS/próbek treningów nie są uwzględnione.",
             "encryptToggle": "Zaszyfruj hasłem-frazą",
             "passphrasePlaceholder": "Hasło-fraza (min. 12 znaków)",
             "passphraseHelp": "Wyprowadza klucz archiwum za pomocą Argon2id i pieczętuje je AES-256-GCM. Zapisz plik z rozszerzeniem .hlx.",
@@ -6370,7 +6370,7 @@
             "keptLabels": "To konto ma już tagi lub grupy z tymi kluczami pod własną nazwą, więc zostały zachowane: {keys}",
             "resultNothing": "Nic nie zaimportowano. Pominięto {skipped, plural, one {# wpis} few {wszystkie # wpisy} many {wszystkie # wpisów} other {# wpisu}}.",
             "resultEmpty": "Ten plik nie zawierał pomiarów ani wpisów nastroju.",
-            "limitsHint": "Do {mb} MB i do {rows, plural, one {# wpisu} few {# wpisów} many {# wpisów} other {# wpisu}} na listę. Dodaje wpisy do twojej dokumentacji; nie przywraca pełnej kopii zapasowej."
+            "limitsHint": "Do {mb} MB i do {rows, plural, one {# wpisu} few {# wpisów} many {# wpisów} other {# wpisu}} na listę."
           },
           "csv": {
             "title": "Plik CSV",
@@ -6492,7 +6492,7 @@
             },
             "steps": {
               "export": "Na telefonie z Androidem otwórz Health Connect, przejdź do Zarządzaj danymi, potem Eksport i import, i rozpocznij eksport.",
-              "cloud": "Health Connect zapisuje eksport tylko w aplikacji chmurowej, takiej jak Google Drive, Dropbox czy Nextcloud, nigdy w samym telefonie. Wybierz tam jedną z nich.",
+              "cloud": "Health Connect zapisuje eksport tylko w aplikacji chmurowej, takiej jak Google Drive, Dropbox czy Nextcloud, nigdy w samym telefonie.",
               "upload": "Pobierz plik ZIP z tej chmury na to urządzenie i prześlij go tutaj."
             },
             "dropLabel": "Upuść tutaj plik ZIP z Health Connect",
@@ -6531,7 +6531,7 @@
             "dropLabel": "Upuść tutaj plik aktywności",
             "dropHint": "lub kliknij, aby go wybrać: plik .fit, .fit.gz lub .zip do 10 MB.",
             "fileInputLabel": "Plik aktywności",
-            "privacyNote": "Trening, który już tu jest z Garmina, Apple Zdrowie lub innej aplikacji, nie zostanie dodany drugi raz: dostanie krzywą tętna z pliku, jeśli jeszcze jej nie miał. Ślad GPS jest zapisywany tylko wtedy, gdy włączone są Trasy treningów.",
+            "privacyNote": "Ślad GPS jest zapisywany tylko wtedy, gdy włączone są Trasy treningów.",
             "steps": {
               "garmin": "Garmin Connect: otwórz aktywność na stronie, wybierz menu z kołem zębatym, a potem Eksportuj oryginał. Prześlij plik ZIP bez zmian.",
               "other": "Inne aplikacje i urządzenia: wyeksportuj aktywność jako plik FIT (.fit lub .fit.gz) i prześlij go tutaj."
@@ -7733,7 +7733,6 @@
     "notificationStatus": {
       "title": "Niezawodność kanałów",
       "description": "Stan każdego kanału; „Automatycznie wyłączone” oznacza zatrzymanie po trwałych błędach.",
-      "emptyDescription": "Dodaj kanał w Ustawienia › Integracje › Kanały dostarczania.",
       "stateActive": "Aktywne",
       "stateAutoDisabled": "Automatycznie wyłączone",
       "stateSendingPaused": "Wysyłanie wstrzymane",
@@ -7943,7 +7942,7 @@
       "openNudges": "Otwórz w Powiadomieniach"
     },
     "integrationRedirectGuide": {
-      "intro": "To połączenie działa przez Twoją własną aplikację deweloperską {provider}, około 5 minut konfiguracji:",
+      "intro": "Skonfiguruj własną aplikację deweloperską {provider} (około 5 minut)",
       "step1": "Utwórz aplikację w portalu deweloperskim {provider}.",
       "step2": "Ustaw jej URL przekierowania/callback na:",
       "step3": "Wklej powyżej otrzymany identyfikator klienta i sekret klienta."
@@ -10319,7 +10318,7 @@
       "daysAria": "Wybierz próg zapasu w dniach",
       "leadLabel": "Czas na ponowne zamówienie (dni)",
       "leadAria": "Czas na ponowne zamówienie w dniach",
-      "leadHelp": "Alert pojawia się o tyle dni plus jeden interwał dawki wcześniej, aby nowy zapas dotarł przed Twoją ostatnią dawką. Pojedynczy lek może nadpisać tę wartość na swojej karcie zapasu.",
+      "leadHelp": "Alert pojawia się o tyle dni plus jeden interwał dawki wcześniej, aby nowy zapas dotarł przed Twoją ostatnią dawką.",
       "leadSavedToast": "Czas na ponowne zamówienie zapisany",
       "savedToast": "Próg zapasu zapisany",
       "enabledToast": "Alerty niskiego zapasu włączone.",
@@ -10420,7 +10419,7 @@
     "content": {
       "title": "Wartości zdrowotne w powiadomieniach",
       "description": "Czy powiadomienie może pokazywać wartości, takie jak poranny wynik.",
-      "detail": "Wyłączone: powiadomienie mówi tylko, czego dotyczy, więc ekran blokady nie pokazuje wartości zdrowotnych. Włączone: dodaje wartości, na przykład poranny wynik w podsumowaniu. Dotknięcie powiadomienia w obu przypadkach otwiera właściwe miejsce w aplikacji.",
+      "detail": "Wyłączone: powiadomienie mówi tylko, czego dotyczy, więc ekran blokady nie pokazuje wartości zdrowotnych. Włączone: dodaje wartości, na przykład poranny wynik w podsumowaniu.",
       "toggleAria": "Pokazuj wartości zdrowotne w powiadomieniach",
       "statusDetailed": "Z wartościami",
       "statusGeneric": "Bez wartości",
@@ -15710,7 +15709,7 @@
   "recordImport": {
     "title": "Wyniki badań i leki z arkusza kalkulacyjnego",
     "description": "Zaimportuj wyniki badań z wielu lat lub listę leków z pliku CSV.",
-    "detail": "Ty wybierasz, która kolumna zawiera co; HealthLog najpierw sprawdza każdy wiersz i niczego nie importuje bez twojego potwierdzenia. Wiersze, które już są, zostaną pominięte.",
+    "detail": "Ty wybierasz, która kolumna zawiera co; HealthLog najpierw sprawdza każdy wiersz i niczego nie importuje bez twojego potwierdzenia.",
     "kind": {
       "labs": "Wyniki badań",
       "medications": "Leki"

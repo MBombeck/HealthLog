@@ -6266,7 +6266,7 @@
           "fullBackup": {
             "title": "Backup completo",
             "description": "Todo o seu registro em um único arquivo JSON.",
-            "scopeNote": "Os metadados dos documentos e o resumo gerado por IA, se houver, são incluídos como texto simples; os arquivos originais dos documentos e os dados de GPS/amostras dos treinos não. Baixe esses itens separadamente no cofre ou na exportação de treinos.",
+            "scopeNote": "Os metadados dos documentos e o resumo gerado por IA, se houver, são incluídos como texto simples; os arquivos originais dos documentos e os dados de GPS/amostras dos treinos não.",
             "encryptToggle": "Criptografar com uma frase-senha",
             "passphrasePlaceholder": "Frase-senha (mín. 12 caracteres)",
             "passphraseHelp": "Deriva a chave do arquivo com Argon2id e a sela com AES-256-GCM. Salve o arquivo com a extensão .hlx.",
@@ -6370,7 +6370,7 @@
             "keptLabels": "Esta conta já tem tags ou grupos com essas chaves e com nome próprio, então eles foram mantidos: {keys}",
             "resultNothing": "Nada foi importado. {skipped, plural, one {# entrada foi pulada} other {Todas as # entradas foram puladas}}.",
             "resultEmpty": "Esse arquivo não continha medições nem registros de humor.",
-            "limitsHint": "Até {mb} MB e até {rows, plural, one {# entrada} other {# entradas}} em cada lista. Isso adiciona entradas ao seu registro; não restaura um backup completo."
+            "limitsHint": "Até {mb} MB e até {rows, plural, one {# entrada} other {# entradas}} em cada lista."
           },
           "csv": {
             "title": "Arquivo CSV",
@@ -6492,7 +6492,7 @@
             },
             "steps": {
               "export": "No seu celular Android, abra o Health Connect, vá em Gerenciar dados, depois em Exportar e importar, e inicie uma exportação.",
-              "cloud": "O Health Connect só salva a exportação em um aplicativo de armazenamento em nuvem, como Google Drive, Dropbox ou Nextcloud, nunca no próprio celular. Escolha um lá.",
+              "cloud": "O Health Connect só salva a exportação em um aplicativo de armazenamento em nuvem, como Google Drive, Dropbox ou Nextcloud, nunca no próprio celular.",
               "upload": "Baixe o arquivo ZIP dessa nuvem para este dispositivo e envie-o aqui."
             },
             "dropLabel": "Arraste o ZIP do Health Connect para cá",
@@ -6531,7 +6531,7 @@
             "dropLabel": "Solte o arquivo de atividade aqui",
             "dropHint": "ou clique para escolhê-lo: um arquivo .fit, .fit.gz ou .zip de até 10 MB.",
             "fileInputLabel": "Arquivo de atividade",
-            "privacyNote": "Um treino que já está aqui pelo Garmin, Apple Health ou outro app não é adicionado duas vezes: ele recebe a curva de frequência cardíaca do arquivo se ainda não tinha uma. O trajeto de GPS só é guardado quando Rotas de treino está ativado.",
+            "privacyNote": "O trajeto de GPS só é guardado quando Rotas de treino está ativado.",
             "steps": {
               "garmin": "Garmin Connect: abra a atividade no site, escolha o menu da engrenagem e depois Exportar original. Envie o arquivo ZIP do jeito que ele vier.",
               "other": "Outros apps e aparelhos: exporte a atividade como arquivo FIT (.fit ou .fit.gz) e envie aqui."
@@ -7733,7 +7733,6 @@
     "notificationStatus": {
       "title": "Status de entrega",
       "description": "Estado de cada canal; “Desativado automaticamente” significa que as tentativas pararam após erros permanentes.",
-      "emptyDescription": "Configure um canal em Configurações › Integrações › Canais de entrega.",
       "stateActive": "Ativo",
       "stateAutoDisabled": "Desativado automaticamente",
       "stateSendingPaused": "Envio pausado",
@@ -7943,7 +7942,7 @@
       "openNudges": "Abrir em Notificações"
     },
     "integrationRedirectGuide": {
-      "intro": "Esta conexão usa seu próprio aplicativo de desenvolvedor {provider}; leva cerca de 5 minutos para configurar:",
+      "intro": "Configure seu próprio aplicativo de desenvolvedor {provider} (cerca de 5 minutos)",
       "step1": "Crie um aplicativo no portal de desenvolvedores {provider}.",
       "step2": "Defina a URL de redirecionamento/callback dele para:",
       "step3": "Cole o ID do cliente e o segredo do cliente que ele fornece acima."
@@ -10319,7 +10318,7 @@
       "daysAria": "Selecionar o limite de estoque baixo em dias",
       "leadLabel": "Prazo de reposição (dias)",
       "leadAria": "Prazo de reposição em dias",
-      "leadHelp": "O alerta dispara este número de dias mais um intervalo de dose antes, para que uma reposição chegue antes da sua última dose. Um medicamento individual pode substituir isso na aba de estoque.",
+      "leadHelp": "O alerta dispara este número de dias mais um intervalo de dose antes, para que uma reposição chegue antes da sua última dose.",
       "leadSavedToast": "Prazo de reposição salvo",
       "savedToast": "Limite de estoque baixo salvo",
       "enabledToast": "Alertas de estoque baixo ativados.",
@@ -10420,7 +10419,7 @@
     "content": {
       "title": "Números de saúde nas notificações",
       "description": "Se uma notificação pode exibir valores como sua pontuação da manhã.",
-      "detail": "Desativado, uma notificação diz apenas do que se trata, então a tela de bloqueio não mostra números de saúde. Ativado, ela adiciona os números, por exemplo a pontuação da manhã no resumo. Tocar em uma notificação abre o lugar certo no aplicativo de qualquer forma.",
+      "detail": "Desativado, uma notificação diz apenas do que se trata, então a tela de bloqueio não mostra números de saúde. Ativado, ela adiciona os números, por exemplo a pontuação da manhã no resumo.",
       "toggleAria": "Mostrar números de saúde nas notificações",
       "statusDetailed": "Números exibidos",
       "statusGeneric": "Sem números",
@@ -15710,7 +15709,7 @@
   "recordImport": {
     "title": "Resultados laboratoriais e medicamentos a partir de uma planilha",
     "description": "Traga anos de resultados laboratoriais ou uma lista de medicamentos a partir de um arquivo CSV.",
-    "detail": "Você escolhe qual coluna contém o quê; o HealthLog confere cada linha primeiro e não importa nada até você confirmar. Linhas que já estão no seu registro são ignoradas.",
+    "detail": "Você escolhe qual coluna contém o quê; o HealthLog confere cada linha primeiro e não importa nada até você confirmar.",
     "kind": {
       "labs": "Resultados laboratoriais",
       "medications": "Medicamentos"

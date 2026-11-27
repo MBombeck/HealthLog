@@ -6266,7 +6266,7 @@
           "fullBackup": {
             "title": "Full backup",
             "description": "Your whole record in one JSON file.",
-            "scopeNote": "Document metadata and the AI-generated summary, if one exists, are included as plain text; original document files and workout GPS/sample data are not. Download those separately from the vault or the workout export.",
+            "scopeNote": "Document metadata and the AI-generated summary, if one exists, are included as plain text; original document files and workout GPS/sample data are not.",
             "encryptToggle": "Encrypt with a passphrase",
             "passphrasePlaceholder": "Passphrase (min. 12 characters)",
             "passphraseHelp": "Derives the archive key with Argon2id and seals it with AES-256-GCM. Save the file with a .hlx extension.",
@@ -6370,7 +6370,7 @@
             "keptLabels": "This account already has tags or groups with these keys under its own names, so those were kept: {keys}",
             "resultNothing": "Nothing was imported. {skipped, plural, one {The # entry was} other {All # entries were}} skipped.",
             "resultEmpty": "That file carried no measurements and no mood entries.",
-            "limitsHint": "Up to {mb} MB and up to {rows, plural, one {# entry} other {# entries}} in each list. It adds entries to your record; it does not restore a full backup."
+            "limitsHint": "Up to {mb} MB and up to {rows, plural, one {# entry} other {# entries}} in each list."
           },
           "csv": {
             "title": "CSV file",
@@ -6492,7 +6492,7 @@
             },
             "steps": {
               "export": "On your Android phone, open Health Connect, go to Manage data, then Export and import, and start an export.",
-              "cloud": "Health Connect only saves the export to a cloud storage app such as Google Drive, Dropbox or Nextcloud, never to the phone itself. Pick one there.",
+              "cloud": "Health Connect only saves the export to a cloud storage app such as Google Drive, Dropbox or Nextcloud, never to the phone itself.",
               "upload": "Download the ZIP file from that cloud to this device and upload it here."
             },
             "dropLabel": "Drop the Health Connect ZIP here",
@@ -6531,7 +6531,7 @@
             "dropLabel": "Drop the activity file here",
             "dropHint": "or click to choose it: a .fit, .fit.gz or .zip file up to 10 MB.",
             "fileInputLabel": "Activity file",
-            "privacyNote": "A workout that is already here from Garmin, Apple Health or another app is not added twice: it gets the heart rate curve from the file if it had none. The GPS track is only kept when Workout routes is switched on.",
+            "privacyNote": "The GPS track is only kept when Workout routes is switched on.",
             "steps": {
               "garmin": "Garmin Connect: open the activity on the website, choose the gear menu, then Export original. Upload the ZIP file as it is.",
               "other": "Other apps and devices: export the activity as a FIT file (.fit or .fit.gz) and upload it here."
@@ -7733,7 +7733,6 @@
     "notificationStatus": {
       "title": "Delivery status",
       "description": "State of each channel; “Auto-disabled” means retries stopped after permanent errors.",
-      "emptyDescription": "Set up a channel under Settings › Integrations › Delivery channels.",
       "stateActive": "Active",
       "stateAutoDisabled": "Auto-disabled",
       "stateSendingPaused": "Sending paused",
@@ -7943,7 +7942,7 @@
       "openNudges": "Open in Notifications"
     },
     "integrationRedirectGuide": {
-      "intro": "This connects through your own {provider} developer app, about 5 minutes to set up:",
+      "intro": "Set up your own {provider} developer app (about 5 minutes)",
       "step1": "Create an app in the {provider} developer portal.",
       "step2": "Set its redirect / callback URL to:",
       "step3": "Paste the client ID and client secret it gives you above."
@@ -10319,7 +10318,7 @@
       "daysAria": "Select the low-stock threshold in days",
       "leadLabel": "Reorder lead time (days)",
       "leadAria": "Reorder lead time in days",
-      "leadHelp": "The alert fires this many days plus one dose-interval earlier so a refill arrives before your last dose. A single medication can override this on its supply tab.",
+      "leadHelp": "The alert fires this many days plus one dose-interval earlier so a refill arrives before your last dose.",
       "leadSavedToast": "Reorder lead time saved",
       "savedToast": "Low-stock threshold saved",
       "enabledToast": "Low-stock alerts enabled.",
@@ -10420,7 +10419,7 @@
     "content": {
       "title": "Health figures in notifications",
       "description": "Whether a notification may show values such as your morning score.",
-      "detail": "Off, a notification only says what it is about, so a lock screen shows no health figures. On, it adds the figures, for example the morning score in the briefing. Tapping a notification opens the right place in the app either way.",
+      "detail": "Off, a notification only says what it is about, so a lock screen shows no health figures. On, it adds the figures, for example the morning score in the briefing.",
       "toggleAria": "Show health figures in notifications",
       "statusDetailed": "Figures shown",
       "statusGeneric": "Without figures",
@@ -15710,7 +15709,7 @@
   "recordImport": {
     "title": "Lab results and medications from a spreadsheet",
     "description": "Bring years of lab results or a medication list in from a CSV file.",
-    "detail": "You choose which column holds what, HealthLog checks every row first and imports nothing until you confirm. Rows already in your record are skipped.",
+    "detail": "You choose which column holds what, HealthLog checks every row first and imports nothing until you confirm.",
     "kind": {
       "labs": "Lab results",
       "medications": "Medications"

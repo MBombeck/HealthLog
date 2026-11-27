@@ -171,7 +171,6 @@ export function NotificationStatusCard() {
         <EmptyState
           size="compact"
           title={t("settings.notificationStatus.emptyTitle")}
-          description={t("settings.notificationStatus.emptyDescription")}
         />
       </SettingsCard>
     );

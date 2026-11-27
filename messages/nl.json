@@ -6266,7 +6266,7 @@
           "fullBackup": {
             "title": "Volledige back-up",
             "description": "Je hele dossier in één JSON-bestand.",
-            "scopeNote": "Metadata van documenten en de door AI gegenereerde samenvatting, als die er is, worden als platte tekst meegenomen; originele documentbestanden en GPS- en sensorgegevens van trainingen niet. Download die apart uit de kluis of via de trainingsexport.",
+            "scopeNote": "Metadata van documenten en de door AI gegenereerde samenvatting, als die er is, worden als platte tekst meegenomen; originele documentbestanden en GPS- en sensorgegevens van trainingen niet.",
             "encryptToggle": "Versleutelen met een wachtzin",
             "passphrasePlaceholder": "Wachtzin (min. 12 tekens)",
             "passphraseHelp": "Leidt de archiefsleutel af met Argon2id en versleutelt het archief met AES-256-GCM. Sla het bestand op met de extensie .hlx.",
@@ -6370,7 +6370,7 @@
             "keptLabels": "Dit account heeft al tags of groepen met deze sleutels onder een eigen naam, die zijn behouden: {keys}",
             "resultNothing": "Er is niets geïmporteerd. {skipped, plural, one {De # registratie is overgeslagen} other {Alle # registraties zijn overgeslagen}}.",
             "resultEmpty": "Dat bestand bevatte geen metingen en geen stemmingsregistraties.",
-            "limitsHint": "Tot {mb} MB en tot {rows, plural, one {# item} other {# items}} per lijst. Het voegt items toe aan je dossier; het zet geen volledige back-up terug."
+            "limitsHint": "Tot {mb} MB en tot {rows, plural, one {# item} other {# items}} per lijst."
           },
           "csv": {
             "title": "CSV-bestand",
@@ -6492,7 +6492,7 @@
             },
             "steps": {
               "export": "Open op je Android-telefoon Health Connect, ga naar Gegevens beheren en daarna naar Exporteren en importeren, en start een export.",
-              "cloud": "Health Connect slaat de export alleen op in een cloudopslag-app zoals Google Drive, Dropbox of Nextcloud, nooit op de telefoon zelf. Kies daar een app.",
+              "cloud": "Health Connect slaat de export alleen op in een cloudopslag-app zoals Google Drive, Dropbox of Nextcloud, nooit op de telefoon zelf.",
               "upload": "Download het ZIP-bestand uit die cloud naar dit apparaat en upload het hier."
             },
             "dropLabel": "Sleep het Health Connect-ZIP-bestand hierheen",
@@ -6531,7 +6531,7 @@
             "dropLabel": "Zet het activiteitsbestand hier neer",
             "dropHint": "of klik om het te kiezen: een .fit-, .fit.gz- of .zip-bestand tot 10 MB.",
             "fileInputLabel": "Activiteitsbestand",
-            "privacyNote": "Een training die hier al is via Garmin, Apple Gezondheid of een andere app wordt niet dubbel toegevoegd: die krijgt de hartslagcurve uit het bestand als hij er nog geen had. Het GPS-spoor wordt alleen bewaard als Trainingsroutes aan staat.",
+            "privacyNote": "Het GPS-spoor wordt alleen bewaard als Trainingsroutes aan staat.",
             "steps": {
               "garmin": "Garmin Connect: open de activiteit op de website, kies het tandwielmenu en daarna Origineel exporteren. Upload het ZIP-bestand zoals het is.",
               "other": "Andere apps en apparaten: exporteer de activiteit als FIT-bestand (.fit of .fit.gz) en upload het hier."
@@ -7733,7 +7733,6 @@
     "notificationStatus": {
       "title": "Bezorgstatus",
       "description": "Status per kanaal; “Automatisch uitgeschakeld” betekent dat nieuwe pogingen na permanente fouten zijn gestopt.",
-      "emptyDescription": "Stel een kanaal in onder Instellingen › Koppelingen › Bezorgkanalen.",
       "stateActive": "Actief",
       "stateAutoDisabled": "Automatisch uitgeschakeld",
       "stateSendingPaused": "Verzenden gepauzeerd",
@@ -7943,7 +7942,7 @@
       "openNudges": "Openen in Meldingen"
     },
     "integrationRedirectGuide": {
-      "intro": "Dit koppelt via je eigen {provider}-ontwikkelaarsapp; het instellen duurt ongeveer 5 minuten:",
+      "intro": "Je eigen {provider}-ontwikkelaarsapp instellen (ongeveer 5 minuten)",
       "step1": "Maak een app aan in het ontwikkelaarsportaal van {provider}.",
       "step2": "Stel de redirect-/callback-URL in op:",
       "step3": "Plak de client-ID en het clientgeheim die je krijgt hierboven."
@@ -10319,7 +10318,7 @@
       "daysAria": "Kies de drempelwaarde voor lage voorraad in dagen",
       "leadLabel": "Levertijd bij nabestellen (dagen)",
       "leadAria": "Levertijd bij nabestellen in dagen",
-      "leadHelp": "De melding komt zoveel dagen plus één doseringsinterval eerder, zodat een nieuwe voorraad binnen is vóór je laatste dosis. Per medicijn kun je dit aanpassen op het tabblad Voorraad.",
+      "leadHelp": "De melding komt zoveel dagen plus één doseringsinterval eerder, zodat een nieuwe voorraad binnen is vóór je laatste dosis.",
       "leadSavedToast": "Levertijd bij nabestellen opgeslagen",
       "savedToast": "Drempelwaarde voor lage voorraad opgeslagen",
       "enabledToast": "Meldingen bij lage voorraad ingeschakeld.",
@@ -10420,7 +10419,7 @@
     "content": {
       "title": "Gezondheidscijfers in meldingen",
       "description": "Of een melding waarden mag tonen, zoals je ochtendscore.",
-      "detail": "Uit: een melding zegt alleen waar het over gaat, zodat er op een vergrendelscherm geen gezondheidscijfers te zien zijn. Aan: de melding toont ook de cijfers, bijvoorbeeld de ochtendscore in de briefing. Als je op een melding tikt, kom je in beide gevallen op de juiste plek in de app.",
+      "detail": "Uit: een melding zegt alleen waar het over gaat, zodat er op een vergrendelscherm geen gezondheidscijfers te zien zijn. Aan: de melding toont ook de cijfers, bijvoorbeeld de ochtendscore in de briefing.",
       "toggleAria": "Gezondheidscijfers tonen in meldingen",
       "statusDetailed": "Cijfers zichtbaar",
       "statusGeneric": "Zonder cijfers",
@@ -15710,7 +15709,7 @@
   "recordImport": {
     "title": "Labuitslagen en medicijnen uit een spreadsheet",
     "description": "Haal jaren aan labuitslagen of een medicijnlijst binnen uit een CSV-bestand.",
-    "detail": "Jij kiest welke kolom wat bevat; HealthLog controleert eerst elke rij en importeert pas als je bevestigt. Rijen die er al zijn worden overgeslagen.",
+    "detail": "Jij kiest welke kolom wat bevat; HealthLog controleert eerst elke rij en importeert pas als je bevestigt.",
     "kind": {
       "labs": "Labuitslagen",
       "medications": "Medicijnen"

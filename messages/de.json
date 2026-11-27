@@ -6266,7 +6266,7 @@
           "fullBackup": {
             "title": "Voll-Backup",
             "description": "Deine gesamte Akte in einer JSON-Datei.",
-            "scopeNote": "Dokumentmetadaten und die KI-Zusammenfassung, falls vorhanden, sind als Klartext enthalten; die Originaldateien der Dokumente sowie GPS-Routen und Einzelmesswerte von Trainings sind es nicht. Lade diese separat aus dem Dokumententresor bzw. dem Trainings-Export herunter.",
+            "scopeNote": "Dokumentmetadaten und die KI-Zusammenfassung, falls vorhanden, sind als Klartext enthalten; die Originaldateien der Dokumente sowie GPS-Routen und Einzelmesswerte von Trainings sind es nicht.",
             "encryptToggle": "Mit einer Passphrase verschlüsseln",
             "passphrasePlaceholder": "Passphrase (mind. 12 Zeichen)",
             "passphraseHelp": "Leitet den Archivschlüssel per Argon2id ab und versiegelt ihn mit AES-256-GCM. Speichere die Datei mit der Endung .hlx.",
@@ -6370,7 +6370,7 @@
             "keptLabels": "Dieses Konto hat Tags oder Gruppen mit diesen Schlüsseln schon unter eigenem Namen, die wurden behalten: {keys}",
             "resultNothing": "Nichts importiert. {skipped, plural, =1 {Der eine Eintrag wurde} other {Alle # Einträge wurden}} übersprungen.",
             "resultEmpty": "Diese Datei enthielt weder Messwerte noch Stimmungseinträge.",
-            "limitsHint": "Bis {mb} MB und bis zu {rows, plural, one {# Eintrag} other {# Einträge}} je Liste. Das ergänzt deine Akte um Einträge; ein vollständiges Backup lässt sich so nicht wiederherstellen."
+            "limitsHint": "Bis {mb} MB und bis zu {rows, plural, one {# Eintrag} other {# Einträge}} je Liste."
           },
           "csv": {
             "title": "CSV-Datei",
@@ -6492,7 +6492,7 @@
             },
             "steps": {
               "export": "Öffne auf deinem Android-Handy Health Connect, geh zu „Daten verwalten“, dann „Exportieren und importieren“, und starte einen Export.",
-              "cloud": "Health Connect speichert den Export nur in einer Cloud-App wie Google Drive, Dropbox oder Nextcloud, nie auf dem Handy selbst. Wähl dort eine aus.",
+              "cloud": "Health Connect speichert den Export nur in einer Cloud-App wie Google Drive, Dropbox oder Nextcloud, nie auf dem Handy selbst.",
               "upload": "Lade die ZIP-Datei aus dieser Cloud auf dieses Gerät herunter und lade sie hier hoch."
             },
             "dropLabel": "Health-Connect-ZIP hier ablegen",
@@ -6531,7 +6531,7 @@
             "dropLabel": "Aktivitätsdatei hier ablegen",
             "dropHint": "oder klicken, um sie auszuwählen: eine .fit-, .fit.gz- oder .zip-Datei bis 10 MB.",
             "fileInputLabel": "Aktivitätsdatei",
-            "privacyNote": "Ein Training, das schon von Garmin, Apple Health oder einer anderen App hier ist, wird nicht doppelt angelegt: Es bekommt den Herzfrequenzverlauf aus der Datei, wenn es noch keinen hatte. Der GPS-Verlauf wird nur gespeichert, wenn Trainingsrouten eingeschaltet sind.",
+            "privacyNote": "Der GPS-Verlauf wird nur gespeichert, wenn Trainingsrouten eingeschaltet sind.",
             "steps": {
               "garmin": "Garmin Connect: Öffne die Aktivität auf der Website, wähle das Zahnradmenü und dann „Original exportieren“. Lade die ZIP-Datei so hoch, wie sie ist.",
               "other": "Andere Apps und Geräte: Exportiere die Aktivität als FIT-Datei (.fit oder .fit.gz) und lade sie hier hoch."
@@ -7733,7 +7733,6 @@
     "notificationStatus": {
       "title": "Zustellstatus",
       "description": "Status je Kanal; „Automatisch deaktiviert“ heißt, dass nach dauerhaften Fehlern gestoppt wurde.",
-      "emptyDescription": "Richte unter Einstellungen › Integrationen › Zustellkanäle einen Kanal ein.",
       "stateActive": "Aktiv",
       "stateAutoDisabled": "Automatisch deaktiviert",
       "stateSendingPaused": "Versand pausiert",
@@ -7943,7 +7942,7 @@
       "openNudges": "In Benachrichtigungen öffnen"
     },
     "integrationRedirectGuide": {
-      "intro": "Die Verbindung läuft über deine eigene {provider}-Entwickler-App. Die Einrichtung dauert etwa 5 Minuten:",
+      "intro": "Eigene {provider}-Entwickler-App einrichten (etwa 5 Minuten)",
       "step1": "Erstelle eine App im {provider}-Entwicklerportal.",
       "step2": "Setze deren Weiterleitungs-/Callback-URL auf:",
       "step3": "Trage die dort erhaltene Client-ID und das Client-Secret oben ein."
@@ -10319,7 +10318,7 @@
       "daysAria": "Vorratsschwelle in Tagen wählen",
       "leadLabel": "Vorlaufzeit zum Nachbestellen (Tage)",
       "leadAria": "Vorlaufzeit zum Nachbestellen in Tagen",
-      "leadHelp": "Die Warnung kommt um so viele Tage plus ein Dosisintervall früher, damit der Nachschub vor deiner letzten Dosis eintrifft. Ein einzelnes Medikament kann diesen Wert auf seinem Bestand-Tab überschreiben.",
+      "leadHelp": "Die Warnung kommt um so viele Tage plus ein Dosisintervall früher, damit der Nachschub vor deiner letzten Dosis eintrifft.",
       "leadSavedToast": "Vorlaufzeit gespeichert",
       "savedToast": "Vorratsschwelle gespeichert",
       "enabledToast": "Vorratswarnungen aktiviert.",
@@ -10420,7 +10419,7 @@
     "content": {
       "title": "Gesundheitswerte in Benachrichtigungen",
       "description": "Ob eine Benachrichtigung Werte wie deinen Morgenscore zeigen darf.",
-      "detail": "Aus: Eine Benachrichtigung sagt nur, worum es geht, der Sperrbildschirm zeigt keine Gesundheitswerte. An: Sie nennt auch die Werte, etwa den Morgenscore im Überblick. Ein Tipp auf die Benachrichtigung öffnet in beiden Fällen die passende Stelle in der App.",
+      "detail": "Aus: Eine Benachrichtigung sagt nur, worum es geht, der Sperrbildschirm zeigt keine Gesundheitswerte. An: Sie nennt auch die Werte, etwa den Morgenscore im Überblick.",
       "toggleAria": "Gesundheitswerte in Benachrichtigungen zeigen",
       "statusDetailed": "Mit Werten",
       "statusGeneric": "Ohne Werte",
@@ -15710,7 +15709,7 @@
   "recordImport": {
     "title": "Laborwerte und Medikamente aus einer Tabelle",
     "description": "Hol dir Laborwerte aus Jahren oder eine Medikamentenliste aus einer CSV-Datei.",
-    "detail": "Du legst fest, welche Spalte was enthält. HealthLog prüft jede Zeile vorher und importiert erst, wenn du bestätigst. Zeilen, die schon da sind, werden übersprungen.",
+    "detail": "Du legst fest, welche Spalte was enthält. HealthLog prüft jede Zeile vorher und importiert erst, wenn du bestätigst.",
     "kind": {
       "labs": "Laborwerte",
       "medications": "Medikamente"

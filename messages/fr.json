@@ -6266,7 +6266,7 @@
           "fullBackup": {
             "title": "Sauvegarde complète",
             "description": "L'ensemble de votre dossier dans un fichier JSON.",
-            "scopeNote": "Les métadonnées des documents et le résumé IA, s'il existe, sont inclus en texte clair ; les fichiers originaux des documents ainsi que les tracés GPS/données d'échantillons des entraînements ne le sont pas. Téléchargez-les séparément depuis le coffre de documents ou l'export des entraînements.",
+            "scopeNote": "Les métadonnées des documents et le résumé IA, s'il existe, sont inclus en texte clair ; les fichiers originaux des documents ainsi que les tracés GPS/données d'échantillons des entraînements ne le sont pas.",
             "encryptToggle": "Chiffrer avec une phrase secrète",
             "passphrasePlaceholder": "Phrase secrète (12 caractères min.)",
             "passphraseHelp": "Dérive la clé de l'archive avec Argon2id et la scelle avec AES-256-GCM. Enregistrez le fichier avec l'extension .hlx.",
@@ -6370,7 +6370,7 @@
             "keptLabels": "Ce compte a déjà des étiquettes ou des groupes avec ces clés sous son propre nom, ils ont été conservés : {keys}",
             "resultNothing": "Rien n'a été importé. {skipped, plural, =1 {La seule entrée a été ignorée} other {Les # entrées ont toutes été ignorées}}.",
             "resultEmpty": "Ce fichier ne contenait ni mesures ni entrées d'humeur.",
-            "limitsHint": "Jusqu’à {mb} Mo et jusqu’à {rows, plural, one {# entrée} other {# entrées}} par liste. Cela ajoute des entrées à votre dossier ; cela ne restaure pas une sauvegarde complète."
+            "limitsHint": "Jusqu’à {mb} Mo et jusqu’à {rows, plural, one {# entrée} other {# entrées}} par liste."
           },
           "csv": {
             "title": "Fichier CSV",
@@ -6492,7 +6492,7 @@
             },
             "steps": {
               "export": "Sur votre téléphone Android, ouvrez Health Connect, allez dans Gérer les données, puis Exporter et importer, et lancez une exportation.",
-              "cloud": "Health Connect enregistre l’exportation uniquement dans une app de stockage cloud comme Google Drive, Dropbox ou Nextcloud, jamais sur le téléphone lui-même. Choisissez-en une.",
+              "cloud": "Health Connect enregistre l’exportation uniquement dans une app de stockage cloud comme Google Drive, Dropbox ou Nextcloud, jamais sur le téléphone lui-même.",
               "upload": "Téléchargez le fichier ZIP de ce cloud sur cet appareil et importez-le ici."
             },
             "dropLabel": "Déposez ici le ZIP de Health Connect",
@@ -6531,7 +6531,7 @@
             "dropLabel": "Déposez le fichier d’activité ici",
             "dropHint": "ou cliquez pour le choisir : un fichier .fit, .fit.gz ou .zip jusqu’à 10 Mo.",
             "fileInputLabel": "Fichier d’activité",
-            "privacyNote": "Un entraînement déjà présent via Garmin, Apple Santé ou une autre app n’est pas ajouté deux fois : il reçoit la courbe de fréquence cardiaque du fichier s’il n’en avait pas. Le tracé GPS n’est conservé que si Parcours d’entraînement est activé.",
+            "privacyNote": "Le tracé GPS n’est conservé que si Parcours d’entraînement est activé.",
             "steps": {
               "garmin": "Garmin Connect : ouvrez l’activité sur le site, choisissez le menu en forme de roue dentée, puis Exporter l’original. Envoyez le fichier ZIP tel quel.",
               "other": "Autres apps et appareils : exportez l’activité au format FIT (.fit ou .fit.gz) et envoyez-la ici."
@@ -7733,7 +7733,6 @@
     "notificationStatus": {
       "title": "Fiabilité des canaux",
       "description": "État de chaque canal ; « Désactivé automatiquement » signifie arrêté après des erreurs permanentes.",
-      "emptyDescription": "Ajoutez un canal dans Paramètres › Intégrations › Canaux de diffusion.",
       "stateActive": "Actif",
       "stateAutoDisabled": "Désactivé automatiquement",
       "stateSendingPaused": "Envoi en pause",
@@ -7943,7 +7942,7 @@
       "openNudges": "Ouvrir dans Notifications"
     },
     "integrationRedirectGuide": {
-      "intro": "Cette connexion passe par votre propre application développeur {provider}, environ 5 minutes de configuration :",
+      "intro": "Configurer votre application développeur {provider} (environ 5 minutes)",
       "step1": "Créez une application dans le portail développeur {provider}.",
       "step2": "Réglez son URL de redirection/callback sur :",
       "step3": "Collez ci-dessus l'ID client et le secret client fournis."
@@ -10319,7 +10318,7 @@
       "daysAria": "Choisir le seuil de stock en jours",
       "leadLabel": "Délai de réapprovisionnement (jours)",
       "leadAria": "Délai de réapprovisionnement en jours",
-      "leadHelp": "L’alerte est envoyée ce nombre de jours plus un intervalle de dose plus tôt, pour qu’un réapprovisionnement arrive avant votre dernière dose. Un médicament donné peut remplacer cette valeur dans son onglet stock.",
+      "leadHelp": "L’alerte est envoyée ce nombre de jours plus un intervalle de dose plus tôt, pour qu’un réapprovisionnement arrive avant votre dernière dose.",
       "leadSavedToast": "Délai de réapprovisionnement enregistré",
       "savedToast": "Seuil de stock enregistré",
       "enabledToast": "Alertes de stock faible activées.",
@@ -10420,7 +10419,7 @@
     "content": {
       "title": "Valeurs de santé dans les notifications",
       "description": "Si une notification peut afficher des valeurs comme votre score du matin.",
-      "detail": "Désactivé, une notification dit seulement de quoi il s'agit, l'écran verrouillé n'affiche donc aucune valeur de santé. Activé, elle ajoute les valeurs, par exemple le score du matin dans le récapitulatif. Toucher une notification ouvre le bon endroit de l'app dans les deux cas.",
+      "detail": "Désactivé, une notification dit seulement de quoi il s'agit, l'écran verrouillé n'affiche donc aucune valeur de santé. Activé, elle ajoute les valeurs, par exemple le score du matin dans le récapitulatif.",
       "toggleAria": "Afficher les valeurs de santé dans les notifications",
       "statusDetailed": "Avec valeurs",
       "statusGeneric": "Sans valeurs",
@@ -15710,7 +15709,7 @@
   "recordImport": {
     "title": "Résultats de laboratoire et médicaments depuis un tableur",
     "description": "Importez des années de résultats ou une liste de médicaments depuis un fichier CSV.",
-    "detail": "Vous choisissez quelle colonne contient quoi ; HealthLog vérifie chaque ligne d'abord et n'importe rien avant votre confirmation. Les lignes déjà présentes sont ignorées.",
+    "detail": "Vous choisissez quelle colonne contient quoi ; HealthLog vérifie chaque ligne d'abord et n'importe rien avant votre confirmation.",
     "kind": {
       "labs": "Résultats de laboratoire",
       "medications": "Médicaments"
