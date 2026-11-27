@@ -216,7 +216,8 @@ function ListItem({
           <Chevron
             aria-hidden
             className={cn(
-              "text-muted-foreground size-4 shrink-0 transition-transform",
+              // Tucked against the value: the row's gap is for content.
+              "text-muted-foreground -ml-1 size-4 shrink-0 transition-transform",
               expanded && "rotate-180",
             )}
           />

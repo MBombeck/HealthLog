@@ -79,24 +79,27 @@ export function MeasurementEditSheet({
         open={!!editing}
         onOpenChange={(open) => !open && closeEdit()}
         title={t("measurements.editMeasurement")}
+        // The type cannot change here; it names what is being edited.
+        description={
+          editing
+            ? TYPE_LABEL_KEYS[editing.type]
+              ? t(TYPE_LABEL_KEYS[editing.type])
+              : editing.type
+            : undefined
+        }
         footer={<div ref={setEditFooterEl} className="flex w-full" />}
       >
         {editing && (
           <form id={editFormId} onSubmit={submitEdit} className="space-y-4">
-            <div className="flex items-center gap-1.5">
-              <Label className="shrink-0">{t("measurements.type")}</Label>
-              <span className="text-sm leading-none font-medium">
-                {TYPE_LABEL_KEYS[editing.type]
-                  ? t(TYPE_LABEL_KEYS[editing.type])
-                  : editing.type}
-              </span>
-            </div>
-
             <FieldGroup
               htmlFor="edit-value"
-              label={t("measurements.valueWithUnit", {
-                unit: rowDisplay(editing).unit,
-              })}
+              label={
+                rowDisplay(editing).unit
+                  ? t("measurements.valueWithUnit", {
+                      unit: rowDisplay(editing).unit,
+                    })
+                  : t("measurements.value")
+              }
             >
               <Input
                 id="edit-value"
