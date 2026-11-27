@@ -144,7 +144,7 @@ describe("<WellnessScores> (the Insights head)", () => {
     expect(html).toContain("wellness-tile");
     expect(html).toContain('data-band="green"');
     expect(html).toContain('href="/insights/scores/health"');
-    expect(html).toContain('data-slot="wellness-score-band-word"');
+    expect(html).not.toContain('data-slot="wellness-score-band-word"');
   });
 
   it("gives a readiness from before today no number, no band and no word", () => {
@@ -163,13 +163,17 @@ describe("<WellnessScores> (the Insights head)", () => {
       />,
     );
     const tile = html.slice(html.indexOf('data-metric="READINESS"'));
+    expect(tile).toContain('data-stale="true"');
+    expect(tile).toMatch(/aria-label="not from today\. Last 81 on 11\/24"/);
     expect(tile).toContain('data-provisional="true"');
     expect(tile).toContain('data-band="none"');
     expect(tile).not.toContain('data-slot="wellness-score-band-word"');
     expect(tile).not.toContain('data-slot="score-ring-provisional"');
-    expect(tile).toContain('data-slot="wellness-score-note"');
-    expect(tile).toMatch(/Last 81 on 11\/24/);
-    // The last value is in the note, never in the ring's centre.
+    expect(tile).toMatch(
+      /data-slot="wellness-score-note"[^>]*>not from today</,
+    );
+    expect(tile.match(/Last 81 on 11\/24/g)).toHaveLength(1);
+    // The last value is in the ring's name, never in its centre.
     expect(tile).not.toMatch(/tabular-nums[^>]*>81</);
   });
 
@@ -192,7 +196,10 @@ describe("<WellnessScores> (the Insights head)", () => {
     expect(tile).toContain('data-provisional="true"');
     expect(tile).toContain('data-band="none"');
     expect(tile).not.toContain('data-slot="wellness-score-band-word"');
-    expect(tile).toMatch(/Last 84 on 11\/21/);
+    expect(tile).toMatch(
+      /data-slot="wellness-score-note"[^>]*>not from today</,
+    );
+    expect(tile).toMatch(/aria-label="not from today\. Last 84 on 11\/21"/);
     expect(tile).not.toMatch(/tabular-nums[^>]*>84</);
   });
 
@@ -266,11 +273,13 @@ describe("<WellnessScores> (the Insights head)", () => {
     );
     expect(stress).toContain('data-slot="wellness-score-origin"');
     expect(stress).toContain(">Estimate<");
-    expect(stress).toContain(">high<");
+    // The band is said by the ring's name, never as a word beside it.
+    expect(stress).not.toContain(">high<");
+    expect(stress).toMatch(/role="img" aria-label="[^"]*high/);
     expect(stress).toContain('href="/insights/scores/stress"');
     const strain = html.slice(html.indexOf('data-metric="STRAIN_SCORE"'));
     expect(strain).toContain(">Device value<");
-    // The device's own reading stands in for a band word.
+    // The device's own reading is the line under the ring.
     expect(strain).toContain("12.4 of 21");
     expect(strain).not.toContain('data-slot="wellness-score-band-word"');
     // No section of their own any more.

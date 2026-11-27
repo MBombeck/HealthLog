@@ -4813,6 +4813,7 @@
         "aria": "Score {score} sur 100, {band}",
         "ariaProvisional": "Score pas encore disponible : données insuffisantes",
         "provisionalCaption": "Données encore insuffisantes",
+        "notToday": "pas d'aujourd'hui",
         "band": {
           "green": "bon",
           "yellow": "moyen",

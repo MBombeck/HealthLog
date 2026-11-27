@@ -23,14 +23,8 @@ import Link from "next/link";
 import { Gauge, HeartPulse, Moon, type LucideIcon } from "lucide-react";
 
 import { ScoreRing } from "@/components/insights/derived/score-ring";
-import {
-  BandWord,
-  ScoreRingTile,
-} from "@/components/insights/derived/score-ring-tile";
-import {
-  bandWordKey,
-  type ScoreBand,
-} from "@/components/insights/derived/band-tokens";
+import { ScoreRingTile } from "@/components/insights/derived/score-ring-tile";
+import type { ScoreBand } from "@/components/insights/derived/band-tokens";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrendTile } from "@/components/ui/trend-tile";
 import type { Locale } from "@/lib/i18n/config";
@@ -53,10 +47,8 @@ export interface ScoreTileView {
   /** Null: no number (not fresh, or not enough data yet). */
   score: number | null;
   band: ScoreBand | undefined;
-  /** A past value exists: the bare track instead of the provisional dash. */
+  /** A past value exists: the stale face ("—", "not from today"). */
   stale: boolean;
-  /** The band in words; null without a number or a band. */
-  bandWord: string | null;
   line: string | null;
 }
 
@@ -113,7 +105,6 @@ function morningTile(
     score: fresh ? tile.ring.score : null,
     band: fresh && tile.ring.band ? (tile.ring.band as ScoreBand) : undefined,
     stale: !fresh && tile.ring.asOfDay !== null,
-    bandWord: null,
     line: tile.line,
   };
 }
@@ -136,7 +127,6 @@ export function scoreTiles(
       score: score?.value ?? null,
       band: score ? ((score.numberBand ?? score.band) as ScoreBand) : undefined,
       stale: false,
-      bandWord: null,
       line: healthLine(score, t, locale),
     },
   ];
@@ -160,13 +150,9 @@ export function scoreTiles(
       ),
     );
   }
-  // The band in words beside each ring (concept B): the ring's colour is
-  // the band, and the word says it too.
-  return tiles.map((tile) => ({
-    ...tile,
-    bandWord:
-      tile.score !== null && tile.band ? t(bandWordKey(tile.band)) : null,
-  }));
+  // No band word beside a ring: its colour and number say the band, and its
+  // accessible name says it in words.
+  return tiles;
 }
 
 /** The grid span of one wide tile: the row is six strip columns. */
@@ -191,11 +177,7 @@ function compactRing(tile: ScoreTileView) {
       size="compact"
       flat
       emptyFace={tile.stale}
-      ariaLabel={
-        tile.score === null && tile.stale
-          ? [tile.label, tile.line].filter(Boolean).join(": ")
-          : undefined
-      }
+      ariaLabel={tile.stale ? (tile.line ?? undefined) : undefined}
     />
   );
 }
@@ -237,7 +219,6 @@ export function TodayScores({
               score={tile.score}
               band={tile.band}
               stale={tile.stale}
-              bandWord={tile.bandWord}
               line={tile.line}
             />
           </div>
@@ -264,13 +245,6 @@ export function TodayScores({
             <span className="text-foreground text-sm leading-tight font-medium break-words hyphens-auto">
               {tile.shortLabel}
             </span>
-            {tile.bandWord && tile.band ? (
-              <BandWord
-                band={tile.band}
-                word={tile.bandWord}
-                className="text-muted-foreground -mt-1 text-xs"
-              />
-            ) : null}
           </Link>
         ))}
       </TrendTile>
