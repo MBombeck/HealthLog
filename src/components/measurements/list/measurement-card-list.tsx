@@ -182,9 +182,9 @@ function MeasurementRow({
         </>
       }
       trailing={
-        // A long unit ("Atemzüge/min") drops under its value rather than
-        // cut the meta line short.
-        <span className="flex max-w-[5.25rem] flex-wrap items-baseline justify-end gap-x-1 text-right">
+        // Value and unit share one line, even a long unit ("mL/(kg·min)",
+        // "Atemzüge/min"): the row has no chevron, so the room is theirs.
+        <span className="flex items-baseline justify-end gap-x-1 text-right whitespace-nowrap">
           <span data-slot="measurement-row-value" className="whitespace-nowrap">
             {value}
           </span>

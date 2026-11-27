@@ -37,9 +37,16 @@ import { cn } from "@/lib/utils";
  */
 function ActionPair({
   className,
+  pairClassName,
   children,
   ...props
-}: React.ComponentProps<"div">) {
+}: React.ComponentProps<"div"> & {
+  /**
+   * Width rules of the pair itself, for a surface that lines several pairs
+   * up in one column (the start page's asks give every button one width).
+   */
+  pairClassName?: string;
+}) {
   const items = flatten(children);
   const menus = items.filter(isActionMenu);
   const actions = items.filter((item) => !isActionMenu(item));
@@ -108,7 +115,10 @@ function ActionPair({
       <div
         ref={pairRef}
         data-slot="action-pair"
-        className="ml-auto grid w-max shrink-0 auto-cols-fr grid-flow-col gap-2 *:w-full data-[stacked=true]:w-auto data-[stacked=true]:min-w-0 data-[stacked=true]:flex-1 data-[stacked=true]:auto-cols-auto data-[stacked=true]:grid-flow-row max-sm:w-full max-sm:*:min-h-11"
+        className={cn(
+          "ml-auto grid w-max shrink-0 auto-cols-fr grid-flow-col gap-2 *:w-full data-[stacked=true]:w-auto data-[stacked=true]:min-w-0 data-[stacked=true]:flex-1 data-[stacked=true]:auto-cols-auto data-[stacked=true]:grid-flow-row max-sm:w-full max-sm:*:min-h-11",
+          pairClassName,
+        )}
       >
         {actions}
       </div>

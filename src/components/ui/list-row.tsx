@@ -104,7 +104,11 @@ function ListGroup({
  *
  * Left to right: an optional `leading` control (a selection checkbox), the
  * `icon`, the `title` over one `meta` line (both cut to one line), the
- * `trailing` value or chip, and a chevron when the row opens something.
+ * `trailing` value or chip, and a chevron when the row opens something and
+ * shows no value. A row with a value never carries a chevron, whatever the
+ * caller asks: the space goes to the value and its unit, which stay on one
+ * line, and hover and focus show that the row is tappable. A row without a
+ * value that leads somewhere ("Stock ›") keeps its chevron. UI standards §20.
  * The whole row is the tap target (`href` or `onSelect`): the title carries
  * the control and stretches it over the row, so the row needs no edit or
  * delete buttons of its own; those live where the row leads (the edit
@@ -145,7 +149,10 @@ function ListItem({
   controls?: string;
   /** Accessible name of the row's control, when the title alone is not. */
   actionLabel?: string;
-  /** Show the chevron of an interactive row; off while a row selects. */
+  /**
+   * Show the chevron of an interactive row; off while a row selects. A row
+   * with a `trailing` value never shows one.
+   */
   chevron?: boolean;
 }) {
   const interactive = href !== undefined || onSelect !== undefined;
@@ -207,12 +214,12 @@ function ListItem({
         {trailing ? (
           <div
             data-slot="list-item-trailing"
-            className="flex shrink-0 items-center text-sm font-semibold tabular-nums"
+            className="flex shrink-0 items-center text-sm font-semibold whitespace-nowrap tabular-nums"
           >
             {trailing}
           </div>
         ) : null}
-        {interactive && chevron ? (
+        {interactive && chevron && !trailing ? (
           <Chevron
             aria-hidden
             className={cn(

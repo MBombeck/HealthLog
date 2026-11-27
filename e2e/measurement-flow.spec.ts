@@ -191,3 +191,89 @@ test.describe("add measurement flow", () => {
     });
   });
 });
+
+/**
+ * A data row has no chevron, so its value and unit share one line at phone
+ * width, even the longest units the product writes (UI standards §20). The
+ * line is measured, not read from a class: the trailing cell is as tall as
+ * the value alone, so the unit cannot have dropped under it. German, because
+ * "Atemzüge/min" is the longer of the two locales' words.
+ */
+test.describe("measurement rows at 390 px", () => {
+  test.use({
+    storageState: criticalStorageState("measurement"),
+    viewport: { width: 390, height: 844 },
+  });
+  test.setTimeout(90_000);
+
+  test.beforeEach(async ({}, testInfo) => {
+    await resetCriticalAccount(criticalAccount("measurement", testInfo), [
+      "DELETE FROM measurement_rollups WHERE user_id = $1",
+      "DELETE FROM measurements WHERE user_id = $1",
+    ]);
+  });
+
+  test("a long unit stays on the value's line", async ({ page, baseURL }) => {
+    await page
+      .context()
+      .addCookies([{ name: "healthlog-locale", value: "de", url: baseURL }]);
+    const switched = await page.request.put("/api/auth/me/locale", {
+      data: { locale: "de" },
+    });
+    expect(switched.status(), await switched.text()).toBe(200);
+
+    try {
+      await page.goto("/measurements", { waitUntil: "domcontentloaded" });
+      await expect(page.locator("main")).toBeVisible({ timeout: 30_000 });
+      // Written from the page: a pooled API-context socket can drop a POST
+      // (see vaccinations.spec.ts).
+      const statuses = await page.evaluate(async () => {
+        const at = new Date(Date.now() - 60_000).toISOString();
+        const out: number[] = [];
+        for (const [type, value] of [
+          ["VO2_MAX", 48.3],
+          ["RESPIRATORY_RATE", 14.5],
+        ] as const) {
+          const res = await fetch("/api/measurements", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ type, value, measuredAt: at }),
+          });
+          out.push(res.status);
+        }
+        return out;
+      });
+      expect(statuses).toEqual([201, 201]);
+
+      await page.reload({ waitUntil: "domcontentloaded" });
+      for (const [type, unit] of [
+        ["VO2_MAX", "mL/(kg·min)"],
+        ["RESPIRATORY_RATE", "Atemzüge/min"],
+      ] as const) {
+        const row = page.locator(`li[data-measurement-type="${type}"]`);
+        await expect(row).toBeVisible({ timeout: 30_000 });
+        await expect(
+          row.locator('[data-slot="measurement-row-unit"]'),
+        ).toHaveText(unit);
+        // No chevron on a row that shows a value.
+        await expect(row.locator("svg.lucide-chevron-right")).toHaveCount(0);
+        const value = await row
+          .locator('[data-slot="measurement-row-value"]')
+          .boundingBox();
+        const trailing = await row
+          .locator('[data-slot="list-item-trailing"]')
+          .boundingBox();
+        expect(value).not.toBeNull();
+        expect(trailing).not.toBeNull();
+        expect(
+          trailing!.height,
+          `${type}: value and unit on one line`,
+        ).toBeLessThanOrEqual(value!.height + 1);
+        // And the cell stays inside the 390 px viewport.
+        expect(trailing!.x + trailing!.width).toBeLessThanOrEqual(390);
+      }
+    } finally {
+      await page.request.put("/api/auth/me/locale", { data: { locale: "en" } });
+    }
+  });
+});

@@ -27,6 +27,9 @@ const NOTE_COUNTER_FROM = Math.floor(MEASUREMENT_NOTES_MAX_LENGTH * 0.8);
  *   field with a unit; a reading without a unit is just "Value".
  * - Every field is the shared `Input`, one height.
  * - The note's counter appears only once the note nears its limit.
+ * - The value field is empty until typed in, in add as in edit: no last
+ *   reading as a grey placeholder ("88"), which read as a value already
+ *   there. There is no placeholder prop to pass one through.
  *
  * `idPrefix` keeps the add and edit ids apart when both are mounted.
  */
@@ -39,7 +42,6 @@ export function MeasurementEntryFields({
   valueHint,
   valueError,
   inputMode = "decimal",
-  placeholder,
   autoFocus,
   glucoseContext,
   measuredAt,
@@ -61,7 +63,6 @@ export function MeasurementEntryFields({
   valueHint?: ReactNode;
   valueError?: string | null;
   inputMode?: "decimal" | "text";
-  placeholder?: string;
   autoFocus?: boolean;
   /** Shown for a glucose reading; `allowNone` for one that came without. */
   glucoseContext?: {
@@ -105,7 +106,6 @@ export function MeasurementEntryFields({
             enterKeyHint="next"
             value={value}
             onChange={(e) => onValueChange(e.target.value)}
-            placeholder={placeholder}
             autoFocus={autoFocus}
             required
             aria-required="true"
