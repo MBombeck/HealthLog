@@ -74,15 +74,14 @@ function setChannels(channels: MockChannel[]) {
 }
 
 describe("<NotificationStatusCard />", () => {
-  it("renders empty state when no channels exist", () => {
+  it("renders nothing when no channels exist", () => {
+    // The channel cards right below are where one is set up.
     setChannels([]);
     const html = render(<NotificationStatusCard />);
-    expect(html).toContain("Delivery status");
-    expect(html).toContain("No channels configured yet");
-    expect(html).not.toContain('data-testid="notification-status-list"');
+    expect(html).toBe("");
   });
 
-  it("renders empty state instead of crashing when data is not an array", () => {
+  it("renders nothing instead of crashing when data is not an array", () => {
     // Regression: the status endpoint returns `{ channels, events }` where
     // `events` is an object map. A shape-drifted / poisoned cache read that
     // hands the whole object to the card must not reach `.map` on a
@@ -92,8 +91,7 @@ describe("<NotificationStatusCard />", () => {
       isLoading: false,
     });
     const html = render(<NotificationStatusCard />);
-    expect(html).toContain("No channels configured yet");
-    expect(html).not.toContain('data-testid="notification-status-list"');
+    expect(html).toBe("");
   });
 
   it("paints Active badge for a healthy channel", () => {

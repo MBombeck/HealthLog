@@ -3898,7 +3898,7 @@
         "weightBody": "체중은 장기적인 에너지 균형과 전반적인 건강을 보여주는 가장 단순한 신호 중 하나예요. 수분·음식·시간대에 따라 흔들리는 한 번의 측정값보다 몇 주에 걸친 추이가 훨씬 중요해요.",
         "bmiBody": "BMI는 체중을 키의 제곱으로 나눈 값으로, 넓은 체중 범주를 알려주는 하나의 숫자예요. 인구 집단 수준의 선별 지표이고, 근육과 지방을 구분하지 못해요.",
         "sleepBody": "수면 시간은 밤새 실제로 잠든 시간이고, 얕은 수면·깊은 수면·REM 단계로 나뉘어요. 대부분의 성인은 대략 7~9시간이 필요하고, 꾸준한 양과 질 모두가 회복·기분·대사를 뒷받침해요.",
-        "moodBody": "기분 기록은 간단한 척도로 시간에 따른 기분을 남겨요. 꾸준히 기록하면 수면·활동·약이 기분과 어떻게 맞물리는지, 하루만 봐서는 절대 보이지 않는 패턴이 드러나요.",
+        "moodBody": "기분 기록은 간단한 척도로 시간에 따른 기분을 남겨요.",
         "medicationsBody": "복약 순응도는 처방대로 약을 얼마나 꾸준히 복용하는지이고, 여기서는 예정된 복용 중 실제로 기록한 비율로 보여줘요. 치료가 의도대로 효과를 내려면 꾸준한 복용이 관건인 경우가 많아요.",
         "restingHrBody": "안정 시 심박수는 완전히 쉬고 있을 때의 심박수로, 보통 밤사이에 측정해요. 활동 중 맥박과는 달라요. 안정 시 심박수가 낮을수록 대체로 심폐 체력이 좋다는 뜻이고, 올라가는 추이는 스트레스나 질병의 초기 신호일 수 있어요. 일반적인 기준으로 성인의 정상 안정 시 심박수는 분당 60~100회예요(AHA 2024). 단련된 심장은 40~60회에 머물러도 문제없어요.",
         "hrvBody": "심박변이도는 연속된 심장 박동 사이 시간의 미세한 변동이에요. 변동이 클수록 대체로 잘 회복되고 적응력 있는 신경계를 뜻하고, 지속적으로 떨어지면 피로·스트레스·회복 부족의 신호일 수 있어요.",
@@ -6069,21 +6069,18 @@
         "displayHeading": "휴대폰에서",
         "elsewhere": {
           "title": "해당 위치에서 설정",
-          "description": "이 리마인더는 관련 항목 옆에서 설정합니다.",
           "doses": {
             "title": "약 복용",
-            "description": "복용 시간과 리마인더는 각 약에서 설정합니다.",
             "link": "약 열기"
           },
           "cycle": {
             "title": "주기",
-            "description": "생리와 가임기 리마인더는 알림 표에서 채널별로 켭니다.",
             "link": "알림 표 열기"
           }
         },
         "snooze": {
           "title": "나중에 알림",
-          "description": "약 카드, 텔레그램, 앱에서 복용 알림을 얼마나 미룰지 정해요.",
+          "description": "복용 알림을 얼마나 미룰지 정해요.",
           "label": "미루는 시간",
           "option": "{minutes}분",
           "saveError": "저장하지 못했어요. 다시 시도해 주세요"
@@ -6252,16 +6249,16 @@
         "cards": {
           "measurementsCsv": {
             "title": "측정",
-            "description": "체중, 혈압, 맥박, 혈당을 비롯한 모든 측정값을 쉼표로 구분한 값으로."
+            "description": "모든 측정값을 스프레드시트로."
           },
           "medicationsCsv": {
             "title": "복약",
-            "description": "복용량, 일정, 그리고 원하면 전체 복용 기록까지 담은 약 목록.",
+            "description": "내 약 목록, 원하면 모든 복용 기록까지.",
             "includeIntake": "복용 기록 포함"
           },
           "moodCsv": {
             "title": "기분",
-            "description": "점수, 태그, 시각이 담긴 하루 기분 기록."
+            "description": "모든 기분 기록과 태그."
           },
           "fullBackup": {
             "title": "전체 백업",
@@ -6280,7 +6277,7 @@
           "charCount": "{used} / {max, plural, other {#자}}",
           "appleHealth": {
             "title": "Apple Health",
-            "description": "iPhone 건강 앱에서 만든 export.zip을 올려 주세요 (프로필 > 모든 건강 데이터 내보내기).",
+            "description": "iPhone 건강 앱의 export.zip.",
             "dropLabel": "여기에 export.zip을 놓으세요",
             "dropHint": "또는 눌러서 파일 선택",
             "fileInputLabel": "Apple Health export.zip 파일 선택",
@@ -6351,7 +6348,7 @@
           },
           "json": {
             "title": "측정값과 기분 (JSON)",
-            "description": "측정과 기분 기록이 담긴 JSON을 붙여 넣거나 .json 파일을 올려 주세요.",
+            "description": "측정값과 기분 기록을 JSON으로.",
             "pasteLabel": "JSON 붙여 넣기",
             "fileInputLabel": "불러올 JSON 파일 선택",
             "schemaHint": "배열 두 개: measurements와 moodEntries.",
@@ -6374,7 +6371,7 @@
           },
           "csv": {
             "title": "CSV 파일",
-            "description": "스프레드시트나 측정기 내보내기 파일에서 측정값을 불러와요.",
+            "description": "스프레드시트나 측정기 내보내기의 측정값.",
             "pasteLabel": "CSV 붙여 넣기",
             "fileInputLabel": "불러올 CSV 파일 선택",
             "schemaHint": "열: type, value, unit, measuredAt (시간대 오프셋 포함), 그리고 선택 항목인 glucoseContext, notes, externalId.",
@@ -6419,7 +6416,7 @@
           },
           "doseHistory": {
             "title": "약 복용 이력",
-            "description": "다른 복약 앱에서 내보낸 복용 이력을 그대로 읽어요.",
+            "description": "다른 복약 앱의 복용 기록.",
             "pasteLabel": "내보낸 내용 붙여 넣기",
             "fileInputLabel": "복용 이력 내보내기 파일 선택",
             "uploadFile": "파일 선택",
@@ -6475,7 +6472,7 @@
           },
           "healthConnect": {
             "title": "Health Connect 내보내기",
-            "description": "Android의 Health Connect 앱에서 데이터를 내보낼 때 만들어지는 ZIP 파일을 가져옵니다.",
+            "description": "Android의 Health Connect가 만든 ZIP.",
             "choose": "파일 선택",
             "uploading": "업로드 중…",
             "uploadFailed": "업로드에 실패했습니다. 다시 시도해 주세요.",
@@ -6518,7 +6515,7 @@
           },
           "fit": {
             "title": "활동 파일(FIT)",
-            "description": "Garmin, Wahoo, Coros, Polar 등 시계나 자전거 컴퓨터가 기록한 FIT 파일에서 운동을 가져옵니다.",
+            "description": "시계나 자전거 컴퓨터의 운동 기록.",
             "choose": "파일 선택",
             "uploading": "업로드 중…",
             "uploadFailed": "업로드에 실패했습니다. 다시 시도해 주세요.",
@@ -6533,7 +6530,7 @@
             "fileInputLabel": "활동 파일",
             "privacyNote": "GPS 경로는 운동 경로가 켜져 있을 때만 저장됩니다.",
             "steps": {
-              "garmin": "Garmin Connect: 웹사이트에서 활동을 열고 톱니바퀴 메뉴에서 원본 내보내기를 선택하세요. ZIP 파일을 그대로 업로드하면 됩니다.",
+              "garmin": "Garmin Connect: 웹사이트에서 활동을 열고 톱니바퀴 메뉴에서 원본 내보내기를 선택하세요.",
               "other": "다른 앱과 기기: 활동을 FIT 파일(.fit 또는 .fit.gz)로 내보내 여기에 업로드하세요."
             },
             "phase": {
@@ -6566,7 +6563,7 @@
           "recordFile": {
             "gadgetbridge": {
               "title": "Gadgetbridge 데이터베이스",
-              "description": "Android의 Gadgetbridge가 내보내는 데이터베이스에서 걸음, 맥박, SpO2, 수면, 체중을 가져와요.",
+              "description": "Android의 Gadgetbridge가 내보낸 데이터베이스.",
               "steps": {
                 "export": "Gadgetbridge에서 설정, 데이터 관리, 데이터베이스 내보내기를 차례로 열어요.",
                 "upload": "Gadgetbridge라는 파일을 여기에 올려요. 최대 512MB."
@@ -6574,9 +6571,9 @@
             },
             "fhirBundle": {
               "title": "진료 기록 (FHIR)",
-              "description": "환자 포털이 내보내는 FHIR R4 Bundle에서 검사 결과, 활력 징후, 질환, 예방접종, 약, 진료 방문을 가져와요.",
+              "description": "환자 포털의 FHIR R4 기록.",
               "steps": {
-                "export": "환자 포털에서 기록을 FHIR R4(JSON)로 내보내요. C-CDA 파일은 읽지 않아요.",
+                "export": "환자 포털에서 기록을 FHIR R4(JSON)로 내보내요.",
                 "upload": ".json 파일을 여기에 올려요. 최대 32MB."
               }
             },
@@ -6630,14 +6627,14 @@
               "removeFailed": "폴더를 제거하지 못했어요. 다시 시도하세요."
             },
             "title": "폴더에서 Health Connect 가져오기",
-            "description": "Health Connect가 예약에 따라 WebDAV 또는 Nextcloud 폴더에 저장하는 내보내기 파일을 HealthLog가 직접 가져와 새 항목을 추가해요.",
+            "description": "WebDAV 폴더의 새 Health Connect 내보내기.",
             "folderUrl": "폴더 주소 (WebDAV)",
             "fileName": "폴더 안의 파일 이름",
             "username": "사용자 이름",
             "password": "비밀번호 또는 앱 비밀번호",
             "passwordKept": "저장된 비밀번호를 유지하려면 비워 두세요",
             "enabled": "약 6시간마다 가져오기",
-            "privacyNote": "비밀번호는 암호화되어 저장되고 다시 표시되지 않아요. 집 네트워크의 폴더는 서버 운영자가 주소를 허용한 경우에만 쓸 수 있어요.",
+            "privacyNote": "비밀번호는 암호화되어 저장되고 다시 표시되지 않아요.",
             "lastAttempt": "마지막 시도 {when}: {outcome}",
             "fetchNow": "지금 가져오기",
             "fetchStarted": "지금 가져오는 중이에요. 결과는 이 카드에 표시돼요.",
@@ -6893,7 +6890,7 @@
     "genderFemale": "여성",
     "genderHint": "성별에 따른 목표값에 쓰여요.",
     "timezone": "시간대",
-    "timezoneHint": "차트 축 라벨, 알림 시각, 내보내기 시각, 코치 맥락에 쓰여요. 저장된 데이터는 바뀌지 않아요.",
+    "timezoneHint": "차트 축 라벨, 알림 시각, 내보내기 시각, 코치 맥락에 쓰여요.",
     "timezoneInvalid": "올바른 IANA 시간대가 아니에요.",
     "profileSaved": "프로필을 저장했어요",
     "profilePartiallySaved": "프로필을 저장했지만 {field} 항목은 업데이트하지 못했어요.",
@@ -6912,7 +6909,7 @@
     },
     "avatar": {
       "title": "프로필 사진",
-      "description": "직접 운영하는 서버에 저장되는 사진을 올려요. 외부 아바타 서비스 대신 앱 전체에 표시돼요.",
+      "description": "직접 운영하는 서버에 저장되는 사진을 올려요.",
       "upload": "사진 올리기",
       "replace": "사진 바꾸기",
       "remove": "삭제",
@@ -6979,22 +6976,22 @@
     "telegramStep2": "봇에게 /start를 보내 채팅을 활성화하세요.",
     "telegramStep3": "@userinfobot이나 Bot API로 채팅 ID를 확인하세요.",
     "ntfy": "ntfy",
-    "ntfyDescription": "ntfy(셀프 호스팅 또는 ntfy.sh)로 보내는 알림이에요.",
+    "ntfyDescription": "ntfy로 받는 알림.",
     "ntfyEnable": "ntfy 켜기",
     "ntfyServer": "서버 URL",
     "ntfyTopic": "토픽",
     "ntfyAuthToken": "인증 토큰 (선택)",
     "ntfyAuthTokenHint": "접근 제어가 걸린 비공개 토픽에만 필요해요.",
     "webhook": "웹훅",
-    "webhookDescription": "Discord, Slack, Gotify, Home Assistant, n8n 등 JSON을 받는 어떤 URL로든 알림을 POST해요.",
+    "webhookDescription": "JSON을 받는 모든 URL로 알림 전송.",
     "webhookEnable": "웹훅 켜기",
     "webhookUrl": "웹훅 URL",
-    "webhookUrlHint": "POST를 보낼 전체 URL이에요. 사설 네트워크 주소는 서버 운영자가 허용해야 해요.",
+    "webhookUrlHint": "POST를 보낼 전체 URL이에요.",
     "webhookHeaderName": "헤더 이름 (선택)",
     "webhookHeaderValue": "헤더 값 (선택)",
     "webhookFormat": "메시지 형식",
     "webhookFormatGeneric": "일반 JSON",
-    "webhookFormatGenericHint": "Discord나 Slack 웹후크 URL은 그대로 붙여 넣으면 돼요. Home Assistant와 n8n은 title, message, eventType, priority 필드를 읽어요.",
+    "webhookFormatGenericHint": "Discord나 Slack 웹후크 URL은 그대로 붙여 넣으면 돼요.",
     "webhookFormatGotify": "Gotify",
     "webhookFormatGotifyHint": "/message로 끝나는 URL을 쓰고, 앱 토큰은 X-Gotify-Key 헤더에 넣어 주세요.",
     "email": "이메일",
@@ -7002,7 +6999,7 @@
     "emailEnable": "이메일 켜기",
     "emailRecipient": "받는 주소",
     "webPush": "브라우저 푸시",
-    "webPushDescription": "HealthLog를 열어 두지 않아도 브라우저로 바로 알림을 받아요.",
+    "webPushDescription": "이 브라우저로 받는 알림.",
     "webPushNotSupported": "이 브라우저는 푸시 알림을 지원하지 않아요.",
     "webPushInstallFirst": "iPhone과 iPad에서는 설치한 앱에서만 푸시 알림을 받을 수 있어요. Safari에서 공유를 누른 다음 '홈 화면에 추가'를 선택하고, 홈 화면에서 HealthLog를 연 뒤 여기서 '푸시 켜기'를 눌러 주세요.",
     "webPushDenied": "푸시 알림이 차단돼 있어요. 브라우저 설정에서 허용해 주세요.",
@@ -7100,7 +7097,7 @@
         "defaultChainLabel": "기본 순서",
         "defaultChainHint": "기본값인 작업은 이 순서를 따릅니다. 평소 규칙은 그대로이며, 문서는 로컬 모델을 먼저 시도합니다.",
         "tasksHeading": "작업",
-        "tasksHint": "작업마다 체인을 고르세요. 자체 체인을 쓰는 작업 아래에는 시도할 제공자가 순서대로 표시돼요.",
+        "tasksHint": "작업마다 체인을 고르세요.",
         "taskDefault": "기본값",
         "save": "순서 저장",
         "saved": "순서가 저장되었습니다",
@@ -7118,7 +7115,7 @@
           "workoutInsights": "운동 메모",
           "reactionLines": "새 측정값에 대한 반응"
         },
-        "tasksNeedChain": "작업마다 제공자를 따로 정하려면 위에서 체인을 만드세요. 그전까지는 모든 작업이 기본값을 따라요."
+        "tasksNeedChain": "작업마다 제공자를 따로 정하려면 위에서 체인을 만드세요."
       },
       "activeProviderHeading": "사용 중인 제공자",
       "activeProviderLabel": "설정할 제공자",
@@ -7367,7 +7364,7 @@
         "failed": "API 키를 삭제하지 못했어요."
       },
       "coachBudgetHeading": "자체 호스팅 모델용 코치 예산",
-      "coachBudgetBody": "코치가 프롬프트에 넣는 데이터의 양과 한 번의 답변이 작업할 수 있는 시간을 로컬 모델과 게이트웨이별로 정합니다. 컨텍스트 창이 작은 모델이면 스냅샷 크기를 줄이고, 자체 하드웨어의 큰 모델이면 스냅샷과 답변당 한도를 늘리세요. 빈 칸은 표시된 기본값을 유지합니다. 서버의 공용 제공자를 통한 답변은 항상 기본 한도를 유지합니다.",
+      "coachBudgetBody": "코치가 프롬프트에 넣는 데이터의 양과 한 번의 답변이 작업할 수 있는 시간을 로컬 모델과 게이트웨이별로 정합니다.",
       "coachBudgetProvider": "제공자",
       "coachBudgetLocal": "로컬 모델",
       "coachBudgetCompat": "게이트웨이",
@@ -7389,13 +7386,13 @@
       },
       "glucoseUnit": {
         "title": "혈당",
-        "description": "혈당 수치를 표시할 단위입니다. 어느 쪽을 골라도 저장 방식은 같습니다.",
+        "description": "혈당 수치를 표시할 단위입니다.",
         "saved": "혈당 단위를 저장했습니다",
         "saveError": "혈당 단위를 저장하지 못했습니다."
       }
     },
     "withings": "Withings",
-    "withingsDescription": "Withings 체중계와 혈압계를 연결하면 체중, 체성분, 혈압을 자동으로 동기화해요.",
+    "withingsDescription": "체중, 체성분, 혈압.",
     "withingsCredentials": "API 자격 증명",
     "withingsClientId": "클라이언트 ID",
     "withingsClientSecret": "클라이언트 시크릿",
@@ -7437,7 +7434,7 @@
     "withingsConnect": "Withings로 연결",
     "withingsNoCredentials": "Withings를 연결하려면 위에 API 자격 증명을 입력해 주세요.",
     "whoop": "WHOOP",
-    "whoopDescription": "WHOOP 스트랩을 연결하면 회복도, 수면, 부하, 운동을 HealthLog로 바로 동기화해요.",
+    "whoopDescription": "회복, 수면, 스트레인, 운동.",
     "whoopCredentials": "API 자격 증명",
     "whoopClientId": "클라이언트 ID",
     "whoopClientSecret": "클라이언트 시크릿",
@@ -7482,7 +7479,7 @@
     "googleHealth": "Google Health",
     "googleHealthTag": "Fitbit & Pixel",
     "googleHealthBetaBadge": "베타",
-    "googleHealthDescription": "Google 계정으로 Fitbit, Pixel Watch, Fitbit Air를 연결해 체중, 심박수, 수면, 활동을 가져와요.",
+    "googleHealthDescription": "Google 계정으로 Fitbit과 Pixel Watch 연결.",
     "googleHealthCredentials": "API 자격 증명",
     "googleHealthClientId": "클라이언트 ID",
     "googleHealthClientSecret": "클라이언트 시크릿",
@@ -7616,7 +7613,7 @@
       "namePlaceholder": "이름 (예: Home Assistant)",
       "appleHealth": {
         "label": "측정값을 Apple Health에 기록",
-        "createHint": "그러면 iPhone의 HealthLog 앱이 이 토큰의 측정값을 Apple Health에 추가해요. 나중에 아래 토큰 목록에서 바꿀 수 있어요.",
+        "createHint": "그러면 iPhone의 HealthLog 앱이 이 토큰의 측정값을 Apple Health에 추가해요.",
         "toggleAria": "{name}의 측정값을 Apple Health에 기록",
         "updateFailed": "Apple Health 설정을 바꾸지 못했어요. 다시 시도해 주세요.",
         "unattributed": "이 설정이 생기기 전에 보낸 측정값은 토큰과 연결할 수 없어서 Apple Health에 기록되지 않아요."
@@ -7743,11 +7740,10 @@
       "disabledReason": "사유",
       "nextRetry": "다음 재시도",
       "reEnable": "다시 사용",
-      "sendTest": "테스트 발송",
-      "emptyTitle": "아직 설정한 채널이 없어요"
+      "sendTest": "테스트 발송"
     },
     "identity": {
-      "description": "건강 기록 내보내기(PDF 표지 + FHIR 내보내기)에 쓰이는 선택 정보예요. 모든 항목은 선택이에요.",
+      "description": "건강 기록 내보내기(PDF 표지 + FHIR 내보내기)에 쓰이는 선택 정보예요.",
       "fullName": "이름",
       "fullNamePlaceholder": "예: 홍길동",
       "insurer": "건강보험",
@@ -7846,14 +7842,14 @@
     "genderOther": "기타",
     "nightscout": "Nightscout",
     "nightscoutTag": "CGM",
-    "nightscoutDescription": "직접 운영하는 Nightscout 사이트를 연결해 연속 혈당 측정값을 혈당 패널로 동기화해요.",
+    "nightscoutDescription": "Nightscout 사이트의 연속 혈당.",
     "nightscoutViewData": "혈당 보기",
     "nightscoutUrl": "Nightscout URL",
     "nightscoutUrlSavedPlaceholder": "저장됨: 바꾸려면 새 URL을 입력하세요",
     "nightscoutToken": "API 토큰",
     "nightscoutTokenOptional": "공개 사이트라면 선택 사항이에요",
     "nightscoutTokenSavedPlaceholder": "저장됨: 바꾸려면 새 토큰을 입력하세요",
-    "nightscoutTokenHelp": "Nightscout 관리자 도구에서 발급한 액세스 토큰을 붙여 넣으세요. 사이트를 누구나 읽을 수 있다면 비워 두세요.",
+    "nightscoutTokenHelp": "Nightscout 관리자 도구에서 발급한 액세스 토큰을 붙여 넣으세요.",
     "nightscoutPrivateOperatorTitle": "비공개 Nightscout에 접근하려면 서버 운영자의 승인이 필요해요.",
     "nightscoutPrivateOperatorDescription": "서버 운영자에게 이 Nightscout 출처를 그대로 승인해 달라고 요청하세요.",
     "nightscoutConnect": "연결",
@@ -7867,7 +7863,7 @@
     "nightscoutDisconnectTitle": "Nightscout 연결을 해제할까요?",
     "nightscoutDisconnectDescription": "앞으로 동기화가 멈춰요. 이미 가져온 혈당 측정값은 기록에 그대로 남아요.",
     "polar": "Polar",
-    "polarDescription": "Polar 계정을 연결해 Nightly Recharge 회복도, 수면 단계, 일일 활동, 운동 세션을 동기화해요.",
+    "polarDescription": "회복, 수면, 활동, 훈련.",
     "polarViewData": "수면·회복 보기",
     "polarCredentials": "API 자격 증명",
     "polarClientId": "클라이언트 ID",
@@ -7896,7 +7892,7 @@
       "already_linked": "이 Polar 계정은 이미 다른 HealthLog 프로필에 연결되어 있어요. 이 프로필의 Polar 계정으로 로그인하거나, 먼저 다른 프로필에서 연결을 해제해 주세요."
     },
     "oura": "Oura",
-    "ouraDescription": "Oura 계정을 연결해 준비도, 수면 단계, 심박변이도, 일일 활동을 동기화해요.",
+    "ouraDescription": "컨디션, 수면, HRV, 활동.",
     "ouraViewData": "수면·회복 보기",
     "ouraCredentials": "API 자격 증명",
     "ouraClientId": "클라이언트 ID",
@@ -8123,7 +8119,7 @@
           },
           "emergencyCard": {
             "title": "응급 카드 링크",
-            "description": "응급 카드의 QR 링크. 철회하기 전까지는 스캔한 누구나 카드를 읽을 수 있습니다.",
+            "description": "응급 카드의 QR 링크.",
             "link": "응급 카드 열기"
           },
           "careCalendar": {
@@ -8179,7 +8175,7 @@
       "offKeepsTokens": "끄면 엔드포인트가 일시 중지됩니다. 토큰과 연결은 그대로 남고 다시 켜면 다시 작동합니다."
     },
     "strava": "Strava",
-    "stravaDescription": "Strava 계정을 연결해 활동을 운동 기록으로 동기화해요.",
+    "stravaDescription": "활동을 운동 기록으로.",
     "stravaViewData": "운동 기록 보기",
     "stravaCredentials": "API 자격 증명",
     "stravaClientId": "클라이언트 ID",
@@ -8314,7 +8310,7 @@
     "displayCard": {
       "title": "표시",
       "description": "언어, 단위, 형식은 바꾸는 즉시 저장돼요.",
-      "themeDescription": "시스템은 기기 설정에 따라 밝은 테마와 어두운 테마를 오갑니다. 선택은 이 기기에 저장됩니다.",
+      "themeDescription": "시스템은 기기 설정에 따라 밝은 테마와 어두운 테마를 오갑니다.",
       "navCountsLabel": "내비게이션 숫자",
       "navCountsDescription": "사이드바와 더 보기 메뉴의 항목 옆에 복용할 약과 받아야 할 검진이 몇 개인지 보여줘요."
     },
@@ -8388,14 +8384,15 @@
         "horizon": "{type}: {date}까지 가져왔습니다. 그보다 오래된 기록은 가져오기 한도를 넘습니다.",
         "noProgress": "{type}: {date}까지 가져왔습니다. Google이 더 오래된 기록을 반환하지 않아 가져오기가 여기서 끝났습니다."
       },
-      "notConfigured": "이 서버에는 {provider}가 설정돼 있지 않아요. 위에 직접 자격 증명을 넣거나 관리자에게 요청하세요."
+      "notConfigured": "이 서버에는 {provider}가 설정돼 있지 않아요. 위에 직접 자격 증명을 넣거나 관리자에게 요청하세요.",
+      "setUp": "설정"
     },
     "dawarich": "Dawarich",
     "dawarichTag": "이동",
-    "dawarichDescription": "Dawarich 인스턴스를 연결해 하루 이동 거리, 집 밖에 있던 시간, 여행일을 가져옵니다.",
+    "dawarichDescription": "일일 이동 거리, 외출 시간, 여행일.",
     "dawarichUrl": "Dawarich 주소",
     "dawarichApiKey": "API 키",
-    "dawarichApiKeyHelp": "Dawarich의 계정 메뉴에서 찾을 수 있습니다. HealthLog는 이 키로 하루 단위 값만 읽고 좌표나 장소 이름은 읽지 않습니다.",
+    "dawarichApiKeyHelp": "Dawarich의 계정 메뉴에서 찾을 수 있습니다.",
     "dawarichConnect": "연결",
     "dawarichUpdate": "변경 사항 저장",
     "dawarichConnected": "Dawarich가 연결되었습니다. 최근 30일을 불러오는 중입니다.",
@@ -8449,7 +8446,7 @@
     "dangerZoneRestoreLimits": "접근 권한도 끝나요: 다른 사람과 공유한 것, 다른 사람이 나와 공유한 것, 보호자 역할 모두요. 복원하면 기록이 지금 상태로 돌아와요. 삭제 후에 추가된 것은 대체되고, 연동 연결, 공유, 보호자 역할, 공유 링크는 돌아오지 않아서 다시 설정해야 해요.",
     "garmin": "Garmin",
     "garminTag": "Personal API",
-    "garminDescription": "Garmin Personal API 키를 붙여 넣으면 Garmin Connect의 수면, HRV, 바디 배터리, 스트레스, 걸음 수, 체중, 활동이 동기화됩니다.",
+    "garminDescription": "수면, HRV, 스트레스, 걸음 수, 체중, 활동.",
     "garminSync": "지금 동기화",
     "garminSyncResult": "{count, plural, other {#개}} 항목 동기화됨",
     "garminSyncFailed": "동기화 실패",
@@ -8464,7 +8461,7 @@
     "garminKeyExpiring": "Garmin 키가 {date}에 만료됩니다. 그 전에 Garmin Connect에서 새 키를 만들어 여기에 붙여 넣으세요.",
     "garminKeyExpiryUnknown": "Garmin은 이 키의 만료일을 알려 주지 않습니다. 키를 교체하면서 Garmin Connect에서 고른 유효 기간을 선택하면 이 카드가 일주일 전에 알려 드립니다.",
     "garminConnected": "Garmin이 연결되었습니다. 첫 동기화가 시작됩니다.",
-    "garminKeyHowTo": "Garmin Connect에서 설정, Personal API 순으로 열고 키를 만드세요. Garmin은 키를 한 번만 보여 주므로 바로 복사해 두세요.",
+    "garminKeyHowTo": "Garmin Connect에서 설정, Personal API 순으로 열고 키를 만드세요.",
     "garminKeySettingsLink": "Garmin Connect 열기",
     "garminApiKey": "Personal API 키",
     "garminApiKeyPlaceholder": "키 붙여 넣기",
@@ -8472,7 +8469,7 @@
     "garminKeyValidity": "선택한 유효 기간",
     "garminKeyValidityUnknown": "모르겠음",
     "garminKeyValidityDays": "{count, plural, other {#일}}",
-    "garminKeyValidityHelp": "Garmin은 키 만료일을 알려 주지 않습니다. 유효 기간을 알려 주면 키가 작동을 멈추기 일주일 전에 이 카드가 알려 드립니다.",
+    "garminKeyValidityHelp": "Garmin은 키 만료일을 알려 주지 않습니다.",
     "garminConnect": "연결",
     "garminUpdate": "변경 사항 저장",
     "garminRegion": "Garmin 서비스",
@@ -9035,7 +9032,7 @@
         "downloadFailed": "다운로드하지 못했어요",
         "downloadStarted": "다운로드를 시작했어요",
         "uploadTitle": "백업 업로드",
-        "uploadDescription": "계정 사본을 확인하고 이 서버의 사본 옆에 저장해요. 계정이 이 서버에 더 이상 없는 사본은 다른 계정으로 보낼 수 있어요. 복원은 별도 단계예요.",
+        "uploadDescription": "계정 사본을 확인하고 이 서버의 사본 옆에 저장해요.",
         "uploadButton": "파일 업로드",
         "uploadHelp": "HealthLog 백업 파일(.json 또는 .json.gz)이에요. 업로드 전에 압축되며, 압축된 크기는 최대 512 MB까지 가능해요.",
         "uploadSuccess": "백업을 업로드했어요 (기록 {count, plural, other {#개}})",
@@ -9377,7 +9374,7 @@
     },
     "carrier": "통신사",
     "mfaRequired": "2단계 인증 필수",
-    "mfaRequiredDescription": "모든 계정에 동일하게 적용됩니다. 인증 앱, 보안 키 또는 패스키가 없는 계정에는 추가하라는 안내가 표시되고, 유예 기간 후에는 설정에만 사용할 수 있습니다. 그때까지 iPhone 앱은 로그인을 거부합니다.",
+    "mfaRequiredDescription": "모든 계정에 동일하게 적용됩니다. 인증 앱, 보안 키 또는 패스키가 없는 계정에는 추가하라는 안내가 표시되고, 유예 기간 후에는 설정에만 사용할 수 있습니다.",
     "mfaEnforcedOn": "MFA 켬",
     "mfaEnforcedOff": "MFA 끔",
     "mfaEnforcedOnHint": "이 사용자에게 2단계 인증이 필수예요. 누르면 해제돼요.",
@@ -9943,9 +9940,9 @@
       "loadError": "마이그레이션 상태를 불러오지 못했습니다."
     },
     "mfaRequiredForAdmins": "관리자에게 2단계 인증 요구",
-    "mfaRequiredForAdminsDescription": "인증 앱, 보안 키 또는 패스키가 없는 관리자 계정에는 추가하라는 안내가 표시되고, 유예 기간 후에는 설정에만 사용할 수 있습니다. 그때까지 iPhone 앱은 로그인을 거부합니다.",
+    "mfaRequiredForAdminsDescription": "인증 앱, 보안 키 또는 패스키가 없는 관리자 계정에는 추가하라는 안내가 표시되고, 유예 기간 후에는 설정에만 사용할 수 있습니다.",
     "mfaGraceDays": "유예 기간",
-    "mfaGraceDaysDescription": "새로 정책 대상이 된 계정이 2단계 인증을 추가할 수 있는 기간입니다. 정책을 켤 때 시작됩니다.",
+    "mfaGraceDaysDescription": "새로 정책 대상이 된 계정이 2단계 인증을 추가할 수 있는 기간입니다.",
     "mfaGraceDaysNone": "없음",
     "mfaGraceDaysOption": "{count, plural, other {#일}}"
   },
@@ -10281,8 +10278,7 @@
       "saveError": "저장하지 못했어요. 다시 시도해 주세요.",
       "hourLabel": "알림 시각",
       "hourAria": "기분 알림 시각",
-      "hourSavedToast": "알림 시각을 변경했어요",
-      "detail": "이미 설정한 채널(Telegram, ntfy, Web Push, Apple Push)로만 보내고, 오늘 기록을 남기면 알리지 않아요."
+      "hourSavedToast": "알림 시각을 변경했어요"
     },
     "coachNudge": {
       "title": "능동 코치",
@@ -10292,11 +10288,8 @@
       "statusOff": "꺼짐",
       "groupsLabel": "주제",
       "groupMedication": "복약",
-      "groupMedicationDesc": "지난 한 주 복용이 들쭉날쭉할 때.",
       "groupVitals": "바이탈",
-      "groupVitalsDesc": "혈압, 회복, 체중 추이, 수면.",
       "groupRoutine": "루틴",
-      "groupRoutineDesc": "기록이 갑자기 끊겼을 때와 상황 점검.",
       "frequencyLabel": "빈도",
       "frequencyWeekly": "주 1회까지",
       "frequencyBiweekly": "2주에 1회까지",
@@ -10305,7 +10298,6 @@
       "disabledToast": "능동 코치 알림을 껐어요.",
       "saveError": "저장하지 못했어요. 나중에 다시 시도해 주세요.",
       "aiComposedLabel": "코치가 알림 문구 작성",
-      "aiComposedDesc": "제공자를 쓸 수 있으면 고정 템플릿 대신 모델이 알림 문구를 써요. 기본값은 꺼짐이에요.",
       "aiComposedAria": "AI가 쓴 능동 알림 켜고 끄기"
     },
     "lowStock": {
@@ -10318,14 +10310,12 @@
       "daysAria": "재고 부족 기준일 선택",
       "leadLabel": "재주문 소요일 (일)",
       "leadAria": "재주문 소요일",
-      "leadHelp": "설정한 일수에 복용 간격 하나를 더한 만큼 일찍 알려줘서 마지막 복용 전에 재처방이 도착하도록 해요.",
       "leadSavedToast": "재주문 소요일을 저장했어요",
       "savedToast": "재고 부족 기준을 저장했어요",
       "enabledToast": "재고 부족 알림을 켰어요.",
       "disabledToast": "재고 부족 알림을 껐어요.",
       "saveError": "저장하지 못했어요. 다시 시도해 주세요.",
-      "medicationsLink": "복약으로 이동",
-      "detail": "부족 건마다 한 번만 알리고, 재처방 후 다시 켜져요."
+      "medicationsLink": "복약으로 이동"
     },
     "eventMedicationReminder": "복약 알림",
     "eventMedicationReminderDesc": "예정된 복용 시각마다 보내요.",
@@ -10350,7 +10340,7 @@
     "eventDailyBriefing": "데일리 브리핑",
     "eventDailyBriefingDesc": "그날의 요약을 아침에 한 번 차분하게 알려줘요. 켜기 전에는 보내지 않아요.",
     "eventSecurityAlert": "계정 보안 알림",
-    "eventSecurityAlertDesc": "처음 보는 기기나 장소에서 로그인할 때, 패스키를 추가하거나 삭제할 때, 액세스 토큰이 취소될 때, 로그인 토큰이 두 번 쓰여 기기가 로그아웃될 때 보내요.",
+    "eventSecurityAlertDesc": "새 로그인, 패스키나 토큰 변경, 강제 로그아웃.",
     "eventSharedRecordIntake": "기록을 공유한 사람이 복용을 표시할 때",
     "eventSharedRecordIntakeDesc": "다른 사람이 표시했을 때만 보내고, 내 기록에는 보내지 않아요.",
     "eventMedicationIntakeRecorded": "다른 기기에서 복용한 용량 확인",
@@ -10419,7 +10409,6 @@
     "content": {
       "title": "알림의 건강 수치",
       "description": "알림에 아침 점수 같은 수치를 표시할지 정합니다.",
-      "detail": "끄면 알림은 무엇에 관한 것인지만 알려 주므로 잠금 화면에 건강 수치가 나타나지 않아요. 켜면 수치도 함께 보여 줘요. 예를 들어 브리핑에 아침 점수가 표시됩니다.",
       "toggleAria": "알림에 건강 수치 표시",
       "statusDetailed": "수치 표시",
       "statusGeneric": "수치 없이",
@@ -10453,14 +10442,14 @@
       "body": "{hours}시간 안에 발작 {count, plural, other {#회}}, {name} 님이 기록함. 응급 계획은 발작 일지에 있습니다."
     },
     "eventMeasurementAnomaly": "활력 징후의 지속적 변화",
-    "eventMeasurementAnomalyDesc": "안정 시 심박수나 혈압 같은 활력 징후가 최소 열흘 동안 새로운 수준을 유지할 때. 일주일에 한 번 이하, 아침에만, 진행 중인 질병 기간에는 보내지 않습니다.",
+    "eventMeasurementAnomalyDesc": "열흘째 새 수준에 머문 활력 징후.",
     "measurementAnomaly": {
       "title": "지속적인 변화",
       "bodyUp": "{date} 이후 {metric} 값이 더 높게 유지되고 있습니다. 인사이트에서 전후를 확인하세요.",
       "bodyDown": "{date} 이후 {metric} 값이 더 낮게 유지되고 있습니다. 인사이트에서 전후를 확인하세요."
     },
     "eventSyncStalled": "데이터 소스 동기화 중단",
-    "eventSyncStalledDesc": "매일 데이터를 보내던 iPhone, 링, 시계 또는 체중계가 조용해졌을 때. 중단마다 한 번, 낮 시간에만, 하루 최대 한 번.",
+    "eventSyncStalledDesc": "매일 데이터를 보내던 기기가 조용해졌어요.",
     "syncStalled": {
       "title": "{provider}이(가) 조용해졌습니다",
       "appleYesterday": "{provider}에서 어제부터 아무것도 오지 않았습니다. HealthLog를 한 번 열면 됩니다.",
@@ -14258,7 +14247,7 @@
       "scopeEmptyHint": "섹션을 하나 이상 고르거나, 기록 전체 공유로 돌아가세요.",
       "scopeChooseHint": "기록 전체를 공유할지, 고른 섹션만 공유할지 선택하세요.",
       "expiresLabel": "권한 만료일 (선택)",
-      "expiresHint": "비워 두면 누군가 끝낼 때까지 권한이 이어져요. 날짜를 넣으면 요청마다 확인해서 그날이 끝날 때 권한이 저절로 멈춰요.",
+      "expiresHint": "비워 두면 누군가 끝낼 때까지 권한이 이어져요.",
       "submit": "초대 보내기",
       "submitting": "보내는 중…",
       "sent": "{name} 님에게 초대를 보냈어요.",
@@ -14343,11 +14332,11 @@
       "nameRequired": "기록에 이름을 지어 주세요.",
       "nameTooLong": "이름이 80자를 넘어요.",
       "dobLabel": "생년월일 (선택)",
-      "dobHint": "적고 싶지 않으면 비워 두세요. 연도로 뭔가를 추측하지는 않아요.",
+      "dobHint": "적고 싶지 않으면 비워 두세요.",
       "localeLabel": "이 기록의 언어",
-      "localeHint": "이 기록에 적히는 글의 언어예요. 내 화면은 내 언어 그대로예요.",
+      "localeHint": "이 기록에 적히는 글의 언어예요.",
       "genderLabel": "성별(선택)",
-      "genderHint": "이 기록에서 주기 추적을 처음에 켜둘지 결정합니다. 언제든 바꿀 수 있습니다.",
+      "genderHint": "이 기록에서 주기 추적을 처음에 켜둘지 결정합니다.",
       "genderNone": "지정 안 함",
       "genderMale": "남성",
       "genderFemale": "여성",
@@ -16280,7 +16269,7 @@
       "LAST_90_DAYS": "최근 90일",
       "LAST_365_DAYS": "최근 12개월"
     },
-    "usesSelection": "각 리포트에는 위의 내보내기에서 선택한 항목이 담겨요. 그곳에서 선택을 바꾸면 다음 리포트에 반영돼요. 알림은 보내지 않아요. 리포트가 그냥 그곳에 있어요.",
+    "usesSelection": "각 리포트에는 위의 내보내기에서 선택한 항목이 담겨요.",
     "turnOn": "켜기",
     "turnOff": "끄기",
     "turnOffTitle": "예약된 리포트를 끌까요?",

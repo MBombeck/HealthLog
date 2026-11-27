@@ -215,7 +215,6 @@ export function MoodReminderCard({
           </label>
         }
       />
-      <p className="text-sm">{t("notifications.moodReminder.detail")}</p>
       {enabled && (
         <div className="flex min-h-11 items-center justify-between gap-3">
           <Label htmlFor="mood-reminder-hour">

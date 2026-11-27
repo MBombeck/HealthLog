@@ -3898,7 +3898,7 @@
         "weightBody": "Body weight is one of the simplest signals of long-term energy balance and overall health. The trend over weeks matters far more than any single reading, which fluctuates with hydration, food, and time of day.",
         "bmiBody": "BMI is your weight divided by your height squared, giving a single number that places you in a broad weight category. It is a population-level screen and does not distinguish muscle from fat.",
         "sleepBody": "Sleep duration is how long you actually slept across the night, split into light, deep, and REM stages. Most adults need roughly seven to nine hours; both consistent quantity and quality support recovery, mood, and metabolism.",
-        "moodBody": "Mood tracking records how you feel over time on a simple scale. Logging it regularly reveals patterns (how sleep, activity, or medication line up with how you feel) that a single day never shows.",
+        "moodBody": "Mood tracking records how you feel over time on a simple scale.",
         "medicationsBody": "Adherence is how reliably you take your medication as prescribed, shown here as the share of expected doses you actually logged. Steady intake is often what makes a treatment work as intended.",
         "restingHrBody": "Resting heart rate is your heart rate when you are completely at rest, usually measured overnight, distinct from your pulse during activity. A lower resting rate generally points to better cardiovascular fitness, and a rising trend can be an early sign of stress or illness. As general guidance, a normal adult resting rate is 60–100 beats per minute (AHA 2024); a trained heart can sit benignly at 40–60.",
         "hrvBody": "HRV is the tiny variation in time between consecutive heartbeats. Higher variability usually reflects a well-recovered, adaptable nervous system, while a sustained drop can signal fatigue, stress, or insufficient recovery.",
@@ -6069,21 +6069,18 @@
         "displayHeading": "On your phone",
         "elsewhere": {
           "title": "Set where they belong",
-          "description": "These reminders are set next to what they are about.",
           "doses": {
             "title": "Medication doses",
-            "description": "Each medication's dose times and reminders are set on the medication.",
             "link": "Open medications"
           },
           "cycle": {
             "title": "Cycle",
-            "description": "Period and fertile-window reminders are switched per channel in the notification matrix.",
             "link": "Open the notification matrix"
           }
         },
         "snooze": {
           "title": "Remind me later",
-          "description": "How long a dose reminder is pushed back, on the medication card, in Telegram and in the app.",
+          "description": "How long a dose reminder is pushed back.",
           "label": "Push back by",
           "option": "{minutes} min",
           "saveError": "Could not save. Try again"
@@ -6252,16 +6249,16 @@
         "cards": {
           "measurementsCsv": {
             "title": "Measurements",
-            "description": "Weight, blood pressure, pulse, glucose, and every other measurement as comma-separated values."
+            "description": "Every measurement as a spreadsheet."
           },
           "medicationsCsv": {
             "title": "Medications",
-            "description": "Your medication list with dosage, schedules, and (optionally) the full intake history.",
+            "description": "Your medications, optionally with every dose.",
             "includeIntake": "Include intake history"
           },
           "moodCsv": {
             "title": "Mood",
-            "description": "Daily mood entries with score, tags, and timestamps."
+            "description": "Every mood entry with its tags."
           },
           "fullBackup": {
             "title": "Full backup",
@@ -6280,7 +6277,7 @@
           "charCount": "{used} / {max, plural, one {# character} other {# characters}}",
           "appleHealth": {
             "title": "Apple Health",
-            "description": "Upload the export.zip from the Health app on iPhone (Profile > Export All Health Data).",
+            "description": "The export.zip from the Health app on iPhone.",
             "dropLabel": "Drop export.zip here",
             "dropHint": "or click to choose a file",
             "fileInputLabel": "Choose an Apple Health export.zip file",
@@ -6351,7 +6348,7 @@
           },
           "json": {
             "title": "Measurements and mood (JSON)",
-            "description": "Paste JSON or upload a .json file with measurements and mood entries.",
+            "description": "Measurements and mood entries as JSON.",
             "pasteLabel": "Paste JSON",
             "fileInputLabel": "Choose a JSON file to import",
             "schemaHint": "Two arrays: measurements and moodEntries.",
@@ -6374,7 +6371,7 @@
           },
           "csv": {
             "title": "CSV file",
-            "description": "Import measurements from a spreadsheet or meter export.",
+            "description": "Measurements from a spreadsheet or meter export.",
             "pasteLabel": "Paste CSV",
             "fileInputLabel": "Choose a CSV file to import",
             "schemaHint": "Columns: type, value, unit, measuredAt (with timezone offset), and optional glucoseContext, notes, externalId.",
@@ -6419,7 +6416,7 @@
           },
           "doseHistory": {
             "title": "Medication dose history",
-            "description": "A dose history exported from another medication tracker, read as it comes.",
+            "description": "A dose history from another medication tracker.",
             "pasteLabel": "Paste the export",
             "fileInputLabel": "Choose a dose-history export file",
             "uploadFile": "Choose file",
@@ -6475,7 +6472,7 @@
           },
           "healthConnect": {
             "title": "Health Connect export",
-            "description": "Import the ZIP file the Health Connect app on Android writes when you export your data.",
+            "description": "The ZIP that Health Connect writes on Android.",
             "choose": "Choose file",
             "uploading": "Uploading…",
             "uploadFailed": "The upload failed. Please try again.",
@@ -6518,7 +6515,7 @@
           },
           "fit": {
             "title": "Activity file (FIT)",
-            "description": "Import a workout from the FIT file a watch or bike computer records, such as Garmin, Wahoo, Coros or Polar.",
+            "description": "A workout from a watch or bike computer.",
             "choose": "Choose file",
             "uploading": "Uploading…",
             "uploadFailed": "The upload failed. Please try again.",
@@ -6533,7 +6530,7 @@
             "fileInputLabel": "Activity file",
             "privacyNote": "The GPS track is only kept when Workout routes is switched on.",
             "steps": {
-              "garmin": "Garmin Connect: open the activity on the website, choose the gear menu, then Export original. Upload the ZIP file as it is.",
+              "garmin": "Garmin Connect: open the activity on the website, choose the gear menu, then Export original.",
               "other": "Other apps and devices: export the activity as a FIT file (.fit or .fit.gz) and upload it here."
             },
             "phase": {
@@ -6566,7 +6563,7 @@
           "recordFile": {
             "gadgetbridge": {
               "title": "Gadgetbridge database",
-              "description": "Import steps, heart rate, SpO2, sleep and weight from the database Gadgetbridge exports on Android.",
+              "description": "The database Gadgetbridge exports on Android.",
               "steps": {
                 "export": "In Gadgetbridge open Settings, then Data management, then Export database.",
                 "upload": "Upload the file called Gadgetbridge here. Up to 512 MB."
@@ -6574,9 +6571,9 @@
             },
             "fhirBundle": {
               "title": "Patient record (FHIR)",
-              "description": "Import lab results, vital signs, conditions, vaccinations, medications and visits from a FHIR R4 Bundle a patient portal exports.",
+              "description": "A FHIR R4 record from a patient portal.",
               "steps": {
-                "export": "In your patient portal, export your record as FHIR R4 (JSON). C-CDA files are not read.",
+                "export": "In your patient portal, export your record as FHIR R4 (JSON).",
                 "upload": "Upload the .json file here. Up to 32 MB."
               }
             },
@@ -6630,14 +6627,14 @@
               "removeFailed": "The folder could not be removed. Try again."
             },
             "title": "Health Connect from a folder",
-            "description": "Let HealthLog fetch the export Health Connect saves on a schedule, from a WebDAV or Nextcloud folder, and import what is new.",
+            "description": "New Health Connect exports from a WebDAV folder.",
             "folderUrl": "Folder address (WebDAV)",
             "fileName": "File name in the folder",
             "username": "User name",
             "password": "Password or app password",
             "passwordKept": "Leave empty to keep the saved password",
             "enabled": "Fetch about every six hours",
-            "privacyNote": "The password is stored encrypted and never shown again. A folder on your home network works only when the person running the server allows its address.",
+            "privacyNote": "The password is stored encrypted and never shown again.",
             "lastAttempt": "Last attempt {when}: {outcome}",
             "fetchNow": "Fetch now",
             "fetchStarted": "Fetching now. The result appears on this card.",
@@ -6893,7 +6890,7 @@
     "genderFemale": "Female",
     "genderHint": "Used for gender-specific target values.",
     "timezone": "Timezone",
-    "timezoneHint": "Used for chart axis labels, reminder times, export timestamps, and Coach context. Stored data is unchanged.",
+    "timezoneHint": "Used for chart axis labels, reminder times, export timestamps, and Coach context.",
     "timezoneInvalid": "Not a valid IANA timezone.",
     "profileSaved": "Profile saved",
     "profilePartiallySaved": "Profile saved, but {field} could not be updated.",
@@ -6912,7 +6909,7 @@
     },
     "avatar": {
       "title": "Profile photo",
-      "description": "Upload a photo stored on your own server. It appears across the app in place of an external avatar service.",
+      "description": "Upload a photo stored on your own server.",
       "upload": "Upload photo",
       "replace": "Replace photo",
       "remove": "Remove",
@@ -6979,22 +6976,22 @@
     "telegramStep2": "Send /start to your bot to activate the chat.",
     "telegramStep3": "Find your Chat ID via @userinfobot or the Bot API.",
     "ntfy": "ntfy",
-    "ntfyDescription": "Notifications via ntfy (self-hosted or ntfy.sh).",
+    "ntfyDescription": "Notifications via ntfy.",
     "ntfyEnable": "Enable ntfy",
     "ntfyServer": "Server URL",
     "ntfyTopic": "Topic",
     "ntfyAuthToken": "Auth Token (optional)",
     "ntfyAuthTokenHint": "Only needed for private topics with access control.",
     "webhook": "Webhook",
-    "webhookDescription": "POST notifications to any URL: Discord, Slack, Gotify, Home Assistant, n8n, or any relay that takes JSON.",
+    "webhookDescription": "Notifications to any URL that takes JSON.",
     "webhookEnable": "Enable webhook",
     "webhookUrl": "Webhook URL",
-    "webhookUrlHint": "The full URL to POST to. An address on a private network needs approval from the server operator.",
+    "webhookUrlHint": "The full URL to POST to.",
     "webhookHeaderName": "Header name (optional)",
     "webhookHeaderValue": "Header value (optional)",
     "webhookFormat": "Payload format",
     "webhookFormatGeneric": "Generic JSON",
-    "webhookFormatGenericHint": "Paste a Discord or Slack webhook URL as it is. Home Assistant and n8n read the fields title, message, eventType and priority.",
+    "webhookFormatGenericHint": "Paste a Discord or Slack webhook URL as it is.",
     "webhookFormatGotify": "Gotify",
     "webhookFormatGotifyHint": "Use the URL ending in /message and put the application token in the header X-Gotify-Key.",
     "email": "Email",
@@ -7002,7 +6999,7 @@
     "emailEnable": "Enable email",
     "emailRecipient": "Recipient address",
     "webPush": "Browser Push",
-    "webPushDescription": "Receive notifications directly in your browser, even when HealthLog is not open.",
+    "webPushDescription": "Notifications in this browser.",
     "webPushNotSupported": "Your browser does not support push notifications.",
     "webPushInstallFirst": "On iPhone and iPad, push notifications only work in the installed app. In Safari, tap Share, then Add to Home Screen, open HealthLog from the Home Screen and tap Enable push here.",
     "webPushDenied": "Push notifications are blocked. Allow them in your browser settings.",
@@ -7100,7 +7097,7 @@
         "defaultChainLabel": "Default chain",
         "defaultChainHint": "Tasks on Default follow this chain. Their usual rules still apply: document reads try a local model first.",
         "tasksHeading": "Tasks",
-        "tasksHint": "Choose the chain for each task. A task on a chain of its own lists the providers it tries, in order.",
+        "tasksHint": "Choose the chain for each task.",
         "taskDefault": "Default",
         "save": "Save chains",
         "saved": "Chains saved",
@@ -7118,7 +7115,7 @@
           "workoutInsights": "Workout notes",
           "reactionLines": "Reactions to new readings"
         },
-        "tasksNeedChain": "Create a chain above to give a task its own providers. Until then every task follows the default."
+        "tasksNeedChain": "Create a chain above to give a task its own providers."
       },
       "activeProviderHeading": "Active provider",
       "activeProviderLabel": "Set up a provider",
@@ -7367,7 +7364,7 @@
         "failed": "Could not remove the API key."
       },
       "coachBudgetHeading": "Coach budget for self-hosted models",
-      "coachBudgetBody": "How much of your data the Coach puts into the prompt, and how long one answer may work, for the local model and the gateway. Lower the snapshot size for a model with a small context window; raise it and the per-answer limits for a large model on your own hardware. Empty fields keep the built-in values shown. An answer from the server's shared provider always keeps the built-in limits.",
+      "coachBudgetBody": "How much of your data the Coach puts into the prompt, and how long one answer may work, for the local model and the gateway.",
       "coachBudgetProvider": "Provider",
       "coachBudgetLocal": "Local model",
       "coachBudgetCompat": "Gateway",
@@ -7389,13 +7386,13 @@
       },
       "glucoseUnit": {
         "title": "Blood glucose",
-        "description": "Which unit blood-glucose readings are shown in. Readings are stored the same way either way.",
+        "description": "Which unit blood-glucose readings are shown in.",
         "saved": "Glucose unit saved",
         "saveError": "Could not save your glucose unit."
       }
     },
     "withings": "Withings",
-    "withingsDescription": "Connect your Withings scale and blood-pressure monitor to sync weight, body composition, and blood pressure automatically.",
+    "withingsDescription": "Weight, body composition and blood pressure.",
     "withingsCredentials": "API credentials",
     "withingsClientId": "Client ID",
     "withingsClientSecret": "Client secret",
@@ -7437,7 +7434,7 @@
     "withingsConnect": "Connect with Withings",
     "withingsNoCredentials": "Please enter your API credentials above to connect Withings.",
     "whoop": "WHOOP",
-    "whoopDescription": "Connect your WHOOP strap to sync recovery, sleep, strain, and workouts straight into HealthLog.",
+    "whoopDescription": "Recovery, sleep, strain and workouts.",
     "whoopCredentials": "API credentials",
     "whoopClientId": "Client ID",
     "whoopClientSecret": "Client secret",
@@ -7482,7 +7479,7 @@
     "googleHealth": "Google Health",
     "googleHealthTag": "Fitbit & Pixel",
     "googleHealthBetaBadge": "Beta",
-    "googleHealthDescription": "Connect Fitbit, Pixel Watch and Fitbit Air through your Google account: weight, heart rate, sleep and activity.",
+    "googleHealthDescription": "Fitbit and Pixel Watch through your Google account.",
     "googleHealthCredentials": "API credentials",
     "googleHealthClientId": "Client ID",
     "googleHealthClientSecret": "Client secret",
@@ -7616,7 +7613,7 @@
       "namePlaceholder": "Name, e.g. Home Assistant",
       "appleHealth": {
         "label": "Write readings to Apple Health",
-        "createHint": "The HealthLog app on your iPhone then adds this token's readings to Apple Health. You can change this later in the token list below.",
+        "createHint": "The HealthLog app on your iPhone then adds this token's readings to Apple Health.",
         "toggleAria": "Write readings from {name} to Apple Health",
         "updateFailed": "The Apple Health setting could not be changed. Please try again.",
         "unattributed": "Readings sent before this setting existed can't be matched to a token, so they stay out of Apple Health."
@@ -7743,11 +7740,10 @@
       "disabledReason": "Reason",
       "nextRetry": "Next retry",
       "reEnable": "Re-enable",
-      "sendTest": "Send test",
-      "emptyTitle": "No channels configured yet"
+      "sendTest": "Send test"
     },
     "identity": {
-      "description": "Optional details for the health-record export (PDF cover + FHIR export). All fields are optional.",
+      "description": "Optional details for the health-record export (PDF cover + FHIR export).",
       "fullName": "Full name",
       "fullNamePlaceholder": "e.g. Jane Doe",
       "insurer": "Health insurer",
@@ -7846,14 +7842,14 @@
     "genderOther": "Other",
     "nightscout": "Nightscout",
     "nightscoutTag": "CGM",
-    "nightscoutDescription": "Connect your own Nightscout site to sync continuous glucose readings into the glucose panel.",
+    "nightscoutDescription": "Continuous glucose from your Nightscout site.",
     "nightscoutViewData": "View your glucose",
     "nightscoutUrl": "Nightscout URL",
     "nightscoutUrlSavedPlaceholder": "Saved. Enter a new URL to replace it",
     "nightscoutToken": "API token",
     "nightscoutTokenOptional": "Optional for a public site",
     "nightscoutTokenSavedPlaceholder": "Saved. Enter a new token to replace it",
-    "nightscoutTokenHelp": "Paste an access token from your Nightscout admin tools. Leave empty if your site is publicly readable.",
+    "nightscoutTokenHelp": "Paste an access token from your Nightscout admin tools.",
     "nightscoutPrivateOperatorTitle": "Private Nightscout access requires server operator approval.",
     "nightscoutPrivateOperatorDescription": "Ask your server operator to approve this exact Nightscout origin.",
     "nightscoutConnect": "Connect",
@@ -7867,7 +7863,7 @@
     "nightscoutDisconnectTitle": "Disconnect Nightscout?",
     "nightscoutDisconnectDescription": "Future syncs stop. Glucose readings already imported stay in your history.",
     "polar": "Polar",
-    "polarDescription": "Connect your Polar account to sync Nightly Recharge recovery, sleep stages, daily activity, and training sessions.",
+    "polarDescription": "Recovery, sleep, activity and training.",
     "polarViewData": "View your sleep & recovery",
     "polarCredentials": "API credentials",
     "polarClientId": "Client ID",
@@ -7896,7 +7892,7 @@
       "already_linked": "This Polar account is already connected to another HealthLog profile. Sign in to Polar with the account that belongs to this profile, or disconnect it from the other profile first."
     },
     "oura": "Oura",
-    "ouraDescription": "Connect your Oura account to sync readiness, sleep stages, heart-rate variability, and daily activity.",
+    "ouraDescription": "Readiness, sleep, HRV and activity.",
     "ouraViewData": "View your sleep & recovery",
     "ouraCredentials": "API credentials",
     "ouraClientId": "Client ID",
@@ -8123,7 +8119,7 @@
           },
           "emergencyCard": {
             "title": "Emergency card link",
-            "description": "The QR link on your emergency card. Anyone who scans it can read the card until you revoke it.",
+            "description": "The QR link on your emergency card.",
             "link": "Open the emergency card"
           },
           "careCalendar": {
@@ -8179,7 +8175,7 @@
       "offKeepsTokens": "Switching it off pauses the endpoint. Your tokens and connections stay and work again once it is back on."
     },
     "strava": "Strava",
-    "stravaDescription": "Connect your Strava account to sync your activities into your workout history.",
+    "stravaDescription": "Your activities as workouts.",
     "stravaViewData": "View your workouts",
     "stravaCredentials": "API credentials",
     "stravaClientId": "Client ID",
@@ -8314,7 +8310,7 @@
     "displayCard": {
       "title": "Display",
       "description": "Language, units and formats, saved as soon as you change them.",
-      "themeDescription": "System follows your device between light and dark. The choice is kept on this device.",
+      "themeDescription": "System follows your device between light and dark.",
       "navCountsLabel": "Counts in the navigation",
       "navCountsDescription": "Shows how many doses and check-ups are due beside their entries in the sidebar and the More menu."
     },
@@ -8388,14 +8384,15 @@
         "horizon": "{type}: imported back to {date}. Older readings lie beyond the import limit.",
         "noProgress": "{type}: imported back to {date}. Google stopped returning older readings, so the import ends there."
       },
-      "notConfigured": "{provider} is not set up on this server: add your own credentials above, or ask your administrator."
+      "notConfigured": "{provider} is not set up on this server: add your own credentials above, or ask your administrator.",
+      "setUp": "Set up"
     },
     "dawarich": "Dawarich",
     "dawarichTag": "Movement",
-    "dawarichDescription": "Connect your Dawarich instance to bring in daily distance, time away from home and travel days.",
+    "dawarichDescription": "Daily distance, time away and travel days.",
     "dawarichUrl": "Dawarich address",
     "dawarichApiKey": "API key",
-    "dawarichApiKeyHelp": "You find it in Dawarich under Account. HealthLog uses it to read daily values only, never coordinates or place names.",
+    "dawarichApiKeyHelp": "You find it in Dawarich under Account.",
     "dawarichConnect": "Connect",
     "dawarichUpdate": "Save changes",
     "dawarichConnected": "Dawarich connected. The last 30 days are loading now.",
@@ -8449,7 +8446,7 @@
     "dangerZoneRestoreLimits": "Access ends too: what you share with others, what they share with you, and any Guardian role. A restore puts the record back as it is now. Anything added after the deletion is replaced, and integration connections, sharing, Guardian roles and share links do not come back; they have to be set up again.",
     "garmin": "Garmin",
     "garminTag": "Personal API",
-    "garminDescription": "Paste a Garmin Personal API key to sync sleep, HRV, Body Battery, stress, steps, weight and activities from Garmin Connect.",
+    "garminDescription": "Sleep, HRV, stress, steps, weight and activities.",
     "garminSync": "Sync now",
     "garminSyncResult": "{count, plural, one {# entry synchronized} other {# entries synchronized}}",
     "garminSyncFailed": "Sync failed",
@@ -8464,7 +8461,7 @@
     "garminKeyExpiring": "Your Garmin key expires on {date}. Create a new key in Garmin Connect and paste it here before then.",
     "garminKeyExpiryUnknown": "Garmin does not say when this key expires. Replace the key and choose the validity you picked in Garmin Connect, and this card will warn you a week ahead.",
     "garminConnected": "Garmin connected. The first sync is on its way.",
-    "garminKeyHowTo": "In Garmin Connect, open Settings, then Personal API, and create a key. Garmin shows it only once, so copy it straight away.",
+    "garminKeyHowTo": "In Garmin Connect, open Settings, then Personal API, and create a key.",
     "garminKeySettingsLink": "Open Garmin Connect",
     "garminApiKey": "Personal API key",
     "garminApiKeyPlaceholder": "Paste the key",
@@ -8472,7 +8469,7 @@
     "garminKeyValidity": "Validity you picked",
     "garminKeyValidityUnknown": "I don't know",
     "garminKeyValidityDays": "{count, plural, one {# day} other {# days}}",
-    "garminKeyValidityHelp": "Garmin does not report when a key expires. With the validity, this card warns you a week before the key stops working.",
+    "garminKeyValidityHelp": "Garmin does not report when a key expires.",
     "garminConnect": "Connect",
     "garminUpdate": "Save changes",
     "garminRegion": "Garmin service",
@@ -9060,7 +9057,7 @@
         "downloadFailed": "Download failed",
         "downloadStarted": "Download started",
         "uploadTitle": "Upload backup",
-        "uploadDescription": "Check an account copy and store it beside this server's copies. A copy whose account is no longer on this server can go into another account. Restoring is a separate step.",
+        "uploadDescription": "Check an account copy and store it beside this server's copies.",
         "uploadButton": "Upload file",
         "uploadHelp": "A HealthLog backup as .json or .json.gz. The file is compressed before upload; compressed, it may be up to 512 MB.",
         "uploadSuccess": "Backup uploaded ({count, plural, one {# record} other {# records}})",
@@ -9402,7 +9399,7 @@
     },
     "carrier": "Carrier",
     "mfaRequired": "Require a second factor",
-    "mfaRequiredDescription": "The same for every account: one without an authenticator app, a security key or a passkey is asked to add one, and after the grace period can only be used to set it up. The iPhone app refuses its sign-in until then.",
+    "mfaRequiredDescription": "The same for every account: one without an authenticator app, a security key or a passkey is asked to add one, and after the grace period can only be used to set it up.",
     "mfaEnforcedOn": "MFA on",
     "mfaEnforcedOff": "MFA off",
     "mfaEnforcedOnHint": "A second factor is required for this user. Click to stop requiring it.",
@@ -9943,9 +9940,9 @@
       "loadError": "The migration status could not be loaded."
     },
     "mfaRequiredForAdmins": "Require a second factor for admins",
-    "mfaRequiredForAdminsDescription": "An admin account without an authenticator app, a security key or a passkey is asked to add one, and after the grace period can only be used to set it up. The iPhone app refuses its sign-in until then.",
+    "mfaRequiredForAdminsDescription": "An admin account without an authenticator app, a security key or a passkey is asked to add one, and after the grace period can only be used to set it up.",
     "mfaGraceDays": "Grace period",
-    "mfaGraceDaysDescription": "How long an account a policy newly covers has to add a second factor. It starts when you switch a policy on.",
+    "mfaGraceDaysDescription": "How long an account a policy newly covers has to add a second factor.",
     "mfaGraceDaysNone": "None",
     "mfaGraceDaysOption": "{count, plural, one {# day} other {# days}}"
   },
@@ -10281,8 +10278,7 @@
       "saveError": "Save failed. Please try again.",
       "hourLabel": "Reminder time",
       "hourAria": "Mood reminder hour",
-      "hourSavedToast": "Reminder time updated",
-      "detail": "Routes only through channels you've already configured (Telegram, ntfy, Web Push, Apple Push) and stays silent once you've logged today."
+      "hourSavedToast": "Reminder time updated"
     },
     "coachNudge": {
       "title": "Proactive Coach",
@@ -10292,11 +10288,8 @@
       "statusOff": "Off",
       "groupsLabel": "Topics",
       "groupMedication": "Medication",
-      "groupMedicationDesc": "Patchy intakes over the past week.",
       "groupVitals": "Vitals",
-      "groupVitalsDesc": "Blood pressure, recovery, weight trend, sleep.",
       "groupRoutine": "Routine",
-      "groupRoutineDesc": "Abrupt tracking stops and questions about yourself.",
       "frequencyLabel": "Frequency",
       "frequencyWeekly": "At most once a week",
       "frequencyBiweekly": "At most every two weeks",
@@ -10305,7 +10298,6 @@
       "disabledToast": "Proactive Coach nudges disabled.",
       "saveError": "Could not save. Please try again later.",
       "aiComposedLabel": "Let the Coach phrase the nudge",
-      "aiComposedDesc": "When a provider is available, the proactive nudge is written by the model instead of the fixed template. Off by default.",
       "aiComposedAria": "Toggle AI-composed proactive nudge"
     },
     "lowStock": {
@@ -10318,14 +10310,12 @@
       "daysAria": "Select the low-stock threshold in days",
       "leadLabel": "Reorder lead time (days)",
       "leadAria": "Reorder lead time in days",
-      "leadHelp": "The alert fires this many days plus one dose-interval earlier so a refill arrives before your last dose.",
       "leadSavedToast": "Reorder lead time saved",
       "savedToast": "Low-stock threshold saved",
       "enabledToast": "Low-stock alerts enabled.",
       "disabledToast": "Low-stock alerts disabled.",
       "saveError": "Could not save. Please try again.",
-      "medicationsLink": "Go to your medications",
-      "detail": "One notification per shortage; it re-arms after a refill."
+      "medicationsLink": "Go to your medications"
     },
     "eventMedicationReminder": "Medication reminder",
     "eventMedicationReminderDesc": "Sent at each scheduled dose time.",
@@ -10350,7 +10340,7 @@
     "eventDailyBriefing": "Daily briefing",
     "eventDailyBriefingDesc": "One calm morning summary of your day's read. Off until you turn it on.",
     "eventSecurityAlert": "Account security alerts",
-    "eventSecurityAlertDesc": "Sent on a sign-in from a device or place not seen before, when a passkey is added or removed, when an access token is revoked, and when a device is signed out because its sign-in token was used twice.",
+    "eventSecurityAlertDesc": "A new sign-in, a passkey or token change, or a forced sign-out.",
     "eventSharedRecordIntake": "Someone you shared your record with marks a dose",
     "eventSharedRecordIntakeDesc": "Only sent when another person does it, never for your own entries.",
     "eventMedicationIntakeRecorded": "Confirm doses taken on other devices",
@@ -10419,7 +10409,6 @@
     "content": {
       "title": "Health figures in notifications",
       "description": "Whether a notification may show values such as your morning score.",
-      "detail": "Off, a notification only says what it is about, so a lock screen shows no health figures. On, it adds the figures, for example the morning score in the briefing.",
       "toggleAria": "Show health figures in notifications",
       "statusDetailed": "Figures shown",
       "statusGeneric": "Without figures",
@@ -10453,14 +10442,14 @@
       "body": "{count, plural, one {# seizure} other {# seizures}} within {hours} h, logged by {name}. The rescue plan is in the seizure diary."
     },
     "eventMeasurementAnomaly": "Lasting change in a vital",
-    "eventMeasurementAnomalyDesc": "When a vital such as resting heart rate or blood pressure has held a new level for at least ten days. At most once a week, in the morning, never during an open illness.",
+    "eventMeasurementAnomalyDesc": "A vital that has held a new level for ten days.",
     "measurementAnomaly": {
       "title": "A lasting change",
       "bodyUp": "{metric} has stayed higher since {date}. Insights shows the before and after.",
       "bodyDown": "{metric} has stayed lower since {date}. Insights shows the before and after."
     },
     "eventSyncStalled": "A source stopped syncing",
-    "eventSyncStalledDesc": "When an iPhone, ring, watch or scale that delivers every day has gone quiet. Once per gap, in the daytime, at most once a day.",
+    "eventSyncStalledDesc": "A device that delivers every day has gone quiet.",
     "syncStalled": {
       "title": "{provider} has gone quiet",
       "appleYesterday": "{provider} has sent nothing since yesterday. Opening HealthLog once is enough.",
@@ -14258,7 +14247,7 @@
       "scopeEmptyHint": "Pick at least one section, or go back to sharing the entire record.",
       "scopeChooseHint": "Choose whether to share the entire record or only selected sections.",
       "expiresLabel": "Access ends on (optional)",
-      "expiresHint": "Leave this empty for access that lasts until somebody ends it. A date here is checked on every request, so access stops on its own at the end of that day.",
+      "expiresHint": "Leave this empty for access that lasts until somebody ends it.",
       "submit": "Send invitation",
       "submitting": "Sending…",
       "sent": "Invitation sent to {name}.",
@@ -14343,11 +14332,11 @@
       "nameRequired": "Give the record a name.",
       "nameTooLong": "That name is longer than 80 characters.",
       "dobLabel": "Date of birth (optional)",
-      "dobHint": "Leave it empty if you would rather not record one. Nothing is guessed from a year.",
+      "dobHint": "Leave it empty if you would rather not record one.",
       "localeLabel": "Language of this record",
-      "localeHint": "The language used for text written into this record. Your own screens stay in your language.",
+      "localeHint": "The language used for text written into this record.",
       "genderLabel": "Gender (optional)",
-      "genderHint": "Decides whether cycle tracking starts on for this record. Change it any time.",
+      "genderHint": "Decides whether cycle tracking starts on for this record.",
       "genderNone": "Not specified",
       "genderMale": "Male",
       "genderFemale": "Female",
@@ -16280,7 +16269,7 @@
       "LAST_90_DAYS": "The last 90 days",
       "LAST_365_DAYS": "The last 12 months"
     },
-    "usesSelection": "Each report contains what you selected for the export above. Change the selection there and the next report follows it. No notification is sent: the report is simply there.",
+    "usesSelection": "Each report contains what you selected for the export above.",
     "turnOn": "Turn on",
     "turnOff": "Turn off",
     "turnOffTitle": "Turn off the scheduled report?",

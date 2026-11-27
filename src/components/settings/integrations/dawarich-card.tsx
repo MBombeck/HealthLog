@@ -43,6 +43,7 @@ import {
 } from "./integration-card";
 import {
   IntegrationCardDescription,
+  IntegrationSetupGuideLink,
   integrationDocsHref,
 } from "./setup-guide-link";
 import type { IntegrationStatusViewModel } from "./shared";
@@ -154,15 +155,17 @@ export function DawarichCard({
         icon={MapPinned}
         titleAccessory={<TagChip>{t("settings.dawarichTag")}</TagChip>}
         description={
-          <IntegrationCardDescription
-            i18nPrefix="settings.dawarich"
-            provider="dawarich"
-          />
+          <IntegrationCardDescription i18nPrefix="settings.dawarich" />
         }
         loading={viewModel === undefined}
         connected={false}
         health={null}
-        setup={form}
+        setup={
+          <>
+            <IntegrationSetupGuideLink provider="dawarich" />
+            {form}
+          </>
+        }
       />
     );
   }

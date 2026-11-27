@@ -51,6 +51,7 @@ import {
 import { MetricFreshnessList } from "./metric-freshness-list";
 import {
   IntegrationCardDescription,
+  IntegrationSetupGuideLink,
   integrationDocsHref,
 } from "./setup-guide-link";
 import { failureStreakFor, type IntegrationStatusViewModel } from "./shared";
@@ -140,15 +141,17 @@ export function NightscoutCard({
         icon={Droplet}
         titleAccessory={<TagChip>{t("settings.nightscoutTag")}</TagChip>}
         description={
-          <IntegrationCardDescription
-            i18nPrefix="settings.nightscout"
-            provider="nightscout"
-          />
+          <IntegrationCardDescription i18nPrefix="settings.nightscout" />
         }
         loading={viewModel === undefined}
         connected={false}
         health={null}
-        setup={form}
+        setup={
+          <>
+            <IntegrationSetupGuideLink provider="nightscout" />
+            {form}
+          </>
+        }
       />
     );
   }
