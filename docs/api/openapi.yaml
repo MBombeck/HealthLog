@@ -32425,6 +32425,7 @@ components:
         password:
           type: string
           minLength: 12
+          maxLength: 1024
         timezone:
           type: string
           maxLength: 64
@@ -32447,6 +32448,7 @@ components:
         newPassword:
           type: string
           minLength: 12
+          maxLength: 1024
         confirmPassword:
           type: string
           minLength: 1

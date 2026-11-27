@@ -75,6 +75,7 @@
 
 ### Security
 
+- A long, crafted password can no longer stall the server. The strength check that runs when you register, claim a profile, change your password or an admin resets one read the whole password on the one request thread, and a few hundred characters of the right mix cost seconds of work each time; registration and the profile claim need no sign-in, so anyone could repeat it. The check now reads at most the first 32 characters and stops before an unusual mix of symbols, which keeps it to a few milliseconds. A new password may be at most 1024 characters long. A password of more than 32 characters is judged by its first 32.
 - A FIT import keeps its memory ceiling on a server whose heap was raised through `NODE_OPTIONS`, as the scaling guide describes. The process-wide heap limit replaced the decoder's own 192 MB ceiling, so a crafted file could take as much memory as the whole server was allowed before it was refused. The decoder now runs in a process of its own that sets its ceiling itself and starts without `NODE_OPTIONS`.
 - A Live Activity started over the push relay no longer tells the relay or Apple when it was started. Its id, which the relay writes into the Activity in the clear, began with a timestamp; it is now random and holds nothing else.
 - Names read from outside (codes, units and column names in an import, the parts of a backup, form fields, keys in a request or a stored setting) are no longer looked up in, or written into, an ordinary object. A name that every object already answers to made a FHIR Bundle, Apple Health or backup import, a profile update or a settings read fail with an internal error, and in a Health Connect import it changed a value shared by every object in the server process until the next restart. Such a name is now an ordinary entry or an unknown one, and a test fails on a new lookup of this kind in the code that reads outside input.
@@ -89,6 +90,7 @@
 
 ### Updating
 
+- A new password longer than 1024 characters is refused when you register, claim a profile or change your password. A password you already have keeps working whatever its length: signing in and confirming your current password are not capped.
 - If you run HealthLog against your own PostgreSQL server, keep its major at or below the client major in the image (`docker run --rm --entrypoint pg_dump ghcr.io/mbombeck/healthlog:latest --version`). See `docs/ops/postgres-major-upgrade.md`.
 
 ## [1.49.0] — 2026-11-23
