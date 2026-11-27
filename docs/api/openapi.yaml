@@ -8799,7 +8799,8 @@ paths:
         - Medications
       summary: Delete a medication
       description: Cascades to the medication's schedules, intake events, dose changes, inventory rows, and side-effect logs.
-        Revokes every API token scoped to `medication:<id>:ingest`. Audits as `medication.delete`.
+        Revokes every API token scoped to `medication:<id>:ingest`. Audits as `medication.delete`. The owner, or the
+        guardian of a managed profile acting inside it; an adult's delegate is refused at every level.
       parameters:
         - in: path
           name: id
@@ -8814,7 +8815,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteMedicationResponse"
         "401": *a1
-        "403": *a9
+        "403": *a18
         "404":
           description: Medication not found (or owned by another user).
           content:

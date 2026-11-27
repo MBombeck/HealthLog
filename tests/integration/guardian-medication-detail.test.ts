@@ -210,6 +210,8 @@ async function routes() {
       ),
     detail: (id: string) =>
       cast(detail.GET)(jsonRequest(base(id), "GET"), ctx({ id })),
+    remove: (id: string) =>
+      cast(detail.DELETE)(jsonRequest(base(id), "DELETE"), ctx({ id })),
     listCourses: (id: string) =>
       cast(courses.GET)(jsonRequest(`${base(id)}/courses`, "GET"), ctx({ id })),
     startCourse: (id: string, body: unknown) =>
@@ -356,7 +358,49 @@ describe("a guardian on a managed profile's medication", () => {
   });
 });
 
+describe("a guardian removing a mistaken medication", () => {
+  it("deletes it from the profile, audited with the guardian as actor", async () => {
+    const { guardian, profile } = await guardianInside();
+    const med = await seedMedication(profile.id, "Added by mistake");
+    const r = await routes();
+
+    const removed = await r.remove(med.id);
+    expect(removed.status, await removed.clone().text()).toBe(200);
+    expect(
+      await getPrismaClient().medication.count({ where: { id: med.id } }),
+    ).toBe(0);
+    expect(await auditRows("medication.delete")).toEqual([
+      { userId: profile.id, actorUserId: guardian.id },
+    ]);
+  });
+
+  it("cannot delete a medication of a profile it does not look after", async () => {
+    const { session } = await guardianInside();
+    const otherGuardian = await makeUser("other-guardian");
+    const other = await makeProfile(otherGuardian.id, "Someone else's");
+    const foreign = await seedMedication(other.id);
+    const r = await routes();
+
+    await switchSessionTo(session.id, other.id);
+    expect((await r.remove(foreign.id)).status).toBe(403);
+    expect(
+      await getPrismaClient().medication.count({ where: { id: foreign.id } }),
+    ).toBe(1);
+  });
+});
+
 describe("an adult's share", () => {
+  it("at MANAGE cannot delete the owner's medication", async () => {
+    const { owner } = await adultInside("MANAGE");
+    const med = await seedMedication(owner.id);
+    const r = await routes();
+
+    expect((await r.remove(med.id)).status).toBe(403);
+    expect(
+      await getPrismaClient().medication.count({ where: { id: med.id } }),
+    ).toBe(1);
+  });
+
   it("at READ reads the detail page and changes none of the schedule", async () => {
     const { owner } = await adultInside("READ");
     const med = await seedMedication(owner.id);

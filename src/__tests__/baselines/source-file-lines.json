@@ -10,7 +10,6 @@
     "components/insights/derived/vitals-dashboard.tsx": 1058,
     "components/insights/health-score-card.tsx": 1023,
     "components/insights/insights-tab-strip.tsx": 1072,
-    "components/medications/detail/medication-detail-tabs.tsx": 943,
     "components/medications/wizard/wizard-payload.ts": 1347,
     "components/mood/mood-list.tsx": 1130,
     "components/records/life-circumstances-manager.tsx": 821,
