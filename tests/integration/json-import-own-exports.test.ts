@@ -433,7 +433,7 @@ describe("the CSV import reads the measurement CSV export", () => {
     expect(exported.status).toBe(200);
     const csv = String(exported.body);
     // The account reads glucose in mmol/L, so that is what the file says.
-    expect(csv).toMatch(/BLOOD_GLUCOSE,\d+(\.\d)?,mmol\/L/);
+    expect(csv).toMatch(/BLOOD_GLUCOSE,\d+(\.\d{1,3})?,mmol\/L/);
 
     const user = await makeUser({ timezone: "Europe/Berlin" });
     const res = await callRoute<{ inserted: number; skipped: number }>(
@@ -468,10 +468,8 @@ describe("the CSV import reads the measurement CSV export", () => {
     expect(back).toHaveLength(original.length);
     back.forEach((m, i) => {
       const o = original[i]!;
-      // mmol/L at one decimal: the stored mg/dL value comes back within it.
-      const tolerance = m.type === "BLOOD_GLUCOSE" ? 0.05 * 18.0156 : 1e-9;
-      expect({ ...m, value: 0 }).toEqual({ ...o, value: 0 });
-      expect(Math.abs(m.value - o.value)).toBeLessThanOrEqual(tolerance);
+      // mmol/L at three places: the stored mg/dL value comes back exactly.
+      expect(m).toEqual(o);
     });
   });
 });
