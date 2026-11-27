@@ -261,7 +261,6 @@
     "src/__tests__/v1341-locale-parity.test.ts": 0.1,
     "src/__tests__/v137-wave-zero-fixtures.test.ts": 0,
     "src/__tests__/v1391-additive-contract.test.ts": 0,
-    "src/__tests__/visit-link-guard.test.ts": 0.3,
     "src/__tests__/vorsorge-due-bucket-single-home-guard.test.ts": 1.4,
     "src/__tests__/weight-tile-direction-guard.test.ts": 0.1,
     "src/__tests__/workout-canonical-identity-guard.test.ts": 0.6,
