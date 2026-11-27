@@ -22,6 +22,7 @@ import { apiGet } from "@/lib/api/api-fetch";
 import { formatDate as formatCalendarDate } from "@/lib/date-format";
 import { useDateFormatPreference, useTranslations } from "@/lib/i18n/context";
 import type { SupplySummary } from "@/lib/medications/inventory/summary";
+import { estimateRunwayDays } from "@/lib/medications/supply-runway";
 import { queryKeys } from "@/lib/query-keys";
 
 /** One plan row: the name left, the value right, a rule between rows. */
@@ -68,7 +69,12 @@ export function PlanCard({
   const hasSupply =
     Array.isArray(inventory?.items) && inventory.items.length > 0;
   const summary = inventory?.summary;
-  const runway = medication.runwayDays ?? null;
+  // The server's slot-aware runway; the estimate only for an older payload
+  // that does not carry one.
+  const runway =
+    medication.runwayDays !== undefined
+      ? medication.runwayDays
+      : estimateRunwayDays(summary?.dosesRemaining ?? 0, medication.schedules);
 
   const calendar = (iso: string) =>
     formatCalendarDate(new Date(iso), dateFormatPref, locale);
@@ -123,18 +129,24 @@ export function PlanCard({
           {
             key: "supply",
             label: t("medications.detail.uebersicht.supplyLabel"),
-            value:
+            value: [
+              t("medications.detail.bestand.summary", {
+                remaining: summary.dosesRemaining,
+                total: summary.dosesTotal,
+              }),
+              summary.expiredUnits > 0
+                ? t("medications.detail.bestand.expiredSuffix", {
+                    units: summary.expiredUnits,
+                  })
+                : null,
               runway !== null
-                ? `${t("medications.detail.bestand.summary", {
-                    remaining: summary.dosesRemaining,
-                    total: summary.dosesTotal,
-                  })}, ${t("medications.detail.uebersicht.supplyRunway", {
+                ? t("medications.detail.uebersicht.supplyRunway", {
                     days: runway,
-                  })}`
-                : t("medications.detail.bestand.summary", {
-                    remaining: summary.dosesRemaining,
-                    total: summary.dosesTotal,
-                  }),
+                  })
+                : null,
+            ]
+              .filter(Boolean)
+              .join(", "),
           },
         ]
       : []),
