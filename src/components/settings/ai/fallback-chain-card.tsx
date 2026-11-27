@@ -144,7 +144,7 @@ export function FallbackChainCard({
         anchor="provider-chain"
         icon={ListOrdered}
         title={t("settings.ai.providerChain.title")}
-        description={t("settings.ai.providerChain.description")}
+        info={t("settings.ai.providerChain.description")}
       />
 
       <ul className="space-y-2">

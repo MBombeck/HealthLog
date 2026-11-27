@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { ListOrdered, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { InfoPopover } from "@/components/ui/info-popover";
 import { Button } from "@/components/ui/button";
 import { TargetAdjustButton } from "@/components/insights/target-adjust-button";
 import { TargetAdjustProvider } from "@/lib/insights/target-adjust-context";
@@ -331,7 +332,7 @@ export function SubPageShell({
     // state + renders the sheet, so the gear and the card don't have to
     // share a parent beyond this shell.
     <TargetAdjustProvider>
-      <div data-slot="insights-subpage" className="space-y-3 md:space-y-4">
+      <div data-slot="insights-subpage" className="space-y-4">
         {/* v1.8.7.1 — back-nav leads the page, above the heading. */}
         {backLink}
         {/* The heading + explainer indent to the cards' inner text edge so
@@ -369,8 +370,21 @@ export function SubPageShell({
             focusable
             className="[&_[data-slot=page-header-row]]:min-h-10"
             titleAccessory={
-              diversityNudge || badge ? (
-                <>
+              explainerMetric || diversityNudge || badge ? (
+                <span className="inline-flex items-center gap-1">
+                  {/* The definition sits behind the (i): the page opens on
+                    its title alone. */}
+                  {explainerMetric ? (
+                    <InfoPopover
+                      align="start"
+                      triggerDataSlot="metric-explainer-trigger"
+                      bodyDataSlot="metric-explainer"
+                      content={t(
+                        `insights.subPage.explainer.${explainerMetric}Body`,
+                        explainerParams,
+                      )}
+                    />
+                  ) : null}
                   {/* v1.8.6 — the diversity nudge rides the heading as a
                     `Lightbulb` glyph (the node self-gates to nothing when
                     the spread is healthy). */}
@@ -380,7 +394,7 @@ export function SubPageShell({
                       {badge}
                     </Badge>
                   ) : null}
-                </>
+                </span>
               ) : undefined
             }
             actions={
@@ -451,32 +465,6 @@ export function SubPageShell({
               </>
             }
           />
-          {explainerMetric ? (
-            // v1.8.4 — surface the metric's static definition inline,
-            // directly beneath the heading.
-            //
-            // v1.8.5 — render the explainer body as the *single* caption
-            // under the heading. Pre-v1.8.5 both this paragraph and the
-            // `description` below it stacked, so every metric page opened
-            // with two near-duplicative muted captions before any data — the
-            // root of the "airy / static under the heading" feel. The
-            // explainer body is the definition, so it wins; the description
-            // only renders when no explainer is set (the mother page and any
-            // future explainer-less sub-page).
-            //
-            // v1.8.6 — this caption is now the only surface for the
-            // definition; the round `?` popover that used to read the same
-            // string was removed.
-            <p
-              data-slot="metric-explainer-inline"
-              className="text-foreground text-sm leading-relaxed"
-            >
-              {t(
-                `insights.subPage.explainer.${explainerMetric}Body`,
-                explainerParams,
-              )}
-            </p>
-          ) : null}
           {description && !explainerMetric ? (
             <p className="text-foreground text-sm">{description}</p>
           ) : null}

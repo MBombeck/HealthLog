@@ -90,20 +90,25 @@ export function IntegrationsSection({
           `/settings/channels` redirect; the per-channel anchors stay inside
           the panel. */}
       <section id="channels" className="scroll-mt-28 space-y-4">
+        {/* The link names the per-event notification matrix so the three
+            notification surfaces (matrix, reminder types, channels)
+            cross-reference; it stands on the right of the group heading. */}
         <SectionHeading
           icon={Send}
           title={t("settings.sections.integrations.channelsHeading")}
-          subtitle={t("settings.sections.integrations.channelsDescription")}
+          action={
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="min-h-11 sm:min-h-9"
+            >
+              <Link href="/notifications">
+                {t("settings.sections.integrations.matrixLink")}
+              </Link>
+            </Button>
+          }
         />
-        {/* Names the per-event notification matrix so the three notification
-            surfaces (matrix, reminder types, channels) cross-reference. */}
-        <div>
-          <Button asChild variant="outline" size="sm">
-            <Link href="/notifications">
-              {t("settings.sections.integrations.matrixLink")}
-            </Link>
-          </Button>
-        </div>
         <NotificationChannelsPanel />
       </section>
     </div>

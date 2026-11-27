@@ -942,6 +942,11 @@ model User {
   /// reported by the app's dismiss action. Reader: the ready push
   /// (`wallet-pass/ready-push.ts`), which never sends again once it is set.
   walletReadyPushDismissed     Boolean   @default(false) @map("wallet_ready_push_dismissed")
+  /// One-time hints, notes and banners this account has put away, by id
+  /// (`src/lib/hints/dismissible-hints.ts`): a family, or `family.member`.
+  /// Reader: `/api/auth/me` `dismissedHints`, which every such hint gates on.
+  /// Written by `PATCH /api/auth/me/dismissed-hints`.
+  dismissedHints               String[]  @default([]) @map("dismissed_hints")
 
   // Relations
   passkeys                                  Passkey[]

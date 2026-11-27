@@ -117,6 +117,7 @@ import {
   reminderPhaseConfig,
   medicationSideEffect,
 } from "./schemas";
+import { IMPORT_RATE_LIMIT_DOC } from "@/lib/import/import-rate-limit-policy";
 import { phaseConfigSchema } from "@/lib/validations/phase-config";
 import {
   createSideEffectSchema,
@@ -2344,7 +2345,9 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Medications"],
       summary: "Import a dose history exported from another medication tracker",
       description:
-        "Reads a ten-column CSV export covering a whole regimen (multiple medications in one file), matching each row against the caller's existing medications by name — a medication is NEVER created from an import file. `text/csv` carries the actual dose history (`Date`/`Scheduled Date` in separate columns, mapped onto `takenAt`/`scheduledFor`). `application/json` is accepted at the content-type check but the documented JSON export shape always refuses at 422 (`json_carries_no_intake_time`): it has no field for when a dose was actually taken, and inferring one from the scheduled time would manufacture an on-time history the file never claimed. Body capped at 16 MB and 30 000 importable rows. `?dryRun=1` parses, matches, and returns the file verdict WITHOUT writing. A real submission queues the write onto the same background job the per-medication import uses (chunked, heartbeated, resumable) and returns 202 with a `statusUrl` to poll. Shares the 5/hour `import:` rate bucket with every other bulk import surface. Auth via cookie or Bearer.",
+        "Reads a ten-column CSV export covering a whole regimen (multiple medications in one file), matching each row against the caller's existing medications by name — a medication is NEVER created from an import file. `text/csv` carries the actual dose history (`Date`/`Scheduled Date` in separate columns, mapped onto `takenAt`/`scheduledFor`). `application/json` is accepted at the content-type check but the documented JSON export shape always refuses at 422 (`json_carries_no_intake_time`): it has no field for when a dose was actually taken, and inferring one from the scheduled time would manufacture an on-time history the file never claimed. Body capped at 16 MB and 30 000 importable rows. `?dryRun=1` parses, matches, and returns the file verdict WITHOUT writing. A real submission queues the write onto the same background job the per-medication import uses (chunked, heartbeated, resumable) and returns 202 with a `statusUrl` to poll. Shares the `import:` rate bucket with every other bulk import surface, " +
+        IMPORT_RATE_LIMIT_DOC +
+        ". Auth via cookie or Bearer.",
       parameters: [
         {
           name: "dryRun",

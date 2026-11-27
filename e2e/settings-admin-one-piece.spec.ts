@@ -360,7 +360,8 @@ test("every locale's shell explainer fits one line at desktop width", async ({
   await settleBeforeMeasure(page, explainer);
 
   const sentences = shellExplainers();
-  expect(sentences.length).toBeGreaterThan(locales.length * 20);
+  // Admin pages carry an explainer each; a Settings page has none (1.50).
+  expect(sentences.length).toBeGreaterThan(locales.length * 15);
   const result = await explainer.evaluate(async (p, items) => {
     const column = p.clientWidth;
     const computed = getComputedStyle(p);
@@ -483,7 +484,19 @@ for (const locale of ["en", "de"] as const) {
       const tops = plain.map((m) => m.headingTop);
       const heights = plain.map((m) => m.headerHeight);
       const spreadTop = Math.max(...tops) - Math.min(...tops);
-      const spreadHeight = Math.max(...heights) - Math.min(...heights);
+      // Heights are compared within a family: an Admin page carries a
+      // one-line explainer under its title, a Settings page (since 1.50)
+      // carries none, so the two differ by one line by construction.
+      const spreadHeight = Math.max(
+        ...["/admin", "/settings"].map((prefix) => {
+          const family = plain
+            .filter((m) => m.route.startsWith(prefix))
+            .map((m) => m.headerHeight);
+          return family.length > 0
+            ? Math.max(...family) - Math.min(...family)
+            : 0;
+        }),
+      );
 
       const childTops = withBackLink.map((m) => m.headingTop);
       const childSpreadTop = Math.max(...childTops) - Math.min(...childTops);

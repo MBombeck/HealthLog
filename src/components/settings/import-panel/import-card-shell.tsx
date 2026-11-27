@@ -186,6 +186,7 @@ export function ImportCardShell({
   title,
   description,
   foldLabel,
+  status,
   children,
 }: {
   testId: string;
@@ -194,6 +195,8 @@ export function ImportCardShell({
   title: string;
   description?: string;
   foldLabel?: string;
+  /** A `StatusChip` for a card that is a connection (the remote folder). */
+  status?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const { t } = useTranslations();
@@ -218,6 +221,7 @@ export function ImportCardShell({
             title
           )
         }
+        status={status}
         className="p-4 md:p-6"
       />
       <Disclosure

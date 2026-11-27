@@ -42,6 +42,7 @@ import {
   useRecordCapabilities,
   holdsOwnerRights,
 } from "@/hooks/use-record-capabilities";
+import { useDismissedHints } from "@/hooks/use-dismissed-hints";
 import {
   capTimelineSeriesKeys,
   DAY_QUERY_PARAM,
@@ -67,10 +68,7 @@ import { LabExcludedNote } from "./lab-lines";
 import { TimelineLegend } from "./timeline-legend";
 import { LifeEventSheet } from "./life-event-sheet";
 import { ReadinessCard } from "./readiness-card";
-import {
-  READINESS_CARD_DISMISSED_KEY,
-  showReadinessCard,
-} from "./readiness-model";
+import { showReadinessCard } from "./readiness-model";
 import { TimelineReadinessSheet } from "./readiness-sheet";
 import { Segmented } from "@/components/ui/segmented";
 import { SERIES_PALETTE, assignSeriesColors } from "./series-colors";
@@ -98,11 +96,7 @@ import {
   symptomNames,
 } from "./timeline-menus";
 import { withSymptomLines } from "./series-format";
-import {
-  isBoolean,
-  isStringArray,
-  useDevicePreference,
-} from "./use-device-preference";
+import { isStringArray, useDevicePreference } from "./use-device-preference";
 import {
   useLifeEvents,
   useTimeline,
@@ -290,11 +284,8 @@ export function TimelineView() {
     [],
     isStringArray,
   );
-  const [cardDismissed, setCardDismissed] = useDevicePreference(
-    READINESS_CARD_DISMISSED_KEY,
-    false,
-    isBoolean,
-  );
+  const hints = useDismissedHints();
+  const cardDismissed = hints.isDismissed("timeline-readiness");
 
   const modules = user?.modules;
   const { values, allowed, setStoredValues, seriesColor } =
@@ -526,7 +517,7 @@ export function TimelineView() {
       {readiness.data && showReadinessCard(readiness.data, cardDismissed) && (
         <ReadinessCard
           readiness={readiness.data}
-          onDismiss={() => setCardDismissed(true)}
+          onDismiss={() => void hints.dismiss("timeline-readiness")}
         />
       )}
 

@@ -1158,6 +1158,7 @@
       "adminNoticesDismissed": [],
       "walletRelayHintDismissed": false,
       "walletReadyPushDismissed": false,
+      "dismissedHints": [],
       "fullName": null,
       "insurerName": null,
       "insuranceNumberEncrypted": null,

@@ -87,11 +87,11 @@ for (const theme of ["light", "dark"] as const) {
       await themed(page, theme);
       await page.goto("/insights");
       const grid = page.locator('[data-slot="wellness-scores-grid"]');
-      await expect(grid.locator('[data-metric="STRAIN_SCORE"]')).toBeVisible();
+      await expect(grid.locator('[data-score="STRAIN_SCORE"]')).toBeVisible();
       const order = await grid
-        .locator('[data-slot="wellness-score-tile"]')
+        .locator('[data-slot="score-ring-tile"]')
         .evaluateAll((tiles) =>
-          tiles.map((tile) => tile.getAttribute("data-metric")),
+          tiles.map((tile) => tile.getAttribute("data-score")),
         );
       expect(order).toEqual([
         "READINESS",
@@ -99,12 +99,12 @@ for (const theme of ["light", "dark"] as const) {
         "STRESS_SCORE",
         "STRAIN_SCORE",
       ]);
-      // The estimates carry a label, not a section of their own.
+      // The estimates say so on their line, not in a section of their own.
       await expect(
         grid.locator(
-          '[data-metric="STRESS_SCORE"] [data-slot="wellness-score-origin"]',
+          '[data-score="STRESS_SCORE"] [data-slot="score-ring-tile-line"]',
         ),
-      ).toBeVisible();
+      ).toContainText("Estimate");
       await expect(page.locator('[data-slot="estimates-section"]')).toHaveCount(
         0,
       );

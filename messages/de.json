@@ -68,7 +68,13 @@
     "savedNamed": "{label} gespeichert",
     "entryUndone": "Eintrag entfernt",
     "entryUndoFailed": "Der Eintrag konnte nicht entfernt werden.",
-    "note": "Notiz"
+    "note": "Notiz",
+    "status": {
+      "active": "Aktiv",
+      "error": "Fehler",
+      "off": "Aus",
+      "running": "Läuft"
+    }
   },
   "apiErrors": {
     "measurement": {
@@ -3474,7 +3480,6 @@
       },
       "settingsAriaLabel": "Coach-Einstellungen",
       "settingsTitle": "Coach-Einstellungen",
-      "settingsDescription": "Stell ein, wie der Coach mit dir spricht.",
       "settingsToneLabel": "Tonfall",
       "settingsToneWarm": "Warm",
       "settingsToneNeutral": "Neutral",
@@ -3487,10 +3492,6 @@
       "settingsSourcesSummary": "Der Coach sieht {count} von {total} Datenbereichen und blickt {window} zurück.",
       "settingsSourcesSummaryAll": "Der Coach sieht {count} von {total} Datenbereichen und deinen ganzen Verlauf.",
       "settingsSourcesPointerLink": "Coach-Einstellungen öffnen",
-      "settingsExcludeLabel": "Metriken ausschließen",
-      "settingsExcludeHint": "Der Coach sieht keine Daten der ausgewählten Metriken.",
-      "settingsContextLabel": "Kontext mitschicken",
-      "settingsContextHint": "Optionale Blöcke, auf die sich der Coach stützen kann. Schalte einen ab, wird der Block in jeder Antwort weggelassen.",
       "settingsEvidenceLabel": "Belege standardmäßig zeigen",
       "settingsEvidenceHint": "Die Belege-Box unter jeder Antwort automatisch öffnen.",
       "settingsDefaultWindowLabel": "Standard-Analysezeitraum",
@@ -3592,8 +3593,11 @@
         "steadyLatestBelow": "Deine Werte liegen meist bei {low} {unit}; dein letzter Wert vom {date} lag mit {value} darunter.",
         "componentLine": "{component}: {line}",
         "insufficient": "Lerne noch deinen üblichen Bereich. Protokolliere noch ein paar Tage weiter.",
-        "driver": "{note}",
-        "loadError": "Dein üblicher Bereich konnte nicht geladen werden."
+        "loadError": "Dein üblicher Bereich konnte nicht geladen werden.",
+        "range": "Bereich",
+        "todayValue": "heute {value}",
+        "latestValue": "{date}: {value}",
+        "soFarValue": "heute bisher {value}"
       },
       "scope": {
         "prefix": "Der Coach ist schon bei {metric}"
@@ -3751,7 +3755,6 @@
       },
       "reasoning": {
         "label": "Denktiefe",
-        "hint": "Gründlicher denken heißt genauere Antworten und etwas mehr Wartezeit.",
         "off": "Aus",
         "minimal": "Minimal",
         "low": "Niedrig",
@@ -3761,7 +3764,8 @@
         "disabled": "Der Admin hat gründliches Denken abgeschaltet."
       },
       "memoryLink": "Gedächtnis ({count})",
-      "newConversation": "Neue Unterhaltung"
+      "newConversation": "Neue Unterhaltung",
+      "settingsSeesLabel": "Was der Coach sieht"
     },
     "relativeJustNow": "gerade eben",
     "relativeMinutesAgoOne": "vor {count} Minute",
@@ -3955,7 +3959,9 @@
       },
       "bpDerived": {
         "pulsePressure": "Der Pulsdruck (die Differenz zwischen deinen Werten) beträgt etwa {value} mmHg; rund 40 ist in Ruhe typisch.",
-        "meanArterialPressure": "Der mittlere arterielle Druck (der Durchschnitt, den deine Organe sehen) liegt bei etwa {value} mmHg, normalerweise um 70–100."
+        "meanArterialPressure": "Der mittlere arterielle Druck (der Durchschnitt, den deine Organe sehen) liegt bei etwa {value} mmHg, normalerweise um 70–100.",
+        "pulsePressureLabel": "Pulsdruck",
+        "meanArterialPressureLabel": "Mitteldruck"
       },
       "stats": {
         "label": "Zusammenfassende Statistik",
@@ -5363,7 +5369,6 @@
     },
     "bpTimeOfDay": {
       "title": "Nach Tageszeit",
-      "description": "Dein durchschnittlicher Blutdruck je Tageszeit im Zeitraum des Diagramms.",
       "part": {
         "morning": "Morgens",
         "midday": "Mittags",
@@ -5371,14 +5376,7 @@
       },
       "filterAll": "Ganzer Tag",
       "filterLabel": "Im Diagramm zeigen",
-      "readingsOne": "{count} Messung",
-      "readingsFew": "{count} Messungen",
-      "readingsOther": "{count} Messungen",
       "notEnough": "Zu wenige Messungen",
-      "pulse": "Puls {value} bpm",
-      "difference": "Morgens minus abends: {systolic}/{diastolic} mmHg.",
-      "differencePending": "Morgen und Abend werden verglichen, sobald beide mindestens {min, plural, one {# Messung} other {# Messungen}} haben.",
-      "hours": "Morgens {morning}, mittags {midday}, abends {evening}, in deiner Zeitzone.",
       "hourRange": "{start} bis {end} Uhr",
       "emptyTitle": "Keine vollständigen Messungen in diesem Zeitraum",
       "emptyDescription": "Hier erscheinen Messungen mit systolischem und diastolischem Wert.",
@@ -5396,7 +5394,6 @@
       }
     },
     "scores": {
-      "historyWindow": "Verlauf {days} Tage",
       "staleLast": "Zuletzt {score} am {date}",
       "valuesFrom": "Werte vom {date}",
       "loadError": "Deine Scores konnten gerade nicht geladen werden.",
@@ -6019,7 +6016,6 @@
           "autoAiRead": "Neue Dokumente automatisch mit KI lesen",
           "honesty": "Wenn eingeschaltet, wird jedes in dieses Profil hochgeladene Dokument an den oben für das Profil gewählten KI-Anbieter geschickt, dort gelesen, beschrieben und für die Suche erschlossen, ohne Tippen je Dokument; schon vorhandene Dokumente ohne Zusammenfassung werden ebenfalls geschickt (bis zu 200 bei jedem Einschalten). Das Einschalten hält die Einwilligung dieses Profils fest, dass seine Dokumente gelesen werden dürfen. Standardmäßig aus.",
           "pageTitle": "Dokumente und KI",
-          "pageSubtitle": "Ob KI die Dokumente liest, die in das Profil von {name} hochgeladen werden.",
           "noProvider": "Für das Profil von {name} ist kein KI-Anbieter gewählt, der Dokumente lesen könnte, deshalb bleibt der Schalter aus. Wähle oben einen.",
           "aiOff": "KI ist für das Profil von {name} ausgeschaltet, deshalb würde kein Dokument gelesen."
         },
@@ -6052,20 +6048,16 @@
     },
     "sections": {
       "account": {
-        "title": "Konto",
-        "subtitle": "Dein Profil, deine Darstellung und die Einrichtung."
+        "title": "Konto"
       },
       "integrations": {
         "title": "Integrationen",
-        "subtitle": "Datenquellen und Geräte verbinden und verwalten.",
         "connectionsHeading": "Verbindungen",
         "channelsHeading": "Zustellkanäle",
-        "channelsDescription": "Wohin Erinnerungen und Hinweise zugestellt werden.",
         "matrixLink": "Benachrichtigungen je Kanal"
       },
       "notifications": {
         "title": "Benachrichtigungen",
-        "subtitle": "Wähle, welche Erinnerungen du erhältst und wohin sie zugestellt werden.",
         "remindersHeading": "Erinnerungen",
         "matrixLink": "Benachrichtigungen je Kanal",
         "channelsLink": "Zustellkanäle",
@@ -6106,7 +6098,6 @@
           "title": "Insights",
           "description": "Reihenfolge der Übersicht und der Navigations-Pills."
         },
-        "subtitle": "Lege Reihenfolge und Ansicht von Dashboard, Insights und Tracking-Listen fest.",
         "medications": {
           "title": "Medikamente",
           "description": "Listenansicht und manuelle Reihenfolge."
@@ -6128,12 +6119,8 @@
           "description": "Ansicht und Anordnung der Monate."
         }
       },
-      "dashboard": {
-        "subtitle": "Ordne die Kacheln auf deinem Dashboard an."
-      },
       "thresholds": {
-        "title": "Zielwerte",
-        "subtitle": "Lege deine persönlichen Zielbereiche je Messgröße fest."
+        "title": "Zielwerte"
       },
       "sources": {
         "title": "Quellen-Priorität",
@@ -6212,7 +6199,6 @@
           "other": "Sonstige",
           "unknown": "Unbekannt"
         },
-        "subtitle": "Lege fest, welche Quelle gewinnt, wenn zwei dieselbe Messgröße liefern.",
         "nutrients": {
           "title": "Synchronisierte Nährstoffzufuhr",
           "description": "Tagessummen {days, plural, =1 {des letzten Tages} other {der letzten # Tage}} aus Apple Health oder einem Ernährungstracker und den eingenommenen Supplementen.",
@@ -6227,16 +6213,13 @@
         "noneInUse": "Noch keine Quelle zum Sortieren. Verbinde eine unter Integrationen oder trage einen Wert ein."
       },
       "ai": {
-        "title": "KI-Anbieter",
-        "subtitle": "Wähle deinen KI-Anbieter und hinterlege deinen eigenen Schlüssel."
+        "title": "KI-Anbieter"
       },
       "api": {
-        "title": "API & Tokens",
-        "subtitle": "API-Endpunkte und Zugriffstoken verwalten."
+        "title": "API & Tokens"
       },
       "advanced": {
-        "title": "Erweitert",
-        "subtitle": "Daten zurücksetzen und Konto löschen."
+        "title": "Erweitert"
       },
       "export": {
         "title": "Export & Import",
@@ -6255,8 +6238,8 @@
           },
           "medicationsCsv": {
             "title": "Medikamente (CSV)",
-            "description": "Auf Wunsch mit jeder Einnahme",
-            "includeIntake": "Einnahmehistorie einschließen"
+            "includeIntake": "Einnahmehistorie einschließen",
+            "description": "Auf Wunsch mit jeder Einnahme"
           },
           "moodCsv": {
             "title": "Stimmung (CSV)",
@@ -6264,13 +6247,13 @@
           },
           "fullBackup": {
             "title": "Voll-Backup",
-            "description": "Alles in einer Datei, auf Wunsch verschlüsselt",
             "scopeNote": "Dokumentmetadaten und die KI-Zusammenfassung, falls vorhanden, sind als Klartext enthalten; die Originaldateien der Dokumente sowie GPS-Routen und Einzelmesswerte von Trainings sind es nicht.",
             "encryptToggle": "Mit einer Passphrase verschlüsseln",
             "passphrasePlaceholder": "Passphrase (mind. 12 Zeichen)",
             "passphraseHelp": "Leitet den Archivschlüssel per Argon2id ab und versiegelt ihn mit AES-256-GCM. Speichere die Datei mit der Endung .hlx.",
             "noRecoveryWarning": "Es gibt keine Wiederherstellung. Geht diese Passphrase verloren, lässt sich das Archiv nicht mehr öffnen. Bewahre sie sicher auf.",
-            "detail": "Eine portable Kopie deiner Akte zum Aufbewahren und Lesen: Werte als einfaches JSON, Dokumente nur mit ihren Metadaten."
+            "detail": "Eine portable Kopie deiner Akte zum Aufbewahren und Lesen: Werte als einfaches JSON, Dokumente nur mit ihren Metadaten.",
+            "description": "Alles in einer Datei, auf Wunsch verschlüsselt"
           },
           "doctorReport": {
             "title": "Arztbericht",
@@ -6284,7 +6267,10 @@
           "appleHealth": {
             "title": "Apple Health",
             "description": "Die export.zip aus der Health-App auf dem iPhone.",
+            "dropLabel": "export.zip hier ablegen",
+            "dropHint": "oder zum Auswählen klicken",
             "fileInputLabel": "Eine Apple-Health-export.zip-Datei auswählen",
+            "choose": "Datei auswählen",
             "idempotencyNote": "Große Archive werden im Hintergrund verarbeitet.",
             "uploading": "Wird hochgeladen…",
             "uploadFailed": "Upload fehlgeschlagen. Bitte erneut versuchen.",
@@ -6429,7 +6415,7 @@
             "import": "Importieren",
             "empty": "Erst den Export einfügen oder eine Datei wählen.",
             "readFailed": "Diese Datei konnte nicht gelesen werden.",
-            "rateLimited": "Höchstens 5 Importe pro Stunde. Später erneut versuchen.",
+            "rateLimited": "Das stündliche Importlimit ist erreicht. Später erneut versuchen.",
             "tooLarge": "Diese Datei überschreitet das Limit von 16 MB.",
             "inProgress": "Ein Import des Einnahmeverlaufs läuft bereits. Auf sein Ende warten.",
             "workerUnavailable": "Der Hintergrunddienst ist nicht verfügbar, es wurde nichts importiert.",
@@ -6480,6 +6466,7 @@
           "healthConnect": {
             "title": "Health-Connect-Export",
             "description": "Die ZIP, die Health Connect auf Android schreibt.",
+            "choose": "Datei auswählen",
             "uploading": "Wird hochgeladen …",
             "uploadFailed": "Das Hochladen ist fehlgeschlagen. Bitte versuch es noch einmal.",
             "tooLarge": "Die Datei ist größer, als dieser Server annimmt.",
@@ -6498,6 +6485,8 @@
               "cloud": "Health Connect speichert den Export nur in einer Cloud-App wie Google Drive, Dropbox oder Nextcloud, nie auf dem Handy selbst.",
               "upload": "Lade die ZIP-Datei aus dieser Cloud auf dieses Gerät herunter und lade sie hier hoch."
             },
+            "dropLabel": "Health-Connect-ZIP hier ablegen",
+            "dropHint": "oder klicken, um sie auszuwählen. Bis 1 GB.",
             "fileInputLabel": "ZIP-Datei des Health-Connect-Exports",
             "privacyNote": "Einträge von Apps, die du schon direkt verbunden hast, etwa Withings, werden ausgelassen, damit nichts doppelt ankommt.",
             "rateLimited": "Zu viele Uploads in kurzer Zeit. Warte eine Minute und versuch es noch einmal.",
@@ -6516,19 +6505,24 @@
               "stagingMissing": "Die hochgeladene Datei war nicht mehr auf dem Server. Lade sie noch einmal hoch.",
               "interrupted": "Der Import wurde durch einen Neustart des Servers unterbrochen. Lade die Datei noch einmal hoch."
             },
-            "fileHint": "ZIP, bis 1 GB",
             "folderRow": "Automatisch aus einem Ordner",
             "folderMeta": "WebDAV oder Nextcloud, unter Integrationen"
           },
           "fit": {
             "title": "Aktivitätsdatei (FIT)",
-            "description": "Trainings von einer Uhr oder einem Radcomputer.",
+            "description": "Ein Training von einer Uhr oder einem Radcomputer.",
+            "choose": "Datei auswählen",
             "uploading": "Wird hochgeladen…",
             "uploadFailed": "Das Hochladen ist fehlgeschlagen. Bitte versuche es erneut.",
+            "tooLarge": "Die Datei ist größer als 10 MB.",
+            "rateLimited": "Zu viele Uploads in kurzer Zeit. Warte eine Minute und versuche es erneut.",
+            "busy": "Für dein Konto läuft bereits ein Import. Warte, bis er abgeschlossen ist.",
             "failed": "Der Import ist fehlgeschlagen. Bitte versuche es erneut.",
             "doneSummary": "Die Aktivitätsdatei wurde importiert.",
             "doneNothing": "Der Import ist abgeschlossen, es gab aber nichts Neues hinzuzufügen.",
-            "fileInputLabel": "Aktivitätsdateien",
+            "dropLabel": "Aktivitätsdatei hier ablegen",
+            "dropHint": "oder klicken, um sie auszuwählen: eine .fit-, .fit.gz- oder .zip-Datei bis 10 MB.",
+            "fileInputLabel": "Aktivitätsdatei",
             "privacyNote": "Der GPS-Verlauf wird nur gespeichert, wenn Trainingsrouten eingeschaltet sind.",
             "steps": {
               "garmin": "Garmin Connect: Öffne die Aktivität auf der Website, wähle das Zahnradmenü und dann „Original exportieren“.",
@@ -6559,24 +6553,7 @@
               "noSession": "Die Datei enthält kein lesbares Training.",
               "stagingMissing": "Die hochgeladene Datei war nicht mehr auf dem Server. Lade sie erneut hoch.",
               "interrupted": "Der Import wurde durch einen Neustart des Servers unterbrochen. Lade die Datei erneut hoch."
-            },
-            "batch": {
-              "waiting": "Wartet",
-              "imported": "Importiert",
-              "duplicate": "Schon importiert",
-              "progress": "{done} von {total}",
-              "capped": "Nur die ersten 100 Dateien werden importiert.",
-              "reason": {
-                "tooLarge": "Größer als 10 MB",
-                "unsupported": "Keine FIT-Datei",
-                "damaged": "Datei beschädigt",
-                "notActivity": "Keine Aktivität",
-                "noWorkout": "Kein Training gefunden",
-                "busy": "Ein anderer Import läuft",
-                "retry": "Fehlgeschlagen, bitte erneut versuchen"
-              }
-            },
-            "fileHint": ".fit, .fit.gz oder .zip, je bis 10 MB"
+            }
           },
           "recordFile": {
             "gadgetbridge": {
@@ -6585,8 +6562,7 @@
               "steps": {
                 "export": "In Gadgetbridge Einstellungen öffnen, dann Datenverwaltung, dann Datenbank exportieren.",
                 "upload": "Die Datei namens Gadgetbridge hier hochladen. Bis 512 MB."
-              },
-              "fileHint": "Die Datei „Gadgetbridge“, bis 512 MB"
+              }
             },
             "fhirBundle": {
               "title": "Patientenakte (FHIR)",
@@ -6594,9 +6570,9 @@
               "steps": {
                 "export": "Im Patientenportal die Akte als FHIR R4 (JSON) exportieren.",
                 "upload": "Die .json-Datei hier hochladen. Bis 32 MB."
-              },
-              "fileHint": ".json, bis 32 MB"
+              }
             },
+            "choose": "Datei wählen",
             "uploading": "Wird hochgeladen…",
             "running": "Import läuft im Hintergrund…",
             "doneSummary": "Die Datei wurde übernommen.",
@@ -6662,9 +6638,6 @@
             "removeTitle": "Diesen Ordner entfernen?",
             "removeBody": "HealthLog holt nichts mehr von dort und vergisst das Passwort. Was schon übernommen wurde, bleibt."
           },
-          "pickerFile": "Datei",
-          "pickerFiles": "Dateien",
-          "pickerChoose": "Auswählen",
           "row": {
             "done": "{date}, {count, plural, one {# Eintrag} other {# Einträge}}",
             "failed": "{date}, nicht importiert"
@@ -6672,22 +6645,16 @@
           "pasteOr": "Oder einfügen",
           "guideTitle": "Beispiel und Spalten"
         },
-        "subtitle": "Exportiere deine Daten oder importiere Messwerte und Einträge aus anderen Apps und Dateien.",
         "exportHeading": "Exportieren"
       },
       "about": {
-        "title": "Über diese App",
-        "subtitle": "Version, Lizenz und Projektlinks."
+        "title": "Über diese App"
       },
       "sharing": {
         "title": "Freigabe",
         "subtitle": "Teile schreibgeschützten Zugriff auf deine Daten."
       },
-      "insights": {
-        "subtitle": "Ordne die Übersichts-Bereiche und die Reihenfolge der Chips an."
-      },
       "medications": {
-        "subtitle": "Verwalte Ansicht und Reihenfolge deiner Medikamentenliste.",
         "registry": {
           "title": "Arzneimittelregister",
           "description": "Wo „Beipackzettel suchen“ nach offiziellen Beipackzetteln sucht, unabhängig von der App-Sprache.",
@@ -6697,18 +6664,6 @@
           "saved": "Arzneimittelregister gespeichert",
           "saveError": "Das Arzneimittelregister konnte nicht gespeichert werden."
         }
-      },
-      "mood": {
-        "subtitle": "Organisiere deine Stimmungs-Tags, Gruppen und Auswahlreihenfolge."
-      },
-      "labs": {
-        "subtitle": "Ansicht, Sortierung und Biomarker verwalten."
-      },
-      "illness": {
-        "subtitle": "Ansicht und Reihenfolge der Episoden verwalten."
-      },
-      "vorsorge": {
-        "subtitle": "Ansicht, Reihenfolge und einzelne Erinnerungen verwalten."
       },
       "modules": {
         "title": "Module",
@@ -6720,21 +6675,17 @@
         },
         "manageIn": "Unter {section} verwalten",
         "operatorDisabled": "Serverweit deaktiviert",
-        "subtitle": "Lege fest, welche Tracking-Bereiche HealthLog überall anzeigt.",
         "backToHub": "Zurück zu den Modulen",
         "openModuleSettings": "Moduleinstellungen",
         "pages": {
           "medications": {
-            "title": "Medikamente",
-            "description": "Injektionsstellen, die die Rotation auslässt."
+            "title": "Medikamente"
           },
           "mood": {
-            "title": "Stimmungs-Tags",
-            "description": "Gruppen, eigene Tags und archivierte Tags."
+            "title": "Stimmungs-Tags"
           },
           "labs": {
-            "title": "Laborwerte",
-            "description": "Biomarker und Texterkennung auf dem Gerät für Laborberichte."
+            "title": "Laborwerte"
           },
           "arrangementTitle": "Reihenfolge und Ansicht",
           "arrangementDescription": "Wie diese Liste sortiert und angezeigt wird, legst du unter Anordnung fest.",
@@ -6744,32 +6695,25 @@
         }
       },
       "health-record": {
-        "title": "Arztbericht und Export",
-        "subtitle": "Erstelle den Arztbericht und exportiere eine vollständige, arzttaugliche Gesundheitsakte."
+        "title": "Arztbericht und Export"
       },
       "coach": {
-        "title": "Coach",
-        "subtitle": "Stelle den Coach, seine proaktiven Hinweise und sein Gedächtnis ein."
+        "title": "Coach"
       },
       "security": {
-        "title": "Sicherheit",
-        "subtitle": "Zwei-Faktor-Authentifizierung, Wiederherstellungscodes und Passkeys."
+        "title": "Sicherheit"
       },
       "privacy": {
-        "title": "Daten & Datenschutz",
-        "subtitle": "Deine Daten, Aufbewahrung, Verschlüsselung und Kontosicherheit an einem Ort."
+        "title": "Daten & Datenschutz"
       },
       "mcp": {
-        "title": "MCP-Connector",
-        "subtitle": "Verbinde einen externen Assistenten mit deinen eigenen Gesundheitsdaten."
+        "title": "MCP-Connector"
       },
       "anamnesis": {
-        "title": "Anamnese",
-        "subtitle": "Deine Vorgeschichte, Lebensumstände, Notfalldaten und was die KI lesen darf."
+        "title": "Anamnese"
       },
       "environment": {
         "title": "Standort & Wetter",
-        "subtitle": "Wetter, Tageslicht und Standort-Kontext.",
         "disabledHint": "Aktiviere das Umwelt-Modul, um einen Heimatort festzulegen und tägliches Wetter und Tageslicht abzurufen.",
         "searchPlaceholder": "Stadt suchen",
         "search": "Suchen",
@@ -6831,7 +6775,6 @@
       },
       "score": {
         "title": "Gesundheitsscore",
-        "subtitle": "Lege fest, welche Bereiche in deinen Score einfließen.",
         "card": {
           "title": "Was in deinen Score einfließt",
           "description": "Jeder Bereich, den du aufzeichnest, zählt mit, solange du hier nichts anderes sagst."
@@ -6882,8 +6825,7 @@
         }
       },
       "access": {
-        "title": "Geteilter Zugriff",
-        "subtitle": "Wer deine Gesundheitsakte öffnen kann und wessen Akte du öffnen kannst."
+        "title": "Geteilter Zugriff"
       }
     },
     "profile": "Profil",
@@ -6993,7 +6935,6 @@
     "multiDevice": "Multi-Gerät",
     "backedUp": "gesichert",
     "telegram": "Telegram",
-    "telegramDescription": "Medikamenten-Erinnerungen per Bot.",
     "botToken": "Bot-Token",
     "chatId": "Chat-ID",
     "enableNotifications": "Benachrichtigungen aktivieren",
@@ -7001,14 +6942,12 @@
     "telegramStep2": "Sende /start an deinen Bot, um den Chat zu aktivieren.",
     "telegramStep3": "Finde deine Chat-ID über @userinfobot oder die Bot-API.",
     "ntfy": "ntfy",
-    "ntfyDescription": "Benachrichtigungen über ntfy.",
     "ntfyEnable": "ntfy aktivieren",
     "ntfyServer": "Server-URL",
     "ntfyTopic": "Topic",
     "ntfyAuthToken": "Auth-Token (optional)",
     "ntfyAuthTokenHint": "Nur nötig bei privaten Topics mit Zugangsschutz.",
     "webhook": "Webhook",
-    "webhookDescription": "Benachrichtigungen an jede URL, die JSON annimmt.",
     "webhookEnable": "Webhook aktivieren",
     "webhookUrl": "Webhook-URL",
     "webhookUrlHint": "Die vollständige URL für den POST.",
@@ -7020,11 +6959,9 @@
     "webhookFormatGotify": "Gotify",
     "webhookFormatGotifyHint": "Nutze die URL, die auf /message endet, und trage das App-Token als Header X-Gotify-Key ein.",
     "email": "E-Mail",
-    "emailDescription": "Warnungen und Erinnerungen per E-Mail empfangen.",
     "emailEnable": "E-Mail aktivieren",
     "emailRecipient": "Empfängeradresse",
     "webPush": "Browser-Push",
-    "webPushDescription": "Benachrichtigungen in diesem Browser.",
     "webPushNotSupported": "Dein Browser unterstützt keine Push-Benachrichtigungen.",
     "webPushInstallFirst": "Auf iPhone und iPad funktionieren Push-Benachrichtigungen nur in der installierten App. Tippe in Safari auf Teilen und dann auf „Zum Home-Bildschirm“, öffne HealthLog vom Home-Bildschirm aus und tippe hier auf „Push aktivieren“.",
     "webPushDenied": "Push-Benachrichtigungen wurden blockiert. Erlaube sie in den Browser-Einstellungen.",
@@ -7049,9 +6986,6 @@
     "regenerateRateLimit": "Bitte warte, du hast das stündliche Limit für Analysen erreicht.",
     "lastGeneratedAt": "Zuletzt generiert",
     "ai": {
-      "chatgptConnectedBadge": "ChatGPT verbunden",
-      "adminAiActiveBadge": "Betreiber-Anbieter aktiv",
-      "connectionExpiredBadge": "Verbindung abgelaufen",
       "connectedSince": "Verbunden seit {when}.",
       "deviceCodeHeading": "Verbindung auf chatgpt.com abschließen",
       "deviceCodeStep1": "Öffne diesen Link auf einem beliebigen Gerät:",
@@ -7171,9 +7105,6 @@
         "apiKeyPlaceholder": "sk-…"
       },
       "codex": {
-        "statusConnected": "Verbunden",
-        "statusDisconnected": "Nicht verbunden",
-        "statusExpired": "Verbindung abgelaufen",
         "connectButton": "Mit ChatGPT verbinden",
         "disconnectButton": "Trennen",
         "disconnectTitle": "ChatGPT trennen?",
@@ -7200,7 +7131,6 @@
       "testReasonUnreachable": "Der KI-Anbieter war nicht erreichbar.",
       "coachMemory": {
         "title": "Woran sich der Coach erinnert",
-        "description": "Dauerhafte Angaben, die du dem Coach mitgeteilt hast.",
         "empty": "Der Coach hat noch keine Angaben gespeichert. Im Gespräch merkt er sich dauerhafte Details, die du teilst (deine Ziele, Beschwerden, Vorlieben), und du kannst sie hier jederzeit löschen.",
         "learnedPrefix": "gelernt {when}",
         "categoryPreference": "Vorlieben",
@@ -7330,13 +7260,11 @@
       },
       "coachConversations": {
         "title": "Coach-Gespräche",
-        "description": "Öffne ein Gespräch, um es zu lesen, oder lösche es.",
         "more": "Mehr anzeigen",
         "openAll": "Alle Gespräche öffnen"
       },
       "coachPlans": {
         "title": "Coach-Pläne",
-        "description": "Die Pläne, die du mit dem Coach vereinbart hast, zum Lesen oder Entfernen.",
         "open": "Pläne öffnen"
       },
       "reasoning": {
@@ -7352,7 +7280,6 @@
         "coachNote": "Im Coach gilt die Denktiefe aus den Coach-Einstellungen.",
         "backgroundNote": "Hintergrundarbeit wie das Tagesbriefing nutzt diese Einstellung nicht: Sie denkt höchstens auf Mittel nach, weniger, wenn der Betreiber eine niedrigere Grenze setzt, und gar nicht auf der Stufe Sparsam."
       },
-      "providerCardDescription": "Richte Schlüssel und Modell je Anbieter ein; die Reihenfolge darunter bestimmt, welchen HealthLog zuerst fragt.",
       "runtimeTitle": "Prüfen und aktualisieren",
       "usage": {
         "title": "KI-Einsatz",
@@ -7423,7 +7350,6 @@
     "withingsCredentialsSavedPlaceholder": "Gespeichert. Neue eingeben zum Ersetzen",
     "withingsCredentialsSavedPlaceholderSecret": "Gespeichert. Neues eingeben zum Ersetzen",
     "withingsSaveCredentials": "Speichern",
-    "configured": "Konfiguriert",
     "withingsSync": "Jetzt synchronisieren",
     "withingsFullSync": "Alle Daten synchronisieren",
     "withingsFullSyncTitle": "Vollsynchronisierung?",
@@ -7625,11 +7551,9 @@
     "whoopViewData": "Erholung ansehen",
     "googleHealthViewData": "Schritte ansehen",
     "apiTokens": "API-Tokens",
-    "apiTokensDescription": "Tokens für Messwerte, Trainings, Dokumente und Medikamenten-Einnahme prüfen und widerrufen.",
     "measurementsToken": {
       "title": "Messwert-Tokens",
       "description": "Erzeuge ein Token, damit eine Waage, eine Uhr, ein Ernährungstracker oder deine Hausautomatisierung Messwerte, Werte deiner eigenen Metriken und tägliche Nährstoffsummen eintragen kann.",
-      "detail": "Das Token wird nur einmal angezeigt.",
       "scopeNote": "Es kann nur Messwerte in deine eigene Akte eintragen, Werte zu eigenen Metriken, die du schon angelegt hast, und tägliche Nährstoffsummen, solange das Nährstoffe-Modul aktiv ist; lesen, ändern oder löschen kann es nichts. Messwerte und Nährstoffsummen werden als extern gekennzeichnet. Die ID einer eigenen Metrik ist der Teil nach /custom-metrics/ in der Adresse ihrer Seite.",
       "nutrientsLink": "Nährstoffaufnahme ansehen",
       "createFailed": "Das Token konnte nicht erstellt werden. Bitte versuche es erneut.",
@@ -7645,7 +7569,6 @@
     "workoutsToken": {
       "title": "Training-Tokens",
       "description": "Erzeuge ein Token, damit eine Uhren-Brücke oder ein Sync-Skript deine Trainings eintragen kann.",
-      "detail": "Das Token wird nur einmal angezeigt.",
       "scopeNote": "Es kann ausschließlich neue Trainings in deine eigene Akte eintragen. Es kann deine Daten nicht lesen, nichts ändern oder löschen und kein weiteres Token erstellen. Trainings, die darüber kommen, werden als von einem externen Gerät gekennzeichnet. Hat dein Telefon dieselbe Einheit aufgezeichnet, siehst du die Aufzeichnung des Telefons.",
       "createFailed": "Das Token konnte nicht erstellt werden. Bitte versuche es erneut.",
       "namePlaceholder": "Name, z. B. Garmin"
@@ -7653,12 +7576,10 @@
     "documentsToken": {
       "title": "Dokument-Tokens",
       "description": "Erzeuge ein Token, damit Paperless-ngx, Papra oder das Import-Skript Dokumente in deine Ablage legen können.",
-      "detail": "Das Token wird nur einmal angezeigt.",
       "scopeNote": "Es kann ausschließlich neue Dokumente in deine eigene Ablage legen. Es kann nichts auflisten, öffnen, herunterladen, ändern oder löschen und kein weiteres Token erstellen. Zurück bekommt es nur, ob eine Datei gespeichert wurde, nicht wie du sie abgelegt hast.",
       "createFailed": "Das Token konnte nicht erstellt werden. Bitte versuche es erneut.",
       "namePlaceholder": "Name, z. B. Paperless-ngx"
     },
-    "tokenMintMovedDescription": "Tokens werden dort ausgestellt, wo sie gelten: oben für Messwerte, Trainings und Dokumente, oder im API-Endpoint eines Medikaments für genau dieses Medikament.",
     "tokenCreated": "Token erstellt. Kopiere ihn jetzt! Er wird nicht erneut angezeigt.",
     "tokenCopy": "Token kopieren",
     "tokenCopied": "Token in die Zwischenablage kopiert",
@@ -7681,7 +7602,6 @@
     "noActiveTokens": "Keine aktiven Tokens vorhanden.",
     "tokenNeverUsed": "Nie",
     "apiEndpointsTitle": "API-Endpoints",
-    "apiEndpointsDescription": "Übersicht der derzeit verfügbaren externen Endpoint(s) für Token-basierte Eingaben.",
     "apiEndpointMethod": "Methode",
     "apiEndpointPath": "Pfad",
     "apiEndpointAuth": "Authentifizierung",
@@ -7752,11 +7672,6 @@
     },
     "notificationStatus": {
       "title": "Zustellstatus",
-      "description": "Status je Kanal; „Automatisch deaktiviert“ heißt, dass nach dauerhaften Fehlern gestoppt wurde.",
-      "stateActive": "Aktiv",
-      "stateAutoDisabled": "Automatisch deaktiviert",
-      "stateSendingPaused": "Versand pausiert",
-      "stateManuallyDisabled": "Deaktiviert",
       "lastSuccess": "Letzter erfolgreicher Versand",
       "lastFailure": "Letzter Fehler",
       "consecutiveFailures": "Fehler in Folge",
@@ -7954,10 +7869,8 @@
         }
       },
       "state": {
-        "title": "Coach",
-        "description": "Ob der Coach-Button und das Coach-Panel erscheinen. Der Schalter liegt unter Module."
+        "title": "Coach"
       },
-      "nudgesMoved": "Stellst du mit deinen anderen Erinnerungen unter Benachrichtigungen ein.",
       "openNudges": "In Benachrichtigungen öffnen"
     },
     "integrationRedirectGuide": {
@@ -7995,8 +7908,6 @@
         "export": "Datenexport",
         "other": "Sicherheitsereignis"
       },
-      "active": "Aktiv",
-      "inactive": "Inaktiv",
       "stepUpRequired": "Melde dich aus Sicherheitsgründen erneut an, um deinen zweiten Faktor zu ändern.",
       "useRecoveryCode": "Stattdessen Wiederherstellungscode verwenden",
       "useAuthenticator": "Stattdessen Authenticator-App verwenden",
@@ -8186,7 +8097,6 @@
       "connectionsTitle": "Verbundene Assistenten",
       "connectionsDescription": "Assistenten, die du über die Anmeldung autorisiert hast.",
       "noConnections": "Keine verbundenen Assistenten.",
-      "connectionConnected": "Verbunden",
       "connectionLastUsed": "Zuletzt verwendet",
       "connectionNeverUsed": "Nie verwendet",
       "connectionRevoke": "Trennen",
@@ -8338,12 +8248,6 @@
       "navCountsDescription": "Zeigt in der Seitenleiste und im Menü „Mehr“ neben den Einträgen, wie viele Einnahmen und Vorsorgetermine fällig sind."
     },
     "integrationCard": {
-      "state": {
-        "ok": "Läuft",
-        "limited": "Eingeschränkt",
-        "degraded": "Verzögert",
-        "actionRequired": "Aktion nötig"
-      },
       "reason": {
         "dataArriving": "Daten kommen an.",
         "dataArrivingHistory": "Daten kommen an. Der ältere Verlauf wird im Hintergrund geladen.",
@@ -8376,7 +8280,6 @@
       "moreValuesOne": "{count} weiteren Wert",
       "moreValuesFew": "{count} weitere Werte",
       "moreValuesOther": "{count} weitere Werte",
-      "notConnected": "Nicht verbunden.",
       "lastData": "Letzte Daten: {when}",
       "lastDataNone": "Letzte Daten: noch keine",
       "reconnect": "Neu verbinden",
@@ -8456,8 +8359,6 @@
     "integrationDisconnectFailed": "{provider} konnte nicht getrennt werden.",
     "timezoneSaved": "Zeitzone gespeichert.",
     "moduleState": {
-      "on": "An",
-      "off": "Aus",
       "change": "Unter Module ändern"
     },
     "timezoneUseDevice": "Zeitzone dieses Geräts übernehmen ({zone})",
@@ -8519,7 +8420,8 @@
       "cycle": "Menstruationszyklus"
     },
     "passkeyRenameFailed": "Der Passkey konnte nicht umbenannt werden.",
-    "passkeyRemoveFailed": "Der Passkey konnte nicht entfernt werden."
+    "passkeyRemoveFailed": "Der Passkey konnte nicht entfernt werden.",
+    "apiEndpointsShow": "Endpunkte anzeigen"
   },
   "admin": {
     "title": "Administration",
@@ -12496,7 +12398,6 @@
       "relatedMetric": "Siehe auch: {metric}",
       "continue": "Weitersuchen",
       "settingLabel": "Anschlussfragen vorschlagen",
-      "settingHint": "Zeigt unter der letzten Antwort des Coaches bis zu drei Vorschläge für die nächste Frage.",
       "changeAssumption": "Stattdessen: {value}"
     },
     "clarify": {
@@ -14023,6 +13924,14 @@
       "vitalsInRangeFew": "Alle {count} heutigen Werte liegen in ihrem üblichen Bereich.",
       "vitalsInRangeOther": "Alle {count} heutigen Werte liegen in ihrem üblichen Bereich.",
       "vitalInRange": "{metric} liegt heute im Mittel bei {value}, in deinem üblichen Bereich ({range}).",
+      "pillarFlagged": {
+        "yellow": "{pillar} braucht im Gesundheitsscore heute Aufmerksamkeit.",
+        "red": "{pillar} liegt im Gesundheitsscore heute außerhalb des Referenzbereichs."
+      },
+      "scoreFlagged": {
+        "yellow": "Dein Gesundheitsscore zeigt heute einen Bereich, der Aufmerksamkeit braucht.",
+        "red": "Dein Gesundheitsscore zeigt heute einen Bereich außerhalb des Referenzbereichs."
+      },
       "floor": {
         "bpHigh": "Der Blutdruck stieg in den letzten 24 Stunden auf {value}.",
         "bpLow": "Der Blutdruck fiel in den letzten 24 Stunden auf {value}.",
@@ -14093,6 +14002,9 @@
         "allInOne": "{count} geprüft, im Bereich",
         "allInFew": "{count} geprüft, alle im Bereich",
         "allInOther": "{count} geprüft, alle im Bereich",
+        "checkedOne": "{count} geprüft",
+        "checkedFew": "{count} geprüft",
+        "checkedOther": "{count} geprüft",
         "oneOut": {
           "above": "{metric} über deinem Bereich",
           "below": "{metric} unter deinem Bereich"
@@ -14906,7 +14818,6 @@
     "errorReaderBusy": "Der Dokumentleser ist gerade mit anderen Aufgaben beschäftigt. Versuch es in einer Minute noch einmal.",
     "jobFailure": {
       "title": "Angehaltene KI im Hintergrund",
-      "description": "Was zuletzt nicht durchlief und warum; ein Eintrag verschwindet, sobald es wieder klappt.",
       "line": "{job}: {reason}",
       "repeated": "{count, plural, one {Einmal} other {#-mal hintereinander}} fehlgeschlagen, zuletzt am {when}.",
       "lastAt": "Zuletzt versucht am {when}.",
@@ -16515,7 +16426,6 @@
     "expiryPushBody": "{title}: gültig bis {date}, noch {count, plural, one {# Sitzung} other {# Sitzungen}} offen."
   },
   "chartContext": {
-    "listLabel": "Medikamente und Erkrankungen in diesem Zeitraum",
     "start": "{name} begonnen",
     "startDose": "{name} begonnen mit {dose}",
     "startEstimated": "{name}: erste erfasste Einnahme",

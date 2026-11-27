@@ -76,6 +76,8 @@ describe("a score ring's colour", () => {
     const rings = files.filter((f) =>
       /<ScoreRing\b/.test(readFileSync(f, "utf8")),
     );
-    expect(rings.length).toBeGreaterThanOrEqual(4);
+    // The Insights row and the start page draw theirs through the shared
+    // tile, so the sites are the tile, the anatomy view and the hero.
+    expect(rings.length).toBeGreaterThanOrEqual(3);
   });
 });

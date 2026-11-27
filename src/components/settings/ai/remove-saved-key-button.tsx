@@ -9,6 +9,10 @@
  * /api/user/ai-provider` has always cleared a key sent as `null`; this is the
  * control for it, shared by the four forms that hold a personal key so each
  * asks the same question and reports the same way.
+ *
+ * It stands beside the key field it clears, as a secondary button, not in
+ * the card's action row: a red "remove" next to "Save" read as the card's
+ * other main action. The confirmation stays destructive.
  */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
@@ -53,8 +57,9 @@ export function RemoveSavedKeyButton({ field }: { field: SavedKeyField }) {
     <ConfirmButton
       slot={`settings-ai-remove-key-${field}`}
       destructive
-      variant="destructive"
+      variant="outline"
       size="sm"
+      className="min-h-11 shrink-0 sm:min-h-9"
       icon={<Trash2 className="size-4" aria-hidden />}
       label={t("settings.ai.removeKey.label")}
       title={t("settings.ai.removeKey.title")}

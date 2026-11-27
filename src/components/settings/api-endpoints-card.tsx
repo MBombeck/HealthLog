@@ -3,6 +3,7 @@
 import { Key } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Disclosure } from "@/components/ui/disclosure";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useTranslations } from "@/lib/i18n/context";
@@ -62,75 +63,77 @@ export function ApiEndpointsCard() {
         anchor="api-endpoints"
         icon={Key}
         title={t("settings.apiEndpointsTitle")}
-        description={t("settings.apiEndpointsDescription")}
       />
 
-      {/* Desktop table — verbatim layout for md+. */}
-      <div className="border-border relative hidden overflow-x-auto rounded-lg border md:block">
-        <table className="w-full min-w-[760px] text-xs md:min-w-0">
-          <thead>
-            <tr className="bg-muted/40 text-muted-foreground border-b">
-              <th className="px-3 py-2 text-left font-medium">
-                {t("settings.apiEndpointMethod")}
-              </th>
-              <th className="px-3 py-2 text-left font-medium">
-                {t("settings.apiEndpointPath")}
-              </th>
-              <th className="px-3 py-2 text-left font-medium">
-                {t("settings.apiEndpointAuth")}
-              </th>
-              <th className="px-3 py-2 text-left font-medium">
-                {t("settings.apiEndpointExample")}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {endpoints.map((endpoint) => (
-              <tr key={`${endpoint.method} ${endpoint.path}`}>
-                <td className="px-3 py-2 font-medium">{endpoint.method}</td>
-                <td className="px-3 py-2 font-mono">{endpoint.path}</td>
-                <td className="px-3 py-2 font-mono">{endpoint.auth}</td>
-                <td className="px-3 py-2 font-mono">{endpoint.example}</td>
+      {/* A reference, not something read on every visit: folded. */}
+      <Disclosure data-fold summary={t("settings.apiEndpointsShow")}>
+        {/* Desktop table — verbatim layout for md+. */}
+        <div className="border-border relative hidden overflow-x-auto rounded-lg border md:block">
+          <table className="w-full min-w-[760px] text-xs md:min-w-0">
+            <thead>
+              <tr className="bg-muted/40 text-muted-foreground border-b">
+                <th className="px-3 py-2 text-left font-medium">
+                  {t("settings.apiEndpointMethod")}
+                </th>
+                <th className="px-3 py-2 text-left font-medium">
+                  {t("settings.apiEndpointPath")}
+                </th>
+                <th className="px-3 py-2 text-left font-medium">
+                  {t("settings.apiEndpointAuth")}
+                </th>
+                <th className="px-3 py-2 text-left font-medium">
+                  {t("settings.apiEndpointExample")}
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {endpoints.map((endpoint) => (
+                <tr key={`${endpoint.method} ${endpoint.path}`}>
+                  <td className="px-3 py-2 font-medium">{endpoint.method}</td>
+                  <td className="px-3 py-2 font-mono">{endpoint.path}</td>
+                  <td className="px-3 py-2 font-mono">{endpoint.auth}</td>
+                  <td className="px-3 py-2 font-mono">{endpoint.example}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-      {/* Mobile card list — each endpoint stacks its columns vertically
+        {/* Mobile card list — each endpoint stacks its columns vertically
           with a labelled meta row. No horizontal scroll. */}
-      <ul
-        className="space-y-2 md:hidden"
-        data-testid="settings-api-endpoints-mobile-list"
-      >
-        {endpoints.map((endpoint) => (
-          <li
-            key={`${endpoint.method} ${endpoint.path}`}
-            className="bg-muted/30 border-border space-y-1.5 rounded-lg border p-3 text-xs"
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary" className="text-xs">
-                {endpoint.method}
-              </Badge>
-              <code className="font-mono break-all">{endpoint.path}</code>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-xs tracking-wide uppercase">
-                {t("settings.apiEndpointAuth")}
-              </p>
-              <code className="font-mono break-all">{endpoint.auth}</code>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-xs tracking-wide uppercase">
-                {t("settings.apiEndpointExample")}
-              </p>
-              <code className="block font-mono break-all">
-                {endpoint.example}
-              </code>
-            </div>
-          </li>
-        ))}
-      </ul>
+        <ul
+          className="space-y-2 md:hidden"
+          data-testid="settings-api-endpoints-mobile-list"
+        >
+          {endpoints.map((endpoint) => (
+            <li
+              key={`${endpoint.method} ${endpoint.path}`}
+              className="bg-muted/30 border-border space-y-1.5 rounded-lg border p-3 text-xs"
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary" className="text-xs">
+                  {endpoint.method}
+                </Badge>
+                <code className="font-mono break-all">{endpoint.path}</code>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-xs tracking-wide uppercase">
+                  {t("settings.apiEndpointAuth")}
+                </p>
+                <code className="font-mono break-all">{endpoint.auth}</code>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-xs tracking-wide uppercase">
+                  {t("settings.apiEndpointExample")}
+                </p>
+                <code className="block font-mono break-all">
+                  {endpoint.example}
+                </code>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </Disclosure>
     </SettingsCard>
   );
 }

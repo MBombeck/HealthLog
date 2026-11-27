@@ -3,8 +3,8 @@
  * its number say the band; the ring's accessible name says it in words, so
  * colour is never the only carrier. This guard holds the rule in two ways:
  *
- *  1. every shared ring surface (the ring, the score tile in both sizes, the
- *     Insights tile) is rendered in every band, as a load and not, and its
+ *  1. every shared ring surface (the ring and the score tile in both sizes,
+ *     the one the Insights row draws too) is rendered in every band, as a load and not, and its
  *     visible text must hold no band word while the ring's name does;
  *  2. under `src/components`, only the files that build a ring's accessible
  *     name may resolve a band word key, so a page cannot put the word back
@@ -19,7 +19,6 @@ import { describe, expect, it } from "vitest";
 import type { ScoreBand } from "@/components/insights/derived/band-tokens";
 import { ScoreRing } from "@/components/insights/derived/score-ring";
 import { ScoreRingTile } from "@/components/insights/derived/score-ring-tile";
-import { RingTile } from "@/components/insights/derived/wellness-scores";
 import { I18nProvider } from "@/lib/i18n/context";
 
 import { scanSourceMatches } from "./helpers/source-files";
@@ -75,25 +74,6 @@ describe("no band word beside a score ring", () => {
         expect(ringName(html)).toMatch(WORD);
       });
     }
-
-    it(`RingTile ${band}`, () => {
-      const html = render(
-        <RingTile
-          score={64}
-          band={band}
-          label="Readiness"
-          href="/insights/scores/readiness"
-          metricSlot="READINESS"
-          hue="readiness"
-          icon={Gauge}
-          index={0}
-          animate={false}
-          baseline={null}
-        />,
-      );
-      expect(visibleText(html)).not.toMatch(WORD);
-      expect(ringName(html)).toMatch(WORD);
-    });
   }
 
   it("resolves a band word key only where a ring's name is built", () => {
@@ -110,7 +90,6 @@ describe("no band word beside a score ring", () => {
     expect(files).toEqual([
       "components/insights/derived/band-tokens.ts",
       "components/insights/derived/score-ring.tsx",
-      "components/insights/derived/wellness-scores.tsx",
     ]);
   });
 });
