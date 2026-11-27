@@ -54,6 +54,7 @@ export const SERVER_FEATURES = [
   "medication.low-stock-trigger",
   "insights.score-origin",
   "integrations.overview",
+  "account.dismissed-hints",
   "daily.asks",
   "daily.scores-short-labels",
 ] as const;
@@ -140,6 +141,8 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "push.device on /api/auth/me and in the POST /api/devices answer carries liveActivityStartToken (the server holds a push-to-start token the relay still takes) and liveActivityPushToken (it holds the legacy Live Activity push token of the direct path), booleans only, so the app re-sends a token only when the server lacks it.",
   "insights.chart-context":
     "GET /api/insights/context returns the marks a metric chart draws: medications[] (start, stop, doseChange, pause, resume with date, name, dose, estimated, href), illnesses[] (acute episodes, start, end, label, href) and cyclePhases[] (phase, start, end inclusive), read from the timeline lanes, each empty when its module is off or its section not shared; optional from/to cut the window.",
+  "account.dismissed-hints":
+    "GET /api/auth/me carries dismissedHints, the ids of the one-time hints the account has closed (a family such as timeline-readiness, or family.member such as i18n-banner.fr); PATCH /api/auth/me/dismissed-hints with dismiss and/or restore changes it and answers the stored list. Restoring a family restores its members. Show a hint only while neither its id nor its family is listed.",
   "daily.morning":
     "GET /api/daily/morning returns the morning read: lead (rank 0 to 10, key, one sentence, language) chosen by fixed rules from the day's own readings, cards night and today_different with ring (score and band null unless fresh, asOfDay), up to three lines and sourceValues (device scores under the vendor's name and scale, no band), and scores.sleep / scores.readiness (ring, one line, href; null when the record has no such score) for the start page's score tiles beside DailyDigest.score.",
   "measurements.series-kinds":

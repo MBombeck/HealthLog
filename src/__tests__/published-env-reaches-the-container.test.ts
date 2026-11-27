@@ -92,6 +92,11 @@ const PUBLISHED_TO_USERS = [
     shownBy: "the MCP consent screen, which states how long a connection lasts",
   },
   {
+    name: "IMPORT_RATE_LIMIT_PER_HOUR",
+    shownBy:
+      "the too-many-imports message, which names the hourly ceiling in force",
+  },
+  {
     name: "SESSION_COOKIE_SECURE",
     shownBy:
       "nothing directly — the original of this defect class, kept as a control",

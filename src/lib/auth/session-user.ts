@@ -121,6 +121,7 @@ export const SESSION_USER_SELECT = {
   passkeyUpgradeNudgeDismissed: true,
   walletRelayHintDismissed: true,
   walletReadyPushDismissed: true,
+  dismissedHints: true,
   fullName: true,
   insurerName: true,
   insurerIkNumber: true,

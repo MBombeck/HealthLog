@@ -679,7 +679,11 @@ function auditDetailKeysIn(rel: string): string[][] {
 }
 
 /** The bucket-key expressions this module passes to a rate limiter. */
-const RATE_LIMITERS = new Set(["checkRateLimit", "checkAuthSurfaceRateLimit"]);
+const RATE_LIMITERS = new Set([
+  "checkRateLimit",
+  "checkAuthSurfaceRateLimit",
+  "checkImportRateLimit",
+]);
 
 function rateLimitKeysIn(rel: string): string[] {
   const source = read(rel);

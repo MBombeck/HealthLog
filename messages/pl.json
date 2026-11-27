@@ -6403,7 +6403,7 @@
             "import": "Importuj",
             "empty": "Najpierw wklej eksport albo wybierz plik.",
             "readFailed": "Nie udało się odczytać tego pliku.",
-            "rateLimited": "Maksymalnie 5 importów na godzinę. Spróbuj później.",
+            "rateLimited": "Osiągnięto godzinny limit importów. Spróbuj później.",
             "tooLarge": "Ten plik przekracza limit 16 MB.",
             "inProgress": "Import historii dawek już trwa. Poczekaj, aż się zakończy.",
             "workerUnavailable": "Proces w tle jest niedostępny, więc nic nie zostało zaimportowane.",

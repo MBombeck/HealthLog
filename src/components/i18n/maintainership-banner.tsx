@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useState } from "react";
 import { Languages, X } from "lucide-react";
-import { isMaintainedLocale, type Locale } from "@/lib/i18n/config";
+import { useAuth } from "@/hooks/use-auth";
+import { useDismissedHints } from "@/hooks/use-dismissed-hints";
+import { hintId } from "@/lib/hints/dismissible-hints";
+import { isMaintainedLocale } from "@/lib/i18n/config";
 import { useTranslations } from "@/lib/i18n/context";
 
 /**
@@ -21,19 +24,18 @@ import { useTranslations } from "@/lib/i18n/context";
  * machine-translated and links to the GitHub translation-feedback issue
  * template so they can contribute fixes back.
  *
- * Dismissal is persisted to localStorage per-locale so a user who
- * dismisses the FR banner does not see it again on next visit, but
- * still sees the IT banner when they switch language.
+ * Dismissal is remembered on the account per language
+ * (`i18n-banner.<locale>`, `useDismissedHints`), so a user who dismisses the
+ * FR banner does not see it again on any device, but still sees the IT
+ * banner when they switch language.
  *
  * The component returns null (renders nothing) when:
  *   - the active locale is in MAINTAINED_LOCALES, or
  *   - the user has dismissed this locale's banner, or
- *   - we are server-side rendering (no localStorage) — the client
- *     re-evaluates on mount, so the banner appears on second paint
- *     without a hydration mismatch warning.
+ *   - the account has not loaded yet, so a dismissed banner never
+ *     paints and then disappears.
  */
 
-const STORAGE_PREFIX = "healthlog-i18n-banner-dismissed:";
 // v1.4.26 — `.github/ISSUE_TEMPLATE/translation.yml` now exists.
 // GitHub matches the `?template=` query against the filename; the old
 // `.md` filename never resolved (the form file was missing), so the
@@ -41,53 +43,26 @@ const STORAGE_PREFIX = "healthlog-i18n-banner-dismissed:";
 const GITHUB_ISSUE_URL =
   "https://github.com/MBombeck/HealthLog/issues/new?template=translation.yml";
 
-function storageKey(locale: Locale): string {
-  return `${STORAGE_PREFIX}${locale}`;
-}
-
-function readDismissed(locale: Locale): boolean {
-  if (typeof window === "undefined") return true;
-  try {
-    return window.localStorage.getItem(storageKey(locale)) === "1";
-  } catch {
-    // localStorage unavailable (private mode, quota) — fail open so the
-    // banner appears. The user can still hide it for the session.
-    return false;
-  }
-}
-
-// Subscribe is a no-op: we only need React to re-read storage on the
-// initial client render, not to react to outside writes. Returning a
-// noop unsubscriber is the React-recommended pattern for one-shot
-// hydration of a browser-only value (mirrors next/router's locale
-// snapshot trick).
-const subscribeNoop = () => () => undefined;
-
 export function MaintainershipBanner() {
   const { locale, t } = useTranslations();
-  // SSR snapshot: server treats the banner as dismissed so the static
-  // markup never paints it. Client mount swaps in the real flag from
-  // localStorage during the same render via useSyncExternalStore —
-  // no setState-in-effect, no hydration mismatch warning.
-  const dismissedFromStorage = useSyncExternalStore<boolean>(
-    subscribeNoop,
-    () => readDismissed(locale),
-    () => true,
-  );
+  const { user, isLoading } = useAuth();
+  const hints = useDismissedHints();
   const [sessionDismissed, setSessionDismissed] = useState(false);
-  const dismissed = dismissedFromStorage || sessionDismissed;
+  // Without an account (a refused record view) the close holds for this
+  // visit only.
+  const dismissed =
+    sessionDismissed ||
+    isLoading ||
+    (user !== null &&
+      user !== undefined &&
+      hints.isDismissed("i18n-banner", locale));
 
   if (isMaintainedLocale(locale)) return null;
   if (dismissed) return null;
 
   const handleDismiss = () => {
     setSessionDismissed(true);
-    try {
-      window.localStorage.setItem(storageKey(locale), "1");
-    } catch {
-      // Best-effort persistence — the in-memory `sessionDismissed`
-      // flag still hides the banner for the rest of the session.
-    }
+    if (user) void hints.dismiss(hintId("i18n-banner", locale));
   };
 
   return (

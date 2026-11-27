@@ -10139,8 +10139,10 @@ paths:
         taken, and inferring one from the scheduled time would manufacture an on-time history the file never claimed.
         Body capped at 16 MB and 30 000 importable rows. `?dryRun=1` parses, matches, and returns the file verdict
         WITHOUT writing. A real submission queues the write onto the same background job the per-medication import uses
-        (chunked, heartbeated, resumable) and returns 202 with a `statusUrl` to poll. Shares the 5/hour `import:` rate
-        bucket with every other bulk import surface. Auth via cookie or Bearer."
+        (chunked, heartbeated, resumable) and returns 202 with a `statusUrl` to poll. Shares the `import:` rate bucket
+        with every other bulk import surface, 5 an hour by default, set by the operator through
+        `IMPORT_RATE_LIMIT_PER_HOUR` (a whole number from 1 to 1000; anything else falls back to 5); the 429 message
+        names the value in force. Auth via cookie or Bearer."
       parameters:
         - name: dryRun
           in: query
@@ -12696,6 +12698,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PatchWorkoutRoutesEnvelope"
+        "400": *a31
+        "401": *a1
+        "403": *a9
+        "413": *a32
+        "415": *a33
+        "422": *a4
+        "429": *a5
+  /api/auth/me/dismissed-hints:
+    patch:
+      tags:
+        - Auth
+      summary: Put one-time hints away or bring them back
+      description: >-
+        The one-time hints, notes and banners the caller has put away, stored on the account so a closed hint stays
+        closed on every device. The current list is `dismissedHints` on `/api/auth/me`; a client shows a hint only while
+        its id is absent there.
+
+
+        Idempotent, audit-logged. Rate-limited 60 / min per user. The caller's own list: under a switched session it is
+        still the caller's. An unknown id is 422.
+
+
+        The body is capped at 4 KB and must carry `Content-Type: application/json`. Anything larger is 413, a wrong
+        content type is 415, and a body that is not JSON at all is 400.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DismissedHintsPatchRequest"
+      responses:
+        "200":
+          description: The stored list after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatchDismissedHintsEnvelope"
         "400": *a31
         "401": *a1
         "403": *a9
@@ -18694,8 +18733,9 @@ paths:
         reason `duplicate` and not written. Without it a row is deduplicated on `(type, measuredAt)` and a repeat is
         `skipped` / `duplicate`. Writes commit in chunks rather than as one transaction; a failure part-way leaves
         earlier chunks written, and re-uploading the same file completes the rest. `?dryRun=1` validates + previews
-        without writing. Shares the 5/hour `import:` rate bucket. An unknown query parameter is refused with 422, so a
-        misspelt `dryRun` never writes."
+        without writing. Shares the `import:` rate bucket, 5 an hour by default, set by the operator through
+        `IMPORT_RATE_LIMIT_PER_HOUR` (a whole number from 1 to 1000; anything else falls back to 5); the 429 message
+        names the value in force. An unknown query parameter is refused with 422, so a misspelt `dryRun` never writes."
       parameters:
         - in: query
           name: dryRun
@@ -18747,14 +18787,16 @@ paths:
         own and a refused row is reported by line with a reason, never guessed (a number or date that reads two ways is
         refused). Re-uploading the same file writes nothing: every row is reported as a duplicate. `dryRun=1` checks the
         whole file without writing and returns the first rows as they would be stored; it spends a separate bucket of 30
-        checks an hour, the import itself the shared 5-an-hour `import:` bucket. Owner only; refused with
-        `module.disabled` when the module is switched off. An unknown query parameter is refused with 422, so a misspelt
-        `dryRun` never writes. Each row's name resolves to the account's marker the way a scanned report's rows do
-        (name, alias, catalog name); a new analyte mints one marker from its first row. A numeric result needs a unit:
-        an empty unit cell is refused with `missing_unit`, and `1` (the UCUM unity) states a value without a unit, such
-        as a ratio or INR. A result in another unit is converted when the conversion is known and keeps the printed
-        value beside it, otherwise the row is refused with `unit_mismatch`. Any other text in the value column is a
-        qualitative result. A date without a time is stored as that calendar date. At most 20 000 data rows."
+        checks an hour, the import itself the shared `import:` bucket, 5 an hour by default, set by the operator through
+        `IMPORT_RATE_LIMIT_PER_HOUR` (a whole number from 1 to 1000; anything else falls back to 5); the 429 message
+        names the value in force. Owner only; refused with `module.disabled` when the module is switched off. An unknown
+        query parameter is refused with 422, so a misspelt `dryRun` never writes. Each row's name resolves to the
+        account's marker the way a scanned report's rows do (name, alias, catalog name); a new analyte mints one marker
+        from its first row. A numeric result needs a unit: an empty unit cell is refused with `missing_unit`, and `1`
+        (the UCUM unity) states a value without a unit, such as a ratio or INR. A result in another unit is converted
+        when the conversion is known and keeps the printed value beside it, otherwise the row is refused with
+        `unit_mismatch`. Any other text in the value column is a qualitative result. A date without a time is stored as
+        that calendar date. At most 20 000 data rows."
       parameters:
         - in: query
           name: dryRun
@@ -18956,13 +18998,14 @@ paths:
         own and a refused row is reported by line with a reason, never guessed (a number or date that reads two ways is
         refused). Re-uploading the same file writes nothing: every row is reported as a duplicate. `dryRun=1` checks the
         whole file without writing and returns the first rows as they would be stored; it spends a separate bucket of 30
-        checks an hour, the import itself the shared 5-an-hour `import:` bucket. Owner only; refused with
-        `module.disabled` when the module is switched off. An unknown query parameter is refused with 422, so a misspelt
-        `dryRun` never writes. Maps name, dose (as written), daily intake times, an as-needed mark and a start and end
-        date; every other rhythm is set up afterwards in the app. A row needs times unless it is marked as needed. Each
-        row is checked against the create route's own schema; a dated window opens a course. Reminders stay off unless
-        `reminders=1`. A medication the record holds under the same name and dose is a duplicate. At most 500 data
-        rows."
+        checks an hour, the import itself the shared `import:` bucket, 5 an hour by default, set by the operator through
+        `IMPORT_RATE_LIMIT_PER_HOUR` (a whole number from 1 to 1000; anything else falls back to 5); the 429 message
+        names the value in force. Owner only; refused with `module.disabled` when the module is switched off. An unknown
+        query parameter is refused with 422, so a misspelt `dryRun` never writes. Maps name, dose (as written), daily
+        intake times, an as-needed mark and a start and end date; every other rhythm is set up afterwards in the app. A
+        row needs times unless it is marked as needed. Each row is checked against the create route's own schema; a
+        dated window opens a course. Reminders stay off unless `reminders=1`. A medication the record holds under the
+        same name and dose is a duplicate. At most 500 data rows."
       parameters:
         - in: query
           name: dryRun
@@ -19154,8 +19197,9 @@ paths:
         not transactional: on a mid-file write failure the response is 503 (`meta.errorCode` = `import.write_failed`,
         `meta.retryable` = true) with `meta.stats` carrying what landed — rows already written stay written, and a retry
         is only safe against duplication for rows that carry an `externalId`. Validation is fail-fast (the 422 carries
-        the first issue's message, not the multi-issue envelope). Rate-limited 5/hour per user (shared `import:` bucket
-        with the CSV importer)."
+        the first issue's message, not the multi-issue envelope). Rate-limited per user through the `import:` bucket it
+        shares with the CSV importers, 5 an hour by default, set by the operator through `IMPORT_RATE_LIMIT_PER_HOUR` (a
+        whole number from 1 to 1000; anything else falls back to 5); the 429 message names the value in force."
       requestBody:
         required: true
         content:
@@ -37020,6 +37064,25 @@ components:
       required:
         - storeWorkoutRoutes
       description: Keep or stop keeping the GPS track of new workouts. Off by default.
+    DismissedHintsPatchRequest:
+      type: object
+      properties:
+        dismiss:
+          maxItems: 200
+          type: array
+          items:
+            type: string
+            maxLength: 96
+        restore:
+          maxItems: 200
+          type: array
+          items:
+            type: string
+            maxLength: 96
+      description: Put one-time hints away (`dismiss`) or bring them back (`restore`). An id is a hint family
+        (`timeline-readiness`, `ai-setup`, `ai-consent-request`, `correlation-seasonal`, `i18n-banner`,
+        `getting-started`) or `family.member` (`i18n-banner.fr`, `getting-started.<row>`). Restoring a family restores
+        its members too.
     ShowNavCountsPatchRequest:
       type: object
       properties:
@@ -49945,6 +50008,7 @@ components:
               - medication.low-stock-trigger
               - insights.score-origin
               - integrations.overview
+              - account.dismissed-hints
               - daily.asks
               - daily.scores-short-labels
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
@@ -50090,10 +50154,14 @@ components:
             /api/integrations/overview returns one row per data source and delivery channel: key, group (source |
             channel), setUp, status (active | error | off, null when not set up), reason (a connection-health reason, or
             not_connected | paused | switched_off | auto_disabled | sending_paused | delivery_failing), lastAt, offered
-            and setupNote (own_credentials | null). Render status as it comes. `daily.asks`: GET /api/daily/digest
-            carries asks: every row the start page asks today, often none (kind, tier safety | decision | due, itemKey,
-            title, body, subject, exactly two actions with the primary first, learnMore), ranked on the server, never
-            capped or folded; render as delivered, no card when empty. Later is dose.snooze:<medicationId> on a dose and
+            and setupNote (own_credentials | null). Render status as it comes. `account.dismissed-hints`: GET
+            /api/auth/me carries dismissedHints, the ids of the one-time hints the account has closed (a family such as
+            timeline-readiness, or family.member such as i18n-banner.fr); PATCH /api/auth/me/dismissed-hints with
+            dismiss and/or restore changes it and answers the stored list. Restoring a family restores its members. Show
+            a hint only while neither its id nor its family is listed. `daily.asks`: GET /api/daily/digest carries asks:
+            every row the start page asks today, often none (kind, tier safety | decision | due, itemKey, title, body,
+            subject, exactly two actions with the primary first, learnMore), ranked on the server, never capped or
+            folded; render as delivered, no card when empty. Later is dose.snooze:<medicationId> on a dose and
             ask.later:<dismissKey> on other reminders; the admin rows (push_relay, server_setup) come only to a browser
             session. `daily.scores-short-labels`: Each start-page score carries shortLabel, its short name for a tile
             from the score registry, worded in the response language: GET /api/daily/morning scores.sleep and
@@ -74099,6 +74167,33 @@ components:
       required:
         - data
         - error
+      additionalProperties: false
+    PatchDismissedHintsEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/DismissedHintsResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DismissedHintsResponse:
+      type: object
+      properties:
+        dismissedHints:
+          type: array
+          items:
+            type: string
+      required:
+        - dismissedHints
       additionalProperties: false
     PatchShowNavCountsEnvelope:
       type: object
@@ -103762,6 +103857,13 @@ components:
           description: "#1113 — whether the navigation shows its counts (doses due on Medications, check-ups due on Checkups).
             `true` by default. When `false`, show no count and do not call `GET /api/nav/counts`. Set it with `PATCH
             /api/auth/me/show-nav-counts`."
+        dismissedHints:
+          type: array
+          items:
+            type: string
+          description: The one-time hints, notes and banners this account has put away, by id (a family such as
+            `timeline-readiness`, or `family.member` such as `i18n-banner.fr`). Show a hint only while its id, or its
+            family, is absent. Change it with `PATCH /api/auth/me/dismissed-hints`.
         features:
           type: object
           properties:
@@ -103878,6 +103980,7 @@ components:
         - glucoseUnit
         - medicineRegistry
         - showNavCounts
+        - dismissedHints
         - features
         - push
         - emergencyCard

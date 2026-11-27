@@ -6403,7 +6403,7 @@
             "import": "Importieren",
             "empty": "Erst den Export einfügen oder eine Datei wählen.",
             "readFailed": "Diese Datei konnte nicht gelesen werden.",
-            "rateLimited": "Höchstens 5 Importe pro Stunde. Später erneut versuchen.",
+            "rateLimited": "Das stündliche Importlimit ist erreicht. Später erneut versuchen.",
             "tooLarge": "Diese Datei überschreitet das Limit von 16 MB.",
             "inProgress": "Ein Import des Einnahmeverlaufs läuft bereits. Auf sein Ende warten.",
             "workerUnavailable": "Der Hintergrunddienst ist nicht verfügbar, es wurde nichts importiert.",

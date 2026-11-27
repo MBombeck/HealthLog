@@ -2,8 +2,8 @@
 
 /**
  * A small preference kept on this device only (v1.42, #613): which value
- * lines run under the chart, which lanes are hidden, whether the readiness
- * card was closed. Conveniences, never record state: storage can be empty,
+ * lines run under the chart, which lanes are hidden. (Whether the readiness
+ * card was closed is on the account: `useDismissedHints`.) Conveniences, never record state: storage can be empty,
  * blocked or throw, and the timeline then simply starts from its defaults.
  */
 import { useCallback, useState } from "react";
@@ -51,6 +51,3 @@ export function useDevicePreference<T>(
 
 export const isStringArray = (raw: unknown): raw is string[] =>
   Array.isArray(raw) && raw.every((v) => typeof v === "string");
-
-export const isBoolean = (raw: unknown): raw is boolean =>
-  typeof raw === "boolean";
