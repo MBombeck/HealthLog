@@ -1160,7 +1160,6 @@
     "sourceGarmin": "Garmin",
     "valueOutOfRange": "Vul een waarde in tussen {min} en {max} {unit}.",
     "valueOutOfRangeNoUnit": "Vul een waarde in tussen {min} en {max}.",
-    "lastValue": "Laatst {value}, {when}",
     "lastValueDeviates": "Flink anders dan je vorige meting. Klopt dat?",
     "saveAndNext": "Volgende waarde",
     "typeRecoveryScoreWhoop": "WHOOP Recovery",

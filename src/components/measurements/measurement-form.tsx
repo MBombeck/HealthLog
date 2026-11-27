@@ -8,8 +8,6 @@ import {
 import { useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Input } from "@/components/ui/input";
-import { DateTimeField } from "@/components/ui/date-time-field";
 import { FieldGroup } from "@/components/ui/field-group";
 import {
   Select,
@@ -42,11 +40,14 @@ import {
 } from "@/lib/query-keys";
 import { localizedApiError } from "@/lib/api/localized-error";
 import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
-import { MEASUREMENT_NOTES_MAX_LENGTH } from "@/lib/measurements/notes-limit";
 
 import { DurationReadAs } from "./duration-read-as";
 import { useEntryType } from "./entry/use-entry-type";
-import { LastValueLine, lastValuePlaceholder } from "./entry/last-value-line";
+import {
+  LastValueDeviation,
+  lastValuePlaceholder,
+} from "./entry/last-value-line";
+import { MeasurementEntryFields } from "./entry/measurement-entry-fields";
 import {
   canonicalEntryValue,
   useMeasurementEntryAssist,
@@ -56,18 +57,13 @@ import {
   MEASUREMENT_TYPES,
   measurementFormTypes,
 } from "./measurement-form-types";
-import {
-  GlucoseContextSelect,
-  type GlucoseContextValue,
-} from "./glucose-context-select";
+import type { GlucoseContextValue } from "./glucose-context-select";
 import { ketoneFingerstickBatch } from "./ketone-fingerstick";
 import {
   BloodPressureFields,
   MeasurementFormFooter,
   PairedGlucoseField,
 } from "./measurement-form-parts";
-
-const MAX_COMMENT_LENGTH = MEASUREMENT_NOTES_MAX_LENGTH;
 
 interface MeasurementFormProps {
   onSuccess?: () => void;
@@ -413,144 +409,76 @@ export function MeasurementForm({
         </Select>
       </FieldGroup>
 
-      {isBpMode ? (
-        <BloodPressureFields
-          sys={sysBp}
-          dia={diaBp}
-          pulse={pulse}
-          onSys={setSysBp}
-          onDia={setDiaBp}
-          onPulse={setPulse}
-          placeholders={{
-            sys: placeholder,
-            dia: assist.lastDia
-              ? lastValuePlaceholder(assist.lastDia, rowDisplay, fmt.number)
-              : undefined,
-          }}
-          autoFocus={autoFocus}
-          invalid={!!error}
-          describedBy={errorDescriptor}
-          lastLine={
-            assist.last ? (
-              <LastValueLine
-                last={assist.last}
-                lastDia={assist.lastDia}
-                deviates={assist.deviates}
-              />
-            ) : null
-          }
-        />
-      ) : (
-        <FieldGroup
-          htmlFor="value"
-          hint={
-            durationRead?.ok === true ? (
-              <DurationReadAs minutes={durationRead.minutes} />
-            ) : assist.last ? (
-              <LastValueLine last={assist.last} deviates={assist.deviates} />
-            ) : null
-          }
-          error={valueError}
-          label={t("measurements.valueWithUnit", { unit: valueUnit })}
-        >
-          <Input
-            id="value"
-            // Not `type="number"`: its sanitisation drops a decimal comma on
-            // the engines that do not localise the field, and "7,5" then
-            // arrives as an empty string with no explanation. `inputMode`
-            // still raises the numeric keypad, and the submit path reads the
-            // comma — the same shape the labs and custom-metric fields use.
-            // A duration also takes "7:30" and "7h 30m", which the decimal
-            // keypad cannot type.
-            inputMode={durationUnit !== null ? "text" : "decimal"}
-            enterKeyHint="next"
-            value={value}
-            onChange={(e) => {
-              setValue(e.target.value);
-              setValueError(null);
-            }}
-            // The person's own last reading, never a stranger's example.
-            placeholder={placeholder}
-            autoFocus={autoFocus}
-            required
-            aria-required="true"
-            aria-invalid={!!error || !!valueError || undefined}
-            aria-describedby={
-              [valueError ? "value-error" : null, errorDescriptor]
-                .filter(Boolean)
-                .join(" ") || undefined
-            }
-          />
-        </FieldGroup>
-      )}
-
-      {isKetoneMode && (
-        <PairedGlucoseField
-          value={pairedGlucose}
-          onChange={setPairedGlucose}
-          unit={glucoseUnit}
-          invalid={!!error}
-          describedBy={errorDescriptor}
-        />
-      )}
-
-      {(isGlucoseMode || (isKetoneMode && pairedGlucose.trim() !== "")) && (
-        <FieldGroup
-          htmlFor="glucose-context"
-          label={t("measurements.glucoseContext")}
-        >
-          <GlucoseContextSelect
-            id="glucose-context"
-            value={glucoseContext}
-            // The add form offers no "none": a reading typed in always says
-            // when it was taken.
-            onValueChange={(v) => v && setGlucoseContext(v)}
-          />
-        </FieldGroup>
-      )}
-
-      <FieldGroup htmlFor="measuredAt" label={t("measurements.timestamp")}>
-        <DateTimeField
-          id="measuredAt"
-          value={measuredAt}
-          onChange={setMeasuredAt}
-          // v1.17 — mirror the server-side plausibility bound: the
-          // picker cannot select a future instant. Matches the
-          // `validateEntryInstant` refine on `measuredAt`.
-          max={getDefaultMeasuredAtValue()}
-          required
-          aria-required="true"
-          aria-invalid={!!error || undefined}
-          aria-describedby={errorDescriptor}
-        />
-      </FieldGroup>
-
-      <FieldGroup
-        htmlFor="notes"
-        label={
-          <>
-            {t("common.note")}
-            <span className="text-muted-foreground ml-1 font-normal">
-              ({t("common.optional")})
-            </span>
-          </>
+      <MeasurementEntryFields
+        unit={valueUnit}
+        value={value}
+        onValueChange={(next) => {
+          setValue(next);
+          setValueError(null);
+        }}
+        valueField={
+          isBpMode ? (
+            <BloodPressureFields
+              sys={sysBp}
+              dia={diaBp}
+              pulse={pulse}
+              onSys={setSysBp}
+              onDia={setDiaBp}
+              onPulse={setPulse}
+              placeholders={{
+                sys: placeholder,
+                dia: assist.lastDia
+                  ? lastValuePlaceholder(assist.lastDia, rowDisplay, fmt.number)
+                  : undefined,
+              }}
+              autoFocus={autoFocus}
+              invalid={!!error}
+              describedBy={errorDescriptor}
+            />
+          ) : undefined
         }
-        labelAccessory={
-          <span className="text-muted-foreground text-xs">
-            {notes.length}/{MAX_COMMENT_LENGTH}
-          </span>
+        valueHint={
+          durationRead?.ok === true ? (
+            <DurationReadAs minutes={durationRead.minutes} />
+          ) : assist.deviates ? (
+            <LastValueDeviation deviates />
+          ) : null
         }
+        valueError={valueError}
+        // A duration also takes "7:30" and "7h 30m", which the decimal
+        // keypad cannot type.
+        inputMode={durationUnit !== null ? "text" : "decimal"}
+        // The person's own last reading, never a stranger's example.
+        placeholder={placeholder}
+        autoFocus={autoFocus}
+        glucoseContext={
+          isGlucoseMode || (isKetoneMode && pairedGlucose.trim() !== "")
+            ? {
+                value: glucoseContext,
+                // The add form offers no "none": a reading typed in always
+                // says when it was taken.
+                onChange: (v) => v && setGlucoseContext(v),
+              }
+            : null
+        }
+        measuredAt={measuredAt}
+        onMeasuredAtChange={setMeasuredAt}
+        maxMeasuredAt={getDefaultMeasuredAtValue()}
+        notes={notes}
+        onNotesChange={setNotes}
+        invalid={!!error}
+        describedBy={errorDescriptor}
       >
-        <Input
-          id="notes"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder={t("measurements.notesPlaceholder")}
-          maxLength={MAX_COMMENT_LENGTH}
-          enterKeyHint="done"
-          autoCapitalize="sentences"
-        />
-      </FieldGroup>
+        {isKetoneMode && (
+          <PairedGlucoseField
+            value={pairedGlucose}
+            onChange={setPairedGlucose}
+            unit={glucoseUnit}
+            invalid={!!error}
+            describedBy={errorDescriptor}
+          />
+        )}
+      </MeasurementEntryFields>
 
       {error && (
         <div

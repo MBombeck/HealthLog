@@ -1160,7 +1160,6 @@
     "sourceGarmin": "Garmin",
     "valueOutOfRange": "Gib einen Wert zwischen {min} und {max} {unit} ein.",
     "valueOutOfRangeNoUnit": "Gib einen Wert zwischen {min} und {max} ein.",
-    "lastValue": "Zuletzt {value}, {when}",
     "lastValueDeviates": "Deutlich anders als dein letzter Wert. Stimmt das?",
     "saveAndNext": "Nächster Wert",
     "typeRecoveryScoreWhoop": "WHOOP Recovery",

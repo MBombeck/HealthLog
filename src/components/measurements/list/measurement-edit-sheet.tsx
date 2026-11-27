@@ -3,9 +3,7 @@
 import { createPortal } from "react-dom";
 import { Loader2, Trash2 } from "lucide-react";
 
-import { FieldError } from "@/components/forms/field-error";
 import { SeededFormDiscardDialog } from "@/components/forms/use-seeded-form-dismissal";
-import { FieldGroup } from "@/components/ui/field-group";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,17 +16,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ActionMenu, ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
-import { DateTimeField } from "@/components/ui/date-time-field";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { useTranslations } from "@/lib/i18n/context";
 
-import { GlucoseContextSelect } from "../glucose-context-select";
 import { MEASUREMENT_TYPE_LABEL_KEYS as TYPE_LABEL_KEYS } from "../measurement-list-meta";
 
-import { MAX_COMMENT_LENGTH, toDateTimeLocalValue } from "./list-model";
+import { toDateTimeLocalValue } from "./list-model";
+import { MeasurementEntryFields } from "../entry/measurement-entry-fields";
 import { deleteConfirmDescription } from "./row-actions";
 import type { MeasurementEdit } from "./use-measurement-edit";
 import type { MeasurementRowDisplay } from "./use-measurement-row-display";
@@ -58,7 +53,6 @@ export function MeasurementEditSheet({
     editError,
     editErrorDescriptor,
     editValueError,
-    editValueErrorId,
     editMeasuredAt,
     setEditMeasuredAt,
     editNotes,
@@ -91,84 +85,31 @@ export function MeasurementEditSheet({
       >
         {editing && (
           <form id={editFormId} onSubmit={submitEdit} className="space-y-4">
-            <FieldGroup
-              htmlFor="edit-value"
-              label={
-                rowDisplay(editing).unit
-                  ? t("measurements.valueWithUnit", {
-                      unit: rowDisplay(editing).unit,
-                    })
-                  : t("measurements.value")
+            <MeasurementEntryFields
+              idPrefix="edit-"
+              unit={rowDisplay(editing).unit}
+              value={editValue}
+              onValueChange={setEditValue}
+              valueError={editValueError}
+              glucoseContext={
+                editing.type === "BLOOD_GLUCOSE"
+                  ? {
+                      value: editGlucoseContext,
+                      onChange: setEditGlucoseContext,
+                      // A sensor or MCP reading arrives without a context,
+                      // and saving its note must not force one onto it.
+                      allowNone: true,
+                    }
+                  : null
               }
-            >
-              <Input
-                id="edit-value"
-                type="number"
-                enterKeyHint="next"
-                step="any"
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                required
-                aria-required="true"
-                aria-invalid={!!(editValueError || editError) || undefined}
-                aria-describedby={
-                  editValueError ? editValueErrorId : editErrorDescriptor
-                }
-              />
-              <FieldError id={editValueErrorId} message={editValueError} />
-            </FieldGroup>
-
-            {editing.type === "BLOOD_GLUCOSE" && (
-              <FieldGroup
-                htmlFor="edit-glucose-context"
-                label={t("measurements.glucoseContext")}
-              >
-                <GlucoseContextSelect
-                  id="edit-glucose-context"
-                  value={editGlucoseContext}
-                  onValueChange={setEditGlucoseContext}
-                  // A sensor or MCP reading arrives without a context, and
-                  // saving its note must not force one onto it.
-                  allowNone
-                />
-              </FieldGroup>
-            )}
-
-            <FieldGroup
-              htmlFor="edit-measuredAt"
-              label={t("measurements.timestamp")}
-            >
-              <DateTimeField
-                id="edit-measuredAt"
-                value={editMeasuredAt}
-                onChange={setEditMeasuredAt}
-                // Match the server bound: no future instant.
-                max={toDateTimeLocalValue(new Date().toISOString())}
-                required
-                aria-required="true"
-                aria-invalid={!!editError || undefined}
-                aria-describedby={editErrorDescriptor}
-              />
-            </FieldGroup>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-3">
-                <Label htmlFor="edit-notes">
-                  {t("common.note")} ({t("common.optional")})
-                </Label>
-                <span className="text-muted-foreground text-xs">
-                  {editNotes.length}/{MAX_COMMENT_LENGTH}
-                </span>
-              </div>
-              <Input
-                id="edit-notes"
-                value={editNotes}
-                onChange={(e) => setEditNotes(e.target.value)}
-                maxLength={MAX_COMMENT_LENGTH}
-                enterKeyHint="done"
-                autoCapitalize="sentences"
-              />
-            </div>
+              measuredAt={editMeasuredAt}
+              onMeasuredAtChange={setEditMeasuredAt}
+              maxMeasuredAt={toDateTimeLocalValue(new Date().toISOString())}
+              notes={editNotes}
+              onNotesChange={setEditNotes}
+              invalid={!!editError}
+              describedBy={editErrorDescriptor}
+            />
 
             {editError && (
               <div

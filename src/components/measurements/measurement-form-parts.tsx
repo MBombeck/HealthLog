@@ -1,7 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
-
 import { Loader2, RotateCcw } from "lucide-react";
 
 import { ActionMenu, ActionPair } from "@/components/ui/action-pair";
@@ -156,8 +154,7 @@ function UnitLabel({ htmlFor, label }: { htmlFor: string; label: string }) {
 
 /**
  * The blood pressure row: systolic, diastolic and an optional pulse, each
- * placeholder the person's own last reading, and the "Last …" line under
- * the row. Systolic takes the focus when the form opens.
+ * placeholder the person's own last reading. Systolic takes the focus when the form opens.
  */
 export function BloodPressureFields({
   sys,
@@ -170,7 +167,6 @@ export function BloodPressureFields({
   autoFocus,
   invalid,
   describedBy,
-  lastLine,
 }: {
   sys: string;
   dia: string;
@@ -182,7 +178,6 @@ export function BloodPressureFields({
   autoFocus: boolean;
   invalid: boolean;
   describedBy?: string;
-  lastLine: ReactNode;
 }) {
   const { t } = useTranslations();
   return (
@@ -242,11 +237,6 @@ export function BloodPressureFields({
           max={220}
         />
       </div>
-      {lastLine ? (
-        <p className="text-muted-foreground text-xs sm:col-span-3">
-          {lastLine}
-        </p>
-      ) : null}
     </div>
   );
 }

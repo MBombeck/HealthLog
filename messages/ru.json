@@ -1160,7 +1160,6 @@
     "sourceGarmin": "Garmin",
     "valueOutOfRange": "Введите значение от {min} до {max} {unit}.",
     "valueOutOfRangeNoUnit": "Введите значение от {min} до {max}.",
-    "lastValue": "Последнее: {value}, {when}",
     "lastValueDeviates": "Заметно отличается от прошлого измерения. Всё верно?",
     "saveAndNext": "Следующий замер",
     "typeRecoveryScoreWhoop": "WHOOP Recovery",
