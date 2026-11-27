@@ -58,7 +58,6 @@
     "__tests__/error-display-helper-guard.test.ts": 1,
     "__tests__/factor-verification-surface-guard.test.ts": 1,
     "__tests__/feature-flags-mock-guard.test.ts": 1,
-    "__tests__/greeting-hour-single-source.test.ts": 1,
     "__tests__/guard-floor-guard.test.ts": 1,
     "__tests__/healthcheck-boot-storm.test.ts": 1,
     "__tests__/i18n-call-site-coverage.test.ts": 1,

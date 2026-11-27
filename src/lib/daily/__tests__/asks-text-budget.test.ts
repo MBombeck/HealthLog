@@ -21,12 +21,10 @@
  * the one thing the card may cut, with an ellipsis; they are not budgeted.
  * The real layout is checked in the browser by `e2e/today-asks.spec.ts`.
  */
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
 import { describe, expect, it } from "vitest";
 
 import advances from "./fixtures/inter-advances.json";
+import { readSource } from "@/__tests__/helpers/source-files";
 import {
   ASK_TEXT_BUDGET,
   askTextLength,
@@ -55,10 +53,10 @@ function width(text: string, px: number, weight: Weight): number {
 }
 
 /** Every label key an ask can put on a button, read from the policy. */
-const ASKS_SOURCE = readFileSync(
-  join(process.cwd(), "src/lib/daily/asks.ts"),
-  "utf8",
-);
+const ASKS_SOURCE = readSource("src/lib/daily/asks.ts", [
+  "PRIMARY_BY_KIND",
+  "buildAdminAsk",
+]);
 const LABEL_KEYS = [
   ...new Set(
     [...ASKS_SOURCE.matchAll(/labelKey: "([^"]+)"/g)].map((m) => m[1]),

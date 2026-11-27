@@ -934,8 +934,7 @@ export async function loadDailyDigest(
         snapshot.layout.enabledHeroItemKinds ??
         PRIORITY_ITEM_KINDS,
       score,
-      // Already resolved for today by the snapshot read (`briefing-today.ts`
-      // via `applyBriefingForToday`), as every surface serves it.
+      // Resolved for today by the snapshot read (`applyBriefingForToday`).
       briefing: snapshot.briefing,
       medsToday: snapshot.medsToday,
       // #176 — the briefing is served only in the reader's language or

@@ -78,7 +78,6 @@
     "components/cycle/cycle-settings.tsx :: CycleSettings": 228,
     "components/cycle/cycle-view.tsx :: CycleView": 403,
     "components/cycle/log-day-sheet.tsx :: LogDaySheet": 753,
-    "components/dashboard/dashboard-header.tsx :: DashboardHeader": 214,
     "components/dashboard/medication-intake-quick-add.tsx :: MedicationIntakeQuickAdd": 226,
     "components/day/day-layer.tsx :: DayLayer": 358,
     "components/day/day-view.tsx :: DayView": 309,
