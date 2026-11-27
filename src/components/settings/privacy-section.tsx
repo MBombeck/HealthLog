@@ -181,7 +181,7 @@ export function PrivacySection() {
           title={t("settings.privacy.sessions.title")}
           description={t("settings.privacy.sessions.description")}
         />
-        <SettingsCardActions align="start">
+        <SettingsCardActions>
           <Button asChild variant="outline" size="sm">
             <Link href="/settings/security#sessions">
               {t("settings.privacy.sessions.open")}
@@ -207,7 +207,7 @@ export function PrivacySection() {
               : t("settings.privacy.delete.immediateNotice")}
           </SettingsInfoTile>
         )}
-        <SettingsCardActions align="start">
+        <SettingsCardActions>
           <Button asChild variant="outline" size="sm">
             <Link href="/settings/advanced">
               {t("settings.privacy.delete.openAdvanced")}
@@ -226,7 +226,7 @@ export function PrivacySection() {
           title={t("settings.privacy.posture.title")}
           description={t("settings.privacy.posture.description")}
         />
-        <SettingsCardActions align="start">
+        <SettingsCardActions>
           <Button asChild variant="outline" size="sm">
             <Link href="/settings/ai">
               {t("settings.privacy.posture.openAi")}

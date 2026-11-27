@@ -94,7 +94,7 @@ describe("<NotificationStatusCard />", () => {
     expect(html).toBe("");
   });
 
-  it("paints Active badge for a healthy channel", () => {
+  it("paints the Active chip for a healthy channel", () => {
     setChannels([
       {
         id: "ch-1",
@@ -119,7 +119,7 @@ describe("<NotificationStatusCard />", () => {
     expect(html).not.toContain('data-testid="re-enable-WEB_PUSH"');
   });
 
-  it("paints Auto-disabled badge + Re-enable button + reason for an auto-disabled channel", () => {
+  it("paints the Error chip + Re-enable button + reason for an auto-disabled channel", () => {
     setChannels([
       {
         id: "ch-2",
@@ -137,7 +137,7 @@ describe("<NotificationStatusCard />", () => {
     ]);
     const html = render(<NotificationStatusCard />);
     expect(html).toContain('data-state="auto_disabled"');
-    expect(html).toContain(">Auto-disabled</span>");
+    expect(html).toContain(">Error</span>");
     expect(html).toContain('data-testid="re-enable-WEB_PUSH"');
     expect(html).toContain("web_push_410_gone");
     // Send-test must be present but disabled (the channel is dead until re-enabled).
@@ -146,7 +146,7 @@ describe("<NotificationStatusCard />", () => {
     expect(html).toMatch(/disabled[^>]*data-testid="send-test-WEB_PUSH"/);
   });
 
-  it("paints Sending paused badge when nextRetryAt is in the future", () => {
+  it("paints the Error chip when nextRetryAt is in the future", () => {
     setChannels([
       {
         id: "ch-3",
@@ -164,13 +164,13 @@ describe("<NotificationStatusCard />", () => {
     ]);
     const html = render(<NotificationStatusCard />);
     expect(html).toContain('data-state="sending_paused"');
-    expect(html).toContain(">Sending paused</span>");
+    expect(html).toContain(">Error</span>");
     expect(html).toContain('data-testid="next-retry"');
     // No re-enable button — the channel is still enabled, just cooling down.
     expect(html).not.toContain('data-testid="re-enable-NTFY"');
   });
 
-  it("paints Manually-disabled badge when the user toggled enabled=false themselves", () => {
+  it("paints the Off chip when the user toggled enabled=false themselves", () => {
     setChannels([
       {
         id: "ch-4",
@@ -188,7 +188,7 @@ describe("<NotificationStatusCard />", () => {
     ]);
     const html = render(<NotificationStatusCard />);
     expect(html).toContain('data-state="manually_disabled"');
-    expect(html).toContain(">Disabled</span>");
+    expect(html).toContain(">Off</span>");
     // Manually-disabled does NOT get the Re-enable button (only
     // auto-disabled does — manual disable is reversed via the
     // channel's own "Enabled" switch in the per-channel card).
@@ -213,7 +213,7 @@ describe("<NotificationStatusCard />", () => {
     ]);
     const html = render(<NotificationStatusCard />, "de");
     expect(html).toContain("Zustellstatus");
-    expect(html).toContain("Automatisch deaktiviert");
+    expect(html).toContain(">Fehler</span>");
     expect(html).toContain("Wieder aktivieren");
   });
 });

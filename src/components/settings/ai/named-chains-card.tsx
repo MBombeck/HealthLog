@@ -158,7 +158,7 @@ export function NamedChainsCard({
         anchor="provider-chains"
         icon={Route}
         title={t("settings.ai.namedChains.title")}
-        description={t("settings.ai.namedChains.description")}
+        info={t("settings.ai.namedChains.description")}
       />
       {query.error ? (
         <QueryErrorRow
@@ -288,22 +288,6 @@ function NamedChainsEditor({ data }: { data: NamedChainsData }) {
         </ul>
       )}
 
-      {draft.chains.length < MAX_CHAINS && (
-        <div>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="min-h-11 sm:min-h-9"
-            onClick={addChain}
-            data-testid="ai-named-chains-add"
-          >
-            <PlusCircle className="h-4 w-4" />
-            {t("settings.ai.namedChains.newChain")}
-          </Button>
-        </div>
-      )}
-
       {draft.chains.length > 0 && (
         <DefaultChainSelect
           chains={draft.chains}
@@ -336,6 +320,18 @@ function NamedChainsEditor({ data }: { data: NamedChainsData }) {
         />
       )}
       <SettingsCardActions>
+        {draft.chains.length < MAX_CHAINS && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={addChain}
+            data-testid="ai-named-chains-add"
+          >
+            <PlusCircle className="h-4 w-4" />
+            {t("settings.ai.namedChains.newChain")}
+          </Button>
+        )}
         <Button
           size="sm"
           onClick={() => save.mutate(draft)}

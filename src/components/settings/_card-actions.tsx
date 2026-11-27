@@ -30,9 +30,12 @@ import { cn } from "@/lib/utils";
  * itself, and `healthlog/card-action-row` refuses the class in the first
  * place.
  *
- * `align="start"` is the one documented exception: a card whose only actions
- * are deep links out of it (privacy, about, export) has no primary action, so
- * its links read with the text on the left rather than against it.
+ * The row is always right-aligned and its buttons are centred on it. There is
+ * no left-aligned form: a card whose only action is a link out of it (privacy,
+ * about, the Coach's pointer to Notifications) used to take `align="start"`,
+ * and those cards read as the odd ones out beside every card whose button
+ * stands on the right. `settings-card-actions-guard.test.ts` refuses an
+ * `align` on the row and a hand-rolled left-aligned action row.
  *
  * `leading` is a control that belongs to the row but is not one of its
  * actions (the "Details" disclosure of an integration card). It stands on
@@ -46,13 +49,11 @@ const ACTION_BUTTONS =
   "[&_:is(button,a)[data-variant][data-size]:not([data-size^=icon])]:h-8 [&_:is(button,a)[data-variant][data-size]:not([data-size^=icon])]:min-h-11 [&_:is(button,a)[data-variant][data-size]:not([data-size^=icon])]:w-auto sm:pointer-fine:[&_:is(button,a)[data-variant][data-size]:not([data-size^=icon])]:min-h-9";
 
 export function SettingsCardActions({
-  align = "end",
   leading,
   className,
   children,
   ...props
 }: React.ComponentProps<"div"> & {
-  align?: "start" | "end";
   leading?: React.ReactNode;
 }) {
   if (leading) {
@@ -81,8 +82,7 @@ export function SettingsCardActions({
     <div
       data-slot="settings-card-actions"
       className={cn(
-        "flex flex-wrap items-center gap-2",
-        align === "end" ? "justify-end" : "justify-start",
+        "flex flex-wrap items-center justify-end gap-2",
         ACTION_BUTTONS,
         className,
       )}

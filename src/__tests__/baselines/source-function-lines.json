@@ -177,7 +177,7 @@
     "components/settings/ai/runtime-actions-row.tsx :: RuntimeActionsRow": 277,
     "components/settings/api-section.tsx :: ApiTokensCard": 269,
     "components/settings/coach-nudge-card.tsx :: CoachNudgeCard": 232,
-    "components/settings/coach-prefs-section.tsx :: CoachPrefsSection": 314,
+    "components/settings/coach-prefs-section.tsx :: CoachPrefsSection": 276,
     "components/settings/environment-section.tsx :: EnvironmentSection": 665,
     "components/settings/import-panel/apple-health-import-card.tsx :: AppleHealthImportCard": 288,
     "components/settings/import-panel/csv-import-card.tsx :: CsvImportCard": 207,

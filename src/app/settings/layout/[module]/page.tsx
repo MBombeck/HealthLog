@@ -69,7 +69,6 @@ export default async function SettingsLayoutModulePage({ params }: PageProps) {
       active="layout"
       heading={{
         title: t(group.titleKey),
-        subtitle: t(group.descriptionKey),
         headingId,
         // The way back to the hub. `SettingsHubBackLink` and its string have
         // existed since the sub-pages were split out, but the only thing that

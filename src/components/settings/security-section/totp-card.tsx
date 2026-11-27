@@ -23,7 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
+import { StatusChip } from "@/components/ui/status-chip";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -282,13 +282,7 @@ export function TotpCard({
         icon={Smartphone}
         title={t("settings.security.totp.title")}
         description={t("settings.security.totp.description")}
-        status={
-          enabled ? (
-            <Badge variant="secondary">{t("settings.security.active")}</Badge>
-          ) : (
-            <Badge variant="outline">{t("settings.security.inactive")}</Badge>
-          )
-        }
+        status={<StatusChip tone={enabled ? "active" : "off"} />}
       />
 
       <div>

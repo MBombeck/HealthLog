@@ -19,17 +19,9 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  AlertCircle,
-  Bell,
-  CheckCircle2,
-  Clock,
-  Loader2,
-  RotateCw,
-  Send,
-} from "lucide-react";
+import { Bell, Loader2, RotateCw, Send } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
+import { StatusChip, type StatusChipTone } from "@/components/ui/status-chip";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useMounted } from "@/hooks/use-mounted";
@@ -44,7 +36,7 @@ import { translateCode } from "@/lib/i18n/translate-code";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { runConnectionTest } from "@/components/settings/test-connection-button";
 
-type ChannelType = "TELEGRAM" | "NTFY" | "WEB_PUSH" | "APNS";
+export type ChannelType = "TELEGRAM" | "NTFY" | "WEB_PUSH" | "APNS";
 
 type ChannelState =
   "active" | "auto_disabled" | "manually_disabled" | "sending_paused";
@@ -70,14 +62,13 @@ const TEST_ENDPOINTS: Record<ChannelType, string> = {
   APNS: "/api/notifications/apns/test",
 };
 
-export function NotificationStatusCard() {
-  const hydrated = useMounted();
-  const { isAuthenticated } = useAuth();
-  const { t } = useTranslations();
-  const fmt = useFormatters();
-  const queryClient = useQueryClient();
-
-  const { data, isLoading } = useQuery({
+/**
+ * The per-channel delivery state, shared by this card and the channel cards
+ * below it (one query, one cache entry), so a channel card's status chip and
+ * this list never disagree.
+ */
+export function useNotificationChannelStatuses(enabled: boolean) {
+  return useQuery({
     queryKey: queryKeys.notificationsStatus(),
     queryFn: async () => {
       const data = await apiGet<{ channels: ChannelStatus[] }>(
@@ -85,9 +76,52 @@ export function NotificationStatusCard() {
       );
       return data.channels;
     },
-    enabled: isAuthenticated,
+    enabled,
     refetchInterval: 30_000,
   });
+}
+
+/** A delivery state as one of the three status words. */
+export function channelStatusTone(state: ChannelState): StatusChipTone {
+  switch (state) {
+    case "active":
+      return "active";
+    case "auto_disabled":
+    case "sending_paused":
+      return "error";
+    case "manually_disabled":
+      return "off";
+  }
+}
+
+/**
+ * The chip a channel card shows in its header: off until the channel is set
+ * up and switched on, an error while the delivery ledger reports one for it,
+ * active otherwise.
+ */
+export function useChannelStatusTone(
+  type: ChannelType | null,
+  isAuthenticated: boolean,
+  live: boolean,
+): StatusChipTone {
+  const statuses = useNotificationChannelStatuses(isAuthenticated);
+  if (!live) return "off";
+  const row = type
+    ? (Array.isArray(statuses.data) ? statuses.data : []).find(
+        (channel) => channel.type === type,
+      )
+    : undefined;
+  return row && channelStatusTone(row.state) === "error" ? "error" : "active";
+}
+
+export function NotificationStatusCard() {
+  const hydrated = useMounted();
+  const { isAuthenticated } = useAuth();
+  const { t } = useTranslations();
+  const fmt = useFormatters();
+  const queryClient = useQueryClient();
+
+  const { data, isLoading } = useNotificationChannelStatuses(isAuthenticated);
 
   const reEnable = useMutation({
     // Confirms in place: the channel's badge turns back to "Active".
@@ -147,7 +181,6 @@ export function NotificationStatusCard() {
           anchor="delivery-status"
           icon={Bell}
           title={t("settings.notificationStatus.title")}
-          description={t("settings.notificationStatus.description")}
         />
         <Loader2 className="text-muted-foreground h-4 w-4 animate-spin motion-reduce:animate-none" />
       </SettingsCard>
@@ -169,7 +202,6 @@ export function NotificationStatusCard() {
       <SettingsCardHeader
         icon={Bell}
         title={t("settings.notificationStatus.title")}
-        description={t("settings.notificationStatus.description")}
       />
 
       <ul
@@ -210,8 +242,6 @@ function ChannelRow({
   reEnablePending: boolean;
   testPending: boolean;
 }) {
-  const stateBadge = stateBadgeFor(channel.state, t);
-
   return (
     <li
       className="flex flex-col gap-2 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between"
@@ -221,14 +251,11 @@ function ChannelRow({
       <div className="space-y-1">
         <div className="flex items-center gap-2">
           <span className="font-medium">{channel.label}</span>
-          <Badge
-            variant={stateBadge.variant}
-            className={stateBadge.className}
+          <StatusChip
+            tone={channelStatusTone(channel.state)}
             data-testid={`notification-status-badge-${channel.type}`}
-          >
-            {stateBadge.icon}
-            <span className="ml-1">{stateBadge.label}</span>
-          </Badge>
+            data-state={channel.state}
+          />
         </div>
         <dl className="text-muted-foreground space-y-0.5 text-xs">
           {channel.lastSuccessAt && (
@@ -329,45 +356,4 @@ function ChannelRow({
       </div>
     </li>
   );
-}
-
-function stateBadgeFor(
-  state: ChannelState,
-  t: (key: string) => string,
-): {
-  label: string;
-  variant: "default" | "outline" | "destructive" | "secondary";
-  className: string;
-  icon: React.ReactNode;
-} {
-  switch (state) {
-    case "active":
-      return {
-        label: t("settings.notificationStatus.stateActive"),
-        variant: "default",
-        className: "border-success/30 bg-success/15 text-success",
-        icon: <CheckCircle2 className="h-3 w-3" aria-hidden />,
-      };
-    case "auto_disabled":
-      return {
-        label: t("settings.notificationStatus.stateAutoDisabled"),
-        variant: "destructive",
-        className: "",
-        icon: <AlertCircle className="h-3 w-3" aria-hidden />,
-      };
-    case "sending_paused":
-      return {
-        label: t("settings.notificationStatus.stateSendingPaused"),
-        variant: "outline",
-        className: "border-warning/40 text-warning",
-        icon: <Clock className="h-3 w-3" aria-hidden />,
-      };
-    case "manually_disabled":
-      return {
-        label: t("settings.notificationStatus.stateManuallyDisabled"),
-        variant: "secondary",
-        className: "",
-        icon: <Clock className="h-3 w-3" aria-hidden />,
-      };
-  }
 }

@@ -273,7 +273,7 @@ export function AboutSection() {
             icon={BookOpen}
             title={t("settings.about.linksHeading")}
           />
-          <SettingsCardActions align="start">
+          <SettingsCardActions>
             <Button asChild variant="outline" size="sm">
               <a
                 href={version.repository}
