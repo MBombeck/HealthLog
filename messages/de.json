@@ -2459,7 +2459,6 @@
         "scheduleLabel": "Zeitplan {index}",
         "fullEditNote": "Häufigkeit, Wirkstoffklasse und Zeitraum bearbeitest du im Editor unter Erweitert > Lebenszyklus.",
         "graceEcho": "Erinnerungsdauer: {minutes, plural, one {# Minute} other {# Minuten}}",
-        "manageChannels": "Benachrichtigungskanäle verwalten",
         "history": {
           "title": "Planhistorie",
           "currentSince": "Aktueller Plan seit {date}",

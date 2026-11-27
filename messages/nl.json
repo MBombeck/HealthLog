@@ -2459,7 +2459,6 @@
         "scheduleLabel": "Schema {index}",
         "fullEditNote": "Frequentie, behandelklasse en kuurperiode bewerk je in de editor onder Geavanceerd > Levenscyclus.",
         "graceEcho": "Herinneringsduur: {minutes, plural, one {# minuut} other {# minuten}}",
-        "manageChannels": "Meldingskanalen beheren",
         "history": {
           "title": "Schemageschiedenis",
           "currentSince": "Huidig schema sinds {date}",

@@ -32,7 +32,10 @@ import {
   liveDoseState,
   type TakeSlot,
 } from "@/lib/medications/dose-state/pill";
-import { DOSE_ACTION_TERM } from "@/lib/medications/dose-state/terms";
+import {
+  DOSE_ACTION_TERM,
+  isOpenDoseState,
+} from "@/lib/medications/dose-state/terms";
 import { queryKeys } from "@/lib/query-keys";
 import { userDayKey } from "@/lib/tz/format";
 
@@ -100,12 +103,6 @@ export function useTodayDoses(medicationId: string, enabled: boolean) {
   );
 }
 
-const OPEN_STATES: ReadonlySet<DoseState> = new Set([
-  "pending",
-  "due",
-  "overdue",
-]);
-
 /** The card's one sentence, from the server's states. */
 function useTodaySentence({
   medication,
@@ -134,7 +131,7 @@ function useTodaySentence({
       : t("medications.detail.uebersicht.nextDoseAsNeeded");
   }
   // The first dose of today that still waits for an answer.
-  const open = slots.find((dose) => dose.state && OPEN_STATES.has(dose.state));
+  const open = slots.find((dose) => isOpenDoseState(dose.state));
   if (!open) {
     return slots.length > 0
       ? t("medications.detail.overview.today.nothingOpen")

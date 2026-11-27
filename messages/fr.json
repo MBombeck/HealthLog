@@ -2459,7 +2459,6 @@
         "scheduleLabel": "Horaire {index}",
         "fullEditNote": "La fréquence, la classe de traitement et la période de traitement se modifient dans l'éditeur, sous Avancé > Cycle de vie.",
         "graceEcho": "Durée des rappels : {minutes, plural, one {# minute} other {# minutes}}",
-        "manageChannels": "Gérer les canaux de notification",
         "history": {
           "title": "Historique du plan",
           "currentSince": "Plan actuel depuis {date}",

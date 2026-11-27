@@ -2459,7 +2459,6 @@
         "scheduleLabel": "Harmonogram {index}",
         "fullEditNote": "Częstotliwość, klasę leczenia i okres leczenia edytujesz w edytorze w sekcji Zaawansowane > Cykl życia.",
         "graceEcho": "Czas przypomnień: {minutes, plural, one {# minuta} few {# minuty} many {# minut} other {# minuty}}",
-        "manageChannels": "Zarządzaj kanałami powiadomień",
         "history": {
           "title": "Historia planu",
           "currentSince": "Aktualny plan od {date}",

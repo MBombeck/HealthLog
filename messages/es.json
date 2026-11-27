@@ -2459,7 +2459,6 @@
         "scheduleLabel": "Horario {index}",
         "fullEditNote": "La frecuencia, la clase de tratamiento y el periodo de tratamiento se editan en el editor, en Avanzado > Ciclo de vida.",
         "graceEcho": "Duración de los recordatorios: {minutes, plural, one {# minuto} other {# minutos}}",
-        "manageChannels": "Gestionar canales de notificación",
         "history": {
           "title": "Historial del plan",
           "currentSince": "Plan actual desde {date}",

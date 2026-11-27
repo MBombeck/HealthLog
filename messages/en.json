@@ -2459,7 +2459,6 @@
         "scheduleLabel": "Schedule {index}",
         "fullEditNote": "Frequency, treatment class and course are edited in the editor under Advanced > Lifecycle.",
         "graceEcho": "Reminder duration: {minutes, plural, one {# minute} other {# minutes}}",
-        "manageChannels": "Manage notification channels",
         "history": {
           "title": "Plan history",
           "currentSince": "Current plan since {date}",

@@ -2459,7 +2459,6 @@
         "scheduleLabel": "Cronograma {index}",
         "fullEditNote": "Frequência, classe de tratamento e período do tratamento são editadas no editor em Avançado > Ciclo de vida.",
         "graceEcho": "Duração dos lembretes: {minutes, plural, one {# minuto} other {# minutos}}",
-        "manageChannels": "Gerenciar canais de notificação",
         "history": {
           "title": "Histórico do plano",
           "currentSince": "Plano atual desde {date}",

@@ -2459,7 +2459,6 @@
         "scheduleLabel": "일정 {index}",
         "fullEditNote": "주기, 치료 분류, 복용 기간은 고급 > 수명 주기의 편집기에서 바꿔요.",
         "graceEcho": "알림 유예 시간: {minutes, plural, other {#분}}",
-        "manageChannels": "알림 채널 관리",
         "history": {
           "title": "일정 변경 이력",
           "currentSince": "{date}부터 현재 일정",

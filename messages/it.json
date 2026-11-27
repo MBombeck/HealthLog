@@ -2459,7 +2459,6 @@
         "scheduleLabel": "Programma {index}",
         "fullEditNote": "Frequenza, classe di trattamento e periodo di trattamento si modificano nell'editor, in Avanzate > Ciclo di vita.",
         "graceEcho": "Durata dei promemoria: {minutes, plural, one {# minuto} other {# minuti}}",
-        "manageChannels": "Gestisci i canali di notifica",
         "history": {
           "title": "Cronologia del piano",
           "currentSince": "Piano attuale dal {date}",

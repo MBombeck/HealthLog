@@ -22,7 +22,6 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
 import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
@@ -249,25 +248,5 @@ export function NotificationsBody({
           </div>
         )}
     </div>
-  );
-}
-
-/**
- * Quiet cross-link: WHICH channels deliver the reminder (push / Telegram /
- * ntfy, quiet hours) is configured globally, not per medication. Those are the
- * caller's own settings, so the page leaves it out of a shared record.
- */
-export function ManageChannelsLink() {
-  const { t } = useTranslations();
-  return (
-    <p className="text-muted-foreground text-xs">
-      <Link
-        href="/settings/integrations#channels"
-        className="focus-visible:ring-ring rounded-sm underline underline-offset-2 focus-visible:ring-2 focus-visible:outline-none"
-        data-slot="zeitplan-manage-channels-link"
-      >
-        {t("medications.detail.zeitplan.manageChannels")}
-      </Link>
-    </p>
   );
 }
