@@ -336,3 +336,26 @@ export async function readSleepNights(
   }
   return out;
 }
+
+/**
+ * Sleep as a value series: the latest `maxNights` nights with time asleep,
+ * newest last, one point per night (its latest instant, its minutes asleep).
+ * A surface that charts or summarises sleep reads nights, never stage rows
+ * bucketed by calendar day: one night's rows fall on two days, and a stage
+ * row is a share of a night, not a reading of it.
+ */
+export async function readSleepNightPoints(
+  userId: string,
+  tz: string,
+  priorityJson: unknown,
+  maxNights = 365,
+): Promise<Array<{ measuredAt: Date; value: number }>> {
+  return (
+    await readSleepNights(userId, tz, priorityJson, {
+      maxNights,
+      newest: true,
+    })
+  )
+    .filter((n) => n.asleepMinutes > 0)
+    .map((n) => ({ measuredAt: n.measuredAt, value: n.asleepMinutes }));
+}

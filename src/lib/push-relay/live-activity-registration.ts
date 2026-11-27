@@ -24,6 +24,7 @@
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
+import { endRelayStartedActivities } from "@/lib/push-relay/live-activity";
 import { relayConfig } from "@/lib/push-relay/config";
 import { tokenTagHex } from "@/lib/push-relay/encoding";
 import { loadRegistration, relayCall } from "@/lib/push-relay/registration";
@@ -197,6 +198,9 @@ export async function applyLiveActivityFields(
   });
   if (!device?.apnsToken) return;
   if (input.liveActivityWithdraw) {
+    // What the relay started ends first, while the relay still holds the
+    // consent: nothing updates it once the consent is gone.
+    await endRelayStartedActivities(deviceId);
     await prisma.device.update({
       where: { id: deviceId },
       data: { liveActivityConsentAt: null, liveActivityConsentVersion: null },
