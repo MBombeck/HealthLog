@@ -9947,7 +9947,6 @@
   },
   "achievements": {
     "title": "Réussites",
-    "subtitle": "Débloquez des réussites en suivant votre santé et en prenant vos médicaments à temps.",
     "loginRequired": "Connectez-vous pour voir les réussites.",
     "points": "Points",
     "unlocked": "Débloqué",
@@ -9955,7 +9954,6 @@
     "allCompleted": "Toutes les réussites débloquées !",
     "completed": "Terminé",
     "goalReached": "Objectif atteint",
-    "remainingUnlocks": "{count} encore à débloquer",
     "noneUnlockedYet": "Aucune réussite débloquée pour l’instant.",
     "pointsValue": "{points, plural, one {# point} other {# points}}",
     "metricCount": "{count}",
@@ -10209,9 +10207,7 @@
         "description": "Données de sommeil enregistrées pendant 7 jours consécutifs."
       }
     },
-    "nextProgressLabel": "Progression avant déblocage",
     "completedOn": "Terminé le {date}",
-    "locked": "Verrouillé",
     "criterionHint": "{current} / {target}",
     "progressPercent": "{percent}%",
     "categories": {
@@ -10239,7 +10235,6 @@
   "notifications": {
     "title": "Notifications par canal",
     "eventColumn": "Événement",
-    "subtitle": "Choisissez quelles notifications vous recevez et par quel canal.",
     "loadError": "Impossible de charger les paramètres de notification.",
     "noChannels": "Configurez d’abord un canal de notification dans Paramètres > Intégrations.",
     "goToSettings": "Aller aux paramètres du canal",
@@ -10837,7 +10832,6 @@
     },
     "disclaimer": "Ces prévisions sont des estimations descriptives issues de vos données enregistrées, ni une méthode de contraception ni un avis médical. Elles n'indiquent jamais qu'il est sûr d'avoir des rapports non protégés. Pour la contraception ou toute décision médicale, consultez un professionnel de santé.",
     "title": "Cycle",
-    "subtitle": "Enregistrez vos règles et symptômes, et voyez ce qui arrive ensuite.",
     "tabs": {
       "calendar": "Calendrier",
       "predictions": "Prévisions",
@@ -12071,7 +12065,6 @@
   },
   "illness": {
     "title": "Maladie",
-    "subtitle": "Un suivi rétrospectif de vos épisodes de maladie et d'affections.",
     "settings": {
       "viewDescription": "Choisissez si les épisodes s'affichent en cartes ou en liste compacte.",
       "orderDescription": "Faites glisser vos épisodes dans l'ordre où vous voulez les voir."
@@ -12526,9 +12519,7 @@
   },
   "mentalHealth": {
     "pageTitle": "Bien-être mental",
-    "pageDescription": "Quatre auto-évaluations validées et facultatives : l’évolution compte plus qu’un score isolé.",
     "attributionLabel": "Source",
-    "attributionShow": "Source et licence pour {instrument}",
     "choosePrompt": "Choisissez un bilan",
     "start": "Commencer",
     "back": "Retour",
@@ -12541,12 +12532,6 @@
       "gad7": "GAD-7 (inquiétude)",
       "who5": "WHO-5 (bien-être)",
       "sci": "SCI (sommeil)"
-    },
-    "instrumentSub": {
-      "phq9": "Dépistage de la dépression, 9 questions",
-      "gad7": "Dépistage de l'anxiété, 7 questions",
-      "who5": "Test de bien-être, 5 questions",
-      "sci": "Test de sommeil, 8 questions"
     },
     "functionalOptionalHint": "Facultatif : vous pouvez envoyer sans répondre à cette question.",
     "result": {
@@ -12585,7 +12570,6 @@
       "title": "Votre historique",
       "empty": "Aucun bilan pour le moment. Votre tendance apparaîtra ici dès que vous en aurez terminé un.",
       "flaggedBadge": "Aide affichée",
-      "chartTitle": "Évolution du score",
       "totalLabel": "Score",
       "bandLabel": "Catégorie",
       "answersToggle": "Réponses",
@@ -16311,7 +16295,7 @@
       "missBody": "Le lien a peut-être été révoqué ou a expiré. La personne à qui appartient la carte peut en créer un nouveau.",
       "title": "Lien QR",
       "loadError": "Le statut du lien n'a pas pu être chargé.",
-      "disclosure": "Toute personne qui scanne le code voit les éléments cochés, sans se connecter. Vous pouvez donner une fin au lien et le révoquer à tout moment ; chaque ouverture est enregistrée pour vous.",
+      "disclosure": "Toute personne qui scanne le code voit les éléments cochés, sans se connecter.",
       "fieldsLabel": "Ce que le lien affiche",
       "expiryLabel": "Fin du lien",
       "expiry": {
@@ -16333,17 +16317,17 @@
       "revoke": "Révoquer le lien",
       "revokeTitle": "Révoquer le lien de la carte d'urgence ?",
       "revokeBody": "Les cartes imprimées avec ce code ne fonctionneront plus. Vous pouvez créer un nouveau lien et réimprimer la carte.",
-      "error": "Le lien n'a pas pu être modifié. Réessayez."
+      "error": "Le lien n'a pas pu être modifié. Réessayez.",
+      "disclosureMore": "Vous pouvez donner une fin au lien et le révoquer à tout moment ; chaque ouverture est enregistrée pour vous."
     },
     "page": {
       "title": "Carte d'urgence",
-      "description": "Vos informations d'urgence quand vous n'êtes pas chez vous.",
       "loadError": "La carte d'urgence n'a pas pu être chargée.",
       "offlineHint": "L'application ne fonctionne pas hors ligne, volontairement. Enregistrez une copie sur votre téléphone pour avoir la carte sans connexion ; elle montre son contenu au jour de l'enregistrement.",
       "downloadError": "Le téléchargement a échoué. Réessayez.",
-      "saveOffline": "Enregistrer une copie hors ligne",
-      "wallet": "Carte pour le portefeuille (PDF)",
-      "walletWithQr": "Carte avec code QR (PDF)",
+      "saveOffline": "Copie hors ligne",
+      "wallet": "Carte en PDF",
+      "walletWithQr": "PDF avec code QR",
       "preview": "Votre carte"
     },
     "name": "Nom",
@@ -16445,7 +16429,8 @@
         "title": "Votre carte d'urgence est prête",
         "body": "Ajoutez-la à Apple Wallet sur cet iPhone."
       }
-    }
+    },
+    "fieldsCount": "{count} sur {total}"
   },
   "treatmentSeries": {
     "heading": "Séries de soins",

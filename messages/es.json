@@ -9947,7 +9947,6 @@
   },
   "achievements": {
     "title": "Logros",
-    "subtitle": "Consigue logros registrando tu salud y tomando tu medicación a tiempo.",
     "loginRequired": "Inicia sesión para ver los logros.",
     "points": "Puntos",
     "unlocked": "Desbloqueado",
@@ -9955,7 +9954,6 @@
     "allCompleted": "¡Todos los logros desbloqueados!",
     "completed": "Completado",
     "goalReached": "Objetivo alcanzado",
-    "remainingUnlocks": "Quedan {count} por desbloquear",
     "noneUnlockedYet": "Aún no has desbloqueado ningún logro.",
     "pointsValue": "{points, plural, one {# punto} other {# puntos}}",
     "metricCount": "{count}",
@@ -10209,9 +10207,7 @@
         "description": "Datos de sueño registrados durante 7 días consecutivos."
       }
     },
-    "nextProgressLabel": "Progreso para desbloquear",
     "completedOn": "Completado el {date}",
-    "locked": "Bloqueado",
     "criterionHint": "{current} / {target}",
     "progressPercent": "{percent}%",
     "categories": {
@@ -10239,7 +10235,6 @@
   "notifications": {
     "title": "Notificaciones por canal",
     "eventColumn": "Evento",
-    "subtitle": "Elige qué notificaciones recibes y por qué canal.",
     "loadError": "No se han podido cargar los ajustes de notificación.",
     "noChannels": "Configura primero un canal de notificación en Ajustes > Integraciones.",
     "goToSettings": "Ir a los ajustes del canal",
@@ -10837,7 +10832,6 @@
     },
     "disclaimer": "Estas predicciones son estimaciones descriptivas a partir de tus datos registrados, no un método anticonceptivo ni un consejo médico. Nunca indican que sea seguro tener relaciones sin protección. Para anticoncepción o cualquier decisión médica, consulta a un profesional sanitario.",
     "title": "Ciclo",
-    "subtitle": "Registra tu periodo y síntomas, y mira qué viene después.",
     "tabs": {
       "calendar": "Calendario",
       "predictions": "Predicciones",
@@ -12071,7 +12065,6 @@
   },
   "illness": {
     "title": "Enfermedad",
-    "subtitle": "Un registro retrospectivo de tus episodios de enfermedad y dolencias.",
     "settings": {
       "viewDescription": "Elige si los episodios se muestran como tarjetas o como lista compacta.",
       "orderDescription": "Arrastra tus episodios al orden en que quieres verlos."
@@ -12526,9 +12519,7 @@
   },
   "mentalHealth": {
     "pageTitle": "Bienestar mental",
-    "pageDescription": "Cuatro autoevaluaciones validadas y voluntarias: cuenta la evolución, no un valor aislado.",
     "attributionLabel": "Fuente",
-    "attributionShow": "Fuente y licencia de {instrument}",
     "choosePrompt": "Elige un cuestionario",
     "start": "Empezar",
     "back": "Atrás",
@@ -12541,12 +12532,6 @@
       "gad7": "GAD-7 (preocupación)",
       "who5": "WHO-5 (bienestar)",
       "sci": "SCI (sueño)"
-    },
-    "instrumentSub": {
-      "phq9": "Cribado de depresión, 9 preguntas",
-      "gad7": "Cribado de ansiedad, 7 preguntas",
-      "who5": "Test de bienestar, 5 preguntas",
-      "sci": "Test de sueño, 8 preguntas"
     },
     "functionalOptionalHint": "Opcional: puedes enviar sin responder esta pregunta.",
     "result": {
@@ -12585,7 +12570,6 @@
       "title": "Tu historial",
       "empty": "Aún no hay cuestionarios. Tu tendencia aparecerá aquí cuando completes uno.",
       "flaggedBadge": "Apoyo mostrado",
-      "chartTitle": "Evolución de la puntuación",
       "totalLabel": "Puntuación",
       "bandLabel": "Categoría",
       "answersToggle": "Respuestas",
@@ -16311,7 +16295,7 @@
       "missBody": "Puede que el enlace se haya revocado o haya caducado. La persona a quien pertenece la tarjeta puede crear uno nuevo.",
       "title": "Enlace QR",
       "loadError": "No se pudo cargar el estado del enlace.",
-      "disclosure": "Quien escanee el código verá lo que marques, sin iniciar sesión. Puedes darle una fecha de fin y revocarlo cuando quieras; cada apertura queda registrada para ti.",
+      "disclosure": "Quien escanee el código verá lo que marques, sin iniciar sesión.",
       "fieldsLabel": "Lo que muestra el enlace",
       "expiryLabel": "El enlace termina",
       "expiry": {
@@ -16333,17 +16317,17 @@
       "revoke": "Revocar enlace",
       "revokeTitle": "¿Revocar el enlace de la tarjeta de emergencia?",
       "revokeBody": "Las tarjetas impresas con este código dejarán de funcionar. Puedes crear un enlace nuevo e imprimir la tarjeta otra vez.",
-      "error": "No se pudo cambiar el enlace. Inténtalo de nuevo."
+      "error": "No se pudo cambiar el enlace. Inténtalo de nuevo.",
+      "disclosureMore": "Puedes darle una fecha de fin y revocarlo cuando quieras; cada apertura queda registrada para ti."
     },
     "page": {
       "title": "Tarjeta de emergencia",
-      "description": "Tus datos de emergencia para cuando estás fuera de casa.",
       "loadError": "No se pudo cargar la tarjeta de emergencia.",
       "offlineHint": "La app no funciona sin conexión a propósito. Guarda una copia en el móvil para llevar la tarjeta sin conexión; muestra lo que contenía el día que la guardaste.",
       "downloadError": "La descarga no funcionó. Inténtalo de nuevo.",
-      "saveOffline": "Guardar copia sin conexión",
-      "wallet": "Tarjeta para la cartera (PDF)",
-      "walletWithQr": "Tarjeta con código QR (PDF)",
+      "saveOffline": "Copia sin conexión",
+      "wallet": "Tarjeta en PDF",
+      "walletWithQr": "PDF con código QR",
       "preview": "Tu tarjeta"
     },
     "name": "Nombre",
@@ -16445,7 +16429,8 @@
         "title": "Tu tarjeta de emergencia está lista",
         "body": "Añádela a Apple Wallet en este iPhone."
       }
-    }
+    },
+    "fieldsCount": "{count} de {total}"
   },
   "treatmentSeries": {
     "heading": "Series de tratamiento",
