@@ -19,6 +19,7 @@ import { bandForScoreKind, provenance, scoreBand } from "./shared";
 import { evaluateScoreBreadth, SCORE_RECOMMENDED_DOMAINS } from "./breadth";
 import type { ScoreConfigBoundary } from "./config";
 import { mean } from "@/lib/stats/central";
+import { shiftDateKey } from "@/lib/tz/format";
 
 export const SCORE_ALGORITHM_CHANGED_AT = "2026-08-30T00:00:00.000Z";
 
@@ -195,79 +196,73 @@ export function computeComposite(
   });
 }
 
+/**
+ * A day the score's history holds, as the delta reads it: the
+ * `HealthScoreRecord` row of that local day, the number shown on it.
+ */
+export interface StoredScoreDay {
+  dayKey: string;
+  composite: number;
+  scoreVersion: number;
+  composition: readonly string[];
+  /** Null on a row written before the recipe version was recorded. */
+  configVersion: number | null;
+  computedAt: Date;
+}
+
+/** How far back the comparison day sits: a week. */
+const SCORE_DELTA_LOOKBACK_DAYS = 7;
+/**
+ * The comparison window's width. The newest stored day in it is the one
+ * compared against, so a week with a day or two unopened still has one.
+ */
+const SCORE_DELTA_WINDOW_DAYS = 7;
+
+/**
+ * The newest stored day in the week that ends {@link
+ * SCORE_DELTA_LOOKBACK_DAYS} before `dayKey`, or null when that week holds
+ * none.
+ */
+function comparisonDay(
+  days: readonly StoredScoreDay[],
+  dayKey: string,
+): StoredScoreDay | null {
+  const to = shiftDateKey(dayKey, -SCORE_DELTA_LOOKBACK_DAYS);
+  const from = shiftDateKey(
+    dayKey,
+    -(SCORE_DELTA_LOOKBACK_DAYS + SCORE_DELTA_WINDOW_DAYS - 1),
+  );
+  let best: StoredScoreDay | null = null;
+  for (const day of days) {
+    if (day.dayKey < from || day.dayKey > to) continue;
+    if (!best || day.dayKey > best.dayKey) best = day;
+  }
+  return best;
+}
+
+/** How many days before today the delta's two stored days can reach back. */
+export const SCORE_DELTA_READ_DAYS =
+  2 * (SCORE_DELTA_LOOKBACK_DAYS + SCORE_DELTA_WINDOW_DAYS - 1);
+
 function sameComposition(
-  left: Derived<CompositeValue>,
-  right: Derived<CompositeValue>,
+  left: readonly string[],
+  right: readonly string[],
 ): boolean {
   return (
-    left.status === "ok" &&
-    right.status === "ok" &&
-    left.value.composition.length === right.value.composition.length &&
-    left.value.composition.every(
-      (pillar, index) => pillar === right.value.composition[index],
-    )
+    left.length === right.length &&
+    left.every((pillar, index) => pillar === right[index])
   );
 }
 
-function comparableDynamicPillars(
-  report: Derived<CompositeValue>,
-  other: Derived<CompositeValue>,
-  pillars: ScorePillarResult[],
-  otherPillars: ScorePillarResult[],
-): {
-  current: number;
-  previous: number;
-  noiseFloor: number;
-} | null {
-  if (report.status !== "ok" || other.status !== "ok") return null;
-  const otherById = new Map(otherPillars.map((pillar) => [pillar.id, pillar]));
-  const pairs = pillars.flatMap((pillar) => {
-    const previous = otherById.get(pillar.id);
-    if (
-      !report.value.composition.includes(pillar.id) ||
-      !other.value.composition.includes(pillar.id) ||
-      pillar.result.status !== "ok" ||
-      previous?.result.status !== "ok" ||
-      !pillar.result.value.deltaEligible ||
-      !previous.result.value.deltaEligible ||
-      pillar.result.value.deltaIdentity !== previous.result.value.deltaIdentity
-    ) {
-      return [];
-    }
-    return [
-      {
-        current: pillar.result.value.score,
-        previous: previous.result.value.score,
-        noiseFloor: Math.max(
-          pillar.result.value.noiseFloor,
-          previous.result.value.noiseFloor,
-        ),
-      },
-    ];
-  });
-  if (pairs.length === 0) return null;
-  return {
-    current: mean(pairs.map((pair) => pair.current))!,
-    previous: mean(pairs.map((pair) => pair.previous))!,
-    noiseFloor: Math.ceil(
-      Math.sqrt(pairs.reduce((sum, pair) => sum + pair.noiseFloor ** 2, 0)) /
-        pairs.length,
-    ),
-  };
-}
-
 /**
- * Whether the person's own recipe changed BETWEEN the two windows being
- * compared.
+ * Whether the person's own recipe changed BETWEEN the two days being
+ * compared, read from the recipe's own date.
  *
  * The exact shape of the global algorithm boundary one function below,
  * for the same reason and with the same arithmetic: a dated change, and
- * a comparison that straddles the date. What makes the per-user version
- * necessary at all is that the two windows are computed in ONE request
- * under whatever recipe is in force right now. Both sides therefore
- * carry the new composition, `sameComposition` agrees, and the
- * subtraction looks legitimate. Nothing inside the two composites can
- * see the change; only the recipe's own `changedAt` can.
+ * a comparison that straddles the date. A stored day names its recipe
+ * version and the delta compares that first; this is the answer for a
+ * day stored before the version was written onto the row.
  *
  * The date is the whole signal, and the boundary's `version` is
  * deliberately NOT consulted here. An earlier draft also required
@@ -298,74 +293,70 @@ export function crossesConfigBoundary(
 }
 
 /**
+ * The week-over-week move of the health score, read from the days the
+ * score's history holds.
+ *
+ * The number it compares against is the stored score of the comparison
+ * day (`comparisonDay`), the point the history chart draws for that day,
+ * and today's side is the score shown now, the chart's newest point. So
+ * "+2" is always the difference between two points the chart beside it
+ * shows. Computing the earlier side again from today's rows, as this did
+ * before 1.50, could produce a move the chart had no point for, and a
+ * number for a day that was never shown.
+ *
+ * The guards keep their order and their meaning, each read off the stored
+ * row: a method change (`algorithm_changed`), the person's own recipe
+ * change (`config_changed`, the act ahead of its consequence), a changed
+ * pillar set (`composition_changed`), a pillar set that only became
+ * eligible in the comparison week (`first_eligibility_window`: the week
+ * before it holds no day of the same set), and a move inside the noise
+ * floor.
+ *
  * `config` is required and has no default on purpose. Every caller has
- * to state which recipe the two windows were computed under, and the
- * account that authored none says so with
- * {@link UNCONFIGURED_SCORE_BOUNDARY}. A defaulted boundary would let a
- * future caller thread nothing and get the pre-v1.35.0 behaviour back —
- * a false drop narrated at a person who had just used the settings page.
+ * to state which recipe today was scored under, and the account that
+ * authored none says so with {@link UNCONFIGURED_SCORE_BOUNDARY}.
  */
-export function attachScoreDelta(
-  current: Derived<CompositeValue>,
-  previous: Derived<CompositeValue>,
-  previousPrevious: Derived<CompositeValue>,
-  asOf: Date,
-  config: ScoreConfigBoundary,
-  currentPillars: ScorePillarResult[] = [],
-  previousPillars: ScorePillarResult[] = [],
-): Pick<HealthScoreReport, "delta" | "deltaReason"> {
+export function attachScoreDelta(args: {
+  current: Derived<CompositeValue>;
+  /** Stored days before today, any order; today's own row is not read. */
+  history: readonly StoredScoreDay[];
+  todayKey: string;
+  asOf: Date;
+  config: ScoreConfigBoundary;
+}): Pick<HealthScoreReport, "delta" | "deltaReason"> {
+  const { current, config } = args;
   if (current.status !== "ok") {
     return { delta: null, deltaReason: "no_current_score" };
   }
-  if (previous.status !== "ok") {
+  const previous = comparisonDay(args.history, args.todayKey);
+  if (!previous) {
     return { delta: null, deltaReason: "no_previous_window" };
   }
 
-  const previousAt = new Date(previous.provenance.computedAt);
   const boundary = new Date(SCORE_ALGORITHM_CHANGED_AT);
   if (
-    current.value.scoreVersion !== previous.value.scoreVersion ||
-    (asOf >= boundary && previousAt < boundary)
+    current.value.scoreVersion !== previous.scoreVersion ||
+    (args.asOf >= boundary && previous.computedAt < boundary)
   ) {
     return { delta: null, deltaReason: "algorithm_changed" };
   }
-  // Ahead of the composition check deliberately. When both fire, the
-  // person changed what counts and that is the truer sentence; "the
-  // included pillars changed" would describe the consequence and leave
-  // out the act.
-  if (crossesConfigBoundary(config, previousAt, asOf)) {
+  if (
+    previous.configVersion === null
+      ? crossesConfigBoundary(config, previous.computedAt, args.asOf)
+      : previous.configVersion !== config.version
+  ) {
     return { delta: null, deltaReason: "config_changed" };
   }
-  if (!sameComposition(current, previous)) {
+  if (!sameComposition(current.value.composition, previous.composition)) {
     return { delta: null, deltaReason: "composition_changed" };
   }
-  if (
-    previousPrevious.status !== "ok" ||
-    !sameComposition(previous, previousPrevious)
-  ) {
+  const before = comparisonDay(args.history, previous.dayKey);
+  if (!before || !sameComposition(previous.composition, before.composition)) {
     return { delta: null, deltaReason: "first_eligibility_window" };
   }
 
-  const comparable =
-    currentPillars.length > 0 || previousPillars.length > 0
-      ? comparableDynamicPillars(
-          current,
-          previous,
-          currentPillars,
-          previousPillars,
-        )
-      : null;
-  if (
-    (currentPillars.length > 0 || previousPillars.length > 0) &&
-    !comparable
-  ) {
-    return { delta: null, deltaReason: "composition_changed" };
-  }
-  const delta = Math.round(
-    (comparable?.current ?? current.value.score) -
-      (comparable?.previous ?? previous.value.score),
-  );
-  if (Math.abs(delta) < (comparable?.noiseFloor ?? current.value.noiseFloor)) {
+  const delta = current.value.score - previous.composite;
+  if (Math.abs(delta) < current.value.noiseFloor) {
     return { delta: null, deltaReason: "below_noise_floor" };
   }
   return { delta, deltaReason: null };

@@ -3239,10 +3239,12 @@
         "missingProfile": "Manca l'età o il profilo di riferimento",
         "missingHeight": "Manca l'altezza",
         "incompletePanel": "È necessario un pannello recente completo con intervalli di riferimento",
-        "crisis": "Al posto del punteggio vengono mostrate indicazioni di sicurezza",
+        "crisis": "Non conteggiato dopo il tuo ultimo check-in",
         "insufficientHistory": "Dati recenti idonei insufficienti",
         "unavailable": "Questo pilastro non è attualmente idoneo"
       },
+      "crisisWithheld": "Il benessere non viene conteggiato dopo il tuo ultimo check-in.",
+      "crisisSupportLink": "Dove trovare aiuto",
       "tension": "I segnali di preparazione differiscono. Favorevoli: {positive}. Sotto sforzo: {negative}.",
       "returnToBand": "{metric} è di nuovo nel tuo intervallo abituale da {days, plural, one {# giorno} other {# giorni}}.",
       "weightGoal": {
@@ -6833,7 +6835,7 @@
         "state": {
           "counting": "Conta nel tuo punteggio",
           "waiting": "Selezionato, in attesa di dati",
-          "crisis": "Al posto di un punteggio viene mostrata un'indicazione di sicurezza. La tua selezione va bene.",
+          "crisis": "Non conteggiato dopo il tuo ultimo check-in. La tua selezione va bene.",
           "readFailed": "Questo pilastro non è stato letto nell'ultimo calcolo."
         },
         "presets": {

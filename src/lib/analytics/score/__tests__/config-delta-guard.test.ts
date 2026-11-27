@@ -20,78 +20,22 @@ import { healthScoreNoticeItemKey } from "@/lib/daily/priority-item-key";
 import { isDismissibleItemKey } from "@/lib/daily/priority-item";
 import { dismissPriorityItemSchema } from "@/lib/validations/daily";
 
-import { attachScoreDelta, crossesConfigBoundary } from "../composite";
+import {
+  attachScoreDelta,
+  crossesConfigBoundary,
+  type StoredScoreDay,
+} from "../composite";
 import {
   resolveHealthScoreConfig,
   healthScoreConfigFromSelection,
   scoreConfigBoundary,
   UNCONFIGURED_SCORE_BOUNDARY,
 } from "../config";
-import type {
-  CompositeValue,
-  PillarValue,
-  ScorePillarId,
-  ScorePillarResult,
-} from "../types";
+import type { CompositeValue } from "../types";
 import { SCORE_VERSION } from "../types";
 
 const DAY_MS = 86_400_000;
 const NOW = new Date("2026-08-20T12:00:00.000Z");
-
-const DOMAIN_BY_PILLAR: Record<ScorePillarId, ScorePillarResult["domain"]> = {
-  BLOOD_PRESSURE: "cardiometabolic",
-  GLYCAEMIA: "cardiometabolic",
-  ACTIVITY: "activity",
-  SLEEP: "sleep",
-  ADIPOSITY: "adiposity",
-  WELLBEING: "wellbeing",
-  LIPIDS: "cardiometabolic",
-};
-
-function pillar(id: ScorePillarId, score: number): ScorePillarResult {
-  const { coverage, confidence } = deriveCoverage({
-    requiredInputs: 1,
-    presentInputs: 1,
-    historyDays: 28,
-    missing: [],
-    fullHistoryDays: 28,
-  });
-  const value: PillarValue = {
-    score,
-    observed: {
-      value: score,
-      unit: "score",
-      label: `${score}`,
-      asOf: NOW.toISOString(),
-      sources: ["MANUAL"],
-    },
-    reference: {
-      kind: "guideline-band",
-      low: 0,
-      high: 100,
-      label: "band",
-      source: "Test 2026",
-    },
-    noiseFloor: 1,
-    deltaEligible: true,
-    deltaIdentity: id,
-  };
-  return {
-    id,
-    domain: DOMAIN_BY_PILLAR[id],
-    result: buildOk({
-      value,
-      coverage,
-      confidence,
-      provenance: {
-        inputs: [id],
-        source: "live",
-        windowDays: 28,
-        computedAt: NOW.toISOString(),
-      },
-    }),
-  };
-}
 
 /** A composite standing at `score`, computed as of `asOf`. */
 function composite(score: number, asOf: Date): Derived<CompositeValue> {
@@ -124,31 +68,43 @@ function composite(score: number, asOf: Date): Derived<CompositeValue> {
   });
 }
 
-const CURRENT_PILLARS = [
-  pillar("BLOOD_PRESSURE", 60),
-  pillar("ACTIVITY", 60),
-  pillar("SLEEP", 60),
-];
-const EARLIER_PILLARS = [
-  pillar("BLOOD_PRESSURE", 80),
-  pillar("ACTIVITY", 80),
-  pillar("SLEEP", 80),
-];
+const TODAY = "2026-08-20";
 
-/** A twenty-point fall, well clear of the noise floor. */
+/**
+ * A day the history holds, `daysBack` before today, scored at 80 under the
+ * recipe version that was in force then.
+ */
+function storedDay(daysBack: number, configVersion: number): StoredScoreDay {
+  const at = new Date(NOW.getTime() - daysBack * DAY_MS);
+  return {
+    dayKey: at.toISOString().slice(0, 10),
+    composite: 80,
+    scoreVersion: SCORE_VERSION,
+    composition: ["BLOOD_PRESSURE", "ACTIVITY", "SLEEP"],
+    configVersion,
+    computedAt: at,
+  };
+}
+
+/**
+ * A twenty-point fall, well clear of the noise floor. The stored days carry
+ * the recipe that was in force when they were scored: the version before
+ * the change when the change came after them, the current one otherwise.
+ */
 function fallingDelta(changedAt: Date | null) {
-  return attachScoreDelta(
-    composite(60, NOW),
-    composite(80, new Date(NOW.getTime() - 7 * DAY_MS)),
-    composite(80, new Date(NOW.getTime() - 14 * DAY_MS)),
-    NOW,
-    {
-      version: changedAt === null ? 0 : 2,
-      changedAt: changedAt?.toISOString() ?? null,
-    },
-    CURRENT_PILLARS,
-    EARLIER_PILLARS,
-  );
+  const version = changedAt === null ? 0 : 2;
+  const versionOn = (daysBack: number) =>
+    changedAt !== null &&
+    changedAt.getTime() > NOW.getTime() - daysBack * DAY_MS
+      ? 1
+      : version;
+  return attachScoreDelta({
+    current: composite(60, NOW),
+    history: [storedDay(7, versionOn(7)), storedDay(14, versionOn(14))],
+    todayKey: TODAY,
+    asOf: NOW,
+    config: { version, changedAt: changedAt?.toISOString() ?? null },
+  });
 }
 
 describe("the recipe boundary", () => {
@@ -204,18 +160,16 @@ describe("the recipe boundary", () => {
       },
     });
 
-    const report = attachScoreDelta(
-      narrower,
-      composite(80, new Date(NOW.getTime() - 7 * DAY_MS)),
-      composite(80, new Date(NOW.getTime() - 14 * DAY_MS)),
-      NOW,
-      {
+    const report = attachScoreDelta({
+      current: narrower,
+      history: [storedDay(7, 1), storedDay(14, 1)],
+      todayKey: TODAY,
+      asOf: NOW,
+      config: {
         version: 2,
         changedAt: new Date(NOW.getTime() - 3 * DAY_MS).toISOString(),
       },
-      CURRENT_PILLARS,
-      EARLIER_PILLARS,
-    );
+    });
 
     expect(report.deltaReason).toBe("config_changed");
   });

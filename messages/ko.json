@@ -3239,10 +3239,12 @@
         "missingProfile": "나이나 참고 프로필이 없어요",
         "missingHeight": "키가 없어요",
         "incompletePanel": "참고 범위가 있는 최근 전체 검사 결과가 필요해요",
-        "crisis": "점수 대신 안전 안내를 보여 줘요",
+        "crisis": "마지막 체크인 이후 점수에 넣지 않아요",
         "insufficientHistory": "최근 유효 데이터가 부족해요",
         "unavailable": "이 항목은 지금 반영 대상이 아니에요"
       },
+      "crisisWithheld": "마지막 체크인 이후 마음 건강은 점수에 넣지 않아요.",
+      "crisisSupportLink": "도움받을 수 있는 곳",
       "tension": "컨디션 신호가 엇갈려요. 좋은 쪽: {positive}. 부담이 큰 쪽: {negative}.",
       "returnToBand": "{metric}: {days, plural, other {#일째}} 평소 범위 안으로 돌아와 있어요.",
       "weightGoal": {
@@ -6833,7 +6835,7 @@
         "state": {
           "counting": "점수에 반영 중",
           "waiting": "선택됨, 데이터 기다리는 중",
-          "crisis": "점수 대신 안전 안내가 표시돼요. 선택은 그대로 괜찮아요.",
+          "crisis": "마지막 체크인 이후 점수에 넣지 않아요. 선택은 그대로 괜찮아요.",
           "readFailed": "지난번 계산에서 이 항목을 읽지 못했어요."
         },
         "presets": {

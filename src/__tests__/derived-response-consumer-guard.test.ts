@@ -23,6 +23,7 @@ const SCHEMA_FILE = join(ROOT, "src/lib/openapi/routes/insights/schemas.ts");
 const IMPORTED_SCHEMA_FILES = [join(ROOT, "src/lib/openapi/routes/profile.ts")];
 const PATH_FILE = join(ROOT, "src/lib/openapi/routes/insights/paths.ts");
 const ROUTE_FILE = join(ROOT, "src/app/api/insights/derived/route.ts");
+const SINGLE_READ_FILE = join(ROOT, "src/lib/insights/derived/single-read.ts");
 const BATCH_ROUTE_FILE = join(
   ROOT,
   "src/app/api/insights/derived/batch/route.ts",
@@ -977,12 +978,23 @@ describe("derived response consumer guard", () => {
       ).toEqual(expectedLineage);
     }
     // v1.42 — the single read goes through the derived cache; the value is
-    // still the compute's, built inside the cache's builder.
+    // still the compute's, built inside the cache's builder. Since 1.50 that
+    // read is `readDerivedSingle`, shared with the score history's newest
+    // point, and the builder lives there.
     const derivedProducer = variableCall(ROUTE_FILE, "derived");
-    expect(["computeDerivedMetric", "cachedSwr"]).toContain(derivedProducer);
+    expect([
+      "computeDerivedMetric",
+      "cachedSwr",
+      "readDerivedSingle",
+    ]).toContain(derivedProducer);
     if (derivedProducer === "cachedSwr") {
       expect(readFileSync(ROUTE_FILE, "utf8")).toMatch(
         /const derived = await cachedSwr\([\s\S]*?computeDerivedMetric\(/,
+      );
+    }
+    if (derivedProducer === "readDerivedSingle") {
+      expect(readFileSync(SINGLE_READ_FILE, "utf8")).toMatch(
+        /return cachedSwr\([\s\S]*?computeDerivedMetric\(/,
       );
     }
     expect(variableCall(ROUTE_FILE, "assessment")).toBe(

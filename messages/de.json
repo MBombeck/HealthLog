@@ -3239,10 +3239,12 @@
         "missingProfile": "Alter oder Referenzprofil fehlt",
         "missingHeight": "Körpergröße fehlt",
         "incompletePanel": "Ein aktuelles vollständiges Panel mit Referenzbereichen ist erforderlich",
-        "crisis": "Anstelle eines Scores werden Sicherheitshinweise angezeigt",
+        "crisis": "Zählt nach deinem letzten Check-in nicht mit",
         "insufficientHistory": "Nicht genügend aktuelle geeignete Daten",
         "unavailable": "Dieser Bereich kann derzeit nicht bewertet werden"
       },
+      "crisisWithheld": "Wohlbefinden zählt nach deinem letzten Check-in nicht mit.",
+      "crisisSupportLink": "Wo du Hilfe findest",
       "tension": "Die Bereitschaftssignale unterscheiden sich. Unterstützend: {positive}. Belastet: {negative}.",
       "returnToBand": "{metric} liegt seit {days, plural, one {# Tag} other {# Tagen}} wieder im üblichen Bereich.",
       "weightGoal": {
@@ -6833,7 +6835,7 @@
         "state": {
           "counting": "Zählt in deinen Score",
           "waiting": "Ausgewählt, wartet auf Daten",
-          "crisis": "Statt eines Werts wird ein Sicherheitshinweis gezeigt. An deiner Auswahl liegt es nicht.",
+          "crisis": "Zählt nach deinem letzten Check-in nicht mit. An deiner Auswahl liegt es nicht.",
           "readFailed": "Dieser Bereich konnte beim letzten Durchlauf nicht gelesen werden."
         },
         "presets": {

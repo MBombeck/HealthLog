@@ -3239,10 +3239,12 @@
         "missingProfile": "Brakuje wieku lub profilu referencyjnego",
         "missingHeight": "Brakuje wzrostu",
         "incompletePanel": "Potrzebny jest aktualny pełny panel z zakresami referencyjnymi",
-        "crisis": "Zamiast wyniku wyświetlane są wskazówki bezpieczeństwa",
+        "crisis": "Nie liczy się po ostatnim sprawdzianie",
         "insufficientHistory": "Za mało aktualnych danych spełniających kryteria",
         "unavailable": "Ten filar obecnie nie spełnia kryteriów"
       },
+      "crisisWithheld": "Samopoczucie nie liczy się po ostatnim sprawdzianie.",
+      "crisisSupportLink": "Gdzie szukać pomocy",
       "tension": "Sygnały gotowości są rozbieżne. Sprzyjające: {positive}. Obciążone: {negative}.",
       "returnToBand": "{metric} od {days, plural, one {# dnia} few {# dni} many {# dni} other {# dnia}} ponownie mieści się w typowym zakresie.",
       "weightGoal": {
@@ -6833,7 +6835,7 @@
         "state": {
           "counting": "Liczy się do Twojego wyniku",
           "waiting": "Wybrany, czeka na dane",
-          "crisis": "Zamiast wyniku pokazywana jest wskazówka bezpieczeństwa. Z Twoim wyborem wszystko w porządku.",
+          "crisis": "Nie liczy się po ostatnim sprawdzianie. Z Twoim wyborem wszystko w porządku.",
           "readFailed": "Tego filaru nie udało się odczytać przy ostatnim liczeniu."
         },
         "presets": {

@@ -37,7 +37,10 @@ vi.mock("@/lib/db", () => ({
     dismissedPriorityItem: { findUnique: vi.fn().mockResolvedValue(null) },
     // v1.38 — the composition note reads the account's last stored score
     // day. Nothing stored in these fixtures, so no note is raised.
-    healthScoreRecord: { findFirst: vi.fn().mockResolvedValue(null) },
+    healthScoreRecord: {
+      findFirst: vi.fn().mockResolvedValue(null),
+      findMany: vi.fn().mockResolvedValue([]),
+    },
     // v1.4.33 — slim summaries slice runs through `$queryRaw`. The
     // v1.4.36 per-type coverage probe and the v1.4.37 default-slice
     // probe also ride `$queryRaw`. Default to an empty coverage map so
@@ -152,6 +155,8 @@ beforeEach(() => {
   vi.mocked(prisma.dismissedPriorityItem.findUnique).mockResolvedValue(
     null as never,
   );
+  // 1.50 — the delta's read of the stored days: none stored here.
+  vi.mocked(prisma.healthScoreRecord.findMany).mockResolvedValue([]);
   // v1.4.35 — rollup table defaults. `resetAllMocks` clears the
   // module-level implementations, so we re-seed both per test. Empty
   // findMany + null findFirst means the slim slice's parity check

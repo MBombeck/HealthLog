@@ -4,18 +4,46 @@ import { computeBpInTargetFastPath } from "@/lib/analytics/bp-in-target-fast-pat
 import { getBpTargets } from "@/lib/analytics/bp-targets";
 import { resolveModuleMap } from "@/lib/modules/gate";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
-import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 import { resolveGlucoseUnit } from "@/lib/glucose";
 
 import { computeAndRecordUserHealthScore } from "./record";
-import type { CompositeValue } from "./types";
-
-const DAY_MS = 86_400_000;
+import { keptHealthScoreReport } from "./report-cell";
+import type { CompositeValue, HealthScoreReport } from "./types";
 
 /** Load the same full Health Score composite served by the analytics surfaces. */
 export async function computeHealthScoreDerived(
   userId: string,
 ): Promise<Derived<CompositeValue>> {
+  return (await computeHealthScoreReportFor(userId, new Date())).composite;
+}
+
+/**
+ * The health score the account's headline shows now, with its local day:
+ * the report kept for the day while no write has made it stale, computed
+ * (and so recorded) otherwise. Null when the headline shows no score.
+ */
+export async function shownHealthScore(
+  userId: string,
+): Promise<{ day: string; value: number } | null> {
+  const now = new Date();
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: userId },
+    select: { timezone: true },
+  });
+  const timezone = user.timezone ?? DEFAULT_TIMEZONE;
+  const report =
+    keptHealthScoreReport(userId, timezone, now) ??
+    (await computeHealthScoreReportFor(userId, now));
+  return report.composite.status === "ok"
+    ? { day: userDayKey(now, timezone), value: report.composite.value.score }
+    : null;
+}
+
+async function computeHealthScoreReportFor(
+  userId: string,
+  now: Date,
+): Promise<HealthScoreReport> {
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
     select: {
@@ -27,32 +55,21 @@ export async function computeHealthScoreDerived(
       glucoseUnit: true,
     },
   });
-  const now = new Date();
   const timezone = user.timezone ?? DEFAULT_TIMEZONE;
   const bpTargets = getBpTargets(user.dateOfBirth, timezone);
-  const bpAt = (at: Date) =>
+  const [modules, sourcePriorityJson, bpEnvelope] = await Promise.all([
+    resolveModuleMap(userId),
+    loadUserSourcePriority(userId),
     bpTargets
       ? computeBpInTargetFastPath({
           userId,
           targets: bpTargets,
-          now: at,
+          now,
           userTz: timezone,
         })
-      : Promise.resolve(null);
-  const [
-    modules,
-    sourcePriorityJson,
-    bpEnvelope,
-    bpEnvelopePriorWeek,
-    bpEnvelopePriorTwoWeeks,
-  ] = await Promise.all([
-    resolveModuleMap(userId),
-    loadUserSourcePriority(userId),
-    bpAt(now),
-    bpAt(new Date(now.getTime() - 7 * DAY_MS)),
-    bpAt(new Date(now.getTime() - 14 * DAY_MS)),
+      : Promise.resolve(null),
   ]);
-  const report = await computeAndRecordUserHealthScore({
+  return computeAndRecordUserHealthScore({
     userId,
     now,
     profile: {
@@ -72,8 +89,5 @@ export async function computeHealthScoreDerived(
     healthScoreConfigJson: user.healthScoreConfigJson,
     bpTargets,
     bpEnvelope,
-    bpEnvelopePriorWeek,
-    bpEnvelopePriorTwoWeeks,
   });
-  return report.composite;
 }

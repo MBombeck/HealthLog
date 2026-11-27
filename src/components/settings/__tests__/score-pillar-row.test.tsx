@@ -85,7 +85,7 @@ describe("selected, waiting for data", () => {
 });
 
 describe("wellbeing under crisis signposting", () => {
-  it("is named as safety guidance, never as a configuration problem", () => {
+  it("is named as not counted, never as a configuration problem", () => {
     const html = render({
       ...base,
       id: "WELLBEING",
@@ -94,7 +94,7 @@ describe("wellbeing under crisis signposting", () => {
     });
 
     expect(html).toContain('data-state="crisis"');
-    expect(html).toContain("Safety guidance is shown instead of a score");
+    expect(html).toContain("Not counted after your last check-in");
     expect(html).toContain("Your selection is fine");
     expect(html).not.toContain("Selected, waiting for data");
   });

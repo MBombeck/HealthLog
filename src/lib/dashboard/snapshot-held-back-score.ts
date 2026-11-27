@@ -32,8 +32,6 @@ import type {
 interface ScoreBpInputs {
   targets: ReturnType<typeof getBpTargets>;
   envelope: BpInTargetEnvelope | null;
-  priorWeek: BpInTargetEnvelope | null;
-  priorTwoWeeks: BpInTargetEnvelope | null;
 }
 
 /**
@@ -70,8 +68,6 @@ export function computeSnapshotScoreReport(
     healthScoreConfigJson: user.healthScoreConfigJson,
     bpTargets: bp.targets,
     bpEnvelope: bp.envelope,
-    bpEnvelopePriorWeek: bp.priorWeek,
-    bpEnvelopePriorTwoWeeks: bp.priorTwoWeeks,
   });
 }
 
@@ -90,24 +86,18 @@ async function liveSnapshotScoreReport(
   modules: Record<ModuleKey, boolean>,
 ): Promise<HealthScoreReport> {
   const targets = getBpTargets(user.dateOfBirth, userTz, now);
-  const [envelope, priorWeek, priorTwoWeeks] = targets
-    ? await Promise.all(
-        [0, 7, 14].map((daysBack) =>
-          computeBpInTargetFastPath({
-            userId: user.id,
-            targets,
-            now: new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000),
-            coverage,
-            userTz,
-          }),
-        ),
-      )
-    : [null, null, null];
+  const envelope = targets
+    ? await computeBpInTargetFastPath({
+        userId: user.id,
+        targets,
+        now,
+        coverage,
+        userTz,
+      })
+    : null;
   return computeSnapshotScoreReport(prisma, user, userTz, now, modules, {
     targets,
     envelope,
-    priorWeek,
-    priorTwoWeeks,
   });
 }
 

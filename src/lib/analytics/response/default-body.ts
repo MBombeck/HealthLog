@@ -141,8 +141,6 @@ export async function buildAnalyticsResponse(
     userTz,
     clinicalBpTargets: bp.clinicalBpTargets,
     bpEnvelope: bp.bpEnvelope,
-    bpEnvelopePriorWeek: bp.bpEnvelopePriorWeek,
-    bpEnvelopePriorTwoWeeks: bp.bpEnvelopePriorTwoWeeks,
   });
   const glucoseByContextOut = glucoseEnabled ? glucoseByContext : null;
   const glucoseClinicalOut = glucoseEnabled ? glucoseClinical : null;

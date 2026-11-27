@@ -405,10 +405,10 @@ describe("buildDashboardSnapshot — two-phase null extras", () => {
     expect(snap.extras).toBeNull();
     // The fast phase still resolved fully.
     expect(snap.tiles.summaries.WEIGHT.latest).toBe(80);
-    // Only the health score's clinical windows are read (now, a week and two
-    // weeks back), by the fast path with its live fallback, as analytics
-    // reads them; the tile's own windows wait for the fold.
-    expect(computeBpInTargetFastPath).toHaveBeenCalledTimes(3);
+    // Only the health score's clinical window is read, by the fast path with
+    // its live fallback, as analytics reads it; the tile's own windows wait
+    // for the fold. The week-over-week move reads the stored days.
+    expect(computeBpInTargetFastPath).toHaveBeenCalledTimes(1);
     // The glucose findMany (part of the thick read) must NOT have fired.
     expect(fakePrisma.measurement.findMany).not.toHaveBeenCalled();
   });
@@ -478,9 +478,9 @@ describe("buildDashboardSnapshot — per-type thick-phase gate", () => {
       tension: null,
       returnToBand: null,
     });
-    // Current, prior-week, and prior-two-week windows support both the weekly
-    // movement and the first-eligibility guard.
-    expect(computeBpInTargetFastPath).toHaveBeenCalledTimes(3);
+    // The current window only: the weekly movement and the first-eligibility
+    // guard read the stored days since 1.50.
+    expect(computeBpInTargetFastPath).toHaveBeenCalledTimes(1);
     expect(computeUserHealthScoreMock).toHaveBeenCalledTimes(1);
   });
 
@@ -538,11 +538,11 @@ describe("buildDashboardSnapshot — per-type thick-phase gate", () => {
       const snap = await buildDashboardSnapshot(fakePrisma, baseUser());
 
       // The tiles wait for the fold; the health score does not. It is read
-      // the way analytics reads it (the score's three clinical windows, live
-      // where uncovered), so the start page never says "not enough data"
-      // beside a number on Insights.
+      // the way analytics reads it (the score's clinical window, live where
+      // uncovered), so the start page never says "not enough data" beside a
+      // number on Insights.
       expect(snap.extras).toBeNull();
-      expect(computeBpInTargetFastPath).toHaveBeenCalledTimes(3);
+      expect(computeBpInTargetFastPath).toHaveBeenCalledTimes(1);
       expect(computeUserHealthScoreMock).toHaveBeenCalledTimes(1);
     },
   );

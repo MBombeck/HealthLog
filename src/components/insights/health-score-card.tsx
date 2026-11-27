@@ -42,6 +42,7 @@ import { cn } from "@/lib/utils";
 import { InlineAction } from "@/components/ui/inline-action";
 import { ScorePill } from "@/components/ui/score-pill";
 import { HealthScorePillars } from "@/components/insights/health-score-pillars";
+import { HealthScoreWithheldLine } from "@/components/insights/health-score-withheld-line";
 
 /**
  * The Health Score panel: the hero band's right-hand column.
@@ -630,15 +631,7 @@ export function HealthScoreCard({
           ) : null}
 
           {crisis.length > 0 ? (
-            <p
-              data-slot="health-score-crisis"
-              data-pillars={crisis.map((p) => p.id).join(",")}
-              className="text-foreground text-xs"
-            >
-              {labelsOf(crisis)}
-              {": "}
-              {reasonText("crisis_signposting")}
-            </p>
+            <HealthScoreWithheldLine pillars={crisis.map((p) => p.id)} />
           ) : null}
 
           {notScored.length > 0 ? (

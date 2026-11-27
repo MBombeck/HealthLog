@@ -40,14 +40,10 @@ export async function readBpInTargetBlock(
   // data" until the window holds enough readings, with a dynamic span label.
   let bpInTargetCount90: number | null = null;
   let bpInTargetSpanDays90: number | null = null;
-  // Hold the current + prior-week BP envelopes so the shared
-  // Health-Score input builder grades the pillar off the identical shape the
-  // dashboard snapshot uses (one builder, no per-surface assembly drift).
-  // The graded score + prior-week BP figures the score consumes are read off
-  // these envelopes inside `buildHealthScoreBpInputs`.
+  // Hold the BP envelope so the shared Health-Score input builder grades the
+  // pillar off the identical shape the dashboard snapshot uses (one builder,
+  // no per-surface assembly drift).
   let bpEnvelope: BpInTargetEnvelope | null = null;
-  let bpEnvelopePriorWeek: BpInTargetEnvelope | null = null;
-  let bpEnvelopePriorTwoWeeks: BpInTargetEnvelope | null = null;
   const bpTargets = resolveEffectiveBpTargets(
     {
       dateOfBirth: user.dateOfBirth,
@@ -71,46 +67,18 @@ export async function readBpInTargetBlock(
     // a `path: "rollup" | "live"` annotate so prod logs prove which
     // branch fired. See `bp-in-target-fast-path.ts` for the
     // documented per-day-mean approximation.
-    //
-    // Two parallel runs: one anchored at `now` for the
-    // standard windows, one anchored at `now - 7d` so the Health-Score
-    // helper has a real prior-week BP pct to feed into its previous-
-    // window snapshot. The two probes share the coverage map and the
-    // same rollup / live branch decision; the extra call is one extra
-    // pair of `readRollupBuckets` reads on the rollup path and is a
-    // no-op when the user has no BP rows at all.
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-    const [windows, windowsPriorWeek, windowsPriorTwoWeeks] = await Promise.all(
-      [
-        computeBpInTargetFastPath({
-          userId: user.id,
-          targets: bpTargets,
-          now,
-          coverage,
-          // Cross-tz runtime guard. The helper falls back
-          // to the live SQL path when the user is more than 3 hours
-          // from UTC, where the rollup table's UTC-midnight day-key
-          // would slip a calendar day relative to the live aggregator's
-          // window cuts.
-          userTz,
-        }),
-        computeBpInTargetFastPath({
-          userId: user.id,
-          targets: bpTargets,
-          now: sevenDaysAgo,
-          coverage,
-          userTz,
-        }),
-        computeBpInTargetFastPath({
-          userId: user.id,
-          targets: bpTargets,
-          now: fourteenDaysAgo,
-          coverage,
-          userTz,
-        }),
-      ],
-    );
+    const windows = await computeBpInTargetFastPath({
+      userId: user.id,
+      targets: bpTargets,
+      now,
+      coverage,
+      // Cross-tz runtime guard. The helper falls back
+      // to the live SQL path when the user is more than 3 hours
+      // from UTC, where the rollup table's UTC-midnight day-key
+      // would slip a calendar day relative to the live aggregator's
+      // window cuts.
+      userTz,
+    });
     // The pillar is graded against the CLINICAL band even when the user
     // keeps a personal target (that band is the number's identity; the
     // personal one is displayed beside it and scores nothing). So when the
@@ -124,33 +92,14 @@ export async function readBpInTargetBlock(
     // a number nobody is looking at, and it would look correct in review.
     if (bpTargetsEqual(bpTargets, clinicalBpTargets)) {
       bpEnvelope = windows;
-      bpEnvelopePriorWeek = windowsPriorWeek;
-      bpEnvelopePriorTwoWeeks = windowsPriorTwoWeeks;
     } else if (clinicalBpTargets) {
-      [bpEnvelope, bpEnvelopePriorWeek, bpEnvelopePriorTwoWeeks] =
-        await Promise.all([
-          computeBpInTargetFastPath({
-            userId: user.id,
-            targets: clinicalBpTargets,
-            now,
-            coverage,
-            userTz,
-          }),
-          computeBpInTargetFastPath({
-            userId: user.id,
-            targets: clinicalBpTargets,
-            now: sevenDaysAgo,
-            coverage,
-            userTz,
-          }),
-          computeBpInTargetFastPath({
-            userId: user.id,
-            targets: clinicalBpTargets,
-            now: fourteenDaysAgo,
-            coverage,
-            userTz,
-          }),
-        ]);
+      bpEnvelope = await computeBpInTargetFastPath({
+        userId: user.id,
+        targets: clinicalBpTargets,
+        now,
+        coverage,
+        userTz,
+      });
     }
     // The BD-Zielbereich headline standardises on the
     // trailing-90-day window (labelled "· 90 T" in the tile). All-time
@@ -182,8 +131,6 @@ export async function readBpInTargetBlock(
     bpInTargetCount90,
     bpInTargetSpanDays90,
     bpEnvelope,
-    bpEnvelopePriorWeek,
-    bpEnvelopePriorTwoWeeks,
     clinicalBpTargets,
   };
 }

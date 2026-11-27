@@ -161,9 +161,9 @@ export interface PillarValue {
   scoreBasis?: BpScoreBasis;
   /** Score points that a weekly move must clear before it is narrated. */
   noiseFloor: number;
-  /** Slow markers contribute to level but never to the weekly delta. */
+  /** Slow markers set the level and stay out of the composite's noise floor. */
   deltaEligible: boolean;
-  /** Input/scoring mode identity used to form like-for-like deltas. */
+  /** Input/scoring mode identity, part of the stored day's fingerprint. */
   deltaIdentity: string;
 }
 

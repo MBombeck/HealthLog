@@ -19,6 +19,16 @@
  * one line through the seam. The algorithm version is part of the recipe
  * here, for the same reason.
  *
+ * The newest point a score's own page shows is the number its headline
+ * shows. `shown` hands that number in with the day it belongs to, and it
+ * takes that day's place in the series (or joins it). A headline beside a
+ * chart that says "no score was recorded" is the contradiction this rules
+ * out: the health score's headline is computed live and recorded on the
+ * same call, but a first read of the day could reach this chart before the
+ * record existed, and a later sync moves the headline past the day's first
+ * record. Readiness is the same shape: the live blend of a fresh morning
+ * stands before the nightly job has stored it.
+ *
  * The usual range is the person's own, the rule the day view's score tiles
  * use (`scoreBand`): median and scaled MAD over the 30 days before the
  * newest point, with at least seven of them, and only from the newest
@@ -63,6 +73,16 @@ export interface ScoreHistoryArgs {
   /** Read only for the sleep score. */
   profile: () => Promise<BaselineProfile>;
   priorityJson: () => Promise<unknown>;
+  /**
+   * The score its headline shows right now, and the local day it belongs
+   * to, or null when the headline shows none. Resolved before the stored
+   * days are read, so a resolver that records the day (the health score's
+   * does) is read back with its own seam flags. Required: a caller that
+   * forgot it would bring the contradiction back without a sound. `null`
+   * for the sleep score, whose headline is the newest night of this same
+   * series by construction.
+   */
+  shown: (() => Promise<{ day: string; value: number } | null>) | null;
 }
 
 interface DayValue {
@@ -183,6 +203,26 @@ function usualBand(values: readonly DayValue[]): ScoreHistory["band"] {
   return scoreBand(prior, SCORE_SCALE_MAX);
 }
 
+/**
+ * The series with the headline's day holding the headline's number: the
+ * stored day's value is replaced (its seam flag stays, the recipe is the
+ * day's), or the day joins the series in its place.
+ */
+function withShownDay(
+  values: readonly DayValue[],
+  shown: { day: string; value: number },
+): DayValue[] {
+  const index = values.findIndex((v) => v.day === shown.day);
+  if (index >= 0) {
+    return values.map((v, i) =>
+      i === index ? { ...v, value: shown.value } : v,
+    );
+  }
+  return [...values, { ...shown, seamBreak: false }].sort((a, b) =>
+    a.day < b.day ? -1 : a.day > b.day ? 1 : 0,
+  );
+}
+
 export async function readScoreHistory(
   args: ScoreHistoryArgs,
 ): Promise<ScoreHistory> {
@@ -195,12 +235,20 @@ export async function readScoreHistory(
     -Math.max(args.days - 1, BAND_WINDOW_DAYS),
   );
 
-  const values =
+  const shown = args.shown ? await args.shown() : null;
+  const stored =
     args.score === "HEALTH_SCORE"
       ? await healthScoreDays(args.userId, readFrom, today)
       : args.score === "READINESS"
         ? await readinessDays(args.userId, readFrom, today, args.tz)
         : await sleepScoreDays(args, readFrom, today);
+  const values =
+    shown && shown.day >= readFrom && shown.day <= today
+      ? withShownDay(stored, {
+          day: shown.day,
+          value: Math.round(shown.value),
+        })
+      : stored;
 
   const points = values.filter((v) => v.day >= from);
   return {

@@ -222,7 +222,10 @@ function fakePrisma(): PrismaClient {
     // v1.38 — no stored day behind this account, so the composition note
     // has nothing to compare against. These cases are about what the
     // recipe and the modules compose TODAY.
-    healthScoreRecord: { findFirst: async () => null },
+    healthScoreRecord: {
+      findFirst: async () => null,
+      findMany: async () => [],
+    },
   } as unknown as PrismaClient;
 }
 
@@ -246,8 +249,6 @@ function score(args: {
     healthScoreConfigJson: args.healthScoreConfigJson,
     bpTargets: null,
     bpEnvelope: null,
-    bpEnvelopePriorWeek: null,
-    bpEnvelopePriorTwoWeeks: null,
   });
 }
 

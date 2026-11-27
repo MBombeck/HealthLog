@@ -13,10 +13,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
-import {
-  healthScoreSetterLine,
-  SCORE_PILLAR_LABEL_KEYS,
-} from "@/lib/score-config/labels";
+import { healthScoreSetterLine } from "@/lib/score-config/labels";
 import { ScoreRing } from "./score-ring";
 import { RING_GRADIENT, TILE_HUE, type RingHue } from "./ring-hues";
 import type { DerivedBatchRead } from "./use-derived-metric";
@@ -50,8 +47,8 @@ import { metricHref } from "@/lib/links/hrefs";
  *
  * A readiness that rests on values from before today is not a statement
  * about today: its ring shows the bare track, no number, no band and no
- * sentence, and below it "Last 81 on Nov 24". The Health score keeps its
- * safety line at rest when a questionnaire answer withholds a pillar.
+ * sentence, and below it "Last 81 on Nov 24". A pillar a questionnaire
+ * answer withholds is said on the Health score's page, not on its tile.
  *
  * Readiness and the sleep score read from the ONE batched derived request
  * the page owns; the Health score from the analytics payload the page
@@ -490,19 +487,9 @@ export function WellnessScores({
   if (healthScore) {
     const composite = healthScore.composite;
     const ok = composite.status === "ok";
-    // A pillar withheld for safety signposting is named at rest, as on the
-    // panel: the person reads it here without opening anything.
-    const crisis = healthScore.pillars.filter(
-      (p) =>
-        p.result.status === "insufficient" &&
-        p.result.reason === "crisis_signposting",
-    );
-    const crisisLine =
-      crisis.length > 0
-        ? `${crisis
-            .map((p) => t(SCORE_PILLAR_LABEL_KEYS[p.id]))
-            .join(", ")}: ${t("insights.healthScore.reason.crisis")}`
-        : null;
+    // A pillar withheld for safety signposting says nothing on the tile: the
+    // score page names it in one sentence with the way to support, and a
+    // one-line slot would only make it sound like a fault.
     tiles.push(
       <RingTile
         key="HEALTH_SCORE"
@@ -510,7 +497,7 @@ export function WellnessScores({
         band={ok ? composite.value.numberBand : undefined}
         label={t("insights.healthScore.label")}
         bandWord={ok ? bandWord("health", composite.value.numberBand) : null}
-        note={crisisLine ?? healthScoreSetterLine(healthScore, t)}
+        note={healthScoreSetterLine(healthScore, t)}
         href="/insights/scores/health"
         metricSlot="HEALTH_SCORE"
         hue="health"

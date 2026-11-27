@@ -19,13 +19,13 @@ import { pickCanonicalSourceRows } from "@/lib/analytics/source-priority";
 import { reconstructNights } from "@/lib/insights/derived/sleep-score";
 import { pickCumulativeDaySum } from "@/lib/measurements/cumulative-day-sum";
 import { ageInYears } from "@/lib/tz/date-only";
-import { userDayKey } from "@/lib/tz/format";
+import { shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { healthScoreNoticeItemKey } from "@/lib/daily/priority-item-key";
 import { annotate, getEvent } from "@/lib/logging/context";
 
 import { ACTIVITY_WINDOW_DAYS, activityWindowKeys } from "./activity";
 import { SLEEP_WINDOW_DAYS } from "./sleep";
-import { attachScoreDelta } from "./composite";
+import { attachScoreDelta, SCORE_DELTA_READ_DAYS } from "./composite";
 import {
   buildCompositionNotice,
   compositionNoticeKey,
@@ -82,8 +82,6 @@ export interface UserHealthScoreInput {
   healthScoreConfigJson: unknown;
   bpTargets: BpTargets | null;
   bpEnvelope: BpInTargetEnvelope | null;
-  bpEnvelopePriorWeek: BpInTargetEnvelope | null;
-  bpEnvelopePriorTwoWeeks: BpInTargetEnvelope | null;
 }
 
 type MeasurementRow = {
@@ -130,6 +128,7 @@ async function capture<T>(
     | "WEIGHT_GOAL"
     | "ALGORITHM_NOTICE"
     | "COMPOSITION_NOTICE"
+    | "SCORE_HISTORY"
     | ScorePillarId[],
 ): Promise<Settled<T>> {
   try {
@@ -806,23 +805,9 @@ export async function computeUserHealthScore(
   // v1.35.0 — the one place "this score is configured" is decided, from the
   // composition's own config and module map, never re-derived by a client.
   const configured = resolveScoreConfigured({ config, recordedPillars });
-  const previousAt = new Date(input.now.getTime() - 7 * DAY_MS);
-  const previousPreviousAt = new Date(input.now.getTime() - 14 * DAY_MS);
   const currentBp = scoreBpEnvelope({
     base: input.bpEnvelope,
     at: input.now,
-    input,
-    rows: bpRows,
-  });
-  const previousBp = scoreBpEnvelope({
-    base: input.bpEnvelopePriorWeek,
-    at: previousAt,
-    input,
-    rows: bpRows,
-  });
-  const previousPreviousBp = scoreBpEnvelope({
-    base: input.bpEnvelopePriorTwoWeeks,
-    at: previousPreviousAt,
     input,
     rows: bpRows,
   });
@@ -866,56 +851,18 @@ export async function computeUserHealthScore(
     }),
     weightGoal,
   });
-  const previous = computeHealthScore({
-    asOf: previousAt,
-    availablePillars,
-    configured,
-    pillars: scoreInputsFor({
-      ...common,
-      asOf: previousAt,
-      bp: previousBp.envelope,
-    }),
-    weightGoal,
-  });
-  const previousPrevious = computeHealthScore({
-    asOf: previousPreviousAt,
-    availablePillars,
-    configured,
-    pillars: scoreInputsFor({
-      ...common,
-      asOf: previousPreviousAt,
-      bp: previousPreviousBp.envelope,
-    }),
-    weightGoal,
-  });
-  // All three windows above were computed under the recipe in force
-  // right now, which is exactly why the guard needs the recipe's own
-  // dated identity: nothing in the three composites can show that last
-  // Tuesday was scored on a different set. Resolved once, from the same
-  // blob the composition came from, so the number and the boundary that
-  // judges its movement can never describe two different recipes.
-  const delta = attachScoreDelta(
-    current.composite,
-    previous.composite,
-    previousPrevious.composite,
-    input.now,
-    scoreConfigBoundary(config),
-    current.pillars,
-    previous.pillars,
-  );
   const itemKey = healthScoreNoticeItemKey(
     current.scoreVersion,
     config.version,
   );
-  // v1.38 — the composition note's only input from the database, and the
-  // first production read this table has ever had. It is filed under the
-  // account's LOCAL day, and the row for today is excluded on purpose: the
-  // write happens on the same request that computed the report, so
-  // comparing against "the newest row" would find today's own composition
-  // the second time the panel is opened and the note would vanish between
-  // two loads of the same page.
+  // v1.38 — the composition note's input from the database, and since 1.50
+  // the delta's too. Both read the days filed under the account's LOCAL day,
+  // and the row for today is excluded on purpose: the write happens on the
+  // same request that computed the report, so comparing against "the newest
+  // row" would find today's own composition the second time the panel is
+  // opened and the note would vanish between two loads of the same page.
   const todayKey = userDayKey(input.now, input.profile.timezone);
-  const [dismissal, priorDay] = await Promise.all([
+  const [dismissal, priorDay, storedDays] = await Promise.all([
     capture(
       db.dismissedPriorityItem.findUnique({
         where: { userId_itemKey: { userId: input.userId, itemKey } },
@@ -937,7 +884,40 @@ export async function computeUserHealthScore(
       null,
       "COMPOSITION_NOTICE",
     ),
+    // The days the delta compares: the newest of the week a week back, and
+    // the week before it for the eligibility guard. The history chart reads
+    // these same rows, so the move the panel names is a move between two of
+    // the chart's points. A failed read is no previous window, said as such
+    // on the wide event.
+    capture(
+      db.healthScoreRecord.findMany({
+        where: {
+          userId: input.userId,
+          dayKey: {
+            gte: shiftDateKey(todayKey, -SCORE_DELTA_READ_DAYS),
+            lt: todayKey,
+          },
+        },
+        select: {
+          dayKey: true,
+          composite: true,
+          scoreVersion: true,
+          composition: true,
+          configVersion: true,
+          computedAt: true,
+        },
+      }),
+      [],
+      "SCORE_HISTORY",
+    ),
   ]);
+  const delta = attachScoreDelta({
+    current: current.composite,
+    history: storedDays.value,
+    todayKey,
+    asOf: input.now,
+    config: scoreConfigBoundary(config),
+  });
   const compositionNotice = await resolveCompositionNotice({
     db,
     userId: input.userId,

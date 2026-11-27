@@ -3239,10 +3239,12 @@
         "missingProfile": "Leeftijd of referentieprofiel ontbreekt",
         "missingHeight": "Lengte ontbreekt",
         "incompletePanel": "Er is een recent, volledig labpanel met referentiebereiken nodig",
-        "crisis": "In plaats van een score worden veiligheidsadviezen getoond",
+        "crisis": "Telt niet mee na je laatste check-in",
         "insufficientHistory": "Niet genoeg recente bruikbare gegevens",
         "unavailable": "Deze pijler komt momenteel niet in aanmerking"
       },
+      "crisisWithheld": "Welzijn telt niet mee na je laatste check-in.",
+      "crisisSupportLink": "Waar je hulp vindt",
       "tension": "De signalen voor je paraatheid lopen uiteen. Ondersteunend: {positive}. Onder druk: {negative}.",
       "returnToBand": "{metric} ligt al {days, plural, one {# dag} other {# dagen}} weer binnen je gebruikelijke bereik.",
       "weightGoal": {
@@ -6833,7 +6835,7 @@
         "state": {
           "counting": "Telt mee voor je score",
           "waiting": "Geselecteerd, wacht op gegevens",
-          "crisis": "In plaats van een score wordt veiligheidsinformatie getoond. Je selectie is in orde.",
+          "crisis": "Telt niet mee na je laatste check-in. Je selectie is in orde.",
           "readFailed": "Deze pijler kon bij de laatste berekening niet worden gelezen."
         },
         "presets": {

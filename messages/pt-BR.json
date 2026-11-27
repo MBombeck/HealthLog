@@ -3239,10 +3239,12 @@
         "missingProfile": "Idade ou perfil de referência está ausente",
         "missingHeight": "A altura está ausente",
         "incompletePanel": "É necessário um painel recente completo com faixas de referência",
-        "crisis": "A orientação de segurança é mostrada em vez de uma pontuação",
+        "crisis": "Não conta após seu último check-in",
         "insufficientHistory": "Dados recentes elegíveis insuficientes",
         "unavailable": "Este pilar não está atualmente elegível"
       },
+      "crisisWithheld": "O bem-estar não conta após seu último check-in.",
+      "crisisSupportLink": "Onde encontrar ajuda",
       "tension": "Os sinais de prontidão diferem. Favoráveis: {positive}. Sob tensão: {negative}.",
       "returnToBand": "{metric} voltou para dentro da sua faixa habitual há {days, plural, one {# dia} other {# dias}}.",
       "weightGoal": {
@@ -6833,7 +6835,7 @@
         "state": {
           "counting": "Contando para sua pontuação",
           "waiting": "Selecionado, aguardando dados",
-          "crisis": "Orientações de segurança são exibidas em vez de uma pontuação. Sua seleção está correta.",
+          "crisis": "Não conta após seu último check-in. Sua seleção está correta.",
           "readFailed": "Este pilar não pôde ser lido na última execução."
         },
         "presets": {
