@@ -134,7 +134,7 @@ export const SETTINGS_CARDS: ReadonlyArray<SettingsCardEntry> = [
     anchor: "security-activity",
     titleKey: "settings.security.activityTitle",
   },
-  // ── Integrations: connections (wrapper ids) ──
+  // ── Integrations: each anchor opens that integration's sheet ──
   {
     section: "integrations",
     anchor: "withings",
@@ -180,11 +180,6 @@ export const SETTINGS_CARDS: ReadonlyArray<SettingsCardEntry> = [
     section: "integrations",
     anchor: "channels",
     titleKey: "settings.sections.integrations.channelsHeading",
-  },
-  {
-    section: "integrations",
-    anchor: "delivery-status",
-    titleKey: "settings.notificationStatus.title",
   },
   { section: "integrations", anchor: "webhook", titleKey: "settings.webhook" },
   // ── Health record ──
@@ -482,25 +477,14 @@ export const SETTINGS_CARDS: ReadonlyArray<SettingsCardEntry> = [
   // ── API ──
   {
     section: "api",
-    anchor: "api-endpoints",
-    titleKey: "settings.apiEndpointsTitle",
+    anchor: "api-tokens",
+    titleKey: "settings.tokenList.title",
   },
   {
     section: "api",
-    anchor: "measurements-token",
-    titleKey: "settings.measurementsToken.title",
+    anchor: "api-address",
+    titleKey: "settings.tokenList.api.title",
   },
-  {
-    section: "api",
-    anchor: "workouts-token",
-    titleKey: "settings.workoutsToken.title",
-  },
-  {
-    section: "api",
-    anchor: "documents-token",
-    titleKey: "settings.documentsToken.title",
-  },
-  { section: "api", anchor: "api-tokens", titleKey: "settings.apiTokens" },
   // ── MCP ──
   {
     section: "mcp",

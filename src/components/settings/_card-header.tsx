@@ -30,6 +30,7 @@
 import * as React from "react";
 import type { LucideIcon } from "lucide-react";
 
+import { useSheetCardMode } from "@/components/settings/sheet-surface";
 import { cn } from "@/lib/utils";
 
 export interface SettingsCardHeaderProps {
@@ -77,6 +78,17 @@ export function SettingsCardHeader({
   anchor,
   className,
 }: SettingsCardHeaderProps) {
+  // In an integration sheet the sheet's own title names the card it is about;
+  // a further card in the same sheet keeps its title as a subheading.
+  const sheetMode = useSheetCardMode();
+  if (sheetMode === "hide-header") return null;
+  if (sheetMode === "subheading") {
+    return (
+      <h3 id={titleId} className="text-sm font-medium">
+        {title}
+      </h3>
+    );
+  }
   return (
     <header
       id={anchor}

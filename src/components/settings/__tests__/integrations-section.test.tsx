@@ -1,24 +1,26 @@
 /**
- * Settings → Integrations: one status display per card.
- *
- * v1.4.19 consolidated three and four status surfaces per card into one pill.
- * v1.42.4 replaces the pill with the shared card's badge, rendered from the
- * server's `health`, and removes what had grown back around it: the raw
- * provider error line, the failure counter, the per-provider banners.
+ * Settings → Integrations: two lists of what is set up, one status chip per
+ * row, every word from the server's overview.
  *
  * The tests pin, on the whole section:
- *   1. one badge per connected card, and nothing else that states a status;
- *   2. the stored provider error text never reaches the page;
- *   3. a paused connection offers exactly one Resume;
- *   4. no card paints a divider under its header;
- *   5. every not-connected card links its setup guide.
+ *   1. only set-up integrations are rows, in their group, sources first;
+ *   2. each row carries exactly one status chip, with the server's status;
+ *   3. an active row says when it last worked, any other row says why;
+ *   4. no stored provider error or failure counter reaches the page;
+ *   5. "Add" lists what is offered and not set up, and nothing else.
  */
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+
+import type {
+  IntegrationOverview,
+  IntegrationOverviewItem,
+} from "@/lib/integrations/overview";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
   usePathname: () => "/settings/integrations",
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock("@/hooks/use-auth", () => ({
@@ -30,30 +32,17 @@ vi.mock("@/hooks/use-auth", () => ({
   }),
 }));
 
-// v1.12.1 — the four cards now read every field off the single
-// /api/integrations/status envelope; the per-card /api/<provider>/status
-// queries are gone. The test mock only needs the consolidated payload.
-let integrationStatusPayload: unknown = null;
-function setIntegrationStatus(payload: unknown) {
-  integrationStatusPayload = payload;
-}
+let overview: IntegrationOverview | null = null;
+let envelope: unknown = null;
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: ({ queryKey }: { queryKey: unknown[] }) => {
     const key = Array.isArray(queryKey) ? queryKey.join("/") : "";
-    if (key === "integrations/status") {
-      return { data: integrationStatusPayload, isLoading: false };
+    if (key === "integrations/status/overview") {
+      return { data: overview ?? undefined, isLoading: !overview };
     }
-    if (key === "settings/global-services") {
-      return {
-        data: {
-          telegramGlobal: true,
-          ntfyGlobal: true,
-          webPushGlobal: true,
-          apiGlobal: true,
-        },
-        isLoading: false,
-      };
+    if (key === "integrations/status") {
+      return { data: envelope, isLoading: false };
     }
     return { data: null, isLoading: false, refetch: vi.fn() };
   },
@@ -62,6 +51,7 @@ vi.mock("@tanstack/react-query", () => ({
 }));
 
 import { I18nProvider } from "@/lib/i18n/context";
+import { addableItems } from "../integrations/integration-add-sheet";
 import { IntegrationsSection } from "../integrations-section";
 
 const CALLBACK_URLS = {
@@ -81,177 +71,127 @@ function render() {
   );
 }
 
-/** Count occurrences of a substring in the rendered HTML. */
-function count(html: string, needle: string): number {
-  let n = 0;
-  let i = 0;
-  while ((i = html.indexOf(needle, i)) !== -1) {
-    n++;
-    i += needle.length;
-  }
-  return n;
-}
-
-const PROVIDERS = [
-  "withings",
-  "whoop",
-  "google-health",
-  "polar",
-  "oura",
-  "strava",
-  "nightscout",
-  "garmin",
-] as const;
-
-function health(overrides: Record<string, unknown> = {}) {
+function item(
+  key: IntegrationOverviewItem["key"],
+  patch: Partial<IntegrationOverviewItem> = {},
+): IntegrationOverviewItem {
+  const channel = [
+    "telegram",
+    "ntfy",
+    "web-push",
+    "webhook",
+    "email",
+    "apns",
+  ].includes(key);
   return {
-    state: "ok",
-    reason: "data_arriving",
-    since: null,
-    action: null,
-    unavailable: [],
-    lastSuccessAt: "2026-05-09T18:00:00.000Z",
-    lastDataAt: "2026-05-09T17:00:00.000Z",
-    diagnostics: {
-      ledgerState: "connected",
-      failingLegs: [],
-      failingSince: null,
-      lastAttemptAt: "2026-05-09T18:00:00.000Z",
-      verdict: "fresh",
-      recentCalls: [],
-    },
-    ...overrides,
+    key,
+    group: channel ? "channel" : "source",
+    setUp: false,
+    status: null,
+    reason: null,
+    lastAt: null,
+    offered: true,
+    setupNote: null,
+    ...patch,
   };
 }
 
-function disconnected(integration: string) {
-  return {
-    integration,
-    lastError: null,
-    connected: false,
-    configured: false,
-    available: false,
-    health: null,
-  };
-}
+const TODAY = new Date().toISOString();
 
-/** The Withings card's markup, up to the next card. */
-function withingsCard(html: string): string {
-  const start = html.indexOf('data-testid="withings-card"');
-  const next = html.indexOf('data-slot="integration-card"', start + 1);
-  return html.slice(start, next === -1 ? undefined : next);
-}
-
-/** Withings as given, every other provider present and not connected. */
-function envelopeWith(withings: Record<string, unknown>) {
-  return {
+beforeEach(() => {
+  envelope = {
     threshold: 3,
     integrations: [
       {
         integration: "withings",
-        lastError: null,
-        connected: true,
-        configured: true,
-        ...withings,
-      },
-      ...PROVIDERS.filter((p) => p !== "withings").map(disconnected),
-    ],
-  };
-}
-
-describe("IntegrationsSection — one status display per card", () => {
-  beforeEach(() => {
-    integrationStatusPayload = null;
-  });
-
-  it("renders exactly one badge for the connected card and no other status surface", () => {
-    setIntegrationStatus(envelopeWith({ health: health() }));
-
-    const html = render();
-    expect(count(html, 'data-slot="integration-health-badge"')).toBe(1);
-    expect(html).not.toContain('data-testid="integration-status-pill"');
-    expect(html).not.toContain('data-testid="integration-status-banner"');
-    expect(html).not.toContain("Last successful sync");
-    expect(html).not.toContain("Last attempt");
-    // The seven other providers and Apple Health are not connected and say so
-    // once each.
-    expect(count(html, ">Not connected.<")).toBe(8);
-  });
-
-  it("never shows the stored provider error or a failure counter", () => {
-    setIntegrationStatus(
-      envelopeWith({
         lastError: "Withings refresh error: 503 - upstream",
         consecutiveFailuresByKind: {
           transient: 2,
           reauth_required: 0,
           persistent: 0,
         },
-        health: health({
-          state: "degraded",
-          reason: "provider_errors",
-          since: "2026-05-09T08:00:00.000Z",
-        }),
+        connected: true,
+        configured: true,
+      },
+    ],
+  };
+  overview = {
+    items: [
+      item("apple-health", {
+        setUp: true,
+        status: "active",
+        reason: "data_arriving",
+        lastAt: TODAY,
       }),
-    );
+      item("withings", {
+        setUp: true,
+        status: "error",
+        reason: "reauth_required",
+        lastAt: "2026-11-24T06:12:00.000Z",
+      }),
+      item("oura", { setupNote: "own_credentials" }),
+      item("dawarich", { offered: false }),
+      item("telegram", { setUp: true, status: "active", lastAt: TODAY }),
+      item("ntfy", { setUp: true, status: "off", reason: "switched_off" }),
+      item("email", { offered: false }),
+      item("webhook"),
+      item("apns", { offered: false }),
+    ],
+  };
+});
 
+function rows(html: string): string[] {
+  return [...html.matchAll(/data-testid="integration-row-([a-z-]+)"/g)].map(
+    (m) => m[1],
+  );
+}
+
+describe("IntegrationsSection — the lists", () => {
+  it("shows only what is set up, sources before channels", () => {
+    expect(rows(render())).toEqual([
+      "apple-health",
+      "withings",
+      "telegram",
+      "ntfy",
+    ]);
+  });
+
+  it("gives each row exactly one chip, with the server's status", () => {
     const html = render();
+    expect(html.match(/data-slot="status-chip"/g)).toHaveLength(4);
     expect(html).toMatch(
-      /data-slot="integration-health-badge"[^>]*data-state="degraded"/,
+      /data-integration="withings" data-status="error"[\s\S]*?data-slot="status-chip" data-tone="error"/,
     );
+    expect(html).not.toContain('data-slot="integration-health-badge"');
+  });
+
+  it("says when an active row last worked and why any other row is not", () => {
+    const html = render();
+    expect(html).toContain("Sign-in expired");
+    expect(html).toContain("Switched off");
+    expect(html).toMatch(/Last today, \d/);
+  });
+
+  it("never shows the stored provider error or a failure counter", () => {
+    const html = render();
     expect(html).not.toContain("Withings refresh error");
-    expect(html).not.toContain("2/3 consecutive failures");
-    // Not the user's to fix: the Withings card offers no button.
-    expect(withingsCard(html)).toContain('data-testid="withings-menu"');
-    expect(withingsCard(html)).not.toContain(
-      'data-slot="integration-primary-action"',
-    );
+    expect(html).not.toContain("consecutive failures");
   });
 
-  it("a paused connection offers exactly one Resume", () => {
-    setIntegrationStatus(
-      envelopeWith({
-        lastError: "Withings activity error: 293",
-        health: health({
-          state: "action_required",
-          reason: "paused_after_errors",
-          since: "2026-05-09T18:00:00.000Z",
-          action: "resume",
-        }),
-      }),
-    );
-
+  it("paints the card headers while the overview loads", () => {
+    overview = null;
     const html = render();
-    expect(html).toMatch(
-      /data-slot="integration-health-badge"[^>]*data-state="action_required"/,
-    );
-    expect(html).toContain('data-testid="withings-resume-button"');
-    expect(count(html, 'data-action="resume"')).toBe(1);
-    expect(html).not.toContain('data-testid="withings-parked-banner"');
-    expect(html).not.toContain("Withings activity error: 293");
+    expect(html).toContain("Data sources");
+    expect(html).toContain('aria-busy="true"');
+    expect(rows(html)).toEqual([]);
   });
+});
 
-  it("no integration card paints a divider under its header", () => {
-    setIntegrationStatus(envelopeWith({ health: health() }));
-    expect(count(render(), 'data-testid="integration-card-divider"')).toBe(0);
-  });
-
-  // Every card that is not connected yet carries the same discreet "Setup
-  // guide" link to its runbook under the single shared docs base. Once
-  // connected, the link moves into the card's menu.
-  it("every not-connected integration card carries the shared Setup-guide link", () => {
-    setIntegrationStatus({
-      threshold: 3,
-      integrations: PROVIDERS.map(disconnected),
-    });
-
-    const html = render();
-    expect(count(html, 'data-slot="integration-setup-guide"')).toBe(8);
-    for (const provider of PROVIDERS) {
-      expect(html).toContain(`data-testid="${provider}-setup-guide"`);
-      expect(html).toContain(
-        `href="https://docs.healthlog.dev/guides/connect-${provider}/"`,
-      );
-    }
+describe("IntegrationsSection — Add", () => {
+  it("lists what is offered and not set up, nothing the server cannot offer", () => {
+    expect(addableItems(overview!.items).map((i) => i.key)).toEqual([
+      "oura",
+      "webhook",
+    ]);
   });
 });

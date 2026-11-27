@@ -68,7 +68,12 @@
     "savedNamed": "{label} salvo",
     "entryUndone": "Registro removido",
     "entryUndoFailed": "Não foi possível remover o registro.",
-    "note": "Nota"
+    "note": "Nota",
+    "status": {
+      "active": "Ativo",
+      "error": "Erro",
+      "off": "Desligado"
+    }
   },
   "apiErrors": {
     "measurement": {
@@ -6055,10 +6060,7 @@
       "integrations": {
         "title": "Integrações",
         "subtitle": "Conecte e gerencie suas fontes de dados e dispositivos.",
-        "connectionsHeading": "Conexões",
-        "channelsHeading": "Canais de entrega",
-        "channelsDescription": "Onde lembretes e alertas são entregues.",
-        "matrixLink": "Notificações por canal"
+        "channelsHeading": "Canais de entrega"
       },
       "notifications": {
         "title": "Notificações",
@@ -7400,7 +7402,6 @@
     "withingsCredentialsSavedPlaceholder": "Salvo. Digite novo para substituir",
     "withingsCredentialsSavedPlaceholderSecret": "Salvo. Digite novo para substituir",
     "withingsSaveCredentials": "Salvar",
-    "configured": "Configurado",
     "withingsSync": "Sincronizar agora",
     "withingsFullSync": "Sincronizar todos os dados",
     "withingsFullSyncTitle": "Sincronização completa?",
@@ -7594,48 +7595,26 @@
       "description": "Configurado nesta conta sem um cartão de configurações próprio."
     },
     "healthConnectFolder": {
-      "name": "Health Connect de uma pasta",
-      "description": "Buscado na sua pasta WebDAV ou Nextcloud a cada seis horas. Configure e altere em Importar.",
-      "manage": "Abrir as configurações da pasta"
+      "name": "Health Connect de uma pasta"
     },
     "withingsViewData": "Ver suas medições",
     "whoopViewData": "Ver sua recuperação",
     "googleHealthViewData": "Ver seus passos",
-    "apiTokens": "Tokens de API",
-    "apiTokensDescription": "Revise e revogue tokens para medições, treinos, documentos e tomadas de medicamentos.",
     "measurementsToken": {
-      "title": "Tokens de medição",
-      "description": "Gere um token para que uma balança, uma ponte de relógio, um app de dieta ou sua automação residencial possa adicionar leituras, valores das suas métricas personalizadas e totais diários de nutrientes.",
-      "detail": "O token é exibido uma vez.",
-      "scopeNote": "Ele só pode adicionar leituras ao seu próprio registro, valores às métricas personalizadas que você já criou e totais diários de nutrientes enquanto o módulo de nutrientes estiver ativo; não pode ler, alterar nem excluir nada. Leituras e totais de nutrientes são marcados como externos. O ID de uma métrica personalizada é a parte depois de /custom-metrics/ no endereço da página dela.",
-      "nutrientsLink": "Ver ingestão de nutrientes",
-      "createFailed": "O token não pôde ser criado. Tente novamente.",
       "namePlaceholder": "Nome, ex.: Home Assistant",
       "appleHealth": {
         "label": "Gravar medições no Apple Health",
         "createHint": "O app HealthLog no seu iPhone passa a adicionar as medições deste token ao Apple Health.",
-        "toggleAria": "Gravar as medições de {name} no Apple Health",
         "updateFailed": "Não foi possível alterar a configuração do Apple Health. Tente novamente.",
         "unattributed": "As medições enviadas antes de esta configuração existir não podem ser associadas a um token, por isso ficam fora do Apple Health."
       }
     },
     "workoutsToken": {
-      "title": "Tokens de treino",
-      "description": "Gere um token para que uma ponte de relógio ou um script de sincronização possa adicionar seus treinos.",
-      "detail": "O token é exibido uma vez.",
-      "scopeNote": "Ele só pode adicionar novos treinos ao seu próprio registro. Não pode ler seus dados, alterar ou excluir nada, nem criar outro token. Os treinos que ele adiciona são marcados como vindos de um dispositivo externo e, quando seu celular registrou a mesma sessão, você vê a cópia do celular.",
-      "createFailed": "O token não pôde ser criado. Tente novamente.",
       "namePlaceholder": "Nome, ex.: Garmin"
     },
     "documentsToken": {
-      "title": "Tokens de documento",
-      "description": "Gere um token para que o Paperless-ngx, o Papra ou o script de importação possa adicionar documentos ao seu cofre.",
-      "detail": "O token é exibido uma vez.",
-      "scopeNote": "Ele só pode adicionar novos documentos ao seu próprio cofre. Não pode listar, abrir, baixar, alterar ou excluir nada, nem criar outro token. O que ele recebe de volta é se um arquivo foi armazenado, não como você o arquivou.",
-      "createFailed": "O token não pôde ser criado. Tente novamente.",
       "namePlaceholder": "Nome, ex.: Paperless-ngx"
     },
-    "tokenMintMovedDescription": "Os tokens são emitidos onde se aplicam: acima para medições, treinos e documentos, ou no endpoint de API próprio de um medicamento, para aquele medicamento específico.",
     "tokenCreated": "Token criado. Copie-o agora! Ele não será exibido novamente.",
     "tokenCopy": "Copiar token",
     "tokenCopied": "Token copiado para a área de transferência",
@@ -7651,18 +7630,11 @@
     "revokedTokensTitle": "Tokens revogados ({count})",
     "tokenTableName": "Nome",
     "tokenTablePermissions": "Permissões",
-    "tokenTableStatus": "Status",
     "tokenTableCreated": "Criado",
     "tokenTableLastUsed": "Último uso",
     "tokenTableActions": "Ações",
     "noActiveTokens": "Nenhum token ativo disponível.",
     "tokenNeverUsed": "Nunca",
-    "apiEndpointsTitle": "Endpoints de API",
-    "apiEndpointsDescription": "Visão geral dos endpoints externos disponíveis atualmente para ingestão baseada em tokens.",
-    "apiEndpointMethod": "Método",
-    "apiEndpointPath": "Caminho",
-    "apiEndpointAuth": "Autenticação",
-    "apiEndpointExample": "Exemplo de corpo",
     "dangerZone": "Excluir todos os dados",
     "dangerZoneDescription": "Apaga todo o seu registro de saúde e todas as conexões de integração.",
     "dangerZoneConfirm": "Excluir todos os dados?",
@@ -8496,7 +8468,114 @@
       "cycle": "ciclo menstrual"
     },
     "passkeyRenameFailed": "Não foi possível renomear a chave de acesso.",
-    "passkeyRemoveFailed": "Não foi possível remover a chave de acesso."
+    "passkeyRemoveFailed": "Não foi possível remover a chave de acesso.",
+    "integrationList": {
+      "channels": "Canais de entrega",
+      "sources": "Fontes de dados",
+      "addTitle": "Adicionar",
+      "allAdded": "Tudo o que este servidor oferece está configurado.",
+      "noSources": "Nenhuma fonte de dados ainda",
+      "noChannels": "Nenhum canal de entrega ainda",
+      "ownCredentials": "Exige suas próprias credenciais de app",
+      "syncNow": "Sincronizar agora",
+      "lastAt": "Última vez: {when}",
+      "never": "Ainda não",
+      "apns": "App do iPhone",
+      "facts": {
+        "status": "Status",
+        "reason": "Motivo",
+        "lastSync": "Última sincronização",
+        "lastDelivery": "Última entrega",
+        "brings": "Traz",
+        "delivers": "Entrega em",
+        "lastFailure": "Última falha",
+        "lastFailureWith": "{when}, {reason}"
+      },
+      "reason": {
+        "dataArriving": "Os dados estão chegando",
+        "firstSyncPending": "Primeira sincronização pendente",
+        "planLimited": "O plano não inclui tudo",
+        "permissionLimited": "Faltam algumas permissões",
+        "providerErrors": "O provedor não responde bem",
+        "syncStalled": "A sincronização parou",
+        "noNewData": "Sem dados novos",
+        "unexpectedSilence": "Sem dados há algum tempo",
+        "reauthRequired": "Login expirado",
+        "pausedAfterErrors": "Pausado após erros",
+        "notConnected": "Não conectado",
+        "paused": "Pausado",
+        "switchedOff": "Desativado",
+        "autoDisabled": "Desativado após recusa",
+        "sendingPaused": "Envio pausado",
+        "deliveryFailing": "A última entrega falhou"
+      },
+      "brings": {
+        "appleHealth": "Tudo do Saúde, pelo app do iPhone",
+        "withings": "Peso, pressão arterial, sono",
+        "whoop": "Recuperação, sono, esforço",
+        "googleHealth": "Fitbit e Pixel Watch",
+        "garmin": "Sono, VFC, estresse, atividade",
+        "oura": "Prontidão, sono, VFC",
+        "polar": "Recuperação, sono, treino",
+        "strava": "Atividades como treinos",
+        "nightscout": "Glicose contínua",
+        "dawarich": "Lugares e rotas como contexto",
+        "healthConnectFolder": "Exportação do Health Connect do WebDAV ou Nextcloud",
+        "documentSources": "Documentos do Paperless-ngx ou Papra",
+        "telegram": "Um chat do Telegram pelo seu bot",
+        "ntfy": "Um tópico do ntfy",
+        "webPush": "Este navegador",
+        "webhook": "JSON para um endereço seu",
+        "email": "Lembretes por e-mail",
+        "apns": "Notificações no iPhone"
+      }
+    },
+    "tokenList": {
+      "title": "Tokens",
+      "newToken": "Novo token",
+      "empty": "Nenhum token ainda",
+      "caption": "Seus tokens",
+      "scopeColumn": "Acesso",
+      "more": "Mais",
+      "scopeMoreLabel": "O que este acesso permite",
+      "mirrorMoreLabel": "O que significa gravar no Apple Saúde",
+      "revoked": "Revogado",
+      "hideRevoked": "Ocultar revogados",
+      "menuLabel": "Ações para {name}",
+      "copied": "Copiado",
+      "scope": {
+        "all": "Acesso total",
+        "measurements": "Medições",
+        "workouts": "Treinos",
+        "documents": "Documentos",
+        "medication": "Medicamento",
+        "mcpRead": "MCP, leitura",
+        "mcpWrite": "MCP, escrita",
+        "fhir": "FHIR",
+        "profile": "Perfil"
+      },
+      "scopeInfo": {
+        "measurements": "Adiciona medições, valores de métricas próprias e totais diários de nutrientes ao seu prontuário. Não pode ler, alterar nem excluir nada.",
+        "workouts": "Adiciona novos treinos ao seu prontuário. Não pode ler, alterar nem excluir nada.",
+        "documents": "Adiciona novos documentos ao seu cofre. Não pode listar, abrir, alterar nem excluir nada."
+      },
+      "create": {
+        "failed": "Não foi possível criar o token. Tente novamente.",
+        "createdTitle": "Token criado",
+        "done": "Concluído",
+        "shownOnce": "O token só é exibido agora.",
+        "expiry": "Válido por",
+        "expiryYear": "1 ano",
+        "expiryDays": "{days} dias"
+      },
+      "api": {
+        "title": "API",
+        "address": "Endereço",
+        "copyAddress": "Copiar endereço da API",
+        "endpoints": "Endpoints",
+        "openReference": "Abrir referência"
+      }
+    }
   },
   "admin": {
     "title": "Administração",
@@ -16316,10 +16395,10 @@
       "fieldsLabel": "O que o link mostra",
       "expiryLabel": "O link termina",
       "expiry": {
-        "none": "Nunca, até revogar",
         "30": "Em 30 dias",
         "365": "Em um ano",
-        "730": "Em dois anos"
+        "730": "Em dois anos",
+        "none": "Nunca, até revogar"
       },
       "create": "Criar o link",
       "qrAlt": "Código QR do link do cartão de emergência",

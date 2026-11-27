@@ -1,111 +1,200 @@
 "use client";
 
 /**
- * `<IntegrationsSection>` — Settings → Integrationen.
+ * `<IntegrationsSection>`: Settings → Integrations as two lists.
  *
- * v1.18.1 — the Connections content IS the Integrationen page: clicking
- * Integrationen shows the OAuth + device data sources (Withings / WHOOP /
- * Google Health / Polar / Oura / Nightscout) directly, with no tab strip.
+ * Data sources (where data comes from) and delivery channels (where reminders
+ * go), each showing only what is set up: one row per integration with its
+ * status chip, as the server resolves it (`GET /api/integrations/overview`).
+ * A row opens the integration's sheet, which holds everything the old card
+ * held: the setup forms, credentials, sync, test, details, disconnect. "Add"
+ * in the page header opens the list of what is not set up yet.
  *
- * v1.25.7 — the delivery CHANNELS (Telegram / ntfy / Web Push / Webhook /
- * Email) move back here from Notifications as a labelled "Delivery channels"
- * group below the connections. Channels are delivery providers — the same
- * conceptual family as Withings / WHOOP / a connected device — not reminder
- * preferences, so they belong with the other integrations. Notifications keeps
- * only the reminder-TYPE content. The group carries `id="channels"` so
- * `/settings/channels` 301-redirects to `/settings/integrations#channels`, and
- * the per-channel anchors (`#telegram`, `#ntfy`, …) inside the panel keep
- * working.
- *
- * `parseOAuthOutcome` / `oauthReasonKey` are re-exported from
- * `connections-panel.tsx` so existing unit-test imports keep resolving.
- *
- * `<NutrientIntakeCard>` (v1.28) moved here from
- * Settings → Sources. It is a read-only sync inventory (what the Apple
- * Health nutrients opt-in has stored), not a which-connection-wins ranking —
- * "Source priority" describes the latter only. Matches the standing
- * providers→Integrations rule; the card still renders nothing while the
- * `nutrients` module is off.
+ * The open sheet lives in the query string (`?integration=<key>`, `?add=1`),
+ * so the header button, a reload and a shared link all reach it. The anchors
+ * older links carry (`#oura`, `#telegram`, a SYNC_STALLED notice's
+ * `#<source>`) open that integration's sheet.
  */
 
-import Link from "next/link";
-import { Link2, Send } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { Link2, Send, type LucideIcon } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
+import { FitbitRemovalNotice } from "@/components/settings/integrations/fitbit-removal-notice";
+import {
+  IntegrationAddSheet,
+  addableItems,
+} from "@/components/settings/integrations/integration-add-sheet";
+import { IntegrationListCard } from "@/components/settings/integrations/integration-list";
+import {
+  overviewKeyFromHash,
+  useIntegrationOverview,
+} from "@/components/settings/integrations/integration-registry";
+import { IntegrationSheet } from "@/components/settings/integrations/integration-sheet";
+import { openIntegrationsAdd } from "@/components/settings/integrations/integrations-add-button";
+import { useOAuthReturnToasts } from "@/components/settings/integrations/oauth-return";
+import { useIntegrationStatuses } from "@/components/settings/integrations/shared";
+import { SettingsCardHeader } from "@/components/settings/_card-header";
+import { SettingsCard } from "@/components/settings/settings-card";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { QueryErrorCard } from "@/components/ui/query-error-card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import type { IntegrationCallbackUrls } from "@/lib/integrations/callback-urls";
-import { ConnectionsPanel } from "@/components/settings/integrations/connections-panel";
-import { SectionHeading } from "@/components/ui/section-heading";
-import { NotificationChannelsPanel } from "@/components/settings/integrations/notification-channels-panel";
-import { NutrientIntakeCard } from "@/components/settings/nutrient-intake-card";
-import { DocumentSourcesCard } from "@/components/settings/integrations/document-sources-card";
-import { Button } from "@/components/ui/button";
+import type { IntegrationOverviewItem } from "@/lib/integrations/overview";
+import { queryKeys } from "@/lib/query-keys";
+import { useUrlSearch, writeUrlState } from "@/lib/url-state";
 
 export {
   parseOAuthOutcome,
   oauthReasonKey,
-} from "@/components/settings/integrations/connections-panel";
+} from "@/components/settings/integrations/oauth-return";
+
+function openIntegration(key: string | null) {
+  writeUrlState((params) => {
+    params.delete("add");
+    if (key) params.set("integration", key);
+    else params.delete("integration");
+  });
+}
 
 export function IntegrationsSection({
   callbackUrls,
 }: {
-  /** Server-resolved per-provider OAuth callback URLs; see `ConnectionsPanel`. */
+  /** Server-resolved per-provider OAuth callback URLs, read per request. */
   callbackUrls: IntegrationCallbackUrls;
 }) {
   const { t } = useTranslations();
+  const { isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
+  const overview = useIntegrationOverview(isAuthenticated);
+  // The envelope the sheets read; fetched with the page so a sheet opens
+  // with its card already filled in.
+  const { data: envelope } = useIntegrationStatuses(isAuthenticated);
+  useOAuthReturnToasts();
 
-  // v1.18.6 — the visible page heading + subtitle come from the shared
-  // `<SettingsSectionFrame>` in the route; the connections panel is the
-  // primary surface, with the delivery-channels group sequenced below it.
-  return (
-    <div className="space-y-10">
-      {/* Connections ("where the data comes from"). The OAuth + device data
-          sources. A labelled group header gives this block parity with the
-          delivery-channels group below it. */}
-      <section className="space-y-4">
-        <SectionHeading
-          icon={Link2}
-          title={t("settings.sections.integrations.connectionsHeading")}
-          // The module tour's "integrations" stop anchors here.
-          tourId="integrations-hero"
-        />
-        <ConnectionsPanel callbackUrls={callbackUrls} />
+  const search = useUrlSearch();
+  const openKey = search.get("integration");
+  const addOpen = search.get("add") === "1";
+  const items = overview.data?.items;
+  const openItem = items?.find((item) => item.key === openKey) ?? null;
 
-        {/* The opt-in nutrients sync inventory
-            (moved from Settings → Sources, where "source priority" only
-            ever meant which-connection-wins ranking, not a read-only sync
-            list). The card carries its own header + renders nothing while
-            the `nutrients` module is off, so it slots in as a sibling card
-            under the same Connections group rather than a new labelled
-            section that could paint an orphaned heading over nothing. */}
-        <NutrientIntakeCard />
+  // An anchor from an older link opens that integration's sheet, once.
+  const hashHandled = useRef(false);
+  useEffect(() => {
+    if (hashHandled.current || !items) return;
+    hashHandled.current = true;
+    const key = overviewKeyFromHash(window.location.hash, items);
+    if (key) openIntegration(key);
+  }, [items]);
 
-        {/* v1.39.3 (#1038) — Paperless-ngx / Papra for the document picker.
-            Renders nothing unless the operator listed an origin in
-            DOCUMENT_SOURCE_ORIGINS and the person is in their own record. */}
-        <DocumentSourcesCard />
-      </section>
+  function closeSheet() {
+    openIntegration(null);
+    // A channel saved in the sheet writes outside the status envelope.
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.integrationsOverview(),
+    });
+  }
 
-      {/* Delivery channels ("where it's delivered"). The existing channels
-          panel, unchanged. `id="channels"` anchors the group for the
-          `/settings/channels` redirect; the per-channel anchors stay inside
-          the panel. */}
-      <section id="channels" className="scroll-mt-28 space-y-4">
-        <SectionHeading
-          icon={Send}
-          title={t("settings.sections.integrations.channelsHeading")}
-          subtitle={t("settings.sections.integrations.channelsDescription")}
-        />
-        {/* Names the per-event notification matrix so the three notification
-            surfaces (matrix, reminder types, channels) cross-reference. */}
-        <div>
-          <Button asChild variant="outline" size="sm">
-            <Link href="/notifications">
-              {t("settings.sections.integrations.matrixLink")}
-            </Link>
+  const all = items ?? [];
+  const pick = (item: IntegrationOverviewItem) => openIntegration(item.key);
+  const sources = all.filter((i) => i.group === "source" && i.setUp);
+  const channels = all.filter((i) => i.group === "channel" && i.setUp);
+  const canAdd = addableItems(all).length > 0;
+
+  const emptyLine = (title: string) => (
+    <EmptyState
+      variant="plain"
+      size="compact"
+      title={title}
+      action={
+        canAdd ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="min-h-11 sm:min-h-9"
+            onClick={() => openIntegrationsAdd(true)}
+          >
+            {t("common.add")}
           </Button>
-        </div>
-        <NotificationChannelsPanel />
-      </section>
+        ) : undefined
+      }
+    />
+  );
+
+  return (
+    <div className="space-y-6" data-tour-id="integrations-hero">
+      {envelope?.fitbitRemovalNotice === true ? <FitbitRemovalNotice /> : null}
+
+      {overview.isError ? (
+        <QueryErrorCard
+          error={overview.error}
+          onRetry={() => void overview.refetch()}
+        />
+      ) : !items ? (
+        <>
+          <ListSkeleton
+            icon={Link2}
+            title={t("settings.integrationList.sources")}
+          />
+          <ListSkeleton
+            icon={Send}
+            title={t("settings.integrationList.channels")}
+          />
+        </>
+      ) : (
+        <>
+          <IntegrationListCard
+            icon={Link2}
+            title={t("settings.integrationList.sources")}
+            anchor="sources"
+            items={sources}
+            onOpen={pick}
+            empty={emptyLine(t("settings.integrationList.noSources"))}
+          />
+          <IntegrationListCard
+            icon={Send}
+            title={t("settings.integrationList.channels")}
+            anchor="channels"
+            items={channels}
+            onOpen={pick}
+            empty={emptyLine(t("settings.integrationList.noChannels"))}
+          />
+        </>
+      )}
+
+      {openItem ? (
+        <IntegrationSheet
+          key={openItem.key}
+          item={openItem}
+          open
+          onOpenChange={(open) => {
+            if (!open) closeSheet();
+          }}
+          callbackUrls={callbackUrls}
+        />
+      ) : null}
+      <IntegrationAddSheet
+        items={all}
+        open={addOpen}
+        onOpenChange={(open) => openIntegrationsAdd(open)}
+        onPick={pick}
+      />
     </div>
+  );
+}
+
+function ListSkeleton({ icon, title }: { icon: LucideIcon; title: string }) {
+  return (
+    <SettingsCard aria-busy="true">
+      <SettingsCardHeader icon={icon} title={title} />
+      <div className="space-y-3">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+    </SettingsCard>
   );
 }

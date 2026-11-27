@@ -38,6 +38,13 @@ import {
   RECENT_CALL_STATUSES,
 } from "@/lib/integrations/connection-health";
 import type { ZodOpenApiObject } from "zod-openapi";
+import {
+  OVERVIEW_CHANNEL_KEYS,
+  OVERVIEW_REASONS,
+  OVERVIEW_SETUP_NOTES,
+  OVERVIEW_SOURCE_KEYS,
+  OVERVIEW_STATUSES,
+} from "@/lib/integrations/overview";
 import { googleHealthCredentialsSchema } from "@/lib/validations/google-health";
 import { WITHINGS_PLAN_FEATURES } from "@/lib/withings/plan-features";
 import { OURA_SCOPE_GATED_COLLECTIONS } from "@/lib/oura/scope";
@@ -1204,6 +1211,64 @@ const oauthProviderStatusResponse = z
     description:
       "Connection status for an OAuth provider whose grant lives on the user row (Oura / Polar / Strava). When no token is stored the body is exactly `{ connected: false, configured: false, available, hasOwnCredentials }` — the ledger fields are absent, not null. Tokens and client secrets are never returned. Pure read.",
   });
+
+// ── The list rows (`GET /api/integrations/overview`) ─────────────────
+
+const integrationOverviewItem = z
+  .object({
+    key: z
+      .enum([...OVERVIEW_SOURCE_KEYS, ...OVERVIEW_CHANNEL_KEYS])
+      .describe(
+        "Which integration the row describes. `document-sources` is the Paperless-ngx / Papra connection set; `apns` is the iPhone app's push channel, set up by the app.",
+      ),
+    group: z
+      .enum(["source", "channel"])
+      .describe(
+        "Data source (data comes in) or delivery channel (reminders go out).",
+      ),
+    setUp: z
+      .boolean()
+      .describe(
+        "Something is stored for it: a connection, the person's own app credentials, a set-up folder, or a channel row. The settings list shows exactly the rows where this is true.",
+      ),
+    status: z
+      .enum(OVERVIEW_STATUSES)
+      .nullable()
+      .describe(
+        "The one status word, decided here: `active` (working), `error` (set up, but nothing arrives or goes out) or `off` (set up and switched off, or not connected). Null exactly when `setUp` is false. Render it as it comes; never derive it from other fields.",
+      ),
+    reason: z
+      .enum([...CONNECTION_HEALTH_REASONS, ...OVERVIEW_REASONS])
+      .nullable()
+      .describe(
+        "Why the row reads as it does. For a connected source it is the connection-health reason (see `ConnectionHealth.reason`). The own codes: `not_connected` (credentials or a folder stored, no connection), `paused` (the person switched it off), `switched_off` (a channel the person turned off), `auto_disabled` (the dispatcher turned a channel off after a hard refusal), `sending_paused` (a channel waiting out a cooldown), `delivery_failing` (a channel whose latest send failed). Null for an active channel and for a row not set up.",
+      ),
+    lastAt: isoDateTime()
+      .nullable()
+      .describe(
+        "When it last worked: the last successful sync for a source, the last delivered message for a channel.",
+      ),
+    offered: z
+      .boolean()
+      .describe(
+        "The server can offer it to this account: the operator switch for Telegram, ntfy and Web Push, a mail transport for email, the environment module for Dawarich, the operator's origin list and the documents module for document sources. Always false for `apns`. A row neither set up nor offered is not shown.",
+      ),
+    setupNote: z
+      .enum(OVERVIEW_SETUP_NOTES)
+      .nullable()
+      .describe(
+        "`own_credentials`: no usable app credentials resolve on this server, so connecting first needs the person's own client id and secret. Null otherwise.",
+      ),
+  })
+  .meta({ id: "IntegrationOverviewItem" });
+
+const integrationOverview = z
+  .object({
+    items: z
+      .array(integrationOverviewItem)
+      .describe("Every source, then every channel, always, in display order."),
+  })
+  .meta({ id: "IntegrationOverview" });
 
 // ── The consolidated envelope (`GET /api/integrations/status`) ───────
 
@@ -2797,6 +2862,28 @@ export const integrationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...stdResponses,
         ...probeNotConfigured422,
         ...selfRateLimited429,
+      },
+    },
+  },
+  "/api/integrations/overview": {
+    get: {
+      tags: ["Integrations"],
+      summary: "Read one status row per integration",
+      description:
+        "The rows of the integrations list: every data source and delivery channel with whether it is set up, the one status word (`active`, `error`, `off`), its reason code and when it last worked, plus whether the server can offer it. Sources take their status from the shared connection health (`ok` and `limited` are active, `degraded` and `action_required` an error), channels from the dispatcher's reliability fields. Pure read. Auth via cookie or Bearer.",
+      responses: {
+        "200": {
+          description: "All rows, sources first.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                integrationOverview,
+                "IntegrationOverviewResponse",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
       },
     },
   },

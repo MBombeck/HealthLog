@@ -23,6 +23,8 @@ import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DESTINATION_ICONS as ICON } from "@/components/layout/destination-icons";
 import { PageHeader } from "@/components/ui/page-header";
+import { ApiNewTokenButton } from "@/components/settings/api-new-token-button";
+import { IntegrationsAddButton } from "@/components/settings/integrations/integrations-add-button";
 import { SUB_SHELL_GRID_FLOOR } from "@/components/layout/shell-metrics";
 import { useAuth } from "@/hooks/use-auth";
 import { useMounted } from "@/hooks/use-mounted";
@@ -446,7 +448,14 @@ export function SettingsShell({
               labelKey="settings.sections.layout.backToHub"
             />
           ) : undefined,
-          headingAccessory: undefined,
+          // Integrations and API & tokens are lists whose "add" is the
+          // page's one button.
+          headingAccessory:
+            activeSection.slug === "integrations" ? (
+              <IntegrationsAddButton />
+            ) : activeSection.slug === "api" ? (
+              <ApiNewTokenButton />
+            ) : undefined,
         }
       : null);
 

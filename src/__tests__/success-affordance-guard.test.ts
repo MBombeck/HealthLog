@@ -402,7 +402,7 @@ const PINNED_AFFORDANCES: Record<
   "src/components/settings/insights-pill-order-section.tsx": {
     "toast.success": 1,
   },
-  "src/components/settings/integrations/connections-panel.tsx": {
+  "src/components/settings/integrations/oauth-return.ts": {
     "toast.success": 2,
   },
   // The saved-credentials confirmation line.
