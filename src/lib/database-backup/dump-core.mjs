@@ -44,6 +44,7 @@ import {
 } from "node:fs";
 import { readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
+import { Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { createGunzip } from "node:zlib";
 
@@ -1606,24 +1607,70 @@ export async function decryptOffhostFile(options) {
   const decipher = createDecipheriv("aes-256-gcm", key, header.iv);
   decipher.setAAD(Buffer.from(`${AAD_PREFIX}${options.objectKey}`, "utf8"));
   decipher.setAuthTag(tag);
+  // The tag is checked in `final()`. Its failure is told apart by where it
+  // was thrown, never by OpenSSL's wording, which differs between Node and
+  // OpenSSL versions ("unable to authenticate data", "bad decrypt", ...).
+  let tagRefused = false;
+  const opener = new Transform({
+    transform(chunk, _encoding, callback) {
+      let out;
+      try {
+        out = decipher.update(chunk);
+      } catch (err) {
+        callback(err instanceof Error ? err : new Error(String(err)));
+        return;
+      }
+      callback(null, out);
+    },
+    flush(callback) {
+      let last;
+      try {
+        last = decipher.final();
+      } catch (cause) {
+        tagRefused = true;
+        callback(
+          cause instanceof Error ? cause : new Error(String(cause), { cause }),
+        );
+        return;
+      }
+      callback(null, last);
+    },
+  });
   try {
     await pipeline(
       createReadStream(options.inPath, {
         start: header.length,
         end: size - TAG_LENGTH - 1,
       }),
-      decipher,
+      opener,
       createGunzip(),
       createWriteStream(options.outPath, { flags: "wx", mode: 0o600 }),
     );
   } catch (err) {
     await rm(options.outPath, { force: true });
+    if (tagRefused) {
+      throw new OffhostTagRefusedError(
+        "the off-host copy does not open with this key under this name (altered, renamed, or written with another key)",
+        { cause: err },
+      );
+    }
     const reason = err instanceof Error ? err.message : String(err);
-    throw new Error(
-      /auth|unable to authenticate/i.test(reason)
-        ? "the off-host copy does not open with this key under this name (altered, renamed, or written with another key)"
-        : `could not open the off-host copy: ${reason}`,
-    );
+    throw new Error(`could not open the off-host copy: ${reason}`, {
+      cause: err,
+    });
+  }
+}
+
+/** An off-host copy whose GCM tag does not verify under the key and name given. */
+export class OffhostTagRefusedError extends Error {
+  /**
+   * @param {string} message
+   * @param {ErrorOptions} [options]
+   */
+  constructor(message, options) {
+    super(message, options);
+    this.name = "OffhostTagRefusedError";
+    this.code = "OFFHOST_TAG_REFUSED";
   }
 }
 
