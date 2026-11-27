@@ -123,6 +123,7 @@ describe("buildDailyDigest — composition", () => {
       delta: 3,
       steadyWeeks: null,
       steadyAtLeast: false,
+      shortLabel: "Health score",
     });
     expect(d.topSignal?.headline).toBe("Blood pressure is holding steady");
     expect(d.briefingLead).toBe(
