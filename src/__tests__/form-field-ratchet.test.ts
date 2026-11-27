@@ -71,8 +71,6 @@ const REASONS: Record<string, string> = {
   "components/records/life-circumstances-fields.tsx": CHECKBOX_ROW,
   "components/settings/access/grant-invite-card.tsx":
     "wraps a radio or checkbox with its sentence; no primitive",
-  "components/settings/apple-health-mirror-token.tsx":
-    "a compact switch inside a token table cell, and a checkbox with its text",
   "components/settings/coach-nudge-card.tsx": STATUS_SWITCH,
   "components/settings/injection-sites-card.tsx": CHECKBOX_ROW,
   "components/settings/low-stock-card.tsx": STATUS_SWITCH,

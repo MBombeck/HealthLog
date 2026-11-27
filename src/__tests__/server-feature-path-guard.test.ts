@@ -28,6 +28,7 @@ import { SERVER_FEATURES, type ServerFeature } from "@/lib/server-features";
 /** Paths added since v1.49.0, by the key that tells a client they exist. */
 const FEATURE_KEY_PATHS: Record<string, ServerFeature> = {
   "/api/daily/morning": "daily.morning",
+  "/api/integrations/overview": "integrations.overview",
   "/api/insights/context": "insights.chart-context",
   "/api/documents/inbound/{id}/lab-values": "documents.lab-values-extract",
   "/api/treatment-series": "care.treatment-series",

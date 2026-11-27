@@ -160,7 +160,7 @@ describe("IntegrationsSection — the lists", () => {
     const html = render();
     expect(html.match(/data-slot="status-chip"/g)).toHaveLength(4);
     expect(html).toMatch(
-      /data-integration="withings" data-status="error"[\s\S]*?data-slot="status-chip" data-tone="error"/,
+      /data-integration="withings" data-status="error"[\s\S]*?data-slot="status-chip"[^>]*data-tone="error"/,
     );
     expect(html).not.toContain('data-slot="integration-health-badge"');
   });

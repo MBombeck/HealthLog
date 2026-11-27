@@ -1,7 +1,7 @@
 {
   "$comment": "Raw <label> elements per file under src/components and src/app, outside src/components/ui. Maintained by src/__tests__/form-field-ratchet.test.ts.",
-  "count": 25,
-  "total": 28,
+  "count": 24,
+  "total": 26,
   "entries": {
     "components/admin/backups/restore-dialog.tsx": 1,
     "components/auth/mfa-login-step.tsx": 1,
@@ -19,7 +19,6 @@
     "components/records/audit-c-panel.tsx": 1,
     "components/records/life-circumstances-fields.tsx": 1,
     "components/settings/access/grant-invite-card.tsx": 3,
-    "components/settings/apple-health-mirror-token.tsx": 2,
     "components/settings/coach-nudge-card.tsx": 1,
     "components/settings/injection-sites-card.tsx": 1,
     "components/settings/low-stock-card.tsx": 1,

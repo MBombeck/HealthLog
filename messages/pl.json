@@ -8566,7 +8566,7 @@
         "shownOnce": "Token jest wyświetlany tylko teraz.",
         "expiry": "Ważny przez",
         "expiryYear": "1 rok",
-        "expiryDays": "{days} dni"
+        "expiryDays": "{days, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}}"
       },
       "api": {
         "title": "API",

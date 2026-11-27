@@ -26,37 +26,14 @@
  */
 
 import { useState, type ReactNode } from "react";
-import { createPortal } from "react-dom";
-import {
-  Check,
-  ChevronDown,
-  Copy,
-  ExternalLink,
-  Link2,
-  Loader2,
-  MoreHorizontal,
-  Play,
-  RefreshCw,
-  type LucideIcon,
-} from "lucide-react";
+import { ChevronDown, Link2, Play, type LucideIcon } from "lucide-react";
 
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { SettingsCard } from "@/components/settings/settings-card";
-import {
-  useIntegrationSheetSlots,
-  type IntegrationSheetSlots,
-} from "@/components/settings/sheet-surface";
+import { useIntegrationSheetSlots } from "@/components/settings/sheet-surface";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Disclosure } from "@/components/ui/disclosure";
-import { ConfirmDialog } from "@/components/ui/confirm-button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type {
@@ -66,15 +43,21 @@ import type {
 import { cn } from "@/lib/utils";
 
 import {
+  APP_VERSION,
+  DetailsPanel,
+  IntegrationMenu,
+  PrimaryButton,
+  type IntegrationMenuAction,
+  type IntegrationPrimaryHandlers,
+} from "./integration-card-parts";
+import { IntegrationSheetBody } from "./integration-sheet-body";
+import {
   diagnosticsText,
   formatHealthInstant,
   healthBadgeLabel,
   healthSentence,
   unavailableItemLabel,
 } from "./integration-health-copy";
-
-/** The app version the build stamped; empty in a dev build. */
-const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || "";
 
 /**
  * The three calm states take the status token on a light wash. "Action
@@ -104,27 +87,10 @@ export function HealthBadge({ state }: { state: ConnectionHealthState }) {
   );
 }
 
-export interface IntegrationMenuAction {
-  /** Stable id; becomes `data-action` and the `<provider>-menu-<id>` testid. */
-  id: string;
-  label: string;
-  icon: LucideIcon;
-  onSelect?: () => void;
-  /** Navigates instead of acting. External links open in a new tab. */
-  href?: string;
-  external?: boolean;
-  disabled?: boolean;
-  destructive?: boolean;
-  /** Ask first; the action runs from the dialog's confirm button. */
-  confirm?: { title: string; body: string; confirmLabel: string };
-}
-
-export interface IntegrationPrimaryHandlers {
-  onReconnect?: () => void;
-  onResume?: () => void;
-  pending?: boolean;
-  disabled?: boolean;
-}
+export type {
+  IntegrationMenuAction,
+  IntegrationPrimaryHandlers,
+} from "./integration-card-parts";
 
 export interface IntegrationCardProps {
   /** Connection key; drives `data-integration` and the testids. */
@@ -161,55 +127,35 @@ export interface IntegrationCardProps {
   testId?: string;
 }
 
-export function IntegrationCard({
-  provider,
-  providerName,
-  icon,
-  title,
-  titleAccessory,
-  description,
-  loading = false,
-  connected,
-  health,
-  historyLoading,
-  appleHealth,
-  primary,
-  menu = [],
-  details,
-  diagnosticsExtra,
-  children,
-  setup,
-  connectAction,
-  testId,
-}: IntegrationCardProps) {
+export function IntegrationCard(props: IntegrationCardProps) {
+  const {
+    provider,
+    providerName,
+    icon,
+    title,
+    titleAccessory,
+    description,
+    loading = false,
+    connected,
+    health,
+    historyLoading,
+    appleHealth,
+    primary,
+    menu = [],
+    details,
+    diagnosticsExtra,
+    children,
+    setup,
+    connectAction,
+    testId,
+  } = props;
   const { t, locale } = useTranslations();
   const fmt = useFormatters();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const detailsId = `${provider}-integration-details`;
+  // Inside an integration sheet the sheet is the frame (`sheet-surface.ts`).
   const sheetSlots = useIntegrationSheetSlots();
-
-  if (sheetSlots) {
-    return (
-      <IntegrationSheetBody
-        slots={sheetSlots}
-        provider={provider}
-        providerName={providerName}
-        description={description}
-        loading={loading}
-        connected={connected}
-        health={health}
-        primary={primary}
-        menu={menu}
-        details={details}
-        diagnosticsExtra={diagnosticsExtra}
-        setup={setup}
-        connectAction={connectAction}
-        testId={testId}
-      >
-        {children}
-      </IntegrationSheetBody>
-    );
-  }
+  if (sheetSlots) return <IntegrationSheetBody slots={sheetSlots} {...props} />;
 
   const cardState = loading
     ? "loading"
@@ -394,253 +340,6 @@ export function IntegrationCard({
   );
 }
 
-function PrimaryButton({
-  action,
-  icon: Icon,
-  label,
-  onClick,
-  pending,
-  disabled,
-  provider,
-}: {
-  action: "reconnect" | "resume";
-  icon: LucideIcon;
-  label: string;
-  onClick: () => void;
-  pending?: boolean;
-  disabled?: boolean;
-  provider: string;
-}) {
-  return (
-    <Button
-      type="button"
-      size="sm"
-      className="min-h-11 sm:min-h-9"
-      onClick={onClick}
-      disabled={disabled || pending}
-      aria-busy={pending || undefined}
-      data-slot="integration-primary-action"
-      data-action={action}
-      data-testid={`${provider}-${action}-button`}
-    >
-      {pending ? (
-        <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" />
-      ) : (
-        <Icon className="size-3.5" aria-hidden="true" />
-      )}
-      {label}
-    </Button>
-  );
-}
-
-/**
- * The rare actions. A destructive or heavy entry asks first through the same
- * confirmation the card used before; the dialog is controlled here because a
- * menu item closes its menu, and with it any dialog nested inside.
- */
-function IntegrationMenu({
-  provider,
-  providerName,
-  items,
-  quiet = false,
-}: {
-  provider: string;
-  providerName: string;
-  items: IntegrationMenuAction[];
-  /** A ghost trigger, for the sheet's title row. */
-  quiet?: boolean;
-}) {
-  const { t } = useTranslations();
-  const [confirming, setConfirming] = useState<IntegrationMenuAction | null>(
-    null,
-  );
-
-  return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant={quiet ? "ghost" : "outline"}
-            size="icon"
-            className="min-h-11 min-w-11 sm:size-9 sm:min-h-9 sm:min-w-9"
-            aria-label={t("settings.integrationCard.menuLabel", {
-              provider: providerName,
-            })}
-            data-slot="integration-menu-trigger"
-            data-testid={`${provider}-menu`}
-          >
-            <MoreHorizontal className="size-4" aria-hidden="true" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align={quiet ? "end" : "start"}
-          className="w-64 max-w-[calc(100vw-2rem)]"
-          data-slot="integration-menu"
-        >
-          {items.map((item) => {
-            const Icon = item.icon;
-            const common = {
-              "data-slot": "integration-menu-item",
-              "data-action": item.id,
-              "data-testid": `${provider}-menu-${item.id}`,
-              disabled: item.disabled,
-              variant: item.destructive
-                ? ("destructive" as const)
-                : ("default" as const),
-            };
-            if (item.href) {
-              return (
-                <DropdownMenuItem key={item.id} asChild {...common}>
-                  <a
-                    href={item.href}
-                    {...(item.external
-                      ? { target: "_blank", rel: "noopener noreferrer" }
-                      : {})}
-                  >
-                    <Icon aria-hidden="true" />
-                    {item.label}
-                    {item.external ? (
-                      <ExternalLink
-                        aria-hidden="true"
-                        className="ml-auto size-3"
-                      />
-                    ) : null}
-                  </a>
-                </DropdownMenuItem>
-              );
-            }
-            return (
-              <DropdownMenuItem
-                key={item.id}
-                {...common}
-                onSelect={() => {
-                  if (item.confirm) setConfirming(item);
-                  else item.onSelect?.();
-                }}
-              >
-                <Icon aria-hidden="true" />
-                {item.label}
-              </DropdownMenuItem>
-            );
-          })}
-        </DropdownMenuContent>
-      </DropdownMenu>
-      {confirming?.confirm ? (
-        <ConfirmDialog
-          open
-          onOpenChange={(open) => {
-            if (!open) setConfirming(null);
-          }}
-          title={confirming.confirm.title}
-          body={confirming.confirm.body}
-          confirmLabel={confirming.confirm.confirmLabel}
-          destructive={confirming.destructive}
-          slot={`${provider}-${confirming.id}`}
-          onConfirm={() => {
-            const run = confirming.onSelect;
-            setConfirming(null);
-            run?.();
-          }}
-        />
-      ) : null}
-    </>
-  );
-}
-
-/**
- * "Details for a bug report": collapsed by default and present in every state,
- * so a report always looks the same. Its toggle sits at the start of the
- * action row and the panel opens above that row, which stays the last thing in
- * the card. The monospace block is exactly the text the copy button places on
- * the clipboard. The panel is always in the markup and `hidden` while closed,
- * so what a report would contain is inspectable without opening it.
- */
-function DetailsPanel({
-  id,
-  open,
-  text,
-  unavailable,
-  children,
-}: {
-  id: string;
-  open: boolean;
-  text: string;
-  unavailable: string[];
-  children?: ReactNode;
-}) {
-  const { t } = useTranslations();
-  const [copy, setCopy] = useState<"idle" | "copied" | "failed">("idle");
-
-  async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopy("copied");
-      window.setTimeout(() => setCopy("idle"), 2000);
-    } catch {
-      setCopy("failed");
-    }
-  }
-
-  return (
-    <div
-      id={id}
-      hidden={!open}
-      className="space-y-3"
-      data-slot="integration-details"
-      data-state={open ? "open" : "closed"}
-    >
-      {unavailable.length > 0 ? (
-        <p className="text-sm" data-slot="integration-unavailable-list">
-          {t("settings.integrationCard.details.unavailableList", {
-            list: unavailable.join(", "),
-          })}
-        </p>
-      ) : null}
-      {children}
-      <pre
-        className="bg-muted/40 text-foreground overflow-x-auto rounded-lg border p-3 font-mono text-xs leading-relaxed whitespace-pre"
-        data-slot="integration-diagnostics"
-      >
-        {text}
-      </pre>
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="min-h-11 sm:min-h-9"
-          onClick={handleCopy}
-          data-slot="integration-diagnostics-copy"
-        >
-          {copy === "copied" ? (
-            <Check className="size-3.5" aria-hidden="true" />
-          ) : (
-            <Copy className="size-3.5" aria-hidden="true" />
-          )}
-          {t("common.copy")}
-        </Button>
-        <span
-          role="status"
-          aria-live="polite"
-          data-slot="integration-diagnostics-copy-status"
-          data-state={copy}
-          className={cn(
-            "text-xs",
-            copy === "failed" ? "text-destructive" : "text-success",
-          )}
-        >
-          {copy === "copied"
-            ? t("common.copied")
-            : copy === "failed"
-              ? t("settings.integrationCard.details.copyFailed")
-              : ""}
-        </span>
-      </div>
-    </div>
-  );
-}
-
 /**
  * The forms, guides and help a connection needs before it connects, folded
  * under "Set up": a page of eleven cards read as eleven sets of instructions
@@ -658,204 +357,5 @@ function IntegrationSetupFold({ children }: { children?: ReactNode }) {
     >
       {children}
     </Disclosure>
-  );
-}
-
-/**
- * The card as the body of an integration sheet. The sheet already names the
- * connection and shows its status, reason and last sync, so the body keeps
- * what the person can do: the setup forms (open, not folded), the lines a
- * controller adds, the bug-report details, and the action pair at the foot.
- * "Sync now" leaves the menu for the pair; everything else rare stays in the
- * ⋯ menu beside the title, "Disconnect" among it.
- */
-function IntegrationSheetBody({
-  slots,
-  provider,
-  providerName,
-  description,
-  loading,
-  connected,
-  health,
-  primary,
-  menu,
-  details,
-  diagnosticsExtra,
-  setup,
-  connectAction,
-  testId,
-  children,
-}: {
-  slots: IntegrationSheetSlots;
-  provider: string;
-  providerName: string;
-  description?: ReactNode;
-  loading: boolean;
-  connected: boolean;
-  health: ConnectionHealth | null;
-  primary?: IntegrationPrimaryHandlers;
-  menu: IntegrationMenuAction[];
-  details?: ReactNode;
-  diagnosticsExtra?: readonly string[];
-  setup?: ReactNode;
-  connectAction?: ReactNode;
-  testId?: string;
-  children?: ReactNode;
-}) {
-  const { t } = useTranslations();
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const detailsId = `${provider}-integration-details`;
-
-  const body = (content: ReactNode) => (
-    <div
-      className="flex flex-col gap-4"
-      data-testid={testId ?? `${provider}-card`}
-      data-slot="integration-card"
-      data-surface="sheet"
-      data-integration={provider}
-      data-state={
-        loading
-          ? "loading"
-          : !connected
-            ? "not_connected"
-            : (health?.state ?? "unknown")
-      }
-    >
-      {content}
-    </div>
-  );
-
-  if (loading) {
-    return body(
-      <div className="space-y-2" aria-busy="true">
-        <Skeleton className="h-4 w-2/3" />
-        <Skeleton className="h-3 w-1/3" />
-      </div>,
-    );
-  }
-
-  if (!connected) {
-    return body(
-      <>
-        {description ? (
-          <div className="text-sm" data-slot="settings-card-description">
-            {description}
-          </div>
-        ) : null}
-        {setup ? <div data-slot="integration-setup">{setup}</div> : null}
-        {children}
-        {connectAction && slots.actions
-          ? createPortal(connectAction, slots.actions)
-          : null}
-      </>,
-    );
-  }
-
-  const syncItem = menu.find((item) => item.id === "sync");
-  const rest = menu.filter((item) => item.id !== "sync");
-  const action = health?.action ?? null;
-  const primaryButton =
-    action === "resume" && primary?.onResume ? (
-      <PrimaryButton
-        action="resume"
-        icon={Play}
-        label={t("settings.integrationCard.resume")}
-        onClick={primary.onResume}
-        pending={primary.pending}
-        disabled={primary.disabled}
-        provider={provider}
-      />
-    ) : primary?.onReconnect ? (
-      <PrimaryButton
-        action="reconnect"
-        icon={Link2}
-        label={t("settings.integrationCard.reconnect")}
-        onClick={primary.onReconnect}
-        pending={primary.pending}
-        disabled={primary.disabled}
-        provider={provider}
-      />
-    ) : null;
-
-  const actions =
-    syncItem || primaryButton ? (
-      <>
-        {syncItem?.onSelect ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="min-h-11 sm:min-h-9"
-            onClick={syncItem.onSelect}
-            disabled={syncItem.disabled}
-            data-slot="integration-sync-action"
-            data-testid={`${provider}-sync-button`}
-          >
-            <RefreshCw className="size-3.5" aria-hidden="true" />
-            {t("settings.integrationList.syncNow")}
-          </Button>
-        ) : null}
-        {primaryButton}
-      </>
-    ) : null;
-
-  return body(
-    <>
-      {children}
-      {health ? (
-        <>
-          <button
-            type="button"
-            aria-expanded={detailsOpen}
-            aria-controls={detailsId}
-            onClick={() => setDetailsOpen((open) => !open)}
-            data-slot="integration-details-toggle"
-            data-testid={`${provider}-details-toggle`}
-            className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -ml-1 flex min-h-11 items-center gap-2 self-start rounded-md px-1 text-sm outline-none focus-visible:ring-[3px] sm:min-h-9"
-          >
-            <ChevronDown
-              aria-hidden="true"
-              className={cn(
-                "size-3.5 shrink-0 transition-transform motion-reduce:transition-none",
-                detailsOpen && "rotate-180",
-              )}
-            />
-            {t("settings.integrationCard.details.title")}
-          </button>
-          <DetailsPanel
-            id={detailsId}
-            open={detailsOpen}
-            text={diagnosticsText(
-              {
-                version: APP_VERSION,
-                provider: providerName,
-                health,
-                extra: diagnosticsExtra,
-              },
-              t,
-            )}
-            unavailable={health.unavailable.map((u) =>
-              unavailableItemLabel(u.item, t),
-            )}
-          >
-            {details}
-          </DetailsPanel>
-        </>
-      ) : details ? (
-        <div className="space-y-3">{details}</div>
-      ) : null}
-      {actions && slots.actions ? createPortal(actions, slots.actions) : null}
-      {rest.length > 0 && slots.menu
-        ? createPortal(
-            <IntegrationMenu
-              provider={provider}
-              providerName={providerName}
-              items={rest}
-              quiet
-            />,
-            slots.menu,
-          )
-        : null}
-    </>,
   );
 }

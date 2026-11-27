@@ -8566,7 +8566,7 @@
         "shownOnce": "Le jeton n’est affiché que maintenant.",
         "expiry": "Valable",
         "expiryYear": "1 an",
-        "expiryDays": "{days} jours"
+        "expiryDays": "{days, plural, one {# jour} other {# jours}}"
       },
       "api": {
         "title": "API",

@@ -31,6 +31,7 @@ import { runConnectionTest } from "@/components/settings/test-connection-button"
 import { WebPushCard } from "@/components/settings/web-push-card";
 import { WebhookCard } from "@/components/settings/webhook-card";
 import { Button } from "@/components/ui/button";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { StatusChip } from "@/components/ui/status-chip";
 import { useAuth } from "@/hooks/use-auth";
@@ -185,7 +186,7 @@ interface ChannelStatusRow {
 
 function useChannelStatusRow(channelKey: OverviewChannelKey) {
   const { isAuthenticated } = useAuth();
-  const { data } = useQuery({
+  const query = useQuery({
     queryKey: queryKeys.notificationsStatus(),
     queryFn: async () => {
       const body = await apiGet<{ channels: ChannelStatusRow[] }>(
@@ -195,15 +196,27 @@ function useChannelStatusRow(channelKey: OverviewChannelKey) {
     },
     enabled: isAuthenticated,
   });
-  const rows = Array.isArray(data) ? data : [];
-  return rows.find((row) => row.type === CHANNEL_KEY_TYPE[channelKey]) ?? null;
+  const rows = Array.isArray(query.data) ? query.data : [];
+  return {
+    query,
+    row: rows.find((row) => row.type === CHANNEL_KEY_TYPE[channelKey]) ?? null,
+  };
 }
 
 /** The latest failed send of a channel, as the dispatcher recorded it. */
 function ChannelFailureRow({ channelKey }: { channelKey: OverviewChannelKey }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
-  const row = useChannelStatusRow(channelKey);
+  const { query, row } = useChannelStatusRow(channelKey);
+  if (query.isError) {
+    return (
+      <QueryErrorRow
+        inset
+        error={query.error}
+        onRetry={() => void query.refetch()}
+      />
+    );
+  }
   if (!row?.lastFailureAt) return null;
   return (
     <FactRow label={t("settings.integrationList.facts.lastFailure")}>
@@ -236,10 +249,11 @@ function ChannelSheetActions({
   const { t } = useTranslations();
   const slots = useIntegrationSheetSlots()?.actions ?? null;
   const queryClient = useQueryClient();
-  const row = useChannelStatusRow(channelKey);
+  const { row } = useChannelStatusRow(channelKey);
   const testEndpoint = CHANNEL_TEST_ENDPOINT[channelKey];
 
   const reEnable = useMutation({
+    // Confirms in place: the chip turns back to "Active".
     meta: CONFIRMS_INLINE,
     mutationFn: (channelId: string) =>
       apiPost("/api/notifications/status", { channelId }),

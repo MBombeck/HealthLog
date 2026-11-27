@@ -187,7 +187,7 @@
     "components/settings/insights-pill-order-section.tsx :: InsightsPillOrderSection": 254,
     "components/settings/integrations/document-sources-card.tsx :: SourceForm": 299,
     "components/settings/integrations/google-health-card.tsx :: GoogleHealthCard": 300,
-    "components/settings/integrations/integration-card.tsx :: IntegrationCard": 208,
+    "components/settings/integrations/integration-card.tsx :: IntegrationCard": 212,
     "components/settings/integrations/oauth-integration-card.tsx :: OAuthIntegrationCardView": 316,
     "components/settings/low-stock-card.tsx :: LowStockCard": 296,
     "components/settings/mcp-section.tsx :: McpTokensCard": 253,

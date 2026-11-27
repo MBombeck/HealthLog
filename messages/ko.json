@@ -8515,7 +8515,7 @@
         "whoop": "회복, 수면, 스트레인",
         "googleHealth": "Fitbit 및 Pixel Watch",
         "garmin": "수면, HRV, 스트레스, 활동",
-        "oura": "준비 상태, 수면, HRV",
+        "oura": "준비도, 수면, HRV",
         "polar": "회복, 수면, 운동",
         "strava": "활동을 운동으로",
         "nightscout": "연속 혈당",
@@ -8566,7 +8566,7 @@
         "shownOnce": "토큰은 지금만 표시됩니다.",
         "expiry": "유효 기간",
         "expiryYear": "1년",
-        "expiryDays": "{days}일"
+        "expiryDays": "{days, plural, other {#일}}"
       },
       "api": {
         "title": "API",

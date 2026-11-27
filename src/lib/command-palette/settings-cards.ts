@@ -134,7 +134,12 @@ export const SETTINGS_CARDS: ReadonlyArray<SettingsCardEntry> = [
     anchor: "security-activity",
     titleKey: "settings.security.activityTitle",
   },
-  // ── Integrations: each anchor opens that integration's sheet ──
+  // ── Integrations: the two lists, then each anchor opens that sheet ──
+  {
+    section: "integrations",
+    anchor: "sources",
+    titleKey: "settings.integrationList.sources",
+  },
   {
     section: "integrations",
     anchor: "withings",

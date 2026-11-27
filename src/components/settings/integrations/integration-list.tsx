@@ -68,9 +68,11 @@ export function IntegrationListCard({
       data-slot="integration-list"
       data-group={anchor}
     >
-      <div className="px-4 py-4 md:px-6">
-        <SettingsCardHeader icon={icon} title={title} />
-      </div>
+      <SettingsCardHeader
+        icon={icon}
+        title={title}
+        className="px-4 py-4 md:px-6"
+      />
       {items.length === 0 ? (
         <div className="border-t px-4 py-4 md:px-6">{empty}</div>
       ) : (

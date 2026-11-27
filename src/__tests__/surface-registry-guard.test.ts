@@ -212,6 +212,8 @@ describe("1. every page route is an entry or a declared child of one", () => {
  * the reason.
  */
 const UNINDEXED_ANCHORS: Readonly<Record<string, string>> = {
+  "delivery-status":
+    "The delivery status card of the onboarding reminders step; in Settings each channel's status is its row and sheet under Integrations, which are entries.",
   "other-reminders":
     "A list of pointers to where reminders are set; the targets are entries.",
   "sessions-link": "A link to Security > Active sessions, which is the entry.",

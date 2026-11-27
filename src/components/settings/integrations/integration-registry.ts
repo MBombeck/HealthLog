@@ -4,9 +4,9 @@
  * What the integrations list knows about each integration besides its status:
  * the icon, the name and the one line that says what it brings (a source) or
  * where it delivers (a channel). The status itself comes from the server
- * (`GET /api/integrations/overview`) and is never derived here.
+ * (`GET /api/integrations/overview`, read by the section) and is never
+ * derived here.
  */
-import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
   Archive,
@@ -27,14 +27,11 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { apiGet } from "@/lib/api/api-fetch";
 import type {
-  IntegrationOverview,
   IntegrationOverviewItem,
   OverviewKey,
   OverviewReason,
 } from "@/lib/integrations/overview";
-import { queryKeys } from "@/lib/query-keys";
 
 export const INTEGRATION_ICON: Record<OverviewKey, LucideIcon> = {
   "apple-health": HeartPulse,
@@ -139,13 +136,4 @@ export function overviewKeyFromHash(
   const raw = hash.replace(/^#/, "");
   const id = INTEGRATION_HASH_ALIASES[raw] ?? raw;
   return items.find((item) => item.key === id)?.key ?? null;
-}
-
-export function useIntegrationOverview(enabled: boolean) {
-  return useQuery({
-    queryKey: queryKeys.integrationsOverview(),
-    queryFn: () => apiGet<IntegrationOverview>("/api/integrations/overview"),
-    enabled,
-    refetchOnWindowFocus: true,
-  });
 }

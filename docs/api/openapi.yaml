@@ -26432,6 +26432,27 @@ paths:
         "422": *a67
         "429": *a68
         "502": *a69
+  /api/integrations/overview:
+    get:
+      tags:
+        - Integrations
+      summary: Read one status row per integration
+      description: "The rows of the integrations list: every data source and delivery channel with whether it is set up, the
+        one status word (`active`, `error`, `off`), its reason code and when it last worked, plus whether the server can
+        offer it. Sources take their status from the shared connection health (`ok` and `limited` are active, `degraded`
+        and `action_required` an error), channels from the dispatcher's reliability fields. Pure read. Auth via cookie
+        or Bearer."
+      responses:
+        "200":
+          description: All rows, sources first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IntegrationOverviewResponse"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
   /api/integrations/status:
     get:
       tags:
@@ -49923,6 +49944,7 @@ components:
               - medication.side-effect-headache
               - medication.low-stock-trigger
               - insights.score-origin
+              - integrations.overview
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices; since
@@ -50059,7 +50081,11 @@ components:
             RECOVERY_SCORE, STRESS_SCORE and STRAIN_SCORE values on GET /api/insights/derived carry origin (estimate |
             device | computed) and deviceSource (the measurement source of a device value, else null); the health score
             composite carries weights (one { id, weight } per counted pillar, summing to 1) and each snapshot
-            healthScore.pillars row its weight (null when it did not count)."
+            healthScore.pillars row its weight (null when it did not count). `integrations.overview`: GET
+            /api/integrations/overview returns one row per data source and delivery channel: key, group (source |
+            channel), setUp, status (active | error | off, null when not set up), reason (a connection-health reason, or
+            not_connected | paused | switched_off | auto_disabled | sending_paused | delivery_failing), lastAt, offered
+            and setupNote (own_credentials | null). Render status as it comes."
       required:
         - version
         - buildSha
@@ -100848,6 +100874,138 @@ components:
       required:
         - data
         - error
+      additionalProperties: false
+    IntegrationOverviewResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/IntegrationOverview"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    IntegrationOverview:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/IntegrationOverviewItem"
+          description: Every source, then every channel, always, in display order.
+      required:
+        - items
+      additionalProperties: false
+    IntegrationOverviewItem:
+      type: object
+      properties:
+        key:
+          type: string
+          enum:
+            - apple-health
+            - withings
+            - whoop
+            - google-health
+            - garmin
+            - oura
+            - polar
+            - strava
+            - nightscout
+            - dawarich
+            - health-connect-remote
+            - document-sources
+            - telegram
+            - ntfy
+            - web-push
+            - webhook
+            - email
+            - apns
+          description: Which integration the row describes. `document-sources` is the Paperless-ngx / Papra connection set; `apns`
+            is the iPhone app's push channel, set up by the app.
+        group:
+          type: string
+          enum:
+            - source
+            - channel
+          description: Data source (data comes in) or delivery channel (reminders go out).
+        setUp:
+          type: boolean
+          description: "Something is stored for it: a connection, the person's own app credentials, a set-up folder, or a channel
+            row. The settings list shows exactly the rows where this is true."
+        status:
+          anyOf:
+            - type: string
+              enum:
+                - active
+                - error
+                - off
+            - type: "null"
+          description: "The one status word, decided here: `active` (working), `error` (set up, but nothing arrives or goes out)
+            or `off` (set up and switched off, or not connected). Null exactly when `setUp` is false. Render it as it
+            comes; never derive it from other fields."
+        reason:
+          anyOf:
+            - type: string
+              enum:
+                - data_arriving
+                - first_sync_pending
+                - plan_limited
+                - permission_limited
+                - provider_errors
+                - sync_stalled
+                - no_new_data
+                - unexpected_silence
+                - reauth_required
+                - paused_after_errors
+                - not_connected
+                - paused
+                - switched_off
+                - auto_disabled
+                - sending_paused
+                - delivery_failing
+            - type: "null"
+          description: "Why the row reads as it does. For a connected source it is the connection-health reason (see
+            `ConnectionHealth.reason`). The own codes: `not_connected` (credentials or a folder stored, no connection),
+            `paused` (the person switched it off), `switched_off` (a channel the person turned off), `auto_disabled`
+            (the dispatcher turned a channel off after a hard refusal), `sending_paused` (a channel waiting out a
+            cooldown), `delivery_failing` (a channel whose latest send failed). Null for an active channel and for a row
+            not set up."
+        lastAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+          description: "When it last worked: the last successful sync for a source, the last delivered message for a channel."
+        offered:
+          type: boolean
+          description: "The server can offer it to this account: the operator switch for Telegram, ntfy and Web Push, a mail
+            transport for email, the environment module for Dawarich, the operator's origin list and the documents
+            module for document sources. Always false for `apns`. A row neither set up nor offered is not shown."
+        setupNote:
+          anyOf:
+            - type: string
+              enum:
+                - own_credentials
+            - type: "null"
+          description: "`own_credentials`: no usable app credentials resolve on this server, so connecting first needs the
+            person's own client id and secret. Null otherwise."
+      required:
+        - key
+        - group
+        - setUp
+        - status
+        - reason
+        - lastAt
+        - offered
+        - setupNote
       additionalProperties: false
     IntegrationStatusEnvelopeResponse:
       type: object

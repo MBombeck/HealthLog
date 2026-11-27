@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { apiGet, apiPatch } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
+import { cn } from "@/lib/utils";
 
 /** The scope a measurement token carries, and nothing else. */
 const MEASUREMENTS_WRITE = "measurements:write";
@@ -39,7 +40,11 @@ export function patchTokenMirror(
  * before readings were linked to their token, by an account that held more
  * than one, so no setting here can put them into Apple Health.
  */
-export function UnattributedReadingsNotice() {
+export function UnattributedReadingsNotice({
+  className,
+}: {
+  className?: string;
+}) {
   const { t } = useTranslations();
   const { isAuthenticated } = useAuth();
   const { data } = useQuery({
@@ -50,7 +55,10 @@ export function UnattributedReadingsNotice() {
   });
   if (!data || !(data.unattributedReadings > 0)) return null;
   return (
-    <p className="text-sm" data-slot="apple-health-unattributed-notice">
+    <p
+      className={cn("text-sm", className)}
+      data-slot="apple-health-unattributed-notice"
+    >
       {t("settings.measurementsToken.appleHealth.unattributed")}
     </p>
   );

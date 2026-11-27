@@ -347,6 +347,16 @@ const LAYOUT_CHILD_SLUGS: ReadonlySet<string> = new Set([
   "vorsorge",
 ]);
 
+/**
+ * The page's one button, beside its title: Integrations and API & tokens are
+ * lists whose "add" lives there.
+ */
+function headingAccessoryFor(slug: SettingsSectionSlug): React.ReactNode {
+  if (slug === "integrations") return <IntegrationsAddButton />;
+  if (slug === "api") return <ApiNewTokenButton />;
+  return undefined;
+}
+
 /** Map a Layout child editor onto the Layout hub for nav highlighting. */
 function navHighlightSlug(slug: SettingsSectionSlug): SettingsSectionSlug {
   return LAYOUT_CHILD_SLUGS.has(slug) ? "layout" : slug;
@@ -448,14 +458,7 @@ export function SettingsShell({
               labelKey="settings.sections.layout.backToHub"
             />
           ) : undefined,
-          // Integrations and API & tokens are lists whose "add" is the
-          // page's one button.
-          headingAccessory:
-            activeSection.slug === "integrations" ? (
-              <IntegrationsAddButton />
-            ) : activeSection.slug === "api" ? (
-              <ApiNewTokenButton />
-            ) : undefined,
+          headingAccessory: headingAccessoryFor(activeSection.slug),
         }
       : null);
 

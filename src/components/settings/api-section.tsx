@@ -13,15 +13,12 @@
  * the MCP page; both are listed and revoked here.
  */
 
-import { useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Braces,
-  Check,
-  Copy,
   ExternalLink,
   KeyRound,
-  Loader2,
   MoreHorizontal,
   Trash2,
 } from "lucide-react";
@@ -31,17 +28,16 @@ import {
   openNewToken,
 } from "@/components/settings/api-new-token-button";
 import {
+  CopyValueButton,
+  NewTokenSheet,
+} from "@/components/settings/api-new-token-sheet";
+import {
   UnattributedReadingsNotice,
   isMeasurementTokenInfo,
   patchTokenMirror,
 } from "@/components/settings/apple-health-mirror-token";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { SettingsCard } from "@/components/settings/settings-card";
-import {
-  recentProofErrorMessage,
-  throwIfReproofRequired,
-  useRecentProof,
-} from "@/components/settings/security-section/use-recent-proof";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-button";
 import {
@@ -52,19 +48,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/ui/empty-state";
-import { FieldGroup } from "@/components/ui/field-group";
 import { InlineAction } from "@/components/ui/inline-action";
-import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
-import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SwitchRow } from "@/components/ui/switch-row";
 import { TagChip } from "@/components/ui/tag-chip";
 import { useAuth } from "@/hooks/use-auth";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
@@ -114,32 +100,6 @@ function scopeLabel(
   return permissions.join(", ");
 }
 
-/** What the "New token" flow mints, with the endpoint behind each. */
-const MINT_KINDS = {
-  measurements: {
-    endpoint: "/api/tokens/measurements",
-    labelKey: "settings.tokenList.scope.measurements",
-    infoKey: "settings.tokenList.scopeInfo.measurements",
-    placeholderKey: "settings.measurementsToken.namePlaceholder",
-  },
-  workouts: {
-    endpoint: "/api/tokens/workouts",
-    labelKey: "settings.tokenList.scope.workouts",
-    infoKey: "settings.tokenList.scopeInfo.workouts",
-    placeholderKey: "settings.workoutsToken.namePlaceholder",
-  },
-  documents: {
-    endpoint: "/api/tokens/documents",
-    labelKey: "settings.tokenList.scope.documents",
-    infoKey: "settings.tokenList.scopeInfo.documents",
-    placeholderKey: "settings.documentsToken.namePlaceholder",
-  },
-} as const;
-type MintKind = keyof typeof MINT_KINDS;
-
-/** Expiry choices in days; the routes accept 1 to 365. */
-const EXPIRY_DAYS = [30, 90, 180, 365] as const;
-
 export function ApiSection() {
   const search = useUrlSearch();
   return (
@@ -151,23 +111,6 @@ export function ApiSection() {
         onOpenChange={(open) => openNewToken(open)}
       />
     </div>
-  );
-}
-
-/** "More": at most two sentences, opened on tap. */
-function MoreInfo({ children, label }: { children: string; label: string }) {
-  const { t } = useTranslations();
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <InlineAction tone="muted" size="sm" aria-label={label}>
-          {t("settings.tokenList.more")}
-        </InlineAction>
-      </PopoverTrigger>
-      <PopoverContent align="start" sideOffset={6} className="max-w-xs">
-        <p className="text-sm">{children}</p>
-      </PopoverContent>
-    </Popover>
   );
 }
 
@@ -206,13 +149,12 @@ function TokensCard() {
 
   return (
     <SettingsCard flush data-slot="api-tokens-card">
-      <div className="px-4 py-4 md:px-6">
-        <SettingsCardHeader
-          anchor="api-tokens"
-          icon={KeyRound}
-          title={t("settings.tokenList.title")}
-        />
-      </div>
+      <SettingsCardHeader
+        anchor="api-tokens"
+        icon={KeyRound}
+        title={t("settings.tokenList.title")}
+        className="px-4 py-4 md:px-6"
+      />
       {isError ? (
         <div className="border-t px-4 py-4 md:px-6">
           <QueryErrorCard error={error} onRetry={() => void refetch()} />
@@ -318,7 +260,7 @@ function TokensCard() {
                   <td className="text-muted-foreground hidden truncate px-2 py-3 md:table-cell">
                     {lastUsed(tok)}
                   </td>
-                  <td className="py-2 pr-2 text-right md:pr-4">
+                  <td className="pr-2 text-right md:pr-4">
                     {tok.revoked ? null : <TokenMenu token={tok} />}
                   </td>
                 </tr>
@@ -342,9 +284,7 @@ function TokensCard() {
           ) : null}
         </div>
       )}
-      <div className="px-4 empty:hidden md:px-6 [&>*]:mb-4">
-        <UnattributedReadingsNotice />
-      </div>
+      <UnattributedReadingsNotice className="border-t px-4 py-3 md:px-6" />
     </SettingsCard>
   );
 }
@@ -446,63 +386,6 @@ function TokenMenu({ token }: { token: ApiTokenInfo }) {
   );
 }
 
-/** A copy button with its own announced outcome (`role="status"`). */
-function CopyValueButton({
-  value,
-  label,
-  testId,
-}: {
-  value: string;
-  /** Names what is copied, for screen readers. */
-  label: string;
-  testId?: string;
-}) {
-  const { t } = useTranslations();
-  const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
-  const timer = useRef<number | null>(null);
-
-  async function copy() {
-    if (timer.current !== null) window.clearTimeout(timer.current);
-    try {
-      await navigator.clipboard.writeText(value);
-      setState("copied");
-    } catch {
-      setState("failed");
-    }
-    timer.current = window.setTimeout(() => setState("idle"), 2000);
-  }
-
-  return (
-    <span className="relative inline-flex shrink-0 items-center">
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="min-h-11 sm:min-h-9"
-        aria-label={label}
-        onClick={() => void copy()}
-        data-state={state}
-        data-testid={testId}
-      >
-        {state === "copied" ? (
-          <Check className="size-3.5" aria-hidden="true" />
-        ) : (
-          <Copy className="size-3.5" aria-hidden="true" />
-        )}
-        {state === "copied" ? t("settings.tokenList.copied") : t("common.copy")}
-      </Button>
-      <span role="status" className="sr-only">
-        {state === "copied"
-          ? t("settings.tokenList.copied")
-          : state === "failed"
-            ? t("settings.tokenCopyFailed")
-            : ""}
-      </span>
-    </span>
-  );
-}
-
-/** The API address once, with copy, and the reference. */
 function ApiAddressCard() {
   const { t } = useTranslations();
   const [origin] = useState(() =>
@@ -511,13 +394,12 @@ function ApiAddressCard() {
   const address = `${origin}/api`;
   return (
     <SettingsCard flush data-slot="api-address-card">
-      <div className="px-4 py-4 md:px-6">
-        <SettingsCardHeader
-          anchor="api-address"
-          icon={Braces}
-          title={t("settings.tokenList.api.title")}
-        />
-      </div>
+      <SettingsCardHeader
+        anchor="api-address"
+        icon={Braces}
+        title={t("settings.tokenList.api.title")}
+        className="px-4 py-4 md:px-6"
+      />
       <div className="flex min-h-14 items-center gap-3 border-t px-4 py-2 md:px-6">
         <span className="shrink-0 text-sm font-medium">
           {t("settings.tokenList.api.address")}
@@ -551,230 +433,5 @@ function ApiAddressCard() {
         </Button>
       </div>
     </SettingsCard>
-  );
-}
-
-/** Name, access, expiry; then the token, shown once. */
-function NewTokenSheet({
-  open,
-  onOpenChange,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
-  const { t } = useTranslations();
-  const queryClient = useQueryClient();
-  const recentProof = useRecentProof();
-  const [name, setName] = useState("");
-  const [kind, setKind] = useState<MintKind>("measurements");
-  const [days, setDays] = useState<number>(365);
-  const [mirror, setMirror] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const formId = useId();
-
-  function reset() {
-    setName("");
-    setKind("measurements");
-    setDays(365);
-    setMirror(false);
-    setError(null);
-    setToken(null);
-  }
-
-  function close() {
-    onOpenChange(false);
-    reset();
-  }
-
-  async function create(event: React.FormEvent) {
-    event.preventDefault();
-    setCreating(true);
-    setError(null);
-    try {
-      const res = await recentProof.run(async () =>
-        throwIfReproofRequired(
-          await apiFetchRaw(MINT_KINDS[kind].endpoint, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              name: name.trim(),
-              expiresInDays: days,
-              ...(kind === "measurements" && { mirrorToAppleHealth: mirror }),
-            }),
-          }),
-        ),
-      );
-      const json = await res.json();
-      if (res.ok) {
-        setToken(json.data.token);
-        void queryClient.invalidateQueries({ queryKey: queryKeys.tokens() });
-      } else {
-        setError(json.error || t("settings.tokenList.create.failed"));
-      }
-    } catch (failure) {
-      setError(recentProofErrorMessage(failure, t("common.networkError")));
-    } finally {
-      setCreating(false);
-    }
-  }
-
-  const created = token !== null;
-
-  return (
-    <>
-      {recentProof.dialog}
-      <ResponsiveSheet
-        open={open}
-        onOpenChange={(next) => (next ? onOpenChange(true) : close())}
-        title={
-          created
-            ? t("settings.tokenList.create.createdTitle")
-            : t("settings.tokenList.newToken")
-        }
-        dirty={!created && name.trim().length > 0}
-        footer={
-          created ? (
-            <Button
-              type="button"
-              size="sm"
-              className="min-h-11 sm:min-h-9"
-              onClick={close}
-            >
-              {t("settings.tokenList.create.done")}
-            </Button>
-          ) : (
-            <>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="min-h-11 sm:min-h-9"
-                onClick={close}
-              >
-                {t("common.cancel")}
-              </Button>
-              <Button
-                type="submit"
-                form={formId}
-                size="sm"
-                className="min-h-11 sm:min-h-9"
-                disabled={creating || !name.trim()}
-                data-testid="api-new-token-create"
-              >
-                {creating ? (
-                  <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" />
-                ) : null}
-                {t("common.create")}
-              </Button>
-            </>
-          )
-        }
-      >
-        {created ? (
-          <div className="space-y-3" data-slot="settings-token-created">
-            <div className="flex items-center gap-2 rounded-lg border p-2 pl-3">
-              <code
-                className="min-w-0 flex-1 font-mono text-sm break-all"
-                data-testid="api-new-token-value"
-              >
-                {token}
-              </code>
-              <CopyValueButton
-                value={token}
-                label={t("settings.tokenCopy")}
-                testId="api-new-token-copy"
-              />
-            </div>
-            <p className="text-muted-foreground text-sm">
-              {t("settings.tokenList.create.shownOnce")}
-            </p>
-          </div>
-        ) : (
-          <form
-            id={formId}
-            onSubmit={(event) => void create(event)}
-            className="space-y-4"
-            data-slot="api-new-token-form"
-          >
-            <FieldGroup
-              htmlFor={`${formId}-name`}
-              label={t("settings.tokenTableName")}
-            >
-              <Input
-                id={`${formId}-name`}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={t(MINT_KINDS[kind].placeholderKey)}
-                maxLength={100}
-                autoComplete="off"
-              />
-            </FieldGroup>
-            <FieldGroup
-              htmlFor={`${formId}-scope`}
-              label={t("settings.tokenList.scopeColumn")}
-              labelAccessory={
-                <MoreInfo label={t("settings.tokenList.scopeMoreLabel")}>
-                  {t(MINT_KINDS[kind].infoKey)}
-                </MoreInfo>
-              }
-            >
-              <NativeSelect
-                id={`${formId}-scope`}
-                value={kind}
-                onChange={(e) => setKind(e.target.value as MintKind)}
-                data-testid="api-new-token-scope"
-              >
-                {(Object.keys(MINT_KINDS) as MintKind[]).map((key) => (
-                  <option key={key} value={key}>
-                    {t(MINT_KINDS[key].labelKey)}
-                  </option>
-                ))}
-              </NativeSelect>
-            </FieldGroup>
-            <FieldGroup
-              htmlFor={`${formId}-expiry`}
-              label={t("settings.tokenList.create.expiry")}
-            >
-              <NativeSelect
-                id={`${formId}-expiry`}
-                value={String(days)}
-                onChange={(e) => setDays(Number(e.target.value))}
-              >
-                {EXPIRY_DAYS.map((value) => (
-                  <option key={value} value={value}>
-                    {value === 365
-                      ? t("settings.tokenList.create.expiryYear")
-                      : t("settings.tokenList.create.expiryDays", {
-                          days: value,
-                        })}
-                  </option>
-                ))}
-              </NativeSelect>
-            </FieldGroup>
-            {kind === "measurements" ? (
-              <SwitchRow
-                id={`${formId}-mirror`}
-                label={t("settings.measurementsToken.appleHealth.label")}
-                checked={mirror}
-                onCheckedChange={setMirror}
-                data-slot="apple-health-mirror-opt-in"
-                className="border-t pt-3"
-              >
-                <MoreInfo label={t("settings.tokenList.mirrorMoreLabel")}>
-                  {t("settings.measurementsToken.appleHealth.createHint")}
-                </MoreInfo>
-              </SwitchRow>
-            ) : null}
-            {error ? (
-              <p role="alert" className="text-destructive text-sm">
-                {error}
-              </p>
-            ) : null}
-          </form>
-        )}
-      </ResponsiveSheet>
-    </>
   );
 }

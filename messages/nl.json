@@ -8566,7 +8566,7 @@
         "shownOnce": "Het token wordt alleen nu getoond.",
         "expiry": "Geldig voor",
         "expiryYear": "1 jaar",
-        "expiryDays": "{days} dagen"
+        "expiryDays": "{days, plural, one {# dag} other {# dagen}}"
       },
       "api": {
         "title": "API",

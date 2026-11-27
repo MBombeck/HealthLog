@@ -8515,7 +8515,7 @@
         "whoop": "Recuperación, sueño, esfuerzo",
         "googleHealth": "Fitbit y Pixel Watch",
         "garmin": "Sueño, VFC, estrés, actividad",
-        "oura": "Preparación, sueño, VFC",
+        "oura": "Disposición, sueño, VFC",
         "polar": "Recuperación, sueño, entrenamiento",
         "strava": "Actividades como entrenamientos",
         "nightscout": "Glucosa continua",
@@ -8566,7 +8566,7 @@
         "shownOnce": "El token solo se muestra ahora.",
         "expiry": "Válido durante",
         "expiryYear": "1 año",
-        "expiryDays": "{days} días"
+        "expiryDays": "{days, plural, one {# día} other {# días}}"
       },
       "api": {
         "title": "API",
