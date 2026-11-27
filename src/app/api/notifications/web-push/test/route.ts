@@ -3,7 +3,7 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiSuccess, apiSuccessWithMeta, apiError } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
-import { coerceLocale } from "@/lib/i18n/config";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { sendViaWebPush } from "@/lib/notifications/senders/web-push";
 
@@ -13,12 +13,11 @@ export const dynamic = "force-dynamic";
  * POST /api/notifications/web-push/test
  *
  * Sends a test push to every browser subscribed for the account, through the
- * sender real reminders use, in the account's language. Pressing Test on one
+ * sender real reminders use, in the request's language. Pressing Test on one
  * device must reach that device; the newest subscription alone did not when
  * a person had more than one.
  */
 export const POST = apiHandler(async (request: NextRequest) => {
-  void request;
   const { user } = await requireAuth();
   annotate({ action: { name: "notifications.web-push.test" } });
 
@@ -29,7 +28,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
     });
   }
 
-  const { t } = getServerTranslator(coerceLocale(user.locale));
+  const { t } = getServerTranslator(
+    await resolveServerLocale({ request, userLocale: user.locale ?? null }),
+  );
   const start = performance.now();
   const result = await sendViaWebPush(user.id, {
     eventType: "SYSTEM_ALERT",

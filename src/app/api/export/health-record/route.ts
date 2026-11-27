@@ -51,8 +51,8 @@ import {
   type ArtefactInputs,
 } from "@/lib/export/health-record-artefacts";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
-import { parseLocaleFromAcceptLanguage } from "@/lib/format-locale";
-import { locales, type Locale } from "@/lib/i18n/config";
+import type { Locale } from "@/lib/i18n/config";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 
 /**
@@ -151,19 +151,14 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const practiceName = sanitisePracticeName(input.practiceName);
   const includeCharts = input.includeCharts ?? true;
 
-  // Locale, most-specific first: the explicit selection wins, then the in-app
-  // cookie (what the user actually chose in the UI), and only then the
-  // browser's Accept-Language header — the weakest signal.
-  const cookieValue = request.cookies.get("healthlog-locale")?.value;
-  const cookieLocale = (locales as readonly string[]).includes(
-    cookieValue ?? "",
-  )
-    ? (cookieValue as Locale)
-    : null;
-  const locale: Locale =
-    input.locale ??
-    cookieLocale ??
-    parseLocaleFromAcceptLanguage(request.headers.get("accept-language") ?? "");
+  // The report's language: the explicit selection wins, then the request's
+  // language as every other route resolves it (`resolveServerLocale`), with
+  // the reader's stored language in it.
+  const locale: Locale = await resolveServerLocale({
+    request,
+    userLocale: actor.locale ?? null,
+    override: input.locale ?? null,
+  });
 
   const germanAtc =
     input.germanAtc ??
