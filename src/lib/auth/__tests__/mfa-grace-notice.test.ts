@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const claim = vi.hoisted(() => ({ result: true }));
+const release = vi.hoisted(() => vi.fn(async () => ({ count: 1 })));
 
-vi.mock("@/lib/db", () => ({ prisma: {} }));
+vi.mock("@/lib/db", () => ({
+  prisma: { notificationEvent: { deleteMany: release } },
+}));
 vi.mock("@/lib/notifications/reminder-dedup", () => ({
   claimNotificationEvent: vi.fn(async () => claim.result),
 }));
@@ -14,6 +17,7 @@ import { claimNotificationEvent } from "@/lib/notifications/reminder-dedup";
 import { sendSecurityAlert } from "@/lib/auth/security-alert";
 import {
   MFA_GRACE_NOTICE_EVENT_TYPE,
+  MFA_GRACE_NOTICE_RETRY_MS,
   __resetMfaGraceNoticeForTests,
   noticeMfaGrace,
 } from "../mfa-grace-notice";
@@ -52,6 +56,55 @@ describe("noticeMfaGrace", () => {
     noticeMfaGrace("u1", { state: "grace", dueAt: later });
     await settle();
     expect(sendSecurityAlert).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    [
+      "failed on every channel",
+      () => vi.mocked(sendSecurityAlert).mockResolvedValueOnce(false),
+    ],
+    [
+      "threw",
+      () =>
+        vi
+          .mocked(sendSecurityAlert)
+          .mockRejectedValueOnce(new Error("dispatcher down")),
+    ],
+  ])(
+    "releases its claim and tries again later when the send %s",
+    async (_label, fail) => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      try {
+        vi.setSystemTime(new Date("2026-12-01T08:00:00Z"));
+        fail();
+        noticeMfaGrace("u1", { state: "grace", dueAt: DUE });
+        await settle();
+        expect(release).toHaveBeenCalledWith({
+          where: {
+            recordUserId: "u1",
+            eventType: MFA_GRACE_NOTICE_EVENT_TYPE,
+            dedupKey: `mfa-due:${DUE.toISOString()}`,
+          },
+        });
+
+        // Not on the next request, but once the retry delay is over.
+        noticeMfaGrace("u1", { state: "grace", dueAt: DUE });
+        await settle();
+        expect(sendSecurityAlert).toHaveBeenCalledTimes(1);
+        vi.setSystemTime(Date.now() + MFA_GRACE_NOTICE_RETRY_MS + 1);
+        noticeMfaGrace("u1", { state: "grace", dueAt: DUE });
+        await settle();
+        expect(sendSecurityAlert).toHaveBeenCalledTimes(2);
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
+
+  it("keeps its claim once the notice went out", async () => {
+    noticeMfaGrace("u1", { state: "grace", dueAt: DUE });
+    await settle();
+    expect(release).not.toHaveBeenCalled();
   });
 
   it("sends nothing when another process already claimed it", async () => {

@@ -91,7 +91,9 @@ async function localeOf(userId: string): Promise<Locale> {
  * Send one security alert to the account. `vars` fills the placeholders of
  * the kind's body (`device` and `location` for `new_device`). A `dueAt`
  * becomes the body's `date`, written in the account's language and time
- * zone. Never throws.
+ * zone. Never throws. True when the alert is settled: delivered, or no
+ * channel of the account wants it; false when every channel tried failed or
+ * the send threw, so a caller holding a claim can give it back.
  */
 export async function sendSecurityAlert(
   userId: string,
@@ -120,7 +122,7 @@ export async function sendSecurityAlert(
       metadata: { securityKind: kind },
       urgent: true,
     });
-    return outcome.dispatched;
+    return outcome.dispatched || outcome.channelsAttempted === 0;
   } catch (err) {
     getEvent()?.addWarning(
       `security alert ${kind} failed: ${err instanceof Error ? err.message : String(err)}`,
