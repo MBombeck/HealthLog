@@ -20,13 +20,11 @@ vi.mock("@/components/links/related-records", async () => {
   >("@/components/links/related-records");
   return {
     ...actual,
-    RelationLinkPickers: (props: {
-      linksPath: string;
-      kinds: readonly string[];
-      onSaved: () => void;
-    }) => {
-      captured.pickers = props;
-      return null;
+    RelatedRecordsBlock: (
+      props: Parameters<typeof actual.RelatedRecordsBlock>[0],
+    ) => {
+      captured.pickers = props.edit ?? null;
+      return <actual.RelatedRecordsBlock {...props} />;
     },
   };
 });

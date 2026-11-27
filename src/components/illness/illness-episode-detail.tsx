@@ -12,9 +12,7 @@ import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useState } from "react";
 import Link from "next/link";
 
-import { EpisodeVisitsCard } from "@/components/illness/episode-visits-card";
-import { EpisodeDocumentsCard } from "@/components/documents/episode-documents-card";
-import { RelatedRecordsCard } from "@/components/links/related-records";
+import { EpisodeLinksCard } from "@/components/illness/episode-links-card";
 import type { RelatedLink } from "@/lib/links/related";
 import { EpisodeSymptomsCard } from "@/components/symptoms/episode-symptoms-card";
 import { Badge } from "@/components/ui/badge";
@@ -197,24 +195,13 @@ export function IllnessEpisodeDetail({ episodeId }: { episodeId: string }) {
           <IllnessCorrelationCard episodeId={episodeId} />
         )}
 
-        {/* Condition ⇄ documents linking, condition side: the episode's
-            linked documents plus link/upload entries into the vault. Renders
-            nothing when the documents module is off for this account. */}
-        {episode ? <EpisodeDocumentsCard episodeId={episode.id} /> : null}
-
-        {/* Condition ⇄ visits linking, condition side ONLY. A visit never
-            suggests an episode: an episode spans weeks and a visit is a point,
-            so the reverse match would be wrong often enough to train the person
-            to ignore every suggestion in the product. */}
-        {episode ? <EpisodeVisitsCard episodeId={episode.id} /> : null}
-
-        {/* v1.43 — what else the condition relates to: the medications that
-            treat it and the lab results it shares a visit with. Documents and
-            visits have their own cards above. */}
+        {/* Everything the condition is linked to, as one tile: its
+            documents, its visits, the medications that treat it and the lab
+            results it shares a visit with. */}
         {episode ? (
-          <RelatedRecordsCard
+          <EpisodeLinksCard
+            episodeId={episode.id}
             related={(episode as { related?: RelatedLink[] }).related}
-            omitKinds={["document", "encounter"]}
           />
         ) : null}
       </RevealWhenSettled>
