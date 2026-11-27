@@ -4813,6 +4813,7 @@
         "aria": "Punteggio {score} su 100, {band}",
         "ariaProvisional": "Punteggio non ancora disponibile: dati insufficienti",
         "provisionalCaption": "Dati ancora insufficienti",
+        "notToday": "non di oggi",
         "band": {
           "green": "buono",
           "yellow": "medio",

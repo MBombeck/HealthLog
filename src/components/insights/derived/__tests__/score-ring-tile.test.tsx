@@ -1,7 +1,7 @@
 /**
  * The score tile in both sizes: one link, the short name with the full name
- * reachable, the band word with its mark, one line, and a stale score drawn
- * as the bare track without a band word.
+ * reachable, no band word, one line, and a stale score drawn as the stale
+ * face ("—", "not from today").
  */
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -20,7 +20,6 @@ const BASE: ScoreRingTileProps = {
   score: 42,
   band: "red",
   stale: false,
-  bandWord: "low",
   line: "Resting HR 40/100",
 };
 
@@ -34,19 +33,19 @@ function render(props: Partial<ScoreRingTileProps> = {}): string {
 
 describe("<ScoreRingTile>", () => {
   for (const size of ["wide", "compact"] as const) {
-    it(`${size}: one link with name, band word and one line`, () => {
+    it(`${size}: one link with name and one line, no band word`, () => {
       const html = render({ size });
       expect(html.match(/<a /g)).toHaveLength(1);
       expect(html).toContain('href="/insights/scores/readiness"');
       expect(html).toContain(`data-size="${size}"`);
-      expect(html).toContain('data-slot="score-band-word" data-band="red"');
-      expect(html).toContain(">low<");
+      expect(html).not.toContain('data-slot="score-band-word"');
+      expect(html).not.toContain(">low<");
       expect(html).toContain("Resting HR 40/100");
       // The ring's accessible name carries the number and the band.
       expect(html).toMatch(/role="img" aria-label="[^"]*42[^"]*low/);
     });
 
-    it(`${size}: a stale score shows the bare track and no band word`, () => {
+    it(`${size}: a stale score shows the stale face and no band word`, () => {
       const html = render({
         size,
         score: null,
@@ -55,7 +54,15 @@ describe("<ScoreRingTile>", () => {
       });
       expect(html).not.toContain('data-slot="score-band-word"');
       expect(html).toContain('data-fresh="false"');
-      expect(html).toMatch(/aria-label="Readiness: Last 81 on Nov 24"/);
+      expect(html).toMatch(
+        /role="img" aria-label="not from today\. Last 81 on Nov 24"/,
+      );
+      expect(html).toContain(">\u2014</span>");
+      // The tile's line reads "not from today"; the date is only in the name.
+      expect(html).toMatch(
+        /data-slot="score-ring-tile-line"[^>]*>not from today</,
+      );
+      expect(html.match(/Last 81 on Nov 24/g)).toHaveLength(1);
     });
   }
 

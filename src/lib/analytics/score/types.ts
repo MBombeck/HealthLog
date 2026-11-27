@@ -147,6 +147,14 @@ export interface PillarReference {
 
 export interface PillarValue {
   score: number;
+  /**
+   * 1.50 — the pillar's own band, from its score by the rule every HealthLog
+   * score follows (`scoreBand`: green from 70, yellow from 50). Set by
+   * `okPillar` on every scored pillar so clients draw it and never band a
+   * pillar themselves. Optional on the type so a fixture or a payload built
+   * before 1.50 stays valid.
+   */
+  band?: ScoreBand;
   observed: PillarObserved;
   reference: PillarReference;
   /** Optional user-authored yardstick, displayed beside the scored reference. */
