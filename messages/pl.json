@@ -5365,7 +5365,6 @@
     },
     "bpTimeOfDay": {
       "title": "Według pory dnia",
-      "description": "Twoje średnie ciśnienie w każdej porze dnia, w zakresie wykresu.",
       "part": {
         "morning": "Rano",
         "midday": "W południe",
@@ -5374,9 +5373,6 @@
       "filterAll": "Cały dzień",
       "filterLabel": "Pokaż na wykresie",
       "notEnough": "Za mało pomiarów",
-      "difference": "Rano minus wieczór: {systolic}/{diastolic} mmHg.",
-      "differencePending": "Rano i wieczór zostaną porównane, gdy każda z tych pór będzie mieć co najmniej {min, plural, one {# pomiar} few {# pomiary} many {# pomiarów} other {# pomiaru}}.",
-      "hours": "Rano {morning}, w południe {midday}, wieczorem {evening}, w Twojej strefie czasowej.",
       "hourRange": "{start}–{end}",
       "emptyTitle": "Brak pełnych pomiarów w tym zakresie",
       "emptyDescription": "Tutaj pojawią się pomiary z wartością skurczową i rozkurczową.",

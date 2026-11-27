@@ -3,16 +3,16 @@
 import { Clock } from "lucide-react";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { InfoPopover } from "@/components/ui/info-popover";
 import { EmptyState } from "@/components/ui/empty-state";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Segmented } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TileHeader } from "@/components/insights/tile-header";
 import { ValueRow, type ValueRowItem } from "@/components/insights/value-row";
-import type {
-  BpPartOfDay,
-  BpPartSummary,
+import {
+  BP_PARTS_OF_DAY,
+  type BpPartOfDay,
+  type BpPartSummary,
 } from "@/lib/analytics/bp-time-of-day";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { useBpTimeOfDay } from "@/lib/queries/use-bp-time-of-day";
@@ -36,63 +36,42 @@ function hourRange(part: BpPartSummary): { start: string; end: string } {
 
 /**
  * Blood pressure by part of the day (#1331): the morning, midday and evening
- * means side by side and the morning-minus-evening difference. The control
- * that narrows the chart to one part sits in the chart's header
- * (`BpPartOfDayControl`), beside the range tabs it works with. Every number is the server's
+ * means side by side, with the choice that narrows the chart above to one
+ * part at the card's top right. The page owns the choice (URL state), so the
+ * chart and this card read the same one; the chosen part's value carries the
+ * selected emphasis, the whole day emphasises none. Each part's hours are its
+ * button's tooltip and accessible description. Every number is the server's
  * (`/api/measurements/blood-pressure/time-of-day`); a part below the reading
- * floor shows a dash (with the reason as its hover and accessible text)
- * rather than a mean one reading can swing. The card is the three values;
- * what it means, the hours of each part and the morning-minus-evening
- * difference sit behind its (i).
- * The card is its own text equivalent: there is no graphic to describe.
+ * floor shows a dash, the reason as its hover and accessible text, rather
+ * than a mean one reading can swing.
  */
 export function BpTimeOfDayCard({
   days,
+  chartPart,
+  onChartPartChange,
 }: {
   /** The chart's range, in days, so both read the same window. */
   days: number;
+  chartPart: BpChartPart;
+  onChartPartChange: (next: BpChartPart) => void;
 }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
   const query = useBpTimeOfDay(days);
   const data = query.data;
 
-  // A signed difference: `+` spelled out, the minus from the formatter.
-  const signed = (n: number) => (n > 0 ? `+${fmt.integer(n)}` : fmt.integer(n));
-
-  // What the card means and how its parts are cut sits behind the (i): the
-  // card itself is the three values.
-  const about = data
-    ? [
-        t("insights.bpTimeOfDay.description"),
-        t("insights.bpTimeOfDay.hours", {
-          morning: t(
-            "insights.bpTimeOfDay.hourRange",
-            hourRange(data.parts[0]),
-          ),
-          midday: t("insights.bpTimeOfDay.hourRange", hourRange(data.parts[1])),
-          evening: t(
-            "insights.bpTimeOfDay.hourRange",
-            hourRange(data.parts[2]),
-          ),
-        }),
-        data.morningEveningDifference
-          ? t("insights.bpTimeOfDay.difference", {
-              systolic: signed(data.morningEveningDifference.systolic),
-              diastolic: signed(data.morningEveningDifference.diastolic),
-            })
-          : t("insights.bpTimeOfDay.differencePending", {
-              min: fmt.integer(data.minReadings),
-            }),
-      ].join(" ")
-    : t("insights.bpTimeOfDay.description");
+  const hours = (part: BpPartOfDay): string | undefined => {
+    const summary = data?.parts.find((p) => p.part === part);
+    return summary
+      ? t("insights.bpTimeOfDay.hourRange", hourRange(summary))
+      : undefined;
+  };
 
   const items: ValueRowItem[] = (data?.parts ?? []).map((part) => {
-    const label = t(PART_KEYS[part.part]);
     const enough = part.systolic !== null && part.diastolic !== null;
     return {
       key: part.part,
-      label,
+      label: t(PART_KEYS[part.part]),
       value: enough ? (
         `${fmt.integer(part.systolic!)}/${fmt.integer(part.diastolic!)}`
       ) : (
@@ -103,6 +82,7 @@ export function BpTimeOfDayCard({
       ),
       unit: enough ? "mmHg" : undefined,
       title: enough ? undefined : t("insights.bpTimeOfDay.notEnough"),
+      selected: chartPart === part.part,
     };
   });
 
@@ -113,18 +93,31 @@ export function BpTimeOfDayCard({
       aria-busy={query.isFetching || undefined}
     >
       <CardHeader>
-        <TileHeader
-          icon={Clock}
-          title={t("insights.bpTimeOfDay.title")}
-          titleAs="h2"
-          id="bp-time-of-day-title"
-          right={
-            <InfoPopover
-              content={about}
-              triggerDataSlot="bp-time-of-day-info"
-            />
-          }
-        />
+        {/* Title left, the choice right; on a phone the choice takes its own
+            line under the title, its four segments always on one row. */}
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <TileHeader
+            icon={Clock}
+            title={t("insights.bpTimeOfDay.title")}
+            titleAs="h2"
+            id="bp-time-of-day-title"
+          />
+          <Segmented<BpChartPart>
+            label={t("insights.bpTimeOfDay.filterLabel")}
+            slot="bp-time-of-day-filter"
+            size="sm"
+            value={chartPart}
+            onChange={onChartPartChange}
+            options={[
+              { value: "all", label: t("insights.bpTimeOfDay.filterAll") },
+              ...BP_PARTS_OF_DAY.map((part) => ({
+                value: part,
+                label: t(PART_KEYS[part]),
+                title: hours(part),
+              })),
+            ]}
+          />
+        </div>
       </CardHeader>
       <CardContent>
         {query.isPending ? (
@@ -162,35 +155,5 @@ export function BpTimeOfDayCard({
         ) : null}
       </CardContent>
     </Card>
-  );
-}
-
-/**
- * The chart's part-of-day choice, top right in the blood pressure chart's
- * header before the range tabs. The segments name themselves; the group's
- * name is for assistive tech only.
- */
-export function BpPartOfDayControl({
-  value,
-  onChange,
-}: {
-  value: BpChartPart;
-  onChange: (next: BpChartPart) => void;
-}) {
-  const { t } = useTranslations();
-  return (
-    <Segmented<BpChartPart>
-      label={t("insights.bpTimeOfDay.filterLabel")}
-      slot="bp-time-of-day-filter"
-      size="sm"
-      value={value}
-      onChange={onChange}
-      options={[
-        { value: "all", label: t("insights.bpTimeOfDay.filterAll") },
-        { value: "morning", label: t(PART_KEYS.morning) },
-        { value: "midday", label: t(PART_KEYS.midday) },
-        { value: "evening", label: t(PART_KEYS.evening) },
-      ]}
-    />
   );
 }

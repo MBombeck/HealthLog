@@ -5365,7 +5365,6 @@
     },
     "bpTimeOfDay": {
       "title": "By time of day",
-      "description": "Your average blood pressure in each part of the day, over the chart's range.",
       "part": {
         "morning": "Morning",
         "midday": "Midday",
@@ -5374,9 +5373,6 @@
       "filterAll": "All day",
       "filterLabel": "Show in the chart",
       "notEnough": "Too few readings",
-      "difference": "Morning minus evening: {systolic}/{diastolic} mmHg.",
-      "differencePending": "Morning and evening are compared once each has at least {min, plural, one {# reading} other {# readings}}.",
-      "hours": "Morning {morning}, midday {midday}, evening {evening}, in your time zone.",
       "hourRange": "{start}–{end}",
       "emptyTitle": "No complete readings in this range",
       "emptyDescription": "Readings with both a systolic and a diastolic value show up here.",

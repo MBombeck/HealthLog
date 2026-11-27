@@ -5365,7 +5365,6 @@
     },
     "bpTimeOfDay": {
       "title": "Nach Tageszeit",
-      "description": "Dein durchschnittlicher Blutdruck je Tageszeit im Zeitraum des Diagramms.",
       "part": {
         "morning": "Morgens",
         "midday": "Mittags",
@@ -5374,9 +5373,6 @@
       "filterAll": "Ganzer Tag",
       "filterLabel": "Im Diagramm zeigen",
       "notEnough": "Zu wenige Messungen",
-      "difference": "Morgens minus abends: {systolic}/{diastolic} mmHg.",
-      "differencePending": "Morgen und Abend werden verglichen, sobald beide mindestens {min, plural, one {# Messung} other {# Messungen}} haben.",
-      "hours": "Morgens {morning}, mittags {midday}, abends {evening}, in deiner Zeitzone.",
       "hourRange": "{start} bis {end} Uhr",
       "emptyTitle": "Keine vollständigen Messungen in diesem Zeitraum",
       "emptyDescription": "Hier erscheinen Messungen mit systolischem und diastolischem Wert.",

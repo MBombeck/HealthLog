@@ -15,7 +15,7 @@ import {
   recordHistory,
   setSearch,
 } from "../../../../../tests/browser/url";
-import { BpPartOfDayControl, BpTimeOfDayCard } from "../bp-time-of-day-card";
+import { BpTimeOfDayCard } from "../bp-time-of-day-card";
 import { useBpTimeOfDayState } from "../use-bp-time-of-day-state";
 
 const SUMMARY = {
@@ -60,20 +60,17 @@ const SUMMARY = {
   morningEveningDifference: { systolic: 9, diastolic: 8 },
 };
 
-/**
- * The page's wiring: the state hook feeding the chart header's part control
- * and the card, the chart's part shown.
- */
+/** The page's wiring: the state hook feeding the card, the chart's part shown. */
 function Probe() {
   const state = useBpTimeOfDayState();
   return (
     <>
       <p data-testid="chart-part">{state.partOfDay ?? "all"}</p>
-      <BpPartOfDayControl
-        value={state.partOfDay ?? "all"}
-        onChange={state.setChartPart}
+      <BpTimeOfDayCard
+        days={state.days}
+        chartPart={state.partOfDay ?? "all"}
+        onChartPartChange={state.setChartPart}
       />
-      <BpTimeOfDayCard days={state.days} />
     </>
   );
 }
@@ -98,34 +95,38 @@ async function mount(search = "") {
 }
 
 describe("BpTimeOfDayCard", () => {
-  it("renders the server's figures for the chart's range, the rest behind the (i)", async () => {
-    const { screen, net } = await mount();
+  it("renders the server's figures for the chart's range, the hours on the buttons", async () => {
+    const { screen, net, radio } = await mount();
     await expect.element(screen.getByText("140/90")).toBeVisible();
     await expect.element(screen.getByText("131/82")).toBeVisible();
     // A part below the floor is a dash; the reason is its hover and its
     // accessible text, not a line on the card.
-    const midday = document.querySelector(
-      '[data-slot="bp-time-of-day-values"] [data-key="midday"]',
-    );
-    expect(midday?.getAttribute("title")).toBe("Too few readings");
-    // No counts, pulse or explanation lines on the card itself.
+    const cell = (key: string) =>
+      document.querySelector(
+        `[data-slot="bp-time-of-day-values"] [data-key="${key}"]`,
+      );
+    expect(cell("midday")?.getAttribute("title")).toBe("Too few readings");
+    // No counts, pulse, difference or explanation on the card.
     expect(screen.getByText("Pulse 72 bpm").elements()).toHaveLength(0);
+    expect(screen.getByText(/Morning minus evening/).elements()).toHaveLength(
+      0,
+    );
     expect(
-      screen
-        .getByText("Morning minus evening: +9/+8 mmHg.", { exact: false })
-        .elements(),
+      document.querySelector('[data-slot="bp-time-of-day-info"]'),
+    ).toBeNull();
+    // Each part's hours are its button's tooltip and description.
+    await expect
+      .element(radio("Morning"))
+      .toHaveAttribute("title", "04:00–11:59");
+    await expect
+      .element(radio("Evening"))
+      .toHaveAttribute("title", "18:00–03:59");
+    // The whole day emphasises no value.
+    expect(
+      document.querySelectorAll(
+        '[data-slot="bp-time-of-day-values"] [data-selected]',
+      ),
     ).toHaveLength(0);
-    await screen.getByRole("button", { name: "More information" }).click();
-    await expect
-      .element(screen.getByText(/Morning minus evening: \+9\/\+8 mmHg\./))
-      .toBeVisible();
-    await expect
-      .element(
-        screen.getByText(
-          /Morning 04:00–11:59, midday 12:00–17:59, evening 18:00–03:59, in your time zone\./,
-        ),
-      )
-      .toBeVisible();
     // The chart's persisted 90-day tab decides the window.
     await expect
       .poll(() =>
@@ -136,11 +137,20 @@ describe("BpTimeOfDayCard", () => {
       .toContain("/api/measurements/blood-pressure/time-of-day?days=90");
   });
 
-  it("opens on the part the address names", async () => {
+  it("opens on the part the address names, its value emphasised", async () => {
     const { screen, radio } = await mount("?partOfDay=evening");
     await expect
       .element(radio("Evening"))
       .toHaveAttribute("aria-checked", "true");
+    await expect
+      .poll(() =>
+        document
+          .querySelector(
+            '[data-slot="bp-time-of-day-values"] [data-key="evening"]',
+          )
+          ?.getAttribute("data-selected"),
+      )
+      .toBe("true");
     await expect
       .element(screen.getByTestId("chart-part"))
       .toHaveTextContent("evening");

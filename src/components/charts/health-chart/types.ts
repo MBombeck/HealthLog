@@ -1,5 +1,5 @@
 import type { BpPartOfDay } from "@/lib/analytics/bp-time-of-day";
-import type { ComponentType, ReactNode } from "react";
+import type { ComponentType } from "react";
 
 import type {
   ChartOverlayKey,
@@ -144,11 +144,6 @@ export interface HealthChartProps {
    * blood-pressure hours in `bp-time-of-day.ts`). Unset draws the whole day.
    */
   partOfDay?: BpPartOfDay;
-  /**
-   * The chart's own view controls, top right before the range tabs (the
-   * blood pressure page's part-of-day choice).
-   */
-  headerControls?: ReactNode;
   /**
    * Draw one source's readings only (a device's own score), never the
    * canonical pick that fills its missing days from another source.

@@ -5365,7 +5365,6 @@
     },
     "bpTimeOfDay": {
       "title": "Por momento del día",
-      "description": "Tu tensión arterial media en cada momento del día, en el periodo del gráfico.",
       "part": {
         "morning": "Mañana",
         "midday": "Mediodía",
@@ -5374,9 +5373,6 @@
       "filterAll": "Todo el día",
       "filterLabel": "Mostrar en el gráfico",
       "notEnough": "Muy pocas mediciones",
-      "difference": "Mañana menos noche: {systolic}/{diastolic} mmHg.",
-      "differencePending": "La mañana y la noche se comparan cuando cada una tiene al menos {min, plural, one {# medición} other {# mediciones}}.",
-      "hours": "Mañana {morning}, mediodía {midday}, noche {evening}, en tu zona horaria.",
       "hourRange": "{start}–{end}",
       "emptyTitle": "No hay mediciones completas en este periodo",
       "emptyDescription": "Aquí aparecen las mediciones con valor sistólico y diastólico.",

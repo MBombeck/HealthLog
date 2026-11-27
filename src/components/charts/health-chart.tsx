@@ -103,7 +103,6 @@ export function HealthChart({
   dayLinks = false,
   partOfDay,
   sourceEq,
-  headerControls,
 }: HealthChartProps) {
   const { isAuthenticated, user } = useAuth();
   // Never a fixed Berlin: a mount without the prop cuts the profile's days.
@@ -334,7 +333,6 @@ export function HealthChart({
           }}
           overlayPrefs={overlayPrefs}
           showOverlayControls={Boolean(chartKey && overlayControls)}
-          controls={headerControls}
         />
       )}
 

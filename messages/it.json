@@ -5365,7 +5365,6 @@
     },
     "bpTimeOfDay": {
       "title": "Per momento della giornata",
-      "description": "La tua pressione arteriosa media in ogni momento della giornata, nel periodo del grafico.",
       "part": {
         "morning": "Mattina",
         "midday": "Mezzogiorno",
@@ -5374,9 +5373,6 @@
       "filterAll": "Tutto il giorno",
       "filterLabel": "Mostra nel grafico",
       "notEnough": "Troppe poche misurazioni",
-      "difference": "Mattina meno sera: {systolic}/{diastolic} mmHg.",
-      "differencePending": "Mattina e sera vengono confrontate quando ciascuna ha almeno {min, plural, one {# misurazione} other {# misurazioni}}.",
-      "hours": "Mattina {morning}, mezzogiorno {midday}, sera {evening}, nel tuo fuso orario.",
       "hourRange": "{start}–{end}",
       "emptyTitle": "Nessuna misurazione completa in questo periodo",
       "emptyDescription": "Qui compaiono le misurazioni con valore sistolico e diastolico.",

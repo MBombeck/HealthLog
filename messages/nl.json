@@ -5365,7 +5365,6 @@
     },
     "bpTimeOfDay": {
       "title": "Per moment van de dag",
-      "description": "Je gemiddelde bloeddruk per moment van de dag, over de periode van de grafiek.",
       "part": {
         "morning": "Ochtend",
         "midday": "Middag",
@@ -5374,9 +5373,6 @@
       "filterAll": "Hele dag",
       "filterLabel": "Tonen in de grafiek",
       "notEnough": "Te weinig metingen",
-      "difference": "Ochtend min avond: {systolic}/{diastolic} mmHg.",
-      "differencePending": "Ochtend en avond worden vergeleken zodra elk minstens {min, plural, one {# meting} other {# metingen}} heeft.",
-      "hours": "Ochtend {morning}, middag {midday}, avond {evening}, in je eigen tijdzone.",
       "hourRange": "{start}–{end}",
       "emptyTitle": "Geen volledige metingen in deze periode",
       "emptyDescription": "Metingen met zowel een systolische als een diastolische waarde verschijnen hier.",

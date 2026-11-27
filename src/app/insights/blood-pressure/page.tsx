@@ -20,10 +20,7 @@ import { CoachReadStrip } from "@/components/insights/derived/coach-read-strip";
 import { MetricTargetSummary } from "@/components/insights/metric-target-summary";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
 import { useBpTargetBand } from "@/lib/queries/use-bp-target-band";
-import {
-  BpPartOfDayControl,
-  BpTimeOfDayCard,
-} from "@/components/insights/blood-pressure/bp-time-of-day-card";
+import { BpTimeOfDayCard } from "@/components/insights/blood-pressure/bp-time-of-day-card";
 import { useBpTimeOfDayState } from "@/components/insights/blood-pressure/use-bp-time-of-day-state";
 
 /**
@@ -189,15 +186,13 @@ export default function InsightsBlutdruckPage() {
         showDataTable
         dayLinks
         partOfDay={timeOfDay.partOfDay}
-        headerControls={
-          <BpPartOfDayControl
-            value={timeOfDay.partOfDay ?? "all"}
-            onChange={timeOfDay.setChartPart}
-          />
-        }
       />
 
-      <BpTimeOfDayCard days={timeOfDay.days} />
+      <BpTimeOfDayCard
+        days={timeOfDay.days}
+        chartPart={timeOfDay.partOfDay ?? "all"}
+        onChartPartChange={timeOfDay.setChartPart}
+      />
 
       {/* v1.12.4 — target card sits between the chart and the assessment on
           the canonical spine (ESH classification + sys/dia band + 30-day S/D

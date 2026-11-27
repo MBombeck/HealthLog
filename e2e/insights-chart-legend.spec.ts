@@ -13,8 +13,9 @@ import { MOBILE_ROUTES_STORAGE_STATE_PATH } from "./setup/global-setup";
  * and a dose change two days ago, so both sit inside the drawn days whatever
  * the range.
  *
- *   - the part-of-day choice sits top right in the chart's header, before the
- *     range tabs, and the card under the chart carries no caption for it;
+ *   - the part-of-day choice sits in the time-of-day card's header, its four
+ *     segments on one row, and no caption names it; the chart header keeps
+ *     the range tabs;
  *   - the context is named in the legend row beside the series, at the same
  *     height, and an item opens its dates;
  *   - nothing about the context sits on a row of its own under the plot;
@@ -85,21 +86,28 @@ test.describe("metric chart legend and controls", () => {
       await mockContext(page);
       await page.goto("/insights/blood-pressure");
 
+      // The part-of-day choice sits in the time-of-day card's header, not in
+      // the chart's: the chart header keeps the range tabs and its settings.
       const controls = page.locator('[data-slot="chart-header-controls"]');
-      const partOfDay = controls.getByRole("radiogroup", {
+      await expect(
+        controls.locator('[data-slot="chart-range-tab"]').first(),
+      ).toBeVisible();
+      await expect(
+        controls.getByRole("radiogroup", { name: "Show in the chart" }),
+      ).toHaveCount(0);
+      const card = page.locator('[data-slot="bp-time-of-day"]');
+      const partOfDay = card.getByRole("radiogroup", {
         name: "Show in the chart",
       });
       await expect(partOfDay).toBeVisible();
-      // Before the range tabs, in the same group.
-      const [partBox, rangeBox] = await Promise.all([
-        partOfDay.boundingBox(),
-        controls.locator('[data-slot="chart-range-tab"]').first().boundingBox(),
-      ]);
-      expect(partBox && rangeBox).toBeTruthy();
-      expect(
-        partBox!.y + partBox!.height <= rangeBox!.y + 1 ||
-          partBox!.x + partBox!.width <= rangeBox!.x + 1,
-      ).toBe(true);
+      // Its four segments stand on one row, at every width.
+      const tops = await partOfDay
+        .getByRole("radio")
+        .evaluateAll((els) =>
+          els.map((el) => Math.round(el.getBoundingClientRect().top)),
+        );
+      expect(tops).toHaveLength(4);
+      expect(new Set(tops).size).toBe(1);
       // The caption is gone from the page; the group keeps its name.
       await expect(page.getByText("Show in the chart")).toHaveCount(0);
 
@@ -134,6 +142,7 @@ test.describe("metric chart legend and controls", () => {
 
       const results = await new AxeBuilder({ page })
         .include('[data-slot="chart-header-controls"]')
+        .include('[data-slot="bp-time-of-day"]')
         .include('[data-slot="chart-legend"]')
         .withTags(WCAG)
         .analyze();

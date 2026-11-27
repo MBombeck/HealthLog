@@ -15,6 +15,8 @@ export interface ValueRowItem {
   note?: ReactNode;
   /** Shown on hover and read by assistive tech, e.g. why a value is a dash. */
   title?: string;
+  /** The read-out a control on the card has chosen (a part of the day). */
+  selected?: boolean;
 }
 
 const COLS: Record<number, string> = {
@@ -54,8 +56,14 @@ export function ValueRow({
         <div
           key={item.key}
           data-key={item.key}
+          data-selected={item.selected ? "true" : undefined}
           title={item.title}
-          className="min-w-0 space-y-0.5"
+          className={cn(
+            // The chosen read-out wears the selection tint; the padding is
+            // given back by the negative margin so the columns do not move.
+            "-mx-2 -my-1 min-w-0 space-y-0.5 rounded-md px-2 py-1",
+            item.selected && "bg-primary/10 ring-primary/30 ring-1",
+          )}
         >
           <dt className="text-muted-foreground text-xs tracking-wide uppercase">
             {item.label}

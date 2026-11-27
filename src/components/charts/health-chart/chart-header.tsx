@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentType, ReactNode } from "react";
+import type { ComponentType } from "react";
 
 import { TileHeader } from "@/components/insights/tile-header";
 import type { useChartOverlayPrefs } from "@/hooks/use-chart-overlay-prefs";
@@ -18,8 +18,7 @@ import { ChartRangeTabs } from "../chart-range-tabs";
  * the range tabs and the overlay cog right-aligned on a second; the bucket
  * and comparison chips hide below `sm` (the range tabs already say which
  * window is shown, and the cog still reaches the overlays). From `sm` up
- * everything sits on one row. A chart's own view controls (`controls`) lead
- * the right-hand group, so every control of the chart sits top right.
+ * everything sits on one row.
  */
 export function HealthChartHeader({
   title,
@@ -31,7 +30,6 @@ export function HealthChartHeader({
   onRangeChange,
   overlayPrefs,
   showOverlayControls,
-  controls,
 }: {
   title: string;
   titleIcon?: ComponentType<{ className?: string }>;
@@ -42,11 +40,6 @@ export function HealthChartHeader({
   onRangeChange: (days: ChartRangePoints) => void;
   overlayPrefs: ReturnType<typeof useChartOverlayPrefs>;
   showOverlayControls: boolean;
-  /**
-   * A chart's own view controls (the blood pressure page's part of the
-   * day), placed before the range tabs in the same right-aligned group.
-   */
-  controls?: ReactNode;
 }) {
   const { t } = useTranslations();
   return (
@@ -102,22 +95,19 @@ export function HealthChartHeader({
             card stays a read surface. */}
       </div>
       <div
-        className="flex w-full flex-wrap items-center justify-end gap-x-6 gap-y-2 sm:w-auto"
+        className="flex flex-nowrap items-center justify-end gap-1 self-end sm:self-auto"
         data-slot="chart-header-controls"
       >
-        {controls}
-        <div className="flex flex-nowrap items-center gap-1">
-          <ChartRangeTabs value={rangePoints} onChange={onRangeChange} />
-          {/* Only a chart bound to a persistent key offers the overlay
-              controls; ad-hoc charts keep the clean line. */}
-          {showOverlayControls ? (
-            <ChartOverlayControls
-              prefs={overlayPrefs.prefs}
-              onChange={overlayPrefs.setPrefs}
-              hasComparisonData={hasComparisonData}
-            />
-          ) : null}
-        </div>
+        <ChartRangeTabs value={rangePoints} onChange={onRangeChange} />
+        {/* Only a chart bound to a persistent key offers the overlay
+            controls; ad-hoc charts keep the clean line. */}
+        {showOverlayControls ? (
+          <ChartOverlayControls
+            prefs={overlayPrefs.prefs}
+            onChange={overlayPrefs.setPrefs}
+            hasComparisonData={hasComparisonData}
+          />
+        ) : null}
       </div>
     </div>
   );

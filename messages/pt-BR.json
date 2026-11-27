@@ -5365,7 +5365,6 @@
     },
     "bpTimeOfDay": {
       "title": "Por período do dia",
-      "description": "Sua pressão arterial média em cada período do dia, no intervalo do gráfico.",
       "part": {
         "morning": "Manhã",
         "midday": "Tarde",
@@ -5374,9 +5373,6 @@
       "filterAll": "Dia todo",
       "filterLabel": "Mostrar no gráfico",
       "notEnough": "Poucas medições",
-      "difference": "Manhã menos noite: {systolic}/{diastolic} mmHg.",
-      "differencePending": "Manhã e noite são comparadas quando cada uma tiver pelo menos {min, plural, one {# medição} other {# medições}}.",
-      "hours": "Manhã {morning}, tarde {midday}, noite {evening}, no seu fuso horário.",
       "hourRange": "{start}–{end}",
       "emptyTitle": "Nenhuma medição completa neste intervalo",
       "emptyDescription": "Medições com valor sistólico e diastólico aparecem aqui.",

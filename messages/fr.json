@@ -5365,7 +5365,6 @@
     },
     "bpTimeOfDay": {
       "title": "Selon le moment de la journée",
-      "description": "Votre tension artérielle moyenne à chaque moment de la journée, sur la période du graphique.",
       "part": {
         "morning": "Matin",
         "midday": "Midi",
@@ -5374,9 +5373,6 @@
       "filterAll": "Toute la journée",
       "filterLabel": "Afficher dans le graphique",
       "notEnough": "Trop peu de mesures",
-      "difference": "Matin moins soir : {systolic}/{diastolic} mmHg.",
-      "differencePending": "Le matin et le soir sont comparés dès que chacun compte au moins {min, plural, one {# mesure} other {# mesures}}.",
-      "hours": "Matin {morning}, midi {midday}, soir {evening}, dans votre fuseau horaire.",
       "hourRange": "{start}–{end}",
       "emptyTitle": "Aucune mesure complète sur cette période",
       "emptyDescription": "Les mesures avec une valeur systolique et diastolique apparaissent ici.",
