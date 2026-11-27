@@ -3,7 +3,6 @@
 import { InfoPopover } from "@/components/ui/info-popover";
 import {
   BAND_PROGRESS_CLASS,
-  bandForScore,
   clampScore,
 } from "@/components/insights/derived/band-tokens";
 import { CoverageMeter } from "@/components/insights/derived/coverage-meter";
@@ -64,8 +63,9 @@ export function HealthScorePillars({
 /**
  * One scored pillar, one line: a truncating name, a thin fill bar, the score,
  * and the (i) that opens everything else. The bar takes the pillar's OWN band
- * colour — a pillar at 92 reads green even when the composite is red, which
- * is the point of showing the contributors at all.
+ * colour, as the server resolved it (`value.band`) — a pillar at 92 reads
+ * green even when the composite is red, which is the point of showing the
+ * contributors at all.
  *
  * The observed value, the reference band, the personal target, the source and
  * the per-pillar confidence all live in the popover. That is one tap more
@@ -85,7 +85,9 @@ function PillarRow({
   const { t } = useTranslations();
   if (pillar.result.status !== "ok") return null;
   const score = clampScore(pillar.result.value.score);
-  const band = bandForScore(score);
+  // The band the scorer resolved for this pillar; a payload without one
+  // (an older server) draws the bar neutral rather than banding it here.
+  const band = pillar.result.value.band;
   const observed = pillarObservedText(pillar, detail);
   const lines = pillarDetailLines(pillar, detail);
 
@@ -111,8 +113,12 @@ function PillarRow({
       >
         <div
           data-slot="health-score-pillar-bar"
-          className={cn("h-full rounded-full", BAND_PROGRESS_CLASS[band])}
+          className={cn(
+            "h-full rounded-full",
+            band ? BAND_PROGRESS_CLASS[band] : "bg-muted-foreground",
+          )}
           style={{ width: `${score}%` }}
+          data-band={band ?? "none"}
         />
       </div>
       <span

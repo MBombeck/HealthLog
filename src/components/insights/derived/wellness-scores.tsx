@@ -79,15 +79,14 @@ export function baselineOf(series: number[] | undefined): number | null {
 }
 
 /**
- * One score tile: the ring with its band word, an optional note and the
- * score's course, all one link to the score's page. On a phone the ring sits
+ * One score tile: the ring, an optional note and the score's course, all one link to the score's page. On a phone the ring sits
  * beside its text; from `md` up the tile stacks.
  */
 export function RingTile({
   score,
   band,
+  stale = false,
   label,
-  bandWord,
   note,
   ariaLabel,
   href,
@@ -103,10 +102,15 @@ export function RingTile({
 }: {
   /** The 0..100 score; null draws the bare track (see `note`). */
   score: number | null;
-  band?: ScoreBand;
+  /**
+   * The score's band. `null`: the score carries no band (a device's own
+   * value), and the ring is drawn neutral, never in a guessed band. No band
+   * word is shown; the ring's accessible name says the band.
+   */
+  band?: ScoreBand | null;
+  /** Not about today: the stale face, "—" and "not from today". */
+  stale?: boolean;
   label: string;
-  /** The band word under the ring; null when the score carries no band. */
-  bandWord: string | null;
   /** One line beside or under the ring ("Last 81 on Nov 24"). */
   note?: ReactNode;
   /**
@@ -143,8 +147,8 @@ export function RingTile({
       data-metric={metricSlot}
       // The gentle `.wellness-tile` surface: a low-opacity mix of the
       // metric's `--tile-hue` over `--card`. The per-metric arc is the only
-      // saturated thing on the tile; the band stays conveyed by the word
-      // below and the ring's `data-band` + aria-label.
+      // saturated thing on the tile; the band stays conveyed by the ring's
+      // number, `data-band` and aria-label.
       style={
         {
           "--tile-hue": TILE_HUE[hue],
@@ -170,24 +174,14 @@ export function RingTile({
         <div className="flex shrink-0 flex-col items-center gap-1.5">
           <ScoreRing
             score={score}
-            // No band word means the score carries no band (a device's own
-            // value): the ring is drawn neutral, never in a guessed band.
-            band={bandWord === null ? null : band}
+            band={band}
             size="tile"
             animate={animate}
             delayMs={delayMs}
             baseline={baseline}
-            emptyFace={score === null && ariaLabel !== undefined}
+            emptyFace={stale}
             ariaLabel={ariaLabel}
           />
-          {bandWord ? (
-            <span
-              data-slot="wellness-score-band-word"
-              className="text-muted-foreground text-center text-xs"
-            >
-              {bandWord}
-            </span>
-          ) : null}
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           {note ? (
@@ -371,9 +365,8 @@ function loadTile(
     <RingTile
       key={tile.id}
       score={v.score}
-      band={v.band}
+      band={v.device ? null : v.band}
       label={title}
-      bandWord={word}
       note={deviceLine}
       ariaLabel={`${title}: ${v.score}, ${word ?? deviceLine}`}
       href={metricHref(tile.slug) ?? ""}
@@ -446,9 +439,6 @@ export function WellnessScores({
     );
   }
 
-  const bandWord = (kind: "readiness" | "sleep" | "health", band: ScoreBand) =>
-    t(scoreBandWordKey(kind, band));
-
   const tiles: ReactNode[] = [];
 
   for (const tile of DAY_SCORES) {
@@ -470,10 +460,10 @@ export function WellnessScores({
         key={tile.id}
         score={stale ? null : v.score}
         band={stale ? undefined : v.band}
+        stale={stale}
         label={title}
-        bandWord={stale ? null : bandWord(tile.kind, v.band)}
-        note={lastLine}
-        ariaLabel={stale ? `${title}. ${lastLine}` : undefined}
+        note={stale ? t("insights.derived.scoreRing.notToday") : null}
+        ariaLabel={lastLine ?? undefined}
         href={`/insights/scores/${tile.kind}`}
         metricSlot={tile.id}
         hue={tile.kind}
@@ -497,7 +487,6 @@ export function WellnessScores({
         score={ok ? composite.value.score : null}
         band={ok ? composite.value.numberBand : undefined}
         label={t("insights.healthScore.label")}
-        bandWord={ok ? bandWord("health", composite.value.numberBand) : null}
         note={healthScoreSetterLine(healthScore, t)}
         href="/insights/scores/health"
         metricSlot="HEALTH_SCORE"

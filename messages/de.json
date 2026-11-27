@@ -4813,6 +4813,7 @@
         "aria": "Wert {score} von 100, {band}",
         "ariaProvisional": "Wert noch nicht verfügbar, zu wenig Daten",
         "provisionalCaption": "Noch zu wenig Daten",
+        "notToday": "nicht von heute",
         "band": {
           "green": "gut",
           "yellow": "mittel",
@@ -6052,7 +6053,7 @@
     "sections": {
       "account": {
         "title": "Konto",
-        "subtitle": "Dein Profil, deine Identität und deine Anmeldedaten."
+        "subtitle": "Dein Profil, deine Darstellung und die Einrichtung."
       },
       "integrations": {
         "title": "Integrationen",
@@ -6874,10 +6875,8 @@
     },
     "profile": "Profil",
     "language": "Sprache",
-    "languageDescription": "Wähle die Anzeigesprache der Anwendung.",
     "timeFormat": {
       "title": "Stundenformat",
-      "description": "Bestimmt, ob Uhrzeiten im 24-Stunden- oder 12-Stunden-Format (AM/PM) angezeigt werden.",
       "auto": "Automatisch (Sprache)",
       "h24": "24 Stunden",
       "h12": "12 Stunden (AM/PM)",
@@ -6886,7 +6885,6 @@
     },
     "dateFormat": {
       "title": "Datumsformat",
-      "description": "Bestimmt die Reihenfolge von Tag, Monat und Jahr bei der Anzeige von Daten.",
       "auto": "Automatisch (Sprache)",
       "dmy": "TT.MM.JJJJ",
       "mdy": "MM/TT/JJJJ",
@@ -6924,14 +6922,13 @@
     },
     "avatar": {
       "title": "Profilfoto",
-      "description": "Lade ein Foto hoch, das auf deinem eigenen Server gespeichert wird.",
       "upload": "Foto hochladen",
       "replace": "Foto ersetzen",
       "remove": "Entfernen",
       "removeTitle": "Profilbild entfernen?",
       "removeBody": "Das Bild wird von deinem Server gelöscht, an seine Stelle treten deine Initialen. Zum erneuten Hochladen brauchst du die Originaldatei.",
       "removeConfirm": "Bild entfernen",
-      "hint": "JPEG, PNG oder WebP. Bis zu 2 MB und 2048×2048 Pixel.",
+      "hint": "JPEG, PNG oder WebP, bis 2 MB und 2048×2048 Pixel.",
       "uploaded": "Profilfoto aktualisiert",
       "removed": "Profilfoto entfernt",
       "invalidType": "Nicht unterstützter Bildtyp. Verwende JPEG, PNG oder WebP.",
@@ -7393,7 +7390,6 @@
     "dashboard": {
       "units": {
         "title": "Einheiten",
-        "description": "Lege fest, wie Distanzen und Geschwindigkeiten in Diagrammen und Kacheln angezeigt werden.",
         "metric": "Metrisch",
         "imperial": "Imperial",
         "saved": "Einheiten-Einstellung gespeichert",
@@ -7401,7 +7397,6 @@
       },
       "glucoseUnit": {
         "title": "Blutzucker",
-        "description": "In welcher Einheit Blutzuckerwerte angezeigt werden.",
         "saved": "Blutzucker-Einheit gespeichert",
         "saveError": "Die Blutzucker-Einheit konnte nicht gespeichert werden."
       }
@@ -13329,9 +13324,6 @@
       "titlePlaceholder": "Titel hinzufügen",
       "kindLabel": "Typ",
       "dateLabel": "Dokumentdatum",
-      "conditionsLabel": "Verknüpfte Erkrankungen",
-      "linkCondition": "Verknüpfen",
-      "noConditions": "Mit keiner Erkrankung verknüpft",
       "previewUnavailable": "Keine Inline-Vorschau für diesen Dateityp",
       "uploadedMeta": "Hinzugefügt am {date}, {size}",
       "importedFrom": "Importiert aus {system}",
@@ -13341,10 +13333,6 @@
       "sourceReportSchedule": "dem Berichtsplan",
       "share": "Teilen",
       "labValuesLink": "{count, plural, one {# Laborwert} other {# Laborwerte}} ansehen",
-      "visitsLabel": "Gehört zu Termin",
-      "vaccinationsLabel": "Impfungen",
-      "noVisitsToLink": "Noch keine Termine erfasst.",
-      "noVaccinationsToLink": "Noch keine Impfungen erfasst.",
       "saved": "Änderungen gespeichert",
       "saving": "Wird gespeichert…",
       "previewNotOnDevice": "Dieser Browser kann PDFs nicht in der Seite anzeigen"
@@ -13368,11 +13356,7 @@
       "linkVisit": "Termin zuordnen"
     },
     "episodeCard": {
-      "title": "Dokumente",
-      "link": "Verknüpfen",
-      "upload": "Hochladen",
       "viewAll": "Alle anzeigen",
-      "emptyLine": "Noch keine Dokumente mit dieser Erkrankung verknüpft.",
       "loadError": "Verknüpfte Dokumente konnten nicht geladen werden"
     },
     "linkPicker": {
@@ -14765,8 +14749,6 @@
       "choose": "Zu welchem Termin gehört das?"
     },
     "episodeCard": {
-      "title": "Termine dazu",
-      "emptyLine": "Noch kein Termin mit dieser Erkrankung verknüpft.",
       "add": "Termin hinzufügen"
     },
     "dashboard": {
@@ -14853,7 +14835,7 @@
       }
     },
     "related": {
-      "title": "Verwandt",
+      "title": "Verknüpfungen",
       "kind": {
         "labResult": "Laborwert",
         "encounter": "Termin",
@@ -14875,6 +14857,10 @@
       },
       "nothingToOffer": "Noch nichts zum Verknüpfen.",
       "saveError": "Die Verknüpfung konnte nicht gespeichert werden."
+    },
+    "row": {
+      "add": "Verknüpfen",
+      "uploadDocument": "Dokument hochladen"
     }
   },
   "bodySites": {

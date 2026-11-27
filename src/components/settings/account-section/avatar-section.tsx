@@ -9,8 +9,6 @@ import { Button } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
-import { SettingsCard } from "@/components/settings/settings-card";
-import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { ApiError, apiFetchRaw, throwApiError } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
 import { CONFIRMS_INLINE } from "@/lib/api/mutation-feedback";
@@ -25,7 +23,8 @@ import { FileInput } from "@/components/ui/file-picker";
 const ACCEPTED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const AVATAR_MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
 
-export function AvatarSection() {
+/** The profile photo, as the first line of the profile card. */
+export function AvatarField() {
   const { t } = useTranslations();
   const { user, refetch } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -103,45 +102,41 @@ export function AvatarSection() {
   const avatarUrl = user.avatarUrl ?? null;
   const busy = upload.isPending || remove.isPending;
 
+  // The photo is the first line of the profile card, not a card of its
+  // own: the picture, the two actions, and the one line of limits. The
+  // anchor stays `avatar`, so the search palette's "Profile photo" lands here.
   return (
-    <SettingsCard>
-      <SettingsCardHeader
-        anchor="avatar"
-        icon={ImageUp}
-        title={t("settings.avatar.title")}
-      />
-      {/* The accepted formats and limits belong to the sentence that explains
-          what this card does, not to a caption of their own under the buttons.
-          Two strings rather than one merged key: the same wording is the
-          upload's own constraint copy, and a translator keeps the shorter unit
-          either way. */}
-      <p className="text-sm">
-        {t("settings.avatar.description")} {t("settings.avatar.hint")}
-      </p>
-      <div className="flex items-center gap-4">
-        <Avatar className="size-16">
-          {avatarUrl && <AvatarImage src={avatarUrl} alt={accountName(user)} />}
-          <AvatarFallback className="text-base">
-            {nameInitials(accountName(user))}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex flex-wrap gap-2">
+    <div
+      id="avatar"
+      className="flex scroll-mt-28 items-center gap-4"
+      data-slot="settings-avatar"
+    >
+      <Avatar className="size-14 shrink-0">
+        {avatarUrl && <AvatarImage src={avatarUrl} alt={accountName(user)} />}
+        <AvatarFallback className="text-base">
+          {nameInitials(accountName(user))}
+        </AvatarFallback>
+      </Avatar>
+      <div className="min-w-0 flex-1 space-y-1.5">
+        <div className="flex flex-wrap items-center gap-2">
           <FileInput
             ref={fileInputRef}
             accept="image/jpeg,image/png,image/webp"
             className="hidden"
             onChange={handleFile}
+            aria-label={t("settings.avatar.title")}
           />
           <Button
+            type="button"
             variant="outline"
-            className="min-h-11 sm:min-h-9"
+            size="sm"
             disabled={busy}
             onClick={() => fileInputRef.current?.click()}
           >
             {upload.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+              <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
             ) : (
-              <ImageUp className="h-4 w-4" />
+              <ImageUp className="size-4" />
             )}
             {avatarUrl
               ? t("settings.avatar.replace")
@@ -152,8 +147,9 @@ export function AvatarSection() {
               slot="settings-avatar-remove"
               destructive
               variant="ghost"
-              className="text-destructive min-h-11 sm:min-h-9"
-              icon={<Trash2 className="h-4 w-4" />}
+              size="sm"
+              className="text-destructive"
+              icon={<Trash2 className="size-4" />}
               label={t("settings.avatar.remove")}
               title={t("settings.avatar.removeTitle")}
               body={t("settings.avatar.removeBody")}
@@ -168,17 +164,21 @@ export function AvatarSection() {
             />
           )}
         </div>
+        {msg ? (
+          <p
+            role="alert"
+            className={`text-xs ${
+              msgType === "success" ? "text-success" : "text-destructive"
+            }`}
+          >
+            {statusText(msg, t)}
+          </p>
+        ) : (
+          <p className="text-muted-foreground text-xs">
+            {t("settings.avatar.hint")}
+          </p>
+        )}
       </div>
-      {msg && (
-        <p
-          role="alert"
-          className={`text-sm ${
-            msgType === "success" ? "text-success" : "text-destructive"
-          }`}
-        >
-          {statusText(msg, t)}
-        </p>
-      )}
-    </SettingsCard>
+    </div>
   );
 }
