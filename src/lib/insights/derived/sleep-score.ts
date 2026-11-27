@@ -46,6 +46,7 @@ import {
   reconstructSleepNights,
   type SleepStageRow,
 } from "@/lib/analytics/sleep-night";
+import { isLastNight, lastNightOnRecord } from "@/lib/sleep/last-night";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { bandForScoreKind } from "@/lib/analytics/score/shared";
 import {
@@ -367,6 +368,8 @@ interface SleepRow {
    */
   source?: MeasurementSource | null;
   deviceType?: string | null;
+  /** The row's own zone, which files a night slept abroad (`wakeDayOf`). */
+  timeZone?: string | null;
 }
 
 export interface NightSummary {
@@ -416,6 +419,7 @@ export function reconstructNights(
     sleepStage: r.sleepStage,
     source: r.source ?? null,
     deviceType: r.deviceType ?? null,
+    timeZone: r.timeZone ?? null,
   }));
   const nights = reconstructSleepNights(stageRows, tz, priorityJson);
   return nights.map((n) => {
@@ -528,6 +532,7 @@ export async function computeSleepScore(
       sleepStage: true,
       source: true,
       deviceType: true,
+      timeZone: true,
     },
   })) as SleepRow[];
 
@@ -570,7 +575,23 @@ export async function computeSleepScore(
     });
   }
 
-  const latest = scorableNights[scorableNights.length - 1];
+  // The night the score describes is last night by the one rule: the latest
+  // night with a main sleep, never a nap after it.
+  const latest = lastNightOnRecord(scorableNights, (n) => n.midpoint !== null);
+  if (latest === null) {
+    const { coverage } = deriveCoverage({
+      requiredInputs: required,
+      presentInputs: 0,
+      historyDays: scorableNights.length,
+      missing: inputs,
+      fullHistoryDays: windowDays,
+    });
+    return buildInsufficient<SleepScoreValue>({
+      coverage,
+      provenance: { inputs, source: "live", windowDays, computedAt },
+      reason: "no_scorable_night",
+    });
+  }
   const midpoints = scorableNights
     .map((n) => n.midpoint)
     .filter((m): m is number => m != null);
@@ -638,7 +659,7 @@ export async function computeSleepScore(
       score,
       band: bandForScoreKind("sleep", score),
       night: latest.night,
-      fresh: latest.night === userDayKey(now, tz),
+      fresh: isLastNight(latest, userDayKey(now, tz)),
       // Emit whole minutes (iOS #18) — the canonical totals sum second-
       // precision segments and can otherwise serialise as e.g. 433.4999.
       // Null-preserving on the in-bed signal.

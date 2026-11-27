@@ -31,6 +31,7 @@
  * exclamation mark, no general warning (`morning-copy.test.ts`). A rank that
  * cannot say something true for the case at hand does not hold.
  */
+import { isLastNight } from "@/lib/sleep/last-night";
 import type { Locale } from "@/lib/i18n/config";
 import { pluralKey } from "@/lib/i18n/plural";
 import { resolveIntlLocale } from "@/lib/format-locale";
@@ -202,56 +203,6 @@ export interface MorningSleepScore {
   night: string;
   /** That night's time asleep; absent on an older cached value. */
   asleepMinutes?: number;
-}
-
-/** The morning's one reading of "last night" (`resolveLastNight`). */
-export interface LastNight {
-  /** Last night's duration, or null when it is not in. */
-  sleep: TodaySleep | null;
-  /** Sleep is expected, last night is not in and the morning is not final. */
-  sleepPending: boolean;
-  /** The latest night on record when last night is not in; never today. */
-  latestNightDay: string | null;
-}
-
-/**
- * Whether last night is in, by one rule: the sleep score's night, the
- * latest night with time asleep, filed under its wake day, is the reader's
- * today. The sentence, the duration line, the ring, "not in yet" and the
- * pending state all read this, so none of them can disagree with another.
- * A rolling 24-hour window would call yesterday's night "last night" until
- * 23 h 59 min after waking, and the snapshot it came from is cached apart
- * from the sleep score, so the card could say "not in yet" beside last
- * night's ring. Without a sleep score the latest sleep row's wake day
- * stands in.
- */
-export function resolveLastNight(args: {
-  todayKey: string;
-  sleepOn: boolean;
-  sleepExpected: boolean;
-  morningRefreshedToday: boolean;
-  sleepScore: { night: string; asleepMinutes: number } | null;
-  latestSleep: { wakeDay: string; minutes: number | null } | null;
-  usualMinutes: number | null;
-}): LastNight {
-  if (!args.sleepOn) {
-    return { sleep: null, sleepPending: false, latestNightDay: null };
-  }
-  const latest = args.sleepScore
-    ? { day: args.sleepScore.night, minutes: args.sleepScore.asleepMinutes }
-    : args.latestSleep
-      ? { day: args.latestSleep.wakeDay, minutes: args.latestSleep.minutes }
-      : null;
-  const minutes = latest?.minutes ?? 0;
-  const isIn = latest !== null && latest.day === args.todayKey && minutes > 0;
-  return {
-    sleep: isIn ? { minutes, usualMinutes: args.usualMinutes } : null,
-    sleepPending: args.sleepExpected && !args.morningRefreshedToday && !isIn,
-    latestNightDay:
-      !isIn && latest !== null && latest.day !== args.todayKey
-        ? latest.day
-        : null,
-  };
 }
 
 export interface MorningInput {
@@ -671,7 +622,10 @@ function lastNightScored(input: MorningInput): boolean {
     input.modules.sleep !== false &&
     input.sleep !== null &&
     input.sleepScore !== null &&
-    input.sleepScore.night === input.todayKey
+    isLastNight(
+      { night: input.sleepScore.night, asleepMinutes: input.sleep.minutes },
+      input.todayKey,
+    )
   );
 }
 

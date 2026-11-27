@@ -23,12 +23,13 @@ import type { MeasurementType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
-import { DASHBOARD_REFETCH_INTERVAL_MS } from "@/lib/queries/refetch-interval";
 import { readDashboardSnapshotCached } from "@/lib/dashboard/snapshot-read";
 import {
   lastNightFromSnapshot,
+  MORNING_CACHE_TTL_MS,
   morningCacheKey,
   morningExtrasCacheKey,
+  readLastNight,
 } from "@/lib/daily/last-night";
 import { resolveModuleMap } from "@/lib/modules/gate";
 import { resolveRestMode } from "@/lib/illness/rest-mode";
@@ -84,7 +85,6 @@ type Translate = (
 ) => string;
 
 /** Same lifetime as the digest's extras cell: a poll and a minute. */
-const MORNING_CACHE_TTL_MS = DASHBOARD_REFETCH_INTERVAL_MS + 60_000;
 
 /** How long a confirmed floor answers the morning: the push's own window. */
 const FLOOR_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -553,6 +553,7 @@ export async function loadDailyMorning(
     modules,
     restModeContext,
     extras,
+    night,
     { floor, floorReading },
     quiet,
     visit,
@@ -570,6 +571,9 @@ export async function loadDailyMorning(
         sleep: m.sleep !== false,
         recovery: m.recovery !== false,
       }),
+    ),
+    modulesRead.then((m) =>
+      m.sleep !== false ? readLastNight(user.id, tz, todayKey, now) : null,
     ),
     readFloor(user.id, now, units.glucoseUnit),
     loadQuietSources(user.id, now).catch(() => []),
@@ -596,18 +600,17 @@ export async function loadDailyMorning(
   );
 
   // Sleep: whether sleep is tracked at all comes from the snapshot; whether
-  // last night is in comes from one rule, the sleep score's night
-  // (`resolveLastNight`), which the sentence, the line, the ring and the
-  // pending state all read. The digest reads it through the same helper.
+  // last night is in comes from one rule (`resolveLastNight`) over the night
+  // `readLastNight` read, which the sentence, the line, the ring and the
+  // pending state all read. The digest reads the same night the same way.
   const sleepOn = modules.sleep !== false;
   const sleepScore = extras.sleepScore;
   const { lastNight, sleepExpected } = lastNightFromSnapshot({
     snapshot,
-    tz,
     todayKey,
     sleepOn,
     morningRefreshedToday: user.morningDigestRefreshedOn === todayKey,
-    sleepScore,
+    night,
   });
 
   const restMode: TodayRestMode | null =

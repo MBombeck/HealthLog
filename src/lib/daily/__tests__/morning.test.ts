@@ -14,11 +14,11 @@ import {
   MORNING_LEAD_KEYS,
   SLEEP_PENDING_LEAD_UNTIL_HOUR,
   rankOf,
-  resolveLastNight,
   type MorningInput,
   type MorningLeadKey,
 } from "@/lib/daily/morning";
 import { floorFromReadings } from "@/lib/daily/morning-floor";
+import { resolveLastNight } from "@/lib/sleep/last-night";
 
 const t = getServerTranslator("en").t;
 const NOW = new Date("2026-11-26T07:30:00Z");
@@ -390,8 +390,7 @@ describe("last night, one rule", () => {
     // rolling 24-hour window would still call that night "last night".
     const night = resolveLastNight({
       ...base,
-      sleepScore: { night: "2026-11-25", asleepMinutes: 310 },
-      latestSleep: { wakeDay: "2026-11-25", minutes: 310 },
+      night: { night: "2026-11-25", asleepMinutes: 310 },
     });
     expect(night).toEqual({
       sleep: null,
@@ -421,8 +420,7 @@ describe("last night, one rule", () => {
     // used to decide the line still had yesterday's.
     const night = resolveLastNight({
       ...base,
-      sleepScore: { night: TODAY, asleepMinutes: 440 },
-      latestSleep: { wakeDay: "2026-11-25", minutes: 310 },
+      night: { night: TODAY, asleepMinutes: 440 },
     });
     expect(night).toEqual({
       sleep: { minutes: 440, usualMinutes: 450 },
@@ -445,35 +443,16 @@ describe("last night, one rule", () => {
   it("never names today as the latest night when only in-bed time is in", () => {
     const night = resolveLastNight({
       ...base,
-      sleepScore: { night: TODAY, asleepMinutes: 0 },
-      latestSleep: { wakeDay: TODAY, minutes: 0 },
+      night: { night: TODAY, asleepMinutes: 0 },
     });
     expect(night.sleep).toBeNull();
     expect(night.sleepPending).toBe(true);
     expect(night.latestNightDay).toBeNull();
   });
 
-  it("falls back to the calendar wake day when no sleep score exists", () => {
-    expect(
-      resolveLastNight({
-        ...base,
-        sleepScore: null,
-        latestSleep: { wakeDay: TODAY, minutes: 400 },
-      }).sleep,
-    ).toEqual({ minutes: 400, usualMinutes: 450 });
-    expect(
-      resolveLastNight({
-        ...base,
-        sleepScore: null,
-        latestSleep: { wakeDay: "2026-11-25", minutes: 400 },
-      }),
-    ).toMatchObject({ sleep: null, latestNightDay: "2026-11-25" });
-  });
-
   it("is not pending once the morning refresh ran, or with sleep off", () => {
     const stale = {
-      sleepScore: { night: "2026-11-25", asleepMinutes: 310 },
-      latestSleep: { wakeDay: "2026-11-25", minutes: 310 },
+      night: { night: "2026-11-25", asleepMinutes: 310 },
     };
     expect(
       resolveLastNight({ ...base, ...stale, morningRefreshedToday: true })
