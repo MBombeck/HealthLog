@@ -14,7 +14,7 @@
  * set which is rendered immediately below the result.
  *
  * v1.25.3 — this is now the ORCHESTRATOR + landing only; the 387-line monolith
- * split into focused components (`instrument-card`, `check-in-wizard`,
+ * split into focused components (`instrument-row`, `check-in-wizard`,
  * `assessment-result`, `assessment-history`, `crisis-card`).
  * The landing follows the card grammar of Vorsorge / Medications: instrument
  * cards (last-result line + Start) + a history card. The disclaimer renders
@@ -44,10 +44,13 @@ import { PageHeader } from "@/components/ui/page-header";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { ListGroup } from "@/components/ui/list-row";
+import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 
 import { AssessmentResult } from "./assessment-result";
 import { CheckInWizard } from "./check-in-wizard";
-import { InstrumentCard } from "./instrument-card";
+import { InstrumentRow } from "./instrument-row";
 import { InstrumentDetail } from "./instrument-detail";
 import type {
   AssessmentRow,
@@ -88,6 +91,10 @@ function useSubmitAssessment(onSaved: (data: CreateResponse) => void) {
 
 export function MentalWellbeing() {
   const { t, locale } = useTranslations();
+  // A screener is answered by the person it is about: no grant level admits
+  // starting one, so inside somebody else's record the sheet has no Start.
+  const { canManageDomain } = useRecordCapabilities();
+  const canManageMind = canManageDomain("mind");
 
   const [phase, setPhase] = useState<Phase>("choose");
   const [instrument, setInstrument] = useState<InstrumentId>("PHQ9");
@@ -170,10 +177,7 @@ export function MentalWellbeing() {
         <>
           {/* v1.26 — visible page header, consistent with every other module
               (the title was previously sr-only; the description stays). */}
-          <PageHeader
-            title={t("mentalHealth.pageTitle")}
-            description={t("mentalHealth.pageDescription")}
-          />
+          <PageHeader title={t("mentalHealth.pageTitle")} />
 
           {/* What happens to the answers. The Modules hub used to carry this
               as the second sentence of the module's one-line description,
@@ -181,7 +185,7 @@ export function MentalWellbeing() {
               to the screen where somebody is about to answer. */}
           <p
             data-slot="mental-health-privacy-note"
-            className="text-muted-foreground -mt-3 text-xs"
+            className="text-muted-foreground -mt-3 text-sm"
           >
             {t("mentalHealth.privacyNote")}
           </p>
@@ -196,29 +200,18 @@ export function MentalWellbeing() {
                 onRetry={() => void refetchHistory()}
               />
             ) : historyPending ? (
-              <ul
-                className="grid list-none gap-4 p-0 sm:grid-cols-2"
-                aria-busy="true"
-              >
-                {INSTRUMENT_ORDER.map((id) => (
-                  <li key={id} className="contents">
-                    <Skeleton className="h-44 w-full rounded-xl" />
-                  </li>
-                ))}
-              </ul>
+              <Skeleton className="h-56 w-full rounded-xl" aria-busy="true" />
             ) : (
-              <ul className="grid list-none gap-4 p-0 sm:grid-cols-2">
+              <ListGroup data-slot="instrument-list">
                 {INSTRUMENT_ORDER.map((id) => (
-                  <li key={id} className="contents">
-                    <InstrumentCard
-                      instrument={id}
-                      last={lastByInstrument.get(id)}
-                      onStart={() => begin(id)}
-                      onOpenDetail={() => setDetailInstrument(id)}
-                    />
-                  </li>
+                  <InstrumentRow
+                    key={id}
+                    instrument={id}
+                    last={lastByInstrument.get(id)}
+                    onOpenDetail={() => setDetailInstrument(id)}
+                  />
                 ))}
-              </ul>
+              </ListGroup>
             )}
           </section>
 
@@ -240,7 +233,17 @@ export function MentalWellbeing() {
                   )
                 : t("mentalHealth.history.title")
             }
-            description={t("mentalHealth.history.chartTitle")}
+            footer={
+              detailInstrument && canManageMind ? (
+                <Button
+                  type="button"
+                  onClick={() => begin(detailInstrument)}
+                  data-slot="instrument-detail-start"
+                >
+                  {t("mentalHealth.start")}
+                </Button>
+              ) : undefined
+            }
           >
             {detailInstrument && (
               <InstrumentDetail
@@ -249,7 +252,6 @@ export function MentalWellbeing() {
                 trend={history?.trends?.find(
                   (trend) => trend.instrument === detailInstrument,
                 )}
-                onStart={() => begin(detailInstrument)}
               />
             )}
             <ListCapNotice cap={historyPage?.cap} className="mt-3" />

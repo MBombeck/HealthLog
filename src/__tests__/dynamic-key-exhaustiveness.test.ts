@@ -56,8 +56,8 @@ import { INSTRUMENTS } from "@/lib/mental-health/instruments";
  *   - records.allergies.status.*    allergyStatusEnum
  *   - records.family.relationship.* familyRelationshipEnum
  *   - mentalHealth.instrument.*         } INSTRUMENTS i18nKey slugs
- *   - mentalHealth.instrumentSub.*      } (PHQ-9 / GAD-7 / WHO-5 / SCI —
- *   - mentalHealth.instrumentDescription.* } the WHO-5/SCI class that bit before)
+ *   - mentalHealth.instrumentDescription.* } (PHQ-9 / GAD-7 / WHO-5 / SCI —
+ *                                          the WHO-5/SCI class that bit before)
  *
  * ── Deliberately EXCLUDED (would produce false positives) ──
  *   - `insights.workouts.sport.*` — the Strava render path stores a raw
@@ -129,7 +129,6 @@ const REGISTRY: readonly KeySpace[] = [
 
   // mentalHealth.* — the WHO-5/SCI class whose absence originally motivated this guard.
   { prefix: "mentalHealth.instrument", members: INSTRUMENT_SLUGS },
-  { prefix: "mentalHealth.instrumentSub", members: INSTRUMENT_SLUGS },
   { prefix: "mentalHealth.instrumentDescription", members: INSTRUMENT_SLUGS },
 ];
 
