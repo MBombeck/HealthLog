@@ -4811,7 +4811,7 @@
         "aria": "Балл {score} из 100, {band}",
         "ariaProvisional": "Балл пока недоступен, недостаточно данных",
         "provisionalCaption": "Пока недостаточно данных",
-        "notFromToday": "Не за сегодня",
+        "notToday": "не за сегодня",
         "band": {
           "green": "хорошо",
           "yellow": "удовлетворительно",

@@ -138,8 +138,9 @@ export interface ScoreRingProps {
   /**
    * With `score === null`: the stale face, for a score that exists but is not
    * about today (a readiness resting on yesterday's values). A solid
-   * `--score-track` ring, no number, a centred "–" and the label "Not from
-   * today", as the native app draws it. No "not enough data" caption, which
+   * `--score-track` ring, no number, a centred "—" (U+2014, the placeholder
+   * both clients share) and the label "not from today", as the native app
+   * draws it. No "not enough data" caption, which
    * would say something untrue; the caller's line says when the last value
    * was.
    */
@@ -227,7 +228,7 @@ export function ScoreRing({
   const displayedRounded = Math.round(displayed);
 
   const ariaLabel = stale
-    ? t("insights.derived.scoreRing.notFromToday")
+    ? t("insights.derived.scoreRing.notToday")
     : (ariaLabelOverride ??
       (hasScore
         ? t("insights.derived.scoreRing.aria", {
@@ -344,7 +345,7 @@ export function ScoreRing({
             hasScore ? "text-foreground" : "text-muted-foreground",
           )}
         >
-          {hasScore ? (valueText ?? displayedRounded) : stale ? "–" : "—"}
+          {hasScore ? (valueText ?? displayedRounded) : "—"}
         </span>
         {label && !stale ? (
           <span className={cn("text-muted-foreground", dims.labelClass)}>

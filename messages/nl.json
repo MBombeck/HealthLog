@@ -4811,7 +4811,7 @@
         "aria": "Score {score} van 100, {band}",
         "ariaProvisional": "Score nog niet beschikbaar, niet genoeg gegevens",
         "provisionalCaption": "Nog niet genoeg gegevens",
-        "notFromToday": "Niet van vandaag",
+        "notToday": "niet van vandaag",
         "band": {
           "green": "goed",
           "yellow": "redelijk",
