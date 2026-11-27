@@ -85,11 +85,13 @@ describe("<ImportPanel> — SSR smoke", () => {
     }
   });
 
-  it("gives the Apple Health drop area a keyboard-operable role", () => {
+  it("opens every file picker from a real button in its row", () => {
     const html = render(<ImportPanel />);
-    // A div masquerading as a button must be focusable + role=button so a
-    // keyboard user can trigger the file picker.
-    expect(html).toContain('role="button"');
+    // The file cards carry no drop area posing as a button: each picker row
+    // holds a real <button>, so a keyboard reaches it like any other.
+    const pickers = html.split("data-import-picker").length - 1;
+    expect(pickers).toBe(5);
+    expect(html).not.toContain('role="button"');
     expect(html).toContain("aria-live");
   });
 

@@ -6281,10 +6281,7 @@
           "appleHealth": {
             "title": "Apple Santé",
             "description": "Le fichier export.zip de l’app Santé de l’iPhone.",
-            "dropLabel": "Déposez export.zip ici",
-            "dropHint": "ou cliquez pour choisir un fichier",
             "fileInputLabel": "Choisir un fichier export.zip d'Apple Santé",
-            "choose": "Choisir un fichier",
             "idempotencyNote": "Les grandes archives sont traitées en arrière-plan.",
             "uploading": "Envoi…",
             "uploadFailed": "Échec de l'envoi. Veuillez réessayer.",
@@ -6347,7 +6344,8 @@
             "skipBreakdownMore": "+ {count, plural, one {# autre type} other {# autres types}}",
             "cycleSummary": "{samples, plural, one {# échantillon de cycle fusionné} other {# échantillons de cycle fusionnés}} en {days, plural, one {# journal quotidien} other {# journaux quotidiens}}.",
             "cycleModuleOff": "{count, plural, one {# échantillon de cycle ignoré} other {# échantillons de cycle ignorés}}, car le suivi du cycle est désactivé pour ce compte.",
-            "cycleDaysFailed": "{count, plural, one {# jour de cycle n'a pas pu être écrit} other {# jours de cycle n'ont pas pu être écrits}} : {reason}"
+            "cycleDaysFailed": "{count, plural, one {# jour de cycle n'a pas pu être écrit} other {# jours de cycle n'ont pas pu être écrits}} : {reason}",
+            "fileHint": "export.zip de l’app Santé"
           },
           "json": {
             "title": "Mesures et humeur (JSON)",
@@ -6476,7 +6474,6 @@
           "healthConnect": {
             "title": "Export Health Connect",
             "description": "Le ZIP que Health Connect écrit sur Android.",
-            "choose": "Choisir un fichier",
             "uploading": "Envoi en cours…",
             "uploadFailed": "L’envoi a échoué. Réessayez.",
             "tooLarge": "Le fichier dépasse la taille acceptée par ce serveur.",
@@ -6495,8 +6492,6 @@
               "cloud": "Health Connect enregistre l’exportation uniquement dans une app de stockage cloud comme Google Drive, Dropbox ou Nextcloud, jamais sur le téléphone lui-même.",
               "upload": "Téléchargez le fichier ZIP de ce cloud sur cet appareil et importez-le ici."
             },
-            "dropLabel": "Déposez ici le ZIP de Health Connect",
-            "dropHint": "ou cliquez pour le choisir. Jusqu’à 1 Go.",
             "fileInputLabel": "Fichier ZIP de l’exportation Health Connect",
             "privacyNote": "Les enregistrements des apps que vous connectez déjà directement, comme Withings, sont ignorés pour que rien n’arrive en double.",
             "rateLimited": "Trop d’envois en peu de temps. Attendez une minute et réessayez.",
@@ -6514,19 +6509,17 @@
               "tooLarge": "L’exportation est plus volumineuse que ce que ce serveur accepte.",
               "stagingMissing": "Le fichier envoyé n’était plus sur le serveur. Envoyez-le à nouveau.",
               "interrupted": "Un redémarrage du serveur a interrompu l’importation. Envoyez le fichier à nouveau."
-            }
+            },
+            "fileHint": "ZIP, 1 Go maximum"
           },
           "fit": {
             "title": "Fichier d’activité (FIT)",
             "description": "Des entraînements d’une montre ou d’un compteur vélo.",
-            "choose": "Choisir des fichiers",
             "uploading": "Envoi en cours…",
             "uploadFailed": "L’envoi a échoué. Veuillez réessayer.",
             "failed": "L’importation a échoué. Veuillez réessayer.",
             "doneSummary": "Le fichier d’activité a été importé.",
             "doneNothing": "L’importation est terminée, mais il n’y avait rien de nouveau à ajouter.",
-            "dropLabel": "Déposez les fichiers d’activité ici",
-            "dropHint": "ou cliquez pour les choisir : fichiers .fit, .fit.gz ou .zip jusqu’à 10 Mo chacun.",
             "fileInputLabel": "Fichiers d’activité",
             "privacyNote": "Le tracé GPS n’est conservé que si Parcours d’entraînement est activé.",
             "steps": {
@@ -6574,7 +6567,8 @@
                 "busy": "Une autre importation est en cours",
                 "retry": "Échec, réessayez"
               }
-            }
+            },
+            "fileHint": ".fit, .fit.gz ou .zip, 10 Mo maximum chacun"
           },
           "recordFile": {
             "gadgetbridge": {
@@ -6583,7 +6577,8 @@
               "steps": {
                 "export": "Dans Gadgetbridge, ouvrez Paramètres, puis Gestion des données, puis Exporter la base de données.",
                 "upload": "Téléversez ici le fichier nommé Gadgetbridge. Jusqu'à 512 Mo."
-              }
+              },
+              "fileHint": "Le fichier « Gadgetbridge », 512 Mo maximum"
             },
             "fhirBundle": {
               "title": "Dossier patient (FHIR)",
@@ -6591,9 +6586,9 @@
               "steps": {
                 "export": "Dans votre portail patient, exportez votre dossier au format FHIR R4 (JSON).",
                 "upload": "Téléversez ici le fichier .json. Jusqu'à 32 Mo."
-              }
+              },
+              "fileHint": ".json, 32 Mo maximum"
             },
-            "choose": "Choisir un fichier",
             "uploading": "Téléversement…",
             "running": "Import en arrière-plan…",
             "doneSummary": "Le fichier a été importé.",
@@ -6658,7 +6653,10 @@
             "remove": "Retirer le dossier",
             "removeTitle": "Retirer ce dossier ?",
             "removeBody": "HealthLog cesse d'y récupérer quoi que ce soit et oublie le mot de passe. Ce qui a déjà été importé reste."
-          }
+          },
+          "pickerFile": "Fichier",
+          "pickerFiles": "Fichiers",
+          "pickerChoose": "Choisir"
         },
         "subtitle": "Exportez vos données, ou importez mesures et entrées d’autres applis et fichiers."
       },

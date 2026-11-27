@@ -6281,10 +6281,7 @@
           "appleHealth": {
             "title": "Apple Health",
             "description": "The export.zip from the Health app on iPhone.",
-            "dropLabel": "Drop export.zip here",
-            "dropHint": "or click to choose a file",
             "fileInputLabel": "Choose an Apple Health export.zip file",
-            "choose": "Choose file",
             "idempotencyNote": "Large archives are processed in the background.",
             "uploading": "Uploading…",
             "uploadFailed": "Upload failed. Please try again.",
@@ -6347,7 +6344,8 @@
             "skipBreakdownMore": "+ {count, plural, one {# more type} other {# more types}}",
             "cycleSummary": "{samples, plural, one {# cycle sample} other {# cycle samples}} merged into {days, plural, one {# day log} other {# day logs}}.",
             "cycleModuleOff": "{count, plural, one {# cycle sample skipped} other {# cycle samples skipped}} because cycle tracking is off for this account.",
-            "cycleDaysFailed": "{count, plural, one {# cycle day couldn't be written} other {# cycle days couldn't be written}}: {reason}"
+            "cycleDaysFailed": "{count, plural, one {# cycle day couldn't be written} other {# cycle days couldn't be written}}: {reason}",
+            "fileHint": "export.zip from the Health app"
           },
           "json": {
             "title": "Measurements and mood (JSON)",
@@ -6476,7 +6474,6 @@
           "healthConnect": {
             "title": "Health Connect export",
             "description": "The ZIP that Health Connect writes on Android.",
-            "choose": "Choose file",
             "uploading": "Uploading…",
             "uploadFailed": "The upload failed. Please try again.",
             "tooLarge": "The file is larger than this server accepts.",
@@ -6495,8 +6492,6 @@
               "cloud": "Health Connect only saves the export to a cloud storage app such as Google Drive, Dropbox or Nextcloud, never to the phone itself.",
               "upload": "Download the ZIP file from that cloud to this device and upload it here."
             },
-            "dropLabel": "Drop the Health Connect ZIP here",
-            "dropHint": "or click to choose it. Up to 1 GB.",
             "fileInputLabel": "Health Connect export ZIP file",
             "privacyNote": "Records from apps you already connect directly, such as Withings, are left out so nothing arrives twice.",
             "rateLimited": "Too many uploads in a short time. Wait a minute and try again.",
@@ -6514,19 +6509,17 @@
               "tooLarge": "The export is larger than this server accepts.",
               "stagingMissing": "The uploaded file was no longer on the server. Upload it again.",
               "interrupted": "The import was interrupted by a server restart. Upload the file again."
-            }
+            },
+            "fileHint": "ZIP, up to 1 GB"
           },
           "fit": {
             "title": "Activity file (FIT)",
             "description": "Workouts from a watch or bike computer.",
-            "choose": "Choose files",
             "uploading": "Uploading…",
             "uploadFailed": "The upload failed. Please try again.",
             "failed": "The import failed. Please try again.",
             "doneSummary": "The activity file was imported.",
             "doneNothing": "The import finished, but there was nothing new to add.",
-            "dropLabel": "Drop activity files here",
-            "dropHint": "or click to choose them: .fit, .fit.gz or .zip files up to 10 MB each.",
             "fileInputLabel": "Activity files",
             "privacyNote": "The GPS track is only kept when Workout routes is switched on.",
             "steps": {
@@ -6574,7 +6567,8 @@
                 "busy": "Another import is running",
                 "retry": "Failed, try again"
               }
-            }
+            },
+            "fileHint": ".fit, .fit.gz or .zip, up to 10 MB each"
           },
           "recordFile": {
             "gadgetbridge": {
@@ -6583,7 +6577,8 @@
               "steps": {
                 "export": "In Gadgetbridge open Settings, then Data management, then Export database.",
                 "upload": "Upload the file called Gadgetbridge here. Up to 512 MB."
-              }
+              },
+              "fileHint": "The file “Gadgetbridge”, up to 512 MB"
             },
             "fhirBundle": {
               "title": "Patient record (FHIR)",
@@ -6591,9 +6586,9 @@
               "steps": {
                 "export": "In your patient portal, export your record as FHIR R4 (JSON).",
                 "upload": "Upload the .json file here. Up to 32 MB."
-              }
+              },
+              "fileHint": ".json, up to 32 MB"
             },
-            "choose": "Choose file",
             "uploading": "Uploading…",
             "running": "Importing in the background…",
             "doneSummary": "The file was imported.",
@@ -6658,7 +6653,10 @@
             "remove": "Remove folder",
             "removeTitle": "Remove this folder?",
             "removeBody": "HealthLog stops fetching from it and forgets the password. What was already imported stays."
-          }
+          },
+          "pickerFile": "File",
+          "pickerFiles": "Files",
+          "pickerChoose": "Choose"
         },
         "subtitle": "Export your data, or import measurements and records from other apps and files."
       },
