@@ -7,7 +7,7 @@ import { parseJsonBody } from "@/lib/api/body";
 import { NextRequest } from "next/server";
 import {
   apiHandler,
-  requireAuth,
+  requireSelfAuth,
   requireMfaManagementAuth,
 } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
@@ -18,7 +18,7 @@ export const PATCH = apiHandler(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> },
   ) => {
-    const { user } = await requireAuth();
+    const { user } = await requireSelfAuth();
     const { id } = await params;
 
     const parsed = await parseJsonBody(request, passkeyRenameSchema, {

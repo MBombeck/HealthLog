@@ -14,7 +14,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PushSubscription } from "@/generated/prisma/client";
 
 const mocks = vi.hoisted(() => ({
-  requireAuth: vi.fn(),
+  requireSelfAuth: vi.fn(),
   findMany: vi.fn(),
   deleteMany: vi.fn(),
   getVapidConfig: vi.fn(),
@@ -25,7 +25,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/api-handler", () => ({
   apiHandler: <T>(fn: T) => fn,
-  requireAuth: mocks.requireAuth,
+  requireSelfAuth: mocks.requireSelfAuth,
 }));
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -93,7 +93,9 @@ function payloadsSent(): Array<{ title: string; body: string; tag: string }> {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.requireAuth.mockResolvedValue({ user: { id: "u-1", locale: "de" } });
+  mocks.requireSelfAuth.mockResolvedValue({
+    user: { id: "u-1", locale: "de" },
+  });
   mocks.checkRateLimit.mockResolvedValue({ allowed: true });
   mocks.getVapidConfig.mockResolvedValue({
     subject: "mailto:ops@example.com",

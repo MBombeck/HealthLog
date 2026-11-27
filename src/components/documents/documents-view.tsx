@@ -29,7 +29,10 @@ import { PullToRefreshIndicator } from "@/components/ui/pull-to-refresh-indicato
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import {
+  useRecordCapabilities,
+  holdsOwnerRights,
+} from "@/hooks/use-record-capabilities";
 import { useAiCapability } from "@/hooks/use-ai-capability";
 import {
   accountLabel,
@@ -107,7 +110,8 @@ export function DocumentsView() {
   const { t } = useTranslations();
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const timezone = user?.timezone || DEFAULT_TIMEZONE;
-  const { canManageDomain, inSharedRecord, sections } = useRecordCapabilities();
+  const caps = useRecordCapabilities();
+  const { canManageDomain, inSharedRecord, sections } = caps;
   const canManageDocuments = canManageDomain("documents");
   const router = useRouter();
   const pathname = usePathname();
@@ -367,7 +371,7 @@ export function DocumentsView() {
           onLinkEncounter={(encounterId) =>
             runBulk("linkEncounter", { encounterId })
           }
-          onShare={inSharedRecord ? undefined : openBulkShare}
+          onShare={holdsOwnerRights(caps) ? openBulkShare : undefined}
           onRequestDelete={() => requestDelete([...selectedIds])}
           onClear={clearSelection}
         />

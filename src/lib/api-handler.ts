@@ -409,11 +409,12 @@ export {
   type AuthContext,
 } from "./auth/guards/context";
 export {
-  requireAuth,
+  requireSelfAuth,
   requireBearerAuth,
   type BearerAuthContext,
 } from "./auth/guards/caller";
 export {
+  requireAuth,
   requireActorAuth,
   requireGuardianAuth,
   requireRecordAuth,
