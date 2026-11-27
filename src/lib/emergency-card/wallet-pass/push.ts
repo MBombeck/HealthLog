@@ -47,6 +47,11 @@ export interface WalletPushOutcome {
   accepted: number;
   /** Registrations dropped: the device is gone or the token is bad. */
   dropped: number;
+  /**
+   * Pushes Apple refused for a reason that is not the token's (certificate,
+   * topic, payload): kept owed, never dropped, and the job fails on them.
+   */
+  rejected: number;
   /** Set when the throttle held a content push back: try again then. */
   deferredUntil: Date | null;
   /** Why nothing could be sent at all, when nothing was. */
@@ -158,6 +163,7 @@ export async function pushOwedWalletUpdates(
     owed: 0,
     accepted: 0,
     dropped: 0,
+    rejected: 0,
     deferredUntil: null,
     skipped: null,
   };
@@ -221,7 +227,10 @@ export async function pushOwedWalletUpdates(
   const gone: string[] = [...unreadable];
   for (const [ref, result] of results) {
     if (result === "accepted") accepted.push(ref);
-    else if (result === "unregistered" || result === "rejected") gone.push(ref);
+    // Only a dead token drops its registration; `rejected` is about the
+    // certificate, topic or payload and would otherwise wipe every device.
+    else if (result === "unregistered") gone.push(ref);
+    else if (result === "rejected") outcome.rejected += 1;
   }
   if (accepted.length > 0) {
     await prisma.walletPassRegistration.updateMany({
@@ -241,6 +250,7 @@ export async function pushOwedWalletUpdates(
       wallet_push_owed: outcome.owed,
       wallet_push_accepted: outcome.accepted,
       wallet_push_dropped: outcome.dropped,
+      wallet_push_rejected: outcome.rejected,
     },
   });
   return outcome;

@@ -161,10 +161,17 @@ export async function runTreatmentSeriesExpiryTick(
         continue;
       }
 
-      const claimed = await claimNotificationEvent(prisma, {
+      const claim = {
         recordUserId: row.user.id,
         eventType: "MEASUREMENT_REMINDER",
         dedupKey: `series-expiry:${row.id}:${validUntil}`,
+      };
+      // The claim covers the whole lead time, so a send that went nowhere
+      // gives it back: the next hour tries again instead of never.
+      const release = () =>
+        prisma.notificationEvent.deleteMany({ where: claim }).catch(() => {});
+      const claimed = await claimNotificationEvent(prisma, {
+        ...claim,
         since: new Date(
           now.getTime() - (SERIES_EXPIRY_LEAD_DAYS + 2) * 86_400_000,
         ),
@@ -180,21 +187,30 @@ export async function runTreatmentSeriesExpiryTick(
       const own = render(await resolveJobLocale(row.user.locale));
       // No Done / Later: there is no reminder row to complete or postpone,
       // and the push opens the series itself.
-      const outcome = await dispatchImpl({
-        eventType: "MEASUREMENT_REMINDER",
-        userId: row.user.id,
-        title: own.title,
-        message: own.message,
-        renderForRecipient: (locale: Locale) => render(locale),
-        suppressActions: true,
-        metadata: {
-          scheduledAt: now.toISOString(),
-          treatmentSeriesId: row.id,
-          url: treatmentSeriesPath(row.id),
-        },
-      });
+      let outcome: Awaited<ReturnType<typeof dispatchImpl>>;
+      try {
+        outcome = await dispatchImpl({
+          eventType: "MEASUREMENT_REMINDER",
+          userId: row.user.id,
+          title: own.title,
+          message: own.message,
+          renderForRecipient: (locale: Locale) => render(locale),
+          suppressActions: true,
+          metadata: {
+            scheduledAt: now.toISOString(),
+            treatmentSeriesId: row.id,
+            url: treatmentSeriesPath(row.id),
+          },
+        });
+      } catch (err) {
+        await release();
+        throw err;
+      }
       if (outcome.dispatched) summary.dispatched += 1;
-      else summary.skippedNoChannel += 1;
+      else {
+        if (outcome.channelsAttempted > 0) await release();
+        summary.skippedNoChannel += 1;
+      }
     } catch (err: unknown) {
       summary.failed += 1;
       getEvent()?.addWarning(

@@ -5,8 +5,8 @@
  * Mirrors the `web-push.ts` shape so the dispatcher can call it through
  * the same `SendOutcome`-returning contract:
  *  - `ok: true`              if at least one device received the push.
- *  - `hardReject: true`      when EVERY device returned a permanent
- *    APNs reason (`Unregistered`, `BadDeviceToken`, `DeviceTokenNotForTopic`).
+ *  - `hardReject: true`      when EVERY device returned a dead token
+ *    (`apnsTokenGone`, the one classifier for every APNs push).
  *    The dead device rows are deleted from the DB regardless, so a
  *    hard channel reject means the user has zero iOS devices left for
  *    the dispatcher to try.
@@ -29,6 +29,7 @@ import apn from "@parse/node-apn";
 import { prisma } from "@/lib/db";
 import { deleteDeviceRows } from "@/lib/devices/delete-devices";
 import { getEvent } from "@/lib/logging/context";
+import { apnsTokenGone } from "@/lib/notifications/senders/apns-token-gone";
 import type { SendOutcome } from "@/lib/notifications/retry-policy";
 import { recordPushAttemptForPayload } from "@/lib/notifications/senders/push-attempt-record";
 import { plainPushText } from "@/lib/notifications/strip-emoji";
@@ -104,7 +105,7 @@ export interface ApnsSendResult {
   ok: boolean;
   /** APNs HTTP status, when the call reached Apple. */
   status?: number;
-  /** Apple's error code, e.g. "BadDeviceToken", "Unregistered". */
+  /** Apple's error code, e.g. `BadDeviceToken` or `TooManyRequests`. */
   reason?: string;
   /**
    * True on permanent failures (`Unregistered`, `BadDeviceToken`,
@@ -129,21 +130,6 @@ interface ApnsConfig {
    */
   forceProduction: boolean;
 }
-
-/**
- * Permanent APNs error reasons. Anything in this set means "delete the
- * device row, do not retry". Sourced from Apple's
- * `Sending Notification Requests to APNs` reference table.
- *
- * `DeviceTokenNotForTopic` lands here (rather than as a transient blip)
- * because it indicates a configuration mismatch between the iOS bundle
- * and the server-side topic — re-sending will fail forever.
- */
-const PERMANENT_APNS_REASONS = new Set<string>([
-  "Unregistered",
-  "BadDeviceToken",
-  "DeviceTokenNotForTopic",
-]);
 
 /**
  * Apple's documented ceiling for the `apns-collapse-id` header. A longer
@@ -558,7 +544,7 @@ export async function sendApnsPush(
   const failure = result.failed[0];
   const reason = failure?.response?.reason ?? failure?.error?.message;
   const status = failure?.status ? Number(failure.status) : undefined;
-  const shouldDisable = reason ? PERMANENT_APNS_REASONS.has(reason) : false;
+  const shouldDisable = apnsTokenGone(status, reason);
 
   getEvent()?.addExternalCall({
     service: "apns",
@@ -985,7 +971,7 @@ export async function sendApnsRawPush(
   const failure = result.failed[0];
   const reason = failure?.response?.reason ?? failure?.error?.message;
   const status = failure?.status ? Number(failure.status) : undefined;
-  const shouldDisable = reason ? PERMANENT_APNS_REASONS.has(reason) : false;
+  const shouldDisable = apnsTokenGone(status, reason);
 
   getEvent()?.addExternalCall({
     service: "apns",

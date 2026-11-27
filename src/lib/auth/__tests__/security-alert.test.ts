@@ -73,6 +73,19 @@ describe("sendSecurityAlert", () => {
     expect(sent.metadata).toEqual({ securityKind: "mfa_due" });
   });
 
+  it("is settled when no channel wants it, unsettled when every channel failed", async () => {
+    dispatchNotification.mockResolvedValueOnce({
+      dispatched: false,
+      channelsAttempted: 0,
+    });
+    await expect(sendSecurityAlert("u1", "passkey_added")).resolves.toBe(true);
+    dispatchNotification.mockResolvedValueOnce({
+      dispatched: false,
+      channelsAttempted: 2,
+    });
+    await expect(sendSecurityAlert("u1", "passkey_added")).resolves.toBe(false);
+  });
+
   it("never throws when the dispatcher fails", async () => {
     dispatchNotification.mockRejectedValue(new Error("down"));
     await expect(sendSecurityAlert("u1", "passkey_added")).resolves.toBe(false);

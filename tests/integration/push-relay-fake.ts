@@ -131,6 +131,8 @@ export class FakeRelay {
   walletManifests: Buffer[] = [];
   /** Every item `POST /v1/wallet/apple/notify` received. */
   walletPushes: Array<{ ref: string; token: string }> = [];
+  /** The notify result per token; `accepted` when none is set. */
+  walletAnswer = new Map<string, string>();
   /** Who the Wallet endpoints sign as, and what a signature looks like. */
   walletIdentity = {
     passTypeIdentifier: "pass.dev.healthlog.vector",
@@ -334,7 +336,10 @@ export class FakeRelay {
       };
       this.walletPushes.push(...req.items);
       return this.reply(nonce, 200, {
-        results: req.items.map((i) => ({ ref: i.ref, result: "accepted" })),
+        results: req.items.map((i) => ({
+          ref: i.ref,
+          result: this.walletAnswer.get(i.token) ?? "accepted",
+        })),
       });
     }
     if (method === "GET" && pathAndQuery === "/v1/status") {
