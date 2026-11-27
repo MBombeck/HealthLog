@@ -549,11 +549,9 @@ test.describe("document vault", () => {
     // the detail sheet is actually closed with the drawer owning the same
     // document; maximize before that and the close path takes the other branch
     // — `history.back()` — which races the push to `/coach` and lands back on
-    // `/documents` with nothing raised. The sheet's own close control leaves
-    // the tree with the sheet, so its absence is that hand-off, observed.
-    await expect(
-      page.locator('[data-slot="document-detail-close"]'),
-    ).toHaveCount(0);
+    // `/documents` with nothing raised. The sheet leaving the tree is that
+    // hand-off, observed.
+    await expect(detail).toHaveCount(0);
     await drawer.locator('[data-slot="coach-drawer-maximize"]').click();
     await expect.poll(() => new URL(page.url()).pathname).toBe("/coach");
     expect(new URL(page.url()).searchParams.get("doc")).toBe(MRT_DOC_ID);

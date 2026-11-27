@@ -23,11 +23,9 @@
  */
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { X } from "lucide-react";
 
 import { DocumentReadingConsentPrompt } from "@/components/ai/document-reading-consent-prompt";
 import { ActionMenu } from "@/components/ui/action-pair";
-import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-button";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
@@ -157,22 +155,6 @@ export function DocumentDetailSheet({
         title={title}
         description={t("documents.detail.title")}
         contentWidth="3xl"
-        showCloseButton={false}
-        headerAction={
-          // A larger `size-5` close with a full tap target in place of the
-          // primitive's `size-4` X (`showCloseButton={false}`), this sheet only.
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            data-slot="document-detail-close"
-            aria-label={t("common.close")}
-            onClick={() => onOpenChange(false)}
-            className="text-muted-foreground hover:text-foreground min-h-11 min-w-11 sm:size-9"
-          >
-            <X className="size-5" aria-hidden="true" />
-          </Button>
-        }
         footer={footer}
       >
         {detailQuery.isPending && open ? (
