@@ -1,5 +1,5 @@
 /**
- * APNs sender unit tests (v1.4.23 Wave 3 / F4).
+ * APNs sender unit tests (v1.4.23).
  *
  * Drives the real `apns.ts` against a stubbed `@parse/node-apn` Provider
  * so we can exercise:

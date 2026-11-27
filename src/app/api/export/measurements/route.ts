@@ -1,7 +1,7 @@
 /**
  * GET /api/export/measurements
  *
- * v1.4.16 phase B7. Per-type CSV download for the consolidated
+ * v1.4.16. Per-type CSV download for the consolidated
  * `/settings/export` UI. Filterable by `since` / `until` (inclusive
  * date strings parsed via the standard Date constructor — invalid
  * values are silently dropped from the where-clause).

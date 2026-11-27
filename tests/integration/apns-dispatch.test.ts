@@ -1,5 +1,5 @@
 /**
- * APNs dispatch integration test (v1.4.23 Wave 3 / F4).
+ * APNs dispatch integration test (v1.4.23).
  *
  * Drives `dispatchNotification` against a real Postgres testcontainer
  * with a stubbed `@parse/node-apn` Provider. Asserts:

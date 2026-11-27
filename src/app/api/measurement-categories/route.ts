@@ -33,7 +33,7 @@
  * - `version: 1` is an additive marker; the categorisation shape will
  *   evolve additively, never by reshuffling existing assignments.
  *
- * Locked contract per `.planning/RESPONSE-TO-IOS-TEAM-2026-05-16.md` §3 R1.
+ * Locked contract with the iOS client.
  */
 import type { NextRequest } from "next/server";
 

@@ -483,7 +483,7 @@ export default function LoginPage() {
 
             {(!oidcStatus?.only || linkPending) && (
               <>
-                {/* Phase A5 / B-mobile: bumped from default size (h-9, 36px)
+                {/* Mobile audit: bumped from default size (h-9, 36px)
                   to size="lg" so the login CTAs meet WCAG 2.5.5 (44px
                   minimum) on mobile. Login is the most-tapped flow on a
                   fresh install. */}

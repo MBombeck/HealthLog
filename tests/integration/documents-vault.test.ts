@@ -1,7 +1,7 @@
 /**
  * Document vault — end-to-end contract against a real Postgres.
  *
- * Covers the Wave-1 hardenings the unit mocks cannot pin:
+ * Covers the vault hardenings the unit mocks cannot pin:
  *
  *   1. Upload → binary2-encrypted row + plaintext sha256; /original
  *      round-trips the exact bytes with the class-correct headers.

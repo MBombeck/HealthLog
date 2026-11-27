@@ -156,7 +156,7 @@ function capCombinedText(
  * one OR MORE independent documents (S7): structure is defined only by the
  * marker pairs, and the model must name WHICH document a cited value comes from.
  *
- * Deviation from the Wave-1 plan's literal `["grounding", …]` contract list: the
+ * Why the shared `["grounding", …]` fragments are not reused: the
  * shared `grounding` fragment is worded for the Coach's health SNAPSHOT and the
  * user's OWN baseline — none of which exist here (D3: no snapshot). So the
  * grounding + extractive-citation + honest-absence rules are written here,

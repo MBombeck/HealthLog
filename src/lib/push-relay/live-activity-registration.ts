@@ -187,6 +187,25 @@ async function removeConsentAtRelay(apnsToken: string): Promise<void> {
   );
 }
 
+/**
+ * End the relay-started Activities ahead of a withdrawal, best effort. The
+ * withdrawal is the user's decision and is stored whatever happens here: a
+ * failed end is a warning on the request and an error line for the
+ * operator, never the request's failure. The Activities it leaves running
+ * stop on their own at the system's Live Activity lifetime.
+ */
+export async function endRelayStartedActivitiesBeforeWithdrawal(
+  deviceId: string,
+): Promise<void> {
+  try {
+    await endRelayStartedActivities(deviceId);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    getEvent()?.addWarning(`live_activity_withdraw_end_failed: ${message}`);
+    console.error("live_activity_withdraw_end_failed", { deviceId, message });
+  }
+}
+
 /** Write the checked Live Activity fields onto the device. */
 export async function applyLiveActivityFields(
   deviceId: string,
@@ -200,7 +219,7 @@ export async function applyLiveActivityFields(
   if (input.liveActivityWithdraw) {
     // What the relay started ends first, while the relay still holds the
     // consent: nothing updates it once the consent is gone.
-    await endRelayStartedActivities(deviceId);
+    await endRelayStartedActivitiesBeforeWithdrawal(deviceId);
     await prisma.device.update({
       where: { id: deviceId },
       data: { liveActivityConsentAt: null, liveActivityConsentVersion: null },

@@ -9,8 +9,7 @@
  * declaration: this route serves the caller's own account and keeps working
  * while the caller is acting as someone else. Which routes may say any of the
  * three is the single most security-sensitive list in the product, and it is a
- * judgement — argued in `.planning/2026-08-01-delegable-classification.md`, not
- * derived from anything a machine can check.
+ * judgement, not derived from anything a machine can check.
  *
  * v1.37.0 added the section column and the two newer literals. The column is
  * the one thing here a guard can do the least about, and the file says so at

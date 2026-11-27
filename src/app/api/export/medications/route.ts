@@ -1,7 +1,7 @@
 /**
  * GET /api/export/medications
  *
- * v1.4.16 phase B7. Per-type CSV download for the consolidated
+ * v1.4.16. Per-type CSV download for the consolidated
  * `/settings/export` UI. Always includes the medication list; appends
  * a `# Intake history` block when `?intake=true` (the default — the
  * UI toggle is checked by default so a stripped-down export is opt-in).

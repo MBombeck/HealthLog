@@ -1,6 +1,6 @@
 /**
  * APNs sender — joins the dispatcher cascade alongside Telegram, ntfy,
- * and Web Push (v1.4.23 Wave 3 / F4).
+ * and Web Push (v1.4.23).
  *
  * Mirrors the `web-push.ts` shape so the dispatcher can call it through
  * the same `SendOutcome`-returning contract:

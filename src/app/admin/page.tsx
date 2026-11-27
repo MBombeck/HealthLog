@@ -13,12 +13,12 @@ import { PushRelayQuestion } from "@/components/admin/push-relay-question";
 import { ServerSetupNotice } from "@/components/admin/server-setup-notice";
 
 /**
- * `/admin` — overview landing page. v1.4.15 (phase A2) replaces the
+ * `/admin` — overview landing page. v1.4.15 replaces the
  * previous status-card grid + section quick-jump menu with two
  * at-a-glance panes: a compact system snapshot and the 10 most recent
  * audit entries. The section navigation is already exposed in the
- * shell sidebar (and in the global app sidebar after Phase 4b), so the
- * old grid duplicated existing nav. See `.planning/phase-A2-report.md`.
+ * shell sidebar (and in the global app sidebar), so the
+ * old grid duplicated existing nav.
  */
 export default function AdminOverviewPage() {
   const { user } = useAuth();

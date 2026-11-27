@@ -7,8 +7,6 @@ server-side with `source = WHOOP` and `externalId = <resource-uuid>:<fieldTag>`
 (the field-tag disambiguates the several measurements derived from one WHOOP
 resource). WHOOP rows tag `deviceType = band`.
 
-Stance reference: `.planning/v1.11-build/epic-A-whoop-buildspec.md` §3.2 + §5.
-
 ## Recovery (`/v2/recovery`) — record `updated_at` is `measuredAt`
 
 | Source field                        | MeasurementType      | Unit    | fieldTag    | Note                                                                                       |
