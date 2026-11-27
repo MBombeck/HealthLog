@@ -10,7 +10,6 @@ import {
   FlaskConical,
   Loader2,
   Pencil,
-  Plus,
   Share2,
   Sparkles,
   Trash2,
@@ -20,12 +19,7 @@ import { Button } from "@/components/ui/button";
 import { DateField } from "@/components/ui/date-field";
 import { InlineAction } from "@/components/ui/inline-action";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { FieldGroup } from "@/components/ui/field-group";
 import {
   Select,
   SelectContent,
@@ -196,7 +190,7 @@ export function DocumentDetailFooter({
   );
 }
 
-/** Title, kind, filing date and the condition links, each saving on commit. */
+/** Title, kind and filing date, each saving on commit. */
 export function DocumentDetailFields({
   doc,
   detail,
@@ -213,15 +207,13 @@ export function DocumentDetailFields({
     setTitleDraft,
     commitTitle,
     patch,
-    episodes,
-    toggleEpisode,
   } = detail;
   return (
     <>
-      <div className="space-y-1.5">
-        <Label htmlFor="document-title-input">
-          {t("documents.detail.titleLabel")}
-        </Label>
+      <FieldGroup
+        htmlFor="document-title-input"
+        label={t("documents.detail.titleLabel")}
+      >
         {editingTitle ? (
           <Input
             id="document-title-input"
@@ -270,13 +262,13 @@ export function DocumentDetailFields({
             />
           </button>
         )}
-      </div>
+      </FieldGroup>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="document-kind-select">
-            {t("documents.detail.kindLabel")}
-          </Label>
+        <FieldGroup
+          htmlFor="document-kind-select"
+          label={t("documents.detail.kindLabel")}
+        >
           {/* Read-only rather than absent: the value IS the content
               a delegate came to read, and a form field that shows it
               without accepting a change is the honest rendering. */}
@@ -298,11 +290,11 @@ export function DocumentDetailFields({
               ))}
             </SelectContent>
           </Select>
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="document-date-field">
-            {t("documents.detail.dateLabel")}
-          </Label>
+        </FieldGroup>
+        <FieldGroup
+          htmlFor="document-date-field"
+          label={t("documents.detail.dateLabel")}
+        >
           <DateField
             id="document-date-field"
             disabled={!canManageDocuments}
@@ -314,71 +306,7 @@ export function DocumentDetailFields({
             }
             aria-label={t("documents.detail.dateLabel")}
           />
-        </div>
-      </div>
-
-      <div className="space-y-1.5">
-        <p className="text-sm leading-none font-medium">
-          {t("documents.detail.conditionsLabel")}
-        </p>
-        <div className="flex flex-wrap items-center gap-1.5">
-          {doc.conditionLinks.map((link) => (
-            <Link
-              key={link.episodeId}
-              href={`/illness/${link.episodeId}`}
-              className="bg-muted text-foreground hover:bg-muted/70 focus-visible:ring-ring/50 inline-flex max-w-48 items-center rounded-full px-2.5 py-1 text-xs focus-visible:ring-[3px] focus-visible:outline-none"
-            >
-              <span className="truncate">{link.name}</span>
-            </Link>
-          ))}
-          {doc.conditionLinks.length === 0 ? (
-            <span className="text-muted-foreground text-xs">
-              {t("documents.detail.noConditions")}
-            </span>
-          ) : null}
-          {canManageDocuments && (episodes.data?.length ?? 0) > 0 ? (
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 rounded-full px-2.5 text-xs"
-                >
-                  <Plus className="size-3" aria-hidden />
-                  {t("documents.detail.linkCondition")}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="start" className="w-64 p-2">
-                <ul className="max-h-56 space-y-0.5 overflow-y-auto overscroll-contain">
-                  {episodes.data?.map((episode) => {
-                    const linked = doc.conditionLinks.some(
-                      (l) => l.episodeId === episode.id,
-                    );
-                    return (
-                      <li key={episode.id}>
-                        <button
-                          type="button"
-                          onClick={() => toggleEpisode(episode.id)}
-                          className="hover:bg-muted focus-visible:ring-ring/50 flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm focus-visible:ring-[3px] focus-visible:outline-none"
-                          aria-pressed={linked}
-                        >
-                          <Check
-                            className={cn(
-                              "size-4 shrink-0",
-                              linked ? "opacity-100" : "opacity-0",
-                            )}
-                            aria-hidden
-                          />
-                          <span className="truncate">{episode.label}</span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </PopoverContent>
-            </Popover>
-          ) : null}
-        </div>
+        </FieldGroup>
       </div>
     </>
   );

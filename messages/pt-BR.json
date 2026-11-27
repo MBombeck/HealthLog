@@ -853,8 +853,6 @@
     "customizeTitle": "Layout do painel",
     "heroItemsDescription": "Escolha quais tipos de item podem aparecer nos Destaques de hoje.",
     "heroItemsNotificationNote": "As configurações de notificação são gerenciadas separadamente.",
-    "heroContentTitle": "O cartão principal mostra",
-    "heroContentScore": "Pontuação de saúde e resumo diário",
     "heroItems": {
       "coach_checkin": "Check-ins do Coach",
       "dose_window": "Doses de medicamentos",
@@ -936,7 +934,8 @@
       }
     },
     "quickAddSymptom": "Registrar sintoma",
-    "todayCardVisible": "Mostrar o cartão principal",
+    "scoreRowVisible": "Mostrar as pontuações",
+    "asksAlwaysShown": "Doses atrasadas e perguntas sobre o servidor aparecem sempre.",
     "recoveryKitBanner": {
       "title": "Guarde seu kit de recuperação",
       "body": "Sem cópias das chaves que este servidor usa, os dados dele não podem ser recuperados após uma reinstalação. Leva poucos minutos.",
@@ -948,8 +947,7 @@
     "quickAddSeizure": "Registrar crise",
     "morning": {
       "heroItemsTitle": "Para hoje",
-      "heroItemsDescription": "Escolha quais tipos de itens podem aparecer em “Para hoje”.",
-      "heroContentReminders": "Para hoje primeiro"
+      "heroItemsDescription": "Escolha quais tipos de itens podem aparecer em “Para hoje”."
     }
   },
   "measurements": {
@@ -1179,6 +1177,10 @@
     "shortTypeTimeInDaylight": "Tempo sob luz do dia",
     "shortTypeAudioExposureEvent": "Evento de escuta alta",
     "shortTypeRespiratoryRate": "Frequência respiratória",
+    "shortTypeHealthScore": "Pontuação de saúde",
+    "shortTypeRestingHeartRate": "FC em repouso",
+    "shortTypeBloodPressure": "Pressão",
+    "shortTypeBloodGlucose": "Glicemia",
     "shortTypeLeanBodyMass": "Massa corporal magra",
     "shortTypeWalkingHeartRateAverage": "Frequência cardíaca ao caminhar (média)",
     "shortTypeWalkingDoubleSupport": "Apoio duplo ao caminhar",
@@ -6050,7 +6052,7 @@
     "sections": {
       "account": {
         "title": "Conta",
-        "subtitle": "Seu perfil, identidade e dados de login."
+        "subtitle": "Seu perfil, a exibição e a configuração."
       },
       "integrations": {
         "title": "Integrações",
@@ -6859,10 +6861,8 @@
     },
     "profile": "Perfil",
     "language": "Idioma",
-    "languageDescription": "Escolha o idioma de exibição do aplicativo.",
     "timeFormat": {
       "title": "Formato de hora",
-      "description": "Controla se os horários são exibidos no relógio de 24 horas ou de 12 horas (AM/PM).",
       "auto": "Automático (idioma)",
       "h24": "24 horas",
       "h12": "12 horas (AM/PM)",
@@ -6871,7 +6871,6 @@
     },
     "dateFormat": {
       "title": "Formato de data",
-      "description": "Controla a ordem de dia, mês e ano quando as datas são exibidas.",
       "auto": "Automático (idioma)",
       "dmy": "DD.MM.AAAA",
       "mdy": "MM/DD/AAAA",
@@ -6909,14 +6908,13 @@
     },
     "avatar": {
       "title": "Foto do perfil",
-      "description": "Envie uma foto armazenada no seu próprio servidor.",
       "upload": "Enviar foto",
       "replace": "Substituir foto",
       "remove": "Remover",
       "removeTitle": "Remover a foto do perfil?",
       "removeBody": "A imagem é excluída do seu servidor e suas iniciais tomam seu lugar. Você precisaria do arquivo original para enviá-la novamente.",
       "removeConfirm": "Remover foto",
-      "hint": "JPEG, PNG ou WebP. Até 2 MB e 2048×2048 pixels.",
+      "hint": "JPEG, PNG ou WebP, até 2 MB e 2048×2048 pixels.",
       "uploaded": "Foto do perfil atualizada",
       "removed": "Foto do perfil removida",
       "invalidType": "Tipo de imagem não compatível. Use JPEG, PNG ou WebP.",
@@ -7378,7 +7376,6 @@
     "dashboard": {
       "units": {
         "title": "Unidades",
-        "description": "Escolha como distâncias e velocidades são exibidas nos gráficos e blocos.",
         "metric": "Métrico",
         "imperial": "Imperial",
         "saved": "Preferência de unidade salva",
@@ -7386,7 +7383,6 @@
       },
       "glucoseUnit": {
         "title": "Glicemia",
-        "description": "Em qual unidade as leituras de glicemia são exibidas.",
         "saved": "Unidade de glicose salva",
         "saveError": "Não foi possível salvar sua unidade de glicose."
       }
@@ -9719,6 +9715,8 @@
       },
       "question": {
         "title": "Usar o relay de push do HealthLog?",
+        "askTitle": "Notificações por relay de push?",
+        "askBody": "O conteúdo continua criptografado.",
         "body": "Notificações para o app da App Store, criptografadas de ponta a ponta: o relay só vê quando uma é enviada.",
         "yes": "Sim",
         "no": "Não",
@@ -9811,10 +9809,9 @@
       "notice": {
         "title": "Configurar este servidor",
         "body": "Cinco passos curtos sobre cadastros, notificações, IA e privacidade; você pode pular ou mudar qualquer um depois.",
+        "bodyShort": "Cinco passos curtos sobre cadastros, notificações, IA e privacidade.",
         "open": "Começar a configuração",
-        "dismiss": "Agora não",
-        "relayBody": "Lembretes no iPhone e a Wallet aguardam esta resposta, na página inicial da administração.",
-        "relayOpen": "Abrir administração"
+        "dismiss": "Agora não"
       },
       "accounts": {
         "title": "Quem pode usar este servidor",
@@ -13313,9 +13310,6 @@
       "titlePlaceholder": "Adicionar um título",
       "kindLabel": "Tipo",
       "dateLabel": "Data do documento",
-      "conditionsLabel": "Condições vinculadas",
-      "linkCondition": "Vincular",
-      "noConditions": "Não vinculado a uma condição",
       "previewUnavailable": "Sem pré-visualização embutida para este tipo de arquivo",
       "uploadedMeta": "Adicionado {date}, {size}",
       "importedFrom": "Importado de {system}",
@@ -13325,10 +13319,6 @@
       "sourceReportSchedule": "seu agendamento de relatórios",
       "share": "Compartilhar",
       "labValuesLink": "Ver {count, plural, one {# resultado laboratorial} other {# resultados laboratoriais}}",
-      "visitsLabel": "Pertence à consulta",
-      "vaccinationsLabel": "Vacinas",
-      "noVisitsToLink": "Nenhuma consulta registrada ainda.",
-      "noVaccinationsToLink": "Nenhuma vacina registrada ainda.",
       "saved": "Alterações salvas",
       "saving": "Salvando…",
       "previewNotOnDevice": "Este navegador não consegue exibir PDFs dentro da página"
@@ -13352,11 +13342,7 @@
       "linkVisit": "Arquivar contra consulta"
     },
     "episodeCard": {
-      "title": "Documentos",
-      "link": "Vincular",
-      "upload": "Enviar",
       "viewAll": "Mostrar tudo",
-      "emptyLine": "Nenhum documento vinculado a esta condição ainda.",
       "loadError": "Não foi possível carregar os documentos vinculados"
     },
     "linkPicker": {
@@ -13856,6 +13842,7 @@
       },
       "syncIssue": {
         "title": "Sincronização precisa de atenção",
+        "askTitle": "Sincronização parada",
         "body": "{integration} não está sincronizando. Reconecte para manter seus dados atualizados."
       },
       "sourceQuiet": {
@@ -13907,10 +13894,14 @@
     },
     "action": {
       "logDose": "Tomar",
+      "later": "Mais tarde",
+      "answer": "Responder",
+      "learnMore": "Mais",
+      "open": "Abrir",
+      "setUp": "Configurar",
+      "reconnectShort": "Reconectar",
       "reconnect": "Reconectar",
       "viewCheckups": "Ver prevenção",
-      "viewAppointment": "Ver consulta",
-      "viewAppointments": "Ver consultas",
       "checkinKeep": "Manter",
       "checkinAdjust": "Ajustar",
       "checkinLetGo": "Deixar ir",
@@ -13921,14 +13912,8 @@
       "openSource": "Abrir"
     },
     "today": {
-      "scoreLabel": "Pontuação de saúde",
-      "deltaVsBaseline": "{delta} vs. seu baseline",
-      "deltaFlat": "Em linha com seu baseline",
-      "sleepPending": "O sono de ontem à noite ainda não chegou, então a leitura de hoje é provisória.",
-      "worthALook": "Vale uma olhada",
-      "allClear": "Nada precisa da sua atenção hoje.",
-      "ringLink": "Abrir detalhes de {metric}",
-      "heading": "Hoje",
+      "deltaShort": "{delta} vs. baseline",
+      "deltaFlatShort": "No baseline",
       "steadyWeeksOne": "Estável por {count} semana",
       "steadyWeeksFew": "Estável por {count} semanas",
       "steadyWeeksOther": "Estável por {count} semanas",
@@ -14098,6 +14083,7 @@
       "latestNight": "Última noite: {date}",
       "vitalOutside": "{metric}: média de {value} hoje, usual {range}",
       "contributor": "{name}: {value} de 100",
+      "contributorShort": "{name} {value}/100",
       "readinessLast": "Último {score} em {date}",
       "source": {
         "recovery": {
@@ -14749,8 +14735,6 @@
       "choose": "A qual consulta isso pertence?"
     },
     "episodeCard": {
-      "title": "Consultas sobre isso",
-      "emptyLine": "Nenhuma consulta vinculada a esta condição ainda.",
       "add": "Adicionar uma consulta"
     },
     "dashboard": {
@@ -14837,7 +14821,7 @@
       }
     },
     "related": {
-      "title": "Relacionados",
+      "title": "Vínculos",
       "kind": {
         "labResult": "Resultado laboratorial",
         "encounter": "Consulta",
@@ -14859,6 +14843,10 @@
       },
       "nothingToOffer": "Nada para vincular ainda.",
       "saveError": "Não foi possível salvar o vínculo."
+    },
+    "row": {
+      "add": "Vincular",
+      "uploadDocument": "Enviar um documento"
     }
   },
   "bodySites": {

@@ -52,7 +52,7 @@ import {
   statusText,
   type StatusMessage,
 } from "./account-section-utils";
-import { AvatarSection } from "./avatar-section";
+import { AvatarField } from "./avatar-section";
 import { SetupCard } from "./setup-card";
 import { dateOfBirthKey } from "@/lib/tz/date-only";
 import { translateCodeOrNull } from "@/lib/i18n/translate-code";
@@ -387,16 +387,10 @@ export function AccountSection() {
   // `<SettingsSectionFrame>` in the route; this body is the profile cards.
   return (
     <div className="space-y-6">
-      {/* Profile card */}
-      {/* Profile photo card */}
-      <AvatarSection />
-
-      {/* v1.39 — the way back into the first-run experience: the setup
-          questions again, and the dashboard checklist this browser hid. */}
-      <SetupCard />
-
+      {/* Profile first, its photo the first line; setup comes last. */}
       <SettingsCard>
         <SettingsCardHeader icon={User} title={t("settings.profile")} />
+        <AvatarField />
         <form
           onSubmit={(event) => void handleSaveProfile(event)}
           className="space-y-4"
@@ -679,6 +673,8 @@ export function AccountSection() {
       </SettingsCard>
 
       <DisplayPreferencesCard isAuthenticated={isAuthenticated} />
+      {/* v1.39: the setup questions again, and the hidden checklist. */}
+      <SetupCard />
 
       {/* v1.18.0 — injection-site exclusions moved to the dedicated
           Medikamente settings section, where every medication-specific
@@ -757,9 +753,6 @@ export function DisplayPreferencesCard({
               </option>
             ))}
           </NativeSelect>
-          <p className="text-muted-foreground text-xs">
-            {t("settings.languageDescription")}
-          </p>
         </div>
         <UnitPreferenceSelect isAuthenticated={isAuthenticated} />
         <GlucoseUnitSelect isAuthenticated={isAuthenticated} />

@@ -11,7 +11,7 @@
  * kind icon `text-foreground size-5`, title in foreground (`text-sm
  * font-medium`, truncated), a muted meta line (date · size) with the real
  * filename on its own muted line below (full name on hover via `title`),
- * condition-tag pills, an attachment-class badge for download-only formats,
+ * condition chips that open the condition, an attachment-class badge for download-only formats,
  * and a selection checkbox that appears on hover / focus / while selected. The
  * whole card is clickable through an invisible overlay button; the checkbox
  * floats above it.
@@ -25,9 +25,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RecordLinkChip } from "@/components/links/record-links";
 import { useFencedObjectUrl } from "@/hooks/use-fenced-object-url";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
+import { recordHref } from "@/lib/links/hrefs";
 import type { InboundDocumentDto } from "@/lib/validations/inbound-documents";
 import { DOCUMENT_KIND_ICONS } from "./document-kind-meta";
 import type { UploadQueueItem } from "./use-document-upload";
@@ -275,14 +277,10 @@ export function DocumentCard({
         processing ||
         justIndexed ? (
           <div className="mt-auto flex flex-wrap items-center gap-1.5 pt-1">
-            {document.conditionLinks.map((link) => (
-              <span
-                key={link.episodeId}
-                className="bg-muted text-foreground inline-flex max-w-40 items-center rounded-full px-2 py-0.5 text-xs"
-              >
-                <span className="truncate">{link.name}</span>
-              </span>
-            ))}
+            <ConditionChips
+              links={document.conditionLinks}
+              tabIndex={tabIndex}
+            />
             {document.servingClass === "attachment" ? (
               <Badge
                 variant="outline"
@@ -393,6 +391,33 @@ export function DocumentCard({
       ) : null}
     </Card>
   );
+}
+
+/**
+ * The same chip as the detail sheet's link row: it opens the condition,
+ * above the whole-card button, and follows the grid's roving tab stop like
+ * the day link.
+ */
+function ConditionChips({
+  links,
+  tabIndex,
+}: {
+  links: InboundDocumentDto["conditionLinks"];
+  tabIndex: number;
+}) {
+  return links.map((link) => (
+    <RecordLinkChip
+      key={link.episodeId}
+      chip={{
+        kind: "conditionEpisode",
+        id: link.episodeId,
+        label: link.name,
+        href: recordHref("illness", link.episodeId),
+      }}
+      tabIndex={tabIndex}
+      className="relative z-10 max-w-48"
+    />
+  ));
 }
 
 /** SVG progress ring for the in-flight upload card (0..1). */

@@ -853,8 +853,6 @@
     "customizeTitle": "Dashboardindeling",
     "heroItemsDescription": "Kies welke soorten items in Hoogtepunten van vandaag kunnen verschijnen.",
     "heroItemsNotificationNote": "Meldingsinstellingen worden apart beheerd.",
-    "heroContentTitle": "Bovenste kaart toont",
-    "heroContentScore": "Gezondheidsscore en dagoverzicht",
     "heroItems": {
       "coach_checkin": "Check-ins van de Coach",
       "dose_window": "Medicatiedoses",
@@ -936,7 +934,8 @@
       }
     },
     "quickAddSymptom": "Symptoom vastleggen",
-    "todayCardVisible": "Bovenste kaart tonen",
+    "scoreRowVisible": "Scores tonen",
+    "asksAlwaysShown": "Te late doses en vragen over de server verschijnen altijd.",
     "recoveryKitBanner": {
       "title": "Bewaar je herstelkit",
       "body": "Zonder kopieën van de sleutels die deze server gebruikt, kunnen de gegevens na een herinstallatie niet worden hersteld. Het kost een paar minuten.",
@@ -948,8 +947,7 @@
     "quickAddSeizure": "Aanval vastleggen",
     "morning": {
       "heroItemsTitle": "Vandaag te doen",
-      "heroItemsDescription": "Kies welke soorten items in “Vandaag te doen” kunnen verschijnen.",
-      "heroContentReminders": "Eerst “Vandaag te doen”"
+      "heroItemsDescription": "Kies welke soorten items in “Vandaag te doen” kunnen verschijnen."
     }
   },
   "measurements": {
@@ -1179,6 +1177,10 @@
     "shortTypeTimeInDaylight": "Tijd in daglicht",
     "shortTypeAudioExposureEvent": "Melding hard geluid",
     "shortTypeRespiratoryRate": "Ademfrequentie",
+    "shortTypeHealthScore": "Gezondheid",
+    "shortTypeRestingHeartRate": "Rusthartslag",
+    "shortTypeBloodPressure": "Bloeddruk",
+    "shortTypeBloodGlucose": "Glucose",
     "shortTypeLeanBodyMass": "Magere massa",
     "shortTypeWalkingHeartRateAverage": "Wandelhartslag",
     "shortTypeWalkingDoubleSupport": "Dubbele steun",
@@ -6050,7 +6052,7 @@
     "sections": {
       "account": {
         "title": "Account",
-        "subtitle": "Je profiel, identiteit en inloggegevens."
+        "subtitle": "Je profiel, weergave en inrichting."
       },
       "integrations": {
         "title": "Koppelingen",
@@ -6859,10 +6861,8 @@
     },
     "profile": "Profiel",
     "language": "Taal",
-    "languageDescription": "Kies de weergavetaal van de applicatie.",
     "timeFormat": {
       "title": "Tijdnotatie",
-      "description": "Bepaalt of tijden worden weergegeven in de 24-uursnotatie of de 12-uursnotatie (AM/PM).",
       "auto": "Automatisch (taal)",
       "h24": "24-uurs",
       "h12": "12-uurs (AM/PM)",
@@ -6871,7 +6871,6 @@
     },
     "dateFormat": {
       "title": "Datumnotatie",
-      "description": "Bepaalt de volgorde van dag, maand en jaar wanneer datums worden weergegeven.",
       "auto": "Automatisch (taal)",
       "dmy": "DD.MM.JJJJ",
       "mdy": "MM/DD/JJJJ",
@@ -6909,14 +6908,13 @@
     },
     "avatar": {
       "title": "Profielfoto",
-      "description": "Upload een foto die op je eigen server wordt opgeslagen.",
       "upload": "Foto uploaden",
       "replace": "Foto vervangen",
       "remove": "Verwijderen",
       "removeTitle": "Profielfoto verwijderen?",
       "removeBody": "De afbeelding wordt van je server verwijderd en je initialen nemen haar plaats in. Om haar opnieuw te uploaden heb je het originele bestand nodig.",
       "removeConfirm": "Foto verwijderen",
-      "hint": "JPEG, PNG of WebP. Maximaal 2 MB en 2048×2048 pixels.",
+      "hint": "JPEG, PNG of WebP, maximaal 2 MB en 2048×2048 pixels.",
       "uploaded": "Profielfoto bijgewerkt",
       "removed": "Profielfoto verwijderd",
       "invalidType": "Niet-ondersteund afbeeldingstype. Gebruik JPEG, PNG of WebP.",
@@ -7378,7 +7376,6 @@
     "dashboard": {
       "units": {
         "title": "Eenheden",
-        "description": "Kies hoe afstanden en snelheden in grafieken en tegels worden weergegeven.",
         "metric": "Metrisch",
         "imperial": "Imperiaal",
         "saved": "Voorkeur voor eenheden opgeslagen",
@@ -7386,7 +7383,6 @@
       },
       "glucoseUnit": {
         "title": "Bloedglucose",
-        "description": "In welke eenheid bloedglucosemetingen worden weergegeven.",
         "saved": "Glucose-eenheid opgeslagen",
         "saveError": "Je glucose-eenheid kon niet worden opgeslagen."
       }
@@ -9719,6 +9715,8 @@
       },
       "question": {
         "title": "De HealthLog-pushrelay gebruiken?",
+        "askTitle": "Meldingen via pushrelay?",
+        "askBody": "De inhoud blijft versleuteld.",
         "body": "Meldingen voor de app uit de App Store, end-to-end versleuteld: de relay ziet alleen wanneer er een wordt verstuurd.",
         "yes": "Ja",
         "no": "Nee",
@@ -9811,10 +9809,9 @@
       "notice": {
         "title": "Deze server inrichten",
         "body": "Vijf korte stappen over aanmeldingen, meldingen, AI en privacy; elke stap kun je overslaan of later wijzigen.",
+        "bodyShort": "Vijf korte stappen over aanmeldingen, meldingen, AI en privacy.",
         "open": "Inrichting starten",
-        "dismiss": "Niet nu",
-        "relayBody": "Herinneringen op de iPhone en Wallet wachten op dit antwoord, op de beheerstartpagina.",
-        "relayOpen": "Beheer openen"
+        "dismiss": "Niet nu"
       },
       "accounts": {
         "title": "Wie deze server kan gebruiken",
@@ -13313,9 +13310,6 @@
       "titlePlaceholder": "Titel toevoegen",
       "kindLabel": "Soort",
       "dateLabel": "Documentdatum",
-      "conditionsLabel": "Gekoppelde aandoeningen",
-      "linkCondition": "Koppelen",
-      "noConditions": "Niet gekoppeld aan een aandoening",
       "previewUnavailable": "Geen voorbeeld beschikbaar voor dit bestandstype",
       "uploadedMeta": "Toegevoegd op {date}, {size}",
       "importedFrom": "Geïmporteerd uit {system}",
@@ -13325,10 +13319,6 @@
       "sourceReportSchedule": "het rapportschema",
       "share": "Delen",
       "labValuesLink": "{count, plural, one {# labuitslag} other {# labuitslagen}} bekijken",
-      "visitsLabel": "Hoort bij bezoek",
-      "vaccinationsLabel": "Vaccinaties",
-      "noVisitsToLink": "Nog geen bezoeken vastgelegd.",
-      "noVaccinationsToLink": "Nog geen vaccinaties vastgelegd.",
       "saved": "Wijzigingen opgeslagen",
       "saving": "Opslaan…",
       "previewNotOnDevice": "Deze browser kan pdf's niet in de pagina tonen"
@@ -13352,11 +13342,7 @@
       "linkVisit": "Aan bezoek koppelen"
     },
     "episodeCard": {
-      "title": "Documenten",
-      "link": "Koppelen",
-      "upload": "Uploaden",
       "viewAll": "Alles tonen",
-      "emptyLine": "Nog geen documenten aan deze aandoening gekoppeld.",
       "loadError": "De gekoppelde documenten konden niet worden geladen"
     },
     "linkPicker": {
@@ -13856,6 +13842,7 @@
       },
       "syncIssue": {
         "title": "Synchronisatie vraagt aandacht",
+        "askTitle": "Synchronisatie gestopt",
         "body": "{integration} synchroniseert niet. Maak opnieuw verbinding om je gegevens actueel te houden."
       },
       "sourceQuiet": {
@@ -13907,10 +13894,14 @@
     },
     "action": {
       "logDose": "Innemen",
+      "later": "Later",
+      "answer": "Antwoorden",
+      "learnMore": "Meer",
+      "open": "Openen",
+      "setUp": "Instellen",
+      "reconnectShort": "Verbinden",
       "reconnect": "Opnieuw verbinden",
       "viewCheckups": "Controles bekijken",
-      "viewAppointment": "Bezoek bekijken",
-      "viewAppointments": "Bezoeken bekijken",
       "checkinKeep": "Aanhouden",
       "checkinAdjust": "Aanpassen",
       "checkinLetGo": "Loslaten",
@@ -13921,14 +13912,8 @@
       "openSource": "Openen"
     },
     "today": {
-      "scoreLabel": "Gezondheidsscore",
-      "deltaVsBaseline": "{delta} t.o.v. je basislijn",
-      "deltaFlat": "In lijn met je basislijn",
-      "sleepPending": "De slaap van afgelopen nacht is nog niet binnen, dus het beeld van vandaag is voorlopig.",
-      "worthALook": "Het bekijken waard",
-      "allClear": "Er vraagt vandaag niets om je aandacht.",
-      "ringLink": "Details van {metric} openen",
-      "heading": "Vandaag",
+      "deltaShort": "{delta} t.o.v. basislijn",
+      "deltaFlatShort": "Op basislijn",
       "steadyWeeksOne": "Al {count} week stabiel",
       "steadyWeeksFew": "Al {count} weken stabiel",
       "steadyWeeksOther": "Al {count} weken stabiel",
@@ -14098,6 +14083,7 @@
       "latestNight": "Laatste nacht: {date}",
       "vitalOutside": "{metric}: vandaag gemiddeld {value}, gebruikelijk {range}",
       "contributor": "{name}: {value} van 100",
+      "contributorShort": "{name} {value}/100",
       "readinessLast": "Laatst {score} op {date}",
       "source": {
         "recovery": {
@@ -14749,8 +14735,6 @@
       "choose": "Bij welk bezoek hoort dit?"
     },
     "episodeCard": {
-      "title": "Bezoeken hierover",
-      "emptyLine": "Nog geen bezoek aan deze aandoening gekoppeld.",
       "add": "Bezoek toevoegen"
     },
     "dashboard": {
@@ -14837,7 +14821,7 @@
       }
     },
     "related": {
-      "title": "Gerelateerd",
+      "title": "Koppelingen",
       "kind": {
         "labResult": "Labuitslag",
         "encounter": "Bezoek",
@@ -14859,6 +14843,10 @@
       },
       "nothingToOffer": "Nog niets om te koppelen.",
       "saveError": "De koppeling kon niet worden opgeslagen."
+    },
+    "row": {
+      "add": "Koppelen",
+      "uploadDocument": "Document uploaden"
     }
   },
   "bodySites": {
