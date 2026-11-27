@@ -248,6 +248,12 @@ const PINNED_AFFORDANCES: Record<
   // The copy tick on a result table: shown only after the clipboard write
   // resolved, so it reports a copy that happened; nothing is written to the
   // record.
+  // Not a write outcome: the mark beside today's value in the usual-range
+  // read-out says the value sits inside its range, beside the up/down marks
+  // for above and below. It reports a reading's place, never a write.
+  "src/components/insights/derived/coach-read-strip.tsx": {
+    "text-success": 1,
+  },
   "src/components/insights/coach-panel/copy-table-button.tsx": {
     "text-success": 1,
   },

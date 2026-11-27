@@ -1,6 +1,7 @@
 /**
  * The blood-pressure time-of-day card in a real browser (#1331): the server's
- * numbers rendered as given, the narrowing control as a keyboard radiogroup,
+ * numbers rendered as given, the narrowing control (in the chart's header) as
+ * a keyboard radiogroup,
  * and the narrowed part in the address bar, so it survives a reload and a
  * shared link while the whole day keeps a bare URL.
  */
@@ -94,22 +95,38 @@ async function mount(search = "") {
 }
 
 describe("BpTimeOfDayCard", () => {
-  it("renders the server's figures for the chart's range", async () => {
-    const { screen, net } = await mount();
+  it("renders the server's figures for the chart's range, the hours on the buttons", async () => {
+    const { screen, net, radio } = await mount();
     await expect.element(screen.getByText("140/90")).toBeVisible();
     await expect.element(screen.getByText("131/82")).toBeVisible();
-    await expect.element(screen.getByText("Too few readings")).toBeVisible();
-    await expect.element(screen.getByText("Pulse 72 bpm")).toBeVisible();
+    // A part below the floor is a dash; the reason is its hover and its
+    // accessible text, not a line on the card.
+    const cell = (key: string) =>
+      document.querySelector(
+        `[data-slot="bp-time-of-day-values"] [data-key="${key}"]`,
+      );
+    expect(cell("midday")?.getAttribute("title")).toBe("Too few readings");
+    // No counts, pulse, difference or explanation on the card.
+    expect(screen.getByText("Pulse 72 bpm").elements()).toHaveLength(0);
+    expect(screen.getByText(/Morning minus evening/).elements()).toHaveLength(
+      0,
+    );
+    expect(
+      document.querySelector('[data-slot="bp-time-of-day-info"]'),
+    ).toBeNull();
+    // Each part's hours are its button's tooltip and description.
     await expect
-      .element(screen.getByText("Morning minus evening: +9/+8 mmHg."))
-      .toBeVisible();
+      .element(radio("Morning"))
+      .toHaveAttribute("title", "04:00–11:59");
     await expect
-      .element(
-        screen.getByText(
-          "Morning 04:00–11:59, midday 12:00–17:59, evening 18:00–03:59, in your time zone.",
-        ),
-      )
-      .toBeVisible();
+      .element(radio("Evening"))
+      .toHaveAttribute("title", "18:00–03:59");
+    // The whole day emphasises no value.
+    expect(
+      document.querySelectorAll(
+        '[data-slot="bp-time-of-day-values"] [data-selected]',
+      ),
+    ).toHaveLength(0);
     // The chart's persisted 90-day tab decides the window.
     await expect
       .poll(() =>
@@ -120,11 +137,20 @@ describe("BpTimeOfDayCard", () => {
       .toContain("/api/measurements/blood-pressure/time-of-day?days=90");
   });
 
-  it("opens on the part the address names", async () => {
+  it("opens on the part the address names, its value emphasised", async () => {
     const { screen, radio } = await mount("?partOfDay=evening");
     await expect
       .element(radio("Evening"))
       .toHaveAttribute("aria-checked", "true");
+    await expect
+      .poll(() =>
+        document
+          .querySelector(
+            '[data-slot="bp-time-of-day-values"] [data-key="evening"]',
+          )
+          ?.getAttribute("data-selected"),
+      )
+      .toBe("true");
     await expect
       .element(screen.getByTestId("chart-part"))
       .toHaveTextContent("evening");
@@ -167,10 +193,13 @@ describe("BpTimeOfDayCard", () => {
     await expect.poll(currentSearch).toBe("?partOfDay=evening");
   });
 
-  it("names the control for assistive technology", async () => {
+  it("names the control for assistive technology, with no caption on screen", async () => {
     const { screen } = await mount();
     await expect
       .element(screen.getByRole("radiogroup", { name: "Show in the chart" }))
       .toBeVisible();
+    // The group's name is for assistive tech only: the card carries no
+    // "Show in the chart" caption any more.
+    expect(screen.getByText("Show in the chart").elements()).toHaveLength(0);
   });
 });

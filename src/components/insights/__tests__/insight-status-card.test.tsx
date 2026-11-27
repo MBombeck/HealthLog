@@ -141,22 +141,18 @@ describe("<InsightStatusCard>", () => {
     expect(html).not.toContain('data-slot="assessment-show-more"');
   });
 
-  it("renders the structured skeleton (v1.4.37) when loading instead of a centred spinner", () => {
+  it("shows no card while loading, only a status for assistive tech", () => {
     const html = render(
       <InsightStatusCard {...baseProps} text={null} loading />,
     );
-    // The skeleton mounts the same icon dot, title bar, prose lines,
-    // and footer that the loaded card paints so the loading state
-    // previews the final geometry instead of pinning the card to a
-    // single centred spinner row. The aria-busy + sr-only label
-    // preserve the accessible "loading" semantics for assistive
-    // tech.
+    // No skeleton card at the foot of the page: a status the reader's
+    // assistive tech announces, and nothing on screen.
     expect(html).toContain('aria-busy="true"');
     expect(html).toContain('data-testid="insight-status-card-loading"');
+    expect(html).toContain("sr-only");
     expect(html).toContain("Loading");
-    // The classic Loader2 + visible "common.loading" copy retired so
-    // we do not double-paint the announcement.
-    expect(html).not.toContain("animate-spin");
+    expect(html).not.toContain('data-slot="skeleton"');
+    expect(html).not.toContain('data-slot="card"');
   });
 
   it("keeps loading, preparing, empty, and populated states distinct with stable compact geometry", () => {
@@ -179,7 +175,10 @@ describe("<InsightStatusCard>", () => {
     expect(empty).toContain("No assessment yet.");
     expect(populated).toContain('data-slot="insight-assessment"');
 
-    for (const html of [loading, preparing, empty]) {
+    // Loading and preparing paint no card; a queued generation is one line.
+    expect(preparing).not.toContain('data-slot="card"');
+    expect(preparing).toContain("Preparing");
+    for (const html of [empty]) {
       expect(html).toContain("gap-2");
       expect(html).toContain("py-3");
       expect(html).toContain("md:py-4");
