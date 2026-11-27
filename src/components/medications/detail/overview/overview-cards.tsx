@@ -231,17 +231,19 @@ export function useTodayDoses(medicationId: string, enabled: boolean) {
     () =>
       (Array.isArray(data) ? data : [])
         .filter((row) => row.medicationId === medicationId)
-        .map((row) => ({
-          key: row.id,
-          slotAt: row.slotInstant,
-          takenAt: row.takenAt,
-          state:
-            row.state === "upcoming"
-              ? "pending"
-              : row.state === "taken" && row.takenLate
-                ? "taken_late"
-                : row.state,
-        }))
+        .map(
+          (row): TodayDose => ({
+            key: row.id,
+            slotAt: row.slotInstant,
+            takenAt: row.takenAt,
+            state:
+              row.state === "upcoming"
+                ? "pending"
+                : row.state === "taken" && row.takenLate
+                  ? "taken_late"
+                  : row.state,
+          }),
+        )
         .sort((a, b) =>
           (a.slotAt ?? a.takenAt ?? "").localeCompare(
             b.slotAt ?? b.takenAt ?? "",
