@@ -43,6 +43,10 @@ import {
   runWithGoogleHealthStop,
 } from "@/lib/google-health/budget";
 import { reportJobProgress } from "@/lib/jobs/job-observer";
+import {
+  backfillIncomplete,
+  withPageWalkLedger,
+} from "@/lib/integrations/page-walk";
 import { LANE_YIELD_DELAY_SECONDS, laneWanted } from "@/lib/jobs/heavy-lane";
 import { GOOGLE_HEALTH_COLLECTION_KEYS } from "@/lib/google-health/collection-keys";
 import { GOOGLE_HEALTH_BACKFILL_QUEUE } from "./google-health-backfill-queue";
@@ -172,8 +176,10 @@ export interface GoogleHealthBackfillPayload {
  * finished, an edge moved) is not a failure: it sends the next slice
  * (`slice + 1`) and returns `continued`, without the error line or the
  * queue's failure count. Only a slice that moved nothing throws, with what
- * each collection came to in the message, because that one is stuck: the
- * pg-boss retry and, after it, the next boot take it from there. The chain is
+ * each collection came to in the message and the collection's error as the
+ * cause, because that one is stuck: the drain's backoff after an outage
+ * (`integration-backfill-retry.ts`), the pg-boss retry otherwise, and after
+ * either the next boot take it from there. The chain is
  * capped at `GOOGLE_HEALTH_BACKFILL_MAX_SLICE`.
  *
  * What the slice did is annotated on the run's event as
@@ -255,27 +261,32 @@ export async function runGoogleHealthBackfillForUser(
   );
   const startedAt = Date.now();
   const {
-    result: { imported, failed, busy },
-    skipped,
-    advanced,
-    collections,
-    ended,
-  } = await runWithGoogleHealthBackfillResume(
-    userId,
-    done,
-    () =>
-      runWithGoogleHealthStop(
-        shouldStop,
-        () =>
-          syncUserGoogleHealth(userId, {
-            fullSync: true,
-            waitForLockMs: GOOGLE_HEALTH_SYNC_LOCK_WAIT_MS,
-          }),
-        budget,
-      ),
-    cursors,
-    edgeFilterUnsupported,
-    endedBefore,
+    result: {
+      result: { imported, failed, busy },
+      skipped,
+      advanced,
+      collections,
+      ended,
+    },
+    failure,
+  } = await withPageWalkLedger(() =>
+    runWithGoogleHealthBackfillResume(
+      userId,
+      done,
+      () =>
+        runWithGoogleHealthStop(
+          shouldStop,
+          () =>
+            syncUserGoogleHealth(userId, {
+              fullSync: true,
+              waitForLockMs: GOOGLE_HEALTH_SYNC_LOCK_WAIT_MS,
+            }),
+          budget,
+        ),
+      cursors,
+      edgeFilterUnsupported,
+      endedBefore,
+    ),
   );
 
   // `ended` is `endedBefore`, grown by this slice.
@@ -420,11 +431,13 @@ export async function runGoogleHealthBackfillForUser(
       // No follow-up could be queued; fall through to the retry path so the
       // work is not dropped.
     }
-    // Nothing moved in this slice: the backfill is stuck, not slow. Surface
-    // through the pg-boss retry path (retryLimit 3, backoff) with what each
-    // collection came to, so the log line says where it is stuck. If the
-    // failure parked the connection at error_reauth meanwhile, the next
-    // attempt takes the reauth return above instead of failing again.
+    // Nothing moved in this slice: the backfill is stuck, not slow. Throw
+    // with what each collection came to, so the log line says where it is
+    // stuck, and the collection's error as the cause: the drain sends the
+    // slice again after an outage (`integration-backfill-retry.ts`), anything
+    // else goes to the pg-boss retry. If the failure parked the connection at
+    // error_reauth meanwhile, the next attempt takes the reauth return above
+    // instead of failing again.
     annotate({
       action: {
         name: "google_health.backfill.stuck",
@@ -435,8 +448,9 @@ export async function runGoogleHealthBackfillForUser(
       .filter((c) => c.status !== "done")
       .map((c) => `${c.key}:${c.status}`)
       .join(",");
-    throw new Error(
+    throw backfillIncomplete(
       `google-health backfill incomplete for user ${userId} — marker not stamped (no progress in slice ${slice}${budget.stopReason ? `, stopped on ${budget.stopReason}` : ""}${where ? `; ${where}` : ""})`,
+      failure,
     );
   }
 

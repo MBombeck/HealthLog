@@ -33,6 +33,10 @@ import {
   runWithGoogleHealthHardFailLedger,
 } from "@/lib/google-health/sync-core";
 import { syncUserSleep } from "@/lib/google-health/sync-sleep";
+import {
+  backfillIncomplete,
+  withPageWalkLedger,
+} from "@/lib/integrations/page-walk";
 import { isGoogleHealthParked } from "@/lib/google-health/sync";
 import {
   GOOGLE_HEALTH_SYNC_LOCK_WAIT_MS,
@@ -58,7 +62,9 @@ export interface GoogleHealthSleepRepairPayload {
  * ambient hard-fail ledger (returning a count either way), so the repair runs
  * it inside its own ledger scope — the same mechanism `syncUserGoogleHealth`
  * uses for its cycle verdict — and stamps `sleepRepairedAt` ONLY on a clean
- * run. A hard fetch/write failure THROWS so pg-boss retries; a dead token
+ * run. A hard fetch/write failure THROWS with the collection's error as the
+ * cause, so the drain sends it again after an outage and pg-boss retries the
+ * rest (`integration-backfill-retry.ts`); a dead token
  * (parked connection, missing credentials, failed refresh) is NOT clean but
  * does not throw — retrying a dead grant burns the retry budget on the same
  * no-op. It returns WITHOUT stamping instead: the boot discovery re-enqueues
@@ -79,13 +85,15 @@ export async function runGoogleHealthSleepRepairForUser(
 
   // The repair re-reads the account's sleep, so it takes the account's lock
   // like every other run (`withGoogleHealthSyncLock`).
-  const run = await withGoogleHealthSyncLock(
-    userId,
-    () =>
-      runWithGoogleHealthHardFailLedger(() =>
-        syncUserSleep(userId, { deferRollup: false }),
-      ),
-    { waitMs: GOOGLE_HEALTH_SYNC_LOCK_WAIT_MS },
+  const { result: run, failure } = await withPageWalkLedger(() =>
+    withGoogleHealthSyncLock(
+      userId,
+      () =>
+        runWithGoogleHealthHardFailLedger(() =>
+          syncUserSleep(userId, { deferRollup: false }),
+        ),
+      { waitMs: GOOGLE_HEALTH_SYNC_LOCK_WAIT_MS },
+    ),
   );
   if (!run.ran) {
     throw new Error(
@@ -106,8 +114,9 @@ export async function runGoogleHealthSleepRepairForUser(
       });
       return { imported };
     }
-    throw new Error(
+    throw backfillIncomplete(
       `google-health sleep repair incomplete for user ${userId} (${failures.join(", ")}) — marker not stamped`,
+      failure,
     );
   }
 

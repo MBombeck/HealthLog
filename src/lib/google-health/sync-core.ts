@@ -39,6 +39,7 @@ import { dropImplausibleMeasurements } from "@/lib/measurements/plausibility-gat
 import { withoutFoldedSamples } from "@/lib/measurements/folded-window";
 import { emitInsertedMeasurementArrivals } from "@/lib/arrivals/measurement-emit";
 import { recordSyncFailure, type FailureKind } from "@/lib/integrations/status";
+import { noteBackfillFailure } from "@/lib/integrations/page-walk";
 import { collapseToTypeDayKeys } from "@/lib/rollups/measurement-rollups";
 import { afterProviderWrite } from "@/lib/integrations/sync-kit/after-write";
 import { type GoogleHealthResumePoint } from "./data-points";
@@ -896,6 +897,7 @@ export async function handleCollectionFetchError(
     return 0;
   }
   noteGoogleHealthOutcomeFailure("collection_failed");
+  noteBackfillFailure(err);
   await recordGoogleHealthSyncFailure(userId, err);
   getEvent()?.addWarning(
     `google-health ${resource} failed for ${userId}: ${err}`,
