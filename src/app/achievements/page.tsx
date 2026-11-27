@@ -1,10 +1,12 @@
 "use client";
 
+import { useId, useState } from "react";
 import {
   Activity,
   AlertTriangle,
   Bug,
   CalendarCheck,
+  Check,
   CalendarDays,
   FileText,
   Fingerprint,
@@ -13,7 +15,6 @@ import {
   Heart,
   KeyRound,
   Languages,
-  Lock,
   LogIn,
   Moon,
   Pill,
@@ -29,7 +30,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
+import { ListGroup, ListItem } from "@/components/ui/list-row";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageAuthGate } from "@/components/ui/page-auth-gate";
@@ -43,6 +44,7 @@ import {
   type AchievementProgress,
 } from "@/lib/gamification/achievements";
 import { TrendTile } from "@/components/ui/trend-tile";
+import { cn } from "@/lib/utils";
 
 const iconMap: Record<string, LucideIcon> = {
   Activity,
@@ -125,160 +127,124 @@ export function groupByCategory(
   }));
 }
 
-interface AchievementCardProps {
-  achievement: AchievementProgress;
-  t: ReturnType<typeof useTranslations>["t"];
-  tCount: ReturnType<typeof useTranslations>["tCount"];
-}
-
-function AchievementCard({ achievement, t, tCount }: AchievementCardProps) {
+/**
+ * One achievement as one row of its category's card (ui-standards §20):
+ * the icon, the title over one meta line, the progress on the right. A tap
+ * opens the row and shows what the achievement asks for, the count so far
+ * and its points. A locked row says so once, through its progress, rather
+ * than in a chip, a fraction and a percentage at once.
+ */
+function AchievementRow({ achievement }: { achievement: AchievementProgress }) {
+  const { t, tCount } = useTranslations();
   const fmt = useFormatters();
+  const [open, setOpen] = useState(false);
+  const detailId = useId();
   const i18n = { t, tCount };
   const Icon = iconMap[achievement.icon] ?? Star;
   const unlocked = achievement.unlocked;
-
-  // v1.4.18 — locked hidden achievements paint an opaque placeholder.
-  // Critically, the actual title / description / metric / target are
-  // never rendered to the DOM so the user can't peek into the source
-  // to learn the trigger. Once unlocked the real strings appear.
-  if (achievement.isHidden && !unlocked) {
-    return (
-      <div
-        data-slot="achievement-card-hidden"
-        aria-label={t("achievements.hiddenCard.ariaLabel")}
-        className="border-border bg-card/40 rounded-xl border p-3 opacity-70"
-      >
-        <div className="mb-2 flex items-start justify-between gap-2">
-          <div className="flex items-center gap-3">
-            <div className="bg-muted text-muted-foreground rounded-lg p-2">
-              <HelpCircle className="h-3.5 w-3.5" />
-            </div>
-            <div className="min-w-0">
-              <h3 className="text-sm font-semibold">
-                {t("achievements.hiddenCard.title")}
-              </h3>
-            </div>
-          </div>
-          <Badge variant="secondary" className="shrink-0">
-            <Lock className="mr-1 h-3 w-3" aria-hidden="true" />
-            {t("achievements.locked")}
-          </Badge>
-        </div>
-      </div>
-    );
-  }
+  const fraction = t("achievements.criterionHint", {
+    current: formatMetric(achievement.format, achievement.current, i18n),
+    target: formatMetric(achievement.format, achievement.target, i18n),
+  });
+  const points = t("achievements.pointsValue", { points: achievement.points });
 
   return (
-    <div
+    <ListItem
       data-slot={
-        unlocked ? "achievement-card-unlocked" : "achievement-card-locked"
+        unlocked ? "achievement-row-unlocked" : "achievement-row-locked"
       }
-      className={
-        unlocked
-          ? "border-primary/30 from-primary/8 to-primary/0 rounded-xl border bg-gradient-to-br p-3"
-          : "border-border bg-card/50 rounded-xl border p-3"
-      }
-    >
-      <div className="mb-2 flex items-start justify-between gap-2">
-        <div className="flex items-center gap-3">
-          <div
-            className={
-              unlocked
-                ? "bg-primary/15 text-primary rounded-lg p-2"
-                : "bg-muted text-muted-foreground rounded-lg p-2"
-            }
-          >
-            <Icon className="h-3.5 w-3.5" />
-          </div>
-          <div className="min-w-0">
-            <h3 className="text-sm font-semibold">{t(achievement.titleKey)}</h3>
-            <p className="text-muted-foreground text-xs">
-              {t(achievement.descriptionKey)}
-            </p>
-          </div>
-        </div>
-        <Badge
-          variant={unlocked ? "default" : "secondary"}
-          className="shrink-0"
-        >
-          {unlocked ? (
-            t("achievements.completed")
-          ) : (
-            <>
-              <Lock className="mr-1 h-3 w-3" aria-hidden="true" />
-              {t("achievements.locked")}
-            </>
+      onSelect={() => setOpen((v) => !v)}
+      expanded={open}
+      controls={detailId}
+      icon={
+        <span
+          className={cn(
+            "flex size-8 items-center justify-center rounded-lg",
+            unlocked
+              ? "bg-primary/10 text-primary"
+              : "bg-muted text-muted-foreground",
           )}
-        </Badge>
-      </div>
-
-      {!unlocked && (
-        <div className="mt-2 space-y-1.5">
-          <p className="text-muted-foreground text-xs">
-            {t("achievements.criterionHint", {
-              current: formatMetric(
-                achievement.format,
-                achievement.current,
-                i18n,
-              ),
-              target: formatMetric(
-                achievement.format,
-                achievement.target,
-                i18n,
-              ),
-            })}
-          </p>
-          {/* v1.4.33 — aria-label so the bar carries an accessible name. */}
-          <Progress
-            value={achievement.progressPercent}
-            className="h-1.5"
-            aria-label={t("achievements.criterionHint", {
-              current: formatMetric(
-                achievement.format,
-                achievement.current,
-                i18n,
-              ),
-              target: formatMetric(
-                achievement.format,
-                achievement.target,
-                i18n,
-              ),
-            })}
-          />
-        </div>
-      )}
-
-      <div className="text-muted-foreground mt-3 flex items-center justify-between text-xs">
-        <span className="font-medium">
-          {t("achievements.pointsValue", {
-            points: achievement.points,
-          })}
+        >
+          <Icon className="size-4" aria-hidden />
         </span>
-        {unlocked ? (
-          <span>
-            {achievement.completedAt
-              ? t("achievements.completedOn", {
-                  date: fmt.date(achievement.completedAt),
-                })
-              : t("achievements.goalReached")}
-          </span>
+      }
+      title={t(achievement.titleKey)}
+      meta={
+        unlocked
+          ? achievement.completedAt
+            ? t("achievements.completedOn", {
+                date: fmt.date(achievement.completedAt),
+              })
+            : t("achievements.goalReached")
+          : fraction
+      }
+      trailing={
+        unlocked ? (
+          <Check
+            className="text-primary size-4"
+            aria-label={t("achievements.completed")}
+          />
         ) : (
-          <span>
+          <span className="text-muted-foreground text-xs font-medium">
             {t("achievements.progressPercent", {
               percent: achievement.progressPercent,
             })}
           </span>
-        )}
-      </div>
-    </div>
+        )
+      }
+    >
+      {open ? (
+        <div
+          id={detailId}
+          data-slot="achievement-row-detail"
+          className="space-y-2 px-4 pb-3 pl-15 text-sm"
+        >
+          <p>{t(achievement.descriptionKey)}</p>
+          {unlocked ? null : (
+            <Progress
+              value={achievement.progressPercent}
+              className="h-1.5"
+              aria-label={fraction}
+            />
+          )}
+          <p className="text-muted-foreground text-xs">{points}</p>
+        </div>
+      ) : null}
+    </ListItem>
+  );
+}
+
+/**
+ * The hidden achievements not yet found, as one row. Their title,
+ * description, metric and target never reach the DOM, so the source gives
+ * nothing away; once one is unlocked it appears as an ordinary row.
+ */
+function HiddenRow({ count }: { count: number }) {
+  const { t } = useTranslations();
+  return (
+    <ListItem
+      data-slot="achievement-row-hidden"
+      aria-label={t("achievements.hiddenCard.ariaLabel")}
+      icon={
+        <span className="bg-muted text-muted-foreground flex size-8 items-center justify-center rounded-lg">
+          <HelpCircle className="size-4" aria-hidden />
+        </span>
+      }
+      title={t("achievements.hiddenCard.title")}
+      meta={t("achievements.hiddenCard.description")}
+      trailing={
+        <span className="text-muted-foreground text-xs font-medium">
+          {count}
+        </span>
+      }
+    />
   );
 }
 
 export default function AchievementsPage() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const { t, tCount } = useTranslations();
+  const { t } = useTranslations();
   const fmt = useFormatters();
-  const i18n = { t, tCount };
 
   // v1.18.0 — the achievements module gate. When the account has the
   // module turned off the whole page disappears: an empty state stands in
@@ -320,10 +286,7 @@ export default function AchievementsPage() {
   if (isError) {
     return (
       <div className="space-y-6">
-        <PageHeader
-          title={t("achievements.title")}
-          description={t("achievements.subtitle")}
-        />
+        <PageHeader title={t("achievements.title")} />
         <QueryErrorCard error={error} onRetry={() => refetch()} />
       </div>
     );
@@ -332,10 +295,6 @@ export default function AchievementsPage() {
   const summary = data?.summary;
   const achievements = data?.achievements ?? [];
   const grouped = groupByCategory(achievements);
-  const remainingUnlocks = Math.max(
-    0,
-    (summary?.totalCount ?? 0) - (summary?.unlockedCount ?? 0),
-  );
 
   return (
     <div className="space-y-6">
@@ -345,20 +304,38 @@ export default function AchievementsPage() {
             {t("achievements.title")}
           </span>
         }
-        description={t("achievements.subtitle")}
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <TrendTile className="min-h-34 justify-between">
-          <p className="text-muted-foreground text-sm">
-            {t("achievements.points")}
-          </p>
-          <p className="text-4xl leading-none font-bold md:text-5xl">
-            {fmt.integer(summary?.earnedPoints ?? 0)}
-            <span className="text-muted-foreground ml-2 text-base font-medium">
-              / {fmt.integer(summary?.totalPoints ?? 0)}
-            </span>
-          </p>
+      <section
+        data-slot="achievements-summary"
+        aria-label={t("achievements.title")}
+        className="space-y-2"
+      >
+        <TrendTile className="gap-3">
+          <dl className="grid grid-cols-2 gap-4">
+            <div>
+              <dt className="text-muted-foreground text-sm">
+                {t("achievements.points")}
+              </dt>
+              <dd className="text-3xl leading-none font-bold tabular-nums">
+                {fmt.integer(summary?.earnedPoints ?? 0)}
+                <span className="text-muted-foreground ml-1.5 text-sm font-medium">
+                  / {fmt.integer(summary?.totalPoints ?? 0)}
+                </span>
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground text-sm">
+                {t("achievements.unlocked")}
+              </dt>
+              <dd className="text-3xl leading-none font-bold tabular-nums">
+                {summary?.unlockedCount ?? 0}
+                <span className="text-muted-foreground ml-1.5 text-sm font-medium">
+                  / {summary?.totalCount ?? 0}
+                </span>
+              </dd>
+            </div>
+          </dl>
           <Progress
             value={
               summary?.totalPoints
@@ -369,72 +346,32 @@ export default function AchievementsPage() {
             aria-label={t("achievements.points")}
           />
         </TrendTile>
-        <TrendTile className="min-h-34 justify-between">
+        {summary && !summary.nextAchievement && summary.totalCount > 0 ? (
           <p className="text-muted-foreground text-sm">
-            {t("achievements.unlocked")}
+            {t("achievements.allCompleted")}
           </p>
-          <p className="text-4xl leading-none font-bold md:text-5xl">
-            {summary?.unlockedCount ?? 0}
-            <span className="text-muted-foreground ml-2 text-base font-medium">
-              / {summary?.totalCount ?? 0}
-            </span>
-          </p>
-          <p className="text-muted-foreground text-xs">
-            {t("achievements.remainingUnlocks", { count: remainingUnlocks })}
-          </p>
-        </TrendTile>
-        <TrendTile className="min-h-34 sm:col-span-2 lg:col-span-1">
-          <p className="text-muted-foreground text-sm">
+        ) : null}
+      </section>
+
+      {summary?.nextAchievement ? (
+        <section
+          aria-labelledby="achievements-next"
+          data-slot="achievements-next"
+          className="space-y-2"
+        >
+          <h2 id="achievements-next" className="text-sm font-semibold">
             {t("achievements.nextGoal")}
-          </p>
-          {summary?.nextAchievement ? (
-            <div className="mt-3 space-y-2">
-              <p className="text-base font-semibold">
-                {t(summary.nextAchievement.titleKey)}
-              </p>
-              <p className="text-muted-foreground text-xs">
-                {t(summary.nextAchievement.descriptionKey)}
-              </p>
-              <p className="text-muted-foreground text-xs leading-relaxed">
-                {t("achievements.nextProgressLabel")}:{" "}
-                {formatMetric(
-                  summary.nextAchievement.format,
-                  summary.nextAchievement.current,
-                  i18n,
-                )}{" "}
-                /{" "}
-                {formatMetric(
-                  summary.nextAchievement.format,
-                  summary.nextAchievement.target,
-                  i18n,
-                )}{" "}
-                ({summary.nextAchievement.progressPercent}%)
-              </p>
-              <p className="text-muted-foreground text-xs">
-                {t("achievements.pointsValue", {
-                  points: summary.nextAchievement.points,
-                })}
-              </p>
-            </div>
-          ) : (
-            <p className="mt-2 text-sm font-medium">
-              {t("achievements.allCompleted")}
-            </p>
-          )}
-          <Progress
-            value={summary?.nextAchievement?.progressPercent ?? 100}
-            className="mt-3 h-1.5"
-            aria-label={t("achievements.nextProgressLabel")}
-          />
-        </TrendTile>
-      </div>
+          </h2>
+          <ListGroup>
+            <AchievementRow achievement={summary.nextAchievement} />
+          </ListGroup>
+        </section>
+      ) : null}
 
       {grouped.length === 0 ? (
-        // v1.4.15: upgrade to the EmptyState primitive so the
-        // surface matches the rest of the app. Trophy icon makes the
-        // intent obvious before the user reads the copy. Reuses the
-        // existing `noneUnlockedYet` string to avoid C4 i18n churn.
         <EmptyState
+          variant="plain"
+          size="compact"
           icon={<Trophy className="size-6" />}
           title={t("achievements.noneUnlockedYet")}
         />
@@ -444,34 +381,36 @@ export default function AchievementsPage() {
             const unlockedInCategory = items.filter(
               (item) => item.unlocked,
             ).length;
+            const shown = items.filter(
+              (item) => !(item.isHidden && !item.unlocked),
+            );
+            const hiddenLocked = items.length - shown.length;
             return (
               <section
                 key={category}
                 aria-labelledby={`achievements-category-${category}`}
                 data-slot="achievements-category"
                 data-category={category}
+                className="space-y-2"
               >
-                <div className="mb-3 flex items-baseline justify-between gap-3">
-                  <h2
-                    id={`achievements-category-${category}`}
-                    className="text-base font-semibold tracking-tight"
-                  >
-                    {t(CATEGORY_LABEL_KEY[category])}
-                  </h2>
-                  <span className="text-muted-foreground text-xs tabular-nums">
+                <h2
+                  id={`achievements-category-${category}`}
+                  className="flex items-baseline gap-2 text-sm font-semibold"
+                >
+                  {t(CATEGORY_LABEL_KEY[category])}
+                  <span className="text-muted-foreground font-normal tabular-nums">
                     {unlockedInCategory} / {items.length}
                   </span>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {items.map((achievement) => (
-                    <AchievementCard
+                </h2>
+                <ListGroup>
+                  {shown.map((achievement) => (
+                    <AchievementRow
                       key={achievement.id}
                       achievement={achievement}
-                      t={t}
-                      tCount={tCount}
                     />
                   ))}
-                </div>
+                  {hiddenLocked > 0 ? <HiddenRow count={hiddenLocked} /> : null}
+                </ListGroup>
               </section>
             );
           })}
