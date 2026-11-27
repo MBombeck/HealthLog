@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import de from "../../../../messages/de.json";
@@ -54,6 +54,13 @@ vi.mock("@/hooks/use-chart-overlay-prefs", () => ({
     isSaving: false,
   }),
 }));
+
+// The chart pulls in Recharts and the chart kit. Transforming that graph cold
+// takes seconds on a loaded machine, so it happens once here, on a hook's
+// budget, instead of inside whichever test happens to run first.
+beforeAll(async () => {
+  await import("../health-chart");
+}, 60_000);
 
 describe("<HealthChart> — series names", () => {
   beforeEach(() => {

@@ -110,6 +110,11 @@ const renderHere = (data: Buffer) =>
     minInkRatio: raster.RASTER_MIN_INK_RATIO,
   });
 
+// Every test here renders real pages through pdf.js and Skia: CPU work that
+// takes well under a second alone and several on a loaded machine. The
+// budget is sized for that work rather than for a unit test.
+vi.setConfig({ testTimeout: 30_000 });
+
 describe("rasterizePdf font and decoder data (#1124)", () => {
   it("gives pdfjs its font, CMap and wasm directories and no system fonts", async () => {
     const result = await renderHere(fixture("fallback-fonts.pdf"));
