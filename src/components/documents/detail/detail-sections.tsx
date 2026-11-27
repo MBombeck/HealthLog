@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -9,7 +7,6 @@ import {
   ExternalLink,
   FlaskConical,
   Loader2,
-  Pencil,
   Share2,
   Sparkles,
   Trash2,
@@ -17,180 +14,172 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { DateField } from "@/components/ui/date-field";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { InlineAction } from "@/components/ui/inline-action";
 import { Input } from "@/components/ui/input";
-import { FieldGroup } from "@/components/ui/field-group";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { ListGroup, ListItem } from "@/components/ui/list-row";
+import { NativeSelect } from "@/components/ui/native-select";
 import { INBOUND_DOCUMENT_KINDS } from "@/lib/documents/inbound-constants";
-import { formatBytes } from "@/lib/format/bytes";
-import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { useTranslations } from "@/lib/i18n/context";
 import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
 import { cn } from "@/lib/utils";
-
-// Loaded on demand: only a managed profile's guardian ever opens it, and it
-// carries the Coach's bubble renderer.
-const DocumentChatSheet = dynamic(
-  () => import("../chat/document-chat-sheet").then((m) => m.DocumentChatSheet),
-  { ssr: false, loading: () => null },
-);
 import type {
   InboundDocumentDetailDto,
   InboundDocumentKindValue,
 } from "@/lib/validations/inbound-documents";
 
-import {
-  DocumentDownloadButton,
-  DocumentOpenInTabButton,
-} from "./original-file";
+import { DocumentDownloadButton, DocumentOpenInTabItem } from "./original-file";
 import type { DocumentDetail } from "./use-document-detail";
 
 /**
- * The sheet's footer. Delete sits bottom-left as a quiet text button (the
- * bottom-right slot reads as the confirm action, and a destructive control
- * there is a footgun); Coach, Share, open in a new tab and Download keep the
- * trailing edge, icon-only on phones so they never overflow at 360 px.
+ * The sheet's footer: one pair, Share (the owner's alone) and Download. The
+ * rest (the AI reads, the Coach, opening the original in a tab, Delete) is
+ * the "⋯" the sheet passes in, which `ActionPair` stands in the header.
  */
 export function DocumentDetailFooter({
+  doc,
+  detail,
+  menu,
+}: {
+  doc: InboundDocumentDetailDto;
+  detail: DocumentDetail;
+  /** The `ActionMenu`, or null when it would hold nothing. */
+  menu: React.ReactNode;
+}) {
+  const { t } = useTranslations();
+  const { ownsVault, setShareOpen, inlineSrc, inlineFailed } = detail;
+  return (
+    <>
+      {menu}
+      {ownsVault ? (
+        <Button
+          variant="outline"
+          onClick={() => setShareOpen(true)}
+          data-slot="document-share"
+        >
+          <Share2 className="size-4" aria-hidden />
+          {t("documents.detail.share")}
+        </Button>
+      ) : null}
+      <DocumentDownloadButton
+        documentId={doc.id}
+        filename={doc.filename}
+        readyUrl={inlineSrc}
+        unavailable={inlineFailed}
+        slot="document-download"
+      />
+    </>
+  );
+}
+
+/**
+ * The "⋯" entries that are not AI reads: the Coach about this page, the
+ * original in a new tab (types the browser draws itself), and Delete. A hook
+ * so the sheet knows whether the menu holds anything at all.
+ */
+export function useDocumentDetailMenuItems({
   doc,
   detail,
   aiEnabled,
   coachAvailable,
   onOpenChange,
+  onOpenChat,
 }: {
-  doc: InboundDocumentDetailDto;
+  doc: InboundDocumentDetailDto | null | undefined;
   detail: DocumentDetail;
   aiEnabled: boolean;
   coachAvailable: boolean;
   onOpenChange: (open: boolean) => void;
-}) {
+  /** Opens the document's own chat (a managed profile's guardian). */
+  onOpenChat: () => void;
+}): React.ReactNode[] {
   const { t } = useTranslations();
   // The vault's "Ask the Coach" opens the fenced conversation scoped to this
-  // document in the shared side drawer.
+  // document in the shared side drawer. `launch` is null inside somebody
+  // else's record (the shell mounts no drawer there).
   const launch = useCoachLaunch();
-  // #1403 — a managed profile's guardian has no Coach drawer (a shared record
-  // does not mount one), so the same question opens the document's own chat.
-  const [chatOpen, setChatOpen] = useState(false);
   const {
     canManageDocuments,
     ownsVault,
     setConfirmDeleteOpen,
     remove,
-    setShareOpen,
     inlineSrc,
     inlineFailed,
   } = detail;
-  return (
-    <div className="flex w-full items-center justify-between gap-2">
-      {/* Deleting is the owner's and a managed profile's guardian's;
-          inside an adult's record the sheet reads the document and offers
-          the download, and the leading slot simply has nothing in it.
-          Sharing stays the owner's alone. */}
-      {canManageDocuments ? (
-        <Button
-          variant="ghost"
-          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-          onClick={() => setConfirmDeleteOpen(true)}
-          disabled={remove.isPending}
-          data-slot="document-detail-delete"
-        >
-          <Trash2 className="size-4" aria-hidden />
-          {t("documents.detail.delete")}
-        </Button>
-      ) : (
-        <span />
-      )}
-      <div className="flex items-center gap-2">
-        {/* .x — `launch` is the one entry point that rendered
-            without asking whether a drawer exists to open. It is null
-            inside somebody else's record (the shell mounts no drawer
-            there), and `/documents` is a shared-record destination, so
-            this is the Coach button a delegate actually meets. */}
-        {aiEnabled && coachAvailable && launch ? (
-          // "Ask the Coach" opens the REAL
-          // coach conversation scoped to this document in the SIDE
-          // DRAWER (the maximize control there expands it to the full
-          // `/coach` page). Every doc turn still runs on the hardened
-          // fenced document endpoint (never the coach tool route) — only
-          // WHERE the conversation renders changed, not the send path.
-          // Close the detail sheet so the drawer owns the surface.
-          <Button
-            variant="outline"
-            onClick={() => {
-              onOpenChange(false);
-              launch.askCoach(null, undefined, false, doc.id);
-            }}
-            data-slot="document-chat-open"
-          >
-            <Sparkles className="size-4" aria-hidden />
-            <span className="sr-only sm:not-sr-only">
-              {t("documents.chat.openButton")}
-            </span>
-          </Button>
-        ) : aiEnabled &&
-          !launch &&
-          !ownsVault &&
-          canManageDocuments &&
-          doc.hasContentIndex ? (
-          <>
-            <Button
-              variant="outline"
-              onClick={() => setChatOpen(true)}
-              data-slot="document-chat-open"
-            >
-              <Sparkles className="size-4" aria-hidden />
-              <span className="sr-only sm:not-sr-only">
-                {t("documents.chat.openButton")}
-              </span>
-            </Button>
-            <DocumentChatSheet
-              documentId={doc.id}
-              title={doc.title ?? doc.filename ?? t("documents.card.untitled")}
-              open={chatOpen}
-              onOpenChange={setChatOpen}
-            />
-          </>
-        ) : null}
-        {ownsVault && (
-          <Button
-            variant="outline"
-            onClick={() => setShareOpen(true)}
-            data-slot="document-share"
-            aria-label={t("documents.detail.share")}
-          >
-            <Share2 className="size-4" aria-hidden />
-            <span className="hidden sm:inline">
-              {t("documents.detail.share")}
-            </span>
-          </Button>
-        )}
-        {/* A blob tab on a browser with no PDF viewer would only start the
-            same download the button beside it offers. */}
-        {detail.previewInline ? (
-          <DocumentOpenInTabButton
-            readyUrl={inlineSrc}
-            unavailable={inlineFailed}
-          />
-        ) : null}
-        <DocumentDownloadButton
-          documentId={doc.id}
-          filename={doc.filename}
-          readyUrl={inlineSrc}
-          unavailable={inlineFailed}
-          variant="outline"
-          slot="document-download"
-        />
-      </div>
-    </div>
-  );
+  const items: React.ReactNode[] = [];
+  if (!doc) return items;
+  if (aiEnabled && coachAvailable && launch) {
+    // Every doc turn runs on the fenced document endpoint, never the coach
+    // tool route; only where the conversation renders is the drawer. The
+    // sheet closes so the drawer owns the surface.
+    items.push(
+      <DropdownMenuItem
+        key="coach"
+        data-slot="document-chat-open"
+        onSelect={() => {
+          onOpenChange(false);
+          launch.askCoach(null, undefined, false, doc.id);
+        }}
+      >
+        <Sparkles aria-hidden />
+        {t("documents.chat.openButton")}
+      </DropdownMenuItem>,
+    );
+  } else if (
+    aiEnabled &&
+    !launch &&
+    !ownsVault &&
+    canManageDocuments &&
+    doc.hasContentIndex
+  ) {
+    // #1403: a managed profile's guardian has no Coach drawer, so the same
+    // question opens the document's own chat.
+    items.push(
+      <DropdownMenuItem
+        key="chat"
+        data-slot="document-chat-open"
+        onSelect={onOpenChat}
+      >
+        <Sparkles aria-hidden />
+        {t("documents.chat.openButton")}
+      </DropdownMenuItem>,
+    );
+  }
+  // A blob tab on a browser with no PDF viewer would only start the same
+  // download the footer offers.
+  if (detail.previewInline) {
+    items.push(
+      <DocumentOpenInTabItem
+        key="tab"
+        readyUrl={inlineSrc}
+        unavailable={inlineFailed}
+      />,
+    );
+  }
+  // Deleting is the owner's and a managed profile's guardian's.
+  if (canManageDocuments) {
+    items.push(
+      <DropdownMenuItem
+        key="delete"
+        variant="destructive"
+        data-slot="document-detail-delete"
+        disabled={remove.isPending}
+        onSelect={() => setConfirmDeleteOpen(true)}
+      >
+        <Trash2 aria-hidden />
+        {t("documents.detail.delete")}
+      </DropdownMenuItem>,
+    );
+  }
+  return items;
 }
 
-/** Title, kind and filing date, each saving on commit. */
+/**
+ * Title, kind and filing date as three rows of one card, each saving on
+ * commit. A tap on the title row turns it into the field; kind and date
+ * carry their control on the right.
+ */
 export function DocumentDetailFields({
   doc,
   detail,
@@ -208,13 +197,14 @@ export function DocumentDetailFields({
     commitTitle,
     patch,
   } = detail;
+  const titleText = doc.title ?? t("documents.detail.titlePlaceholder");
   return (
-    <>
-      <FieldGroup
-        htmlFor="document-title-input"
-        label={t("documents.detail.titleLabel")}
-      >
-        {editingTitle ? (
+    <ListGroup data-slot="document-detail-fields">
+      {editingTitle ? (
+        <li className="flex min-h-14 items-center gap-2.5 px-4 py-2">
+          <Label htmlFor="document-title-input" className="shrink-0">
+            {t("documents.detail.titleLabel")}
+          </Label>
           <Input
             id="document-title-input"
             autoFocus
@@ -228,75 +218,71 @@ export function DocumentDetailFields({
             maxLength={200}
             placeholder={t("documents.detail.titlePlaceholder")}
           />
-        ) : !canManageDocuments ? (
-          <p
-            id="document-title-input"
-            className={cn(
-              "min-h-10 px-3 py-2 text-sm",
-              doc.title === null && "text-muted-foreground",
-            )}
-          >
-            {doc.title ?? t("documents.detail.titlePlaceholder")}
-          </p>
-        ) : (
-          <button
-            type="button"
-            id="document-title-input"
-            onClick={() => {
-              setTitleDraft(doc.title ?? "");
-              setEditingTitle(true);
-            }}
-            className="border-input hover:bg-muted/50 focus-visible:border-input-focus flex min-h-10 w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-left text-sm focus-visible:outline-none"
-          >
+        </li>
+      ) : (
+        <ListItem
+          data-slot="document-detail-title-row"
+          title={t("documents.detail.titleLabel")}
+          actionLabel={`${t("documents.detail.titleLabel")}, ${titleText}`}
+          {...(canManageDocuments
+            ? {
+                onSelect: () => {
+                  setTitleDraft(doc.title ?? "");
+                  setEditingTitle(true);
+                },
+              }
+            : {})}
+          trailing={
             <span
+              title={titleText}
               className={cn(
-                "truncate",
+                "max-w-[55vw] truncate font-normal sm:max-w-sm",
                 doc.title === null && "text-muted-foreground",
               )}
             >
-              {doc.title ?? t("documents.detail.titlePlaceholder")}
+              {titleText}
             </span>
-            <Pencil
-              className="text-muted-foreground size-3.5 shrink-0"
-              aria-hidden
-            />
-          </button>
-        )}
-      </FieldGroup>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <FieldGroup
-          htmlFor="document-kind-select"
-          label={t("documents.detail.kindLabel")}
-        >
-          {/* Read-only rather than absent: the value IS the content
-              a delegate came to read, and a form field that shows it
-              without accepting a change is the honest rendering. */}
-          <Select
+          }
+        />
+      )}
+      {/* Read-only rather than absent for a delegate: the value IS the
+          content they came to read. */}
+      <ListItem
+        title={
+          <Label htmlFor="document-kind-select">
+            {t("documents.detail.kindLabel")}
+          </Label>
+        }
+        trailing={
+          <NativeSelect
+            id="document-kind-select"
             value={doc.kind}
             disabled={!canManageDocuments}
-            onValueChange={(value) =>
-              patch.mutate({ kind: value as InboundDocumentKindValue })
+            className="font-normal"
+            onChange={(e) =>
+              patch.mutate({
+                kind: e.target.value as InboundDocumentKindValue,
+              })
             }
           >
-            <SelectTrigger id="document-kind-select" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {INBOUND_DOCUMENT_KINDS.map((kind) => (
-                <SelectItem key={kind} value={kind}>
-                  {t(`documents.kind.${kind}`)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </FieldGroup>
-        <FieldGroup
-          htmlFor="document-date-field"
-          label={t("documents.detail.dateLabel")}
-        >
+            {INBOUND_DOCUMENT_KINDS.map((kind) => (
+              <option key={kind} value={kind}>
+                {t(`documents.kind.${kind}`)}
+              </option>
+            ))}
+          </NativeSelect>
+        }
+      />
+      <ListItem
+        title={
+          <Label htmlFor="document-date-field">
+            {t("documents.detail.dateLabel")}
+          </Label>
+        }
+        trailing={
           <DateField
             id="document-date-field"
+            className="w-40 font-normal"
             disabled={!canManageDocuments}
             value={doc.documentDate ?? ""}
             onChange={(value) =>
@@ -306,15 +292,15 @@ export function DocumentDetailFields({
             }
             aria-label={t("documents.detail.dateLabel")}
           />
-        </FieldGroup>
-      </div>
-    </>
+        }
+      />
+    </ListGroup>
   );
 }
 
 /**
- * The lab values read from this page, when Labs holds any, and the upload,
- * filename and import provenance meta lines.
+ * The lab values read from this page, when Labs holds any, and where an
+ * imported document came from.
  */
 export function DocumentDetailMeta({
   doc,
@@ -323,8 +309,7 @@ export function DocumentDetailMeta({
   doc: InboundDocumentDetailDto;
   detail: DocumentDetail;
 }) {
-  const { t, locale } = useTranslations();
-  const format = useFormatters();
+  const { t } = useTranslations();
   const { labsModuleEnabled, labFactCount, sourceSystemName } = detail;
   return (
     <>
@@ -338,21 +323,6 @@ export function DocumentDetailMeta({
           {t("documents.detail.labValuesLink", { count: labFactCount })}
           <ArrowRight className="size-3.5" aria-hidden="true" />
         </Link>
-      ) : null}
-
-      <p className="text-muted-foreground text-xs">
-        {t("documents.detail.uploadedMeta", {
-          date: format.date(doc.createdAt),
-          size: formatBytes(doc.byteSize, locale),
-        })}
-      </p>
-      {doc.filename ? (
-        <p
-          className="text-muted-foreground truncate text-xs"
-          title={doc.filename}
-        >
-          {doc.filename}
-        </p>
       ) : null}
 
       {/* Where an imported document came from (#1038). Meta, so

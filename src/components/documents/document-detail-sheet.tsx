@@ -4,9 +4,12 @@
  * Document detail on `ResponsiveSheet` (bottom sheet on phones, dialog on
  * desktop). Inline-class documents (PDF / browser-native images) preview
  * inline against the owner-scoped decrypt-and-serve route — skeleton first,
- * content on load, internal scroll only (`overscroll-contain`). Attachment-
- * class documents get NO fake preview: type glyph, filename, size, and a
- * prominent Download button.
+ * content on load, internal scroll only (`overscroll-contain`). Under it, or
+ * alone for a type with no preview, the file as one row: glyph, name, when it
+ * came in and its size.
+ *
+ * The footer is one pair, Share and Download; the AI reads, the Coach,
+ * opening the original in a tab and Delete share the "⋯" in the header.
  *
  * Metadata edits save on commit (title on Enter/blur, kind and filing date
  * on change, condition links on toggle — replace-set PATCH). A quiet status
@@ -15,12 +18,15 @@
  * as a QueryErrorCard.
  * Delete soft-deletes with an Undo toast (restore endpoint); a restore
  * refusal maps `meta.reason` (`purged`, `duplicateExists`) to translated
- * copy. A Share action in the footer opens the clinician share-link create
- * flow (shared `ShareLinkCreateForm`) with this document pre-attached.
+ * copy. Share opens the clinician share-link create flow (shared
+ * `ShareLinkCreateForm`) with this document pre-attached.
  */
+import { useState } from "react";
+import dynamic from "next/dynamic";
 import { X } from "lucide-react";
 
 import { DocumentReadingConsentPrompt } from "@/components/ai/document-reading-consent-prompt";
+import { ActionMenu } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-button";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
@@ -35,17 +41,31 @@ import {
   DocumentDetailFooter,
   DocumentDetailMeta,
   DocumentSaveStatus,
+  useDocumentDetailMenuItems,
 } from "./detail/detail-sections";
-import { DocumentPreviewFallback, InlinePreview } from "./detail/original-file";
-import { useDocumentDetail } from "./detail/use-document-detail";
+import { DocumentFileRow, InlinePreview } from "./detail/original-file";
+import {
+  useDocumentDetail,
+  type DocumentDetail,
+} from "./detail/use-document-detail";
 import { useDocumentDetailAi } from "./detail/use-document-detail-ai";
-import { DocumentAiSection } from "./document-ai-section";
+import {
+  DocumentAiSection,
+  useDocumentAiMenuItems,
+} from "./document-ai-section";
 import { DocumentEncounterSuggestion } from "./document-encounter-suggestion";
 import { DocumentFactsSection } from "./document-facts-review";
 import { DocumentRecordLinks } from "./document-record-links";
 import { DocumentShareSheet } from "./document-share-sheet";
 import { DocumentAiFailureNotes } from "./document-ai-failure-notes";
 import { DocumentSummaryBlock } from "./document-summary-block";
+
+// Loaded on demand: only a managed profile's guardian ever opens it, and it
+// carries the Coach's bubble renderer.
+const DocumentChatSheet = dynamic(
+  () => import("./chat/document-chat-sheet").then((m) => m.DocumentChatSheet),
+  { ssr: false, loading: () => null },
+);
 
 /** The grace window the delete confirmation names. */
 const GRACE = { days: DOCUMENT_PURGE_GRACE_DAYS };
@@ -92,9 +112,15 @@ export function DocumentDetailSheet({
     inlineSrc,
     inlineFailed,
   } = detail;
+  const ai = useDocumentDetailAi({
+    documentId,
+    open,
+    assistAvailable,
+    contentIndexEnabled,
+    detail,
+  });
   const {
     documentAi,
-    coach,
     capability,
     suggest,
     summary,
@@ -109,21 +135,18 @@ export function DocumentDetailSheet({
     aiEnabled,
     indexEnabled,
     autoReadEnabled,
-    runSuggest,
-    runSummary,
-    generateStoredSummary,
-    runIndex,
     applyTitle,
     applyKind,
     applyDate,
     suggestionKindLabel,
     suggestionDateLabel,
-  } = useDocumentDetailAi({
-    documentId,
-    open,
-    assistAvailable,
-    contentIndexEnabled,
+  } = ai;
+  const [chatOpen, setChatOpen] = useState(false);
+  const menu = useSheetMenu({
     detail,
+    ai,
+    onOpenChange,
+    onOpenChat: () => setChatOpen(true),
   });
 
   return (
@@ -152,13 +175,7 @@ export function DocumentDetailSheet({
         }
         footer={
           doc ? (
-            <DocumentDetailFooter
-              doc={doc}
-              detail={detail}
-              aiEnabled={aiEnabled}
-              coachAvailable={coach.available}
-              onOpenChange={onOpenChange}
-            />
+            <DocumentDetailFooter doc={doc} detail={detail} menu={menu} />
           ) : undefined
         }
       >
@@ -182,39 +199,34 @@ export function DocumentDetailSheet({
 
         {doc ? (
           <div className="space-y-6">
-            {previewInline ? (
-              <InlinePreview
-                src={inlineSrc}
-                failed={inlineFailed}
-                mimeType={doc.mimeType}
-                title={title}
-              />
-            ) : (
-              <DocumentPreviewFallback doc={doc} title={title} Icon={Icon} />
-            )}
+            <div className="space-y-3">
+              {previewInline ? (
+                <InlinePreview
+                  src={inlineSrc}
+                  failed={inlineFailed}
+                  mimeType={doc.mimeType}
+                  title={title}
+                />
+              ) : null}
+              <DocumentFileRow doc={doc} title={title} Icon={Icon} />
+            </div>
 
             <DocumentSummaryBlock
               summary={doc.summary}
-              // Writing a summary is the owner's or a guardian's, never a delegate's.
-              canGenerate={canManageDocuments}
               summaryState={doc.summaryState}
               generatedAtLabel={
                 doc.summaryGeneratedAt
                   ? format.date(doc.summaryGeneratedAt)
                   : null
               }
-              aiEnabled={aiEnabled}
-              isGenerating={storedSummary.isPending}
               runPhase={storedSummary.runPhase}
-              actionsDisabled={capability.isPending}
               failures={doc.aiFailures}
-              onGenerate={generateStoredSummary}
             />
             <DocumentAiFailureNotes
               failures={doc.aiFailures}
               canRetry={canManageDocuments && documentAi.available}
               retryPending={indexDoc.isPending}
-              onRetry={runIndex}
+              onRetry={ai.runIndex}
             />
 
             {detail.ownsVault && documentAi.reason === "consent_required" ? (
@@ -227,14 +239,10 @@ export function DocumentDetailSheet({
                 autoReadEnabled={autoReadEnabled}
                 indexEnabled={indexEnabled}
                 unavailableReason={capability.data?.reason ?? null}
-                actionsDisabled={capability.isPending}
-                onSuggest={runSuggest}
-                suggestPending={suggest.isPending}
                 suggestErrorKey={
                   suggest.isError ? aiErrorText(suggest.error) : null
                 }
-                onSummarise={runSummary}
-                summaryPending={summary.isPending || storedSummary.isPending}
+                summaryPending={summary.isPending}
                 suggestion={suggestion}
                 suggestionKindLabel={suggestionKindLabel}
                 suggestionDateLabel={suggestionDateLabel}
@@ -253,14 +261,11 @@ export function DocumentDetailSheet({
                   summary.reset();
                 }}
                 hasContentIndex={doc.hasContentIndex}
-                contentIndexSource={doc.contentIndexSource}
                 lastIndexOutcome={doc.lastIndexOutcome}
-                indexPending={indexDoc.isPending}
                 indexRunPhase={indexDoc.runPhase}
                 assistRunPhase={
                   suggest.isPending ? suggest.runPhase : summary.runPhase
                 }
-                onIndex={runIndex}
               />
             )}
 
@@ -327,6 +332,14 @@ export function DocumentDetailSheet({
         ) : null}
       </ResponsiveSheet>
 
+      {doc && chatOpen ? (
+        <DocumentChatSheet
+          documentId={doc.id}
+          title={title}
+          open={chatOpen}
+          onOpenChange={setChatOpen}
+        />
+      ) : null}
       {doc ? (
         <DocumentShareSheet
           open={shareOpen}
@@ -349,4 +362,55 @@ export function DocumentDetailSheet({
       ) : null}
     </>
   );
+}
+
+/**
+ * The sheet's one "⋯": the AI reads (the owner's or a guardian's, with a
+ * provider), then the Coach, the original in a new tab and Delete. Null when
+ * it would hold nothing.
+ */
+function useSheetMenu({
+  detail,
+  ai,
+  onOpenChange,
+  onOpenChat,
+}: {
+  detail: DocumentDetail;
+  ai: ReturnType<typeof useDocumentDetailAi>;
+  onOpenChange: (open: boolean) => void;
+  onOpenChat: () => void;
+}): React.ReactNode {
+  const { doc, canManageDocuments } = detail;
+  const aiItems = useDocumentAiMenuItems({
+    aiEnabled:
+      Boolean(doc) &&
+      canManageDocuments &&
+      ai.documentAi.available &&
+      ai.aiEnabled,
+    autoReadEnabled: ai.autoReadEnabled,
+    indexEnabled: ai.indexEnabled,
+    hasContentIndex: doc?.hasContentIndex ?? false,
+    contentIndexSource: doc?.contentIndexSource ?? null,
+    canSummarise: doc?.summaryState !== "PENDING",
+    actionsDisabled: ai.capability.isPending,
+    indexPending: ai.indexDoc.isPending,
+    suggestPending: ai.suggest.isPending,
+    summaryPending: ai.summary.isPending || ai.storedSummary.isPending,
+    onIndex: ai.runIndex,
+    onSuggest: ai.runSuggest,
+    onShowText: () => ai.runSummary("text"),
+    onSummarise: ai.generateStoredSummary,
+  });
+  const otherItems = useDocumentDetailMenuItems({
+    doc,
+    detail,
+    aiEnabled: ai.aiEnabled,
+    coachAvailable: ai.coach.available,
+    onOpenChange,
+    onOpenChat,
+  });
+  const items = [...aiItems, ...otherItems];
+  return items.length > 0 ? (
+    <ActionMenu slot="document-detail-more">{items}</ActionMenu>
+  ) : null;
 }

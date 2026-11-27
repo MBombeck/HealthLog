@@ -13264,11 +13264,8 @@
       "summary": {
         "title": "Podsumowanie",
         "pending": "Podsumowanie jest przygotowywane.",
-        "none": "Dla tego dokumentu nie wygenerowano jeszcze podsumowania.",
         "withheld": "Podsumowanie zostało wygenerowane, ale nie przeszło kontroli bezpieczeństwa, więc nie jest wyświetlane. Możesz spróbować ponownie lub przeczytać sam dokument.",
-        "unavailable": "Nie udało się wygenerować podsumowania dla tego dokumentu.",
-        "generate": "Wygeneruj podsumowanie",
-        "generating": "Generowanie…"
+        "unavailable": "Nie udało się wygenerować podsumowania dla tego dokumentu."
       },
       "index": {
         "outcome": {
@@ -13293,7 +13290,6 @@
       "titlePlaceholder": "Dodaj tytuł",
       "kindLabel": "Typ",
       "dateLabel": "Data dokumentu",
-      "previewUnavailable": "Brak podglądu dla tego typu pliku",
       "uploadedMeta": "Dodano {date}, {size}",
       "importedFrom": "Zaimportowano z: {system}",
       "importedFromWithId": "Zaimportowano z: {system}, ID {id}",
@@ -13303,8 +13299,7 @@
       "share": "Udostępnij",
       "labValuesLink": "Zobacz {count, plural, one {# wynik badania} few {# wyniki badań} many {# wyników badań} other {# wyniku badania}}",
       "saved": "Zmiany zapisane",
-      "saving": "Zapisywanie…",
-      "previewNotOnDevice": "Ta przeglądarka nie wyświetla plików PDF na stronie"
+      "saving": "Zapisywanie…"
     },
     "dropOverlay": {
       "title": "Upuść pliki, aby je przesłać",

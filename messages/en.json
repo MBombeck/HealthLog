@@ -13264,11 +13264,8 @@
       "summary": {
         "title": "Summary",
         "pending": "The summary is being prepared.",
-        "none": "No summary has been generated for this document yet.",
         "withheld": "A summary was generated but did not pass the safety check, so it is not shown. You can try again, or read the document itself.",
-        "unavailable": "No summary could be generated for this document.",
-        "generate": "Generate summary",
-        "generating": "Generating…"
+        "unavailable": "No summary could be generated for this document."
       },
       "index": {
         "outcome": {
@@ -13293,7 +13290,6 @@
       "titlePlaceholder": "Add a title",
       "kindLabel": "Type",
       "dateLabel": "Document date",
-      "previewUnavailable": "No inline preview for this file type",
       "uploadedMeta": "Added {date}, {size}",
       "importedFrom": "Imported from {system}",
       "importedFromWithId": "Imported from {system}, ID {id}",
@@ -13303,8 +13299,7 @@
       "share": "Share",
       "labValuesLink": "View {count, plural, one {# lab result} other {# lab results}}",
       "saved": "Changes saved",
-      "saving": "Saving…",
-      "previewNotOnDevice": "This browser cannot show PDFs inside the page"
+      "saving": "Saving…"
     },
     "dropOverlay": {
       "title": "Drop files to upload",

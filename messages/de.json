@@ -13264,11 +13264,8 @@
       "summary": {
         "title": "Zusammenfassung",
         "pending": "Die Zusammenfassung wird erstellt.",
-        "none": "Für dieses Dokument wurde noch keine Zusammenfassung erstellt.",
         "withheld": "Eine Zusammenfassung wurde erstellt, hat die Sicherheitsprüfung aber nicht bestanden und wird deshalb nicht angezeigt. Du kannst es erneut versuchen oder das Dokument selbst lesen.",
-        "unavailable": "Für dieses Dokument konnte keine Zusammenfassung erstellt werden.",
-        "generate": "Zusammenfassung erstellen",
-        "generating": "Wird erstellt…"
+        "unavailable": "Für dieses Dokument konnte keine Zusammenfassung erstellt werden."
       },
       "index": {
         "outcome": {
@@ -13293,7 +13290,6 @@
       "titlePlaceholder": "Titel hinzufügen",
       "kindLabel": "Typ",
       "dateLabel": "Dokumentdatum",
-      "previewUnavailable": "Keine Inline-Vorschau für diesen Dateityp",
       "uploadedMeta": "Hinzugefügt am {date}, {size}",
       "importedFrom": "Importiert aus {system}",
       "importedFromWithId": "Importiert aus {system}, ID {id}",
@@ -13303,8 +13299,7 @@
       "share": "Teilen",
       "labValuesLink": "{count, plural, one {# Laborwert} other {# Laborwerte}} ansehen",
       "saved": "Änderungen gespeichert",
-      "saving": "Wird gespeichert…",
-      "previewNotOnDevice": "Dieser Browser kann PDFs nicht in der Seite anzeigen"
+      "saving": "Wird gespeichert…"
     },
     "dropOverlay": {
       "title": "Zum Hochladen ablegen",

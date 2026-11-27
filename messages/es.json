@@ -13264,11 +13264,8 @@
       "summary": {
         "title": "Resumen",
         "pending": "Se está preparando el resumen.",
-        "none": "Todavía no se ha generado ningún resumen para este documento.",
         "withheld": "Se generó un resumen, pero no superó la comprobación de seguridad, así que no se muestra. Puedes intentarlo de nuevo o leer el documento.",
-        "unavailable": "No se pudo generar ningún resumen para este documento.",
-        "generate": "Generar resumen",
-        "generating": "Generando…"
+        "unavailable": "No se pudo generar ningún resumen para este documento."
       },
       "index": {
         "outcome": {
@@ -13293,7 +13290,6 @@
       "titlePlaceholder": "Añadir un título",
       "kindLabel": "Tipo",
       "dateLabel": "Fecha del documento",
-      "previewUnavailable": "Sin vista previa integrada para este tipo de archivo",
       "uploadedMeta": "Añadido el {date}, {size}",
       "importedFrom": "Importado de {system}",
       "importedFromWithId": "Importado de {system}, ID {id}",
@@ -13303,8 +13299,7 @@
       "share": "Compartir",
       "labValuesLink": "Ver {count, plural, one {# resultado de laboratorio} other {# resultados de laboratorio}}",
       "saved": "Cambios guardados",
-      "saving": "Guardando…",
-      "previewNotOnDevice": "Este navegador no puede mostrar PDF dentro de la página"
+      "saving": "Guardando…"
     },
     "dropOverlay": {
       "title": "Suelta los archivos para subirlos",

@@ -13264,11 +13264,8 @@
       "summary": {
         "title": "Résumé",
         "pending": "Le résumé est en cours de préparation.",
-        "none": "Aucun résumé n’a encore été généré pour ce document.",
         "withheld": "Un résumé a été généré mais n’a pas passé le contrôle de sécurité, il n’est donc pas affiché. Vous pouvez réessayer ou lire le document lui-même.",
-        "unavailable": "Aucun résumé n’a pu être généré pour ce document.",
-        "generate": "Générer le résumé",
-        "generating": "Génération…"
+        "unavailable": "Aucun résumé n’a pu être généré pour ce document."
       },
       "index": {
         "outcome": {
@@ -13293,7 +13290,6 @@
       "titlePlaceholder": "Ajouter un titre",
       "kindLabel": "Type",
       "dateLabel": "Date du document",
-      "previewUnavailable": "Pas d'aperçu intégré pour ce type de fichier",
       "uploadedMeta": "Ajouté le {date}, {size}",
       "importedFrom": "Importé depuis {system}",
       "importedFromWithId": "Importé depuis {system}, ID {id}",
@@ -13303,8 +13299,7 @@
       "share": "Partager",
       "labValuesLink": "Voir {count, plural, one {# résultat de laboratoire} other {# résultats de laboratoire}}",
       "saved": "Modifications enregistrées",
-      "saving": "Enregistrement…",
-      "previewNotOnDevice": "Ce navigateur ne peut pas afficher les PDF dans la page"
+      "saving": "Enregistrement…"
     },
     "dropOverlay": {
       "title": "Déposez les fichiers pour les téléverser",

@@ -13264,11 +13264,8 @@
       "summary": {
         "title": "Riepilogo",
         "pending": "Il riepilogo è in preparazione.",
-        "none": "Non è ancora stato generato alcun riepilogo per questo documento.",
         "withheld": "Un riepilogo è stato generato ma non ha superato il controllo di sicurezza, quindi non viene mostrato. Puoi riprovare o leggere il documento stesso.",
-        "unavailable": "Non è stato possibile generare un riepilogo per questo documento.",
-        "generate": "Genera riepilogo",
-        "generating": "Generazione…"
+        "unavailable": "Non è stato possibile generare un riepilogo per questo documento."
       },
       "index": {
         "outcome": {
@@ -13293,7 +13290,6 @@
       "titlePlaceholder": "Aggiungi un titolo",
       "kindLabel": "Tipo",
       "dateLabel": "Data del documento",
-      "previewUnavailable": "Nessuna anteprima integrata per questo tipo di file",
       "uploadedMeta": "Aggiunto il {date}, {size}",
       "importedFrom": "Importato da {system}",
       "importedFromWithId": "Importato da {system}, ID {id}",
@@ -13303,8 +13299,7 @@
       "share": "Condividi",
       "labValuesLink": "Vedi {count, plural, one {# risultato di laboratorio} other {# risultati di laboratorio}}",
       "saved": "Modifiche salvate",
-      "saving": "Salvataggio…",
-      "previewNotOnDevice": "Questo browser non può mostrare i PDF nella pagina"
+      "saving": "Salvataggio…"
     },
     "dropOverlay": {
       "title": "Rilascia i file per caricarli",

@@ -13264,11 +13264,8 @@
       "summary": {
         "title": "Samenvatting",
         "pending": "De samenvatting wordt voorbereid.",
-        "none": "Er is nog geen samenvatting voor dit document gemaakt.",
         "withheld": "Er is een samenvatting gemaakt, maar die kwam niet door de veiligheidscontrole en wordt daarom niet getoond. Je kunt het opnieuw proberen of het document zelf lezen.",
-        "unavailable": "Voor dit document kon geen samenvatting worden gemaakt.",
-        "generate": "Samenvatting genereren",
-        "generating": "Genereren…"
+        "unavailable": "Voor dit document kon geen samenvatting worden gemaakt."
       },
       "index": {
         "outcome": {
@@ -13293,7 +13290,6 @@
       "titlePlaceholder": "Titel toevoegen",
       "kindLabel": "Soort",
       "dateLabel": "Documentdatum",
-      "previewUnavailable": "Geen voorbeeld beschikbaar voor dit bestandstype",
       "uploadedMeta": "Toegevoegd op {date}, {size}",
       "importedFrom": "Geïmporteerd uit {system}",
       "importedFromWithId": "Geïmporteerd uit {system}, ID {id}",
@@ -13303,8 +13299,7 @@
       "share": "Delen",
       "labValuesLink": "{count, plural, one {# labuitslag} other {# labuitslagen}} bekijken",
       "saved": "Wijzigingen opgeslagen",
-      "saving": "Opslaan…",
-      "previewNotOnDevice": "Deze browser kan pdf's niet in de pagina tonen"
+      "saving": "Opslaan…"
     },
     "dropOverlay": {
       "title": "Zet bestanden neer om te uploaden",
