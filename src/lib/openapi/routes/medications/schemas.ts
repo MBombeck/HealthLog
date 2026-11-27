@@ -364,13 +364,13 @@ export const medicationResource = z
       .nullable()
       .optional()
       .describe(
-        "Present on the READ paths only — the list and single GET compute it; the create / update responses return the stored row and omit it. v1.7.0 server-computed next due instant across all the medication's schedules (earliest `nextOccurrenceAfter`). Read-only — computed, not stored. NULL when no schedule has an upcoming slot (paused, one-shot in the past, `endsOn` crossed, every schedule PRN). v1.16.4 — when an unresolved slot's anchor has passed but the catch-up band is still open (`anchor < now <= overdueEnd`, current schedule era), this carries THAT slot (a past instant) with `nextDueOverdue: true` instead of jumping to the next future slot. The list GET is cached 60 s, so a 60 s staleness is accepted.",
+        "Present on the READ paths only — the list and single GET compute it; the create / update responses return the stored row and omit it. v1.7.0 server-computed next due instant across all the medication's schedules (earliest `nextOccurrenceAfter`). Read-only — computed, not stored. NULL when no schedule has an upcoming slot (paused, one-shot in the past, `endsOn` crossed, every schedule PRN). v1.16.4 — when an unresolved slot's anchor has passed but the catch-up band is still open (`anchor < now <= overdueEnd`, current schedule era), this carries THAT slot (a past instant) instead of jumping to the next future slot; `nextDueOverdue` says whether it is still `due` or already `overdue`. The list GET is cached 60 s, so a 60 s staleness is accepted.",
       ),
     nextDueOverdue: z
       .boolean()
       .optional()
       .describe(
-        "Present on the READ paths only, alongside `nextDueAt`. v1.16.4 — true when `nextDueAt` is an OPEN overdue slot: its anchor has passed, `now` is still inside the slot's catch-up band, and no taken / skipped / auto-missed row resolves it. False for a regular future next-due (and when `nextDueAt` is null). Read-only — computed, not stored.",
+        "Present on the READ paths only, alongside `nextDueAt`. True when the dose at `nextDueAt` is `overdue` by the dose resolver: past its on-time window (`currentDose.overdueSince`), before its miss cutoff, with no taken / skipped / auto-missed row on it. The same rule as `currentDose.state`, the today rows and the dashboard's `medsToday.nextDueOverdue`. Since v1.50.0 it stays false while the slot is inside its on-time window even after its anchor has passed (that dose reads `due` everywhere); it used to turn true at the anchor. False for a future next-due and when `nextDueAt` is null. Read-only — computed, not stored.",
       ),
     startsOn: isoDateTime()
       .nullable()

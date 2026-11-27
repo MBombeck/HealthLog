@@ -75,6 +75,7 @@
 
 - A record's links read as one row. A document's conditions, visits and doses, and the lab results and medications it relates to, were separate blocks, each with a line of its own when empty ("Not linked to any condition"). They are now one "Links" row of chips, and a chip opens its record; with nothing linked there is no row. Whoever may file the document gets one Link button that asks which kind first, and unlinking is unticking in the same list. Visits, lab results, medications and conditions use the same row, and a condition's documents, visits and related records share one tile instead of three. A condition chip on a vault card opens the condition.
 - Settings > Account opens with the profile. The photo is the first line of the profile card, with its two actions and one line of limits, instead of a card of its own; Display follows, and Setup comes last. The language, units, glucose unit, time and date format fields lost the sentence under each that repeated their name.
+- A dose is overdue only once its on-time window has closed, everywhere. The medication list and detail called a dose overdue the minute its scheduled time passed, while its current dose, the today list and the Live Activity still called it due for the rest of the on-time window. `nextDueOverdue` now follows the same rule as `currentDose.state`: the slot it names stays the same, and it turns true only past the on-time window.
 
 ### Fixed
 
