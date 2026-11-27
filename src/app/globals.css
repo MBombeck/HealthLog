@@ -429,12 +429,15 @@ body,
   /* Band fallback (anatomy detail view, no per-metric hue). Lands on the
      app-wide --success green (#50fa7b) so a "green" ring matches the green
      of every positive signal / trend delta beside it. */
-  --ring-green-from: #35d76a;
-  --ring-green-to: #50fa7b;
-  --ring-yellow-from: #e0a050;
-  --ring-yellow-to: #e8ab5c;
-  --ring-red-from: #e0594a;
-  --ring-red-to: #e96456;
+  /* Score rings (concept B): the arc is the band, nothing else. A blueish
+     green, a warm amber and a muted red, tuned for red-green colour
+     blindness (smallest step ΔE 25), with a neutral ink for a score without
+     a band and the track beneath. Words stay "low", never "bad". */
+  --score-good: #3cc291;
+  --score-fair: #ecb354;
+  --score-low: #dc5f58;
+  --score-ink: #c9cdd8;
+  --score-track: #44475a;
 
   /*
    * v1.15.0 — cycle-phase ring hues (Dracula dark). Four calm, distinct
@@ -574,12 +577,12 @@ body,
   --tile-strain: #b0277d;
   /* Light: lands on the light-theme --success (#14720a) so ring green
      matches every positive signal beside it. */
-  --ring-green-from: #12760f;
-  --ring-green-to: #14720a;
-  --ring-yellow-from: #b27018;
-  --ring-yellow-to: #bd7a1e;
-  --ring-red-from: #b22e20;
-  --ring-red-to: #ba3526;
+  /* Score rings (concept B), light: see the dark set. */
+  --score-good: #0b7f5c;
+  --score-fair: #b9770a;
+  --score-low: #b23a32;
+  --score-ink: #4b4658;
+  --score-track: #dad8de;
 
   /*
    * v1.15.0 — cycle-phase ring hues (Alucard light). Deeper + more

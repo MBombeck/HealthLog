@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useId, useState } from "react";
+import { Suspense, useId, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { Activity, ChevronDown, Plus } from "lucide-react";
@@ -36,6 +36,7 @@ import type { StripEntry } from "./strip-tiles";
  * empty state once it resolved with nothing to show.
  */
 export function DashboardTiles({
+  lead,
   stripEntries,
   chartEntries,
   chartsRevealed,
@@ -46,6 +47,11 @@ export function DashboardTiles({
   canAddMeasurement,
   onAddMeasurement,
 }: {
+  /**
+   * What sits right above the strip on its gutter (the asks and the score
+   * row), so the three rows read as one grid.
+   */
+  lead?: ReactNode;
   stripEntries: StripEntry[];
   chartEntries: ChartEntry[];
   chartsRevealed: boolean;
@@ -89,7 +95,7 @@ export function DashboardTiles({
   // Nothing to show once the read resolved: one call to action into the
   // quick-entry sheet instead of an empty strip under the header.
   if (showEmptyState) {
-    return (
+    const empty = (
       <EmptyState
         icon={<Activity className="size-6" />}
         title={t("dashboard.emptyTitle")}
@@ -104,36 +110,47 @@ export function DashboardTiles({
         }
       />
     );
+    return lead ? (
+      <div className="flex flex-col gap-3">
+        {lead}
+        {empty}
+      </div>
+    ) : (
+      empty
+    );
   }
 
   return (
     <>
-      {showTileStripSkeleton && (
-        <div className="@container">
-          <div
-            // Mirrors the real grid track, keyed off the configured tile
-            // count: a strip trimmed to three tiles shows three silhouettes.
-            aria-hidden="true"
-            data-slot="dashboard-tile-strip-skeleton"
-            className={ONE_ROW_GRID}
-          >
-            {Array.from({ length: configuredTileCount }).map((_, idx) => (
-              <TrendCardSkeleton
-                key={`tile-skeleton-${idx}`}
-                className={expanded ? undefined : oneRowItemClass(idx)}
-              />
-            ))}
+      <div className="flex flex-col gap-3 empty:hidden">
+        {lead}
+        {showTileStripSkeleton && (
+          <div className="@container">
+            <div
+              // Mirrors the real grid track, keyed off the configured tile
+              // count: a strip trimmed to three tiles shows three silhouettes.
+              aria-hidden="true"
+              data-slot="dashboard-tile-strip-skeleton"
+              className={ONE_ROW_GRID}
+            >
+              {Array.from({ length: configuredTileCount }).map((_, idx) => (
+                <TrendCardSkeleton
+                  key={`tile-skeleton-${idx}`}
+                  className={expanded ? undefined : oneRowItemClass(idx)}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      )}
-      {stripEntries.length > 0 && (
-        <TileStrip
-          entries={stripEntries}
-          expanded={expanded}
-          onToggle={toggleExpanded}
-          user={user}
-        />
-      )}
+        )}
+        {stripEntries.length > 0 && (
+          <TileStrip
+            entries={stripEntries}
+            expanded={expanded}
+            onToggle={toggleExpanded}
+            user={user}
+          />
+        )}
+      </div>
       {chartEntries.map((entry) => (
         <div key={entry.id} className="space-y-2">
           {/* A boundary per chart, so each paints on its own instead of the

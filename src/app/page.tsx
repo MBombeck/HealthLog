@@ -142,7 +142,11 @@ export default async function DashboardPage() {
       // `undefined`. The two Today reads run side by side, not one after the
       // other, so the budget covers both at once.
       const now = new Date();
-      const digestWork = loadDailyDigest(user, now).catch(() => undefined);
+      // The digest route's own answer for a browser session on its own
+      // record, which this is: the admin question is asked here too.
+      const digestWork = loadDailyDigest(user, now, { adminAsks: true }).catch(
+        () => undefined,
+      );
       const morningWork = loadDailyMorning(user, now).catch(() => undefined);
       const seriesWork =
         batchWindow && seriesTypes.length > 0

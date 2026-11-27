@@ -107,6 +107,7 @@ import {
   loadQuietSources,
   wordQuietSources,
 } from "@/lib/sync-stall/quiet-load";
+import { readAskInputs } from "@/lib/daily/asks-load";
 
 /** Integration states that mean "your action is needed to keep data flowing". */
 const SYNC_ISSUE_STATES = ["error_reauth", "parked"] as const;
@@ -551,6 +552,8 @@ export interface DailyDigestLoadOptions {
    * resolves the locale from the request.
    */
   locale?: Locale;
+  /** Ask the admin question; a browser session on its own record only. */
+  adminAsks?: boolean;
 }
 
 /**
@@ -618,7 +621,7 @@ export async function loadDailyDigest(
     resolveJobLocale(user.locale),
     prisma.integrationStatus.findMany({
       where: { userId: user.id, state: { in: [...SYNC_ISSUE_STATES] } },
-      select: { integration: true, state: true },
+      select: { integration: true, state: true, lastSuccessAt: true },
       orderBy: { integration: "asc" },
     }),
     loadQuietSources(user.id, now).catch(() => []),
@@ -781,8 +784,8 @@ export async function loadDailyDigest(
   });
 
   const syncIssues: DailyDigestSyncIssue[] = syncRows.map((row) => ({
-    integration: row.integration,
-    state: row.state,
+    ...row,
+    lastSuccessAt: row.lastSuccessAt?.toISOString() ?? null,
   }));
 
   /**
@@ -834,11 +837,9 @@ export async function loadDailyDigest(
         }
       : null;
 
-  // The freshest ECG recording (device verdict + recordedAt only). The
-  // builder decides "new" and gates on the `insights` module. An ECG row only
-  // ever carries an AFib-screening verdict; the shared enum's other members
-  // (walking-steadiness / event codes) never apply, so anything else maps to
-  // null rather than leaking into the device-verdict copy.
+  // The builder decides "new" and gates on `insights`. An ECG row carries
+  // only an AFib-screening verdict; any other member of the shared enum maps
+  // to null rather than leaking into the device-verdict copy.
   const verdict = ecgRow?.rhythmClassification;
   const latestEcg: DailyDigestEcg | null = ecgRow
     ? {
@@ -911,9 +912,7 @@ export async function loadDailyDigest(
     preventiveDue.push({ label, longCycle });
   }
 
-  // Group the two figures for the reader. `Intl.NumberFormat` is the only
-  // locale-aware step the digest takes on its own; everything else it renders
-  // comes through the translator.
+  // Grouped figures: the one locale-aware step outside the translator.
   const groupNumber = new Intl.NumberFormat(resolvedLocale).format;
   const sameTimeItem: DailyDigestSameTime | null = sameTime
     ? {
@@ -969,6 +968,7 @@ export async function loadDailyDigest(
         toTodayVital(v, units, resolvedLocale, t),
       ),
       cycle,
+      ...(await readAskInputs(user, snapshot.medsToday, now, options)),
       scoreSteady: score
         ? steadyRun(scoreDays ?? [], todayLocalDate, {
             value: score.value,

@@ -170,9 +170,10 @@ export function RingTile({
         <div className="flex shrink-0 flex-col items-center gap-1.5">
           <ScoreRing
             score={score}
-            band={band}
+            // No band word means the score carries no band (a device's own
+            // value): the ring is drawn neutral, never in a guessed band.
+            band={bandWord === null ? null : band}
             size="tile"
-            hue={hue}
             animate={animate}
             delayMs={delayMs}
             baseline={baseline}
