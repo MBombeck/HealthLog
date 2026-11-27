@@ -102,7 +102,11 @@ async function seed() {
   }> = [];
   for (let n = 1; n <= NIGHTS; n++) {
     // Bedtime 22:00 UTC the evening before day `today - n + 1`.
-    let cursor = today.getTime() - n * DAY_MS + 22 * 60 * MIN_MS;
+    // Each night starts at 22:00 UTC two or more days back and ends near
+    // 05:30 UTC the next morning: a night starting yesterday evening would
+    // still be running for the first hours of a UTC day, and a run then saw
+    // only its finished half.
+    let cursor = today.getTime() - (n + 1) * DAY_MS + 22 * 60 * MIN_MS;
     const bedStart = cursor;
     for (const seg of NIGHT) {
       cursor += seg.minutes * MIN_MS;
