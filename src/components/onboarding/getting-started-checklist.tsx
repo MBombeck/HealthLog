@@ -40,8 +40,20 @@ import {
   CHECKLIST_DISMISSED_ITEMS_KEY as DISMISSED_ITEMS_KEY,
   CHECKLIST_EXPANDED_KEY as EXPANDED_KEY,
 } from "@/lib/onboarding/checklist-storage";
-import { sourceConnectionLabelKey } from "@/lib/onboarding/first-result-config";
-import { isBrowserConnectableSource } from "@/lib/onboarding/wizard-steps";
+import {
+  isBrowserConnectableSource,
+  type BrowserConnectableSource,
+} from "@/lib/onboarding/wizard-steps";
+
+/**
+ * The name a source's connection goes by: Fitbit connects through Google
+ * Health since its own API closed; every other source by its own name.
+ */
+function sourceConnectionLabelKey(source: BrowserConnectableSource): string {
+  return source === "fitbit"
+    ? "settings.googleHealth"
+    : `onboarding.flow.sources.options.${source}`;
+}
 import { GettingStartedExtras } from "@/components/onboarding/getting-started-extras";
 
 const ITEM_ICONS: Record<ChecklistItemId, LucideIcon> = {

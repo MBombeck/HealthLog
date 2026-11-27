@@ -1,73 +1,168 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Monitor, Smartphone } from "lucide-react";
 
+import { ChoiceChip } from "@/components/onboarding/choice-chip";
+import { usePersonFlow } from "@/components/onboarding/person-flow";
 import { StepActions } from "@/components/onboarding/step-actions";
 import { StepHeading } from "@/components/onboarding/step-heading";
 import {
-  screenHref,
-  useOnboardingAnswer,
-} from "@/components/onboarding/use-onboarding-flow";
-import { NotificationChannelsPanel } from "@/components/settings/integrations/notification-channels-panel";
-import { localizedApiError } from "@/lib/api/localized-error";
-import { showErrorToast } from "@/lib/errors/error-toast";
+  subscribeOutcomeMessage,
+  subscribeThisBrowser,
+} from "@/components/settings/web-push-card";
+import { useAuth } from "@/hooks/use-auth";
+import { useMounted } from "@/hooks/use-mounted";
+import { apiFetchRaw } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
 import type { OnboardingStateDto } from "@/lib/onboarding/needs";
-import { nextScreen, previousScreen } from "@/lib/onboarding/wizard-steps";
+import type { PersonSegmentId } from "@/lib/onboarding/wizard-steps";
+import { queryKeys } from "@/lib/query-keys";
+
+type Channel = "app" | "browser";
+
+/** This browser can take a push: the API exists and it is not blocked. */
+function browserCanPush(): boolean {
+  return (
+    "serviceWorker" in navigator &&
+    "PushManager" in window &&
+    "Notification" in window &&
+    Notification.permission !== "denied"
+  );
+}
 
 /**
- * 1.49 — the `reminders` follow-up: where reminders arrive.
+ * Where reminders reach the person: one way now, more later (1.50).
  *
- * Shown after confirm, and only to a record with a medication schedule or an
- * area that has reminders of its own (the step machine decides). It is the
- * Settings channel panel itself, so this server's channels show exactly as
- * they do there: a channel the operator switched off is not offered, email
- * only when the server can send it. Nothing is asked of the browser until a
- * card's own button is tapped, which is where Web Push asks for permission.
+ *  - The iPhone app: through the HealthLog push relay while the server uses
+ *    it, otherwise the app reminds on the phone itself. Nothing is written
+ *    here; the app registers itself when it signs in.
+ *  - This browser: offered while the server can send Web Push and the
+ *    browser can take it. The permission is asked on "Continue", which is
+ *    why the line under it says so: this screen is the warning before the
+ *    browser's own prompt. A "no" at that prompt is respected and the flow
+ *    goes on.
  *
- * The step writes nothing of its own: each card saves through its route, and
- * "Continue" and "Skip" only record the step on the ledger. The snooze length
- * stays in Settings → Notifications, beside the reminders it applies to.
+ * Telegram and ntfy need a token from somewhere else, so they are a line,
+ * not a choice; they wait on the setup card.
  */
-export function RemindersScreen({ state }: { state: OnboardingStateDto }) {
+export function RemindersScreen({
+  state,
+  plan,
+}: {
+  state: OnboardingStateDto;
+  plan: readonly PersonSegmentId[] | null;
+}) {
   const { t } = useTranslations();
-  const router = useRouter();
-  const answer = useOnboardingAnswer();
-  const back = previousScreen(state, "reminders");
+  const { user } = useAuth();
+  const flow = usePersonFlow(state, plan, "reminders");
+  const mounted = useMounted();
+  const vapid = useQuery({
+    queryKey: queryKeys.notificationsVapid(),
+    queryFn: async () => (await apiFetchRaw("/api/notifications/vapid")).ok,
+    staleTime: 5 * 60_000,
+  });
+  const browserOffered = mounted && vapid.data === true && browserCanPush();
+  const relayOn = user?.push?.relay?.operatorDecision === "on";
 
-  async function persist(
-    input: { step: "reminders" } | { step: "reminders"; status: "skipped" },
-  ) {
+  const [choice, setChoice] = useState<Channel | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [working, setWorking] = useState(false);
+
+  async function persist(skip: boolean) {
+    if (working) return;
+    setWorking(true);
+    setError(null);
     try {
-      const written = await answer.mutateAsync(input);
-      router.push(screenHref(nextScreen(written, "reminders") ?? "done"));
+      if (!skip && choice === "browser") {
+        const outcome = await subscribeThisBrowser();
+        // A refusal at the browser's prompt is an answer; anything else that
+        // went wrong keeps the person here with the reason.
+        if (outcome !== "subscribed" && outcome !== "denied") {
+          setError(subscribeOutcomeMessage(outcome, t));
+          setWorking(false);
+          return;
+        }
+      }
+      const written = await flow.record(
+        skip ? { step: "reminders", status: "skipped" } : { step: "reminders" },
+      );
+      await flow.advance(written);
     } catch (err) {
-      showErrorToast(localizedApiError(err, t, "onboarding.errorGeneric"), {
-        cause: err,
-      });
+      setWorking(false);
+      flow.fail(err);
     }
   }
 
   return (
     <section
       aria-labelledby="onboarding-reminders-title"
-      className="space-y-6"
+      className="flex flex-1 flex-col"
       data-slot="onboarding-reminders"
     >
       <StepHeading
         id="onboarding-reminders-title"
         title={t("onboarding.flow.reminders.title")}
-        description={t("onboarding.flow.reminders.body")}
+        description={t("setup.person.reminders.body")}
       />
-      <p className="text-sm">{t("onboarding.flow.reminders.app")}</p>
-
-      <NotificationChannelsPanel />
-
+      <fieldset
+        className="grid gap-2"
+        data-slot="onboarding-question-reminders"
+      >
+        <legend className="sr-only">
+          {t("onboarding.flow.reminders.title")}
+        </legend>
+        <ChoiceChip
+          name="onboarding-reminders"
+          value="app"
+          kind="single"
+          checked={choice === "app"}
+          onChange={() => setChoice("app")}
+          label={t("setup.person.reminders.app")}
+          hint={t(
+            relayOn
+              ? "setup.person.reminders.appRelay"
+              : "setup.person.reminders.appLocal",
+          )}
+          Icon={Smartphone}
+        />
+        {browserOffered ? (
+          <ChoiceChip
+            name="onboarding-reminders"
+            value="browser"
+            kind="single"
+            checked={choice === "browser"}
+            onChange={() => setChoice("browser")}
+            label={t("setup.person.reminders.browser")}
+            hint={t("setup.person.reminders.browserHint")}
+            Icon={Monitor}
+          />
+        ) : null}
+      </fieldset>
+      <p className="text-muted-foreground mt-4 text-xs">
+        {t("setup.person.reminders.tokens")}
+      </p>
+      {error ? (
+        <p
+          role="alert"
+          className="text-destructive mt-4 text-sm"
+          data-slot="onboarding-reminders-error"
+        >
+          {error}
+        </p>
+      ) : null}
       <StepActions
-        backHref={back ? screenHref(back) : undefined}
-        onSkip={() => void persist({ step: "reminders", status: "skipped" })}
-        onNext={() => void persist({ step: "reminders" })}
-        pending={answer.isPending}
+        secondary={{
+          label: t("setup.notNow"),
+          onClick: () => void persist(true),
+        }}
+        primary={{
+          label: t("onboarding.shell.next"),
+          onClick: () => void persist(false),
+          disabled: choice === null,
+        }}
+        pending={working}
       />
     </section>
   );

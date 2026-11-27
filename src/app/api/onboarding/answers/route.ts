@@ -39,6 +39,7 @@ import {
   toOnboardingStateDto,
 } from "@/lib/onboarding/needs-store";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { computePlan } from "@/lib/onboarding/wizard-steps";
 import { onboardingAnswerSchema } from "@/lib/validations/onboarding-needs";
 
 export const dynamic = "force-dynamic";
@@ -116,6 +117,15 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     }
   }
 
+  // 1.50 — the answer to "who" pins the flow's segments, so the stepper's
+  // count holds for the rest of the flow. Not on a demo deploy, whose one
+  // account every visitor shares.
+  const offers = await loadOnboardingOffers(user.id);
+  const plan =
+    answer.step === "who" && process.env.DEMO_MODE !== "true"
+      ? computePlan(answer.recordTarget, offers.ai)
+      : null;
+
   const upsert = prisma.onboardingRecord.upsert({
     where: { userId: user.id },
     // Field-by-field, never a spread of the parsed body: the three columns are
@@ -126,6 +136,7 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
       needsJson: toJson(next.needs),
       stepsJson: toJson(next.steps),
       firstResultJson: next.firstResult ? toJson(next.firstResult) : undefined,
+      ...(plan ? { planJson: toJson(plan) } : {}),
     },
     update: {
       needsJson: toJson(next.needs),
@@ -133,6 +144,7 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
       ...(next.firstResult
         ? { firstResultJson: toJson(next.firstResult) }
         : {}),
+      ...(plan ? { planJson: toJson(plan) } : {}),
     },
     select: ONBOARDING_RECORD_SELECT,
   });
@@ -225,10 +237,6 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
   });
 
   return apiSuccess({
-    onboarding: toOnboardingStateDto(
-      written,
-      held,
-      await loadOnboardingOffers(user.id),
-    ),
+    onboarding: toOnboardingStateDto(written, held, offers),
   });
 });

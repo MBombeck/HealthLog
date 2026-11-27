@@ -426,9 +426,9 @@ export function AuthShell({
         ) : null}
         <div className="shell-safe-area flex min-h-dvh flex-col">
           <MaintainershipBanner />
-          <div className="flex flex-1 items-center justify-center px-4 py-8">
-            {children}
-          </div>
+          {/* The setup frame is the whole page: one column with its own
+              gutters, its action row held at the bottom on a phone. */}
+          <div className="flex flex-1 flex-col">{children}</div>
         </div>
       </>
     );

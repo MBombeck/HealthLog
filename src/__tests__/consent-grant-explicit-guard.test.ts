@@ -146,8 +146,12 @@ describe("AI consent is granted only by the person's own tap", () => {
             const enclosing = fns.at(-1);
             const fnName = enclosing?.[1] ?? enclosing?.[2];
             expect(fnName, `${where} outside any named handler`).toBeDefined();
+            // `onClick={fn}` on an element, or `onClick: fn` in an action
+            // the setup's action row hands to its button.
             expect(
-              new RegExp(`onClick=\\{\\s*${fnName}\\s*\\}`).test(file.source),
+              new RegExp(`onClick(?:=\\{|:)\\s*${fnName}\\s*[},]`).test(
+                file.source,
+              ),
               `${where} in ${fnName}, which no onClick hands the click to`,
             ).toBe(true);
           }

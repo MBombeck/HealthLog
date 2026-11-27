@@ -30,6 +30,14 @@ describe("dashboard setup checklist on a demo instance", () => {
     const src = dashboardSource();
     const mounts = src.match(/<GettingStartedChecklist\b[^>]*\/>/g) ?? [];
     expect(mounts).toHaveLength(1);
-    expect(src).toContain("{demoMode ? null : <GettingStartedChecklist />}");
+    // 1.50: only for an account that did not start the new setup flow.
+    expect(src).toMatch(
+      /\{demoMode \|\| setup\.data\?\.person\.planned !== false \? null : \(\s*<GettingStartedChecklist \/>\s*\)\}/,
+    );
+  });
+
+  it("asks the setup state only outside demo mode", () => {
+    const src = dashboardSource();
+    expect(src).toContain("useSetupState(!demoMode && Boolean(user))");
   });
 });

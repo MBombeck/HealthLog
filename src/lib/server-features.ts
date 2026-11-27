@@ -54,6 +54,7 @@ export const SERVER_FEATURES = [
   "medication.low-stock-trigger",
   "insights.score-origin",
   "daily.asks",
+  "setup.resolved-state",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -154,4 +155,6 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "RECOVERY_SCORE, STRESS_SCORE and STRAIN_SCORE values on GET /api/insights/derived carry origin (estimate | device | computed) and deviceSource (the measurement source of a device value, else null); the health score composite carries weights (one { id, weight } per counted pillar, summing to 1) and each snapshot healthScore.pillars row its weight (null when it did not count).",
   "daily.asks":
     "GET /api/daily/digest carries asks: every row the start page asks today, often none (kind, tier safety | decision | due, itemKey, title, body, subject, exactly two actions with the primary first, learnMore), ranked on the server, never capped or folded; render as delivered, no card when empty. Later is dose.snooze:<medicationId> on a dose and ask.later:<dismissKey> on other reminders; the admin rows (push_relay, server_setup) come only to a browser session.",
+  "setup.resolved-state":
+    "GET /api/setup resolves where the person setup stands (status, currentStep, the pinned segments with their screens and statuses) and the setup rows (tasks: id, status todo | done | declined | warning, value, deadline, count), with the card's shown and dismissed state; PATCH /api/setup takes cardDismissed. Ids are closed lists; skip an unknown one. instance is null on a Bearer token.",
 };

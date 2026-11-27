@@ -27,6 +27,8 @@ import {
   todaySlot as resolveTodaySlot,
 } from "@/components/dashboard/today-scores";
 import { GettingStartedChecklist } from "@/components/onboarding/getting-started-checklist";
+import { SetupCard } from "@/components/onboarding/setup-card";
+import { useSetupState } from "@/components/onboarding/use-setup-state";
 import { PullToRefreshIndicator } from "@/components/ui/pull-to-refresh-indicator";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { useAccountOnceMounted, useAuth } from "@/hooks/use-auth";
@@ -69,6 +71,7 @@ export default function DashboardPageClient({
   // costs the whole streamed dashboard (React #418). See
   // `useAccountOnceMounted`.
   const user = useAccountOnceMounted();
+  const setup = useSetupState(!demoMode && Boolean(user));
   const queryClient = useQueryClient();
   const { canWriteDomain } = useRecordCapabilities();
   const canAddMeasurement = canWriteDomain("measurements");
@@ -131,6 +134,9 @@ export default function DashboardPageClient({
       <PullToRefreshIndicator {...pull} />
       <DashboardHeader onQuickEntry={setQuickEntryDialog} />
       <RecoveryKitBanner isAdmin={user?.role === "ADMIN"} />
+      {/* 1.50 — the setup card of an account that went through the new
+          setup flow; older accounts keep the checklist further down. */}
+      {setup.data?.person.cardShown ? <SetupCard state={setup.data} /> : null}
 
       {/* A quiet note about the newest stored environment day (high pollen, a
           hot night, very poor air). Nothing unless one applies, and nothing
@@ -203,7 +209,9 @@ export default function DashboardPageClient({
           mounts only once the snapshot resolves, and above the strip its late
           arrival pushed every tile down. It gates itself on onboarding state
           and disappears once dismissed or complete. */}
-      {demoMode ? null : <GettingStartedChecklist />}
+      {demoMode || setup.data?.person.planned !== false ? null : (
+        <GettingStartedChecklist />
+      )}
     </div>
   );
 }

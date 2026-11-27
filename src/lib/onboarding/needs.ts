@@ -516,22 +516,13 @@ export function accountHoldsBothUnits(held: HeldUnitPreferences): boolean {
   return held.glucoseUnit !== null && held.unitPreference !== null;
 }
 
-/** Areas whose readings come with a reminder of their own. */
-const REMINDER_AREAS = new Set<OnboardingAreaKey>(["mood", "cycle"]);
-
 /**
- * Whether the `reminders` follow-up applies: a medication on a schedule, or an
- * area with reminders of its own, on the person's own record. Answers given
- * for somebody else's record say nothing about where the guardian's own
- * notifications should go.
+ * Whether the `reminders` follow-up applies: on the person's own record,
+ * always (1.50). Answers given for somebody else's record say nothing about
+ * where the guardian's own notifications should go.
  */
 export function remindersFollowUpApplies(needs: OnboardingNeeds): boolean {
-  if (needs.recordTarget === "someone-else") return false;
-  return (
-    needs.medication === "yes" ||
-    needs.medication === "sometimes" ||
-    needs.areas.some((area) => REMINDER_AREAS.has(area))
-  );
+  return needs.recordTarget !== "someone-else";
 }
 
 /**
@@ -566,22 +557,21 @@ export function followUpApplies(
 /**
  * The Coach offer, read off the record's resolved AI block.
  *
- * Offered while the Coach is available, while the one thing missing is the
- * person's consent, or while no provider is set up but the person could set
- * one up. Never while the operator switched it off or the person did.
+ * Offered while the Coach is available or the one thing missing is the
+ * person's consent: a provider can serve the record, so a "yes" works the
+ * moment it is given. Never while no provider is set up (since 1.50 a key
+ * of one's own is a row on the setup card, entered in Settings › AI, the
+ * one place the browser may reach an AI host), nor while the operator or
+ * the person switched it off.
  */
 export function onboardingOffersFromAi(ai: {
   capabilities: {
     coach: { available: boolean; reason: string | null };
   };
-  provider: { canConfigure: boolean };
 }): OnboardingOffers {
   const coach = ai.capabilities.coach;
   return {
-    ai:
-      coach.available ||
-      coach.reason === "consent_required" ||
-      (coach.reason === "no_provider" && ai.provider.canConfigure),
+    ai: coach.available || coach.reason === "consent_required",
   };
 }
 

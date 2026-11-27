@@ -1,6 +1,6 @@
 /**
- * v1.39 — axe over every setup screen, at both viewports, plus one
- * keyboard-only pass through a question.
+ * axe over every person setup screen (1.50), at both viewports and in both
+ * themes, plus one keyboard-only pass through a question.
  *
  * The pattern is `a11y.spec.ts`: a scan waits for something the SCREEN
  * renders once its state is there — the question's chips, the confirm
@@ -22,7 +22,6 @@ import { resetSetupFlow } from "./setup/setup-flow-fixture";
 import { expect, test } from "./setup/test";
 import {
   answer,
-  answerEverything,
   complete,
   expectScreen,
   type SetupScreen,
@@ -47,9 +46,11 @@ const SEMANTIC_RULES: Record<string, true> = {
 };
 
 const VIEWPORTS = [
-  { label: "desktop 1280", width: 1280, height: 720 },
-  { label: "phone 390", width: 390, height: 844 },
-];
+  { label: "desktop 1440 dark", width: 1440, height: 900, scheme: "dark" },
+  { label: "phone 390 light", width: 390, height: 844, scheme: "light" },
+  { label: "desktop 1440 light", width: 1440, height: 900, scheme: "light" },
+  { label: "phone 390 dark", width: 390, height: 844, scheme: "dark" },
+] as const;
 
 /** Where to go, and what has to be on screen before axe may look. */
 interface ScreenCase {
@@ -62,11 +63,6 @@ interface ScreenCase {
 
 const SCREENS: ScreenCase[] = [
   {
-    screen: "welcome",
-    path: "/onboarding",
-    painted: (page) => page.locator('[data-slot="onboarding-set-up"]'),
-  },
-  {
     screen: "who",
     path: "/onboarding/who",
     painted: (page) => page.locator('[data-slot="onboarding-question-who"]'),
@@ -78,37 +74,17 @@ const SCREENS: ScreenCase[] = [
     prepare: (page) => answer(page, { step: "who", recordTarget: "me" }),
   },
   {
-    screen: "medication",
-    path: "/onboarding/medication",
+    screen: "units",
+    path: "/onboarding/units",
     painted: (page) =>
-      page.locator('[data-slot="onboarding-question-medication"]'),
+      page.locator('[data-slot="onboarding-question-glucose-unit"]'),
     prepare: (page) =>
       answer(page, { step: "areas", areas: ["glucose", "weight-body"] }),
   },
   {
     screen: "sources",
     path: "/onboarding/sources",
-    painted: (page) =>
-      page.locator('[data-slot="onboarding-question-sources"]'),
-    prepare: (page) => answer(page, { step: "medication", medication: "yes" }),
-  },
-  {
-    screen: "visit",
-    path: "/onboarding/visit",
-    painted: (page) => page.locator('[data-slot="onboarding-question-visit"]'),
-    prepare: (page) => answer(page, { step: "sources", sources: ["oura"] }),
-  },
-  {
-    screen: "units",
-    path: "/onboarding/units",
-    painted: (page) =>
-      page.locator('[data-slot="onboarding-question-glucose-unit"]'),
-    prepare: (page) => answer(page, { step: "visit", visit: "within-a-month" }),
-  },
-  {
-    screen: "confirm",
-    path: "/onboarding/confirm",
-    painted: (page) => page.locator('[data-slot="onboarding-confirm-modules"]'),
+    painted: (page) => page.locator('[data-slot="onboarding-sources"]'),
     prepare: (page) =>
       answer(page, {
         step: "units",
@@ -119,34 +95,11 @@ const SCREENS: ScreenCase[] = [
     screen: "reminders",
     path: "/onboarding/reminders",
     painted: (page) =>
-      page.locator('[data-slot="notification-channels-panel"]'),
-    prepare: (page) => complete(page),
-  },
-  {
-    screen: "ai",
-    path: "/onboarding/ai",
-    painted: (page) => page.locator('[data-slot="onboarding-question-ai"]'),
-    prepare: (page) => answer(page, { step: "reminders", status: "skipped" }),
-  },
-  {
-    screen: "first-result",
-    path: "/onboarding/first-result",
-    // v1.38.19 — wait for the tile the screen SETTLED on, not for
-    // the connect card. This sweep used to name the connect card, which is
-    // painted for the few hundred milliseconds before the status envelope
-    // resolves whatever the account's real state is — so it scanned a frame
-    // the person may never see, and passed straight through the defect that
-    // frame was hiding. `data-connect-slot` appears only once the screen has
-    // decided, and it is on every one of the four tiles.
-    painted: (page) => page.locator("[data-connect-slot]"),
-    prepare: (page) => answer(page, { step: "ai", status: "skipped" }),
-  },
-  {
-    screen: "done",
-    path: "/onboarding/done",
-    painted: (page) => page.locator('[data-slot="onboarding-open-dashboard"]'),
-    prepare: (page) =>
-      answer(page, { step: "first-result", status: "skipped" }),
+      page.locator('[data-slot="onboarding-question-reminders"]'),
+    prepare: async (page) => {
+      await answer(page, { step: "sources", status: "skipped" });
+      await complete(page);
+    },
   },
 ];
 
@@ -197,6 +150,7 @@ test.describe("setup flow — axe on every screen", () => {
       test.setTimeout(180_000);
       await resetSetupFlow(E2E_SETUP_A11Y.username);
       await page.setViewportSize({ width: vp.width, height: vp.height });
+      await page.emulateMedia({ colorScheme: vp.scheme });
 
       for (const item of SCREENS) {
         await item.prepare?.(page);
@@ -216,7 +170,6 @@ test.describe("setup flow — axe on every screen", () => {
     page,
   }) => {
     await resetSetupFlow(E2E_SETUP_A11Y.username);
-    await answerEverything(page);
     await page.goto("/onboarding/who", { waitUntil: "domcontentloaded" });
     await expectScreen(page, "who");
     // Focus is on the heading; Tab reaches the first chip's radio, Space
@@ -230,7 +183,14 @@ test.describe("setup flow — axe on every screen", () => {
     await expect(
       page.locator('[data-slot="onboarding-choice"][data-checked="true"]'),
     ).toHaveAttribute("data-value", "someone-else");
-    // Tab past the chip group to the action row, then activate "Next".
+    // Tab to the disclaimer and tick it with Space, then on to "Continue".
+    await page.keyboard.press("Tab");
+    await expect(
+      page.locator(
+        '[data-slot="onboarding-disclaimer"] button[role="checkbox"]',
+      ),
+    ).toBeFocused();
+    await page.keyboard.press("Space");
     for (let i = 0; i < 4; i += 1) {
       if (await page.locator('[data-slot="onboarding-next"]:focus').count()) {
         break;

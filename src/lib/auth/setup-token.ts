@@ -26,6 +26,7 @@ import { cookies } from "next/headers";
 
 import { apiError } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
+import { prisma } from "@/lib/db";
 import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
 import { annotate } from "@/lib/logging/context";
 import { operatorLine } from "@/lib/logging/operator-line";
@@ -176,8 +177,19 @@ export function claimIfFirst(priorUsers: number, setupProven: boolean): void {
   if (priorUsers === 0 && !setupProven) throw new SetupRequired();
 }
 
-/** After the first account exists: the proof is spent, and the claim audited. */
+/**
+ * After the first account exists: the proof is spent, the claim audited, and
+ * open sign-up switched off (1.50). Between the owner account and the setup's
+ * sign-up step nobody else may register, and an owner who leaves the setup
+ * early has a server that admits invited people only. The sign-up step, or
+ * Admin › General, opens it on purpose.
+ */
 export async function afterClaim(userId: string, ip: string): Promise<void> {
   (await cookies()).delete(SETUP_PROOF_COOKIE);
+  await prisma.appSettings.upsert({
+    where: { id: "singleton" },
+    create: { id: "singleton", registrationEnabled: false },
+    update: { registrationEnabled: false },
+  });
   await auditLog("auth.setup.claimed", { userId, ipAddress: ip });
 }

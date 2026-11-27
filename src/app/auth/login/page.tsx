@@ -39,7 +39,6 @@ const INSECURE_TRANSPORT_CODE = "auth.session.insecure_transport";
 const DELETION_PENDING = "auth.account.deletion_pending";
 import { loadDocument } from "@/lib/navigation/load-document";
 import { useRegistrationStatus } from "@/hooks/use-registration-status";
-import { FirstAccountSetup } from "@/components/auth/first-account-setup";
 
 type Translate = (key: string, params?: Record<string, string>) => string;
 
@@ -117,6 +116,12 @@ export default function LoginPage() {
   const errorDescriptor = error ? errorId : undefined;
   const { data: registrationStatus } = useRegistrationStatus();
   const registrationEnabled = registrationStatus?.registrationEnabled;
+  // 1.50 — a server with no account has nobody to sign in: its start is the
+  // owner setup on the registration page (the setup code, then the account).
+  const setupRequired = registrationStatus?.setupRequired === true;
+  useEffect(() => {
+    if (setupRequired) router.replace("/auth/register");
+  }, [setupRequired, router]);
 
   // #1097 — a server that sets its sign-in cookie only over https:// cannot
   // sign anyone in on a plain http:// page: the browser drops the cookie. Say
@@ -413,13 +418,6 @@ export default function LoginPage() {
           >
             {t("auth.native.signingInToApp")}
           </div>
-        )}
-
-        {registrationStatus?.setupRequired && (
-          <FirstAccountSetup
-            proven={registrationStatus.setupProven}
-            registerLink={oidcStatus?.only !== true}
-          />
         )}
 
         {mfaChallenge ? (

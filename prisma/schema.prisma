@@ -11432,6 +11432,16 @@ model OnboardingRecord {
   /// "Set up again" without pushing the person back through the redirect.
   completedAt DateTime? @map("completed_at")
 
+  /// The segments the person flow showed when it started (v1.50), as
+  /// `["you", "sources", ...]`, pinned on the answer to "who" so the step
+  /// count never changes mid-flow. Null means "derive from the answers".
+  /// Read by `readPinnedPlan` for the setup pages and `GET /api/setup`.
+  planJson Json? @map("plan_json")
+
+  /// When the person hid the dashboard setup card (v1.50). Settings › Setup
+  /// still lists the same rows. Read by `GET /api/setup` as `cardDismissed`.
+  cardDismissedAt DateTime? @map("card_dismissed_at")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

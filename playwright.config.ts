@@ -272,18 +272,22 @@ export default defineConfig({
         // through stable attributes and the account's own API, not a mobile
         // layout, so it runs in one project.
         "notification-dispatch-journey.spec.ts",
-        // v1.39 — the setup-flow journeys each own one account and walk
-        // it from the welcome screen to the dashboard, resetting it first. A
-        // second project would walk the same account from a second browser
-        // and each would find the other's answers. The two sweeps set their
-        // own viewports inside the desktop project for the same reason.
+        // The setup-flow journeys each own one account and walk it from the
+        // first screen to the dashboard, resetting it first. A second project
+        // would walk the same account from a second browser and each would
+        // find the other's answers. The sweeps set their own viewports inside
+        // the desktop project for the same reason.
         "setup-flow-bp.spec.ts",
-        "setup-flow-medication.spec.ts",
-        "setup-flow-visit.spec.ts",
         "setup-flow-child.spec.ts",
         "setup-flow-a11y.spec.ts",
-        "setup-flow-connect.spec.ts",
         "setup-flow-locale-overflow.spec.ts",
+        // 1.50 — the fresh-instance first run claims a second, empty server
+        // (`E2E_FRESH_BASE_URL`); one browser walks it, from the setup code
+        // to the owner's dashboard, and it sets both widths itself.
+        "first-run.spec.ts",
+        // The server setup rewrites the instance's setup ledger and sign-up
+        // switch; a second project would walk it from a second browser.
+        "setup-flow-server.spec.ts",
         // The delegated-writes journey invites, accepts and revokes between
         // its own two accounts. A second project would send a second invitation
         // between the same pair while the first is live, and meet the 409.

@@ -26,10 +26,7 @@ const SRC = join(__dirname, "..");
 
 const PRIMITIVE = "components/ui/stepper.tsx";
 
-const RATCHETED: Record<string, string> = {
-  "components/onboarding/setup-frame.tsx":
-    "the setup flows' segment bar, until they move onto the primitive",
-};
+const RATCHETED: Record<string, string> = {};
 
 const MARKER_RE = /aria-current=\{?[^}\n]{0,40}"step"/;
 

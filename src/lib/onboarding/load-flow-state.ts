@@ -20,11 +20,14 @@ import { readHeldUnitPreferences, type OnboardingStateDto } from "./needs";
 import { serverSetupOpenFor } from "@/lib/admin/server-setup-store";
 import { loadOnboardingOffers } from "./load-offers";
 import { loadOnboardingRecordRow, toOnboardingStateDto } from "./needs-store";
+import { parsePinnedPlan, type PersonSegmentId } from "./wizard-steps";
 
 export interface OnboardingFlowPageState {
   userId: string;
   userLocale: string | null;
   state: OnboardingStateDto;
+  /** 1.50 — the segments pinned when the flow started, or null. */
+  plan: PersonSegmentId[] | null;
   /** 1.49 — an admin whose server setup is still open (never on a demo). */
   serverSetupOpen: boolean;
 }
@@ -34,15 +37,25 @@ export const loadOnboardingFlowState = cache(
     const session = await getSession();
     if (!session) return null;
     const { user } = session;
-    const [row, offers, serverSetupOpen] = await Promise.all([
+    const [row, offers, serverSetupOpen, pinned] = await Promise.all([
       loadOnboardingRecordRow(prisma, user.id),
       loadOnboardingOffers(user.id),
       serverSetupOpenFor(user),
+      prisma.onboardingRecord.findUnique({
+        where: { userId: user.id },
+        select: { planJson: true },
+      }),
     ]);
     return {
       userId: user.id,
       userLocale: user.locale ?? null,
       state: toOnboardingStateDto(row, readHeldUnitPreferences(user), offers),
+      // A demo deploy's one account is shared by every visitor: its flow is
+      // the "you" part only, nothing that connects or reminds (B-W9).
+      plan:
+        process.env.DEMO_MODE === "true"
+          ? ["you"]
+          : parsePinnedPlan(pinned?.planJson ?? null),
       serverSetupOpen,
     };
   },

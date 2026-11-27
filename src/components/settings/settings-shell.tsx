@@ -15,6 +15,7 @@
  *     column with `max-w-screen-xl`.
  */
 
+import { SetupReturnLink } from "@/components/onboarding/setup-return-link";
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -612,7 +613,10 @@ export function SettingsShell({
             v1.16.4 — a `<div>`, not `<main>`: the surrounding AuthShell
             already provides the page's single `<main>` landmark and a
             nested second one is an a11y violation. */}
-        <div className="min-w-0 md:col-start-2">{children}</div>
+        <div className="min-w-0 md:col-start-2">
+          <SetupReturnLink />
+          {children}
+        </div>
       </div>
     </div>
   );

@@ -11696,12 +11696,6 @@
     },
     {
       "locale": "es",
-      "key": "onboarding.flow.visit.body",
-      "text": "preparación",
-      "reason": "Preparing for a visit, not the readiness score."
-    },
-    {
-      "locale": "es",
       "key": "admin.recoveryReadiness.title",
       "text": "preparación",
       "reason": "Whether a backup can be restored (de \"Wiederherstellbarkeit\"), not the readiness score."

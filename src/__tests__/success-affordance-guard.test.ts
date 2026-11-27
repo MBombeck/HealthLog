@@ -353,7 +353,8 @@ const PINNED_AFFORDANCES: Record<
   "src/components/mood/manage/tag-groups-card.tsx": { "toast.success": 4 },
   "src/components/mood/manage/tag-manager-card.tsx": { "toast.success": 2 },
   "src/components/mood/mood-list.tsx": { "toast.success": 3 },
-  "src/components/onboarding/done-screen.tsx": { CheckCircle2: 2 },
+  // A source's state on the setup's sources screen, not a write's outcome.
+  "src/components/onboarding/sources-screen.tsx": { "text-success": 1 },
   "src/components/practitioners/practitioner-list.tsx": { "toast.success": 1 },
   "src/components/records/allergy-form.tsx": { "toast.success": 1 },
   "src/components/records/allergy-manager.tsx": { "toast.success": 1 },
