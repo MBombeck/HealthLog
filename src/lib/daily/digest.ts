@@ -28,11 +28,6 @@ import { CARE_WIRE_PATH } from "@/lib/encounters/visit-links";
 import type { MedsTodayBlock } from "@/lib/dashboard/meds-today";
 import type { ModuleKey } from "@/lib/modules/registry";
 import type { ServerTranslator } from "@/lib/i18n/server-translator";
-import type {
-  ScoreBasis,
-  ScoreDeltaReason,
-  ScorePillarId,
-} from "@/lib/analytics/score/types";
 import {
   MAX_PRIORITY_ACTIONS,
   isDismissibleKind,
@@ -50,6 +45,9 @@ import {
   tensionWindowItemKey,
 } from "@/lib/daily/priority-item-key";
 import { buildUpcomingVisitItems } from "@/lib/daily/upcoming-visit-items";
+import { allClearLine, healthScoreFlag } from "@/lib/daily/in-range-claim";
+import { digestScore, type DailyDigestScore } from "@/lib/daily/digest-score";
+export type { DailyDigestScore };
 import {
   asksFromDigest,
   type AdminAskKind,
@@ -129,53 +127,6 @@ export type DigestModuleMap = Partial<Record<ModuleKey, boolean>>;
 
 function moduleEnabled(map: DigestModuleMap, key: ModuleKey): boolean {
   return map[key] !== false;
-}
-
-export interface DailyDigestScore {
-  value: number;
-  /** The worse of the number's band and the worst pillar's (shipped apps). */
-  band: string;
-  /** 1.50: the number's own band; the web draws this. Old caches lack it. */
-  numberBand?: string;
-  delta: number | null;
-  /** Additive score identity; omitted by older cached digests. */
-  deltaReason?: ScoreDeltaReason | null;
-  scoreVersion?: number;
-  composition?: ScorePillarId[];
-  /**
-   * v1.35.0 — the resolved "this score is configured" flag, carried
-   * straight from the snapshot's health-score block. Omitted by older
-   * cached digests, like its siblings above.
-   */
-  configured?: boolean;
-  /**
-   * v1.38 — how broad the set behind the number is, carried straight
-   * from the snapshot's health-score block. Since v1.38 a score exists
-   * at one or two areas of health as well as three and is computed the
-   * same way at each, so this block is what tells a narrow score from a
-   * broad one. Omitted by older cached digests, like its siblings above.
-   */
-  scoreBasis?: ScoreBasis;
-  /**
-   * Whole weeks the score has held where it is (same band, within two
-   * points, computed the same way), read off the stored daily scores. Null
-   * when it has not held for two weeks, when the stored record does not
-   * reach today, or when the score moved. Optional so older cached digests
-   * stay valid.
-   */
-  steadyWeeks?: number | null;
-  /**
-   * True when the run reaches back past everything the read covered, so
-   * `steadyWeeks` is a lower bound ("at least"), not the run's start.
-   */
-  steadyAtLeast?: boolean;
-  /**
-   * The pillar in a worse band than the score, its band and its worded line
-   * (the snapshot's). Shown wherever the score is; optional for old caches.
-   */
-  bandSetter?: ScorePillarId | null;
-  bandSetterBand?: "yellow" | "red" | null;
-  bandSetterLine?: string | null;
 }
 
 /** A broken integration, deterministically derived from `IntegrationStatus`. */
@@ -1026,7 +977,7 @@ function composeLine(
     if (candidate && !HAS_NUMBER.test(candidate)) return candidate;
   }
   if (score) return t("daily.line.scoreReady");
-  return t("daily.line.allClear");
+  return allClearLine(healthScoreFlag(score), t) ?? t("daily.line.scoreReady");
 }
 
 /**
@@ -1232,6 +1183,7 @@ export function buildDailyDigest(
       ),
       briefing,
       scoreValue: input.score?.value ?? null,
+      scoreFlag: healthScoreFlag(input.score),
       medsToday: input.medsToday,
       visits: (input.upcomingVisits ?? []).flatMap((visit) =>
         visit.timeLabel === undefined ||
@@ -1260,13 +1212,7 @@ export function buildDailyDigest(
     t,
   );
 
-  const score: DailyDigestScore | null = input.score
-    ? {
-        ...input.score,
-        steadyWeeks: input.scoreSteady?.weeks ?? null,
-        steadyAtLeast: input.scoreSteady?.atLeast ?? false,
-      }
-    : null;
+  const score = digestScore(input.score, input.scoreSteady, t);
 
   return {
     generatedAt: input.now.toISOString(),

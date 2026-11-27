@@ -12,7 +12,7 @@
  * a check whose sentence was reworded away fails the registry.
  *
  * Most checks call the rule itself (`isModelVisibleSection`, the model-bound
- * health score, the Coach exclusions, the lookback floor). Two point at the
+ * health score, the lookback floor). Two point at the
  * test that already exercises the rule on its prompt path, by the exact test
  * title, so deleting or renaming that test fails here.
  */
@@ -26,7 +26,6 @@ import {
   MODEL_EXCLUDED_SECTIONS,
 } from "@/lib/ai/model-bound-data";
 import { reachFloor } from "@/lib/ai/coach/history-reach";
-import { dayExclusionsFor } from "@/lib/ai/coach/tools/day-read";
 import {
   countsModelExcludedPillar,
   modelBoundComposite,
@@ -39,7 +38,6 @@ import {
   INSTRUMENT_ORDER,
 } from "@/lib/mental-health/instruments";
 import { getSignal } from "@/lib/signals/registry";
-import { coachExcludeMetricEnum } from "@/lib/validations/coach-prefs";
 
 import { readSource, readSourceFolder } from "./helpers/source-files";
 
@@ -128,17 +126,6 @@ const PROMISES: Record<string, () => void> = {
   "lifeEvents.privacy": () => {
     expect(isModelVisibleSection("lifeEvents")).toBe(false);
   },
-  // Every exclusion token takes something out of the day the Coach reads.
-  "insights.coach.settingsExcludeHint": () => {
-    const allTypes = ["WEIGHT", "PULSE", "BLOOD_PRESSURE_SYSTOLIC", "STEPS"];
-    for (const token of coachExcludeMetricEnum.options) {
-      const out = dayExclusionsFor(new Set([token]), allTypes);
-      expect(
-        out.sections.size + out.types.size + (out.scores?.size ?? 0),
-        token,
-      ).toBeGreaterThan(0);
-    }
-  },
   "insights.coach.lookback.detailDays": () => {
     const now = new Date("2026-06-01T00:00:00Z");
     expect(
@@ -195,7 +182,7 @@ describe("privacy promises in the app's words", () => {
     const found = promiseKeys();
     // The scan found the sentences known today; an empty set would mean the
     // matcher went blind, not that the promises went away.
-    expect(found.length).toBeGreaterThanOrEqual(8);
+    expect(found.length).toBeGreaterThanOrEqual(7);
     expect(found).toEqual(Object.keys(PROMISES).sort());
   });
 

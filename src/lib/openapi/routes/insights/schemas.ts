@@ -421,6 +421,13 @@ export const dashboardScorePillar = z
       .describe(
         "The pillar's own 0–100 score when it counted toward the health score; null when it did not.",
       ),
+    band: z
+      .enum(["green", "yellow", "red"])
+      .nullable()
+      .optional()
+      .describe(
+        "1.50 (feature `insights.score-origin`) — the pillar's own band, resolved on the server from its score by the rule every HealthLog score follows (green from 70, yellow from 50). Null when the pillar did not count. Draw the pillar from this, never from thresholds of your own. Optional so older cached snapshots stay valid.",
+      ),
     reason: z
       .string()
       .nullable()
@@ -2602,6 +2609,12 @@ const healthScorePillar = z.object({
         status: z.literal("ok"),
         value: z.object({
           score: z.number(),
+          band: z
+            .enum(["green", "yellow", "red"])
+            .optional()
+            .describe(
+              "1.50 (feature `insights.score-origin`) — the pillar's own band, resolved on the server from its score by the rule every HealthLog score follows (green from 70, yellow from 50; a pillar score is higher-better). Draw the pillar from this, never from thresholds of your own. Optional so a payload from an older server stays valid; this server sets it on every scored pillar.",
+            ),
           observed: z.object({
             value: z.number(),
             unit: z.string(),

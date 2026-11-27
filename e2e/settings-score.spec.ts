@@ -105,8 +105,8 @@ test.describe("Settings → Health Score", () => {
     const card = page.locator('[data-slot="score-config-card"]');
     await settleBeforeMeasure(page, card);
 
-    // The heading + subheading pair the settings IA requires, owned by the
-    // shell and not re-declared inside the card. The shell renders the pair
+    // The heading the settings IA requires, owned by the shell and not
+    // re-declared inside the card; a Settings page has no subheading (1.50). The shell renders the pair
     // twice under distinct ids — `…-title` inside a `hidden md:block` column
     // and `…-title-mobile` inside an `md:hidden` one — so exactly one of them
     // is on screen at any width. Asserting the desktop id alone passed on the
@@ -121,7 +121,7 @@ test.describe("Settings → Health Score", () => {
     await expect(heading.first()).toBeVisible();
     await expect(
       heading.first().locator("xpath=following-sibling::p[1]"),
-    ).toBeVisible();
+    ).toHaveCount(0);
 
     // One concept, one card. A second card beside it would be the
     // top/bottom split of one decision the rules forbid; the notice is a

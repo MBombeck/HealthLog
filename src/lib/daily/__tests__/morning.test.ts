@@ -73,6 +73,7 @@ function input(over: Partial<MorningInput> = {}): MorningInput {
     dosesToday: 0,
     visitToday: null,
     readinessAsOfLabel: null,
+    scoreFlag: null,
     ...over,
   };
 }
@@ -330,6 +331,55 @@ describe("morning lead: one rank per state", () => {
     expect(lead.text).toBe(
       "Blood pressure reached 182/121 mmHg in the last 24 hours.",
     );
+  });
+
+  it("rank 8 names the flagged pillar instead of calling the day in range", () => {
+    const vitals = [
+      vital({ type: "BLOOD_PRESSURE_SYS" }),
+      vital({ type: "BLOOD_PRESSURE_DIA" }),
+    ];
+    const lead = expectRank(
+      {
+        vitals,
+        scoreFlag: { band: "yellow", pillar: "BLOOD_PRESSURE" },
+      },
+      "in_range",
+    );
+    expect(lead.text).toBe(
+      "Blood pressure needs attention in your health score today.",
+    );
+    expect(lead.text).not.toMatch(/usual range/);
+    // A pillar not known (an older payload): the score is named.
+    expect(
+      expectRank(
+        { vitals, scoreFlag: { band: "red", pillar: null } },
+        "in_range",
+      ).text,
+    ).toBe(
+      "Your health score marks an area outside its reference range today.",
+    );
+  });
+
+  it("rank 8 with a flagged score and no values today: the night speaks", () => {
+    expect(
+      expectRank(
+        {
+          sleep: { minutes: 440, usualMinutes: 450 },
+          sleepExpected: true,
+          scoreFlag: { band: "red", pillar: "BLOOD_PRESSURE" },
+        },
+        "in_range",
+      ).text,
+    ).toMatch(/^Last night you slept .*close to your usual\.$/);
+  });
+
+  it("rank 8: a night 40 minutes short is not called usual", () => {
+    expect(
+      expectRank(
+        { sleep: { minutes: 410, usualMinutes: 450 }, sleepExpected: true },
+        "in_range",
+      ).text,
+    ).toMatch(/40m less than usual\.$/);
   });
 
   it("rank 8: a scale reading alone in range names it", () => {

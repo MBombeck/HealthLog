@@ -1,32 +1,35 @@
 "use client";
 
 /**
- * One score as a tile: the ring, the score's short name, its band word and
- * one meta line, all one link to the score's page.
+ * One score as a tile: the ring, the score's short name and one meta line,
+ * all one link to the score's page.
  *
  * Two sizes on one anatomy:
- *  - `wide` (the start page's score row): the ring beside a `TileHeader`, the
- *    band word and the line, the metric tile's frame and inset;
+ *  - `wide` (the start page's score row): the ring beside a `TileHeader` and
+ *    the line, the metric tile's frame and inset;
  *  - `compact` (a row of five or six on Insights): the ring on top, about
- *    80 px, then the name, then the band word and the line, each on one line
- *    at a fixed height, so the tiles of a row line up.
+ *    80 px, then the name, then the line, each on one line at a fixed
+ *    height, so the tiles of a row line up.
  *
- * The ring's colour is the band and nothing else (concept B,
+ * No band word stands next to the ring: its colour and its number say the
+ * band, and the ring's accessible name says it in words, so colour is never
+ * the only carrier. The colour is the band and nothing else (concept B,
  * `ring-color.ts`): which score it is, the icon and the name say. A score
- * without a band (`band` undefined) draws in the neutral ink and has no band
- * word; a score that is not about today (`stale`) shows the bare track and
- * no band word, and its line says when the last value was. `ring` replaces
- * the ScoreRing where a tile draws its own dial (the cycle ring).
+ * without a band (`band` undefined) draws in the neutral ink; a score that
+ * is not about today (`stale`) shows the solid track and a centred "—", and
+ * its line reads "not from today"; when the last value was is said in the
+ * ring's accessible name and on the score's page. `ring` replaces the ScoreRing where
+ * a tile draws its own dial (the cycle ring).
  */
 import type { ComponentType, ReactNode } from "react";
 import Link from "next/link";
 
 import { TileHeader } from "@/components/insights/tile-header";
 import { TrendTile } from "@/components/ui/trend-tile";
+import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
 import type { ScoreBand } from "./band-tokens";
-import { ringColor } from "./ring-color";
 import { ScoreRing } from "./score-ring";
 
 export interface ScoreRingTileProps {
@@ -42,54 +45,17 @@ export interface ScoreRingTileProps {
   score: number | null;
   /** The score's band; undefined when it carries none (neutral ring). */
   band: ScoreBand | undefined;
-  /** Not about today: the bare track, no band word. */
+  /** Not about today: the solid track, a centred "—", no number. */
   stale: boolean;
-  /** The band in words ("good", or "low" for a load); null for none. */
-  bandWord: string | null;
-  /** One line, truncated: the move, the duration, the last value. */
+  /**
+   * One line, truncated: the move, the duration, a device's reading. On a
+   * stale tile the line reads "not from today" and this text (when the last
+   * value was) moves into the ring's accessible name.
+   */
   line: string | null;
   /** Replaces the ScoreRing. */
   ring?: ReactNode;
   titleAs?: "h2" | "h3";
-}
-
-/**
- * The band word with its fill mark: full for good, half for fair, hollow
- * for low, in the band's colour. Colour is never the only carrier: the mark's
- * fill and the word say the same.
- */
-export function BandWord({
-  band,
-  word,
-  className,
-}: {
-  band: ScoreBand;
-  word: string;
-  className?: string;
-}) {
-  const color = ringColor(band);
-  return (
-    <span
-      data-slot="score-band-word"
-      data-band={band}
-      className={cn("inline-flex min-w-0 items-center gap-1.5", className)}
-    >
-      <span
-        aria-hidden="true"
-        className="size-2 shrink-0 rounded-full border"
-        style={{
-          borderColor: color,
-          background:
-            band === "green"
-              ? color
-              : band === "yellow"
-                ? `linear-gradient(90deg, ${color} 50%, transparent 50%)`
-                : "transparent",
-        }}
-      />
-      <span className="truncate">{word}</span>
-    </span>
-  );
 }
 
 export function ScoreRingTile({
@@ -102,12 +68,12 @@ export function ScoreRingTile({
   score,
   band,
   stale,
-  bandWord,
   line,
   ring,
   titleAs = "h3",
 }: ScoreRingTileProps) {
-  const showBand = !stale && score !== null;
+  const { t } = useTranslations();
+  const shownLine = stale ? t("insights.derived.scoreRing.notToday") : line;
   const dial = ring ?? (
     <ScoreRing
       score={stale ? null : score}
@@ -116,36 +82,28 @@ export function ScoreRingTile({
       flat
       emptyFace={stale}
       ariaLabel={
-        stale || band === undefined
-          ? [label, score !== null && !stale ? score : null, line]
-              .filter((part) => part !== null && part !== "")
-              .join(": ")
-          : undefined
+        // A stale ring names itself ("not from today") and then says when
+        // the last value was.
+        stale
+          ? (line ?? undefined)
+          : band === undefined
+            ? [label, score, line]
+                .filter((part) => part !== null && part !== "")
+                .join(": ")
+            : undefined
       }
     />
-  );
-  const bandRow = (
-    <p
-      data-slot="score-ring-tile-band"
-      className="text-foreground h-5 min-w-0 text-sm leading-5"
-    >
-      {showBand && band !== undefined && bandWord ? (
-        <BandWord band={band} word={bandWord} />
-      ) : (
-        <span aria-hidden="true">{" "}</span>
-      )}
-    </p>
   );
   const lineRow = (
     <p
       data-slot="score-ring-tile-line"
-      title={line ?? undefined}
+      title={shownLine ?? undefined}
       className={cn(
         "text-muted-foreground truncate leading-5",
         size === "wide" ? "text-sm" : "text-xs",
       )}
     >
-      {line ?? " "}
+      {shownLine ?? " "}
     </p>
   );
 
@@ -168,7 +126,6 @@ export function ScoreRingTile({
               titleAs={titleAs}
               reserveLines={1}
             />
-            {bandRow}
             {lineRow}
           </div>
         </TrendTile>
@@ -184,7 +141,6 @@ export function ScoreRingTile({
             className="max-w-full justify-center"
           />
           <div className="flex w-full min-w-0 flex-col items-center">
-            {bandRow}
             {lineRow}
           </div>
         </TrendTile>

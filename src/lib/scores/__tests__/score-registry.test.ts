@@ -15,23 +15,18 @@ import {
   readSourceFolder,
   stripComments,
 } from "@/__tests__/helpers/source-files";
+import {
+  HEALTHLOG_SCORES,
+  HEALTHLOG_SCORE_IDS,
+  type HealthLogScoreId,
+} from "@/lib/scores/registry";
 
-/** HealthLog's own scores, by the slug of their page under `/insights/scores/`. */
-const SCORE_SLUG_OF = {
-  HEALTH_SCORE: "health",
-  READINESS: "readiness",
-  SLEEP_SCORE: "sleep",
-  // The computed proxy. Its page redirects (readiness for a proxy account,
-  // device scores for a device account); the slug stays reachable for links
-  // already out there.
-  RECOVERY_SCORE: "recovery",
-  STRESS_SCORE: "stress",
-  STRAIN_SCORE: "strain",
-} as const;
-
-type ScoreId = keyof typeof SCORE_SLUG_OF;
-const SCORE_IDS = Object.keys(SCORE_SLUG_OF) as ScoreId[];
-const SCORE_SLUGS: readonly string[] = Object.values(SCORE_SLUG_OF);
+type ScoreId = HealthLogScoreId;
+const SCORE_IDS = HEALTHLOG_SCORE_IDS;
+/** Every slug `/insights/scores/<slug>` may answer to. */
+const SCORE_SLUGS: readonly string[] = SCORE_IDS.map(
+  (id) => HEALTHLOG_SCORES[id].slug,
+);
 
 /**
  * Every file that draws a `<ScoreRing>`, with the scores it may draw.
