@@ -1,3 +1,4 @@
+import { DEFAULT_SOURCE_PRIORITY } from "@/lib/validations/source-priority";
 import { describe, it, expect } from "vitest";
 import {
   describeRecoveryDivergence,
@@ -24,7 +25,11 @@ function nightRows(whoop: number, computed: number): RecoveryRow[] {
 
 describe("describeRecoveryDivergence", () => {
   it("surfaces a material divergence, picking the native source", () => {
-    const out = describeRecoveryDivergence(nightRows(64, 51), "Europe/Berlin");
+    const out = describeRecoveryDivergence(
+      nightRows(64, 51),
+      "Europe/Berlin",
+      DEFAULT_SOURCE_PRIORITY.recovery,
+    );
     expect(out).not.toBeNull();
     expect(out!.chosenSource).toBe("WHOOP");
     expect(out!.alternativeSource).toBe("COMPUTED");
@@ -36,7 +41,11 @@ describe("describeRecoveryDivergence", () => {
 
   it("omits a trivial divergence (sources agree)", () => {
     expect(
-      describeRecoveryDivergence(nightRows(64, 61), "Europe/Berlin"),
+      describeRecoveryDivergence(
+        nightRows(64, 61),
+        "Europe/Berlin",
+        DEFAULT_SOURCE_PRIORITY.recovery,
+      ),
     ).toBeNull();
   });
 
@@ -48,10 +57,22 @@ describe("describeRecoveryDivergence", () => {
         source: "WHOOP",
       },
     ];
-    expect(describeRecoveryDivergence(rows, "Europe/Berlin")).toBeNull();
+    expect(
+      describeRecoveryDivergence(
+        rows,
+        "Europe/Berlin",
+        DEFAULT_SOURCE_PRIORITY.recovery,
+      ),
+    ).toBeNull();
   });
 
   it("returns null on an empty set", () => {
-    expect(describeRecoveryDivergence([], "Europe/Berlin")).toBeNull();
+    expect(
+      describeRecoveryDivergence(
+        [],
+        "Europe/Berlin",
+        DEFAULT_SOURCE_PRIORITY.recovery,
+      ),
+    ).toBeNull();
   });
 });

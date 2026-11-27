@@ -120,7 +120,7 @@ const READERS_WITHOUT_RULE: Record<string, { reason: Reason; why: string }> = {
 
 /** A file applies the rule when its code names one of these. */
 const RULE =
-  /\b(?:loadUserSourcePriority|pickCanonicalSourceRows|canonicalMeasurements(?:Cte|From)|collapseRollupRowsBySource|buildSourceRankCase|sourcePriority|priorityJson|rankPerSource|rankUnqualified|resolveCanonicalRecovery|describeRecoveryDivergence|canonicalRowsOfDay|pickCumulativeDaySum|canonicalCumulativeDayTotalsSql)\b/;
+  /\b(?:loadUserSourcePriority|pickCanonicalSourceRows|canonicalMeasurements(?:Cte|From)|collapseRollupRowsBySource|buildSourceRankCase|sourcePriority|priorityJson|rankPerSource|rankUnqualified|recoveryLadder|canonicalRowsOfDay|pickCumulativeDaySum|canonicalCumulativeDayTotalsSql)\b/;
 
 /** A measurement read of the file's own. */
 const RAW_READ =

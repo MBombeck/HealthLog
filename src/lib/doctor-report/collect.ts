@@ -15,6 +15,7 @@
  *
  * Pure data assembly — no auth, no rate limit, no audit. Idempotent.
  */
+import { recoveryLadder } from "@/lib/insights/derived/recovery-resolve";
 import { medicationWindow } from "@/lib/medications/course-window";
 import { prisma } from "@/lib/db";
 import { countLiveReadingsPerType } from "@/lib/measurements/newest-per-type";
@@ -523,6 +524,7 @@ export async function collectDoctorReportData(
     byType,
     measurements,
     timezone: reportTz,
+    recoveryLadder: recoveryLadder(userProfile?.sourcePriorityJson ?? null),
   });
   // Screener totals answered in an unvalidated translation, per score type.
   const screenerUnvalidatedTranslations =

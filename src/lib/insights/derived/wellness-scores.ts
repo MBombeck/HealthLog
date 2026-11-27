@@ -21,7 +21,8 @@ import { buildInsufficient, buildOk, nowProvenanceTimestamp } from "./coverage";
 import type { BaselineProfile } from "./baseline";
 import type { StrainAnchor } from "@/lib/insights/strain-score";
 import { computeReadiness, type ReadinessComponent } from "./readiness";
-import { resolveCanonicalRecovery } from "./recovery-resolve";
+import { recoveryLadder, resolveCanonicalRecovery } from "./recovery-resolve";
+import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { SPARKLINE_MAX_POINTS, type Derived } from "./types";
 import { dateOnlyKey } from "@/lib/tz/date-only";
 import { resolveUserTimezone } from "@/lib/measurements/consolidation-base";
@@ -194,6 +195,7 @@ export async function computeWellnessScore(
           source: r.source,
         })),
         timezone,
+        recoveryLadder(await loadUserSourcePriority(userId)),
       )
     : rawRows;
 
