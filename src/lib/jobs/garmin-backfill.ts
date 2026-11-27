@@ -10,7 +10,9 @@
  * (`../garmin/backfill-progress.ts`). It ends on its own budget, on the
  * job's, when another heavy job wants the lane, or on Garmin's rate limit
  * (waiting at least as long as `Retry-After` asks), and the next slice picks
- * up at the window it stopped before.
+ * up at the window it stopped before. A slice that made no progress because
+ * Garmin answered with a server error is sent again by the drain after a
+ * growing wait (`integration-backfill-retry.ts`), from the same window.
  *
  * A refused key ends the chain: the connection is parked at
  * `reauth_required` and a reconnect starts a new chain where this one
@@ -497,8 +499,11 @@ export async function runGarminBackfillForUser(
     }
   }
 
+  // The provider's error rides as the cause: the drain reads it to send a
+  // slice that met an outage again later (`integration-backfill-retry.ts`).
   throw new Error(
     `garmin backfill incomplete for user ${userId} (slice ${slice}${stopReason ? `, stopped on ${stopReason}` : ""}${failure instanceof Error ? `: ${failure.message}` : ""})`,
+    failure === undefined ? undefined : { cause: failure },
   );
 }
 

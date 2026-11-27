@@ -34,6 +34,12 @@ export type IntegrationBackfillData = {
    * slice that sends it is still active; never part of the import identity.
    */
   slice?: number;
+  /**
+   * Failed runs in a row behind this job: set when the drain sent a slice
+   * again after a transient provider error (`integration-backfill-retry.ts`),
+   * absent on every slice sent after progress.
+   */
+  retry?: number;
 };
 
 export interface IntegrationBackfillAdmissionPayload {

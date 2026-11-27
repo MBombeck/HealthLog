@@ -435,11 +435,11 @@ export async function runOuraBackfillForUser(
     }
   }
 
-  // Nothing moved, or no next slice could be sent: the pg-boss retry and,
-  // after it, the next boot's discovery take it from here. The progress
-  // note stands, so whatever runs next starts where this one stopped.
+  // Nothing moved, or no next slice was sent: the drain retries an outage (the
+  // cause), the rest goes to pg-boss and discovery, from the progress note.
   throw new Error(
     `oura backfill incomplete for user ${userId} (slice ${slice}${stopReason ? `, stopped on ${stopReason}` : ""}${failure ? `: ${failure instanceof Error ? failure.message : String(failure)}` : ""})`,
+    failure === undefined ? undefined : { cause: failure },
   );
 }
 

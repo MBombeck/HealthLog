@@ -19,6 +19,9 @@
  *   - the history backfill walks back to the start of the history in slices
  *     and stamps its marker; a 429 in the middle sends the next slice after
  *     the wait Garmin named;
+ *   - a slice Garmin answers with a 500 is sent again after a backoff and
+ *     the history still completes; a 500 that never passes gives up after
+ *     the bounded attempts, on the card's ledger and in the job's error;
  *   - connect validates and stores the key sealed, disconnect purges it and
  *     everything stored about it, while the imported history stays.
  */
@@ -98,15 +101,25 @@ const fake = vi.hoisted(() => ({
   hosts: [] as string[],
   /** Runs on each data request, before the answer. */
   onData: null as null | ((path: string) => Promise<void>),
-  sends: [] as Array<{ queue: string; payload: unknown }>,
+  sends: [] as Array<{
+    queue: string;
+    payload: unknown;
+    options?: Record<string, unknown>;
+  }>,
+  /** The status the daily summaries answer with; 200 for the made-up days. */
+  dailyStatus: 200,
   /** The original file of activity 777 (a ZIP), or null for a 404. */
   activityFile: null as Buffer | null,
 }));
 
 vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: () => ({
-    send: async (queue: string, payload: unknown) => {
-      fake.sends.push({ queue, payload });
+    send: async (
+      queue: string,
+      payload: unknown,
+      options?: Record<string, unknown>,
+    ) => {
+      fake.sends.push({ queue, payload, options });
       return `job-${fake.sends.length}`;
     },
   }),
@@ -186,6 +199,7 @@ function weighIn(day: string) {
 function answer(path: string, q: URLSearchParams): unknown {
   const inHistory = (d: string) => d >= fake.historyFrom && d <= fake.today;
   if (path === "/usersummary-service/v2/dailysummaries") {
+    if (fake.dailyStatus !== 200) return { status: fake.dailyStatus };
     return {
       data: daysBetween(q.get("startDate")!, q.get("endDate")!).map((d) =>
         inHistory(d)
@@ -394,6 +408,7 @@ beforeEach(async () => {
   fake.extraWeighDays = [];
   fake.cycleStatus = 200;
   fake.hrvStatus = 200;
+  fake.dailyStatus = 200;
   fake.sleepGone = [];
   fake.hosts.length = 0;
   fake.onData = null;
@@ -1254,5 +1269,135 @@ describe("Garmin key expiry", () => {
     expect(stored?.garminKeyExpiresAt?.toISOString()).toBe(
       `${addDays(fake.today, 80)}T12:00:00.000Z`,
     );
+  });
+});
+
+describe("Garmin history backfill through a Garmin outage", () => {
+  type Payload =
+    import("@/lib/jobs/integration-backfill-admission").IntegrationBackfillAdmissionPayload;
+
+  function admissionJob(payload: Payload, retryCount = 0) {
+    return {
+      id: `job-${payload.data.slice ?? 0}`,
+      data: payload,
+      expireInSeconds: 3600,
+      retryCount,
+    } as unknown as import("pg-boss").Job<Payload>;
+  }
+
+  function lastAdmission(): Payload {
+    const sent = fake.sends
+      .filter((s) => s.queue === "integration-backfill-admission")
+      .at(-1);
+    return sent!.payload as Payload;
+  }
+
+  it("sends a slice that met a 500 again later and completes the history", async () => {
+    await connectUser();
+    fake.historyFrom = addDays(fake.today, -400);
+    fake.dailyStatus = 500;
+    const { drainIntegrationBackfillAdmission } =
+      await import("@/lib/jobs/integration-backfill-drain");
+    const prisma = getPrismaClient();
+
+    // From slice 2 on the daily summaries answer 500. The activity walk still
+    // moves the first slice on; once nothing else can move, the job completes
+    // anyway and the slice is sent again after a backoff.
+    let payload: Payload = {
+      kind: "garmin-backfill",
+      data: {
+        userId: USER_ID,
+        enqueuedAt: new Date().toISOString(),
+        slice: 2,
+      },
+    };
+    for (let i = 0; i < 5 && payload.data.retry === undefined; i++) {
+      await expect(
+        drainIntegrationBackfillAdmission([admissionJob(payload)]),
+      ).resolves.toBeDefined();
+      payload = lastAdmission();
+    }
+    const retry = payload;
+    expect(retry).toMatchObject({
+      kind: "garmin-backfill",
+      data: { userId: USER_ID, retry: 1 },
+    });
+    expect(
+      fake.sends.at(-1)!.options?.startAfter as number,
+    ).toBeGreaterThanOrEqual(150);
+
+    // Garmin is back: the retried slice and the chain after it finish.
+    fake.dailyStatus = 200;
+    let next: Payload | null = retry;
+    for (let i = 0; i < 20 && next; i++) {
+      const before = fake.sends.length;
+      await drainIntegrationBackfillAdmission([admissionJob(next)]);
+      next = fake.sends.length > before ? lastAdmission() : null;
+    }
+    const user = await prisma.user.findUnique({
+      where: { id: USER_ID },
+      select: { garminBackfillCompletedAt: true },
+    });
+    expect(user?.garminBackfillCompletedAt).not.toBeNull();
+    expect((await garminRowCounts()).ACTIVITY_STEPS).toBe(401);
+  });
+
+  it("gives up on a 500 that never passes, and says so on the card", async () => {
+    await connectUser();
+    fake.historyFrom = addDays(fake.today, -400);
+    fake.dailyStatus = 500;
+    const { drainIntegrationBackfillAdmission } =
+      await import("@/lib/jobs/integration-backfill-drain");
+    const { INTEGRATION_BACKFILL_TRANSIENT_ATTEMPTS } =
+      await import("@/lib/jobs/integration-backfill-retry");
+
+    let payload: Payload = {
+      kind: "garmin-backfill",
+      data: { userId: USER_ID, enqueuedAt: new Date().toISOString(), slice: 2 },
+    };
+    let error: unknown;
+    for (let i = 0; i < INTEGRATION_BACKFILL_TRANSIENT_ATTEMPTS + 5; i++) {
+      try {
+        await drainIntegrationBackfillAdmission([admissionJob(payload)]);
+      } catch (err) {
+        error = err;
+        break;
+      }
+      payload = lastAdmission();
+    }
+    // Every failed run but the last was sent again, with its count.
+    const retries = fake.sends
+      .map((s) => (s.payload as Payload).data?.retry)
+      .filter((r) => r !== undefined);
+    expect(retries).toEqual(
+      Array.from(
+        { length: INTEGRATION_BACKFILL_TRANSIENT_ATTEMPTS - 1 },
+        (_, i) => i + 1,
+      ),
+    );
+    expect(String(error)).toMatch(
+      new RegExp(
+        `gave up after ${INTEGRATION_BACKFILL_TRANSIENT_ATTEMPTS} attempts: garmin backfill incomplete for user .* \\(slice \\d+: Garmin dailySummaries error: 500\\)`,
+      ),
+    );
+
+    const { getIntegrationStatus } = await import("@/lib/integrations/status");
+    const status = await getIntegrationStatus(USER_ID, "garmin");
+    expect(status.state).toBe("error_transient");
+    expect(status.lastError).toContain("Garmin dailySummaries error: 500");
+    expect(status.lastError).not.toContain(USER_ID);
+    const row = await getPrismaClient().integrationStatus.findFirst({
+      where: { userId: USER_ID, integration: "garmin" },
+      select: { failingLegs: true },
+    });
+    expect(row?.failingLegs).toEqual(["backfill"]);
+
+    // The progress note stands: nothing was stamped and nothing was lost.
+    const user = await getPrismaClient().user.findUnique({
+      where: { id: USER_ID },
+      select: { garminBackfillCompletedAt: true, garminBackfillProgress: true },
+    });
+    expect(user?.garminBackfillCompletedAt).toBeNull();
+    expect(user?.garminBackfillProgress).not.toBeNull();
   });
 });
