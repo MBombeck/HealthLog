@@ -1,19 +1,18 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { Switch } from "@/components/ui/switch";
 import { SwitchRow } from "@/components/ui/switch-row";
-import { Button } from "@/components/ui/button";
+import { ListGroup, ListItem } from "@/components/ui/list-row";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/ui/empty-state";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
-import Link from "next/link";
-import { Bell, Settings, AlertCircle } from "lucide-react";
+import { AlertCircle, BellRing, Send } from "lucide-react";
 import {
   eventDescriptionTranslationKey,
   eventTranslationKey,
@@ -21,13 +20,6 @@ import {
 import { queryKeys } from "@/lib/query-keys";
 import { preferenceCellEnabled } from "@/lib/notifications/event-default-rule";
 import { apiGet, apiPut } from "@/lib/api/api-fetch";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 
 interface ChannelInfo {
   id: string;
@@ -59,6 +51,8 @@ export default function NotificationsPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { t } = useTranslations();
   const queryClient = useQueryClient();
+  // The kind whose channels are open in the phone sheet.
+  const [openEvent, setOpenEvent] = useState<string | null>(null);
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.notificationsPreferences(),
@@ -126,29 +120,27 @@ export default function NotificationsPage() {
 
   // Cross-links to the other two notification surfaces (reminder types +
   // delivery channels) so the matrix never reads as the only place to manage
-  // notifications. Mirrored by back-links on those two settings screens.
-  const headerActions = (
-    <>
-      <Button asChild variant="outline" size="sm">
-        <Link href="/settings/notifications">
-          {t("notifications.reminderSettingsLink")}
-        </Link>
-      </Button>
-      <Button asChild variant="outline" size="sm">
-        <Link href="/settings/integrations#channels">
-          {t("notifications.channelsLink")}
-        </Link>
-      </Button>
-    </>
+  // notifications. Mirrored by back-links on those two settings screens. Rows
+  // at the foot of the page, not two buttons stacked under the title.
+  const crossLinks = (
+    <ListGroup data-slot="notifications-cross-links">
+      <ListItem
+        href="/settings/notifications"
+        icon={<BellRing className="text-muted-foreground size-4" aria-hidden />}
+        title={t("notifications.reminderSettingsLink")}
+      />
+      <ListItem
+        href="/settings/integrations#channels"
+        icon={<Send className="text-muted-foreground size-4" aria-hidden />}
+        title={t("notifications.channelsLink")}
+      />
+    </ListGroup>
   );
 
   if (authLoading || isLoading) {
     return (
       <div className="space-y-6">
-        <PageHeader
-          title={t("notifications.title")}
-          description={t("notifications.subtitle")}
-        />
+        <PageHeader title={t("notifications.title")} />
         {/* Skeleton mirrors the event-row matrix so the auth-resolving frame
             reserves layout instead of flashing a lone spinner. */}
         <div
@@ -190,10 +182,7 @@ export default function NotificationsPage() {
   if (isError) {
     return (
       <div className="space-y-6">
-        <PageHeader
-          title={t("notifications.title")}
-          description={t("notifications.subtitle")}
-        />
+        <PageHeader title={t("notifications.title")} />
         <QueryErrorCard
           error={error}
           description={t("notifications.loadError")}
@@ -204,39 +193,32 @@ export default function NotificationsPage() {
   }
 
   if (activeChannels.length === 0) {
-    return (
-      <NoChannelPage eventTypes={eventTypes} headerActions={headerActions} />
-    );
+    return <NoChannelPage eventTypes={eventTypes} crossLinks={crossLinks} />;
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={t("notifications.title")}
-        description={t("notifications.subtitle")}
-        actions={headerActions}
-        stackActionsOnPhone
-      />
+      <PageHeader title={t("notifications.title")} />
 
       {/* Desktop: table layout */}
       <div className="bg-card border-border hidden overflow-hidden rounded-xl border md:block">
         <table className="w-full">
           <thead>
             <tr className="border-border border-b">
-              <th className="text-muted-foreground px-4 py-3 text-left text-xs font-medium tracking-wider uppercase">
+              <th className="text-muted-foreground px-4 py-3 text-left text-xs font-medium">
                 {t("notifications.eventColumn")}
               </th>
               {activeChannels.map((ch) => (
                 <th
                   key={ch.id}
-                  className="px-4 py-3 text-center text-xs font-medium tracking-wider uppercase"
+                  className="px-4 py-3 text-center text-xs font-medium"
                 >
                   {/* Disabled state reads through the note + the disabled
                       switches below — never through sub-AA opacity dimming
                       on the label or the note itself. */}
                   <span className="text-muted-foreground">{ch.label}</span>
                   {!ch.enabled && (
-                    <span className="text-muted-foreground block text-xs normal-case">
+                    <span className="text-muted-foreground block text-xs">
                       {t("notifications.channelDisabled")}
                     </span>
                   )}
@@ -289,56 +271,65 @@ export default function NotificationsPage() {
         </table>
       </div>
 
-      {/* Mobile: stacked cards */}
-      <div className="space-y-4 md:hidden">
+      {/* Phone: one row per kind, its channels in a sheet. */}
+      <ListGroup className="md:hidden" data-slot="notifications-kinds">
         {eventTypes.map((eventType) => {
-          const nameKey = eventTranslationKey(eventType);
-          const descKey = eventDescriptionTranslationKey(eventType);
+          const on = activeChannels.filter(
+            (ch) => ch.enabled && isEnabled(ch.id, eventType),
+          );
           return (
-            <Card key={eventType} className="gap-3">
-              <CardHeader className="gap-1">
-                <CardTitle className="text-sm font-medium">
-                  {t(nameKey)}
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  {t(descKey)}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {activeChannels.map((ch) => {
-                  const enabled = isEnabled(ch.id, eventType);
-                  const disabled = !ch.enabled;
-                  const switchId = `notification-${eventType}-${ch.id}`;
-                  return (
-                    <SwitchRow
-                      key={ch.id}
-                      id={switchId}
-                      label={ch.label}
-                      // The same name as the desktop matrix cell: the event
-                      // and the channel, since each card repeats the channels.
-                      aria-label={`${t(nameKey)} - ${ch.label}`}
-                      description={
-                        disabled
-                          ? t("notifications.channelDisabled")
-                          : undefined
-                      }
-                      checked={enabled && !disabled}
-                      disabled={disabled || toggleMutation.isPending}
-                      onCheckedChange={(checked: boolean) =>
-                        toggleMutation.mutate({
-                          channelId: ch.id,
-                          eventType,
-                          enabled: checked,
-                        })
-                      }
-                    />
-                  );
-                })}
-              </CardContent>
-            </Card>
+            <ListItem
+              key={eventType}
+              data-event-type={eventType}
+              onSelect={() => setOpenEvent(eventType)}
+              title={t(eventTranslationKey(eventType))}
+              meta={
+                on.length > 0
+                  ? on.map((ch) => ch.label).join(", ")
+                  : t("settings.moduleState.off")
+              }
+            />
           );
         })}
-      </div>
+      </ListGroup>
+      <ResponsiveSheet
+        open={openEvent !== null}
+        onOpenChange={(open) => {
+          if (!open) setOpenEvent(null);
+        }}
+        title={openEvent ? t(eventTranslationKey(openEvent)) : ""}
+        description={
+          openEvent ? t(eventDescriptionTranslationKey(openEvent)) : undefined
+        }
+      >
+        {openEvent ? (
+          <div className="divide-border divide-y">
+            {activeChannels.map((ch) => {
+              const disabled = !ch.enabled;
+              return (
+                <SwitchRow
+                  key={ch.id}
+                  id={`notification-${openEvent}-${ch.id}`}
+                  label={ch.label}
+                  aria-label={`${t(eventTranslationKey(openEvent))} - ${ch.label}`}
+                  description={
+                    disabled ? t("notifications.channelDisabled") : undefined
+                  }
+                  checked={isEnabled(ch.id, openEvent) && !disabled}
+                  disabled={disabled || toggleMutation.isPending}
+                  onCheckedChange={(checked: boolean) =>
+                    toggleMutation.mutate({
+                      channelId: ch.id,
+                      eventType: openEvent,
+                      enabled: checked,
+                    })
+                  }
+                />
+              );
+            })}
+          </div>
+        ) : null}
+      </ResponsiveSheet>
 
       {/* Info hint about globally-disabled channels — a full sentence that
           explains the state, not the bare "(Disabled)" inline tag. */}
@@ -350,6 +341,8 @@ export default function NotificationsPage() {
           </p>
         </div>
       )}
+
+      {crossLinks}
     </div>
   );
 }
@@ -362,52 +355,38 @@ export default function NotificationsPage() {
  */
 function NoChannelPage({
   eventTypes,
-  headerActions,
+  crossLinks,
 }: {
   eventTypes: string[];
-  headerActions: ReactNode;
+  crossLinks: ReactNode;
 }) {
   const { t } = useTranslations();
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={t("notifications.title")}
-        description={t("notifications.subtitle")}
-        actions={headerActions}
-        stackActionsOnPhone
-      />
-      <EmptyState
-        className="max-w-2xl"
-        icon={<Bell className="size-6" />}
-        title={t("notifications.noChannels")}
-        /* Channel setup lives in Settings → Integrations since v1.25.7;
-           point the CTA at that anchor, not the reminder-types screen. */
-        action={
-          <Button asChild variant="outline">
-            <Link href="/settings/integrations#channels">
-              <Settings className="h-4 w-4" />
-              {t("notifications.goToSettings")}
-            </Link>
-          </Button>
-        }
-      />
-      <div
-        data-slot="notifications-kinds-without-channel"
-        className="bg-card border-border overflow-hidden rounded-xl border"
-      >
-        <ul className="divide-border divide-y">
-          {eventTypes.map((eventType) => (
-            <li key={eventType} className="px-4 py-3">
-              <div className="text-sm font-medium">
-                {t(eventTranslationKey(eventType))}
-              </div>
-              <div className="text-muted-foreground text-xs">
-                {t(eventDescriptionTranslationKey(eventType))}
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
+      <PageHeader title={t("notifications.title")} />
+      <section className="space-y-2">
+        <p className="text-muted-foreground text-sm">
+          {t("notifications.noChannels")}
+        </p>
+        {/* Channel setup lives in Settings > Integrations since v1.25.7;
+            point at that anchor, not the reminder-types screen. */}
+        <ListGroup
+          empty={{
+            label: t("notifications.goToSettings"),
+            href: "/settings/integrations#channels",
+          }}
+        />
+      </section>
+      <ListGroup data-slot="notifications-kinds-without-channel">
+        {eventTypes.map((eventType) => (
+          <ListItem
+            key={eventType}
+            title={t(eventTranslationKey(eventType))}
+            meta={t(eventDescriptionTranslationKey(eventType))}
+          />
+        ))}
+      </ListGroup>
+      {crossLinks}
     </div>
   );
 }
