@@ -324,13 +324,9 @@ export async function runGoogleHealthBackfillForUser(
     );
   }
 
-  /**
-   * Queue the next slice. A slice that waits for a parked collection's retry
-   * goes under a key named after when the retry is due, instead of its slice
-   * number: every slice that meets the same wait, a boot's included, names the
-   * same job, and the queue keeps one. Under the slice number a boot during
-   * the day-long wait started a second chain beside the waiting one.
-   */
+  // Queue the next slice. One that waits for a parked collection's retry is
+  // keyed on when the retry is due, so every slice meeting the same wait (a
+  // boot's too) names one job instead of starting a second chain.
   const sendNextSlice = async (
     delaySeconds: number,
     retryDueAt?: number,
@@ -372,8 +368,7 @@ export async function runGoogleHealthBackfillForUser(
       INTEGRATION_BACKFILL_CONTINUATION_DELAY_SECONDS,
       waitSeconds,
     );
-    // A retry already due is an ordinary next slice; only a wait is keyed on
-    // when it ends.
+    // A retry already due is an ordinary next slice; only a wait is keyed.
     const delayed =
       waitSeconds > INTEGRATION_BACKFILL_CONTINUATION_DELAY_SECONDS;
     if (
@@ -431,13 +426,9 @@ export async function runGoogleHealthBackfillForUser(
       // No follow-up could be queued; fall through to the retry path so the
       // work is not dropped.
     }
-    // Nothing moved in this slice: the backfill is stuck, not slow. Throw
-    // with what each collection came to, so the log line says where it is
-    // stuck, and the collection's error as the cause: the drain sends the
-    // slice again after an outage (`integration-backfill-retry.ts`), anything
-    // else goes to the pg-boss retry. If the failure parked the connection at
-    // error_reauth meanwhile, the next attempt takes the reauth return above
-    // instead of failing again.
+    // Nothing moved in this slice: stuck, not slow. The message says where,
+    // the cause lets the drain retry an outage (`integration-backfill-retry`).
+    // A failure that parked the connection meets the reauth return above.
     annotate({
       action: {
         name: "google_health.backfill.stuck",

@@ -20,45 +20,52 @@
  *     Health) note that collection's error with `noteBackfillFailure`, which
  *     is where a runner's `failure` comes from.
  */
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const read = (path: string): string =>
-  readFileSync(join(process.cwd(), path), "utf8");
+import { readSource } from "@/__tests__/helpers/source-files";
 
 type Carrier = "backfillIncomplete" | "throws the provider error";
 
 /** Runner file of every import kind that belongs to a provider ledger. */
-const RUNNERS: Record<string, { file: string; carrier: Carrier }> = {
+const RUNNERS: Record<
+  string,
+  { file: string; runner: string; carrier: Carrier }
+> = {
   "whoop-backfill": {
     file: "src/lib/jobs/whoop-backfill.ts",
+    runner: "runWhoopBackfillForUser",
     carrier: "backfillIncomplete",
   },
   "google-health-backfill": {
     file: "src/lib/jobs/google-health-backfill.ts",
+    runner: "runGoogleHealthBackfillForUser",
     carrier: "backfillIncomplete",
   },
   "google-health-sleep-repair": {
     file: "src/lib/jobs/google-health-sleep-repair.ts",
+    runner: "runGoogleHealthSleepRepairForUser",
     carrier: "backfillIncomplete",
   },
   // The WHOOP arm re-syncs the full history; the Withings arm's sync throws
   // the provider error itself.
   "sleep-timeline-backfill": {
     file: "src/lib/jobs/sleep-timeline-backfill.ts",
+    runner: "runSleepTimelineBackfillForUser",
     carrier: "backfillIncomplete",
   },
   "garmin-backfill": {
     file: "src/lib/jobs/garmin-backfill.ts",
+    runner: "runGarminBackfillForUser",
     carrier: "backfillIncomplete",
   },
   "oura-backfill": {
     file: "src/lib/jobs/oura-backfill.ts",
+    runner: "runOuraBackfillForUser",
     carrier: "backfillIncomplete",
   },
   "strava-backfill": {
     file: "src/lib/jobs/strava-backfill.ts",
+    runner: "runStravaBackfillForUser",
     carrier: "throws the provider error",
   },
 };
@@ -72,7 +79,10 @@ const COLLECTORS = [
 
 /** The kinds `integrationOf` maps to a provider ledger (not `null`). */
 function ledgerKinds(): string[] {
-  const source = read("src/lib/jobs/integration-backfill-retry.ts");
+  const source = readSource(
+    "src/lib/jobs/integration-backfill-retry.ts",
+    "function integrationOf(",
+  );
   const body = source.match(
     /const map: Record<IntegrationBackfillKind, IntegrationKey \| null> = \{([\s\S]*?)\};/,
   )?.[1];
@@ -94,8 +104,8 @@ describe("integration backfill retry rule", () => {
 
   it.each(Object.entries(RUNNERS))(
     "%s throws its failure where the drain can read it",
-    (_kind, { file, carrier }) => {
-      const source = read(file);
+    (_kind, { file, runner, carrier }) => {
+      const source = readSource(file, `function ${runner}(`);
       expect(source.match(BARE_INCOMPLETE) ?? [], file).toEqual([]);
       if (carrier === "backfillIncomplete") {
         expect(
@@ -110,7 +120,8 @@ describe("integration backfill retry rule", () => {
 
   it.each(COLLECTORS)("%s notes a failed collection's error", (file) => {
     expect(
-      read(file).match(/noteBackfillFailure\(err\)/g)?.length ?? 0,
+      readSource(file, "catch (err)").match(/noteBackfillFailure\(err\)/g)
+        ?.length ?? 0,
       file,
     ).toBeGreaterThan(0);
   });
