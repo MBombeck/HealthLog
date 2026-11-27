@@ -72,21 +72,17 @@ const READERS_WITHOUT_RULE: Record<string, { reason: Reason; why: string }> = {
     reason: "probe",
     why: "the newest updatedAt of any row, a cache fingerprint; no value is read",
   },
-  "lib/insights/recovery-empty-read.ts": {
-    reason: "probe",
-    why: "whether any device recovery row exists, to explain an empty card",
-  },
   "lib/dashboard/widgets/unavailable-widgets.ts": {
     reason: "probe",
     why: "whether a type has any row at all, to hide a widget without data",
   },
+  "lib/insights/derived/same-time-baseline.ts": {
+    reason: "probe",
+    why: "the unit of the newest row as the display unit; the hourly profiles come from readCumulativeDayProfiles, which reads the per-sample source alone",
+  },
   "lib/insights/derived/readiness.ts": {
     reason: "single-producer",
     why: "reads RECOVERY_SCORE filtered to source COMPUTED, HealthLog's own readiness rows",
-  },
-  "lib/daily/morning-load.ts": {
-    reason: "per-source",
-    why: "device scores of the last nights with their source on every row; the card names each device's own score",
   },
   "lib/insights/derived/bmi.ts": {
     reason: "latest-reading",
