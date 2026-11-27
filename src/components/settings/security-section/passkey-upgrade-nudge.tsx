@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Sparkles, X } from "lucide-react";
+import { Fingerprint, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
@@ -31,7 +31,7 @@ export function PasskeyUpgradeNudge() {
 
   return (
     <div className="border-primary/30 bg-primary/5 flex items-start gap-3 rounded-lg border p-4">
-      <Sparkles className="text-muted-foreground mt-0.5 size-5 shrink-0" />
+      <Fingerprint className="text-muted-foreground mt-0.5 size-5 shrink-0" />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium">
           {t("settings.security.passkeyNudge.title")}

@@ -1,60 +1,34 @@
-import {
-  Activity,
-  Award,
-  Brain,
-  BrainCircuit,
-  CalendarHeart,
-  CloudSun,
-  Droplet,
-  Dumbbell,
-  FileScan,
-  FileText,
-  History,
-  Leaf,
-  MessageCircleHeart,
-  Moon,
-  Pill,
-  Plug,
-  Smile,
-  Sparkles,
-  Syringe,
-  TestTube,
-  Thermometer,
-  type LucideIcon,
-} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
+import { DESTINATION_ICONS as ICON } from "@/components/layout/destination-icons";
 import type { ModuleKey } from "@/lib/modules/registry";
 
-/** Neutral Lucide glyph per toggleable module. */
+/**
+ * The glyph per toggleable module: the icon of the destination the module
+ * opens, from the one map (`destination-icons.ts`), so a module row and its
+ * rail entry show the same picture. `insights` is AI analysis, hence the AI
+ * glyph rather than the Insights bulb.
+ */
 export const MODULE_ICONS: Record<ModuleKey, LucideIcon> = {
-  cycle: CalendarHeart,
-  mood: Smile,
-  sleep: Moon,
-  glucose: Droplet,
-  workouts: Dumbbell,
-  recovery: Activity,
-  labs: TestTube,
-  illness: Thermometer,
-  achievements: Award,
-  coach: MessageCircleHeart,
-  insights: Sparkles,
-  // v1.18.1 — medications graduated from CORE to a toggleable module.
-  medications: Pill,
-  doctorReport: FileText,
-  // v1.25.0 — the environmental-context module (opt-in weather/daylight feed).
-  environment: CloudSun,
-  // v1.22.0 — the remote MCP endpoint (opt-in connectivity module).
-  mcp: Plug,
-  // v1.25.0 — inbound clinical documents (opt-in).
-  inboundDocuments: FileScan,
-  // v1.25.0 — opt-in mental-health screeners (PHQ-9 / GAD-7).
-  mentalHealth: Brain,
-  // v1.28 — opt-in micronutrient-intake sync (Apple Health day totals).
-  nutrients: Leaf,
-  // v1.38.0 — the immunization log.
-  vaccinations: Syringe,
-  // v1.42 — the life timeline (opt-in).
-  timeline: History,
-  // The seizure diary (opt-in).
-  seizures: BrainCircuit,
+  cycle: ICON.cycle,
+  mood: ICON.mood,
+  sleep: ICON.sleep,
+  glucose: ICON.glucose,
+  workouts: ICON.workouts,
+  recovery: ICON.recovery,
+  labs: ICON.labs,
+  illness: ICON.illness,
+  achievements: ICON.achievements,
+  coach: ICON.coach,
+  insights: ICON.ai,
+  medications: ICON.medications,
+  doctorReport: ICON.doctorReport,
+  environment: ICON.environment,
+  mcp: ICON.mcp,
+  inboundDocuments: ICON.documents,
+  mentalHealth: ICON.mentalWellbeing,
+  nutrients: ICON.nutrients,
+  vaccinations: ICON.vaccinations,
+  timeline: ICON.timeline,
+  seizures: ICON.seizures,
 };

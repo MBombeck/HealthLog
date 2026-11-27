@@ -174,7 +174,10 @@ describe("the utility tail under a switch", () => {
     visibleUtilityDestinations({ record }).map((d) => d.href);
 
   it("keeps both utilities in one's own record", () => {
-    expect(hrefs(null)).toEqual(["/settings/account", "/notifications"]);
+    expect(hrefs(null)).toEqual([
+      "/settings/account",
+      "/settings/notifications",
+    ]);
     expect(visibleUtilityDestinations().map((d) => d.href)).toEqual(
       hrefs(null),
     );
@@ -223,7 +226,7 @@ describe("the utility tail under a switch", () => {
     for (const recordKind of ["shared", "managed"] as const) {
       for (const level of ["read", "write", "manage", null] as const) {
         expect(hrefs(context(recordKind, level))).not.toContain(
-          "/notifications",
+          "/settings/notifications",
         );
       }
     }

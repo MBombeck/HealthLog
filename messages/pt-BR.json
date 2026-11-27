@@ -370,7 +370,7 @@
     "bpClassificationTitle": "Pressão arterial: classificação ESH (2023)",
     "avgBp": "Pressão arterial média",
     "classification": "Classificação",
-    "bmiTitle": "Índice de Massa Corporal (IMC)",
+    "bmiTitle": "Índice de massa corporal (IMC)",
     "bmiRow": "IMC: {bmi} kg/m², Classificação: {class} (OMS)",
     "complianceTitle": "Adesão à medicação",
     "glp1Title": "Terapia com GLP-1",
@@ -600,7 +600,7 @@
     "admin": "Console de administração",
     "logout": "Sair",
     "login": "Entrar",
-    "notifications": "Notificações por canal",
+    "notifications": "Notificações",
     "theme": "Tema",
     "themeSystem": "Sistema",
     "themeDark": "Escuro",
@@ -3266,7 +3266,7 @@
       "historyLink": "Histórico"
     },
     "dailyBriefing": {
-      "title": "Resumo Diário",
+      "title": "Resumo diário",
       "keyFindingsTitle": "Principais descobertas",
       "signalsTitle": "Sinais do dia",
       "emptyTitle": "Ainda sem resumo",
@@ -4091,11 +4091,11 @@
     "missed": "perdida",
     "assessmentTitle": "Avaliação",
     "restMode": {
-      "title": "Modo de Repouso",
+      "title": "Modo de repouso",
       "body": "Um episódio de doença ou condição está ativo, então isto reflete uma janela de recuperação. Sua pontuação não é reduzida por isso.",
       "bodySince": "Um episódio de doença ou condição está ativo desde {since}, então isto reflete uma janela de recuperação. Sua pontuação não é reduzida por isso."
     },
-    "bloodPressureSectionTitle": "Pressão Arterial",
+    "bloodPressureSectionTitle": "Pressão arterial",
     "weightSectionTitle": "Peso",
     "pulseSectionTitle": "Pulso",
     "bmiSectionTitle": "IMC",
@@ -4383,7 +4383,7 @@
       }
     },
     "totalBodyWater": {
-      "title": "Água Corporal Total",
+      "title": "Água corporal total",
       "description": "Sua água corporal total ao longo do tempo, em quilogramas.",
       "chartTitle": "Água corporal total",
       "emptyState": {
@@ -4393,7 +4393,7 @@
     },
     "navTotalBodyWater": "Água corporal",
     "boneMass": {
-      "title": "Massa Óssea",
+      "title": "Massa óssea",
       "description": "Sua massa óssea ao longo do tempo, em quilogramas.",
       "chartTitle": "Massa óssea",
       "emptyState": {
@@ -4403,7 +4403,7 @@
     },
     "navBoneMass": "Massa óssea",
     "flightsClimbed": {
-      "title": "Andares Subidos",
+      "title": "Andares subidos",
       "description": "Andares de escada que você subiu por dia.",
       "chartTitle": "Andares subidos por dia",
       "emptyState": {
@@ -4413,7 +4413,7 @@
     },
     "navFlightsClimbed": "Andares",
     "walkingRunningDistance": {
-      "title": "Distância Caminhada + Corrida",
+      "title": "Distância caminhada + corrida",
       "description": "Distância caminhada e corrida que você cobriu por dia, em quilômetros.",
       "chartTitle": "Distância por dia",
       "emptyState": {
@@ -4423,7 +4423,7 @@
     },
     "navWalkingRunningDistance": "Distância",
     "fatFreeMass": {
-      "title": "Massa Livre de Gordura",
+      "title": "Massa livre de gordura",
       "description": "Sua massa livre de gordura ao longo do tempo, em quilogramas.",
       "chartTitle": "Massa livre de gordura",
       "emptyState": {
@@ -4433,7 +4433,7 @@
     },
     "navFatFreeMass": "Massa livre de gordura",
     "fatMass": {
-      "title": "Massa de Gordura",
+      "title": "Massa de gordura",
       "description": "Sua massa de gordura ao longo do tempo, em quilogramas.",
       "chartTitle": "Massa de gordura",
       "emptyState": {
@@ -4442,7 +4442,7 @@
       }
     },
     "bodyFat": {
-      "title": "Gordura Corporal",
+      "title": "Gordura corporal",
       "description": "Sua porcentagem de gordura corporal ao longo do tempo.",
       "chartTitle": "Gordura corporal",
       "emptyState": {
@@ -4454,7 +4454,7 @@
     "navFatMass": "Massa de gordura",
     "navBodyFat": "Gordura corporal",
     "muscleMass": {
-      "title": "Massa Muscular",
+      "title": "Massa muscular",
       "description": "Sua massa muscular ao longo do tempo, em quilogramas.",
       "chartTitle": "Massa muscular",
       "emptyState": {
@@ -4464,7 +4464,7 @@
     },
     "navMuscleMass": "Massa muscular",
     "skinTemperature": {
-      "title": "Temperatura da Pele",
+      "title": "Temperatura da pele",
       "description": "Sua temperatura da pele no pulso ao longo do tempo, em graus Celsius.",
       "chartTitle": "Temperatura da pele",
       "emptyState": {
@@ -4474,7 +4474,7 @@
     },
     "navSkinTemperature": "Temp. da pele",
     "pulseWaveVelocity": {
-      "title": "Velocidade de Onda de Pulso",
+      "title": "Velocidade de onda de pulso",
       "description": "Sua velocidade de onda de pulso arterial ao longo do tempo, em m/s. Valores mais altos sugerem artérias mais rígidas.",
       "chartTitle": "Velocidade de onda de pulso",
       "emptyState": {
@@ -4484,7 +4484,7 @@
     },
     "navPulseWaveVelocity": "Velocidade de onda de pulso",
     "vascularAge": {
-      "title": "Idade Vascular",
+      "title": "Idade vascular",
       "description": "Sua idade vascular estimada ao longo do tempo, em anos.",
       "chartTitle": "Idade vascular",
       "emptyState": {
@@ -4494,7 +4494,7 @@
     },
     "navVascularAge": "Idade vascular",
     "visceralFat": {
-      "title": "Gordura Visceral",
+      "title": "Gordura visceral",
       "description": "Sua classificação de gordura visceral ao longo do tempo.",
       "chartTitle": "Gordura visceral",
       "emptyState": {
@@ -4504,7 +4504,7 @@
     },
     "navVisceralFat": "Gordura visceral",
     "audioExposureEnv": {
-      "title": "Áudio Ambiente",
+      "title": "Áudio ambiente",
       "description": "Sua exposição média diária ao som ambiente, em dBA.",
       "chartTitle": "Exposição sonora ambiente",
       "emptyState": {
@@ -4514,7 +4514,7 @@
     },
     "navAudioExposureEnv": "Áudio ambiente",
     "audioExposureHeadphone": {
-      "title": "Áudio de Fone",
+      "title": "Áudio de fone",
       "description": "Sua exposição média diária ao áudio de fone, em dBA.",
       "chartTitle": "Exposição sonora de fone",
       "emptyState": {
@@ -4524,7 +4524,7 @@
     },
     "navAudioExposureHeadphone": "Áudio de fone",
     "timeInDaylight": {
-      "title": "Tempo sob Luz do Dia",
+      "title": "Tempo sob luz do dia",
       "description": "Minutos passados sob luz do dia por dia.",
       "chartTitle": "Tempo sob luz do dia por dia",
       "emptyState": {
@@ -4534,7 +4534,7 @@
     },
     "navTimeInDaylight": "Luz do dia",
     "walkingSteadiness": {
-      "title": "Estabilidade ao Caminhar",
+      "title": "Estabilidade ao caminhar",
       "description": "Sua estabilidade ao caminhar ao longo do tempo, como uma porcentagem.",
       "chartTitle": "Estabilidade ao caminhar",
       "emptyState": {
@@ -4544,7 +4544,7 @@
     },
     "navWalkingSteadiness": "Estabilidade ao caminhar",
     "audioExposureEvent": {
-      "title": "Eventos de Som Alto",
+      "title": "Eventos de som alto",
       "description": "Dias com um evento de exposição a ambiente barulhento.",
       "chartTitle": "Eventos de ambiente barulhento por dia",
       "emptyState": {
@@ -4554,7 +4554,7 @@
     },
     "navAudioExposureEvent": "Eventos barulhentos",
     "respiratoryRate": {
-      "title": "Frequência Respiratória",
+      "title": "Frequência respiratória",
       "description": "Sua frequência respiratória ao longo do tempo, em respirações por minuto.",
       "chartTitle": "Frequência respiratória",
       "emptyState": {
@@ -4564,7 +4564,7 @@
     },
     "navRespiratoryRate": "Frequência respiratória",
     "leanBodyMass": {
-      "title": "Massa Corporal Magra",
+      "title": "Massa corporal magra",
       "description": "Sua massa corporal magra ao longo do tempo, em quilogramas.",
       "chartTitle": "Massa corporal magra",
       "emptyState": {
@@ -4574,7 +4574,7 @@
     },
     "navLeanBodyMass": "Massa corporal magra",
     "walkingHeartRateAverage": {
-      "title": "Frequência Cardíaca ao Caminhar",
+      "title": "Frequência cardíaca ao caminhar",
       "description": "Sua frequência cardíaca média ao caminhar, em bpm.",
       "chartTitle": "Frequência cardíaca média ao caminhar",
       "emptyState": {
@@ -4584,7 +4584,7 @@
     },
     "navWalkingHeartRateAverage": "FC ao caminhar",
     "walkingAsymmetry": {
-      "title": "Assimetria ao Caminhar",
+      "title": "Assimetria ao caminhar",
       "description": "Sua assimetria ao caminhar ao longo do tempo, como uma porcentagem.",
       "chartTitle": "Assimetria ao caminhar",
       "emptyState": {
@@ -4594,7 +4594,7 @@
     },
     "navWalkingAsymmetry": "Assimetria ao caminhar",
     "walkingDoubleSupport": {
-      "title": "Tempo de Duplo Apoio",
+      "title": "Tempo de duplo apoio",
       "description": "A porcentagem de cada passada gasta com ambos os pés no chão.",
       "chartTitle": "Tempo de duplo apoio",
       "emptyState": {
@@ -4604,7 +4604,7 @@
     },
     "navWalkingDoubleSupport": "Duplo apoio",
     "walkingStepLength": {
-      "title": "Comprimento do Passo ao Caminhar",
+      "title": "Comprimento do passo ao caminhar",
       "description": "Seu comprimento médio de passo ao caminhar ao longo do tempo, em metros.",
       "chartTitle": "Comprimento do passo",
       "emptyState": {
@@ -4614,7 +4614,7 @@
     },
     "navWalkingStepLength": "Comprimento do passo",
     "walkingSpeed": {
-      "title": "Velocidade ao Caminhar",
+      "title": "Velocidade ao caminhar",
       "description": "Sua velocidade média ao caminhar ao longo do tempo, em km/h.",
       "chartTitle": "Velocidade ao caminhar",
       "emptyState": {
@@ -5023,7 +5023,7 @@
     },
     "navCardioFitness": "VO₂ máx",
     "cardioRecovery": {
-      "title": "Recuperação Cardíaca",
+      "title": "Recuperação cardíaca",
       "description": "Quanto sua frequência cardíaca cai um minuto após o pico do exercício.",
       "chartTitle": "Recuperação cardíaca (bpm)",
       "emptyState": {
@@ -5033,7 +5033,7 @@
     },
     "navCardioRecovery": "Recuperação cardíaca",
     "wristTemperature": {
-      "title": "Temperatura do Pulso",
+      "title": "Temperatura do pulso",
       "description": "Sua temperatura noturna do pulso, acompanhada contra a sua própria base.",
       "chartTitle": "Temperatura do pulso",
       "emptyState": {
@@ -5054,7 +5054,7 @@
     },
     "navFalls": "Quedas",
     "sixMinuteWalk": {
-      "title": "Caminhada de Seis Minutos",
+      "title": "Caminhada de seis minutos",
       "description": "A estimativa da Apple de quão longe você poderia caminhar em seis minutos.",
       "chartTitle": "Distância de caminhada de seis minutos (m)",
       "emptyState": {
@@ -5064,7 +5064,7 @@
     },
     "navSixMinuteWalk": "Caminhada de 6 min",
     "stairAscentSpeed": {
-      "title": "Velocidade de Subida de Escada",
+      "title": "Velocidade de subida de escada",
       "description": "Quão rápido você sobe escadas, medido pelo seu iPhone ou Watch.",
       "chartTitle": "Velocidade de subida de escada (m/s)",
       "emptyState": {
@@ -5074,7 +5074,7 @@
     },
     "navStairAscentSpeed": "Subida de escada",
     "stairDescentSpeed": {
-      "title": "Velocidade de Descida de Escada",
+      "title": "Velocidade de descida de escada",
       "description": "Quão rápido você desce escadas, medido pelo seu iPhone ou Watch.",
       "chartTitle": "Velocidade de descida de escada (m/s)",
       "emptyState": {
@@ -5084,7 +5084,7 @@
     },
     "navStairDescentSpeed": "Descida de escada",
     "breathingDisturbances": {
-      "title": "Perturbações Respiratórias",
+      "title": "Perturbações respiratórias",
       "description": "Com que frequência sua respiração foi perturbada durante o sono.",
       "chartTitle": "Perturbações respiratórias durante o sono",
       "emptyState": {

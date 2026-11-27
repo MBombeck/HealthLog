@@ -162,13 +162,13 @@ describe("nav-model utility tail (N-1 — one shared list)", () => {
   it("lists the shared utility surfaces (Settings, Notifications)", () => {
     const hrefs = NAV_UTILITY_DESTINATIONS.map((d) => d.href);
     expect(hrefs).toContain("/settings/account");
-    expect(hrefs).toContain("/notifications");
+    expect(hrefs).toContain("/settings/notifications");
   });
 
   it("keeps a stable order (Settings → Notifications)", () => {
     const hrefs = visibleUtilityDestinations().map((d) => d.href);
     expect(hrefs.indexOf("/settings/account")).toBeLessThan(
-      hrefs.indexOf("/notifications"),
+      hrefs.indexOf("/settings/notifications"),
     );
   });
 });
@@ -282,7 +282,7 @@ describe("mobileMoreHubDestinations — the F-1 mobile invariant (feature-only h
     // Settings + Notifications are account utilities — they live ONLY in the
     // user/avatar menu, never duplicated into the mobile More hub.
     expect(hub).not.toContain("/settings/account");
-    expect(hub).not.toContain("/notifications");
+    expect(hub).not.toContain("/settings/notifications");
   });
 
   it("gates Cycle by the module map, same as the sidebar", () => {

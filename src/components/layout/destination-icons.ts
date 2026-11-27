@@ -1,0 +1,142 @@
+import {
+  Activity,
+  AlarmClock,
+  BatteryCharging,
+  Bell,
+  Blocks,
+  Brain,
+  BrainCircuit,
+  ClipboardList,
+  CloudSun,
+  Database,
+  Download,
+  Droplets,
+  Dumbbell,
+  FileHeart,
+  FileScan,
+  FileText,
+  FlaskConical,
+  Gauge,
+  HeartPulse,
+  History,
+  Home,
+  Info,
+  KeyRound,
+  KeySquare,
+  LayoutDashboard,
+  Layers,
+  Leaf,
+  Lightbulb,
+  Link2,
+  Lock,
+  MessagesSquare,
+  Moon,
+  Palette,
+  Pill,
+  Pipette,
+  Plug,
+  Radar,
+  Radio,
+  ScrollText,
+  Server,
+  Settings,
+  Settings2,
+  ShieldAlert,
+  ShieldCheck,
+  SlidersHorizontal,
+  Sparkles,
+  Stethoscope,
+  Syringe,
+  Thermometer,
+  Ticket,
+  ToggleRight,
+  Trophy,
+  User,
+  Users,
+  UsersRound,
+  Waves,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
+
+/**
+ * One icon per destination, for every surface that names one.
+ *
+ * The rail, the collapsed rail, the phone's bottom bar and More sheet, the
+ * account menus, the Settings and Admin rails, the module list and the search
+ * palette all read their glyph from here, so the Coach cannot be a speech
+ * bubble in the rail, a robot in Settings and a sparkle in Admin again, and a
+ * glyph cannot stand for two places at once. `Sparkles` means AI and nothing
+ * else.
+ *
+ * Two surfaces share a glyph only when they name the same destination id:
+ * the person's About page and the server's, the person's API tokens and the
+ * server-wide token list, the Coach and its Admin page. The guard is
+ * `src/__tests__/destination-icon-guard.test.ts`.
+ */
+export const DESTINATION_ICONS = {
+  // ── Rail ──
+  dashboard: Home,
+  measurements: Activity,
+  medications: Pill,
+  mood: Waves,
+  mentalWellbeing: Brain,
+  cycle: Droplets,
+  care: Stethoscope,
+  labs: FlaskConical,
+  medicalHistory: ClipboardList,
+  illness: Thermometer,
+  seizures: BrainCircuit,
+  vaccinations: Syringe,
+  documents: FileScan,
+  timeline: History,
+  insights: Lightbulb,
+  coach: MessagesSquare,
+  achievements: Trophy,
+  // ── Account menu ──
+  settings: Settings,
+  notifications: Bell,
+  emergencyCard: HeartPulse,
+  // ── Areas without a rail entry of their own ──
+  ai: Sparkles,
+  sleep: Moon,
+  glucose: Pipette,
+  workouts: Dumbbell,
+  recovery: BatteryCharging,
+  nutrients: Leaf,
+  environment: CloudSun,
+  mcp: Plug,
+  doctorReport: FileHeart,
+  // ── Settings ──
+  account: User,
+  security: ShieldCheck,
+  access: UsersRound,
+  modules: Blocks,
+  arrangement: Palette,
+  healthScore: Gauge,
+  targets: SlidersHorizontal,
+  integrations: Link2,
+  sources: Layers,
+  apiTokens: KeyRound,
+  export: Download,
+  privacy: Lock,
+  advanced: Settings2,
+  about: Info,
+  // ── Admin ──
+  adminOverview: LayoutDashboard,
+  systemStatus: Server,
+  serverGeneral: Wrench,
+  serverModules: ToggleRight,
+  pushChannels: Radio,
+  reminderChecks: AlarmClock,
+  monitoring: Radar,
+  users: Users,
+  invites: Ticket,
+  loginOverview: ScrollText,
+  appLogs: FileText,
+  backups: Database,
+  encryption: KeySquare,
+  dangerZone: ShieldAlert,
+} as const satisfies Record<string, LucideIcon>;
+
+export type DestinationId = keyof typeof DESTINATION_ICONS;

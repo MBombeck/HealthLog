@@ -18,32 +18,10 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Bell,
-  Blocks,
-  Bot,
-  ClipboardList,
-  CloudSun,
-  Download,
-  FileHeart,
-  Gauge,
-  Info,
-  KeyRound,
-  Plug,
-  Layers,
-  Link2,
-  Lock,
-  Palette,
-  Settings2,
-  ShieldCheck,
-  SlidersHorizontal,
-  Sparkles,
-  User,
-  UsersRound,
-  type LucideIcon,
-} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { DESTINATION_ICONS as ICON } from "@/components/layout/destination-icons";
 import { PageHeader } from "@/components/ui/page-header";
 import { SUB_SHELL_GRID_FLOOR } from "@/components/layout/shell-metrics";
 import { useAuth } from "@/hooks/use-auth";
@@ -142,7 +120,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   {
     slug: "account",
     titleKey: "settings.sections.account.title",
-    icon: User,
+    icon: ICON.account,
     group: "account",
   },
   // Second factors, passkeys, password, and (since v1.44) the active
@@ -151,13 +129,13 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   {
     slug: "security",
     titleKey: "settings.sections.security.title",
-    icon: ShieldCheck,
+    icon: ICON.security,
     group: "account",
   },
   {
     slug: "access",
     titleKey: "settings.sections.access.title",
-    icon: UsersRound,
+    icon: ICON.access,
     group: "account",
   },
   // ── Tracking ── which areas are recorded; each module's own settings
@@ -165,61 +143,61 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   {
     slug: "modules",
     titleKey: "settings.sections.modules.title",
-    icon: Blocks,
+    icon: ICON.modules,
     group: "tracking",
   },
   // ── Arrangement ── order and view, nothing else. The slug stays `layout`.
   {
     slug: "layout",
     titleKey: "settings.sections.layout.title",
-    icon: Palette,
+    icon: ICON.arrangement,
     group: "arrangement",
   },
   // ── Notifications ── every reminder kind, or the link to where it lives.
   {
     slug: "notifications",
     titleKey: "settings.sections.notifications.title",
-    icon: Bell,
+    icon: ICON.notifications,
     group: "notifications",
   },
   // ── Health profile ──
   {
     slug: "score",
     titleKey: "settings.sections.score.title",
-    icon: Gauge,
+    icon: ICON.healthScore,
     group: "healthProfile",
   },
   {
     slug: "thresholds",
     titleKey: "settings.sections.thresholds.title",
-    icon: SlidersHorizontal,
+    icon: ICON.targets,
     group: "healthProfile",
   },
   {
     slug: "anamnesis",
     titleKey: "settings.sections.anamnesis.title",
-    icon: ClipboardList,
+    icon: ICON.medicalHistory,
     group: "healthProfile",
   },
   // Module-gated on the opt-in `environment` module.
   {
     slug: "environment",
     titleKey: "settings.sections.environment.title",
-    icon: CloudSun,
+    icon: ICON.environment,
     group: "healthProfile",
   },
   // ── AI ──
   {
     slug: "ai",
     titleKey: "settings.sections.ai.title",
-    icon: Sparkles,
+    icon: ICON.ai,
     group: "ai",
   },
   // Module-gated on the coach module (`settings:coach`).
   {
     slug: "coach",
     titleKey: "settings.sections.coach.title",
-    icon: Bot,
+    icon: ICON.coach,
     group: "ai",
   },
   // ── Connections ── data coming in (integrations, which source wins) and
@@ -227,19 +205,19 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   {
     slug: "integrations",
     titleKey: "settings.sections.integrations.title",
-    icon: Link2,
+    icon: ICON.integrations,
     group: "connections",
   },
   {
     slug: "sources",
     titleKey: "settings.sections.sources.title",
-    icon: Layers,
+    icon: ICON.sources,
     group: "connections",
   },
   {
     slug: "api",
     titleKey: "settings.sections.api.title",
-    icon: KeyRound,
+    icon: ICON.apiTokens,
     group: "connections",
   },
   // Not module-gated: the page shows the connector's state and links to the
@@ -247,14 +225,14 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   {
     slug: "mcp",
     titleKey: "settings.sections.mcp.title",
-    icon: Plug,
+    icon: ICON.mcp,
     group: "connections",
   },
   // ── Data ── getting data out and in, what is stored, and deleting it.
   {
     slug: "export",
     titleKey: "settings.sections.export.title",
-    icon: Download,
+    icon: ICON.export,
     group: "data",
   },
   // Not module-gated: the health record is a flagship export, and its only
@@ -262,26 +240,26 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   {
     slug: "health-record",
     titleKey: "settings.sections.health-record.title",
-    icon: FileHeart,
+    icon: ICON.doctorReport,
     group: "data",
   },
   {
     slug: "privacy",
     titleKey: "settings.sections.privacy.title",
-    icon: Lock,
+    icon: ICON.privacy,
     group: "data",
   },
   {
     slug: "advanced",
     titleKey: "settings.sections.advanced.title",
-    icon: Settings2,
+    icon: ICON.advanced,
     group: "data",
   },
   // ── System ──
   {
     slug: "about",
     titleKey: "settings.sections.about.title",
-    icon: Info,
+    icon: ICON.about,
     group: "system",
   },
 ] as const;

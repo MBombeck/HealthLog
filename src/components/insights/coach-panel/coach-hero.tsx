@@ -1,9 +1,11 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
+import { DESTINATION_ICONS } from "@/components/layout/destination-icons";
 
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
+
+const CoachIcon = DESTINATION_ICONS.coach;
 
 /**
  * v1.18.9 — the Coach new-chat hero (page surface only).
@@ -64,7 +66,7 @@ export function CoachHero({ composer }: CoachHeroProps) {
             "motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-95 motion-safe:duration-500",
           )}
         >
-          <Sparkles className="text-background size-6" />
+          <CoachIcon className="text-background size-6" />
         </div>
 
         {/* Greeting — one line. A slightly larger, tighter display

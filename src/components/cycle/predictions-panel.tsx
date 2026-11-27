@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Sparkles } from "lucide-react";
+import { CalendarHeart, Check } from "lucide-react";
 
 import {
   Card,
@@ -84,7 +84,10 @@ export function PredictionsPanel({
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <TileHeader icon={Sparkles} title={t("cycle.predictions.title")} />
+          <TileHeader
+            icon={CalendarHeart}
+            title={t("cycle.predictions.title")}
+          />
         </CardHeader>
         <CardContent className="space-y-4">
           {rawChartMode ? (

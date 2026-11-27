@@ -16,33 +16,18 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Bell,
-  Blocks,
-  Database,
-  FileText,
-  Info,
-  KeyRound,
-  Plug,
-  Radio,
-  ScrollText,
-  Server,
-  Settings,
-  ShieldAlert,
-  ShieldCheck,
-  Sparkles,
-  Ticket,
-  Users,
-  type LucideIcon,
-} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { DESTINATION_ICONS as ICON } from "@/components/layout/destination-icons";
 import { PageHeader } from "@/components/ui/page-header";
 import { SubNavLink, SubNavRow } from "@/components/ui/sub-nav";
 import { SUB_SHELL_GRID_FLOOR } from "@/components/layout/shell-metrics";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { isAdminSectionSlug, type AdminSectionSlug } from "./section-slugs";
+
+const AdminOverviewIcon = ICON.adminOverview;
 
 interface AdminSection {
   slug: AdminSectionSlug;
@@ -78,13 +63,13 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
   {
     slug: "system-status",
     titleKey: "admin.section.system-status.title",
-    icon: Server,
+    icon: ICON.systemStatus,
     group: "system",
   },
   {
     slug: "general",
     titleKey: "admin.section.general.title",
-    icon: Settings,
+    icon: ICON.serverGeneral,
     group: "system",
   },
   // v1.18.6 — server-wide module availability; it gates every module, so it
@@ -92,26 +77,26 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
   {
     slug: "module-availability",
     titleKey: "admin.section.module-availability.title",
-    icon: Blocks,
+    icon: ICON.serverModules,
     group: "system",
   },
   // v1.4.36 — About / version / update check folded into Admin.
   {
     slug: "about",
     titleKey: "admin.section.about.title",
-    icon: Info,
+    icon: ICON.about,
     group: "system",
   },
   {
     slug: "services",
     titleKey: "admin.section.services.title",
-    icon: Radio,
+    icon: ICON.pushChannels,
     group: "notifications",
   },
   {
     slug: "reminders",
     titleKey: "admin.section.reminders.title",
-    icon: Bell,
+    icon: ICON.reminderChecks,
     group: "notifications",
   },
   // v1.18.1 — single "Coach" entry replacing the former ai-quality,
@@ -120,25 +105,25 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
   {
     slug: "coach",
     titleKey: "admin.section.coach.title",
-    icon: Sparkles,
+    icon: ICON.coach,
     group: "ai",
   },
   {
     slug: "integrations",
     titleKey: "admin.section.integrations.title",
-    icon: Plug,
+    icon: ICON.monitoring,
     group: "connectivity",
   },
   {
     slug: "api-tokens",
     titleKey: "admin.section.api-tokens.title",
-    icon: KeyRound,
+    icon: ICON.apiTokens,
     group: "connectivity",
   },
   {
     slug: "users",
     titleKey: "admin.section.users.title",
-    icon: Users,
+    icon: ICON.users,
     group: "account",
   },
   // v1.16.0 — invites as their own section, directly after Users
@@ -146,38 +131,38 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
   {
     slug: "invites",
     titleKey: "admin.section.invites.title",
-    icon: Ticket,
+    icon: ICON.invites,
     group: "account",
   },
   {
     slug: "login-overview",
     titleKey: "admin.section.login-overview.title",
-    icon: ScrollText,
+    icon: ICON.loginOverview,
     group: "account",
   },
   {
     slug: "app-logs",
     titleKey: "admin.section.app-logs.title",
-    icon: FileText,
+    icon: ICON.appLogs,
     group: "serverData",
   },
   {
     slug: "backups",
     titleKey: "admin.section.backups.title",
-    icon: Database,
+    icon: ICON.backups,
     group: "serverData",
   },
   // v1.23 — encryption coverage + key-rotation status / safe trigger.
   {
     slug: "encryption",
     titleKey: "admin.section.encryption.title",
-    icon: ShieldCheck,
+    icon: ICON.encryption,
     group: "serverData",
   },
   {
     slug: "danger-zone",
     titleKey: "admin.section.danger-zone.title",
-    icon: ShieldAlert,
+    icon: ICON.dangerZone,
     group: "serverData",
   },
 ] as const;
@@ -311,7 +296,7 @@ export function AdminShell({ active, children }: AdminShellProps) {
             active={activeSlug === null}
             className="snap-start gap-1.5"
           >
-            <ScrollText className="size-3.5" aria-hidden="true" />
+            <AdminOverviewIcon className="size-3.5" aria-hidden="true" />
             {t("admin.shell.overview")}
           </SubNavLink>
           {visibleSections.map((section, index) => {
@@ -387,7 +372,7 @@ export function AdminShell({ active, children }: AdminShellProps) {
                     : "text-foreground hover:bg-accent",
                 )}
               >
-                <ScrollText className="h-4 w-4" aria-hidden="true" />
+                <AdminOverviewIcon className="h-4 w-4" aria-hidden="true" />
                 {t("admin.shell.overview")}
               </Link>
             </li>

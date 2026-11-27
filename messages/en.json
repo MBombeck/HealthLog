@@ -370,7 +370,7 @@
     "bpClassificationTitle": "Blood pressure: ESH classification (2023)",
     "avgBp": "Average blood pressure",
     "classification": "Classification",
-    "bmiTitle": "Body Mass Index (BMI)",
+    "bmiTitle": "Body mass index (BMI)",
     "bmiRow": "BMI: {bmi} kg/m², Classification: {class} (WHO)",
     "complianceTitle": "Medication adherence",
     "glp1Title": "GLP-1 therapy",
@@ -600,7 +600,7 @@
     "admin": "Admin console",
     "logout": "Sign out",
     "login": "Sign in",
-    "notifications": "Notifications per channel",
+    "notifications": "Notifications",
     "theme": "Theme",
     "themeSystem": "System",
     "themeDark": "Dark",
@@ -3266,7 +3266,7 @@
       "historyLink": "History"
     },
     "dailyBriefing": {
-      "title": "Daily Briefing",
+      "title": "Daily briefing",
       "keyFindingsTitle": "Key findings",
       "signalsTitle": "Signals of the day",
       "emptyTitle": "No briefing yet",
@@ -4091,11 +4091,11 @@
     "missed": "missed",
     "assessmentTitle": "Assessment",
     "restMode": {
-      "title": "Rest Mode",
+      "title": "Rest mode",
       "body": "An illness or condition episode is active, so this reflects a recovery window. Your score isn't lowered for it.",
       "bodySince": "An illness or condition episode has been active since {since}, so this reflects a recovery window. Your score isn't lowered for it."
     },
-    "bloodPressureSectionTitle": "Blood Pressure",
+    "bloodPressureSectionTitle": "Blood pressure",
     "weightSectionTitle": "Weight",
     "pulseSectionTitle": "Pulse",
     "bmiSectionTitle": "BMI",
@@ -4288,7 +4288,7 @@
       }
     },
     "bloodGlucose": {
-      "title": "Blood Glucose",
+      "title": "Blood glucose",
       "description": "Your blood-glucose readings over time, in {unit}.",
       "chartTitle": "Blood glucose",
       "medianLabel": "Median glucose",
@@ -4367,7 +4367,7 @@
     "navBloodGlucose": "Glucose",
     "navBloodKetones": "Ketones",
     "bloodKetones": {
-      "title": "Blood Ketones",
+      "title": "Blood ketones",
       "description": "Your beta-hydroxybutyrate readings over time, in {unit}.",
       "chartTitle": "Blood ketones",
       "emptyState": {
@@ -4383,7 +4383,7 @@
       }
     },
     "totalBodyWater": {
-      "title": "Total Body Water",
+      "title": "Total body water",
       "description": "Your total body water over time, in kilograms.",
       "chartTitle": "Total body water",
       "emptyState": {
@@ -4393,7 +4393,7 @@
     },
     "navTotalBodyWater": "Body water",
     "boneMass": {
-      "title": "Bone Mass",
+      "title": "Bone mass",
       "description": "Your bone mass over time, in kilograms.",
       "chartTitle": "Bone mass",
       "emptyState": {
@@ -4403,7 +4403,7 @@
     },
     "navBoneMass": "Bone mass",
     "flightsClimbed": {
-      "title": "Flights Climbed",
+      "title": "Flights climbed",
       "description": "Flights of stairs you climbed each day.",
       "chartTitle": "Flights climbed per day",
       "emptyState": {
@@ -4413,7 +4413,7 @@
     },
     "navFlightsClimbed": "Flights",
     "walkingRunningDistance": {
-      "title": "Walking + Running Distance",
+      "title": "Walking + running distance",
       "description": "Walking and running distance you covered each day, in kilometers.",
       "chartTitle": "Distance per day",
       "emptyState": {
@@ -4423,7 +4423,7 @@
     },
     "navWalkingRunningDistance": "Distance",
     "fatFreeMass": {
-      "title": "Fat-Free Mass",
+      "title": "Fat-free mass",
       "description": "Your fat-free mass over time, in kilograms.",
       "chartTitle": "Fat-free mass",
       "emptyState": {
@@ -4433,7 +4433,7 @@
     },
     "navFatFreeMass": "Fat-free mass",
     "fatMass": {
-      "title": "Fat Mass",
+      "title": "Fat mass",
       "description": "Your fat mass over time, in kilograms.",
       "chartTitle": "Fat mass",
       "emptyState": {
@@ -4442,7 +4442,7 @@
       }
     },
     "bodyFat": {
-      "title": "Body Fat",
+      "title": "Body fat",
       "description": "Your body fat percentage over time.",
       "chartTitle": "Body fat",
       "emptyState": {
@@ -4454,7 +4454,7 @@
     "navFatMass": "Fat mass",
     "navBodyFat": "Body fat",
     "muscleMass": {
-      "title": "Muscle Mass",
+      "title": "Muscle mass",
       "description": "Your muscle mass over time, in kilograms.",
       "chartTitle": "Muscle mass",
       "emptyState": {
@@ -4464,7 +4464,7 @@
     },
     "navMuscleMass": "Muscle mass",
     "skinTemperature": {
-      "title": "Skin Temperature",
+      "title": "Skin temperature",
       "description": "Your wrist skin temperature over time, in degrees Celsius.",
       "chartTitle": "Skin temperature",
       "emptyState": {
@@ -4474,7 +4474,7 @@
     },
     "navSkinTemperature": "Skin temp",
     "pulseWaveVelocity": {
-      "title": "Pulse Wave Velocity",
+      "title": "Pulse wave velocity",
       "description": "Your arterial pulse-wave velocity over time, in m/s. Higher values suggest stiffer arteries.",
       "chartTitle": "Pulse wave velocity",
       "emptyState": {
@@ -4484,7 +4484,7 @@
     },
     "navPulseWaveVelocity": "Pulse wave velocity",
     "vascularAge": {
-      "title": "Vascular Age",
+      "title": "Vascular age",
       "description": "Your estimated vascular age over time, in years.",
       "chartTitle": "Vascular age",
       "emptyState": {
@@ -4494,7 +4494,7 @@
     },
     "navVascularAge": "Vascular age",
     "visceralFat": {
-      "title": "Visceral Fat",
+      "title": "Visceral fat",
       "description": "Your visceral-fat rating over time.",
       "chartTitle": "Visceral fat",
       "emptyState": {
@@ -4504,7 +4504,7 @@
     },
     "navVisceralFat": "Visceral fat",
     "audioExposureEnv": {
-      "title": "Environmental Audio",
+      "title": "Environmental audio",
       "description": "Your daily average environmental sound exposure, in dBA.",
       "chartTitle": "Environmental sound exposure",
       "emptyState": {
@@ -4514,7 +4514,7 @@
     },
     "navAudioExposureEnv": "Environmental audio",
     "audioExposureHeadphone": {
-      "title": "Headphone Audio",
+      "title": "Headphone audio",
       "description": "Your daily average headphone audio exposure, in dBA.",
       "chartTitle": "Headphone audio exposure",
       "emptyState": {
@@ -4524,7 +4524,7 @@
     },
     "navAudioExposureHeadphone": "Headphone audio",
     "timeInDaylight": {
-      "title": "Time in Daylight",
+      "title": "Time in daylight",
       "description": "Minutes spent in daylight each day.",
       "chartTitle": "Time in daylight per day",
       "emptyState": {
@@ -4534,7 +4534,7 @@
     },
     "navTimeInDaylight": "Daylight",
     "walkingSteadiness": {
-      "title": "Walking Steadiness",
+      "title": "Walking steadiness",
       "description": "Your walking steadiness over time, as a percentage.",
       "chartTitle": "Walking steadiness",
       "emptyState": {
@@ -4544,7 +4544,7 @@
     },
     "navWalkingSteadiness": "Walking steadiness",
     "audioExposureEvent": {
-      "title": "Loud Audio Events",
+      "title": "Loud audio events",
       "description": "Days with a loud-environment exposure event.",
       "chartTitle": "Loud-environment events per day",
       "emptyState": {
@@ -4554,7 +4554,7 @@
     },
     "navAudioExposureEvent": "Loud events",
     "respiratoryRate": {
-      "title": "Respiratory Rate",
+      "title": "Respiratory rate",
       "description": "Your respiratory rate over time, in breaths per minute.",
       "chartTitle": "Respiratory rate",
       "emptyState": {
@@ -4564,7 +4564,7 @@
     },
     "navRespiratoryRate": "Respiratory rate",
     "leanBodyMass": {
-      "title": "Lean Body Mass",
+      "title": "Lean body mass",
       "description": "Your lean body mass over time, in kilograms.",
       "chartTitle": "Lean body mass",
       "emptyState": {
@@ -4574,7 +4574,7 @@
     },
     "navLeanBodyMass": "Lean body mass",
     "walkingHeartRateAverage": {
-      "title": "Walking Heart Rate",
+      "title": "Walking heart rate",
       "description": "Your average heart rate while walking, in bpm.",
       "chartTitle": "Walking heart rate average",
       "emptyState": {
@@ -4584,7 +4584,7 @@
     },
     "navWalkingHeartRateAverage": "Walking heart rate",
     "walkingAsymmetry": {
-      "title": "Walking Asymmetry",
+      "title": "Walking asymmetry",
       "description": "Your walking asymmetry over time, as a percentage.",
       "chartTitle": "Walking asymmetry",
       "emptyState": {
@@ -4594,7 +4594,7 @@
     },
     "navWalkingAsymmetry": "Walking asymmetry",
     "walkingDoubleSupport": {
-      "title": "Double Support Time",
+      "title": "Double support time",
       "description": "The percentage of each stride spent with both feet on the ground.",
       "chartTitle": "Double support time",
       "emptyState": {
@@ -4604,7 +4604,7 @@
     },
     "navWalkingDoubleSupport": "Double support",
     "walkingStepLength": {
-      "title": "Walking Step Length",
+      "title": "Walking step length",
       "description": "Your average walking step length over time, in meters.",
       "chartTitle": "Step length",
       "emptyState": {
@@ -4614,7 +4614,7 @@
     },
     "navWalkingStepLength": "Step length",
     "walkingSpeed": {
-      "title": "Walking Speed",
+      "title": "Walking speed",
       "description": "Your average walking speed over time, in km/h.",
       "chartTitle": "Walking speed",
       "emptyState": {
@@ -5023,7 +5023,7 @@
     },
     "navCardioFitness": "VO₂ max",
     "cardioRecovery": {
-      "title": "Cardio Recovery",
+      "title": "Cardio recovery",
       "description": "How far your heart rate drops one minute after peak exercise.",
       "chartTitle": "Cardio recovery (bpm)",
       "emptyState": {
@@ -5033,7 +5033,7 @@
     },
     "navCardioRecovery": "Cardio recovery",
     "wristTemperature": {
-      "title": "Wrist Temperature",
+      "title": "Wrist temperature",
       "description": "Your overnight wrist temperature, tracked against your own baseline.",
       "chartTitle": "Wrist temperature",
       "emptyState": {
@@ -5054,7 +5054,7 @@
     },
     "navFalls": "Falls",
     "sixMinuteWalk": {
-      "title": "Six-Minute Walk",
+      "title": "Six-minute walk",
       "description": "Apple's estimate of how far you could walk in six minutes.",
       "chartTitle": "Six-minute walk distance (m)",
       "emptyState": {
@@ -5064,7 +5064,7 @@
     },
     "navSixMinuteWalk": "6-min walk",
     "stairAscentSpeed": {
-      "title": "Stair Ascent Speed",
+      "title": "Stair ascent speed",
       "description": "How fast you climb stairs, measured by your iPhone or Watch.",
       "chartTitle": "Stair ascent speed (m/s)",
       "emptyState": {
@@ -5074,7 +5074,7 @@
     },
     "navStairAscentSpeed": "Stair ascent",
     "stairDescentSpeed": {
-      "title": "Stair Descent Speed",
+      "title": "Stair descent speed",
       "description": "How fast you go down stairs, measured by your iPhone or Watch.",
       "chartTitle": "Stair descent speed (m/s)",
       "emptyState": {
@@ -5084,7 +5084,7 @@
     },
     "navStairDescentSpeed": "Stair descent",
     "breathingDisturbances": {
-      "title": "Breathing Disturbances",
+      "title": "Breathing disturbances",
       "description": "How often your breathing was disturbed during sleep.",
       "chartTitle": "Sleep breathing disturbances",
       "emptyState": {
@@ -8599,7 +8599,7 @@
       "usageLevels": "Accounts per AI usage level: {frugal} frugal, {standard} standard, {full} full."
     },
     "aiQuality": {
-      "title": "Insights Quality",
+      "title": "Insights quality",
       "loading": "Loading feedback summary…",
       "loadError": "Failed to load Insights quality summary. Try refreshing the page.",
       "empty": "No feedback yet. The aggregator runs daily at 04:00. Once users start rating recommendations, helpful-rate bands appear here.",
@@ -8614,7 +8614,7 @@
       "colHelpfulRate": "Helpful rate"
     },
     "coachFeedback": {
-      "title": "Coach Feedback",
+      "title": "Coach feedback",
       "loading": "Loading Coach feedback summary…",
       "loadError": "Failed to load Coach feedback summary. Try refreshing the page.",
       "empty": "No Coach feedback yet. The aggregator runs daily at 04:00. Once users rate Coach replies, helpful-rate bands appear here.",
@@ -8709,7 +8709,7 @@
         "description": "Chat, upkeep of the Coach's memory, and AI nudges. Stored conversations stay readable and deletable."
       },
       "briefing": {
-        "title": "Daily Briefing",
+        "title": "Daily briefing",
         "description": "The daily briefing, its opening lines elsewhere in the app, and period summaries written by a model."
       },
       "insightStatus": {

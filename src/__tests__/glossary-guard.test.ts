@@ -59,7 +59,6 @@ import { describe, expect, it } from "vitest";
 import {
   NAV_ACCOUNT_MENU_DESTINATIONS,
   NAV_DESTINATIONS,
-  NAV_UTILITY_DESTINATIONS,
 } from "@/components/layout/nav-model";
 import { locales } from "@/lib/i18n/config";
 import glossary from "@/lib/i18n/glossary.json";
@@ -445,17 +444,9 @@ const PAGE_TITLES: Record<string, { file: string; key: string } | null> = {
     file: "src/components/emergency-card/emergency-card-page.tsx",
     key: "emergencyCard.page.title",
   },
-  "/notifications": {
-    file: "src/app/notifications/page.tsx",
-    key: "notifications.title",
-  },
 };
 
-const RAIL = [
-  ...NAV_DESTINATIONS,
-  ...NAV_ACCOUNT_MENU_DESTINATIONS,
-  ...NAV_UTILITY_DESTINATIONS.filter((d) => d.href === "/notifications"),
-];
+const RAIL = [...NAV_DESTINATIONS, ...NAV_ACCOUNT_MENU_DESTINATIONS];
 
 describe("a page is titled what its rail entry says", () => {
   it("knows every rail destination", () => {

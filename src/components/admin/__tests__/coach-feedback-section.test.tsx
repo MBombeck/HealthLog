@@ -54,7 +54,7 @@ describe("CoachFeedbackSection", () => {
     });
     const html = render();
     expect(html).toContain("No Coach feedback yet");
-    expect(html).toContain("Coach Feedback");
+    expect(html).toContain("Coach feedback");
   });
 
   it("renders one row per bucket with helpful-rate tint", () => {
@@ -133,7 +133,7 @@ describe("CoachFeedbackSection", () => {
       const html = render();
       // Sparkles icon + h2 title rendered in every state ⇒ constant
       // header height ⇒ no layout shift when the query resolves.
-      expect(html).toContain("Coach Feedback");
+      expect(html).toContain("Coach feedback");
       expect(html).toContain("bg-card");
       expect(html).toContain("rounded-xl");
     }

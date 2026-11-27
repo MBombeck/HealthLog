@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkles, Trophy } from "lucide-react";
+import { Gift, Trophy } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import { showInformationalToast } from "@/lib/toast/priority";
@@ -132,7 +132,7 @@ export function AchievementUnlockNotifier({
         showInformationalToast(() =>
           toast(title, {
             description,
-            icon: <Sparkles className="size-4" />,
+            icon: <Gift className="size-4" />,
             duration: 8000,
           }),
         );

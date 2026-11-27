@@ -24,8 +24,6 @@ import { SUB_PAGE_TABS } from "@/components/insights/insights-tab-strip";
 import {
   NAV_ACCOUNT_MENU_DESTINATIONS,
   NAV_DESTINATIONS,
-  NAV_UTILITY_DESTINATIONS,
-  isSettingsUtilityDestination,
   navGroupLabelKey,
 } from "@/components/layout/nav-model";
 import { MODULE_ICONS } from "@/components/settings/module-icons";
@@ -143,19 +141,8 @@ function build(): SurfaceEntry[] {
       }),
     );
   }
-  for (const d of NAV_UTILITY_DESTINATIONS) {
-    // The Settings door is the Settings rail itself, listed below.
-    if (isSettingsUtilityDestination(d)) continue;
-    out.push(
-      withKeywords({
-        id: `nav:${d.href}`,
-        href: d.href,
-        labelKey: d.tKey,
-        icon: d.icon,
-        entry: { kind: "menu" },
-      }),
-    );
-  }
+  // The account utilities (Settings, Notifications) are Settings rows and
+  // are listed with the Settings rail below.
   // The record pages the account menu opens (the emergency card). Their id
   // keeps the `nav:` prefix the utilities use, so a recent search and a
   // context link survive the move from the rail.

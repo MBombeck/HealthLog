@@ -171,10 +171,9 @@ export function TopBar() {
                   </Link>
                 </DropdownMenuItem>
               )}
-              {/* v1.4.36 — About moved into the Admin Console
-                  (`/admin/about`). The dropdown entry was redundant
-                  for the small audience that still reaches it (admins
-                  only, on the order of once or twice a year). */}
+              {/* About is not a menu entry: the person's page is the last
+                  Settings row (`/settings/about`), the server's sits in the
+                  Admin console (`/admin/about`). */}
               <DropdownMenuSub>
                 {/* v1.22.1 — the shared sub-trigger ships `py-1.5` and no
                     min-height, while every sibling `DropdownMenuItem` carries
