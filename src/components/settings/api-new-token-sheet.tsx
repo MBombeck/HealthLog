@@ -95,7 +95,12 @@ function MoreInfo({ children, label }: { children: string; label: string }) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <InlineAction tone="muted" size="sm" aria-label={label}>
+        <InlineAction
+          tone="muted"
+          size="sm"
+          // The visible word leads the name (WCAG 2.5.3), the topic follows.
+          aria-label={`${t("settings.tokenList.more")}: ${label}`}
+        >
           {t("settings.tokenList.more")}
         </InlineAction>
       </PopoverTrigger>
