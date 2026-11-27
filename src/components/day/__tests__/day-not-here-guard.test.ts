@@ -28,7 +28,8 @@ import { describe, expect, it } from "vitest";
 const ROOT = join(__dirname, "..", "..", "..", "..");
 
 const NOT_HERE: readonly string[] = [
-  "src/components/daily/today-hero.tsx",
+  "src/components/dashboard/today-asks.tsx",
+  "src/components/dashboard/today-scores.tsx",
   "src/components/charts/trend-card.tsx",
   "src/components/cycle/cycle-calendar.tsx",
   "src/components/insights/daily-briefing.tsx",
@@ -67,14 +68,15 @@ describe("the day view stays out of the surfaces it must not reach", () => {
     expect(offenders.map((f) => relative(ROOT, f))).toEqual([]);
   });
 
-  it("the dashboard's today area hands no day door to its hero", () => {
-    // The charts below the hero open their days; the hero itself is today
-    // and stays on the list above. Pinned from the other side: the hero is
-    // still mounted by the dashboard, so the list entry is not stale.
+  it("the dashboard's today area hands no day door to its asks or scores", () => {
+    // The charts below open their days; the asks and the score row are
+    // today and stay on the list above. Pinned from the other side: both are
+    // still mounted by the dashboard, so the list entries are not stale.
     const dashboard = readFileSync(
       join(ROOT, "src/app/page-client.tsx"),
       "utf8",
     );
-    expect(dashboard).toMatch(/<TodayHero\b/);
+    expect(dashboard).toMatch(/<TodayAsks\b/);
+    expect(dashboard).toMatch(/<TodayScores\b/);
   });
 });

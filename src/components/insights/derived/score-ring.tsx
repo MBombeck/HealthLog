@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import { useCountUp } from "@/hooks/use-count-up";
@@ -11,7 +11,7 @@ import {
   clampScore,
   type ScoreBand,
 } from "./band-tokens";
-import { RING_GRADIENT, type RingHue } from "./ring-hues";
+import { ringColor } from "./ring-color";
 
 /**
  * v1.14.0 — the composite-score dial: a hand-rolled SVG arc gauge, 0 KB
@@ -44,7 +44,7 @@ import { RING_GRADIENT, type RingHue } from "./ring-hues";
  *
  * `score === null` renders the provisional/empty state. a11y: `role="img"` +
  * an aria-label restating number + band, so the ring is never colour-only;
- * the band always rides `data-band` regardless of arc hue.
+ * the band rides `data-band`, and the arc's colour is the band (`ring-color.ts`).
  */
 
 // The SVG is a fixed 0 0 100 100 viewBox; CSS scales it to `dims.px`.
@@ -80,6 +80,12 @@ const SIZE: Record<
     numberClass: "text-2xl md:text-5xl",
     labelClass: "hidden text-xs md:block",
   },
+  // The dashboard's score tiles: 104 px in the wide tile (one tile column of
+  // the strip below), 88 px three to a row in the phone's single tile.
+  dashboard: { px: 104, numberClass: "text-3xl", labelClass: "text-xs" },
+  compact: { px: 88, numberClass: "text-2xl", labelClass: "text-xs" },
+  // An Insights row of five or six compact tiles at 1440.
+  row: { px: 80, numberClass: "text-2xl", labelClass: "text-xs" },
   // The Insights score tiles: 80 px beside the tile's text on a phone, the
   // `sm` 120 px dial from the md breakpoint up.
   tile: {
@@ -94,9 +100,9 @@ export interface ScoreRingProps {
   /** The 0..100 score, or `null` for the provisional/empty state. */
   score: number | null;
   /**
-   * Band override; when omitted it is derived from the score via thresholds.
-   * `null`: the value has no band (a device's own number), so the arc is
-   * neutral ink and the ring names no band word.
+   * The score's band. Omitted: derived from the score via the thresholds.
+   * `null`: the score carries no band (a device's own value, Rest mode), and
+   * the arc is drawn in the neutral ink.
    */
   band?: ScoreBand | null;
   /**
@@ -112,15 +118,17 @@ export interface ScoreRingProps {
    * Render size. `sm` in a grid tile, `md`/`lg` on the anatomy view,
    * `responsive` on the dashboard hero (compact on a phone, `md` above).
    */
-  size?: "sm" | "md" | "lg" | "responsive" | "tile";
+  size?:
+    | "sm"
+    | "md"
+    | "lg"
+    | "responsive"
+    | "tile"
+    | "dashboard"
+    | "compact"
+    | "row";
   /** Disable the sweep + count-up (e.g. when already revealed this session). */
   animate?: boolean;
-  /**
-   * Per-metric hue for the single-hue two-stop arc gradient. When omitted the
-   * gradient falls back to the score's band token (green/yellow/red) — the
-   * anatomy detail view keeps band semantics that way.
-   */
-  hue?: RingHue;
   /**
    * Stagger offset (ms): delays the arc sweep + the count-up start so a row of
    * rings reveals left-to-right and each number trails its own arc.
@@ -173,7 +181,6 @@ export function ScoreRing({
   label,
   size = "md",
   animate = true,
-  hue,
   delayMs = 0,
   baseline,
   emptyFace = false,
@@ -184,19 +191,14 @@ export function ScoreRing({
 }: ScoreRingProps) {
   const { t } = useTranslations();
   const dims = SIZE[size];
-  const gid = useId();
 
   const hasScore = score != null && Number.isFinite(score);
   const clamped = hasScore ? clampScore(score) : 0;
-  const bandless = band === null;
   const resolvedBand: ScoreBand =
     band ?? bandForScore(load ? 100 - clamped : clamped);
-  const hueKey = bandless ? "none" : (hue ?? resolvedBand);
-
-  // Near-flat single-hue arc. The two stops sit a hair apart for a whisper of
-  // depth; the per-metric `hue` leans the colour, with no `hue` the anatomy
-  // view falls back to the muted band token.
-  const [from, to] = RING_GRADIENT[hueKey];
+  // The arc's colour is the band, and only the band (concept B): which score
+  // a ring shows is said by its icon, name and place, never by a hue.
+  const arcColor = ringColor(band === null ? null : resolvedBand);
 
   const reduced = prefersReducedMotion();
   // `flat` forces the calm static treatment regardless of the `animate` prop:
@@ -230,7 +232,7 @@ export function ScoreRing({
 
   const ariaLabel =
     ariaLabelOverride ??
-    (hasScore && bandless
+    (hasScore && band === null
       ? String(Math.round(clamped))
       : hasScore
         ? t("insights.derived.scoreRing.aria", {
@@ -242,7 +244,7 @@ export function ScoreRing({
   return (
     <div
       data-slot="score-ring"
-      data-band={hasScore && !bandless ? resolvedBand : "none"}
+      data-band={hasScore && band !== null ? resolvedBand : "none"}
       data-provisional={hasScore ? undefined : "true"}
       role="img"
       aria-label={ariaLabel}
@@ -264,21 +266,13 @@ export function ScoreRing({
         className="h-full w-full -rotate-90"
         aria-hidden="true"
       >
-        <defs>
-          {/* Single-hue two-stop gradient — JSX SVG, not dangerouslySetInnerHTML. */}
-          <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor={from} />
-            <stop offset="100%" stopColor={to} />
-          </linearGradient>
-        </defs>
-        {/* Segmented same-hue tick track — reads as an instrument, not a bar. */}
+        {/* Segmented neutral tick track — reads as an instrument, not a bar. */}
         <circle
           cx={CX}
           cy={CX}
           r={R}
           fill="none"
-          stroke={`url(#${gid})`}
-          strokeOpacity={0.16}
+          stroke="var(--score-track)"
           strokeWidth={STROKE}
           strokeDasharray="0.5 4.2"
         />
@@ -289,7 +283,7 @@ export function ScoreRing({
             cy={CX}
             r={R}
             fill="none"
-            stroke={`url(#${gid})`}
+            stroke={arcColor}
             strokeOpacity={0.3}
             strokeWidth={STROKE * 0.42}
             strokeLinecap="round"
@@ -306,11 +300,12 @@ export function ScoreRing({
             No bloom / pulse: `.wellness-ring-arc` is a plain flat stroke. */}
         <circle
           className="wellness-ring-arc"
+          data-slot="score-ring-arc"
           cx={CX}
           cy={CX}
           r={R}
           fill="none"
-          stroke={`url(#${gid})`}
+          stroke={arcColor}
           strokeWidth={STROKE}
           strokeLinecap="round"
           strokeDasharray={C}

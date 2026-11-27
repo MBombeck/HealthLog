@@ -215,16 +215,28 @@ as something to log in as.
   refused, with a message naming the two ways out: add another guardian,
   or delete the profile under a fresh second factor. Deleting the profile
   deletes everything recorded for it.
+- **A guardian can do everything the profile's owner could.** Inside the
+  profile, every setting, every entry and its correction or deletion, imports,
+  exports, share links for a doctor, the profile's AI setup and its activity
+  log work for the guardian, and the activity log names the guardian who acted.
+  A few things are deliberately not part of it:
+
+  | Stays with the guardian's own account                                 | Why                                                                                              |
+  | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+  | Passkeys, second factor, sessions, signed-in devices, password, email | They are the guardian's identity. A profile has no login of its own.                             |
+  | API tokens, MCP tokens, per-medication ingest tokens                  | A token signs in as the account. One minted for a profile would give it a login of its own.      |
+  | The push registration of a phone or browser                           | The device is the guardian's. The profile's reminders reach guardians through guardian alerts.   |
+  | Deleting or erasing an account, and who may open it                   | Done from the profile's card in the guardian's own settings, where the last-guardian rule holds. |
+  | The decision after a handover                                         | It belongs to the person, once they have a login.                                                |
+
 - A guardian may keep that record's settings: modules, units, thresholds,
   its language and timezone, and its notification preferences. A guardian
   can also connect and disconnect the record's Withings, WHOOP, Oura, Polar,
   Strava and Google Health from its integrations page; the data lands in the
   profile's record, and a profile without its own provider app uses the
-  guardian's. Nightscout and Dawarich cannot be connected for a profile.
-  Sync, the connection test and provider credentials are not guardian
-  surfaces: once connected, the record syncs on
-  its own schedule, and their deep links land on the shared-record
-  unavailable page rather than on a raw refusal.
+  guardian's. Sync, the connection test, provider credentials, Nightscout
+  and Dawarich follow the rule above: the guardian runs them for the profile
+  as its owner would.
 - **Its document vault is the guardian's to run.** A guardian uploads into
   the profile's vault from their own account, with no second login, and
   manages what is there:

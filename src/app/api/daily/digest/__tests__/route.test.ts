@@ -74,6 +74,7 @@ const DIGEST: DailyDigest = {
   restMode: null,
   line: "Blood pressure is holding steady.",
   worthALook: [],
+  asks: [],
   justIn: null,
   reactionLine: null,
   languages: { response: "en", briefing: "en", reaction: null },
@@ -129,6 +130,10 @@ describe("GET /api/daily/digest — the reader's language (#176)", () => {
       headers: { "accept-language": "nl-NL,nl;q=0.9" },
     });
     await callGet(req);
-    expect(vi.mocked(loadDailyDigest).mock.calls[0][2]).toEqual({});
+    // No locale override; the admin question is asked on a browser session
+    // on its own record (the loader still checks the role).
+    expect(vi.mocked(loadDailyDigest).mock.calls[0][2]).toEqual({
+      adminAsks: true,
+    });
   });
 });

@@ -9,7 +9,7 @@
  * account-security surface and the privacy dashboard.
  */
 import { NextRequest } from "next/server";
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireSelfAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import { securityActivityWhere } from "@/lib/auth/security-activity";
@@ -32,7 +32,7 @@ export interface SecurityActivityDTO {
 }
 
 export const GET = apiHandler(async (request: NextRequest) => {
-  const { user } = await requireAuth();
+  const { user } = await requireSelfAuth();
 
   // The shared list query: an out-of-range limit is a 422 naming it, as on
   // every other list, rather than a silent clamp to something not asked for.

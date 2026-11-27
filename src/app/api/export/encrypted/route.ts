@@ -90,7 +90,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // shipped app calls this route without an elevation, so an account without
   // a second factor still passes on its token; one with a second factor
   // presents a second-factor elevation (before, it could not export at all).
-  const auth = await requireRecentProof({ bearer: "elevation-if-enrolled" });
+  const auth = await requireRecentProof({
+    bearer: "elevation-if-enrolled",
+    record: "owner",
+  });
   const user = auth.user;
   annotate({ action: { name: "user.export.encrypted" } });
 

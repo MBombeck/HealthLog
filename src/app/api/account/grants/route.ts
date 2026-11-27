@@ -28,8 +28,10 @@
  * signed everything else out.
  *
  * **Neither is delegable, and that is structural.** Both resolve through
- * `requireAuth()` (the invitation through `requireRecentProof`, which calls
- * it), which refuses outright while the caller is acting on another account. So a delegate cannot invite anybody into the record they
+ * `requireSelfAuth()` (the invitation through `requireRecentProof`, which calls
+ * it), which refuses outright while the caller is acting on another account,
+ * a managed profile's guardian included: a profile's guardians are managed
+ * under `managed-profiles/[id]/guardians`. So a delegate cannot invite anybody into the record they
  * were given access to, cannot widen their own grant, and cannot pass it on:
  * the route does not have a re-delegation check that somebody could soften, it
  * has no code path that runs under a switch at all. The grantor is then taken
@@ -50,7 +52,7 @@ import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 
 import {
   apiHandler,
-  requireAuth,
+  requireSelfAuth,
   requireFreshMfaIfEnrolled,
   requireRecentProof,
   MFA_STEP_UP_MAX_AGE_SECONDS,
@@ -87,7 +89,7 @@ const INVITE_WINDOW_MS = 60 * 60 * 1000;
 const MAX_GRANTS_PER_DIRECTION = 100;
 
 export const GET = apiHandler(async () => {
-  const { user } = await requireAuth();
+  const { user } = await requireSelfAuth();
   annotate({ action: { name: "sharing.grants.list" } });
 
   const [{ rows: given, cap: givenCap }, { rows: received, cap: receivedCap }] =

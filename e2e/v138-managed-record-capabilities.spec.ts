@@ -211,8 +211,8 @@ test.describe.serial("a guardian's controls inside a managed profile", () => {
     await expect(
       page.locator('[data-slot="emergency-card-preview"]'),
     ).toBeVisible({ timeout: 30_000 });
-    // Settings > Health record: the report schedule and the care calendar are
-    // the guardian's; the clinician links stay the owner's.
+    // Settings > Health record: the report schedule, the care calendar and,
+    // under the owner rule (#1615), the clinician links are the guardian's.
     await page.goto("/settings/health-record");
     await expect(page.locator('[data-slot="report-schedule"]')).toBeVisible({
       timeout: 30_000,
@@ -220,7 +220,7 @@ test.describe.serial("a guardian's controls inside a managed profile", () => {
     await expect(
       page.locator('[data-slot="care-calendar-feed"]'),
     ).toBeVisible();
-    await expect(page.locator("#sharing")).toHaveCount(0);
+    await expect(page.locator("#sharing")).toHaveCount(1);
     await page.goto("/");
     await expect(banner).toBeVisible({ timeout: 30_000 });
 

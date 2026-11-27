@@ -45,7 +45,10 @@ import { streamToResponseBody } from "@/lib/export/response-stream";
 import { NextRequest, NextResponse } from "next/server";
 
 export const GET = apiHandler(async (request: NextRequest) => {
-  const auth = await requireRecentProof({ bearer: "elevation" });
+  const auth = await requireRecentProof({
+    bearer: "elevation",
+    record: "owner",
+  });
   const { user } = auth;
   annotate({ action: { name: "user.export.full-backup" } });
 

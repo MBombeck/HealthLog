@@ -30,9 +30,12 @@
  * view says it is showing the most recent activity rather than all of it.
  * `false` means the list IS everything inside the window.
  *
- * Not delegable: bare `requireAuth()` refuses under a switch. A delegate must
- * not be able to read the owner's record of who has been in it — that list
- * names other delegates, and a grant is not an introduction to the household.
+ * Not delegable to an adult's delegate: `requireAuth()` refuses them under a
+ * switch. A delegate must not be able to read the owner's record of who has
+ * been in it — that list names other delegates, and a grant is not an
+ * introduction to the household. A managed profile's guardian reads it, as the
+ * profile's owner would (#1615): it is how they see what was done in the
+ * profile and by whom.
  */
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";

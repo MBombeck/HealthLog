@@ -514,12 +514,21 @@ function isNavDestinationVisible(
   sections: readonly ShareDomain[] | null = null,
   record: NavRecordContext | null = null,
 ): boolean {
-  if (
-    sharedRecord &&
-    (d.sharedRecord !== true ||
-      !isSharedRecordPathOpen(d.href, sharedViewer(sections, record)))
-  ) {
-    return false;
+  if (sharedRecord) {
+    const viewer = sharedViewer(sections, record);
+    // #1615 — a managed profile's guardian holds the owner's rights, so the
+    // destinations open to them whether or not sharing marks them; the path
+    // gate alone decides (it keeps Settings and Admin to their own rules).
+    const ownerRights =
+      viewer.recordKind === "managed" &&
+      viewer.level === "manage" &&
+      sections === null;
+    if (
+      (!ownerRights && d.sharedRecord !== true) ||
+      !isSharedRecordPathOpen(d.href, viewer)
+    ) {
+      return false;
+    }
   }
   // The inverse marker: a destination that exists ONLY inside somebody else's
   // record (the read-only profile summary). Guarded on `!sharedRecord` rather

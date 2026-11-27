@@ -12,7 +12,7 @@
  * to its structured `<TrendCardSkeleton>` strip + `<ChartSkeleton>` band, so
  * the very first frame a user saw was a flash of bare dark cards followed by
  * a layout jump. The fix reuses the exact same silhouette components and the
- * same auto-fit grid track (`repeat(auto-fit, minmax(min(100%, 11rem), 1fr))`)
+ * same auto-fit grid track (`repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr))`)
  * as `src/app/page.tsx` — ONE skeleton source for every load phase, zero
  * intermediate "empty card" state, zero footprint change at swap time.
  */

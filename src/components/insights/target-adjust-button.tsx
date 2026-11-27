@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 import { useTargetAdjust } from "@/lib/insights/target-adjust-context";
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import {
+  useRecordCapabilities,
+  holdsOwnerRights,
+} from "@/hooks/use-record-capabilities";
 
 /**
  * Header gear that opens the per-metric target editor.
@@ -34,11 +37,11 @@ import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 export function TargetAdjustButton({ className }: { className?: string }) {
   const { t } = useTranslations();
   const adjust = useTargetAdjust();
-  const { inSharedRecord } = useRecordCapabilities();
+  const ownerRights = holdsOwnerRights(useRecordCapabilities());
 
   // No provider, no editable target registered for this page, or a record
   // whose targets this editor cannot reach.
-  if (!adjust || !adjust.canAdjust || inSharedRecord) return null;
+  if (!adjust || !adjust.canAdjust || !ownerRights) return null;
 
   // Reuse the action's existing copy ("Adjust target range" /
   // "Zielbereich anpassen") — the gear performs exactly what the old

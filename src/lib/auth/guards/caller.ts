@@ -27,7 +27,18 @@ import {
 } from "./context";
 
 /**
- * Require an authenticated request. Throws HttpError(401) / HttpError(403) on failure.
+ * The caller's own account, and nothing else, ever (#1615).
+ *
+ * This is the pre-1.50 `requireAuth()`, kept under the name that says what it
+ * is for: identity and authentication. `requireAuth()` itself now admits the
+ * guardian of a managed profile under a switch (see `./record.ts`), because a
+ * managed profile has nobody else who could act on it. The routes that stay
+ * here are the short, reasoned exclusion list frozen by
+ * `managed-profile-owner-rule-guard.test.ts`: the caller's own passkeys,
+ * second factor, sessions, sign-in devices, password and email, the
+ * credentials that sign in as an account (API and MCP tokens), the push
+ * registration of the device in the caller's hand, the account's grants, and
+ * the handover decision that belongs to the person once they have a login.
  *
  * Auth precedence (the Bearer decides, never both):
  *   1. `Authorization: Bearer hlk_<...>` → API token path, with the token's
@@ -36,13 +47,10 @@ import {
  *   2. No Bearer + valid session cookie → cookie path (requiredPermission ignored).
  *   3. Neither → 401.
  *
- * And it REFUSES to run while the request is acting on another
- * account. A bare `requireAuth()` is an undeclared route: nobody has decided
- * whether it is safe under a switch, and the routes that call it include the
- * password change, the MFA management surface, the token mint, and the
- * integration connect. So a request carrying an acting-account carrier gets a
- * 403 `sharing.not_permitted` here, and never a silent fall-back to the
- * caller's own record.
+ * And it REFUSES to run while the request is acting on another account: a
+ * request carrying an acting-account carrier gets a 403
+ * `sharing.not_permitted` here, and never a silent fall-back to the caller's
+ * own record.
  *
  * The fall-back is the tempting wrong answer and is worth naming: it looks
  * harmless, it keeps every un-migrated route working, and it is the reverse
@@ -60,7 +68,7 @@ import {
  *   it. A token that lists neither `*` nor the named scope throws
  *   HttpError(403).
  */
-export async function requireAuth(
+export async function requireSelfAuth(
   requiredPermission?: string,
   options?: WriteMeterOptions,
 ): Promise<AuthContext> {

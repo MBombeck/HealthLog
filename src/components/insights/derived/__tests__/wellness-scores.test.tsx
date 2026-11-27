@@ -71,7 +71,7 @@ function report(
   return {
     composite: {
       status: "ok",
-      value: { score, band },
+      value: { score, band, numberBand: band },
     },
     pillars,
   } as unknown as HealthScoreReport;
@@ -148,11 +148,8 @@ describe("<WellnessScores> (the Insights head)", () => {
     expect(html).toContain('data-tile-count="5"');
     expect(html).toContain('data-band="green"');
     expect(html).toContain('href="/insights/scores/health"');
-    // Each tile's line is filled: the band word when nothing else is said.
-    const lines = [
-      ...html.matchAll(/data-slot="score-ring-tile-line"[^>]*>([^<]*)</g),
-    ].map((m) => m[1]);
-    expect(lines.every((l) => l.trim() !== "")).toBe(true);
+    // Every fresh, banded score names its band in words beside the ring.
+    expect(html.match(/data-slot="score-band-word"/g)).toHaveLength(5);
   });
 
   it("gives a readiness from before today no number, no band and no word", () => {
@@ -265,13 +262,18 @@ describe("<WellnessScores> (the Insights head)", () => {
       html.indexOf('data-score="STRESS_SCORE"'),
       html.indexOf('data-score="STRAIN_SCORE"'),
     );
-    // Whose number it is rides the tile's one line, after the band word.
-    expect(stress).toContain(">high, Estimate<");
+    // A load's band word reads as a load; whose number it is rides the line.
+    expect(stress).toContain(">high<");
+    expect(stress).toMatch(/data-slot="score-ring-tile-line"[^>]*>Estimate</);
+    // The ring says the load's word too, never "low" for a high stress.
+    expect(stress).toMatch(/aria-label="[^"]*high"/);
     expect(stress).toContain('href="/insights/scores/stress"');
     const strain = html.slice(html.indexOf('data-score="STRAIN_SCORE"'));
-    // The device's own reading stands in for a band word.
+    // A device's own reading has no band: a neutral ring, no band word, and
+    // the reading on the line.
     expect(strain).toContain(">12.4 of 21, Device value<");
-    expect(strain).not.toContain(">moderate");
+    expect(strain).not.toContain('data-slot="score-band-word"');
+    expect(strain).toMatch(/data-slot="score-ring" data-band="none"/);
     // No section of their own any more.
     expect(html).not.toContain("Estimates from HealthLog");
   });

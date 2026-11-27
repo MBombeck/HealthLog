@@ -312,6 +312,7 @@ const DIGEST: DailyDigest = {
   restMode: null,
   line: "Your health score today is 82.",
   worthALook: [],
+  asks: [],
   justIn: null,
   reactionLine: null,
 };
@@ -337,7 +338,7 @@ test.describe("the dashboard's top card", () => {
     // before any route mock can answer, so the switch is asserted there and
     // not on the card's content.
     const dashboard = page.locator("[data-today-card]");
-    const hero = page.locator('[data-slot="today-hero"]');
+    const scores = page.locator('[data-slot="today-scores"]');
     await page.goto("/");
     await expect(dashboard).toHaveAttribute("data-today-card", "on");
 
@@ -366,15 +367,15 @@ test.describe("the dashboard's top card", () => {
     await flip("unchecked");
     await page.goto("/");
     await expect(dashboard).toHaveAttribute("data-today-card", "off");
-    await expect(hero).toHaveCount(0);
-    await expect(page.locator('[data-slot="morning-block"]')).toHaveCount(0);
-    await expect(page.locator('[data-slot="morning-skeleton"]')).toHaveCount(0);
+    await expect(scores).toHaveCount(0);
+    await expect(
+      page.locator('[data-slot="today-scores-skeleton"]'),
+    ).toHaveCount(0);
 
-    // A phone width shows no card either.
+    // A phone width shows no score row either.
     await page.setViewportSize({ width: 390, height: 844 });
     await page.reload();
-    await expect(hero).toHaveCount(0);
-    await expect(page.locator('[data-slot="morning-block"]')).toHaveCount(0);
+    await expect(scores).toHaveCount(0);
     await page.setViewportSize({ width: 1280, height: 720 });
 
     await flip("checked");

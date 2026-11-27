@@ -1,6 +1,9 @@
 "use client";
 
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import {
+  useRecordCapabilities,
+  holdsOwnerRights,
+} from "@/hooks/use-record-capabilities";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -41,7 +44,7 @@ export function CustomMetricList() {
   // and the write withdrew rather than the sentence staying true.
   // Every custom-metric write resolves the caller (`requireAuth`); no grant
   // reaches it at any level.
-  const { inSharedRecord } = useRecordCapabilities();
+  const ownerRights = holdsOwnerRights(useRecordCapabilities());
   const router = useRouter();
   const [addOpen, setAddOpen] = useState(false);
   const [addFooterEl, setAddFooterEl] = useState<HTMLDivElement | null>(null);
@@ -61,7 +64,7 @@ export function CustomMetricList() {
     router.push(`/custom-metrics/${saved.id}`);
   }
 
-  if (inSharedRecord) return null;
+  if (!ownerRights) return null;
 
   return (
     <section

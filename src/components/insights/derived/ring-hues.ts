@@ -1,28 +1,16 @@
 /**
- * v1.14.0 — per-metric ring hues for the wellness-score strip.
+ * Per-metric hues of the score charts and tiles: readiness green, recovery
+ * cyan, sleep purple, stress orange, strain pink, a history line and a tile
+ * tint each. The colours live as CSS custom properties in `globals.css`
+ * (`--ring-<key>-from` / `--ring-<key>-to` / `--tile-<key>`), hand-tuned per
+ * theme.
  *
- * Each metric leans toward one intentional, distinct hue: readiness green,
- * recovery cyan, sleep purple, stress orange, strain pink — five clearly
- * different hues so the strip never reads as "a wash of green/cyan".
- *
- * v1.18.7 — CALM. The arc was a dark→neon two-stop gradient (the `to` stop
- * sat on the raw Dracula palette colour) plus a bloom + sheen, which glowed
- * against the flat charts. The two stops are now MUTED and sit a hair apart,
- * so each arc reads as a near-flat single tone — quiet as a chart series. The
- * actual colours live as CSS custom properties in `globals.css`
- * (`--ring-<key>-from` / `--ring-<key>-to` / `--tile-<key>`) with a Dracula
- * dark set on `:root` and an Alucard light set on `:root.light`, so each hue
- * is HAND-TUNED per theme — deep enough to hold contrast on the white Alucard
- * card without going neon on the dark Dracula card.
- *
- * The band semantic is never carried by the hue: it still rides `data-band`
- * + the band word + the aria-label, so a red-band readiness still reads "low"
- * in copy while its ring leans green.
+ * Since 1.50 these never colour a ring's arc. A ring says its band and only
+ * its band (`ring-color.ts`, concept B): an identity hue on the arc read as
+ * a verdict, so a readiness of 42 sat in a calm green ring.
  */
 
-import type { ScoreBand } from "./band-tokens";
-
-/** The per-metric hue keys the wellness strip passes to `<ScoreRing>`.
+/** The per-metric hue keys of the score charts and tiles (not the rings).
  *  `meds` is the dashboard dose ring: the medication family in Insights
  *  paints `--primary` everywhere (the compliance Progress bars, the
  *  compliance trend line, the drug-level and dose-strength curves), so
@@ -35,16 +23,13 @@ export type RingHue =
   "readiness" | "sleep" | "recovery" | "stress" | "strain" | "meds" | "health";
 
 /**
- * Near-flat single-hue arc `[from, to]` per metric, plus a band fallback for
- * the anatomy detail view (which passes no `hue`, so the ring keeps its
- * green/yellow/red band semantics there). The two stops are a hair apart for a
- * whisper of depth, not a neon sweep. Values are CSS var references resolved
- * per theme — consumed straight by the SVG `<linearGradient>` stops.
+ * Per-metric series colours `[from, to]` for a score's charts (its history
+ * line, the anatomy's metric lines). Never a ring's arc: since 1.50 a ring is
+ * coloured by its band only (`ring-color.ts`, concept B), so a hue on a ring
+ * can no longer say "green" about a low score. Values are CSS var references
+ * resolved per theme.
  */
-export const RING_GRADIENT: Record<
-  RingHue | ScoreBand | "none",
-  [string, string]
-> = {
+export const RING_GRADIENT: Record<RingHue, [string, string]> = {
   readiness: ["var(--ring-readiness-from)", "var(--ring-readiness-to)"],
   recovery: ["var(--ring-recovery-from)", "var(--ring-recovery-to)"],
   sleep: ["var(--ring-sleep-from)", "var(--ring-sleep-to)"],
@@ -57,13 +42,6 @@ export const RING_GRADIENT: Record<
   // recovery ring wore; that ring left the head in 1.50, and the purple
   // family is the sleep score's.
   health: ["var(--ring-recovery-from)", "var(--ring-recovery-to)"],
-  // Band fallback for the anatomy detail view (no per-metric hue passed):
-  green: ["var(--ring-green-from)", "var(--ring-green-to)"],
-  yellow: ["var(--ring-yellow-from)", "var(--ring-yellow-to)"],
-  red: ["var(--ring-red-from)", "var(--ring-red-to)"],
-  // A value without a band (a device's own number on its own scale): no
-  // band colour to give, so the arc is ink, never a band it does not have.
-  none: ["var(--muted-foreground)", "var(--muted-foreground)"],
 };
 
 /**

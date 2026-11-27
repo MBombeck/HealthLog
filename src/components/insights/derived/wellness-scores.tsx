@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   Activity,
   Droplets,
@@ -89,7 +88,7 @@ const LOAD_SCORES = [
   { id: "STRAIN_SCORE", kind: "strain", slug: "strain-score", icon: Flame },
 ] as const;
 
-type Tile = Omit<ScoreRingTileProps, "size" | "revealDelayMs">;
+type Tile = Omit<ScoreRingTileProps, "size">;
 
 /** The cycle as one more tile: its dial, the phase as the line. */
 function useCycleTile(enabled: boolean): {
@@ -158,22 +157,6 @@ export function WellnessScores({
   const cycle = useCycleTile(
     user != null && isSurfaceVisible("overview:cycle-summary", user.modules),
   );
-
-  // The reveal plays ONCE per browser session. A background sync refetch
-  // re-renders the head repeatedly; replaying the sweep every time would
-  // read as janky. The head only renders after the client-side batch
-  // resolves (the page loads it without SSR), so there is no server tile to
-  // mismatch.
-  const [play] = useState(() => {
-    if (typeof window === "undefined") return false;
-    try {
-      if (sessionStorage.getItem("wellness-strip-revealed")) return false;
-      sessionStorage.setItem("wellness-strip-revealed", "1");
-      return true;
-    } catch {
-      return true;
-    }
-  });
 
   const regionLabel = t("insights.scores.regionLabel");
 
@@ -265,16 +248,17 @@ export function WellnessScores({
     if (r?.status !== "ok" || !r.value) continue;
     const v = r.value;
     const title = t(`insights.derived.scores.${tile.kind}`);
-    // A strain the device served shows the device's own reading in place of
-    // a band word; whose number it is (an estimate, a device's value) rides
-    // the line after the word.
-    const word = v.device
+    // A strain the device served has no band: its ring is neutral, and its
+    // line gives the device's own reading. Whose number it is (an estimate,
+    // a device's value) rides the line.
+    const origin = scoreOriginLabelKey(v.origin);
+    const originLabel = origin ? t(origin) : null;
+    const deviceValue = v.device
       ? t("insights.deviceScores.valueOfScale", {
           value: fmt.number(v.device.value, 1),
           max: v.device.scaleMax,
         })
-      : t(scoreBandWordKey(tile.kind, v.band));
-    const originKey = scoreOriginLabelKey(v.origin);
+      : null;
     tiles.push({
       id: tile.id,
       href: metricHref(tile.slug) ?? "",
@@ -282,12 +266,13 @@ export function WellnessScores({
       label: title,
       shortLabel: title,
       score: v.score,
-      band: v.device ? null : v.band,
+      band: v.device ? undefined : v.band,
       load: true,
       stale: false,
-      bandWord: word,
-      line: originKey ? `${word}, ${t(originKey)}` : word,
-      ariaLabel: `${title}: ${v.score}, ${word}`,
+      bandWord: v.device ? null : t(scoreBandWordKey(tile.kind, v.band)),
+      line:
+        [deviceValue, originLabel].filter((part) => part !== null).join(", ") ||
+        null,
     });
   }
 
@@ -320,14 +305,9 @@ export function WellnessScores({
           data-tile-count={tiles.length}
           className={ROW_CLASS}
         >
-          {tiles.map((tile, index) => (
+          {tiles.map((tile) => (
             <div key={tile.id} className="min-w-0 snap-start">
-              <ScoreRingTile
-                {...tile}
-                size="compact"
-                titleAs="h2"
-                revealDelayMs={play ? index * 75 : null}
-              />
+              <ScoreRingTile {...tile} size="compact" titleAs="h2" />
             </div>
           ))}
         </div>
