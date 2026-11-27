@@ -2657,6 +2657,7 @@
       "mfaEnforced": false,
       "passkeyUpgradeNudgeDismissed": true,
       "adminNoticesDismissed": [],
+      "dismissedHints": [],
       "fullName": "rt-User-fullName",
       "insurerName": "rt-User-insurerName",
       "insuranceNumberEncrypted": "<sealed:v2:rt-User-insuranceNumberEncrypted>",
