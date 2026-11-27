@@ -21,9 +21,9 @@ import {
   withDayLinkSlot,
 } from "@/components/day/day-link";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
-import { useId, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, Plus, Stethoscope, Wrench } from "lucide-react";
+import { Plus, Stethoscope, Wrench } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ListGroup, ListItem } from "@/components/ui/list-row";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -269,6 +270,43 @@ function EpisodeCard({
   );
 }
 
+/**
+ * A recovered episode as one row of the "Resolved" card (ui-standards §20):
+ * its name over its type and dates, the whole row opening its page. A past
+ * episode has no "Log a day" of its own to offer, so it needs no card.
+ */
+function ResolvedRow({
+  episode,
+  flares,
+}: {
+  episode: IllnessEpisodeDTO;
+  flares?: IllnessEpisodeDTO[];
+}) {
+  const { t } = useTranslations();
+  const fmt = useFormatters();
+  const span = episode.resolvedAt
+    ? `${fmt.dateShortSmart(new Date(episode.onsetAt))}–${fmt.dateShortSmart(new Date(episode.resolvedAt))}`
+    : fmt.dateShortSmart(new Date(episode.onsetAt));
+  const count = flares?.length ?? 0;
+  const meta = [
+    t(`illness.type.${episode.type}`),
+    span,
+    count === 0
+      ? null
+      : count === 1
+        ? t("illness.flares.countOne", { count })
+        : t("illness.flares.countOther", { count }),
+  ].filter(Boolean);
+  return (
+    <ListItem
+      data-slot="illness-resolved-row"
+      href={`/illness/${episode.id}`}
+      title={episode.label}
+      meta={meta.join(", ")}
+    />
+  );
+}
+
 function EpisodeGroup({
   title,
   parents,
@@ -278,7 +316,7 @@ function EpisodeGroup({
   onResolve,
   resolving,
   view,
-  collapsible = false,
+  resolved = false,
 }: {
   title: string;
   parents: IllnessEpisodeDTO[];
@@ -289,70 +327,51 @@ function EpisodeGroup({
   resolving: boolean;
   view: "cards" | "list";
   /**
-   * v1.18.6 — the resolved group collapses by default behind a
-   * disclosure trigger so a long recovered history never pushes the active
-   * conditions below the fold.
+   * The recovered episodes: one card of rows, open. They used to sit behind
+   * a collapsed "RESOLVED (6)" toggle, which on a quiet month hid the whole
+   * journal.
    */
-  collapsible?: boolean;
+  resolved?: boolean;
 }) {
-  // Hooks must run unconditionally; bail on the empty render afterwards.
-  const [open, setOpen] = useState(false);
-  const gridId = useId();
   if (parents.length === 0) return null;
-
-  const grid = (
-    <div
-      id={gridId}
-      className={cn(
-        view === "list" ? "space-y-2" : "grid gap-4 sm:grid-cols-2",
-      )}
-    >
-      {parents.map((episode) => (
-        <EpisodeCard
-          key={episode.id}
-          episode={episode}
-          flares={childrenByParent.get(episode.id)}
-          resolving={resolving}
-          onLogDay={onLogDay}
-          onEdit={onEdit}
-          onResolve={onResolve}
-          view={view}
-        />
-      ))}
-    </div>
-  );
-
-  if (collapsible) {
-    return (
-      <section className="space-y-3">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          aria-controls={gridId}
-          className="text-muted-foreground hover:text-foreground -mx-1 flex w-fit items-center gap-1.5 rounded-md px-1 py-0.5 text-xs font-medium tracking-wide uppercase transition-colors"
-        >
-          <ChevronDown
-            className={cn(
-              "h-3.5 w-3.5 shrink-0 transition-transform motion-reduce:transition-none",
-              open ? "rotate-0" : "-rotate-90",
-            )}
-            aria-hidden="true"
-          />
-          {title}
-          <span className="normal-case">({parents.length})</span>
-        </button>
-        {open ? grid : null}
-      </section>
-    );
-  }
-
   return (
-    <section className="space-y-3">
-      <h2 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+    <section className="space-y-2" data-slot="illness-group">
+      <h2 className="flex items-baseline gap-2 text-sm font-semibold">
         {title}
+        <span className="text-muted-foreground font-normal tabular-nums">
+          {parents.length}
+        </span>
       </h2>
-      {grid}
+      {resolved ? (
+        <ListGroup>
+          {parents.map((episode) => (
+            <ResolvedRow
+              key={episode.id}
+              episode={episode}
+              flares={childrenByParent.get(episode.id)}
+            />
+          ))}
+        </ListGroup>
+      ) : (
+        <div
+          className={cn(
+            view === "list" ? "space-y-2" : "grid gap-4 sm:grid-cols-2",
+          )}
+        >
+          {parents.map((episode) => (
+            <EpisodeCard
+              key={episode.id}
+              episode={episode}
+              flares={childrenByParent.get(episode.id)}
+              resolving={resolving}
+              onLogDay={onLogDay}
+              onEdit={onEdit}
+              onResolve={onResolve}
+              view={view}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }
@@ -409,7 +428,6 @@ export function IllnessView() {
     <div className="space-y-6">
       <PageHeader
         title={<span data-tour-id="illness-hero">{t("illness.title")}</span>}
-        description={t("illness.subtitle")}
         actions={
           <>
             {/* v1.18.6 — wrench left of the primary Add, linking to the
@@ -495,7 +513,7 @@ export function IllnessView() {
             childrenByParent={grouped.childrenByParent}
             resolving={resolve.isPending}
             view={prefs.view}
-            collapsible
+            resolved
             onLogDay={(id) => setLogEpisodeId(id)}
             onEdit={(e) => setEditEpisode(e)}
             onResolve={(id) => resolve.mutate(id)}
