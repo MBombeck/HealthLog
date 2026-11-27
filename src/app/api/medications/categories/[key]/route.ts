@@ -16,7 +16,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -34,9 +34,9 @@ export const dynamic = "force-dynamic";
 
 type RouteParams = { params: Promise<{ key: string }> };
 
-async function rateLimited(userId: string): Promise<boolean> {
+async function rateLimited(actorId: string): Promise<boolean> {
   const rl = await checkRateLimit(
-    `medications:category:custom:${userId}`,
+    `medications:category:custom:${actorId}`,
     30,
     60_000,
   );
@@ -45,8 +45,11 @@ async function rateLimited(userId: string): Promise<boolean> {
 
 export const PATCH = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireAuth();
-    if (await rateLimited(user.id)) {
+    // The owner, or a managed profile's guardian (#1615), who can add a
+    // category from the wizard and so must be able to rename or remove it.
+    // An adult's delegate stays refused. Keyed on the actor, like the add.
+    const { user, actor } = await requireRecordAuth("guardian", "medications");
+    if (await rateLimited(actor.id)) {
       return apiError("Too many requests, try again later", 429);
     }
 
@@ -114,8 +117,11 @@ export const PATCH = apiHandler(
 
 export const DELETE = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireAuth();
-    if (await rateLimited(user.id)) {
+    // The owner, or a managed profile's guardian (#1615), who can add a
+    // category from the wizard and so must be able to rename or remove it.
+    // An adult's delegate stays refused. Keyed on the actor, like the add.
+    const { user, actor } = await requireRecordAuth("guardian", "medications");
+    if (await rateLimited(actor.id)) {
       return apiError("Too many requests, try again later", 429);
     }
 

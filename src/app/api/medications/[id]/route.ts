@@ -1,4 +1,4 @@
-import { apiHandler, requireAuth, requireRecordAuth } from "@/lib/api-handler";
+import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { updateMedicationSchema } from "@/lib/validations/medication";
@@ -45,7 +45,7 @@ export const PUT = apiHandler(
     // it destroys is scheduling anchors, not history — the tombstone `where`
     // excludes every actioned row — and the previous cadence is the one
     // genuinely unrecoverable part, which is what C7 puts in the audit row.
-    // The DELETE beside it stays refused.
+    // The DELETE beside it is the owner's and a managed profile's guardian's.
     const { user, actor, authMethod, grantId } = await requireRecordAuth(
       "manage",
       "medications",
@@ -88,7 +88,12 @@ export const PUT = apiHandler(
 
 export const DELETE = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireAuth();
+    // The owner, or the guardian of a managed profile (#1615): a profile has
+    // nobody else who could remove a medication entered on it by mistake. An
+    // adult's delegate stays refused at every level, MANAGE included, because
+    // the delete takes the dose history and the ingest tokens with it. The
+    // audit row lands on the record and names the guardian as the actor.
+    const { user } = await requireRecordAuth("guardian", "medications");
 
     const { id } = await params;
     // Ownership via the shared helper. The delete needs the medication name

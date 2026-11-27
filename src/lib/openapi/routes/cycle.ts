@@ -705,7 +705,7 @@ export const cyclePaths: NonNullable<ZodOpenApiObject["paths"]> = {
             "The key is not a `custom:` key, or names no symptom this account owns. The two are indistinguishable.",
           content: { "application/json": { schema: errorEnvelope } },
         },
-        ...cycleDisabledResponse,
+        ...cycleDisabledOnADelegableRoute,
         ...stdResponses,
         "422": {
           description:
@@ -757,7 +757,7 @@ export const cyclePaths: NonNullable<ZodOpenApiObject["paths"]> = {
             "The key is not a `custom:` key, or names no symptom this account owns.",
           content: { "application/json": { schema: errorEnvelope } },
         },
-        ...cycleDisabledResponse,
+        ...cycleDisabledOnADelegableRoute,
         ...stdResponses,
         "429": {
           description:
