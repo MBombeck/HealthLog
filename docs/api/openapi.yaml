@@ -49991,6 +49991,7 @@ components:
               - account.dismissed-hints
               - daily.asks
               - daily.scores-short-labels
+              - dashboard.tile-comparison-bands
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices; since
@@ -50142,7 +50143,12 @@ components:
             session. `daily.scores-short-labels`: Each start-page score carries shortLabel, its short name for a tile
             from the score registry, worded in the response language: GET /api/daily/morning scores.sleep and
             scores.readiness, and GET /api/daily/digest score (the Health score). Render it as is; the web shows the
-            same words."
+            same words. `dashboard.tile-comparison-bands`: GET /api/dashboard/snapshot carries tiles.comparison: per
+            ranged tile (weight, bp, pulse when it shows the resting heart rate) avg7 and avg30 as { band: good | fair |
+            low | null, side: above | below | null }, placed in targetBands by the same rule as tiles.attention (bp is
+            the side further from its band), and line, the deviation line in the response language, non-null only while
+            tiles.attention[id] is range (avg7's side, else avg30's). Colour the comparison lines and show the line as
+            served."
       required:
         - version
         - buildSha
@@ -79524,6 +79530,35 @@ components:
               type: array
               items:
                 type: string
+            comparison:
+              description: "Server feature `dashboard.tile-comparison-bands`: per tile widget id (`weight`, `bp`, `pulse`), where the
+                tile's 7- and 30-day means sit against the person's target band in `targetBands`: `good` inside the
+                green band, `fair` in the orange wings, `low` beyond them, with `side` naming the crossed edge. `bp`
+                carries the side further from its band (systolic on a tie). `pulse` is judged only when the tile shows
+                the resting heart rate. A widget without a band is absent. Colour the comparison lines from this; never
+                place a value in `targetBands` on the client."
+              type: object
+              propertyNames:
+                type: string
+              additionalProperties:
+                type: object
+                properties:
+                  avg7:
+                    $ref: "#/components/schemas/DashboardTileComparisonTone"
+                  avg30:
+                    $ref: "#/components/schemas/DashboardTileComparisonTone"
+                  line:
+                    description: "The tile's deviation line in the response language (`Above target range`, `Below target range`), non-null
+                      only while `tiles.attention[id]` is `range`: it names avg7's side when avg7 has one, else avg30's.
+                      Render as served."
+                    type:
+                      - string
+                      - "null"
+                required:
+                  - avg7
+                  - avg30
+                  - line
+                additionalProperties: false
             directions:
               description: v1.43 — per measurement type, which way a change counts. `weightTrend` stays.
               type: object
@@ -80180,6 +80215,30 @@ components:
         `briefingStale: true`. `layoutCatalogue` (full 27-id widget catalogue) and `metricStates` (latest reading per
         metric, keyed by iOS `MetricKind` raw value) are additive cold-launch seeds for the native client; both derive
         in-process from data already fetched, adding no DB round-trip."
+    DashboardTileComparisonTone:
+      type: object
+      properties:
+        band:
+          anyOf:
+            - type: string
+              enum:
+                - good
+                - fair
+                - low
+            - type: "null"
+          description: Null when there is no mean or no band to judge it against.
+        side:
+          anyOf:
+            - type: string
+              enum:
+                - above
+                - below
+            - type: "null"
+          description: Null inside the green band and when `band` is null.
+      required:
+        - band
+        - side
+      additionalProperties: false
     GlucoseClinicalMetrics:
       type: object
       properties:

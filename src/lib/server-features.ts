@@ -56,6 +56,7 @@ export const SERVER_FEATURES = [
   "account.dismissed-hints",
   "daily.asks",
   "daily.scores-short-labels",
+  "dashboard.tile-comparison-bands",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -160,4 +161,6 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "GET /api/daily/digest carries asks: every row the start page asks today, often none (kind, tier safety | decision | due, itemKey, title, body, subject, exactly two actions with the primary first, learnMore), ranked on the server, never capped or folded; render as delivered, no card when empty. Later is dose.snooze:<medicationId> on a dose and ask.later:<dismissKey> on other reminders; the admin rows (push_relay, server_setup) come only to a browser session.",
   "daily.scores-short-labels":
     "Each start-page score carries shortLabel, its short name for a tile from the score registry, worded in the response language: GET /api/daily/morning scores.sleep and scores.readiness, and GET /api/daily/digest score (the Health score). Render it as is; the web shows the same words.",
+  "dashboard.tile-comparison-bands":
+    "GET /api/dashboard/snapshot carries tiles.comparison: per ranged tile (weight, bp, pulse when it shows the resting heart rate) avg7 and avg30 as { band: good | fair | low | null, side: above | below | null }, placed in targetBands by the same rule as tiles.attention (bp is the side further from its band), and line, the deviation line in the response language, non-null only while tiles.attention[id] is range (avg7's side, else avg30's). Colour the comparison lines and show the line as served.",
 };

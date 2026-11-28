@@ -953,6 +953,10 @@
     "morning": {
       "heroItemsTitle": "To do today",
       "heroItemsDescription": "Choose which item types can appear in “To do today”."
+    },
+    "tileComparison": {
+      "above": "Above target range",
+      "below": "Below target range"
     }
   },
   "measurements": {

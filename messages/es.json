@@ -953,6 +953,10 @@
     "morning": {
       "heroItemsTitle": "Para hoy",
       "heroItemsDescription": "Elige qué tipos de elementos pueden aparecer en “Para hoy”."
+    },
+    "tileComparison": {
+      "above": "Por encima del rango",
+      "below": "Por debajo del rango"
     }
   },
   "measurements": {

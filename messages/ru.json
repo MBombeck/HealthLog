@@ -953,6 +953,10 @@
     "morning": {
       "heroItemsTitle": "На сегодня",
       "heroItemsDescription": "Выберите, какие типы элементов могут появляться в разделе «На сегодня»."
+    },
+    "tileComparison": {
+      "above": "Выше цели",
+      "below": "Ниже цели"
     }
   },
   "measurements": {

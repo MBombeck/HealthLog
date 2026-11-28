@@ -953,6 +953,10 @@
     "morning": {
       "heroItemsTitle": "오늘 할 일",
       "heroItemsDescription": "오늘 할 일에 표시할 항목 유형을 선택하세요."
+    },
+    "tileComparison": {
+      "above": "목표 범위 초과",
+      "below": "목표 범위 미만"
     }
   },
   "measurements": {

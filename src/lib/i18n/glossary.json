@@ -11621,6 +11621,118 @@
         "pt-BR": [],
         "ru": []
       }
+    },
+    {
+      "id": "tileComparison.above",
+      "description": "The one line a dashboard tile shows under its means while its latest reading sits above the person's target band.",
+      "wire": "tiles.comparison[id].line on GET /api/dashboard/snapshot, worded on the server in the response language; every client shows it as served.",
+      "terms": {
+        "de": {
+          "name": "Über dem Zielbereich"
+        },
+        "en": {
+          "name": "Above target range"
+        },
+        "fr": {
+          "name": "Au-dessus de la plage"
+        },
+        "es": {
+          "name": "Por encima del rango"
+        },
+        "it": {
+          "name": "Sopra il range"
+        },
+        "pl": {
+          "name": "Powyżej zakresu"
+        },
+        "ko": {
+          "name": "목표 범위 초과"
+        },
+        "nl": {
+          "name": "Boven het doelbereik"
+        },
+        "pt-BR": {
+          "name": "Acima da faixa alvo"
+        },
+        "ru": {
+          "name": "Выше цели"
+        }
+      },
+      "anchors": [
+        {
+          "key": "dashboard.tileComparison.above",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
+    },
+    {
+      "id": "tileComparison.below",
+      "description": "The one line a dashboard tile shows under its means while its latest reading sits below the person's target band.",
+      "wire": "tiles.comparison[id].line on GET /api/dashboard/snapshot, worded on the server in the response language; every client shows it as served.",
+      "terms": {
+        "de": {
+          "name": "Unter dem Zielbereich"
+        },
+        "en": {
+          "name": "Below target range"
+        },
+        "fr": {
+          "name": "En dessous de la plage"
+        },
+        "es": {
+          "name": "Por debajo del rango"
+        },
+        "it": {
+          "name": "Sotto il range"
+        },
+        "pl": {
+          "name": "Poniżej zakresu"
+        },
+        "ko": {
+          "name": "목표 범위 미만"
+        },
+        "nl": {
+          "name": "Onder het doelbereik"
+        },
+        "pt-BR": {
+          "name": "Abaixo da faixa alvo"
+        },
+        "ru": {
+          "name": "Ниже цели"
+        }
+      },
+      "anchors": [
+        {
+          "key": "dashboard.tileComparison.below",
+          "form": "name",
+          "match": "exact"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": []
+      }
     }
   ],
   "allow": [
