@@ -21,6 +21,8 @@ export function typeLabel(type: string, t: Translate): string {
 /** What every row of either layout needs from the list around it. */
 export interface MeasurementRowContext {
   canManage: boolean;
+  /** The phone list's selection mode: rows show a checkbox and a tap selects. */
+  selecting?: boolean;
   selectedIds: ReadonlySet<string>;
   expandedDayKeys: ReadonlySet<string>;
   toggleExpand: (dayKey: string) => void;

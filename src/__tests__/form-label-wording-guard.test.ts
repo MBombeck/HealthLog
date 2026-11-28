@@ -2,19 +2,14 @@
  * A form field's label names the field. It is not a question, and it does not
  * carry its own colon.
  *
- * `Label` puts the colon after every field name itself, and leaves it off a
- * text that already ends in punctuation. So a field named by a question ("What
- * is it?") stood without a colon beside "Sessions:" and "Kind:" in the same
- * sheet, and a name whose string ended in ":" depended on that exception to
- * avoid a double colon. One rule reads the same in every form: the string is
- * a name, and the colon comes from `Label`.
+ * A label is a noun with no colon after it (`ui/label.tsx`), so a string that
+ * ends in "?" or ":" reads as the odd one out beside every other field name
+ * in the sheet. One rule reads the same in every form: the string is a name.
  *
  * What is read: every `FieldGroup` whose `label` is a `t("…")` literal, and
- * every `Label` without `noColon` whose only child is a `t("…")` literal (a
- * `noColon` label is not followed by its field, by the primitive's own
- * contract). The key is resolved in the English bundle; the other bundles are
- * translations of the same name and are held to it by
- * `i18n-locale-integrity.test.ts`.
+ * every `Label` whose only child is a `t("…")` literal. The key is resolved
+ * in the English bundle; the other bundles are translations of the same name
+ * and are held to it by `i18n-locale-integrity.test.ts`.
  *
  * Not read (stated, not hidden): a label built from a variable, a template
  * or more than one child. They are a minority and read differently in a
@@ -81,7 +76,7 @@ function fieldLabelKeys(source: string): string[] {
   }
   for (const match of text.matchAll(/<Label\b/g)) {
     const tag = openingTag(text, match.index);
-    if (/\bnoColon\b/.test(tag) || tag.endsWith("/>")) continue;
+    if (tag.endsWith("/>")) continue;
     const rest = text.slice(match.index + tag.length);
     const child = /^\s*\{\s*t\(\s*"([^"]+)"\s*\)\s*\}\s*<\/Label>/.exec(rest);
     if (child) keys.push(child[1]);
@@ -142,13 +137,12 @@ function sweep(): Array<{ file: string; key: string; text: string }> {
 }
 
 describe("form label wording", () => {
-  it("reads both shapes and skips a noColon label", () => {
+  it("reads both shapes", () => {
     expect(
       fieldLabelKeys(
         [
           '<FieldGroup htmlFor="a" label={t("x.name")} hint={<b>{1}</b>}>',
           '<Label htmlFor="b">{t("x.kind")}</Label>',
-          '<Label noColon>{t("x.prompt")}</Label>',
           '// <Label>{t("x.comment")}</Label>',
         ].join("\n"),
       ),
@@ -162,7 +156,7 @@ describe("form label wording", () => {
       .map(({ file, key, text }) => `${file}: ${key} = "${text}"`);
     expect(
       offenders,
-      "Name the field (a noun, the way the other fields in the form read) and let Label add the colon.",
+      "Name the field with a noun, the way the other fields in the form read, with no colon.",
     ).toEqual([]);
   });
 });

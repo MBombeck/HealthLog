@@ -22,16 +22,12 @@
 import { localDateTimeValue } from "@/components/day/prefill";
 import { useId, useState } from "react";
 import { createPortal } from "react-dom";
-import { Loader2, MoreHorizontal, Plus, RotateCcw } from "lucide-react";
+import { Loader2, RotateCcw } from "lucide-react";
 
+import { ActionMenu, ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
 import { DateTimeField } from "@/components/ui/date-time-field";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { FieldGroup } from "@/components/ui/field-group";
 import { Input } from "@/components/ui/input";
 import { SliderField } from "@/components/ui/slider";
@@ -469,48 +465,29 @@ function SymptomEntryFooter({
 }) {
   const { t } = useTranslations();
   return (
-    <div className="flex w-full items-center justify-between gap-2">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="size-11"
-            disabled={busy}
-            aria-label={t("common.moreOptions")}
-          >
-            <MoreHorizontal className="size-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          <DropdownMenuItem onClick={onReset}>
-            <RotateCcw className="mr-2 size-4" />
-            {t("symptoms.entry.reset")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <div className="flex items-center gap-2">
-        {onCancel && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={busy}
-          >
-            {t("common.cancel")}
-          </Button>
-        )}
-        <Button type="submit" form={formId} disabled={busy}>
-          {busy ? (
-            <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <Plus className="size-4" />
-          )}
-          {t("common.save")}
+    <ActionPair>
+      <ActionMenu disabled={busy}>
+        <DropdownMenuItem onClick={onReset}>
+          <RotateCcw className="mr-2 size-4" />
+          {t("symptoms.entry.reset")}
+        </DropdownMenuItem>
+      </ActionMenu>
+      {onCancel && (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={busy}
+        >
+          {t("common.cancel")}
         </Button>
-      </div>
-    </div>
+      )}
+      <Button type="submit" form={formId} disabled={busy}>
+        {busy ? (
+          <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
+        ) : null}
+        {t("common.save")}
+      </Button>
+    </ActionPair>
   );
 }

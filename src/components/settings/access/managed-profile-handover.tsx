@@ -285,7 +285,6 @@ function HandoverProposalForm({
                 className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0"
               >
                 <Label
-                  noColon
                   htmlFor={id}
                   className="block min-w-0 flex-1 truncate text-sm font-normal"
                 >

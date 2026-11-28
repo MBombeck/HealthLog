@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
 import { DateField } from "@/components/ui/date-field";
 import { Input } from "@/components/ui/input";
@@ -123,7 +124,7 @@ export function AllergyForm({
   }
 
   const footerNode = (
-    <>
+    <ActionPair>
       {onCancel ? (
         <Button
           type="button"
@@ -140,7 +141,7 @@ export function AllergyForm({
         ) : null}
         {t("common.save")}
       </Button>
-    </>
+    </ActionPair>
   );
 
   return (

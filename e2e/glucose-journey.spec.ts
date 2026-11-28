@@ -19,7 +19,7 @@
  * path and nothing about the boundary.
  *
  * Every assertion addresses a stable attribute — `data-testid`,
- * `data-measurement-type`, `data-display-unit`, `data-slot`, a placeholder —
+ * `data-measurement-type`, `data-display-unit`, `data-slot`, a unit symbol —
  * never rendered copy: the labels are i18n-driven, and the same rows paint
  * through a different subtree on the card list.
  *
@@ -171,7 +171,8 @@ async function captureReading(
   opts: {
     typed: string;
     context?: string;
-    expectPlaceholder?: string;
+    /** The unit the value field's label names, e.g. "mmol/L". */
+    expectUnit?: string;
     /** Backdate to `HH:mm` on the day before the form's own default. */
     yesterdayAt?: string;
   },
@@ -183,13 +184,13 @@ async function captureReading(
 
   const valueField = sheet.locator("#value");
   await expect(valueField).toBeVisible();
-  if (opts.expectPlaceholder) {
-    // The placeholder is the form saying which unit it is asking in, in an
-    // attribute rather than in copy.
-    await expect(valueField).toHaveAttribute(
-      "placeholder",
-      opts.expectPlaceholder,
+  if (opts.expectUnit) {
+    // The field's label is the form saying which unit it is asking in. The
+    // field itself stays empty: no last reading as a placeholder.
+    await expect(sheet.locator('label[for="value"]')).toContainText(
+      `(${opts.expectUnit})`,
     );
+    await expect(valueField).not.toHaveAttribute("placeholder", /\S/);
   }
   await valueField.fill(opts.typed);
 
@@ -297,8 +298,7 @@ test.describe("blood glucose", () => {
       await captureReading(page, {
         typed: String(READINGS.typedAsMgdl.mgdl),
         yesterdayAt: "07:30",
-        // The form offers the person's latest reading, in the unit it asks in.
-        expectPlaceholder: String(READINGS.untagged.mgdl),
+        expectUnit: "mg/dL",
       }),
     ).toBe(201);
 
@@ -313,7 +313,7 @@ test.describe("blood glucose", () => {
     // The switch.
     await chooseGlucoseUnit(page, "mmol/L");
 
-    // The form now ASKS in mmol/L — its placeholder says so — and what it
+    // The form now ASKS in mmol/L — its value label says so — and what it
     // stores is still canonical mg/dL, which is what the read-back proves.
     // Bedtime rather than fasting, so each hand-entered reading owns a tile
     // and each tile's "latest" names exactly one of them — a strip where two
@@ -322,7 +322,7 @@ test.describe("blood glucose", () => {
       await captureReading(page, {
         typed: READINGS.typedAsMmol.typed,
         context: "BEDTIME",
-        expectPlaceholder: READINGS.untagged.mmol,
+        expectUnit: "mmol/L",
       }),
     ).toBe(201);
 

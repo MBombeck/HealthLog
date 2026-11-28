@@ -42,18 +42,16 @@ export function TimelineReadinessSheet({
       description={t("timeline.readiness.subtitle")}
       contentWidth="lg"
       footer={
-        <div className="flex w-full flex-wrap justify-end gap-2">
+        <>
           <Button
             variant="outline"
-            size="sm"
-            className="min-h-11 sm:min-h-9"
             onClick={close}
             data-slot="timeline-readiness-later"
           >
             {t("timeline.readiness.later")}
           </Button>
           {showOpenTimeline && (
-            <Button asChild size="sm" className="min-h-11 sm:min-h-9">
+            <Button asChild>
               <Link
                 href="/timeline"
                 onClick={close}
@@ -63,7 +61,7 @@ export function TimelineReadinessSheet({
               </Link>
             </Button>
           )}
-        </div>
+        </>
       }
     >
       <div className="space-y-4" data-slot="timeline-readiness-sheet">
