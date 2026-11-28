@@ -397,7 +397,9 @@ function proseAlternation(field: keyof RangeProse): string {
 // U+007E and the fullwidth U+FF5E are the separator a Korean lab prints
 // ("3.5~5.0"); both are added here rather than to `twoSided` because they are
 // symbols, and the symbol branch needs no surrounding whitespace.
-const SYMBOL_SEP = String.raw`-|–|—|‒|~|～|…|\.{2,3}`;
+// 〜 (U+301C, the wave dash) is how a Japanese report prints a range; it
+// sits outside the fullwidth block the fold maps onto ASCII.
+const SYMBOL_SEP = String.raw`-|–|—|‒|~|～|〜|…|\.{2,3}`;
 
 /** Prefixes that state a ceiling only. */
 const UPPER_PREFIX = `(?:<=|<|≤|${proseAlternation("upper")})`;

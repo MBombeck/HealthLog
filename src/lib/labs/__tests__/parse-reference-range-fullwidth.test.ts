@@ -15,6 +15,8 @@ import { parseReferenceRange } from "@/lib/labs/parse-reference-range";
 describe("parseReferenceRange — fullwidth notation", () => {
   it.each([
     ["３．５～５．０", 3.5, 5],
+    ["３．５〜５．０", 3.5, 5],
+    ["3.5〜5.0", 3.5, 5],
     ["３．５－５．０", 3.5, 5],
     ["３．５－５．０ ｍｍｏｌ／Ｌ", 3.5, 5],
     ["＜５．０", null, 5],
