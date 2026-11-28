@@ -47,7 +47,11 @@ function RowValue({
   title?: string;
 }) {
   return (
-    <span data-slot="row-value" data-kind="text" className="flex min-w-0">
+    <span
+      data-slot="row-value"
+      data-kind="text"
+      className="flex min-w-0 items-center"
+    >
       <span
         data-slot="row-value-text"
         title={title}
