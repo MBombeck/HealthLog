@@ -52,6 +52,11 @@ async function storedWeights(
   return data.measurements.map(({ value, unit }) => ({ value, unit }));
 }
 
+// Both blocks below write the same critical account and empty it before
+// each test, so they take turns: run side by side, one test's reset deleted
+// the reading the other had just saved.
+test.describe.configure({ mode: "default" });
+
 test.describe("add measurement flow", () => {
   test.use({ storageState: criticalStorageState("measurement") });
 
