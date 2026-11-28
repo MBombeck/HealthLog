@@ -111,6 +111,7 @@ export function asksFixtureInput(
     dismissedItemKeys: new Set<string>(),
     adminAsk: "server_setup",
     localTime,
+    locale,
   };
   return input;
 }

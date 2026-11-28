@@ -62,6 +62,8 @@ import {
 } from "@/lib/daily/priority-item-key";
 import { COACH_CHECKIN_ADJUST_INTENT } from "@/lib/daily/coach-checkin-intents";
 import type { EncounterKind } from "@/generated/prisma/client";
+import { makeFormatters } from "@/lib/format-locale";
+import type { Locale } from "@/lib/i18n/config";
 import { encounterKindLabelKey } from "@/lib/encounters/kind-label";
 
 export { ASK_INTENT, OPTIONAL_ASK_KINDS };
@@ -551,7 +553,7 @@ export function asksFromDigest(
 interface WordingContext {
   input: Pick<
     DailyDigestInput,
-    "preventiveDue" | "coachPlans" | "syncIssues" | "localTime"
+    "preventiveDue" | "coachPlans" | "syncIssues" | "localTime" | "locale"
   >;
   doses: ReadonlyMap<
     string,
@@ -569,13 +571,30 @@ export function doseMeta(
   overdue: boolean,
   time: string | null,
   t: Translate,
+  /** The same instant on the language's own clock, when known. */
+  ownTime?: string | null,
 ): string {
-  const withTime = time
-    ? t(overdue ? "daily.ask.overdue" : "daily.ask.due", { time })
-    : null;
+  // A label longer than the language's own clock is an hour cycle the
+  // reader forced ("8:00 AM" in German, Russian): its suffix is what runs a
+  // line past the column, so the state goes alone.
+  const forced = Boolean(time && ownTime && time.length > ownTime.length);
+  const withTime =
+    time && !forced
+      ? t(overdue ? "daily.ask.overdue" : "daily.ask.due", { time })
+      : null;
   return withTime && askTextLength(withTime) <= ASK_TEXT_BUDGET.metaChars
     ? withTime
     : t(overdue ? "daily.ask.overdueNow" : "daily.ask.dueNow");
+}
+
+/** An instant on the language's own clock (its default hour cycle). */
+function ownClock(
+  iso: string | undefined,
+  locale: Locale | undefined,
+): string | null {
+  const at = iso ? Date.parse(iso) : NaN;
+  if (!locale || !Number.isFinite(at)) return null;
+  return makeFormatters(locale, "UTC", "AUTO", "AUTO").time(new Date(at));
 }
 
 /** How many due check-ups a title names before it counts the rest. */
@@ -605,7 +624,7 @@ export function wordAsk(
       const overdue = ask.tier === "safety";
       return {
         title: dose?.name ?? ask.subject ?? t("daily.ask.medication"),
-        body: doseMeta(overdue, at, t),
+        body: doseMeta(overdue, at, t, ownClock(dose?.dueAt, input.locale)),
       };
     }
     case "preventive_care": {

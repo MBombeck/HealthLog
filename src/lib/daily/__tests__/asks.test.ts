@@ -10,6 +10,7 @@ import {
   ASK_INTENT,
   buildAdminAsk,
   CONSENT_ASK_KINDS,
+  doseMeta,
   isMandatoryAsk,
   OPTIONAL_ASK_KINDS,
   DAILY_ASK_KINDS,
@@ -739,5 +740,14 @@ describe("the browser test's asks are the builder's", () => {
       expect(pick(serverAsks(locale))).toEqual(pick(built));
       expect(built).toHaveLength(6);
     }
+  });
+});
+
+describe("a forced hour cycle", () => {
+  it("drops the time when it is longer than the language's own clock", () => {
+    const de = getServerTranslator("de").t;
+    expect(doseMeta(true, "8:00 AM", de, "08:00")).toBe("Überfällig");
+    expect(doseMeta(true, "08:00", de, "08:00")).toBe("Überfällig 08:00");
+    expect(doseMeta(true, "8:00 AM", t, "8:00 AM")).toBe("Overdue 8:00 AM");
   });
 });
