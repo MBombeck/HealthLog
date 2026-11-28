@@ -18,6 +18,7 @@ import {
   type DoctorReportPdfRenderContext,
 } from "./render-context";
 import { withLabUnit } from "@/lib/labs/dimensionless";
+import { drawImagingTable } from "./imaging-section";
 import { drawSurgicalHistoryTable } from "./surgical-history-section";
 import { drawTreatmentSeriesTable } from "./treatment-series-section";
 
@@ -334,6 +335,7 @@ export function buildClinicalRecordsNotesSection(
   // The surgical history, reference data on its own leaf
   // (`surgical-history-section.ts`).
   y = drawSurgicalHistoryTable(context, y);
+  y = drawImagingTable(context, y);
 
   // The immunization history. Reference data (not time-windowed), populated
   // when the `IMMUNIZATIONS` leaf is selected AND the `vaccinations` module is

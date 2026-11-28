@@ -483,6 +483,23 @@ const DISPOSITIONS: Record<StructuredLeafId, Disposition> = {
     },
     marker: "Seasonal influenza",
   },
+  IMAGING_EXAMS: {
+    kind: "rendered",
+    data: {
+      imagingExams: [
+        {
+          performedAt: "2025-04-11T00:00:00.000Z",
+          modality: "MRI",
+          side: "LEFT",
+          bodyPart: "Knee",
+          facility: "Radiology on the hill",
+          requestingDoctor: null,
+          conclusion: "Small meniscus tear",
+        },
+      ],
+    },
+    marker: "Small meniscus tear",
+  },
   FAMILY_HISTORY: {
     kind: "rendered",
     data: {
@@ -554,7 +571,7 @@ describe("clinician view — every catalogue leaf has a renderer or a reason", (
   it("reads a plausible catalogue", () => {
     // Sanity floor: a degraded import would satisfy every loop below
     // vacuously, which is the failure mode a pair guard dies of.
-    expect(STRUCTURED_LEAF_IDS).toHaveLength(21);
+    expect(STRUCTURED_LEAF_IDS).toHaveLength(22);
     expect(Object.keys(DISPOSITIONS).sort()).toEqual(
       [...STRUCTURED_LEAF_IDS].sort(),
     );

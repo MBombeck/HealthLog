@@ -579,7 +579,12 @@
       "postpartumWeek": "After the birth, week {weeks} on the report date",
       "deliveryDate": "Date of the birth",
       "predictionsPaused": "Self-reported. Cycle predictions are paused."
-    }
+    },
+    "imagingTitle": "Imaging",
+    "imagingColDate": "Date",
+    "imagingColExam": "Exam",
+    "imagingColFacility": "Clinic",
+    "imagingColConclusion": "Conclusion"
   },
   "errorBoundary": {
     "title": "Something went wrong",
@@ -664,7 +669,8 @@
       "record": "Health record",
       "analysis": "Analysis"
     },
-    "dueCount": "{label}, {count} due"
+    "dueCount": "{label}, {count} due",
+    "imaging": "Imaging"
   },
   "auth": {
     "login": "Sign in",
@@ -9243,7 +9249,8 @@
         },
         "restoreSkippedSeizureMedicationReference": "Seizure rescue plan or dose linked to a medication the file does not contain (kept without the link)",
         "restoreSkippedSeizureTypeReference": "Seizure linked to a seizure type the file does not contain (kept without the type)",
-        "restoreSkippedSeizureIntakeReference": "Seizure rescue dose linked to a medication intake the file does not contain (kept without the link)"
+        "restoreSkippedSeizureIntakeReference": "Seizure rescue dose linked to a medication intake the file does not contain (kept without the link)",
+        "restoreSkippedImagingCiphertext": "Imaging exam text sealed with a key this server does not hold (exam kept without it)"
       },
       "danger-zone": {
         "title": "Danger zone",
@@ -11882,6 +11889,10 @@
     "seizures": {
       "label": "Seizure diary",
       "description": "Record seizures with type, duration and rescue medication, see clusters, and add them to the doctor report."
+    },
+    "imaging": {
+      "label": "Imaging",
+      "description": "MRI, CT, X-ray and ultrasound exams with their reports and images."
     }
   },
   "moduleOff": {
@@ -14146,7 +14157,8 @@
     "leafEmergency": "Emergency information (blood type, contacts, directives)",
     "leafMedicationEffect": "Change around each medication start (needs the medication list)",
     "leafWorkouts": "Workouts (summary per sport)",
-    "leafSeizures": "Seizure diary"
+    "leafSeizures": "Seizure diary",
+    "leafImagingExams": "Imaging exams"
   },
   "recordSharing": {
     "banner": {
@@ -14577,7 +14589,10 @@
       "treatmentSeriesCreate": "{name} added a treatment series",
       "treatmentSeriesUpdate": "{name} edited a treatment series",
       "treatmentSeriesDelete": "{name} deleted a treatment series",
-      "treatmentSeriesRestore": "{name} restored a treatment series"
+      "treatmentSeriesRestore": "{name} restored a treatment series",
+      "imagingExamCreate": "{name} recorded an imaging exam",
+      "imagingExamUpdate": "{name} edited an imaging exam",
+      "imagingExamDelete": "{name} deleted an imaging exam"
     },
     "section": {
       "measurements": {
@@ -16579,6 +16594,49 @@
       "needAfter": "There are not enough readings since the start to compare yet.",
       "needStart": "Add a start date to compare before and after.",
       "needData": "There are not enough readings to compare yet."
+    }
+  },
+  "imaging": {
+    "title": "Imaging",
+    "examsHeading": "Exams",
+    "addFirst": "Add your first exam",
+    "createTitle": "New exam",
+    "editTitle": "Edit exam",
+    "created": "Exam saved",
+    "updated": "Exam updated",
+    "deleted": "Exam deleted",
+    "saveFailed": "The exam could not be saved.",
+    "deleteFailed": "The exam could not be deleted.",
+    "loadError": "Imaging exams could not be loaded.",
+    "uploadFailed": "The file could not be uploaded.",
+    "deleteTitle": "Delete this exam?",
+    "deleteDescription": "The report and images stay in your documents.",
+    "fileCount": "{count, plural, one {# file} other {# files}}",
+    "form": {
+      "modality": "Type",
+      "date": "Date",
+      "bodyPart": "Body part",
+      "side": "Side",
+      "sideNone": "Not applicable",
+      "facility": "Clinic or lab",
+      "requestingDoctor": "Requested by",
+      "conclusion": "Conclusion",
+      "documents": "Report and images",
+      "upload": "Upload",
+      "noDocuments": "No documents yet"
+    },
+    "modality": {
+      "MRI": "MRI",
+      "CT": "CT",
+      "X_RAY": "X-ray",
+      "ULTRASOUND": "Ultrasound",
+      "MAMMOGRAPHY": "Mammography",
+      "OTHER": "Other imaging"
+    },
+    "side": {
+      "LEFT": "left",
+      "RIGHT": "right",
+      "BOTH": "both sides"
     }
   }
 }

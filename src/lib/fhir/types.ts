@@ -225,10 +225,18 @@ export interface FhirDiagnosticReport {
   resourceType: "DiagnosticReport";
   id: string;
   status: "final";
+  /** `RAD` (v2-0074) on an imaging exam's report. */
+  category?: FhirCodeableConcept[];
   code: FhirCodeableConcept;
   subject: FhirReference;
   effectivePeriod?: FhirPeriod;
+  /** the exam day of an imaging report. */
+  effectiveDateTime?: string;
+  /** the facility of an imaging exam, as a display-only reference. */
+  performer?: Array<{ display: string }>;
   result?: FhirReference[];
+  /** the person's own conclusion of an imaging exam. */
+  conclusion?: string;
 }
 
 export interface FhirOrganization {

@@ -49,6 +49,12 @@ function linkTables(): Map<string, string> {
 
 const KINDS = [...RELATED_KINDS] as RelatedKind[];
 
+/**
+ * Link sources that are not kinds of the matrix. An imaging exam
+ * files its report and pictures and is read from its own page only.
+ */
+const OUTSIDE_MATRIX: ReadonlySet<string> = new Set(["imagingExam"]);
+
 function pairs(): Array<[RelatedKind, RelatedKind]> {
   const out: Array<[RelatedKind, RelatedKind]> = [];
   for (let i = 0; i < KINDS.length; i++) {
@@ -102,8 +108,19 @@ describe("relation matrix", () => {
   it("every link table is a pair of the matrix", () => {
     for (const key of tables.keys()) {
       const [a, b] = key.split(":") as [RelatedKind, RelatedKind];
+      // A record that files documents but is read only from its own page
+      // (an imaging exam) sits outside the matrix by decision, named here.
+      if (OUTSIDE_MATRIX.has(a) || OUTSIDE_MATRIX.has(b)) continue;
       expect(relationCell(a, b)?.mode, key).toBe("stored");
     }
+  });
+
+  it("names every link source outside the matrix on purpose", () => {
+    const sources = new Set([...tables.keys()].map((k) => k.split(":")[0]));
+    const outside = [...sources].filter(
+      (kind) => !KINDS.includes(kind as RelatedKind),
+    );
+    expect(outside.sort()).toEqual([...OUTSIDE_MATRIX].sort());
   });
 
   it("the five v1.43 tables close their pairs", () => {

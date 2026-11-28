@@ -48,6 +48,7 @@ import { searchKeys } from "./search";
 import { sharingKeys } from "./sharing";
 import { vaccinationKeys } from "./vaccinations";
 import { seizureKeys } from "./seizures";
+import { imagingKeys } from "./imaging";
 import { workoutKeys } from "./workouts";
 import { activityKeys } from "./activity";
 import { provenanceKeys } from "./provenance";
@@ -86,6 +87,7 @@ export const queryKeys = {
   ...sharingKeys,
   ...vaccinationKeys,
   ...seizureKeys,
+  ...imagingKeys,
   ...aiRunKeys,
   ...dayKeys,
   ...timelineKeys,
@@ -566,4 +568,14 @@ export const seizureDependentKeys = [
   queryKeys.medications(),
   queryKeys.dayRoot(),
   queryKeys.timelineRoot(),
+];
+
+/**
+ * Keys invalidated by any imaging-exam write (#1672). An exam files vault
+ * documents, and a new upload from the exam lands in the vault, so the
+ * document reads evict with it.
+ */
+export const imagingDependentKeys = [
+  queryKeys.imaging(),
+  queryKeys.documents(),
 ];

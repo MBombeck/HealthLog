@@ -579,7 +579,12 @@
       "postpartumWeek": "Na de bevalling, week {weeks} op de rapportdatum",
       "deliveryDate": "Datum van de bevalling",
       "predictionsPaused": "Zelf opgegeven. Cyclusvoorspellingen staan stil."
-    }
+    },
+    "imagingTitle": "Beeldvorming",
+    "imagingColDate": "Datum",
+    "imagingColExam": "Onderzoek",
+    "imagingColFacility": "Praktijk",
+    "imagingColConclusion": "Conclusie"
   },
   "errorBoundary": {
     "title": "Er is iets misgegaan",
@@ -664,7 +669,8 @@
       "record": "Gezondheidsdossier",
       "analysis": "Analyse"
     },
-    "dueCount": "{label}, {count} open"
+    "dueCount": "{label}, {count} open",
+    "imaging": "Beeldvorming"
   },
   "auth": {
     "login": "Inloggen",
@@ -9243,7 +9249,8 @@
         },
         "restoreSkippedSeizureMedicationReference": "Noodplan of nooddosis van een aanval gekoppeld aan een medicijn dat niet in het bestand staat (bewaard zonder de koppeling)",
         "restoreSkippedSeizureTypeReference": "Aanval gekoppeld aan een aanvalstype dat niet in het bestand staat (bewaard zonder het type)",
-        "restoreSkippedSeizureIntakeReference": "Nooddosis van een aanval gekoppeld aan een inname die niet in het bestand staat (bewaard zonder de koppeling)"
+        "restoreSkippedSeizureIntakeReference": "Nooddosis van een aanval gekoppeld aan een inname die niet in het bestand staat (bewaard zonder de koppeling)",
+        "restoreSkippedImagingCiphertext": "Tekst van een beeldvormingsonderzoek, verzegeld met een sleutel die deze server niet heeft (onderzoek zonder tekst behouden)"
       },
       "danger-zone": {
         "title": "Gevarenzone",
@@ -11882,6 +11889,10 @@
     "seizures": {
       "label": "Aanvalsdagboek",
       "description": "Leg aanvallen vast met type, duur en noodmedicatie, bekijk clusters en aanvalsvrije dagen, en voeg een onderdeel over aanvallen toe aan het artsenrapport."
+    },
+    "imaging": {
+      "label": "Beeldvorming",
+      "description": "MRI, CT, röntgen en echo met verslag en beelden."
     }
   },
   "moduleOff": {
@@ -14146,7 +14157,8 @@
     "leafEmergency": "Noodinformatie (bloedgroep, contactpersonen, wilsverklaringen)",
     "leafMedicationEffect": "Verandering rond de start van elk medicijn (vereist de medicatielijst)",
     "leafWorkouts": "Trainingen (overzicht per sport)",
-    "leafSeizures": "Aanvalsdagboek"
+    "leafSeizures": "Aanvalsdagboek",
+    "leafImagingExams": "Beeldvormingsonderzoeken"
   },
   "recordSharing": {
     "banner": {
@@ -14577,7 +14589,10 @@
       "treatmentSeriesCreate": "{name} heeft een behandelreeks toegevoegd",
       "treatmentSeriesUpdate": "{name} heeft een behandelreeks bewerkt",
       "treatmentSeriesDelete": "{name} heeft een behandelreeks verwijderd",
-      "treatmentSeriesRestore": "{name} heeft een behandelreeks hersteld"
+      "treatmentSeriesRestore": "{name} heeft een behandelreeks hersteld",
+      "imagingExamCreate": "{name} heeft een beeldvormingsonderzoek vastgelegd",
+      "imagingExamUpdate": "{name} heeft een beeldvormingsonderzoek bewerkt",
+      "imagingExamDelete": "{name} heeft een beeldvormingsonderzoek verwijderd"
     },
     "section": {
       "measurements": {
@@ -16579,6 +16594,49 @@
       "needAfter": "Er zijn nog te weinig waarden sinds de start om te vergelijken.",
       "needStart": "Voeg een startdatum toe om voor en na te vergelijken.",
       "needData": "Er zijn nog te weinig waarden om te vergelijken."
+    }
+  },
+  "imaging": {
+    "title": "Beeldvorming",
+    "examsHeading": "Onderzoeken",
+    "addFirst": "Eerste onderzoek toevoegen",
+    "createTitle": "Nieuw onderzoek",
+    "editTitle": "Onderzoek bewerken",
+    "created": "Onderzoek opgeslagen",
+    "updated": "Onderzoek bijgewerkt",
+    "deleted": "Onderzoek verwijderd",
+    "saveFailed": "Het onderzoek kon niet worden opgeslagen.",
+    "deleteFailed": "Het onderzoek kon niet worden verwijderd.",
+    "loadError": "Beeldvormingsonderzoeken konden niet worden geladen.",
+    "uploadFailed": "Het bestand kon niet worden geüpload.",
+    "deleteTitle": "Dit onderzoek verwijderen?",
+    "deleteDescription": "Het verslag en de beelden blijven in je documenten.",
+    "fileCount": "{count, plural, one {# bestand} other {# bestanden}}",
+    "form": {
+      "modality": "Soort",
+      "date": "Datum",
+      "bodyPart": "Lichaamsdeel",
+      "side": "Zijde",
+      "sideNone": "Niet van toepassing",
+      "facility": "Praktijk of kliniek",
+      "requestingDoctor": "Aangevraagd door",
+      "conclusion": "Conclusie",
+      "documents": "Verslag en beelden",
+      "upload": "Uploaden",
+      "noDocuments": "Nog geen documenten"
+    },
+    "modality": {
+      "MRI": "MRI",
+      "CT": "CT-scan",
+      "X_RAY": "Röntgenfoto",
+      "ULTRASOUND": "Echo",
+      "MAMMOGRAPHY": "Mammografie",
+      "OTHER": "Andere beeldvorming"
+    },
+    "side": {
+      "LEFT": "links",
+      "RIGHT": "rechts",
+      "BOTH": "beide zijden"
     }
   }
 }

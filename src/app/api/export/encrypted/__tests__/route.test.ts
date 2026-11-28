@@ -75,6 +75,8 @@ vi.mock("@/lib/db", () => ({
     seizureTypeProfile: { findMany: vi.fn().mockResolvedValue([]) },
     seizureEvent: { findMany: vi.fn().mockResolvedValue([]) },
     seizureDiarySettings: { findUnique: vi.fn().mockResolvedValue(null) },
+    imagingExam: { findMany: vi.fn().mockResolvedValue([]) },
+    imagingExamDocumentLink: { findMany: vi.fn().mockResolvedValue([]) },
     labResultDocumentLink: { findMany: vi.fn().mockResolvedValue([]) },
     encounterMedicationLink: { findMany: vi.fn().mockResolvedValue([]) },
     encounterVaccinationLink: { findMany: vi.fn().mockResolvedValue([]) },

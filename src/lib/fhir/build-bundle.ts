@@ -43,6 +43,8 @@ import {
   conditionsFromReportData,
   seizureBundleResources,
   seizureCompositionSection,
+  imagingCompositionSection,
+  imagingReportsFromReportData,
   medicationStatementsFromReportData,
   medicationAdministrationsFromReportData,
 } from "@/lib/fhir/resources";
@@ -188,6 +190,7 @@ export function buildFhirDocumentBundle(
   const familyHistoryRefs: FhirReference[] = [];
   const coverageRefs: FhirReference[] = [];
   const seizureRefs: FhirReference[] = [];
+  const imagingRefs: FhirReference[] = [];
 
   /**
    * Mint the entry identity. `fullUrl` is a fresh RFC-4122 UUID per entry —
@@ -304,6 +307,12 @@ export function buildFhirDocumentBundle(
   for (const resource of seizureBundleResources(data)) {
     push(resource);
     seizureRefs.push({ reference: `${resource.resourceType}/${resource.id}` });
+  }
+
+  // --- A DiagnosticReport per imaging exam (#1672) -----------------------
+  for (const report of imagingReportsFromReportData(data)) {
+    push(report);
+    imagingRefs.push({ reference: `DiagnosticReport/${report.id}` });
   }
 
   // --- AllergyIntolerance per recorded allergy (v1.25) -------------------
@@ -466,6 +475,7 @@ export function buildFhirDocumentBundle(
           ]
         : []),
       ...seizureCompositionSection(seizureRefs),
+      ...imagingCompositionSection(imagingRefs),
       // v1.25 — structured allergy records (AllergyIntolerance). Present only
       // when the account recorded at least one allergy.
       ...(allergyRefs.length > 0

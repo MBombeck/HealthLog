@@ -1858,6 +1858,91 @@
       }
     },
     {
+      "id": "imaging",
+      "description": "Imaging exams (MRI, CT, X-ray, ultrasound, mammography), one entry per exam with its report and images from the vault.",
+      "terms": {
+        "de": {
+          "name": "Bildgebung",
+          "item": "Untersuchung"
+        },
+        "en": {
+          "name": "Imaging",
+          "item": "exam"
+        },
+        "fr": {
+          "name": "Imagerie",
+          "item": "examen"
+        },
+        "es": {
+          "name": "Imágenes",
+          "item": "estudio"
+        },
+        "it": {
+          "name": "Diagnostica per immagini",
+          "item": "esame"
+        },
+        "pl": {
+          "name": "Diagnostyka obrazowa",
+          "item": "badanie"
+        },
+        "ko": {
+          "name": "영상 검사",
+          "item": "검사"
+        },
+        "nl": {
+          "name": "Beeldvorming",
+          "item": "onderzoek"
+        },
+        "pt-BR": {
+          "name": "Exames de imagem",
+          "item": "exame"
+        },
+        "ru": {
+          "name": "Визуализация",
+          "item": "исследование"
+        },
+        "zh-CN": {
+          "name": "影像检查",
+          "item": "检查"
+        }
+      },
+      "anchors": [
+        {
+          "key": "nav.imaging",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "imaging.title",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "modules.imaging.label",
+          "form": "name",
+          "match": "exact"
+        },
+        {
+          "key": "imaging.created",
+          "form": "item",
+          "match": "contains"
+        }
+      ],
+      "forbidden": {
+        "de": [],
+        "en": [],
+        "fr": [],
+        "es": [],
+        "it": [],
+        "pl": [],
+        "ko": [],
+        "nl": [],
+        "pt-BR": [],
+        "ru": [],
+        "zh-CN": []
+      }
+    },
+    {
       "id": "documents",
       "description": "Inbound clinical documents (letters, findings, scans).",
       "terms": {

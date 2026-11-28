@@ -59,6 +59,7 @@ export const STANDARD_TEMPLATE_LEAVES: readonly ReportLeafId[] = [
   "SEIZURES",
   "SURGICAL_HISTORY",
   "IMMUNIZATIONS",
+  "IMAGING_EXAMS",
 ];
 
 /** The template's i18n label — it is named on the button, never anonymous. */

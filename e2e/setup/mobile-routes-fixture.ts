@@ -134,6 +134,15 @@ export async function seedMobileRoutesRecord(
       practitionerId: practitioner?.id ?? null,
     });
 
+    await post("/api/imaging", {
+      modality: "MRI",
+      performedAt: daysAgo(40),
+      side: "LEFT",
+      bodyPart: "Knie",
+      facility: "Radiologie am Markt",
+      conclusion: "Kleiner Meniskusriss",
+    });
+
     await post("/api/illness/episodes", {
       label: "Erkältung mit Husten",
       type: "INFECTION",

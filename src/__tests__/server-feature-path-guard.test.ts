@@ -35,6 +35,8 @@ const FEATURE_KEY_PATHS: Record<string, ServerFeature> = {
   "/api/auth/me/dismissed-hints": "account.dismissed-hints",
   "/api/insights/context": "insights.chart-context",
   "/api/documents/inbound/{id}/lab-values": "documents.lab-values-extract",
+  "/api/imaging": "records.imaging",
+  "/api/imaging/{id}": "records.imaging",
   "/api/treatment-series": "care.treatment-series",
   "/api/treatment-series/{id}": "care.treatment-series",
   "/api/treatment-series/{id}/restore": "care.treatment-series",

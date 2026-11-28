@@ -31907,6 +31907,131 @@ paths:
         "403": *a89
         "422": *a4
         "429": *a5
+  /api/imaging:
+    get:
+      tags:
+        - Records
+      summary: List imaging exams (v1.50)
+      description: The record's imaging exams, newest exam day first, each with its filed documents. At most 500.
+      responses:
+        "200":
+          description: The exams.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImagingExamListEnvelope"
+        "401": *a1
+        "403": *a18
+        "422": *a4
+        "429": *a5
+    post:
+      tags:
+        - Records
+      summary: Record an imaging exam (v1.50)
+      description: Creates one exam and files the named documents against it. Honours `Idempotency-Key`. Audits as
+        `imaging.exam.create` without the text fields.
+      parameters:
+        - *a6
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateImagingExamRequest"
+      responses:
+        "201":
+          description: Exam recorded.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateImagingExamEnvelope"
+        "401": *a1
+        "403": *a18
+        "409": *a7
+        "422": *a4
+        "429": *a12
+  /api/imaging/{id}:
+    get:
+      tags:
+        - Records
+      summary: Read an imaging exam (v1.50)
+      description: One exam with its filed documents. Owner-scoped.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: The exam.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImagingExamEnvelope"
+        "401": *a1
+        "403": *a18
+        "404": &a90
+          description: "`imaging.notFound`: no imaging exam with this id on the record."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+    patch:
+      tags:
+        - Records
+      summary: Edit an imaging exam (v1.50)
+      description: Partial edit. Audits as `imaging.exam.update` with the modality, day and side before and after; the text
+        fields are never audited.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateImagingExamRequest"
+      responses:
+        "200":
+          description: Exam updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateImagingExamEnvelope"
+        "401": *a1
+        "403": *a18
+        "404": *a90
+        "422": *a4
+        "429": *a5
+    delete:
+      tags:
+        - Records
+      summary: Delete an imaging exam (v1.50)
+      description: Removes the exam and its document links. The documents stay in the vault. Audits as `imaging.exam.delete`.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: Exam deleted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteImagingExamEnvelope"
+        "401": *a1
+        "403": *a18
+        "404": *a90
+        "422": *a4
+        "429": *a5
   /api/bugreport:
     post:
       security: []
@@ -33085,7 +33210,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 133
+              maxItems: 134
               type: array
               items:
                 type: string
@@ -33148,7 +33273,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 133
+              maxItems: 134
               type: array
               items:
                 type: string
@@ -36797,6 +36922,8 @@ components:
           type: boolean
         seizures:
           type: boolean
+        imaging:
+          type: boolean
         baseUpdatedAt:
           description: "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the
             legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored
@@ -36907,7 +37034,7 @@ components:
           type: number
           const: 2
         leaves:
-          maxItems: 133
+          maxItems: 134
           type: array
           items:
             type: string
@@ -45090,6 +45217,8 @@ components:
               type: boolean
             seizures:
               type: boolean
+            imaging:
+              type: boolean
           additionalProperties: false
         cycleTrackingEnabled:
           type: boolean
@@ -46974,6 +47103,119 @@ components:
         - clusterCount
         - clusterWindowHours
       description: "The record's cluster rule: `clusterCount` (2-20) seizures within `clusterWindowHours` (1-168)."
+    CreateImagingExamRequest:
+      type: object
+      properties:
+        modality:
+          type: string
+          enum:
+            - MRI
+            - CT
+            - X_RAY
+            - ULTRASOUND
+            - MAMMOGRAPHY
+            - OTHER
+        performedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        bodyPart:
+          anyOf:
+            - type: string
+              maxLength: 80
+            - type: "null"
+        side:
+          anyOf:
+            - type: string
+              enum:
+                - LEFT
+                - RIGHT
+                - BOTH
+            - type: "null"
+        facility:
+          anyOf:
+            - type: string
+              maxLength: 120
+            - type: "null"
+        requestingDoctor:
+          anyOf:
+            - type: string
+              maxLength: 120
+            - type: "null"
+        conclusion:
+          anyOf:
+            - type: string
+              maxLength: 2000
+            - type: "null"
+        documentIds:
+          maxItems: 100
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+      required:
+        - modality
+        - performedAt
+      description: Record one imaging exam. `modality` and `performedAt` (the exam day; the time is dropped, stored at UTC
+        midnight, from 1900 and not in the future) are required. `bodyPart` (80), `facility` (120), `requestingDoctor`
+        (120) and `conclusion` (2000) are the person's own words, trimmed and encrypted at rest; an empty string stores
+        nothing. `documentIds` files vault documents (the report and the pictures, at most 100) against the exam; ids
+        the record does not own are dropped.
+    UpdateImagingExamRequest:
+      type: object
+      properties:
+        modality:
+          type: string
+          enum:
+            - MRI
+            - CT
+            - X_RAY
+            - ULTRASOUND
+            - MAMMOGRAPHY
+            - OTHER
+        performedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        bodyPart:
+          anyOf:
+            - type: string
+              maxLength: 80
+            - type: "null"
+        side:
+          anyOf:
+            - type: string
+              enum:
+                - LEFT
+                - RIGHT
+                - BOTH
+            - type: "null"
+        facility:
+          anyOf:
+            - type: string
+              maxLength: 120
+            - type: "null"
+        requestingDoctor:
+          anyOf:
+            - type: string
+              maxLength: 120
+            - type: "null"
+        conclusion:
+          anyOf:
+            - type: string
+              maxLength: 2000
+            - type: "null"
+        documentIds:
+          maxItems: 100
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+      description: Partial edit. An omitted key is left alone; `null`, or an empty string for text, clears it. A present
+        `documentIds` replaces the filed documents (an empty array unfiles all of them; the documents stay in the
+        vault).
     MedicationTreatmentClass:
       type: string
       enum:
@@ -47281,11 +47523,12 @@ components:
                 http.method_not_allowed, http.not_found, http.payload_too_large, http.rate_limited, http.server_error,
                 http.unauthenticated, http.unavailable, http.unsupported_media_type; illness — illness.day-log.invalid,
                 illness.disabled, illness.episode.chronic-no-resolve, illness.episode.invalid,
-                illness.episode.invalid-window, illness.episode.parent-not-found, illness.insights.invalid; import —
-                import.apple_health.busy, import.csv.content_type, import.csv.empty, import.csv.too_large,
-                import.file.too_large, import.health_connect.remote.https_required,
-                import.health_connect.remote.invalid_url, import.health_connect.remote.not_configured,
-                import.health_connect.remote.origin_config_invalid, import.health_connect.remote.password_required,
+                illness.episode.invalid-window, illness.episode.parent-not-found, illness.insights.invalid; imaging —
+                imaging.invalid, imaging.notFound; import — import.apple_health.busy, import.csv.content_type,
+                import.csv.empty, import.csv.too_large, import.file.too_large,
+                import.health_connect.remote.https_required, import.health_connect.remote.invalid_url,
+                import.health_connect.remote.not_configured, import.health_connect.remote.origin_config_invalid,
+                import.health_connect.remote.password_required,
                 import.health_connect.remote.private_origin_not_approved, import.rate_limited, import.write_failed;
                 ingest — ingest.idempotencyKey.reused, ingest.medication.notFound, ingest.rate_limited; insights —
                 insights.context.invalid, insights.generate.budgetExceeded, insights.generate.outboundScreened,
@@ -50658,6 +50901,7 @@ components:
               - profile.insurance-number-country
               - dashboard.tile-comparison-bands
               - health-connect.sync
+              - records.imaging
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices; since
@@ -50836,7 +51080,9 @@ components:
             one-time code (QR healthlog-sync://pair?server=…&code=…), POST /api/health-connect/pair exchanges it for a
             health-connect:write token bound to a Device, GET /api/health-connect/state answers the wanted types and
             limits, and POST /api/health-connect/batch takes records, aggregates and deletes with one result per item.
-            Early preview."
+            Early preview. `records.imaging`: Imaging exams: GET/POST /api/imaging and GET/PATCH/DELETE
+            /api/imaging/{id}, one entry per exam with modality, day, side, body part, facility, requesting doctor,
+            conclusion and the vault documents filed against it (documentIds); module key imaging on /api/auth/me."
       required:
         - version
         - buildSha
@@ -54827,6 +55073,104 @@ components:
                 - clusterWindowHours
               additionalProperties: {}
             - type: "null"
+        imagingExams:
+          default: []
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                minLength: 1
+              modality:
+                type: string
+                enum:
+                  - MRI
+                  - CT
+                  - X_RAY
+                  - ULTRASOUND
+                  - MAMMOGRAPHY
+                  - OTHER
+              performedAt:
+                type: string
+                minLength: 1
+              side:
+                anyOf:
+                  - type: string
+                    enum:
+                      - LEFT
+                      - RIGHT
+                      - BOTH
+                  - type: "null"
+              bodyPart:
+                type:
+                  - string
+                  - "null"
+              bodyPartEncrypted:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+              facility:
+                type:
+                  - string
+                  - "null"
+              facilityEncrypted:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+              requestingDoctor:
+                type:
+                  - string
+                  - "null"
+              requestingDoctorEncrypted:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+              conclusion:
+                type:
+                  - string
+                  - "null"
+              conclusionEncrypted:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+              createdAt:
+                type: string
+                minLength: 1
+              updatedAt:
+                type: string
+                minLength: 1
+            required:
+              - id
+              - modality
+              - performedAt
+              - createdAt
+              - updatedAt
+            additionalProperties: {}
+        imagingExamDocumentLinks:
+          default: []
+          type: array
+          items:
+            type: object
+            properties:
+              examId:
+                type: string
+                minLength: 1
+              targetId:
+                type: string
+                minLength: 1
+              createdAt:
+                type: string
+                minLength: 1
+            required:
+              - examId
+              - targetId
+              - createdAt
+            additionalProperties: {}
         allergies:
           default: []
           type: array
@@ -58019,6 +58363,8 @@ components:
         - seizureTypes
         - seizureEvents
         - seizureSettings
+        - imagingExams
+        - imagingExamDocumentLinks
         - allergies
         - familyHistory
         - workouts
@@ -72591,6 +72937,9 @@ components:
         seizures:
           type: boolean
           description: Whether the "seizures" module is enabled for this account.
+        imaging:
+          type: boolean
+          description: Whether the "imaging" module is enabled for this account.
       required:
         - cycle
         - mood
@@ -72613,6 +72962,7 @@ components:
         - vaccinations
         - timeline
         - seizures
+        - imaging
       additionalProperties: false
       description: Fully-resolved module enable/disable map. Every toggleable module key is present. `false` means the surface
         should disappear end-to-end (nav, dashboard, insights, …). `cycle` mirrors `cycleTrackingEnabled`; `coach`
@@ -105479,6 +105829,14 @@ components:
             - not_granted
             - unavailable
           description: Why the "seizures" module is or is not available here.
+        imaging:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "imaging" module is or is not available here.
       required:
         - cycle
         - mood
@@ -105501,6 +105859,7 @@ components:
         - vaccinations
         - timeline
         - seizures
+        - imaging
       additionalProperties: false
       description: "Why each toggleable module is or is not available for the record this session is inside. `enabled` — the
         module is on and the client may paint it. `disabled` — the record has it switched off. `not_granted` — the
@@ -114036,6 +114395,199 @@ components:
       properties:
         data:
           $ref: "#/components/schemas/SeizureSettings"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    ImagingExamListEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ImagingExamList"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    ImagingExamList:
+      type: object
+      properties:
+        exams:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImagingExam"
+      required:
+        - exams
+      additionalProperties: false
+    ImagingExam:
+      type: object
+      properties:
+        id:
+          type: string
+        modality:
+          type: string
+          enum:
+            - MRI
+            - CT
+            - X_RAY
+            - ULTRASOUND
+            - MAMMOGRAPHY
+            - OTHER
+        performedAt:
+          type: string
+        side:
+          anyOf:
+            - type: string
+              enum:
+                - LEFT
+                - RIGHT
+                - BOTH
+            - type: "null"
+        bodyPart:
+          type:
+            - string
+            - "null"
+        facility:
+          type:
+            - string
+            - "null"
+        requestingDoctor:
+          type:
+            - string
+            - "null"
+        conclusion:
+          type:
+            - string
+            - "null"
+        documents:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImagingExamDocument"
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - modality
+        - performedAt
+        - side
+        - bodyPart
+        - facility
+        - requestingDoctor
+        - conclusion
+        - documents
+        - createdAt
+        - updatedAt
+      additionalProperties: false
+      description: One imaging exam. `performedAt` is the exam day at UTC midnight. The text fields are decrypted (null when
+        empty or unreadable). `side` is null when not sided.
+    ImagingExamDocument:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type:
+            - string
+            - "null"
+        date:
+          type:
+            - string
+            - "null"
+        mimeType:
+          type:
+            - string
+            - "null"
+        redacted:
+          type: boolean
+      required:
+        - id
+        - label
+        - date
+        - mimeType
+        - redacted
+      additionalProperties: false
+      description: A vault document filed against the exam. On a shared record whose grant does not open the documents
+        section, `label`, `date` and `mimeType` are null and `redacted` is true.
+    CreateImagingExamEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ImagingExam"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    ImagingExamEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ImagingExam"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    UpdateImagingExamEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ImagingExam"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DeleteImagingExamEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            deleted:
+              type: boolean
+              const: true
+          required:
+            - deleted
+          additionalProperties: false
         error:
           type: "null"
         meta:

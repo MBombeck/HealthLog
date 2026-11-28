@@ -82,6 +82,7 @@ import { restoreSensitiveData } from "@/lib/export/sensitive-backup";
 import { restoreSymptomsData } from "@/lib/export/symptoms-backup";
 import { restoreSeizuresData } from "@/lib/export/seizures-backup";
 import { restoreVaccinationsData } from "@/lib/export/vaccinations-backup";
+import { restoreImagingData } from "@/lib/export/imaging-backup";
 import {
   restoreVisitsData,
   withRestoredLabIds,
@@ -345,6 +346,17 @@ export const RESTORE_STEPS: readonly RestoreStep[] = [
           ctx.payload,
           ctx.skips,
         ),
+      );
+    },
+  },
+  {
+    // Imaging exams, after the documents: a link is written only when its
+    // document came back.
+    name: "imaging",
+    run: async (ctx) => {
+      Object.assign(
+        ctx.cleared,
+        await restoreImagingData(ctx.tx, ctx.ownerId, ctx.payload, ctx.skips),
       );
     },
   },

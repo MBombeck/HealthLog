@@ -112,6 +112,9 @@ export const BACKED_UP_MODELS = [
   "SeizureEvent",
   "SeizureRescueDose",
   "SeizureDiarySettings",
+  // Imaging exams (#1672) and the links filing their documents.
+  "ImagingExam",
+  "ImagingExamDocumentLink",
   // v1.42 — the person's life events, the timeline's anchors. Written by the
   // person and held nowhere else.
   "LifeEvent",
@@ -311,6 +314,8 @@ export const BACKUP_WRITER_FILES: readonly string[] = [
   "src/lib/export/fhir-import-ledger-backup.ts",
   // The seizure diary; the doses ride inside their seizure both ways.
   "src/lib/export/seizures-backup.ts",
+  // Imaging exams and their document links, both ends beside each other.
+  "src/lib/export/imaging-backup.ts",
   // The five relation links that close the relation matrix (v1.43), both
   // ends beside each other, each through its OWN delegate.
   "src/lib/export/relation-links-backup.ts",
@@ -388,6 +393,8 @@ export const TWO_ENDED_MODELS = [
   "SeizureEvent",
   "SeizureRescueDose",
   "SeizureDiarySettings",
+  "ImagingExam",
+  "ImagingExamDocumentLink",
   "LifeEvent",
   "UserHealthProfile",
   "HealthProfileFactRevision",

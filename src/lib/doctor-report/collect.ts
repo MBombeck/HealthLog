@@ -15,6 +15,7 @@
  *
  * Pure data assembly — no auth, no rate limit, no audit. Idempotent.
  */
+import { loadImagingExams } from "@/lib/doctor-report/imaging";
 import { recoveryLadder } from "@/lib/insights/derived/recovery-resolve";
 import { medicationWindow } from "@/lib/medications/course-window";
 import { prisma } from "@/lib/db";
@@ -547,6 +548,7 @@ export async function collectDoctorReportData(
     treatmentSeries,
     surgicalHistory,
     immunizations,
+    imagingExams,
     allergies,
     familyHistory,
     anamnesis,
@@ -608,6 +610,10 @@ export async function collectDoctorReportData(
     // document, so the whole live set rides when the leaf and module admit it.
     gate.admits("IMMUNIZATIONS")
       ? loadImmunizations(userId)
+      : Promise.resolve(null),
+    // Reference data, not windowed, like the surgical history.
+    gate.admits("IMAGING_EXAMS")
+      ? loadImagingExams(userId)
       : Promise.resolve(null),
     gate.admits("ALLERGIES") ? loadAllergies(userId) : Promise.resolve(null),
     gate.admits("FAMILY_HISTORY")
@@ -674,6 +680,7 @@ export async function collectDoctorReportData(
     treatmentSeries,
     surgicalHistory,
     immunizations,
+    imagingExams,
     allergies,
     familyHistory,
     anamnesis,

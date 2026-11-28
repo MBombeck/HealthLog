@@ -190,6 +190,11 @@ import { ownValue } from "@/lib/own-key";
  * and the dose keeps its name snapshot. `seizureTypeReference` names a type a
  * seizure pointed at that the file did not carry; the seizure restores
  * untyped, keeping any classification it carried itself.
+ *
+ * `imagingCiphertext` is the ciphertext rule again for an imaging exam's
+ * four text fields (`imagingExams.<id>.conclusionEncrypted`); the exam
+ * restores without the field. A dropped document link of an exam is named
+ * under `relationLink`.
  */
 export type SkippedCatalogue =
   | "cycleSymptom"
@@ -220,6 +225,7 @@ export type SkippedCatalogue =
   | "moodLabelCiphertext"
   | "visitCiphertext"
   | "vaccinationCiphertext"
+  | "imagingCiphertext"
   | "environmentLocationCiphertext";
 
 /** One key this instance does not know, and the links it cost. */

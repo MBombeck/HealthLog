@@ -196,6 +196,13 @@ export const MODULE_KEYS = [
   // stumbled on. No egress. The data routes gate on it like the illness
   // journal's: a record with the diary off answers `seizures.disabled`.
   "seizures",
+  // imaging exams (`/imaging`): one entry per MRI, CT, X-ray,
+  // ultrasound or mammography, with its report and pictures filed from the
+  // document vault. Default-on, no `optIn` marker: no egress, and the
+  // surfaces are inert until the person records an exam. SURFACE-gated like
+  // `vaccinations`: the `/api/imaging*` data routes stay reachable so a
+  // restore keeps working and re-enabling finds every exam intact.
+  "imaging",
 ] as const;
 
 export type ModuleKey = (typeof MODULE_KEYS)[number];
@@ -399,6 +406,13 @@ export const MODULE_REGISTRY: Readonly<Record<ModuleKey, ModuleDefinition>> =
       // Off by default; see the key's comment in `MODULE_KEYS`.
       optIn: true,
     },
+    imaging: {
+      key: "imaging",
+      labelKey: "modules.imaging.label",
+      descriptionKey: "modules.imaging.description",
+      category: "tracking",
+      // No `optIn`: default-on. Nothing leaves the instance.
+    },
   });
 
 const MODULE_KEY_SET: ReadonlySet<string> = new Set(MODULE_KEYS);
@@ -519,7 +533,7 @@ export const ONBOARDING_AREA_MODULES: Readonly<
   mood: ["mood", "mentalHealth"],
   cycle: ["cycle"],
   activity: ["workouts"],
-  labs: ["labs"],
+  labs: ["labs", "imaging"],
   illness: ["illness"],
 });
 

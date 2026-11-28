@@ -90,6 +90,9 @@ function catalogueLabel(
   if (catalogue === "vaccinationCiphertext") {
     return t("admin.section.backups.restoreSkippedVaccinationCiphertext");
   }
+  if (catalogue === "imagingCiphertext") {
+    return t("admin.section.backups.restoreSkippedImagingCiphertext");
+  }
   if (catalogue === "environmentLocationCiphertext") {
     return t(
       "admin.section.backups.restoreSkippedEnvironmentLocationCiphertext",

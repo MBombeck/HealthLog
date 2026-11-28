@@ -42,6 +42,7 @@
         "src/lib/export/family-history-backup-schema.ts",
         "src/lib/export/health-score-backup-schema.ts",
         "src/lib/export/illness-backup-schema.ts",
+        "src/lib/export/imaging-backup-schema.ts",
         "src/lib/export/intraday-profile-backup-schema.ts",
         "src/lib/export/labs-backup-schema.ts",
         "src/lib/export/life-events-backup-schema.ts",

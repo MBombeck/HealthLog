@@ -5,9 +5,8 @@
 import type { Prisma } from "@/generated/prisma/client";
 
 /**
- * A bound matching the document bulk route's own cap. A link call is a
- * user-driven filing action, not an import path, so a request naming more ids
- * than this is a client defect rather than a large but legitimate batch.
+ * The document bulk route's own cap. A link call is a filing action, not an
+ * import, so naming more ids than this is a client defect.
  */
 export const MAX_TARGETS_PER_CALL = 100;
 
@@ -18,7 +17,9 @@ export type LinkSourceKind =
   | "vaccination"
   | "conditionEpisode"
   | "medication"
-  | "labResult";
+  | "labResult"
+  // Imaging: outside the relation matrix, read from the exam only.
+  | "imagingExam";
 
 /** The record a link points at. */
 export type LinkTargetKind =
@@ -187,6 +188,11 @@ const SOURCES: Record<
     relationField: "labResult",
     softDeletes: true,
   },
+  imagingExam: {
+    delegate: (tx) => narrow<OwnedRowDelegate>(tx.imagingExam),
+    relationField: "exam",
+    softDeletes: false,
+  },
 };
 
 const DOCUMENT_ENDPOINT: EndpointSpec = {
@@ -310,12 +316,8 @@ const LINK_TABLES: Partial<
     targetColumn: "episodeId",
     target: CONDITION_ENDPOINT,
   },
-  // The SAME table as `encounter:document`, read from the other end. A
-  // document's detail sheet answers "which visits is this filed against"
-  // and the visit's own sheet answers "what did this visit produce"; both
-  // questions live in `encounter_document_links`, so this is a second
-  // direction rather than a fourth table. The three-table ceiling counts
-  // tables.
+  // The SAME table as `encounter:document`, read from the document's end
+  // ("which visits is this filed against").
   "document:encounter": {
     delegate: (tx) => narrow<LinkRowDelegate>(tx.encounterDocumentLink),
     sourceColumn: "documentId",
@@ -434,6 +436,12 @@ const LINK_TABLES: Partial<
     sourceColumn: "episodeId",
     targetColumn: "medicationId",
     target: MEDICATION_ENDPOINT,
+  },
+  "imagingExam:document": {
+    delegate: (tx) => narrow<LinkRowDelegate>(tx.imagingExamDocumentLink),
+    sourceColumn: "examId",
+    targetColumn: "documentId",
+    target: DOCUMENT_ENDPOINT,
   },
 };
 
