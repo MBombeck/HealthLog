@@ -194,26 +194,17 @@ function ExportRow({
         contentWidth="lg"
         title={title}
         footer={
-          <>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              {t("common.close")}
-            </Button>
-            <Button
-              type="button"
-              data-testid={actionTestId}
-              onClick={onDownload}
-              disabled={busy || disabled}
-            >
-              {busy ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-              ) : null}
-              {t("settings.sections.export.actions.download")}
-            </Button>
-          </>
+          <Button
+            type="button"
+            data-testid={actionTestId}
+            onClick={onDownload}
+            disabled={busy || disabled}
+          >
+            {busy ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+            ) : null}
+            {t("settings.sections.export.actions.download")}
+          </Button>
         }
       >
         <div data-testid={`${testId}-sheet`} className="space-y-4">

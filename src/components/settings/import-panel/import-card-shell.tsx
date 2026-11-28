@@ -128,7 +128,7 @@ export function ImportSource({
    */
   query?: { isError: boolean; error: unknown; refetch: () => unknown };
   chooseTestId: string;
-  /** The sheet's buttons; "Close" alone by default. */
+  /** The sheet's actions; none by default, since the header X closes it. */
   footer?: React.ReactNode;
   children: React.ReactNode;
 }) {
@@ -214,17 +214,7 @@ export function ImportSource({
             title
           )
         }
-        footer={
-          footer ?? (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              {t("common.close")}
-            </Button>
-          )
-        }
+        footer={footer}
       >
         <div data-testid={`${testId}-sheet`} className="space-y-4">
           {query ? <ImportQueryErrorRow query={query} /> : null}

@@ -225,11 +225,7 @@ export function SeizureSheet({
       )}
       description={t("seizures.sheet.description")}
       footer={
-        readOnly ? (
-          <Button variant="outline" onClick={onClose}>
-            {t("common.close")}
-          </Button>
-        ) : (
+        readOnly ? null : (
           <>
             <Button variant="outline" onClick={onClose}>
               {t("common.cancel")}

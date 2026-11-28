@@ -533,12 +533,6 @@ export function EntityLinkPicker({
             ) : null}
           </div>
         )}
-
-        <div className="flex justify-end border-t pt-3">
-          <Button type="button" onClick={() => setOpen(false)}>
-            {t("links.picker.done")}
-          </Button>
-        </div>
       </div>
     </ResponsiveSheet>
   );

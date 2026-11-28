@@ -7804,7 +7804,6 @@
       "pickerDescription": "Search your vault and select documents to share. Up to {max}.",
       "pickerSearch": "Search documents",
       "pickerEmpty": "No documents found.",
-      "pickerDone": "Done",
       "pickerSelectedCount": "{count} of {max} selected",
       "pickerMaxReached": "You've reached the maximum of {max, plural, one {# document} other {# documents}}.",
       "scopeTitle": "What this link contains",
@@ -8982,7 +8981,6 @@
         "emptyDescription": "No events match the current filters yet. Hit refresh after triggering some traffic.",
         "refresh": "Refresh",
         "eventDetails": "Event details",
-        "closeDetails": "Close details",
         "processDetail": "Buffer is volatile and capped at 500 entries.",
         "cardTitle": "Recent events",
         "filterErrorId": "Error ID"
@@ -13439,7 +13437,6 @@
       "selectedCount": "{count} of up to {max} selected",
       "importAction": "Import {count}",
       "importing": "Importing, one document at a time…",
-      "done": "Done",
       "summary": "Imported: {imported}. Already there: {present}. Not imported: {failed}.",
       "stopped": "Stopped: {reason}",
       "result": {
@@ -14766,7 +14763,6 @@
   "links": {
     "picker": {
       "add": "Add",
-      "done": "Done",
       "selectAll": "Select all",
       "searchPlaceholder": "Search",
       "searchNoMatch": "No match",
@@ -15682,7 +15678,6 @@
     "check": "Check file",
     "runIdle": "Import",
     "run": "Import {count, plural, one {# row} other {# rows}}",
-    "close": "Close",
     "summaryCheck": "{rows, plural, one {# row} other {# rows}} read: {inserted} can be imported, {duplicates} already in your record, {failed} with a problem.",
     "summaryDone": "Imported {inserted, plural, one {# row} other {# rows}}. Skipped {duplicates} already in your record, {failed} with a problem.",
     "markersMatched": "Matched to your markers:",

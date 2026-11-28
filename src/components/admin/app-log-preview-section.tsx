@@ -26,7 +26,6 @@ import {
   Info,
   Loader2,
   RefreshCw,
-  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -40,7 +39,6 @@ import {
 } from "@/components/ui/select";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -417,16 +415,6 @@ export function AppLogPreviewSection() {
               </pre>
             )}
           </div>
-          <DialogClose asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="absolute top-3 right-3"
-              aria-label={t("admin.section.app-logs.closeDetails")}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </DialogClose>
         </DialogContent>
       </Dialog>
     </SettingsCard>

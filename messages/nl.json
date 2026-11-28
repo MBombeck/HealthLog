@@ -7804,7 +7804,6 @@
       "pickerDescription": "Doorzoek je kluis en selecteer documenten om te delen. Maximaal {max}.",
       "pickerSearch": "Documenten zoeken",
       "pickerEmpty": "Geen documenten gevonden.",
-      "pickerDone": "Klaar",
       "pickerSelectedCount": "{count} van {max} geselecteerd",
       "pickerMaxReached": "Je hebt het maximum van {max, plural, one {# document} other {# documenten}} bereikt.",
       "scopeTitle": "Wat deze link bevat",
@@ -8982,7 +8981,6 @@
         "emptyDescription": "Nog geen gebeurtenissen die aan de huidige filters voldoen. Klik op vernieuwen nadat je wat verkeer hebt veroorzaakt.",
         "refresh": "Vernieuwen",
         "eventDetails": "Gebeurtenisdetails",
-        "closeDetails": "Details sluiten",
         "processDetail": "De buffer is vluchtig en heeft een maximum van 500 registraties.",
         "cardTitle": "Recente gebeurtenissen",
         "filterErrorId": "Fout-ID"
@@ -13439,7 +13437,6 @@
       "selectedCount": "{count} van maximaal {max} geselecteerd",
       "importAction": "{count} importeren",
       "importing": "Importeren, één document tegelijk…",
-      "done": "Klaar",
       "summary": "Geïmporteerd: {imported}. Al aanwezig: {present}. Niet geïmporteerd: {failed}.",
       "stopped": "Gestopt: {reason}",
       "result": {
@@ -14766,7 +14763,6 @@
   "links": {
     "picker": {
       "add": "Toevoegen",
-      "done": "Klaar",
       "selectAll": "Alles selecteren",
       "searchPlaceholder": "Zoeken",
       "searchNoMatch": "Geen resultaat",
@@ -15682,7 +15678,6 @@
     "check": "Bestand controleren",
     "runIdle": "Importeren",
     "run": "{count, plural, one {# rij} other {# rijen}} importeren",
-    "close": "Sluiten",
     "summaryCheck": "{rows, plural, one {# rij} other {# rijen}} gelezen: {inserted} te importeren, {duplicates} al aanwezig, {failed} met een probleem.",
     "summaryDone": "{inserted, plural, one {# rij} other {# rijen}} geïmporteerd. Overgeslagen: {duplicates} die er al waren en {failed} met een probleem.",
     "markersMatched": "Gekoppeld aan je markers:",
