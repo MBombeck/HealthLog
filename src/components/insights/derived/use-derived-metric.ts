@@ -57,6 +57,12 @@ export interface DerivedMetricResponse<T> {
    * score-anatomy detail page (it already shipped to iOS in v1.13.2).
    */
   assessment?: DerivedAssessment | null;
+  /**
+   * 1.50 — the score's short name for a tile, worded by the server from the
+   * glossary (null for a metric that is no HealthLog score). A tile renders
+   * it as given.
+   */
+  shortLabel?: string | null;
 }
 
 export interface UseDerivedMetricOptions {

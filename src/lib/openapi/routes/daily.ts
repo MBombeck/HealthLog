@@ -110,7 +110,7 @@ const dailyAskSchema = z
           intent: z
             .string()
             .describe(
-              "Stable action token. Beside the rail's tokens: `dose.snooze:<medicationId>` (the medication's own snooze, `POST /api/medications/intake` with status `snoozed`), `relay.yes` / `relay.no` (the relay question), `admin.notice.later` (sets the admin notice aside), `admin.setup.open` (with `href`), `ask.later:<dismissKey>` (sets the ask aside until the next local day: `POST /api/daily/digest/dismiss` with that key, `ask-later:<YYYY-MM-DD>:<itemKey>`). Labels are the short verbs under `daily.action.*`. A consent row (`push_relay`) carries exactly No and Yes, never a later.",
+              "Stable action token. Beside the rail's tokens: `dose.snooze:<medicationId>` (the medication's own snooze, `POST /api/medications/intake` with status `snoozed`), `relay.yes` / `relay.no` (the relay question), `admin.setup.open` (with `href`), `ask.later:<dismissKey>` (sets the ask aside until the next local day: `POST /api/daily/digest/dismiss` with that key, `ask-later:<YYYY-MM-DD>:<itemKey>`). Labels are the short verbs under `daily.action.*`. A consent row (`push_relay`) carries exactly No and Yes, never a later.",
             ),
           href: z.string().optional().describe("Deep-link when navigational."),
         }),
@@ -238,7 +238,7 @@ export const dailyDigestResponse = z
           .string()
           .optional()
           .describe(
-            'The score\'s short name for a tile, from the score registry and worded in the response language ("Gesundheit", "Health score"). Render it as is. Absent on older cached digests. Feature key `daily.scores-short-labels`.',
+            'The score\'s short name for a tile, from the score registry and worded in the response language ("Gesundheit", "Health"). Render it as is. Absent on older cached digests. Feature key `daily.scores-short-labels`.',
           ),
       })
       .nullable()

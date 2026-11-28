@@ -9,7 +9,7 @@ import {
   type PassField,
   type WalletPassJson,
 } from "../pass-json";
-import { parsePassStrings } from "../strings";
+import { parsePassStrings } from "./pass-strings-reader";
 
 import { MINIMAL_INPUT, NONCE, SAMPLE_INPUT, SAMPLE_VIEW } from "./fixture";
 

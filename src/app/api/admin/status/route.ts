@@ -91,7 +91,7 @@ export const GET = apiHandler(async () => {
     lastError:
       `${hold.count} registrations reported gone at once; deletions are held until ` +
       `${hold.until.toISOString()}. Check the push configuration ` +
-      `(APNs topic and bundle id, key environment, VAPID keys).`,
+      `(APNs topic and bundle id, Wallet Pass Type ID, key environment, VAPID keys).`,
   }));
   const failingJobs =
     queueFailures === null && holds.length === 0

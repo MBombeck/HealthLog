@@ -96,6 +96,11 @@ export interface DashboardScoreRing {
    * the derived score rings.
    */
   doses?: { taken: number; scheduled: number };
+  /**
+   * 1.50 — the score's short name for a tile, set per read by
+   * `applyScoreShortLabels`; null on `MED_COMPLIANCE`, which is no score.
+   */
+  shortLabel?: string | null;
 }
 
 /** The medsToday slice the dose ring reads (subset of `MedsTodayBlock`). */

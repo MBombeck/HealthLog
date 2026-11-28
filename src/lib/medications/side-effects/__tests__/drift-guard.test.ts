@@ -36,7 +36,6 @@ import {
   SIDE_EFFECT_CATEGORIES,
   SIDE_EFFECT_CATEGORY_ORDER,
   SIDE_EFFECT_ENTRIES_BY_CATEGORY,
-  SIDE_EFFECT_ENTRY_COUNT,
 } from "../taxonomy";
 
 function sortedKeys<T extends string>(keys: readonly T[]): T[] {
@@ -93,9 +92,9 @@ describe("side-effect taxonomy drift guard", () => {
       expect(fromGrouping).toEqual(prisma);
     });
 
-    it("SIDE_EFFECT_ENTRY_COUNT matches the live Prisma enum size", () => {
-      expect(SIDE_EFFECT_ENTRY_COUNT).toBe(
-        Object.values(MedicationSideEffectEntry).length,
+    it("SIDE_EFFECT_CATEGORIES files every entry of the live Prisma enum", () => {
+      expect(sortedKeys(Object.keys(SIDE_EFFECT_CATEGORIES))).toEqual(
+        sortedKeys(Object.values(MedicationSideEffectEntry)),
       );
     });
   });

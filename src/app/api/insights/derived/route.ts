@@ -35,6 +35,8 @@ import { resolveDerivedAssessment } from "@/lib/insights/derived/derived-assessm
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { aiCapabilityToServe } from "@/lib/ai/capabilities/gate";
 import { readDerivedSingle } from "@/lib/insights/derived/single-read";
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+import { scoreShortLabelOrNull } from "@/lib/scores/registry";
 
 export const dynamic = "force-dynamic";
 
@@ -175,6 +177,13 @@ export const GET = apiHandler(async (request: NextRequest) => {
     aiAvailable: ai.available,
   });
 
+  // The score's short name for a tile, from the glossary through the score
+  // registry; null for a metric that is not a HealthLog score.
+  const shortLabel = scoreShortLabelOrNull(
+    metric,
+    getServerTranslator(resolvedLocale).t,
+  );
+
   // Flatten the discriminated union for the wire: `metric` tags it,
   // `value`/`reason` are nullable so iOS decodes one stable shape.
   return apiSuccess({
@@ -187,5 +196,6 @@ export const GET = apiHandler(async (request: NextRequest) => {
     reason: derived.status === "insufficient" ? derived.reason : null,
     assessment,
     ai,
+    shortLabel,
   });
 });

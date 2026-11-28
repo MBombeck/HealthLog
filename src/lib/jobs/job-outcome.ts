@@ -410,6 +410,7 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   // The Wallet ready push: people told their pass is ready for Wallet.
   "wallet_ready_pushes_sent",
   "wallet_registrations_dropped",
+  "wallet_registrations_unreadable",
   "wedge_skipped",
   // The full rollup backfill: calendar-year windows one run folded.
   "windows_folded",
