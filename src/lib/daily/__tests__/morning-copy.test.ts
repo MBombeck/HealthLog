@@ -318,7 +318,8 @@ const REACHED: Record<Locale, RegExp> = {
   pl: /osiągnęł/,
   "pt-BR": /\bchegou a\b/,
   ru: /достигал/,
-"zh-CN": /达标/,
+// The buffer sentence says a reading 达到 ("reached") its value.
+  "zh-CN": /达到/,
 };
 
 describe.each(locales.map((l) => [l]))("the floor sentence in %s", (locale) => {

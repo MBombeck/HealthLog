@@ -132,7 +132,7 @@ export const bank: LocaleBank = {
     // English bank withholds a negated intake rather than reading it as a
     // warning, because the sentence still names a medication and a time.
     new RegExp(
-      `(?:不要|别|禁止|不建议)[^。？！\\d]{0,10}?(?:服用?|吃|打|注射|使用)[^。？！\\d]{0,10}?${med}`,
+      `(?:不要|别|禁止|不建议)(?!(?:漏|跳|忘))[^。？！\\d]{0,10}?(?:服用?|吃|打|注射|使用)[^。？！\\d]{0,10}?${med}`,
     ),
     // A change verb BEFORE its medication object ("停用依那普利", "把你的他汀
     // 停两周", "加倍二甲双胍"). The object slot allows no digit, so a date
@@ -223,6 +223,11 @@ export const bank: LocaleBank = {
     /使得/,
     /(?:正是|就是因为)[^。？！]{0,12}(?:导致|造成|引起)/,
     /(?:因为)[^。？！]{0,30}(?:所以|因此)/,
+    /因为/,
+    /由于/,
+    /因此/,
+    /于是/,
+    /之所以/,
   ],
 
   continuation:

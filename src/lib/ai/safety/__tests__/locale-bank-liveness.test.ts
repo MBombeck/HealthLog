@@ -499,7 +499,10 @@ const SENTENCES: Record<Locale, readonly string[]> = {
     "熬夜使得心率升高。",
     "正是失眠导致了疲劳。",
     "因为失眠，所以白天很累。",
-    // continuation and changeStem.
+    "由于睡眠不足，你的心率偏高。",
+    "你少睡了，因此白天更累。",
+    "你提前服药，于是症状缓解。",
+    "你之所以疲劳，是睡眠不足。",
     // The withhold shapes: a prohibitive, a verb-first pause, and a volume
     // stated before its dosage form.
     "今晚不要服用阿托伐他汀。",
