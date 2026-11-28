@@ -340,6 +340,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "illness.episode.parent-not-found",
       "illness.insights.invalid",
     ],
+    imaging: ["imaging.invalid", "imaging.notFound"],
     import: [
       "import.apple_health.busy",
       "import.csv.content_type",

@@ -55,6 +55,7 @@ const ON_THE_SHARED_BUCKET: Array<[route: string, openApiPath: string]> = [
     "/api/medications/{id}/intake",
   ],
   ["src/app/api/labs/route.ts", "/api/labs"],
+  ["src/app/api/imaging/route.ts", "/api/imaging"],
   [
     "src/app/api/custom-metrics/[id]/entries/route.ts",
     "/api/custom-metrics/{id}/entries",
