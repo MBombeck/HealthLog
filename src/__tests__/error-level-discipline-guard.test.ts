@@ -120,9 +120,9 @@ const ALLOWED: Readonly<Record<string, { count: number; reason: string }>> = {
       "Deleting a staged file that a previous step or sweep already removed; ENOENT is the expected case and nothing is lost either way.",
   },
   "lib/jobs/report-schedule.ts::runOneReport": {
-    count: 2,
+    count: 1,
     reason:
-      "An insurance number that no longer decrypts is left off the PDF, the way the export route does it, rather than failing the record's report; and the outcome stamp after a reported render failure is best-effort, because the failure is already reported and the period stays due either way.",
+      "The outcome stamp after a reported render failure is best-effort, because the failure is already reported and the period stays due either way.",
   },
   "lib/jobs/backup-restore.ts::writeProgress": {
     count: 1,

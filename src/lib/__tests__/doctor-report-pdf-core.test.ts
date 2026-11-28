@@ -1026,6 +1026,38 @@ describe("extracted doctor-report section boundaries", () => {
     expect(text).toContain("A123456789");
   });
 
+  it("header/profile writes the number in its country's form", async () => {
+    const options = {
+      timeFormat: "AUTO" as const,
+      dateFormat: "AUTO" as const,
+      t: getServerTranslator("en").t,
+      locale: "en" as const,
+      now: FIXED_NOW,
+    };
+    const austrian = await extractText(
+      renderDoctorReportPdfBytes(makeData(), {
+        ...options,
+        insuranceNumber: "1237010180",
+        insuranceNumberCountry: "AT",
+        insuranceGroupNumber: "GRP 0042",
+      }),
+    );
+    expect(austrian).toContain("1237 010180");
+    // A group number belongs to a US plan only.
+    expect(austrian).not.toContain("Group no.");
+
+    const american = await extractText(
+      renderDoctorReportPdfBytes(makeData(), {
+        ...options,
+        insuranceNumber: "W123456",
+        insuranceNumberCountry: "US",
+        insuranceGroupNumber: "GRP 0042",
+      }),
+    );
+    expect(american).toContain("W123456");
+    expect(american).toContain("Group no.: GRP 0042");
+  });
+
   it("measurements/charts keeps the table but omits chart drawing when disabled", async () => {
     const { t } = getServerTranslator("en");
     const text = await extractText(

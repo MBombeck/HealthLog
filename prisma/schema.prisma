@@ -1276,6 +1276,13 @@ model User {
   fullName                 String? @map("full_name")
   insurerName              String? @map("insurer_name")
   insuranceNumberEncrypted String? @map("insurance_number_encrypted")
+  /// ISO 3166-1 alpha-2 country whose rule the insurance number
+  /// follows (`src/lib/validations/insurance-number.ts`). NULL reads as DE:
+  /// every number stored before the column existed is a KVNR.
+  insuranceNumberCountry   String? @map("insurance_number_country")
+  /// The plan's group number beside a US member ID. Plaintext like
+  /// `insurerIkNumber`; read only while the country is US.
+  insuranceGroupNumber     String? @map("insurance_group_number")
 
   // v1.8.6 profile — optional German insurer institution number (IKNR,
   // 9 digits). Surfaced on the FHIR `Coverage` resource's contained

@@ -35,7 +35,10 @@ import { Buffer } from "node:buffer";
 
 import { Prisma } from "@/generated/prisma/client";
 import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
-import { decrypt } from "@/lib/crypto";
+import {
+  INSURANCE_IDENTITY_SELECT,
+  readInsuranceIdentity,
+} from "@/lib/profile/insurance-identity";
 import { prisma, toJson } from "@/lib/db";
 import { collectDoctorReportData } from "@/lib/doctor-report/collect";
 import {
@@ -186,7 +189,7 @@ export async function runOneReport(
       prisma.user.findUnique({
         where: { id: userId },
         select: {
-          insuranceNumberEncrypted: true,
+          ...INSURANCE_IDENTITY_SELECT,
           timeFormat: true,
           dateFormat: true,
         },
@@ -195,14 +198,9 @@ export async function runOneReport(
       resolveJobLocale(due.locale),
     ]);
     if (!row) return "gone";
-    let insuranceNumber: string | null = null;
-    if (selection.has("INSURANCE") && row.insuranceNumberEncrypted) {
-      try {
-        insuranceNumber = decrypt(row.insuranceNumberEncrypted);
-      } catch {
-        insuranceNumber = null;
-      }
-    }
+    const insurance = readInsuranceIdentity(
+      selection.has("INSURANCE") ? row : null,
+    );
     const { t } = getServerTranslator(locale);
     const pdf = renderDoctorReportPdfBytes(data, {
       t,
@@ -210,7 +208,7 @@ export async function runOneReport(
       userTz: due.tz,
       timeFormat: row.timeFormat,
       dateFormat: row.dateFormat,
-      insuranceNumber,
+      ...insurance,
       includeCharts: true,
     });
 

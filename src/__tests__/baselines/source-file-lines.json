@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 70,
-  "total": 76313,
+  "total": 76314,
   "entries": {
     "components/cycle/log-day-sheet.tsx": 1645,
     "components/insights/coach-panel/chat-bubble.tsx": 821,

@@ -433,6 +433,7 @@
     "practiceLabel": "Clínica",
     "insurer": "Operadora de saúde",
     "insuranceNumber": "Nº da carteirinha",
+    "insuranceGroupNumber": "Nº do grupo",
     "summaryTitle": "Resumo clínico",
     "summaryReadings": "Registrados em {days, plural, one {# dia} other {# dias}}: {count, plural, one {# medição} other {# medições}} em {params, plural, one {# parâmetro} other {# parâmetros}}.",
     "summaryTrend": "{label}: mais recente {latest} {arrow}",
@@ -6887,7 +6888,13 @@
       "other": "Esse valor não foi aceito. Verifique-o e tente novamente.",
       "reproofRequired": "Digite sua senha atual para alterar o endereço de e-mail.",
       "reproofFailed": "Essa senha não está correta, então o endereço de e-mail não foi alterado.",
-      "secondFactorRequired": "Confirme com seu segundo fator ou uma chave de acesso para alterar o endereço de e-mail."
+      "secondFactorRequired": "Confirme com seu segundo fator ou uma chave de acesso para alterar o endereço de e-mail.",
+      "invalidKvnr": "Esse não é um KVNR válido. Verifique a letra e os nove dígitos.",
+      "invalidSvnr": "Esse não é um SVNR válido. Verifique os dez dígitos.",
+      "invalidAhv": "Esse não é um número AVS válido. Ele tem 13 dígitos e começa com 756.",
+      "invalidBsn": "Esse não é um BSN válido. Verifique os nove dígitos.",
+      "invalidNir": "Esse não é um NIR válido. Verifique os 13 caracteres e a chave de dois dígitos.",
+      "invalidMemberId": "Use de 3 a 30 letras, dígitos, espaços, hifens ou pontos."
     },
     "avatar": {
       "title": "Foto do perfil",
@@ -7700,8 +7707,17 @@
       "fullNamePlaceholder": "ex.: Maria Silva",
       "insurer": "Plano de saúde",
       "insurerPlaceholder": "ex.: Unimed",
-      "insuranceNumber": "Número do plano (KVNR)",
-      "insuranceNumberHint": "10 caracteres: uma letra + nove dígitos (ex.: A123456780)."
+      "insuranceNumber": "Número do plano",
+      "insuranceCountry": "País",
+      "numberLabel": {
+        "DE": "Número do plano (KVNR)",
+        "AT": "Número da previdência social (SVNR)",
+        "CH": "Número AVS",
+        "NL": "Número de serviço ao cidadão (BSN)",
+        "FR": "Número da seguridade social (NIR)",
+        "US": "ID de membro"
+      },
+      "insuranceGroupNumber": "Número do grupo"
     },
     "healthRecord": {
       "title": "Exportar registro de saúde",
