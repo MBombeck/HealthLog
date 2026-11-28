@@ -278,4 +278,30 @@ describe.each(ROUTES)("POST /api/import/$name", (route) => {
       }),
     );
   });
+
+  it("fails the row when the queue throws, so the same file can be sent again", async () => {
+    mocks.bossSend.mockRejectedValue(new Error("connection terminated"));
+    expect((await route.post(upload(route.name))).status).toBe(503);
+    expect(mocks.importJobUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "ij-1" },
+        data: expect.objectContaining({ status: "failed" }),
+      }),
+    );
+    expect(mocks.rm).toHaveBeenCalledWith(STAGED, { force: true });
+  });
+
+  it("looks for the same bytes only among finished or recent imports", async () => {
+    await route.post(upload(route.name));
+    const where = mocks.importJobFindFirst.mock.calls[0]?.[0]?.where;
+    // An active row older than the queue's own expiry is not a viable job:
+    // it must not keep answering "already uploaded" for that file forever.
+    expect(where).toMatchObject({
+      status: { not: "failed" },
+      OR: [
+        { status: { notIn: ["queued", "unpacking", "parsing", "upserting"] } },
+        { startedAt: { gte: expect.any(Date) } },
+      ],
+    });
+  });
 });

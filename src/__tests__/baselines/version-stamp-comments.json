@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
-  "count": 2835,
-  "total": 8810,
+  "count": 2834,
+  "total": 8808,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -105,7 +105,7 @@
     "app/api/admin/notifications/health/route.ts": 1,
     "app/api/admin/notifications/reminder-check/route.ts": 3,
     "app/api/admin/notifications/test/__tests__/route.test.ts": 1,
-    "app/api/admin/notifications/test/route.ts": 2,
+    "app/api/admin/notifications/test/route.ts": 1,
     "app/api/admin/provider-health/__tests__/route.test.ts": 6,
     "app/api/admin/provider-health/route.ts": 6,
     "app/api/admin/settings/__tests__/route.test.ts": 1,
@@ -507,7 +507,6 @@
     "app/api/settings/data/route.ts": 2,
     "app/api/settings/ntfy/route.ts": 1,
     "app/api/settings/reminder-thresholds/route.ts": 2,
-    "app/api/settings/telegram/test/route.ts": 1,
     "app/api/share-links/__tests__/route.test.ts": 2,
     "app/api/share-links/route.ts": 7,
     "app/api/sleep/night/__tests__/route.test.ts": 1,

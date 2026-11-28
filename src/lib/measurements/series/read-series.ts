@@ -21,7 +21,7 @@ import {
 } from "@/lib/measurements/series-change";
 import { resolveSeriesReferenceLines } from "@/lib/measurements/series-reference-lines";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
-import { resolveJobLocale } from "@/lib/i18n/job-locale";
+import type { Locale } from "@/lib/i18n/config";
 
 import {
   KIND_TO_TYPE,
@@ -57,12 +57,15 @@ async function readPoints(
 export async function readSeries(args: {
   /** The record read (the owner under a delegation). */
   userId: string;
-  /** Who is reading: the labels are in their language. */
-  actorId: string;
+  /**
+   * The reader's language, resolved from the request by the route
+   * (`resolveServerLocale`): the labels are in it.
+   */
+  locale: Locale;
   kind: SeriesKind;
   days: number;
 }) {
-  const { userId, actorId, kind, days } = args;
+  const { userId, locale, kind, days } = args;
   const since = new Date(Date.now() - days * 86_400_000);
 
   const read = await readPoints(userId, kind, days, since);
@@ -82,8 +85,8 @@ export async function readSeries(args: {
 
   // The resolved judgements. The profile and targets are the
   // RECORD's (the chart is theirs); the labels are in the language of the
-  // account reading it.
-  const [record, reader, seriesTz] = await Promise.all([
+  // request reading it.
+  const [record, seriesTz] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -93,15 +96,8 @@ export async function readSeries(args: {
         thresholdsJson: true,
         timezone: true,
         glucoseUnit: true,
-        locale: true,
       },
     }),
-    actorId === userId
-      ? null
-      : prisma.user.findUnique({
-          where: { id: actorId },
-          select: { locale: true },
-        }),
     resolveUserTimezone(userId),
   ]);
   const rangeProfile = {
@@ -125,9 +121,7 @@ export async function readSeries(args: {
     referenceValue:
       reference !== null && kind === "sleep" ? reference * 60 : reference,
   });
-  const translator = getServerTranslator(
-    await resolveJobLocale((reader ?? record)?.locale ?? null),
-  );
+  const translator = getServerTranslator(locale);
   const referenceLines = resolveSeriesReferenceLines(kind, {
     profile: rangeProfile,
     thresholdsJson: record?.thresholdsJson ?? null,
