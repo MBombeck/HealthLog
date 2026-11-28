@@ -568,6 +568,27 @@ export function buildMorningLead(
   return lead("nothing", t("daily.lead.nothingYet"));
 }
 
+/**
+ * A line that names a metric links to that metric's page, as a milestone
+ * does (`milestoneHref`), and to Insights when the metric has no page of its
+ * own. A line that names no metric (the night still pending) links nowhere.
+ */
+function lineHref(metric: string): string {
+  return metricHref(metric) ?? pageHref("insights");
+}
+
+const SLEEP_HREF = lineHref("sleep_score");
+const READINESS_HREF = lineHref("readiness");
+
+/** The metric each readiness contributor is read from. */
+const CONTRIBUTOR_METRIC: Record<MorningReadinessComponent["key"], string> = {
+  rhr: "RESTING_HEART_RATE",
+  hrv: "HEART_RATE_VARIABILITY",
+  sleep: "sleep_score",
+  respiratory: "RESPIRATORY_RATE",
+  mood: "mood",
+};
+
 function cardTitle(
   kind: keyof typeof MORNING_CARD_TITLE_KEYS,
   t: Translate,
@@ -586,7 +607,7 @@ function nightCard(
   const score = input.sleepScore;
   const lines: DailyMorningLine[] = [];
   if (facts.sleep) {
-    lines.push({ text: sleepFactLine(facts.sleep, t), href: null });
+    lines.push({ text: sleepFactLine(facts.sleep, t), href: SLEEP_HREF });
   } else {
     lines.push({ text: t("daily.morningCard.nightPending"), href: null });
     if (input.latestNightLabel) {
@@ -594,7 +615,7 @@ function nightCard(
         text: t("daily.morningCard.latestNight", {
           date: input.latestNightLabel,
         }),
-        href: null,
+        href: SLEEP_HREF,
       });
     }
   }
@@ -613,7 +634,7 @@ function nightCard(
         : null,
     lines: lines.slice(0, MAX_CARD_LINES),
     sourceValues: [...input.sleepSourceValues],
-    href: metricHref("sleep_score") ?? pageHref("insights"),
+    href: SLEEP_HREF,
   };
 }
 
@@ -634,7 +655,7 @@ function todayDifferentCard(
           value: v.valueLabel,
           range: v.rangeLabel,
         }),
-        href: null,
+        href: lineHref(v.type),
       })),
       sourceValues,
       // The signal card on Insights, with the possible reasons as the engine
@@ -657,7 +678,7 @@ function todayDifferentCard(
       if (banded) {
         lines.push({
           text: t(`daily.morningCard.readinessBand.${readiness.band}`),
-          href: null,
+          href: READINESS_HREF,
         });
       }
       // The night card beside it already shows last night's sleep score, so
@@ -672,7 +693,7 @@ function todayDifferentCard(
             name: t(CONTRIBUTOR_LABEL_KEY[c.key]),
             value: Math.round(c.value as number),
           }),
-          href: null,
+          href: lineHref(CONTRIBUTOR_METRIC[c.key]),
         });
       }
     } else {
@@ -689,7 +710,7 @@ function todayDifferentCard(
             score: Math.round(readiness.score),
             date: input.readinessAsOfLabel,
           }),
-          href: null,
+          href: READINESS_HREF,
         });
       }
     }
@@ -699,7 +720,7 @@ function todayDifferentCard(
       ring,
       lines: lines.slice(0, MAX_CARD_LINES),
       sourceValues,
-      href: metricHref("readiness") ?? pageHref("insights"),
+      href: READINESS_HREF,
     };
   }
   if (sourceValues.length > 0) {
@@ -709,7 +730,7 @@ function todayDifferentCard(
       ring: null,
       lines: [],
       sourceValues,
-      href: metricHref("recovery") ?? pageHref("insights"),
+      href: lineHref("recovery"),
     };
   }
   return null;

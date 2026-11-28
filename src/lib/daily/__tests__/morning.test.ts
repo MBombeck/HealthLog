@@ -7,6 +7,7 @@
 import { describe, expect, it } from "vitest";
 
 import { getServerTranslator } from "@/lib/i18n/server-translator";
+import { metricHref } from "@/lib/links/hrefs";
 import type { TodayVital } from "@/lib/daily/today-overview";
 import {
   buildDailyMorning,
@@ -245,6 +246,8 @@ describe("morning lead: one rank per state", () => {
     const morning = buildDailyMorning(input({ ...pending, localHour: 21 }), t);
     const night = morning.cards.find((c) => c.kind === "night");
     expect(night?.lines[0]?.text).toBe(t("daily.morningCard.nightPending"));
+    // A night not in yet names no reading, so it links nowhere.
+    expect(night?.lines[0]?.href).toBeNull();
   });
 
   it("rank 4 does not speak when the sleep module is off", () => {
@@ -611,6 +614,32 @@ describe("morning cards", () => {
     expect(card?.href).toBe("/insights");
     expect(card?.ring).toBeNull();
     expect(card?.lines).toHaveLength(2);
+  });
+
+  it("links every line that names a metric to that metric's page", () => {
+    const outside = buildDailyMorning(
+      input({
+        readiness: readiness(),
+        vitals: [out("RESTING_HEART_RATE"), out("HEART_RATE_VARIABILITY")],
+      }),
+      t,
+    ).cards.find((c) => c.kind === "today_different");
+    expect(outside?.lines.map((l) => l.href)).toEqual([
+      metricHref("RESTING_HEART_RATE"),
+      metricHref("HEART_RATE_VARIABILITY"),
+    ]);
+    const ready = buildDailyMorning(
+      input({ readiness: readiness() }),
+      t,
+    ).cards.find((c) => c.kind === "today_different");
+    expect(ready?.lines.map((l) => l.href)).toEqual([
+      metricHref("readiness"),
+      metricHref("RESTING_HEART_RATE"),
+      metricHref("mood") ?? "/insights",
+    ]);
+    for (const line of [...(outside?.lines ?? []), ...(ready?.lines ?? [])]) {
+      expect(line.href, line.text).toMatch(/^\/insights/);
+    }
   });
 
   it("names at most two readiness contributors, heaviest deduction first", () => {
