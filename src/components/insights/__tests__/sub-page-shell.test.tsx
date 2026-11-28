@@ -12,6 +12,22 @@ vi.mock("next/navigation", () => ({
 
 // The target gear asks whether this is somebody else's record; the shell
 // renders here without the session it would read that from.
+// The definition sits in the (i) popover beside the title; a closed popover
+// renders no body, so this stand-in prints the body beside its trigger.
+vi.mock("@/components/ui/info-popover", () => ({
+  InfoPopover: ({
+    content,
+    triggerDataSlot,
+  }: {
+    content: React.ReactNode;
+    triggerDataSlot?: string;
+  }) => (
+    <button type="button" data-slot={triggerDataSlot}>
+      <span data-slot="info-popover-body-probe">{content}</span>
+    </button>
+  ),
+}));
+
 vi.mock("@/hooks/use-record-capabilities", async (importOriginal) => ({
   holdsOwnerRights: (
     await importOriginal<typeof import("@/hooks/use-record-capabilities")>()
@@ -79,14 +95,14 @@ describe("<SubPageShell>", () => {
     expect(html).toContain('data-variant="notDiagnosis"');
   });
 
-  it("renders the explainer body inline beneath the heading", () => {
+  it("puts the definition behind the (i) beside the title, not under it", () => {
     const html = render(
       <SubPageShell title="Blood pressure" explainerMetric="bloodPressure">
         <span />
       </SubPageShell>,
     );
-    // The inline caption reuses the same body string the `?` popover reads.
-    expect(html).toMatch(/data-slot="metric-explainer-inline"/);
+    expect(html).not.toMatch(/data-slot="metric-explainer-inline"/);
+    expect(html).toMatch(/data-slot="metric-explainer-trigger"/);
     expect(html).toContain(
       "Blood pressure is the force your blood exerts on the artery walls",
     );
@@ -113,14 +129,12 @@ describe("<SubPageShell>", () => {
     expect(html).not.toContain("{");
   });
 
-  it("no longer paints the round `?` explainer trigger next to the heading", () => {
+  it("paints no (i) without a definition to show", () => {
     const html = render(
-      <SubPageShell title="Blood pressure" explainerMetric="bloodPressure">
+      <SubPageShell title="Blood pressure">
         <span />
       </SubPageShell>,
     );
-    // v1.8.6 — the `?` popover affordance was dropped; only the inline
-    // definition caption remains.
     expect(html).not.toMatch(/data-slot="metric-explainer-trigger"/);
   });
 

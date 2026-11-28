@@ -121,10 +121,12 @@ export interface CoachReasoningSelectProps {
   busy?: boolean;
   /**
    * `sheet` (default): the quick settings' stacked field, as wide as the
-   * sheet. `card`: Settings → Coach, where it sits in the grid beside Tone
-   * and Reply length and takes their small label and content-wide select.
+   * sheet. `row`: Settings → Coach, one row like Tone and Reply length, the
+   * name on the left and the select on the right at their width.
    */
-  variant?: "sheet" | "card";
+  variant?: "sheet" | "row";
+  /** The select's classes in the `row` variant, shared with its neighbours. */
+  rowControlClassName?: string;
   onChange: (next: ReasoningLevel) => void;
 }
 
@@ -135,53 +137,65 @@ export function CoachReasoningSelect({
   state,
   busy = false,
   variant = "sheet",
+  rowControlClassName,
   onChange,
 }: CoachReasoningSelectProps) {
   const { t } = useTranslations();
   const options = reasoningOptions(state, t);
   const locked = reasoningLocked(state);
-  const card = variant === "card";
-  return (
-    <div
-      data-slot="coach-reasoning-field"
-      className={cn(card && "flex flex-col gap-2")}
+  const row = variant === "row";
+  // What the setting does needs no sentence; why it cannot be changed does.
+  const lockedNote = locked ? (
+    <p
+      id={`${id}-hint`}
+      className={cn("text-muted-foreground text-xs", !row && "mt-1")}
     >
-      <Label htmlFor={id} className={cn(card && "text-xs font-medium")}>
-        {t(REASONING_SETTING_KEYS.label)}
-      </Label>
-      <NativeSelect
-        id={id}
-        data-slot="coach-reasoning-select"
-        data-locked={locked ? "true" : undefined}
-        className={card ? "w-fit" : "mt-1"}
-        value={shownReasoningLevel(value, state)}
-        disabled={locked || busy}
-        aria-describedby={`${id}-hint`}
-        onChange={(e) => {
-          const next = e.target.value;
-          if (isReasoningLevel(next) && next !== value) onChange(next);
-        }}
-      >
-        {options.map((option) => (
-          <option
-            key={option.value}
-            value={option.value}
-            disabled={option.disabled}
-          >
-            {option.label}
-          </option>
-        ))}
-      </NativeSelect>
-      <p
-        id={`${id}-hint`}
-        className={cn("text-muted-foreground text-xs", !card && "mt-1")}
-      >
-        {t(
-          locked
-            ? REASONING_SETTING_KEYS.disabled
-            : REASONING_SETTING_KEYS.hint,
-        )}
-      </p>
+      {t(REASONING_SETTING_KEYS.disabled)}
+    </p>
+  ) : null;
+  const select = (
+    <NativeSelect
+      id={id}
+      data-slot="coach-reasoning-select"
+      data-locked={locked ? "true" : undefined}
+      className={row ? rowControlClassName : "mt-1"}
+      value={shownReasoningLevel(value, state)}
+      disabled={locked || busy}
+      aria-describedby={locked ? `${id}-hint` : undefined}
+      onChange={(e) => {
+        const next = e.target.value;
+        if (isReasoningLevel(next) && next !== value) onChange(next);
+      }}
+    >
+      {options.map((option) => (
+        <option
+          key={option.value}
+          value={option.value}
+          disabled={option.disabled}
+        >
+          {option.label}
+        </option>
+      ))}
+    </NativeSelect>
+  );
+  if (row) {
+    return (
+      <div data-slot="coach-reasoning-field" className="flex flex-col gap-1">
+        <div className="flex min-h-11 items-center justify-between gap-4">
+          <Label htmlFor={id} className="min-w-0 truncate">
+            {t(REASONING_SETTING_KEYS.label)}
+          </Label>
+          {select}
+        </div>
+        {lockedNote}
+      </div>
+    );
+  }
+  return (
+    <div data-slot="coach-reasoning-field">
+      <Label htmlFor={id}>{t(REASONING_SETTING_KEYS.label)}</Label>
+      {select}
+      {lockedNote}
     </div>
   );
 }

@@ -1,29 +1,29 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-
-import { MaintainershipBanner } from "../maintainership-banner";
-import { I18nProvider } from "@/lib/i18n/context";
-import type { Locale } from "@/lib/i18n/config";
 
 /**
  * v1.4.25 — <MaintainershipBanner> contract:
  *  1. Renders nothing on maintained locales (DE / EN).
- *  2. Renders a notice strip on machine-translated locales (FR / ES / IT / PL).
- *  3. The notice carries a GitHub-issue CTA so feedback has a clear
- *     home.
- *
- * Dismissal-state behaviour (localStorage round-trip + button click)
- * is covered by the component implementation; SSR markup is what the
- * project's other component tests pin (see `error-details.test.tsx`),
- * so we mirror that idiom here. The mount-time `useEffect` that reads
- * localStorage runs client-side only — the SSR output we test here
- * reflects the pre-mount "dismissed by default" branch, which is the
- * exact contract for first paint with a stored flag.
- *
- * The "banner visible on first paint when no flag stored" path is
- * verified end-to-end by the dev server + Playwright lane (W9f);
- * here we pin the locale gating and the markup contract.
+ *  2. Renders a notice strip on machine-translated locales, with a
+ *     GitHub-issue CTA so feedback has a clear home.
+ *  3. Closed per language on the account (`i18n-banner.<locale>`), so it
+ *     stays closed on every device, and paints nothing until the account
+ *     has loaded, so a closed banner never flashes.
  */
+let auth: { user: { id: string } | null; isLoading: boolean };
+let stored: string[];
+vi.mock("@/hooks/use-auth", () => ({ useAuth: () => auth }));
+vi.mock("@/hooks/use-dismissed-hints", () => ({
+  useDismissedHints: () => ({
+    isDismissed: (family: string, member?: string) =>
+      stored.includes(family) || stored.includes(`${family}.${member}`),
+    dismiss: async () => true,
+  }),
+}));
+
+import { MaintainershipBanner } from "../maintainership-banner";
+import { I18nProvider } from "@/lib/i18n/context";
+import type { Locale } from "@/lib/i18n/config";
 
 function ssr(locale: Locale): string {
   return renderToStaticMarkup(
@@ -35,37 +35,35 @@ function ssr(locale: Locale): string {
 
 describe("<MaintainershipBanner>", () => {
   beforeEach(() => {
-    // Fresh localStorage so each test starts from the "never dismissed"
-    // state. The SSR path doesn't read it, but keeping the slate clean
-    // documents the contract for the client-side branch.
-    try {
-      globalThis.localStorage?.clear();
-    } catch {
-      /* SSR — localStorage absent */
-    }
+    auth = { user: { id: "u1" }, isLoading: false };
+    stored = [];
   });
 
   it("renders nothing on the EN locale (maintained)", () => {
-    const html = ssr("en");
-    expect(html).not.toContain("maintainership-banner");
+    expect(ssr("en")).not.toContain("maintainership-banner");
   });
 
   it("renders nothing on the DE locale (maintained)", () => {
-    const html = ssr("de");
-    expect(html).not.toContain("maintainership-banner");
+    expect(ssr("de")).not.toContain("maintainership-banner");
   });
 
-  // SSR path renders the dismissed-by-default state to avoid a
-  // hydration mismatch. Client mount reads localStorage and reveals
-  // the banner when no flag exists. The SSR-only assertion below
-  // documents that the strip is NOT painted before the first effect
-  // runs — exactly the contract that prevents the flash-of-banner
-  // problem.
-  it("paints nothing in the SSR pass for machine-translated locales", () => {
+  it("shows on a machine-translated locale with the feedback link", () => {
     for (const locale of ["fr", "es", "it", "pl"] as const) {
       const html = ssr(locale);
-      expect(html).not.toContain("maintainership-banner");
+      expect(html).toContain("maintainership-banner");
+      expect(html).toContain("template=translation.yml");
     }
+  });
+
+  it("stays closed for a language closed on the account, and only that one", () => {
+    stored = ["i18n-banner.fr"];
+    expect(ssr("fr")).not.toContain("maintainership-banner");
+    expect(ssr("it")).toContain("maintainership-banner");
+  });
+
+  it("paints nothing until the account has loaded", () => {
+    auth = { user: null, isLoading: true };
+    expect(ssr("fr")).not.toContain("maintainership-banner");
   });
 
   it("the component module exports the locale gate as a named symbol", async () => {

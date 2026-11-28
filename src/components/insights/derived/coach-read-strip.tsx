@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueries } from "@tanstack/react-query";
-import { Sparkles } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, Sparkles } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
@@ -16,6 +16,8 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TileHeader } from "@/components/insights/tile-header";
+import { ValueRow, type ValueRowItem } from "@/components/insights/value-row";
+import { cn } from "@/lib/utils";
 import type { CoachReadStripData } from "@/lib/insights/derived/coach-read-shape";
 
 /**
@@ -256,31 +258,35 @@ export function CoachReadStrip({
     );
 
   const sentenceArgs = { t, fmt, unit: resolvedUnit, locale };
-  // One line per component of a pair, each named; one line otherwise.
-  const baselineLines: string[] = pair
-    ? types.map((type, i) =>
-        t("insights.coach.readStrip.componentLine", {
-          component: t(pair.labelKeys[type]),
-          line: baselineSentence(reads[i].data!, sentenceArgs),
-        }),
-      )
-    : [baselineSentence(data, sentenceArgs)];
+  // One read-out per component of a pair, each named; one otherwise. The
+  // full sentence stays the cell's accessible name and hover text; the card
+  // shows the range and today's value beside a mark for where it sits.
+  const items: ValueRowItem[] = types.map((type, i) => {
+    const read = reads[i].data!;
+    const sentence = baselineSentence(read, sentenceArgs);
+    const label = pair
+      ? t(pair.labelKeys[type])
+      : t("insights.coach.readStrip.range");
+    const title = pair
+      ? t("insights.coach.readStrip.componentLine", {
+          component: label,
+          line: sentence,
+        })
+      : sentence;
+    return readOut(type, read, {
+      label,
+      title,
+      fmt,
+      t,
+      locale,
+      sentence,
+      unit: resolvedUnit,
+    });
+  });
 
-  // Only the wrapper is translated here. `note` is a finished sentence the
-  // server wrote in the reader's language, so it goes in as it arrived — which
-  // is exactly why the route has to know the language, and why this query is
-  // keyed by locale.
-  const driverLine = data.driver
-    ? t("insights.coach.readStrip.driver", { note: data.driver.note })
-    : null;
-
-  // Standard card anatomy — the real Card + TileHeader + CardContent
-  // primitives at the compact density (the metric-stat-strip reference),
-  // so background, radius, icon spacing and the left text edge match
-  // every other insights tile. The former hand-rolled shell
-  // (`bg-card/60 … px-4 py-3.5`) painted a translucent background and a
-  // text edge ~8 px left of the card norm on md+. Body prose in the
-  // regular foreground; muted stays reserved for meta lines.
+  // Standard card anatomy at the compact density, the same as the stat
+  // strip above it. The lagged association the read also carries is not
+  // shown here: a finding about another metric is the overview's to tell.
   return (
     <Card data-slot="coach-read-strip" density="compact">
       <CardHeader>
@@ -293,24 +299,74 @@ export function CoachReadStrip({
         />
       </CardHeader>
       <CardContent className={STRIP_BODY}>
-        <div className="min-w-0 space-y-1 text-sm leading-relaxed">
-          {baselineLines.map((line, i) => (
-            <p
-              key={types[i]}
-              data-slot="coach-read-baseline"
-              data-metric={pair ? types[i] : undefined}
-              className="text-pretty"
-            >
-              {line}
-            </p>
-          ))}
-          {driverLine ? (
-            <p data-slot="coach-read-driver" className="text-pretty">
-              {driverLine}
-            </p>
-          ) : null}
-        </div>
+        <ValueRow items={items} slot="coach-read-baseline" />
       </CardContent>
     </Card>
   );
+}
+
+/** Where today's value sits against the range, as a mark with its word. */
+const PLACEMENT_MARK = {
+  within: { Icon: Check, tone: "text-success" },
+  above: { Icon: ArrowUp, tone: "text-warning" },
+  below: { Icon: ArrowDown, tone: "text-warning" },
+} as const;
+
+/** One component's read-out: the range, and the latest value with its mark. */
+function readOut(
+  type: string,
+  read: CoachReadStripData,
+  {
+    label,
+    title,
+    fmt,
+    t,
+    locale,
+    sentence,
+    unit,
+  }: {
+    unit: string;
+    label: string;
+    title: string;
+    fmt: (value: number) => string;
+    t: (key: string, params?: Record<string, string | number>) => string;
+    locale: string;
+    sentence: string;
+  },
+): ValueRowItem {
+  if (read.learning || !read.baseline) {
+    return { key: type, label, value: "\u2014", note: sentence, title };
+  }
+  const { low, high, latest, placement, basis, latestIsToday, latestDate } =
+    read.baseline;
+  const range =
+    fmt(low) === fmt(high) ? fmt(low) : `${fmt(low)}\u2013${fmt(high)}`;
+  const value = fmt(latest);
+  const latestText =
+    basis === "sameHours"
+      ? t("insights.coach.readStrip.soFarValue", { value })
+      : latestIsToday === false
+        ? t("insights.coach.readStrip.latestValue", {
+            value,
+            date: formatDay(latestDate, locale),
+          })
+        : t("insights.coach.readStrip.todayValue", { value });
+  const mark = PLACEMENT_MARK[placement] ?? PLACEMENT_MARK.within;
+  return {
+    key: type,
+    label,
+    value: range,
+    unit,
+    title,
+    note: (
+      <>
+        <span>{latestText}</span>
+        <mark.Icon
+          className={cn("size-3.5 shrink-0", mark.tone)}
+          aria-hidden="true"
+        />
+        <span className="sr-only">{sentence}</span>
+      </>
+    ),
+  };
 }

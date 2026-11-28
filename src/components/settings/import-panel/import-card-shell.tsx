@@ -17,6 +17,8 @@ export interface ImportCardShellProps {
   description: string;
   /** The label the folded body opens under; "Import" by default. */
   foldLabel?: string;
+  /** A `StatusChip` for a card that is a connection (the remote folder). */
+  status?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -27,6 +29,7 @@ export function ImportCardShell({
   title,
   description,
   foldLabel,
+  status,
   children,
 }: ImportCardShellProps) {
   const { t } = useTranslations();
@@ -37,6 +40,7 @@ export function ImportCardShell({
         icon={Icon}
         title={title}
         description={description}
+        status={status}
       />
       {/* The steps, the drop zone and the result stay folded until the card
           is opened: a list of a dozen sources read as a dozen manuals. */}

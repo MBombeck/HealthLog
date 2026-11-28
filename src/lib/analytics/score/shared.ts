@@ -244,7 +244,10 @@ export function okPillar(args: {
     fullHistoryDays: args.windowDays,
   });
   return buildOk({
-    value: args.value,
+    // The pillar's band is resolved here, once, by the rule every score
+    // follows (`scoreBand`; a pillar score is higher-better), so no client
+    // bands a pillar from its number.
+    value: { ...args.value, band: scoreBand(args.value.score) },
     coverage: args.coverage,
     confidence,
     provenance: provenance({

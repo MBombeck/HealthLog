@@ -10139,8 +10139,10 @@ paths:
         taken, and inferring one from the scheduled time would manufacture an on-time history the file never claimed.
         Body capped at 16 MB and 30 000 importable rows. `?dryRun=1` parses, matches, and returns the file verdict
         WITHOUT writing. A real submission queues the write onto the same background job the per-medication import uses
-        (chunked, heartbeated, resumable) and returns 202 with a `statusUrl` to poll. Shares the 5/hour `import:` rate
-        bucket with every other bulk import surface. Auth via cookie or Bearer."
+        (chunked, heartbeated, resumable) and returns 202 with a `statusUrl` to poll. Shares the `import:` rate bucket
+        with every other bulk import surface, 5 an hour by default, set by the operator through
+        `IMPORT_RATE_LIMIT_PER_HOUR` (a whole number from 1 to 1000; anything else falls back to 5); the 429 message
+        names the value in force. Auth via cookie or Bearer."
       parameters:
         - name: dryRun
           in: query
@@ -12696,6 +12698,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PatchWorkoutRoutesEnvelope"
+        "400": *a31
+        "401": *a1
+        "403": *a9
+        "413": *a32
+        "415": *a33
+        "422": *a4
+        "429": *a5
+  /api/auth/me/dismissed-hints:
+    patch:
+      tags:
+        - Auth
+      summary: Put one-time hints away or bring them back
+      description: >-
+        The one-time hints, notes and banners the caller has put away, stored on the account so a closed hint stays
+        closed on every device. The current list is `dismissedHints` on `/api/auth/me`; a client shows a hint only while
+        its id is absent there.
+
+
+        Idempotent, audit-logged. Rate-limited 60 / min per user. The caller's own list: under a switched session it is
+        still the caller's. An unknown id is 422.
+
+
+        The body is capped at 4 KB and must carry `Content-Type: application/json`. Anything larger is 413, a wrong
+        content type is 415, and a body that is not JSON at all is 400.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DismissedHintsPatchRequest"
+      responses:
+        "200":
+          description: The stored list after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatchDismissedHintsEnvelope"
         "400": *a31
         "401": *a1
         "403": *a9
@@ -18694,8 +18733,9 @@ paths:
         reason `duplicate` and not written. Without it a row is deduplicated on `(type, measuredAt)` and a repeat is
         `skipped` / `duplicate`. Writes commit in chunks rather than as one transaction; a failure part-way leaves
         earlier chunks written, and re-uploading the same file completes the rest. `?dryRun=1` validates + previews
-        without writing. Shares the 5/hour `import:` rate bucket. An unknown query parameter is refused with 422, so a
-        misspelt `dryRun` never writes."
+        without writing. Shares the `import:` rate bucket, 5 an hour by default, set by the operator through
+        `IMPORT_RATE_LIMIT_PER_HOUR` (a whole number from 1 to 1000; anything else falls back to 5); the 429 message
+        names the value in force. An unknown query parameter is refused with 422, so a misspelt `dryRun` never writes."
       parameters:
         - in: query
           name: dryRun
@@ -18747,14 +18787,16 @@ paths:
         own and a refused row is reported by line with a reason, never guessed (a number or date that reads two ways is
         refused). Re-uploading the same file writes nothing: every row is reported as a duplicate. `dryRun=1` checks the
         whole file without writing and returns the first rows as they would be stored; it spends a separate bucket of 30
-        checks an hour, the import itself the shared 5-an-hour `import:` bucket. Owner only; refused with
-        `module.disabled` when the module is switched off. An unknown query parameter is refused with 422, so a misspelt
-        `dryRun` never writes. Each row's name resolves to the account's marker the way a scanned report's rows do
-        (name, alias, catalog name); a new analyte mints one marker from its first row. A numeric result needs a unit:
-        an empty unit cell is refused with `missing_unit`, and `1` (the UCUM unity) states a value without a unit, such
-        as a ratio or INR. A result in another unit is converted when the conversion is known and keeps the printed
-        value beside it, otherwise the row is refused with `unit_mismatch`. Any other text in the value column is a
-        qualitative result. A date without a time is stored as that calendar date. At most 20 000 data rows."
+        checks an hour, the import itself the shared `import:` bucket, 5 an hour by default, set by the operator through
+        `IMPORT_RATE_LIMIT_PER_HOUR` (a whole number from 1 to 1000; anything else falls back to 5); the 429 message
+        names the value in force. Owner only; refused with `module.disabled` when the module is switched off. An unknown
+        query parameter is refused with 422, so a misspelt `dryRun` never writes. Each row's name resolves to the
+        account's marker the way a scanned report's rows do (name, alias, catalog name); a new analyte mints one marker
+        from its first row. A numeric result needs a unit: an empty unit cell is refused with `missing_unit`, and `1`
+        (the UCUM unity) states a value without a unit, such as a ratio or INR. A result in another unit is converted
+        when the conversion is known and keeps the printed value beside it, otherwise the row is refused with
+        `unit_mismatch`. Any other text in the value column is a qualitative result. A date without a time is stored as
+        that calendar date. At most 20 000 data rows."
       parameters:
         - in: query
           name: dryRun
@@ -18956,13 +18998,14 @@ paths:
         own and a refused row is reported by line with a reason, never guessed (a number or date that reads two ways is
         refused). Re-uploading the same file writes nothing: every row is reported as a duplicate. `dryRun=1` checks the
         whole file without writing and returns the first rows as they would be stored; it spends a separate bucket of 30
-        checks an hour, the import itself the shared 5-an-hour `import:` bucket. Owner only; refused with
-        `module.disabled` when the module is switched off. An unknown query parameter is refused with 422, so a misspelt
-        `dryRun` never writes. Maps name, dose (as written), daily intake times, an as-needed mark and a start and end
-        date; every other rhythm is set up afterwards in the app. A row needs times unless it is marked as needed. Each
-        row is checked against the create route's own schema; a dated window opens a course. Reminders stay off unless
-        `reminders=1`. A medication the record holds under the same name and dose is a duplicate. At most 500 data
-        rows."
+        checks an hour, the import itself the shared `import:` bucket, 5 an hour by default, set by the operator through
+        `IMPORT_RATE_LIMIT_PER_HOUR` (a whole number from 1 to 1000; anything else falls back to 5); the 429 message
+        names the value in force. Owner only; refused with `module.disabled` when the module is switched off. An unknown
+        query parameter is refused with 422, so a misspelt `dryRun` never writes. Maps name, dose (as written), daily
+        intake times, an as-needed mark and a start and end date; every other rhythm is set up afterwards in the app. A
+        row needs times unless it is marked as needed. Each row is checked against the create route's own schema; a
+        dated window opens a course. Reminders stay off unless `reminders=1`. A medication the record holds under the
+        same name and dose is a duplicate. At most 500 data rows."
       parameters:
         - in: query
           name: dryRun
@@ -19154,8 +19197,9 @@ paths:
         not transactional: on a mid-file write failure the response is 503 (`meta.errorCode` = `import.write_failed`,
         `meta.retryable` = true) with `meta.stats` carrying what landed — rows already written stay written, and a retry
         is only safe against duplication for rows that carry an `externalId`. Validation is fail-fast (the 422 carries
-        the first issue's message, not the multi-issue envelope). Rate-limited 5/hour per user (shared `import:` bucket
-        with the CSV importer)."
+        the first issue's message, not the multi-issue envelope). Rate-limited per user through the `import:` bucket it
+        shares with the CSV importers, 5 an hour by default, set by the operator through `IMPORT_RATE_LIMIT_PER_HOUR` (a
+        whole number from 1 to 1000; anything else falls back to 5); the 429 message names the value in force."
       requestBody:
         required: true
         content:
@@ -36999,6 +37043,26 @@ components:
       required:
         - storeWorkoutRoutes
       description: Keep or stop keeping the GPS track of new workouts. Off by default.
+    DismissedHintsPatchRequest:
+      type: object
+      properties:
+        dismiss:
+          maxItems: 200
+          type: array
+          items:
+            type: string
+            maxLength: 96
+        restore:
+          maxItems: 200
+          type: array
+          items:
+            type: string
+            maxLength: 96
+      description: Put one-time hints away (`dismiss`) or bring them back (`restore`). An id is a hint family
+        (`timeline-readiness`, `ai-setup`, `ai-consent-request`, `correlation-seasonal`, `i18n-banner`,
+        `getting-started`, `labs-changes`) or `family.member` (`i18n-banner.fr`, `getting-started.<row>`,
+        `labs-changes.<YYYY-MM-DD>` with the newest lab panel's day, so a new panel brings the hint back). Restoring a
+        family restores its members too.
     ShowNavCountsPatchRequest:
       type: object
       properties:
@@ -49923,7 +49987,9 @@ components:
               - medication.side-effect-headache
               - medication.low-stock-trigger
               - insights.score-origin
+              - account.dismissed-hints
               - daily.asks
+              - daily.scores-short-labels
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices; since
@@ -50061,12 +50127,21 @@ components:
             RECOVERY_SCORE, STRESS_SCORE and STRAIN_SCORE values on GET /api/insights/derived carry origin (estimate |
             device | computed) and deviceSource (the measurement source of a device value, else null); the health score
             composite carries weights (one { id, weight } per counted pillar, summing to 1) and each snapshot
-            healthScore.pillars row its weight (null when it did not count). `daily.asks`: GET /api/daily/digest carries
-            asks: every row the start page asks today, often none (kind, tier safety | decision | due, itemKey, title,
-            body, subject, exactly two actions with the primary first, learnMore), ranked on the server, never capped or
+            healthScore.pillars row its weight (null when it did not count); every scored pillar carries its own band
+            (green | yellow | red), resolved on the server: value.band on the score report's pillars (/api/analytics)
+            and band on each snapshot healthScore.pillars row (null when it did not count). `account.dismissed-hints`:
+            GET /api/auth/me carries dismissedHints, the ids of the one-time hints the account has closed (a family such
+            as timeline-readiness, or family.member such as i18n-banner.fr); PATCH /api/auth/me/dismissed-hints with
+            dismiss and/or restore changes it and answers the stored list. Restoring a family restores its members. Show
+            a hint only while neither its id nor its family is listed. `daily.asks`: GET /api/daily/digest carries asks:
+            every row the start page asks today, often none (kind, tier safety | decision | due, itemKey, title, body,
+            subject, exactly two actions with the primary first, learnMore), ranked on the server, never capped or
             folded; render as delivered, no card when empty. Later is dose.snooze:<medicationId> on a dose and
             ask.later:<dismissKey> on other reminders; the admin rows (push_relay, server_setup) come only to a browser
-            session."
+            session. `daily.scores-short-labels`: Each start-page score carries shortLabel, its short name for a tile
+            from the score registry, worded in the response language: GET /api/daily/morning scores.sleep and
+            scores.readiness, and GET /api/daily/digest score (the Health score). Render it as is; the web shows the
+            same words."
       required:
         - version
         - buildSha
@@ -67501,23 +67576,26 @@ components:
           type: boolean
           description: v1.42.2 — whether the server sends dose reminders for this medication. See the `Medication` component.
         nextDueAt:
-          description: "Present on the READ paths only — the list and single GET compute it; the create / update responses return
+          description: Present on the READ paths only — the list and single GET compute it; the create / update responses return
             the stored row and omit it. v1.7.0 server-computed next due instant across all the medication's schedules
             (earliest `nextOccurrenceAfter`). Read-only — computed, not stored. NULL when no schedule has an upcoming
             slot (paused, one-shot in the past, `endsOn` crossed, every schedule PRN). v1.16.4 — when an unresolved
             slot's anchor has passed but the catch-up band is still open (`anchor < now <= overdueEnd`, current schedule
-            era), this carries THAT slot (a past instant) with `nextDueOverdue: true` instead of jumping to the next
-            future slot. The list GET is cached 60 s, so a 60 s staleness is accepted."
+            era), this carries THAT slot (a past instant) instead of jumping to the next future slot; `nextDueOverdue`
+            says whether it is still `due` or already `overdue`. The list GET is cached 60 s, so a 60 s staleness is
+            accepted.
           anyOf:
             - type: string
               format: date-time
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
         nextDueOverdue:
-          description: "Present on the READ paths only, alongside `nextDueAt`. v1.16.4 — true when `nextDueAt` is an OPEN overdue
-            slot: its anchor has passed, `now` is still inside the slot's catch-up band, and no taken / skipped /
-            auto-missed row resolves it. False for a regular future next-due (and when `nextDueAt` is null). Read-only —
-            computed, not stored."
+          description: "Present on the READ paths only, alongside `nextDueAt`. True when the dose at `nextDueAt` is `overdue` by
+            the dose resolver: past its on-time window (`currentDose.overdueSince`), before its miss cutoff, with no
+            taken / skipped / auto-missed row on it. The same rule as `currentDose.state`, the today rows and the
+            dashboard's `medsToday.nextDueOverdue`. Since v1.50.0 it stays false while the slot is inside its on-time
+            window even after its anchor has passed (that dose reads `due` everywhere); it used to turn true at the
+            anchor. False for a future next-due and when `nextDueAt` is null. Read-only — computed, not stored."
           type: boolean
         startsOn:
           anyOf:
@@ -74068,6 +74146,33 @@ components:
         - data
         - error
       additionalProperties: false
+    PatchDismissedHintsEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/DismissedHintsResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DismissedHintsResponse:
+      type: object
+      properties:
+        dismissedHints:
+          type: array
+          items:
+            type: string
+      required:
+        - dismissedHints
+      additionalProperties: false
     PatchShowNavCountsEnvelope:
       type: object
       properties:
@@ -79634,6 +79739,9 @@ components:
                 - "null"
             nextDueOverdue:
               type: boolean
+              description: "True when the dose at `nextDueAt` is `overdue` by the dose resolver: past its on-time window, before its
+                miss cutoff, nothing recorded on it. The same rule as `currentDose.state` and the medication read's
+                `nextDueOverdue`; a dose inside its on-time window is `due`, not overdue."
             nextDueMedicationName:
               type:
                 - string
@@ -79823,24 +79931,28 @@ components:
                     - id: BLOOD_PRESSURE
                       label: Blood pressure
                       value: 82
+                      band: green
                       reason: null
                       reasonCode: null
                       weight: 0.5
                     - id: ACTIVITY
                       label: Activity
                       value: 64
+                      band: yellow
                       reason: null
                       reasonCode: null
                       weight: 0.5
                     - id: SLEEP
                       label: Sleep
                       value: null
+                      band: null
                       reason: Not tracked
                       reasonCode: not_tracked
                       weight: null
                     - id: WELLBEING
                       label: Wellbeing
                       value: null
+                      band: null
                       reason: Not counted after your last check-in
                       reasonCode: crisis_signposting
                       weight: null
@@ -80278,6 +80390,17 @@ components:
               maximum: 100
             - type: "null"
           description: The pillar's own 0–100 score when it counted toward the health score; null when it did not.
+        band:
+          description: 1.50 (feature `insights.score-origin`) — the pillar's own band, resolved on the server from its score by
+            the rule every HealthLog score follows (green from 70, yellow from 50). Null when the pillar did not count.
+            Draw the pillar from this, never from thresholds of your own. Optional so older cached snapshots stay valid.
+          anyOf:
+            - type: string
+              enum:
+                - green
+                - yellow
+                - red
+            - type: "null"
         reason:
           description: Why the pillar did not count, worded as the web panel words it ("Not tracked", "Not enough recent eligible
             data"). Null when it counted. A WELLBEING pillar held back for safety signposting says so in a neutral label
@@ -81855,6 +81978,16 @@ components:
               properties:
                 score:
                   type: number
+                band:
+                  description: 1.50 (feature `insights.score-origin`) — the pillar's own band, resolved on the server from its score by
+                    the rule every HealthLog score follows (green from 70, yellow from 50; a pillar score is
+                    higher-better). Draw the pillar from this, never from thresholds of your own. Optional so a payload
+                    from an older server stays valid; this server sets it on every scored pillar.
+                  type: string
+                  enum:
+                    - green
+                    - yellow
+                    - red
                 observed:
                   type: object
                   properties:
@@ -101565,6 +101698,11 @@ components:
                   type:
                     - string
                     - "null"
+                shortLabel:
+                  description: The score's short name for a tile, from the score registry and worded in the response language
+                    ("Gesundheit", "Health score"). Render it as is. Absent on older cached digests. Feature key
+                    `daily.scores-short-labels`.
+                  type: string
               required:
                 - value
                 - band
@@ -102061,7 +102199,9 @@ components:
               description: "The rule by name: floor (a confirmed safety floor in the last 24 hours), rest_mode, coincident (two or
                 more independent signals outside their usual range: blood pressure counts once, resting heart rate and
                 pulse once, weight and glucose never), vital_outside, sleep_pending, source_quiet (first and second
-                quiet day only), readiness (fresh, yellow or red), night_notable, in_range, planned, nothing."
+                quiet day only), readiness (fresh, yellow or red), night_notable, in_range (today's values counted and
+                all in range, or an ordinary night; while the Health score flags a pillar, its `band` below green, that
+                pillar is named instead and the day is never called in range), planned, nothing."
             text:
               type: string
               description: One sentence, a finding and never advice, worded on the server from the day's own readings. No model text.
@@ -102270,6 +102410,10 @@ components:
     DailyMorningScore:
       type: object
       properties:
+        shortLabel:
+          type: string
+          description: The score's short name for the tile, from the score registry and worded in the response language
+            ("Schlafscore", "Bereitschaft"). Render it as is. Feature key `daily.scores-short-labels`.
         ring:
           description: "The ring as the cards carry it: no number when not fresh."
           $ref: "#/components/schemas/DailyMorningRing"
@@ -102283,6 +102427,7 @@ components:
           type: string
           description: The score's own page.
       required:
+        - shortLabel
         - ring
         - line
         - href
@@ -103561,6 +103706,13 @@ components:
           description: "#1113 — whether the navigation shows its counts (doses due on Medications, check-ups due on Checkups).
             `true` by default. When `false`, show no count and do not call `GET /api/nav/counts`. Set it with `PATCH
             /api/auth/me/show-nav-counts`."
+        dismissedHints:
+          type: array
+          items:
+            type: string
+          description: The one-time hints, notes and banners this account has put away, by id (a family such as
+            `timeline-readiness`, or `family.member` such as `i18n-banner.fr`). Show a hint only while its id, or its
+            family, is absent. Change it with `PATCH /api/auth/me/dismissed-hints`.
         features:
           type: object
           properties:
@@ -103677,6 +103829,7 @@ components:
         - glucoseUnit
         - medicineRegistry
         - showNavCounts
+        - dismissedHints
         - features
         - push
         - emergencyCard
@@ -113304,23 +113457,26 @@ components:
             Read-only — computed, not stored."
           type: boolean
         nextDueAt:
-          description: "Present on the READ paths only — the list and single GET compute it; the create / update responses return
+          description: Present on the READ paths only — the list and single GET compute it; the create / update responses return
             the stored row and omit it. v1.7.0 server-computed next due instant across all the medication's schedules
             (earliest `nextOccurrenceAfter`). Read-only — computed, not stored. NULL when no schedule has an upcoming
             slot (paused, one-shot in the past, `endsOn` crossed, every schedule PRN). v1.16.4 — when an unresolved
             slot's anchor has passed but the catch-up band is still open (`anchor < now <= overdueEnd`, current schedule
-            era), this carries THAT slot (a past instant) with `nextDueOverdue: true` instead of jumping to the next
-            future slot. The list GET is cached 60 s, so a 60 s staleness is accepted."
+            era), this carries THAT slot (a past instant) instead of jumping to the next future slot; `nextDueOverdue`
+            says whether it is still `due` or already `overdue`. The list GET is cached 60 s, so a 60 s staleness is
+            accepted.
           anyOf:
             - type: string
               format: date-time
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
         nextDueOverdue:
-          description: "Present on the READ paths only, alongside `nextDueAt`. v1.16.4 — true when `nextDueAt` is an OPEN overdue
-            slot: its anchor has passed, `now` is still inside the slot's catch-up band, and no taken / skipped /
-            auto-missed row resolves it. False for a regular future next-due (and when `nextDueAt` is null). Read-only —
-            computed, not stored."
+          description: "Present on the READ paths only, alongside `nextDueAt`. True when the dose at `nextDueAt` is `overdue` by
+            the dose resolver: past its on-time window (`currentDose.overdueSince`), before its miss cutoff, with no
+            taken / skipped / auto-missed row on it. The same rule as `currentDose.state`, the today rows and the
+            dashboard's `medsToday.nextDueOverdue`. Since v1.50.0 it stays false while the slot is inside its on-time
+            window even after its anchor has passed (that dose reads `due` everywhere); it used to turn true at the
+            anchor. False for a future next-due and when `nextDueAt` is null. Read-only — computed, not stored."
           type: boolean
         startsOn:
           anyOf:

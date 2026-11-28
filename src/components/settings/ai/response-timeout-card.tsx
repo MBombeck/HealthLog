@@ -114,6 +114,10 @@ export function ResponseTimeoutCard({
         anchor="response-timeout"
         icon={Timer}
         title={t("settings.ai.responseTimeoutHeading")}
+        info={t(
+          "settings.ai.responseTimeoutBody",
+          RESPONSE_TIMEOUT_COPY_PARAMS,
+        )}
       />
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="ai-response-timeout">
@@ -131,17 +135,8 @@ export function ResponseTimeoutCard({
             "settings.ai.responseTimeoutPlaceholder",
             RESPONSE_TIMEOUT_COPY_PARAMS,
           )}
-          aria-describedby="ai-response-timeout-hint"
           className="sm:max-w-xs"
         />
-        {/* The explainer is several sentences, so it rides under the field it
-            explains rather than in the one-sentence header slot. */}
-        <p
-          id="ai-response-timeout-hint"
-          className="text-muted-foreground text-xs"
-        >
-          {t("settings.ai.responseTimeoutBody", RESPONSE_TIMEOUT_COPY_PARAMS)}
-        </p>
       </div>
       {msg && (
         <p className={`text-xs ${ok ? "text-success" : "text-destructive"}`}>

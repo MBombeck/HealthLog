@@ -62,7 +62,6 @@ export function AiJobFailuresCard({
       <SettingsCardHeader
         icon={TriangleAlert}
         title={t("aiRuns.jobFailure.title")}
-        description={t("aiRuns.jobFailure.description")}
       />
       <ul className="space-y-3">
         {failures.map((failure) => (

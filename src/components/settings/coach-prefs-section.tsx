@@ -10,15 +10,12 @@
  * through the shared `useCoachPrefs` / `useSaveCoachPrefs` pair — the
  * same persisted row the chat's "What I draw on" rail edits.
  *
- * One source of truth for data scope: `excludeMetrics`. The optional
- * context group (sleep / medications / profile) used to render its own
- * switches with the same checked-polarity as the exclude list, so
- * "exclude sleep" and "send sleep context" could read as both ON at
- * once. The context switches now DERIVE from the exclusion list
- * (checked = not excluded = sent), so the two groups can never
- * contradict each other.
+ * One source of truth for data scope: `excludeMetrics`, shown as one list
+ * of what the Coach sees (checked = not excluded). Tone, reply length and
+ * thinking depth are three rows of one shape: the name on the left, a select
+ * of one width on the right.
  */
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Loader2, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
@@ -27,13 +24,7 @@ import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Label } from "@/components/ui/label";
 import { SwitchRow } from "@/components/ui/switch-row";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { NativeSelect } from "@/components/ui/native-select";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SettingsCard } from "@/components/settings/settings-card";
@@ -60,7 +51,14 @@ import {
   coachReasoningLevel,
 } from "@/lib/ai/coach/prefs-constants";
 
-const EXCLUDE_OPTIONS: CoachExcludeMetric[] = [
+/**
+ * Everything the Coach can be kept from, in one list. The stored field is
+ * still the exclusion list (`excludeMetrics`); the switches show its inverse,
+ * so "on" reads "the Coach sees this". The list used to be two: "Exclude
+ * metrics" (on = hidden) and "Send context" (on = sent), with sleep in both,
+ * and a switch label that only made sense read backwards.
+ */
+const SEEN_OPTIONS: CoachExcludeMetric[] = [
   "bp",
   "weight",
   "pulse",
@@ -70,16 +68,12 @@ const EXCLUDE_OPTIONS: CoachExcludeMetric[] = [
   "sleep",
   "resting_hr",
   "steps",
-];
-
-// Optional context blocks. Derived from `excludeMetrics` (see header
-// comment): a switch here reads "send this block" and is simply the
-// inverse of the exclusion entry.
-const CONTEXT_OPTIONS: CoachExcludeMetric[] = [
-  "sleep",
   "medications",
   "anthropometrics",
 ];
+
+/** The three pickers share one width, so their right edges line up. */
+const ROW_SELECT = "w-40 sm:w-48";
 
 /**
  * One sentence on what the Coach reads at the saved setting: how many of the
@@ -105,6 +99,34 @@ function sourcesSummary(
       lookbackText(window).optionParams,
     ),
   });
+}
+
+/**
+ * One preference row: the name on the left, the control on the right,
+ * centred on a row of one height, an optional meta line underneath.
+ */
+function PrefRow({
+  id,
+  label,
+  note,
+  children,
+}: {
+  id: string;
+  label: string;
+  note?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1 py-2">
+      <div className="flex min-h-11 items-center justify-between gap-4">
+        <Label htmlFor={id} className="min-w-0 truncate">
+          {label}
+        </Label>
+        {children}
+      </div>
+      {note}
+    </div>
+  );
 }
 
 /** The form's shape while the stored preferences load. */
@@ -182,7 +204,6 @@ export function CoachPrefsSection({ isAuthenticated }: CoachPrefsSectionProps) {
         anchor="coach-preferences"
         icon={SlidersHorizontal}
         title={t("insights.coach.settingsTitle")}
-        description={t("insights.coach.settingsDescription")}
       />
       {isLoading && prefsQuery.isError ? (
         // A failed read is not the defaults: the form would save them over
@@ -196,113 +217,112 @@ export function CoachPrefsSection({ isAuthenticated }: CoachPrefsSectionProps) {
         <CoachPrefsSkeleton />
       ) : (
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* Tone */}
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="coach-prefs-tone" className="text-xs font-medium">
-                {t("insights.coach.settingsToneLabel")}
-              </Label>
-              <Select
+          <div
+            data-slot="coach-prefs-rows"
+            className="divide-border -my-2 flex flex-col divide-y"
+          >
+            <PrefRow
+              id="coach-prefs-tone"
+              label={t("insights.coach.settingsToneLabel")}
+            >
+              <NativeSelect
+                id="coach-prefs-tone"
+                data-slot="coach-prefs-tone"
+                className={ROW_SELECT}
                 value={draft.tone}
-                onValueChange={(value) =>
-                  setDraft((prev) => ({ ...prev, tone: value as CoachTone }))
-                }
-              >
-                <SelectTrigger
-                  id="coach-prefs-tone"
-                  data-slot="coach-prefs-tone"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="warm">
-                    {t("insights.coach.settingsToneWarm")}
-                  </SelectItem>
-                  <SelectItem value="neutral">
-                    {t("insights.coach.settingsToneNeutral")}
-                  </SelectItem>
-                  <SelectItem value="concise">
-                    {t("insights.coach.settingsToneConcise")}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Verbosity. The concise tone forces "brief" server-side
-                (system-prompt.ts, buildPrefsPrefix), so the picker is
-                disabled there — showing "brief" — with a hint instead of
-                a live control that silently does nothing. */}
-            <div className="flex flex-col gap-2">
-              <Label
-                htmlFor="coach-prefs-verbosity"
-                className="text-xs font-medium"
-              >
-                {t("insights.coach.settingsVerbosityLabel")}
-              </Label>
-              <Select
-                value={draft.tone === "concise" ? "brief" : draft.verbosity}
-                disabled={draft.tone === "concise"}
-                onValueChange={(value) =>
+                onChange={(e) =>
                   setDraft((prev) => ({
                     ...prev,
-                    verbosity: value as CoachVerbosity,
+                    tone: e.target.value as CoachTone,
                   }))
                 }
               >
-                <SelectTrigger
-                  id="coach-prefs-verbosity"
-                  data-slot="coach-prefs-verbosity"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="brief">
-                    {t("insights.coach.settingsVerbosityBrief")}
-                  </SelectItem>
-                  <SelectItem value="default">
-                    {t("insights.coach.settingsVerbosityDefault")}
-                  </SelectItem>
-                  <SelectItem value="detailed">
-                    {t("insights.coach.settingsVerbosityDetailed")}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              {draft.tone === "concise" && (
-                <p
-                  className="text-muted-foreground text-xs"
-                  data-slot="coach-prefs-verbosity-concise-hint"
-                >
-                  {t("insights.coach.settingsVerbosityConciseHint")}
-                </p>
-              )}
-            </div>
+                <option value="warm">
+                  {t("insights.coach.settingsToneWarm")}
+                </option>
+                <option value="neutral">
+                  {t("insights.coach.settingsToneNeutral")}
+                </option>
+                <option value="concise">
+                  {t("insights.coach.settingsToneConcise")}
+                </option>
+              </NativeSelect>
+            </PrefRow>
 
-            {/* v1.41 — how hard the Coach thinks, a third field of the same
-                shape; the same field sits in the Coach's quick settings. */}
-            <CoachReasoningSelect
-              id="coach-prefs-reasoning"
-              variant="card"
-              value={coachReasoningLevel(draft)}
-              state={reasoningState}
-              onChange={(reasoning) =>
-                setDraft((prev) => ({ ...prev, reasoning }))
+            {/* The concise tone forces "brief" server-side (system-prompt.ts,
+                buildPrefsPrefix), so the picker is locked there, showing
+                "brief", with the reason as a meta line. */}
+            <PrefRow
+              id="coach-prefs-verbosity"
+              label={t("insights.coach.settingsVerbosityLabel")}
+              note={
+                draft.tone === "concise" ? (
+                  <p
+                    id="coach-prefs-verbosity-note"
+                    className="text-muted-foreground text-xs"
+                    data-slot="coach-prefs-verbosity-concise-hint"
+                  >
+                    {t("insights.coach.settingsVerbosityConciseHint")}
+                  </p>
+                ) : null
               }
-            />
+            >
+              <NativeSelect
+                id="coach-prefs-verbosity"
+                data-slot="coach-prefs-verbosity"
+                className={ROW_SELECT}
+                value={draft.tone === "concise" ? "brief" : draft.verbosity}
+                disabled={draft.tone === "concise"}
+                aria-describedby={
+                  draft.tone === "concise"
+                    ? "coach-prefs-verbosity-note"
+                    : undefined
+                }
+                onChange={(e) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    verbosity: e.target.value as CoachVerbosity,
+                  }))
+                }
+              >
+                <option value="brief">
+                  {t("insights.coach.settingsVerbosityBrief")}
+                </option>
+                <option value="default">
+                  {t("insights.coach.settingsVerbosityDefault")}
+                </option>
+                <option value="detailed">
+                  {t("insights.coach.settingsVerbosityDetailed")}
+                </option>
+              </NativeSelect>
+            </PrefRow>
+
+            {/* v1.41 — how hard the Coach thinks; the same field sits in the
+                Coach's quick settings. */}
+            <div className="py-2">
+              <CoachReasoningSelect
+                id="coach-prefs-reasoning"
+                variant="row"
+                rowControlClassName={ROW_SELECT}
+                value={coachReasoningLevel(draft)}
+                state={reasoningState}
+                onChange={(reasoning) =>
+                  setDraft((prev) => ({ ...prev, reasoning }))
+                }
+              />
+            </div>
           </div>
 
           {/* Data clusters + analysis window live on ONE owner: "What I
               can see" behind the Coach's settings gear, which
-              `/coach?settings=data` opens directly. This card used to render
-              its own copies of both controls; two writable surfaces for the
-              same persisted fields is exactly the redundancy the rail was
-              built to end. It says what the Coach sees at the saved setting
-              and links there. Only while the Coach can open: without it the
-              link would bounce back to Insights and the rail is out of
-              reach. */}
+              `/coach?settings=data` opens directly. This card says what the
+              Coach sees at the saved setting and links there. Only while the
+              Coach can open: without it the link would bounce back to
+              Insights and the rail is out of reach. */}
           {coach.available ? (
             <div
               data-slot="coach-prefs-sources-pointer"
-              className="flex items-start justify-between gap-3"
+              className="flex items-center justify-between gap-3"
             >
               <p
                 data-slot="coach-prefs-sources-summary"
@@ -323,62 +343,27 @@ export function CoachPrefsSection({ isAuthenticated }: CoachPrefsSectionProps) {
             </div>
           ) : null}
 
-          {/* Exclude metrics — checked = excluded. */}
+          {/* What the Coach sees: checked = not excluded. */}
           <div className="flex flex-col gap-2">
-            <Label className="text-xs font-medium">
-              {t("insights.coach.settingsExcludeLabel")}
-            </Label>
-            <p className="text-muted-foreground text-xs leading-relaxed">
-              {t("insights.coach.settingsExcludeHint")}
+            <p id="coach-prefs-sees-label" className="text-sm font-medium">
+              {t("insights.coach.settingsSeesLabel")}
             </p>
             <ul
-              data-slot="coach-prefs-exclude-list"
-              className="border-border/60 divide-border/50 mt-1 flex flex-col divide-y rounded-md border"
+              aria-labelledby="coach-prefs-sees-label"
+              data-slot="coach-prefs-sees-list"
+              className="border-border/60 divide-border/50 flex flex-col divide-y rounded-md border"
             >
-              {EXCLUDE_OPTIONS.map((metric) => {
-                const id = `coach-prefs-exclude-${metric}`;
-                const checked = draft.excludeMetrics.includes(metric);
+              {SEEN_OPTIONS.map((metric) => {
+                const id = `coach-prefs-sees-${metric}`;
+                const sees = !draft.excludeMetrics.includes(metric);
                 return (
                   <li key={metric}>
                     <SwitchRow
-                      className="px-3 py-2"
+                      className="min-h-11 px-3 py-2"
                       label={t(`insights.coach.metric.${metric}`)}
                       id={id}
-                      data-slot={`coach-prefs-exclude-${metric}`}
-                      checked={checked}
-                      onCheckedChange={(next) => setExcluded(metric, next)}
-                    />
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-
-          {/* Optional context blocks — checked = sent, derived as the
-              inverse of the exclusion list so the two groups can never
-              contradict each other. */}
-          <div className="flex flex-col gap-2">
-            <Label className="text-xs font-medium">
-              {t("insights.coach.settingsContextLabel")}
-            </Label>
-            <p className="text-muted-foreground text-xs leading-relaxed">
-              {t("insights.coach.settingsContextHint")}
-            </p>
-            <ul
-              data-slot="coach-prefs-context-list"
-              className="border-border/60 divide-border/50 mt-1 flex flex-col divide-y rounded-md border"
-            >
-              {CONTEXT_OPTIONS.map((metric) => {
-                const id = `coach-prefs-context-${metric}`;
-                const sent = !draft.excludeMetrics.includes(metric);
-                return (
-                  <li key={metric}>
-                    <SwitchRow
-                      className="px-3 py-2"
-                      label={t(`insights.coach.metric.${metric}`)}
-                      id={id}
-                      data-slot={`coach-prefs-context-${metric}`}
-                      checked={sent}
+                      data-slot={`coach-prefs-sees-${metric}`}
+                      checked={sees}
                       onCheckedChange={(next) => setExcluded(metric, !next)}
                     />
                   </li>
@@ -416,7 +401,6 @@ export function CoachPrefsSection({ isAuthenticated }: CoachPrefsSectionProps) {
               Absent in the saved prefs means on. */}
           <SwitchRow
             label={t(COACH_FOLLOW_UP_UI_KEYS.settingLabel)}
-            description={t(COACH_FOLLOW_UP_UI_KEYS.settingHint)}
             id="coach-prefs-follow-up-chips"
             data-slot="coach-prefs-follow-up-chips"
             checked={draft.followUpChips !== false}

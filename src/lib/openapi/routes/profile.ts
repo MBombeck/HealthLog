@@ -35,6 +35,7 @@ import {
   labsLocalOcrPatchSchema,
   workoutRoutesPatchSchema,
   showNavCountsPatchSchema,
+  dismissedHintsPatchSchema,
   unitPreferencePatchSchema,
   glucoseUnitPatchSchema,
   useCentralCodexPatchSchema,
@@ -1059,6 +1060,16 @@ const showNavCountsPatchRequest = showNavCountsPatchSchema.meta({
 const showNavCountsResponse = z
   .object({ showNavCounts: z.boolean() })
   .meta({ id: "ShowNavCountsResponse" });
+
+const dismissedHintsPatchRequest = dismissedHintsPatchSchema.meta({
+  id: "DismissedHintsPatchRequest",
+  description:
+    "Put one-time hints away (`dismiss`) or bring them back (`restore`). An id is a hint family (`timeline-readiness`, `ai-setup`, `ai-consent-request`, `correlation-seasonal`, `i18n-banner`, `getting-started`, `labs-changes`) or `family.member` (`i18n-banner.fr`, `getting-started.<row>`, `labs-changes.<YYYY-MM-DD>` with the newest lab panel's day, so a new panel brings the hint back). Restoring a family restores its members too.",
+});
+
+const dismissedHintsResponse = z
+  .object({ dismissedHints: z.array(z.string()) })
+  .meta({ id: "DismissedHintsResponse" });
 
 const useCentralCodexPatchRequest = useCentralCodexPatchSchema.meta({
   id: "UseCentralCodexPatchRequest",
@@ -2363,6 +2374,33 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
               schema: dataEnvelope(
                 workoutRoutesResponse,
                 "PatchWorkoutRoutesEnvelope",
+              ),
+            },
+          },
+        },
+        ...cappedScalarBodyRefusals,
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/auth/me/dismissed-hints": {
+    patch: {
+      tags: ["Auth"],
+      summary: "Put one-time hints away or bring them back",
+      description:
+        "The one-time hints, notes and banners the caller has put away, stored on the account so a closed hint stays closed on every device. The current list is `dismissedHints` on `/api/auth/me`; a client shows a hint only while its id is absent there.\n\nIdempotent, audit-logged. Rate-limited 60 / min per user. The caller's own list: under a switched session it is still the caller's. An unknown id is 422.\n\nThe body is capped at 4 KB and must carry `Content-Type: application/json`. Anything larger is 413, a wrong content type is 415, and a body that is not JSON at all is 400.",
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: dismissedHintsPatchRequest } },
+      },
+      responses: {
+        "200": {
+          description: "The stored list after the change.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                dismissedHintsResponse,
+                "PatchDismissedHintsEnvelope",
               ),
             },
           },

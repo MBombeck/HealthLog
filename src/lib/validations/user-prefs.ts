@@ -15,6 +15,10 @@ import {
   INJECTION_SITE_VALUES,
 } from "@/lib/validations/medication";
 import { MEDICINE_REGISTRY_CHOICES } from "@/lib/medications/leaflet-registries";
+import {
+  DISMISSED_HINTS_MAX,
+  isDismissibleHintId,
+} from "@/lib/hints/dismissible-hints";
 
 /** `PATCH /api/auth/me/unit-preference` — metric/imperial display branch. */
 export const unitPreferencePatchSchema = z.object({
@@ -78,3 +82,22 @@ export const injectionSitePrefsPatchSchema = z.object({
         "User-level injection-site deny-list. Sites here are never offered for any medication and rejected at intake (deny wins). Empty array clears the exclusion.",
     }),
 });
+
+const hintIdSchema = z
+  .string()
+  .max(96)
+  .refine(isDismissibleHintId, { message: "Unknown hint" });
+
+/**
+ * `PATCH /api/auth/me/dismissed-hints` — put hints away or bring them back.
+ * Ids come from `src/lib/hints/dismissible-hints.ts`; restoring a family
+ * restores its members too. At least one of the two lists is required.
+ */
+export const dismissedHintsPatchSchema = z
+  .object({
+    dismiss: z.array(hintIdSchema).max(DISMISSED_HINTS_MAX).optional(),
+    restore: z.array(hintIdSchema).max(DISMISSED_HINTS_MAX).optional(),
+  })
+  .refine((v) => (v.dismiss?.length ?? 0) + (v.restore?.length ?? 0) > 0, {
+    message: "Nothing to change",
+  });

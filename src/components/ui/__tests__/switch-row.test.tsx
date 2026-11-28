@@ -31,7 +31,7 @@ describe("<SwitchRow>", () => {
       html,
     )![1];
     expect(row.split(" ")).toEqual(
-      expect.arrayContaining(["flex", "justify-between", "items-start"]),
+      expect.arrayContaining(["flex", "justify-between", "items-center"]),
     );
     expect(row).not.toMatch(/flex-col|flex-wrap|sm:|md:/);
     expect(html).toMatch(/<button[^>]*class="[^"]*shrink-0/);
@@ -52,7 +52,7 @@ describe("<SwitchRow>", () => {
     expect(html).toMatch(/<button[^>]*aria-describedby="discreet-description"/);
   });
 
-  it("centres a row that is only a name", () => {
+  it("centres the switch on a row that is only a name too", () => {
     const html = render(<SwitchRow label="Visits" checked />);
     expect(html).toMatch(/data-slot="switch-row"[^>]*class="[^"]*items-center/);
   });

@@ -24,6 +24,7 @@ import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Badge } from "@/components/ui/badge";
+import { StatusChip } from "@/components/ui/status-chip";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
@@ -138,9 +139,7 @@ function McpConnectionsCard() {
                   <p className="min-w-0 flex-1 text-sm font-medium break-words">
                     {conn.clientName}
                   </p>
-                  <Badge className="bg-success/15 text-success text-xs">
-                    {t("settings.mcp.connectionConnected")}
-                  </Badge>
+                  <StatusChip tone="active" />
                 </div>
                 <p className="text-muted-foreground text-xs">
                   <span className="font-medium">

@@ -69,6 +69,9 @@ export interface CycleRingProps {
   className?: string;
 }
 
+/** Below this edge length the dial shows the day without its caption. */
+const SMALL_DIAL = 120;
+
 function evenSpans(): PhaseSpan[] {
   return PHASE_ORDER.map((phase) => ({ phase, fraction: 0.25 }));
 }
@@ -238,16 +241,26 @@ export function CycleRing({
       </svg>
       {/* Conic specular sheen — sweeps the dial once on the reveal. */}
       <div className="wellness-ring-sheen" aria-hidden="true" />
-      {/* Centred day number + phase caption as real DOM text. */}
+      {/* Centred day number + phase caption as real DOM text. A small dial
+          (a score tile, the overview card) has no room for the caption: the
+          day stands alone, the phase is said beside the ring and in the
+          ring's aria-label. */}
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="text-foreground text-4xl font-semibold tracking-tight tabular-nums">
+        <span
+          className={cn(
+            "text-foreground font-semibold tracking-tight tabular-nums",
+            size < SMALL_DIAL ? "text-2xl" : "text-4xl",
+          )}
+        >
           {dayOfCycle != null
             ? Math.round(displayedDay)
             : t("cycle.ring.dayUnknown")}
         </span>
-        <span className="text-muted-foreground mt-0.5 text-xs">
-          {phaseLabel}
-        </span>
+        {size < SMALL_DIAL ? null : (
+          <span className="text-muted-foreground mt-0.5 text-xs">
+            {phaseLabel}
+          </span>
+        )}
       </div>
     </div>
   );
