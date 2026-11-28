@@ -238,7 +238,7 @@ export const dailyDigestResponse = z
           .string()
           .optional()
           .describe(
-            'The score\'s short name for a tile, from the score registry and worded in the response language ("Gesundheit", "Health score"). Render it as is. Absent on older cached digests. Feature key `daily.scores-short-labels`.',
+            'The score\'s short name for a tile, from the score registry and worded in the response language ("Gesundheit", "Health"). Render it as is. Absent on older cached digests. Feature key `daily.scores-short-labels`.',
           ),
       })
       .nullable()

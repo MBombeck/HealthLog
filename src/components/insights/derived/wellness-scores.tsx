@@ -22,6 +22,7 @@ import { useCycleCalendar, useCycleWindow } from "@/components/cycle/use-cycle";
 import { ScoreRingTile, type ScoreRingTileProps } from "./score-ring-tile";
 import type { DerivedBatchRead } from "./use-derived-metric";
 import { scoreOriginLabelKey } from "./band-tokens";
+import { scoreShortLabel } from "@/lib/scores/registry";
 // Type-only — the compute payloads never drag the server graph into the bundle.
 import type { ReadinessValue } from "@/lib/insights/derived/readiness";
 import type { SleepScoreValue } from "@/lib/insights/derived/sleep-score";
@@ -33,7 +34,9 @@ import type { HealthScoreReport } from "@/lib/analytics/score/types";
  * Sleep score ("last night"), the Health score ("the long view"), Stress and
  * Strain where the record has them, and the cycle for an account that tracks
  * it. Every tile is the shared `ScoreRingTile` with the same three parts: the
- * ring, the short name and one line that says how the score stands.
+ * ring, the short name and one line that says how the score stands. The short
+ * name is the payload's `shortLabel`, worded by the server from the glossary;
+ * the registry's same function stands in only for a body cached before it.
  *
  * The row never wraps. Its tiles share the width equally and keep at least
  * 9 rem each; when the window is narrower than that (a phone with three or
@@ -202,7 +205,7 @@ export function WellnessScores({
       href: `/insights/scores/${tile.kind}`,
       icon: tile.icon,
       label: title,
-      shortLabel: title,
+      shortLabel: r.shortLabel ?? scoreShortLabel(tile.id, t),
       score: stale ? null : v.score,
       band: stale ? undefined : v.band,
       stale,
@@ -228,7 +231,7 @@ export function WellnessScores({
       href: "/insights/scores/health",
       icon: HeartPulse,
       label,
-      shortLabel: label,
+      shortLabel: healthScore.shortLabel ?? scoreShortLabel("HEALTH_SCORE", t),
       score: ok ? composite.value.score : null,
       band: ok ? composite.value.numberBand : undefined,
       stale: !ok,
@@ -259,7 +262,7 @@ export function WellnessScores({
       href: metricHref(tile.slug) ?? "",
       icon: tile.icon,
       label: title,
-      shortLabel: title,
+      shortLabel: r.shortLabel ?? scoreShortLabel(tile.id, t),
       score: v.score,
       band: v.device ? undefined : v.band,
       load: true,

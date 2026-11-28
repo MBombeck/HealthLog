@@ -345,6 +345,8 @@ export interface DashboardLayoutCatalogueEntry {
  */
 export interface DashboardSnapshotHealthScore {
   score: number;
+  /** 1.50: the short name for a tile, set per read (`applyScoreShortLabels`). */
+  shortLabel?: string;
   /** The worse of the number's band and the worst pillar's (shipped apps). */
   band: ScoreBand;
   /** 1.50: the number's own band; the web draws this. Old caches lack it. */

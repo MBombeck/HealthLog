@@ -293,6 +293,7 @@ describe("GET /api/insights/score-history", () => {
       days: 90,
       points: [],
       band: null,
+      shortLabel: "Health",
     });
   });
 

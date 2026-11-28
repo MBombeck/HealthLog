@@ -43,9 +43,9 @@ export interface HealthLogScoreEntry {
   titleKey: string;
   /**
    * The metric whose glossary short form names it on a tile
-   * (`metricName(...).short`); absent when the name is already short.
+   * (`metricName(...).short`): a composite metric key or a measurement type.
    */
-  shortMetric?: string;
+  metric: string;
 }
 
 export const HEALTHLOG_SCORES: Readonly<
@@ -55,17 +55,19 @@ export const HEALTHLOG_SCORES: Readonly<
     bandKind: "health",
     slug: "health",
     titleKey: "insights.healthScore.label",
-    shortMetric: "HEALTH_SCORE",
+    metric: "HEALTH_SCORE",
   },
   READINESS: {
     bandKind: "readiness",
     slug: "readiness",
     titleKey: "insights.derived.composite.READINESS.title",
+    metric: "READINESS",
   },
   SLEEP_SCORE: {
     bandKind: "sleep",
     slug: "sleep",
     titleKey: "insights.derived.composite.SLEEP_SCORE.title",
+    metric: "SLEEP_SCORE",
   },
   // The computed proxy. Its page redirects (readiness for a proxy account,
   // device scores for a device account); the slug stays reachable for links
@@ -74,16 +76,19 @@ export const HEALTHLOG_SCORES: Readonly<
     bandKind: "recovery",
     slug: "recovery",
     titleKey: "insights.derived.scores.recovery",
+    metric: "RECOVERY_SCORE",
   },
   STRESS_SCORE: {
     bandKind: "stress",
     slug: "stress",
     titleKey: "insights.derived.scores.stress",
+    metric: "STRESS_SCORE",
   },
   STRAIN_SCORE: {
     bandKind: "strain",
     slug: "strain",
     titleKey: "insights.derived.scores.strain",
+    metric: "STRAIN_SCORE",
   },
 };
 
@@ -91,17 +96,31 @@ type ShortTranslate = (key: string) => string;
 
 /**
  * A score's short name for a tile ("Gesundheit", "Schlafscore",
- * "Bereitschaft"): the glossary short form where the score has one, else its
- * name. Every surface and the wire (`shortLabel`) read it from here.
+ * "Bereitschaft"): the glossary's `short` form for the score's concept,
+ * reached through `metricName`. The one implementation: every surface and the
+ * wire (`shortLabel`) read it from here.
  */
 export function scoreShortLabel(
   id: HealthLogScoreId,
   t: ShortTranslate,
 ): string {
-  const entry = HEALTHLOG_SCORES[id];
-  return entry.shortMetric
-    ? metricName(entry.shortMetric, t).short
-    : t(entry.titleKey);
+  return metricName(HEALTHLOG_SCORES[id].metric, t).short;
+}
+
+/** True for an id that names one of HealthLog's own scores. */
+export function isHealthLogScoreId(id: string): id is HealthLogScoreId {
+  return (HEALTHLOG_SCORE_IDS as readonly string[]).includes(id);
+}
+
+/**
+ * The wire's `shortLabel` for a payload keyed by a metric or ring id: the
+ * score's short name, null for an id that is not a HealthLog score.
+ */
+export function scoreShortLabelOrNull(
+  id: string,
+  t: ShortTranslate,
+): string | null {
+  return isHealthLogScoreId(id) ? scoreShortLabel(id, t) : null;
 }
 
 /** Every slug `/insights/scores/<slug>` may answer to. */
