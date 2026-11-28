@@ -320,6 +320,12 @@ export interface HealthScoreReport {
    */
   compositionNotice?: ScoreCompositionNotice | null;
   restMode?: RestModeAnnotation | null;
+  /**
+   * 1.50 — the score's short name for a tile, from the glossary through the
+   * score registry (`scoreShortLabel`). Set by `GET /api/analytics`, worded in
+   * the reader's language; absent on the report other producers return.
+   */
+  shortLabel?: string;
 }
 
 /**

@@ -13,7 +13,7 @@ import { PATCH as patchHints } from "@/app/api/auth/me/dismissed-hints/route";
 
 import { callRoute, type RouteAuth } from "../kit/call-route";
 import { makeSession, makeUser } from "../kit/factories";
-import { getPrismaClient, truncateAllTables } from "./setup";
+import { getPrismaClient, switchSessionTo, truncateAllTables } from "./setup";
 
 const prisma = getPrismaClient();
 
@@ -82,5 +82,41 @@ describe("dismissed hints", () => {
     expect((await patch({ dismiss: ["ai-setup.<script>"] })).status).toBe(422);
     expect((await patch({})).status).toBe(422);
     expect(await listOn(phone)).toEqual([]);
+  });
+});
+
+describe("dismissed hints inside a managed profile", () => {
+  it("the guardian closes and reads the same list, their own", async () => {
+    const guardian = await makeUser();
+    const { createManagedProfile } =
+      await import("@/lib/managed-profiles/create");
+    const { profile } = await createManagedProfile({
+      creatorId: guardian.id,
+      displayName: "Managed record",
+      dateOfBirth: null,
+      locale: "en",
+      timezone: "UTC",
+      gender: null,
+    });
+    await prisma.user.update({
+      where: { id: guardian.id },
+      data: { dismissedHints: ["ai-setup"] },
+    });
+    const session = await makeSession(guardian);
+    await switchSessionTo(session.sessionId, profile.id);
+
+    const res = await patch({ dismiss: ["timeline-readiness"] }, session);
+    expect(res.status).toBe(200);
+    expect(res.data.dismissedHints).toEqual(["ai-setup", "timeline-readiness"]);
+
+    // The read side answers from the same row the write went to.
+    expect(await listOn(session)).toEqual(["ai-setup", "timeline-readiness"]);
+    const rows = await prisma.user.findMany({
+      where: { id: { in: [guardian.id, profile.id] } },
+      select: { id: true, dismissedHints: true },
+    });
+    const byId = new Map(rows.map((r) => [r.id, r.dismissedHints]));
+    expect(byId.get(guardian.id)).toEqual(["ai-setup", "timeline-readiness"]);
+    expect(byId.get(profile.id)).toEqual([]);
   });
 });
