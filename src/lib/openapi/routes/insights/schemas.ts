@@ -1585,7 +1585,11 @@ export const dashboardSnapshotResponse = z
             "v1.48.0 — the slot instants (ISO 8601, ascending) of the doses `scheduledToday` counts. Since v1.48.2 that excludes as-needed intakes and the pending doses of a medication paused, or a course ended, earlier in the day. The Today medications fact uses them to tell whether any dose was due yet (at or before now, or a candidate for one of them whose `availableFrom` has passed): before the first, with nothing taken, it names the next dose; otherwise it counts taken against the whole day's `scheduledToday`. Absent on a snapshot cached by an older server.",
           ),
         nextDueAt: z.string().nullable(),
-        nextDueOverdue: z.boolean(),
+        nextDueOverdue: z
+          .boolean()
+          .describe(
+            "True when the dose at `nextDueAt` is `overdue` by the dose resolver: past its on-time window, before its miss cutoff, nothing recorded on it. The same rule as `currentDose.state` and the medication read's `nextDueOverdue`; a dose inside its on-time window is `due`, not overdue.",
+          ),
         nextDueMedicationName: z.string().nullable(),
         nextDueMedicationId: z.string().nullable(),
         dueCandidates: z

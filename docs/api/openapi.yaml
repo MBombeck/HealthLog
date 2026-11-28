@@ -37060,8 +37060,9 @@ components:
             maxLength: 96
       description: Put one-time hints away (`dismiss`) or bring them back (`restore`). An id is a hint family
         (`timeline-readiness`, `ai-setup`, `ai-consent-request`, `correlation-seasonal`, `i18n-banner`,
-        `getting-started`) or `family.member` (`i18n-banner.fr`, `getting-started.<row>`). Restoring a family restores
-        its members too.
+        `getting-started`, `labs-changes`) or `family.member` (`i18n-banner.fr`, `getting-started.<row>`,
+        `labs-changes.<YYYY-MM-DD>` with the newest lab panel's day, so a new panel brings the hint back). Restoring a
+        family restores its members too.
     ShowNavCountsPatchRequest:
       type: object
       properties:
@@ -67575,23 +67576,26 @@ components:
           type: boolean
           description: v1.42.2 — whether the server sends dose reminders for this medication. See the `Medication` component.
         nextDueAt:
-          description: "Present on the READ paths only — the list and single GET compute it; the create / update responses return
+          description: Present on the READ paths only — the list and single GET compute it; the create / update responses return
             the stored row and omit it. v1.7.0 server-computed next due instant across all the medication's schedules
             (earliest `nextOccurrenceAfter`). Read-only — computed, not stored. NULL when no schedule has an upcoming
             slot (paused, one-shot in the past, `endsOn` crossed, every schedule PRN). v1.16.4 — when an unresolved
             slot's anchor has passed but the catch-up band is still open (`anchor < now <= overdueEnd`, current schedule
-            era), this carries THAT slot (a past instant) with `nextDueOverdue: true` instead of jumping to the next
-            future slot. The list GET is cached 60 s, so a 60 s staleness is accepted."
+            era), this carries THAT slot (a past instant) instead of jumping to the next future slot; `nextDueOverdue`
+            says whether it is still `due` or already `overdue`. The list GET is cached 60 s, so a 60 s staleness is
+            accepted.
           anyOf:
             - type: string
               format: date-time
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
         nextDueOverdue:
-          description: "Present on the READ paths only, alongside `nextDueAt`. v1.16.4 — true when `nextDueAt` is an OPEN overdue
-            slot: its anchor has passed, `now` is still inside the slot's catch-up band, and no taken / skipped /
-            auto-missed row resolves it. False for a regular future next-due (and when `nextDueAt` is null). Read-only —
-            computed, not stored."
+          description: "Present on the READ paths only, alongside `nextDueAt`. True when the dose at `nextDueAt` is `overdue` by
+            the dose resolver: past its on-time window (`currentDose.overdueSince`), before its miss cutoff, with no
+            taken / skipped / auto-missed row on it. The same rule as `currentDose.state`, the today rows and the
+            dashboard's `medsToday.nextDueOverdue`. Since v1.50.0 it stays false while the slot is inside its on-time
+            window even after its anchor has passed (that dose reads `due` everywhere); it used to turn true at the
+            anchor. False for a future next-due and when `nextDueAt` is null. Read-only — computed, not stored."
           type: boolean
         startsOn:
           anyOf:
@@ -79735,6 +79739,9 @@ components:
                 - "null"
             nextDueOverdue:
               type: boolean
+              description: "True when the dose at `nextDueAt` is `overdue` by the dose resolver: past its on-time window, before its
+                miss cutoff, nothing recorded on it. The same rule as `currentDose.state` and the medication read's
+                `nextDueOverdue`; a dose inside its on-time window is `due`, not overdue."
             nextDueMedicationName:
               type:
                 - string
@@ -113450,23 +113457,26 @@ components:
             Read-only — computed, not stored."
           type: boolean
         nextDueAt:
-          description: "Present on the READ paths only — the list and single GET compute it; the create / update responses return
+          description: Present on the READ paths only — the list and single GET compute it; the create / update responses return
             the stored row and omit it. v1.7.0 server-computed next due instant across all the medication's schedules
             (earliest `nextOccurrenceAfter`). Read-only — computed, not stored. NULL when no schedule has an upcoming
             slot (paused, one-shot in the past, `endsOn` crossed, every schedule PRN). v1.16.4 — when an unresolved
             slot's anchor has passed but the catch-up band is still open (`anchor < now <= overdueEnd`, current schedule
-            era), this carries THAT slot (a past instant) with `nextDueOverdue: true` instead of jumping to the next
-            future slot. The list GET is cached 60 s, so a 60 s staleness is accepted."
+            era), this carries THAT slot (a past instant) instead of jumping to the next future slot; `nextDueOverdue`
+            says whether it is still `due` or already `overdue`. The list GET is cached 60 s, so a 60 s staleness is
+            accepted.
           anyOf:
             - type: string
               format: date-time
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
         nextDueOverdue:
-          description: "Present on the READ paths only, alongside `nextDueAt`. v1.16.4 — true when `nextDueAt` is an OPEN overdue
-            slot: its anchor has passed, `now` is still inside the slot's catch-up band, and no taken / skipped /
-            auto-missed row resolves it. False for a regular future next-due (and when `nextDueAt` is null). Read-only —
-            computed, not stored."
+          description: "Present on the READ paths only, alongside `nextDueAt`. True when the dose at `nextDueAt` is `overdue` by
+            the dose resolver: past its on-time window (`currentDose.overdueSince`), before its miss cutoff, with no
+            taken / skipped / auto-missed row on it. The same rule as `currentDose.state`, the today rows and the
+            dashboard's `medsToday.nextDueOverdue`. Since v1.50.0 it stays false while the slot is inside its on-time
+            window even after its anchor has passed (that dose reads `due` everywhere); it used to turn true at the
+            anchor. False for a future next-due and when `nextDueAt` is null. Read-only — computed, not stored."
           type: boolean
         startsOn:
           anyOf:
