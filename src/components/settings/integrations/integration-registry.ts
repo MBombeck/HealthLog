@@ -35,6 +35,7 @@ import type {
 
 export const INTEGRATION_ICON: Record<OverviewKey, LucideIcon> = {
   "apple-health": HeartPulse,
+  "health-connect-app": Smartphone,
   withings: Scale,
   whoop: Activity,
   "google-health": Watch,
@@ -57,6 +58,7 @@ export const INTEGRATION_ICON: Record<OverviewKey, LucideIcon> = {
 /** The message key of each integration's name. */
 export const INTEGRATION_NAME_KEY: Record<OverviewKey, string> = {
   "apple-health": "settings.appleHealth.title",
+  "health-connect-app": "settings.healthConnectApp.name",
   withings: "settings.withings",
   whoop: "settings.whoop",
   "google-health": "settings.googleHealth",
@@ -79,6 +81,7 @@ export const INTEGRATION_NAME_KEY: Record<OverviewKey, string> = {
 /** What a source brings in, or where a channel delivers: one short line. */
 export const INTEGRATION_BRINGS_KEY: Record<OverviewKey, string> = {
   "apple-health": "settings.integrationList.brings.appleHealth",
+  "health-connect-app": "settings.integrationList.brings.healthConnectApp",
   withings: "settings.integrationList.brings.withings",
   whoop: "settings.integrationList.brings.whoop",
   "google-health": "settings.integrationList.brings.googleHealth",

@@ -131,6 +131,8 @@ const LEGIT_IDENTICAL = new Set<string>([
   "settings.integrations.oura.scope.items.vo2max",
   // Brand / product / proper nouns.
   "settings.googleHealth",
+  // The Android app's own name.
+  "settings.healthConnectApp.name",
   // Garmin's own names: the Body Battery score and the Personal API product,
   // which Garmin Connect shows under the same English name in every locale.
   "measurements.typeBodyBattery",
@@ -155,6 +157,7 @@ const LEGIT_IDENTICAL = new Set<string>([
   "settings.ai.providerChain.types.codex",
   "settings.ai.providerSelect.anthropic",
   "settings.sections.export.import.appleHealth.title",
+  "settings.sections.export.import.healthConnect.title",
   "settings.sections.sources.sourceLabels.APPLE_HEALTH",
   "settings.sections.sources.sourceLabels.GOOGLE_HEALTH",
   "settings.sections.sources.sourceLabels.HEALTH_CONNECT",

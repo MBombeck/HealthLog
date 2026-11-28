@@ -121,6 +121,9 @@ export async function loadIntegrationOverview(
       input.needsOwnCredentials = !sharedApp[key];
     } else if (key === "dawarich") {
       input.offered = environmentOn;
+    } else if (key === "health-connect-app") {
+      // A paired Android device is the whole setup; there is nothing short of it.
+      input.configured = input.connected;
     } else if (key === "health-connect-remote") {
       input.configured = folder !== null;
       input.paused = folder !== null && !folder.enabled;

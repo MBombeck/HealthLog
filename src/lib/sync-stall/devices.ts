@@ -45,6 +45,16 @@ export interface DeviceStallFacts {
 
 type Db = Pick<PrismaClient, "device" | "deviceHealthIngestHour">;
 
+/** The device platforms that deliver from a phone, and what each one feeds. */
+export const STALL_PLATFORMS = ["ios", "android"] as const;
+
+/** The connection a device's stall is told as. */
+export function stallSourceForPlatform(
+  platform: string,
+): "apple-health" | "health-connect-app" {
+  return platform === "android" ? "health-connect-app" : "apple-health";
+}
+
 /** One pass over every device that could have stalled. */
 export async function runDeviceStallPass(
   prisma: Db,
@@ -61,7 +71,8 @@ export async function runDeviceStallPass(
   // already cleared any flag; only the rest need a look.
   const devices = await prisma.device.findMany({
     where: {
-      platform: "ios",
+      // iPhones and the Android devices running HealthLog Sync: one rule.
+      platform: { in: [...STALL_PLATFORMS] },
       healthIngestAt: { not: null },
       OR: [
         { healthIngestAt: { lt: floorAgo } },

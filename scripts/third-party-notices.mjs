@@ -25,7 +25,7 @@
  *                      decision, recorded by running --write and reviewing
  *                      the diff.
  *   --write            Rewrite the generated sections of THIRD_PARTY_NOTICES.md.
- *   --bundle-pnpm OUT [--traced DIR ...]
+ *   --bundle-pnpm OUT --traced DIR [--traced DIR ...]
  *                      Write every shipped pnpm package with its licence
  *                      files to OUT. Runs in the image's builder stage. The
  *                      lockfile closure is what the code may need; DIR (the
@@ -636,17 +636,17 @@ async function main() {
       parse,
     );
     const tracedDirs = args("--traced");
-    if (tracedDirs.length > 0) {
-      const store = installedPnpmPackages(storeDir);
-      for (const dir of tracedDirs) {
-        if (!existsSync(dir)) fail([`--traced ${dir} does not exist.`]);
-        const result = withTraced(entries, installedManifests(dir), store);
-        entries = result.entries;
-        if (result.added.length > 0) {
-          console.log(
-            `Traced into ${dir} outside the production closure: ${result.added.join(", ")}`,
-          );
-        }
+    if (tracedDirs.length === 0)
+      fail(["--bundle-pnpm needs --traced <standalone output>."]);
+    const store = installedPnpmPackages(storeDir);
+    for (const dir of tracedDirs) {
+      if (!existsSync(dir)) fail([`--traced ${dir} does not exist.`]);
+      const result = withTraced(entries, installedManifests(dir), store);
+      entries = result.entries;
+      if (result.added.length > 0) {
+        console.log(
+          `Traced into ${dir} outside the production closure: ${result.added.join(", ")}`,
+        );
       }
     }
     const failures = policyFailures(entries.filter((e) => e.installed));

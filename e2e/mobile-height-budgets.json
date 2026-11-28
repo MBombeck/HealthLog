@@ -14,7 +14,7 @@
       "target": 2500
     },
     "/admin/system-status": {
-      "budget": 3800,
+      "budget": 3900,
       "target": 2200
     },
     "/settings/layout/dashboard": {
@@ -188,6 +188,10 @@
     "/admin/integrations": {
       "budget": 1200,
       "target": 1200
+    },
+    "/settings/export": {
+      "budget": 1500,
+      "target": 1500
     }
   }
 }

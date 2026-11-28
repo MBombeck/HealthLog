@@ -11,8 +11,11 @@
  *   - a series longer than the cap is stored at the cap;
  *   - the worker consumes its staged upload on success and on refusal, marks
  *     the job, and reports a damaged file by its code;
- *   - the shared reconcile leaves a running FIT job alone and fails a dead one.
+ *   - the shared reconcile leaves a running FIT job alone and fails a dead one;
+ *   - a file chosen again through the upload hand-off is answered as already
+ *     imported, by its bytes or by its session, and writes nothing.
  */
+import { createHash, randomUUID } from "node:crypto";
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -29,7 +32,14 @@ import {
   zipOne,
 } from "../fixtures/fit/build-fit";
 import { importFitUpload } from "@/lib/fit/import";
-import { runFitImport } from "@/lib/jobs/fit-import-worker";
+import {
+  FIT_IMPORT_PARSER_REVISION,
+  FIT_IMPORT_SEND_OPTIONS,
+  runFitImport,
+  type FitImportPayload,
+} from "@/lib/jobs/fit-import-worker";
+import { queueStagedImport } from "@/lib/import/staged-upload";
+import { fitFileOutcome } from "@/components/settings/import-panel/fit-batch";
 import { FIT_IMPORT_KIND, FIT_IMPORT_QUEUE } from "@/lib/jobs/fit-import-queue";
 import {
   _setWorkerPrismaForTests,
@@ -40,7 +50,8 @@ import { MAX_WORKOUT_HR_SAMPLES } from "@/lib/validations/workout";
 
 const bossMock = vi.hoisted(() => ({
   handle: null as null | {
-    getJobById: (queue: string, id: string) => Promise<unknown>;
+    getJobById?: (queue: string, id: string) => Promise<unknown>;
+    send?: (queue: string, payload: object) => Promise<string | null>;
   },
 }));
 vi.mock("@/lib/jobs/boss-instance", () => ({
@@ -403,5 +414,94 @@ describe("FIT import worker", () => {
     });
     expect(after.find((r) => r.id === live.id)!.status).toBe("parsing");
     expect(after.find((r) => r.id === dead.id)!.status).toBe("failed");
+  });
+});
+
+describe("FIT files chosen again", () => {
+  /** The hand-off `POST /api/import/fit` makes, with its own spec. */
+  const SPEC = {
+    kind: FIT_IMPORT_KIND,
+    parserRevision: FIT_IMPORT_PARSER_REVISION,
+    queue: FIT_IMPORT_QUEUE,
+    sendOptions: FIT_IMPORT_SEND_OPTIONS,
+    payload: ({
+      userId,
+      importJobId,
+      uploadPath,
+    }: FitImportPayload): FitImportPayload => ({
+      userId,
+      importJobId,
+      uploadPath,
+    }),
+  };
+
+  async function jobOutcome(jobId: string) {
+    const row = await getPrismaClient().importJob.findUniqueOrThrow({
+      where: { id: jobId },
+    });
+    return fitFileOutcome({
+      jobId: row.id,
+      status: row.status,
+      result: row.result as { imported?: number } | null,
+      failureReason: row.failureReason,
+    });
+  }
+
+  it("answers a repeat by its bytes or its session as already imported and writes nothing", async () => {
+    const sent: FitImportPayload[] = [];
+    bossMock.handle = {
+      // The worker hands follow-up work to other queues; only the import
+      // queue's sends are uploads.
+      send: async (queue, payload) => {
+        if (queue === FIT_IMPORT_QUEUE) sent.push(payload as FitImportPayload);
+        return `boss-${sent.length}`;
+      },
+    };
+    const choose = async (bytes: Uint8Array) => {
+      const filePath = join(
+        scratch,
+        `healthlog-fit-import-${randomUUID()}.bin`,
+      );
+      writeFileSync(filePath, bytes);
+      const queued = await queueStagedImport(SPEC, {
+        userId: USER_ID,
+        filePath,
+        bytes: bytes.length,
+        sha256: createHash("sha256").update(bytes).digest("hex"),
+      });
+      return { queued, filePath };
+    };
+    const bare = buildWatchActivity({ start: START, seconds: 300 });
+
+    const first = await choose(bare);
+    expect(first.queued.outcome).toBe("queued");
+    await runFitImport(sent[0]!);
+    const firstId = (first.queued as { jobId: string }).jobId;
+    expect(await jobOutcome(firstId)).toEqual({ status: "imported" });
+
+    // The same bytes: the earlier job answers, nothing is queued.
+    const same = await choose(bare);
+    expect(same.queued).toEqual({
+      outcome: "idempotent",
+      jobId: firstId,
+      status: "done",
+    });
+    expect(existsSync(same.filePath)).toBe(false);
+    expect(sent).toHaveLength(1);
+
+    // The same session zipped: a job of its own that writes nothing.
+    const zipped = await choose(zipOne("1_ACTIVITY.fit", bare));
+    expect(zipped.queued.outcome).toBe("queued");
+    await runFitImport(sent[1]!);
+    expect(
+      await jobOutcome((zipped.queued as { jobId: string }).jobId),
+    ).toEqual({ status: "duplicate" });
+
+    expect(await workouts()).toHaveLength(1);
+    expect(
+      await getPrismaClient().importJob.count({
+        where: { userId: USER_ID, kind: FIT_IMPORT_KIND },
+      }),
+    ).toBe(2);
   });
 });

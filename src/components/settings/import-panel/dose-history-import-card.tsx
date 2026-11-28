@@ -17,18 +17,15 @@
  * tick here either and the skip reasons are grouped with a count rather than
  * repeated per row.
  */
-import { useId, useRef, useState } from "react";
+import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Loader2, PillBottle, Upload } from "lucide-react";
+import { Loader2, PillBottle } from "lucide-react";
 
 import {
   IntakeImportResultView,
   type IntakeImportResultState,
 } from "@/components/medications/intake-import-result";
 import { Button } from "@/components/ui/button";
-import { SettingsCardActions } from "@/components/settings/_card-actions";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
 import {
@@ -42,9 +39,8 @@ import {
   DoseHistoryVerdictView,
   type DoseHistoryFileVerdict,
 } from "./dose-history-verdict";
-import { ImportCardShell } from "./import-card-shell";
-import { MAX_PASTE_CHARS } from "./constants";
-import { FileInput } from "@/components/ui/file-picker";
+import { ImportSource } from "./import-card-shell";
+import { ImportErrorLine, ImportPasteBody } from "./import-paste";
 
 interface DoseHistoryKickoff {
   dryRun: boolean;
@@ -108,12 +104,11 @@ function importFailureKey(err: unknown): string {
     : "settings.sections.export.import.doseHistory.failed";
 }
 
-export function DoseHistoryImportCard() {
+export function DoseHistoryImportSource() {
   const { t } = useTranslations();
   const fatalMessageFor = useFatalMessage();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const textareaId = useId();
   const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
 
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -121,20 +116,6 @@ export function DoseHistoryImportCard() {
   const [verdict, setVerdict] = useState<DoseHistoryFileVerdict | null>(null);
   const [previewOnly, setPreviewOnly] = useState(false);
   const [outcome, setOutcome] = useState<IntakeImportResultState | null>(null);
-
-  async function onFileChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-    setError(null);
-    setVerdict(null);
-    setOutcome(null);
-    try {
-      setText(await file.text());
-    } catch {
-      setError(t("settings.sections.export.import.doseHistory.readFailed"));
-    }
-  }
 
   async function send(dryRun: boolean) {
     setError(null);
@@ -217,111 +198,82 @@ export function DoseHistoryImportCard() {
     }
   }
 
+  const disabled = busy || text.trim().length === 0;
   return (
-    <ImportCardShell
+    <ImportSource
       testId="import-card-dose-history"
       anchor="import-dose-history"
       icon={PillBottle}
       title={t("settings.sections.export.import.doseHistory.title")}
-      description={t("settings.sections.export.import.doseHistory.description")}
+      info={[
+        t("settings.sections.export.import.doseHistory.description"),
+        t("settings.sections.export.import.doseHistory.detail"),
+      ]}
+      meta={t("settings.sections.export.import.doseHistory.rowMeta")}
+      status={busy ? "running" : error ? "failed" : null}
+      open={open}
+      onOpenChange={setOpen}
+      chooseTestId="import-choose-dose-history"
+      footer={
+        <>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={disabled}
+            onClick={() => void send(true)}
+            data-testid="import-dose-history-preview"
+          >
+            {t("settings.sections.export.import.doseHistory.preview")}
+          </Button>
+          <Button
+            type="button"
+            disabled={disabled}
+            onClick={() => void send(false)}
+            data-testid="import-action-dose-history"
+          >
+            {busy ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+            ) : null}
+            {t("settings.sections.export.import.doseHistory.import")}
+          </Button>
+        </>
+      }
     >
-      <p className="text-sm">
-        {t("settings.sections.export.import.doseHistory.detail")}
-      </p>
-
-      <div className="space-y-1.5">
-        <Label htmlFor={textareaId} className="text-xs">
-          {t("settings.sections.export.import.doseHistory.pasteLabel")}
-        </Label>
-        <Textarea
-          id={textareaId}
-          data-testid="import-dose-history-textarea"
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-          rows={5}
-          maxLength={MAX_PASTE_CHARS}
-          spellCheck={false}
-          placeholder="Date,Scheduled Date,Medication,…"
-          className="font-mono sm:pointer-fine:text-xs"
-        />
-        <p className="text-muted-foreground text-right text-xs tabular-nums">
-          {t("settings.sections.export.import.charCount", {
-            used: text.length,
-            max: MAX_PASTE_CHARS,
-          })}
-        </p>
-      </div>
-
-      <FileInput
-        ref={fileInputRef}
+      <ImportPasteBody
+        slug="dose-history"
+        fileMeta={t("settings.sections.export.import.doseHistory.fileMeta")}
         accept=".csv,.json,text/csv,application/json"
-        className="sr-only"
-        aria-label={t(
+        fileInputLabel={t(
           "settings.sections.export.import.doseHistory.fileInputLabel",
         )}
-        onChange={onFileChange}
+        placeholder="Date,Scheduled Date,Medication,…"
+        text={text}
+        onTextChange={(next) => {
+          setText(next);
+          setError(null);
+          setVerdict(null);
+          setOutcome(null);
+        }}
+        onReadFailed={() =>
+          setError(t("settings.sections.export.import.doseHistory.readFailed"))
+        }
+        guideTitle={t(
+          "settings.sections.export.import.doseHistory.columnsHeading",
+        )}
+        guide={<DoseHistoryColumnRulings />}
+        status={
+          <>
+            {verdict && shouldShowDoseHistoryVerdict(outcome) && (
+              <DoseHistoryVerdictView
+                verdict={verdict}
+                previewOnly={previewOnly}
+              />
+            )}
+            {outcome && <IntakeImportResultView result={outcome} />}
+            {error && <ImportErrorLine>{error}</ImportErrorLine>}
+          </>
+        }
       />
-
-      <DoseHistoryColumnRulings />
-
-      <div aria-live="polite" className="space-y-2">
-        {verdict && shouldShowDoseHistoryVerdict(outcome) && (
-          <DoseHistoryVerdictView verdict={verdict} previewOnly={previewOnly} />
-        )}
-        {outcome && <IntakeImportResultView result={outcome} />}
-        {error && (
-          <p
-            role="alert"
-            className="text-destructive flex items-start gap-2 text-sm"
-          >
-            <AlertCircle
-              className="mt-0.5 h-3.5 w-3.5 shrink-0"
-              aria-hidden="true"
-            />
-            <span>{error}</span>
-          </p>
-        )}
-      </div>
-
-      <SettingsCardActions className="mt-auto">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => fileInputRef.current?.click()}
-          data-testid="import-dose-history-choose-file"
-        >
-          <Upload className="h-3.5 w-3.5" />
-          {t("settings.sections.export.import.doseHistory.uploadFile")}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={busy || text.trim().length === 0}
-          onClick={() => void send(true)}
-          data-testid="import-dose-history-preview"
-        >
-          {busy && (
-            <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-          )}
-          {t("settings.sections.export.import.doseHistory.preview")}
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          disabled={busy || text.trim().length === 0}
-          onClick={() => void send(false)}
-          data-testid="import-action-dose-history"
-        >
-          {busy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <PillBottle className="h-3.5 w-3.5" />
-          )}
-          {t("settings.sections.export.import.doseHistory.import")}
-        </Button>
-      </SettingsCardActions>
-    </ImportCardShell>
+    </ImportSource>
   );
 }

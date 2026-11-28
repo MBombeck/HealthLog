@@ -115,7 +115,7 @@ const ALLOWED: Record<string, string> = {
     "Cross-source merge probe for one posted sleep segment: SLEEP_DURATION in a ±tolerance window around its end.",
   "lib/targets/build-response.ts::{ in: recentTypes":
     "Thirty days of weight, blood pressure, resting heart rate, body fat and steps (drained to one row per day). PULSE is filtered out of `recentTypes` and folds in SQL.",
-  "lib/import/health-connect/import.ts::{ in: spotTypes":
+  "lib/import/health-connect/sink.ts::{ in: spotTypes":
     "The Health Connect import's same-reading check: the spot types of one 500-row batch (weight, blood pressure, vitals) in that batch's time window, ±2 s. Heart rate and sleep never take the check.",
   'lib/analytics/intraday-pulse-io.ts::"PULSE"':
     "One local day of PULSE `stats:` rows only (`externalId` starts with `stats:`): uploaded ten-minute buckets and folded hours, at most 144 + 24 a day per source. The day's raw readings fold in SQL (`readLocalDayMinuteBuckets`).",

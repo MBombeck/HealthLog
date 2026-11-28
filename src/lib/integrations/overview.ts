@@ -26,6 +26,7 @@ import type {
 /** Data sources, in the order the list shows them. */
 export const OVERVIEW_SOURCE_KEYS = [
   "apple-health",
+  "health-connect-app",
   "withings",
   "whoop",
   "google-health",

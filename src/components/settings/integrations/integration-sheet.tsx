@@ -50,6 +50,7 @@ import {
 import { queryKeys } from "@/lib/query-keys";
 
 import { AppleHealthCard } from "./apple-health-card";
+import { HealthConnectAppConnection } from "./health-connect-app-connection";
 import { DawarichCard } from "./dawarich-card";
 import { DocumentSourcesCard } from "./document-sources-card";
 import { GarminCard } from "./garmin-card";
@@ -360,6 +361,7 @@ function IntegrationController({
   const sourceWithEnvelope =
     item.group === "source" &&
     item.key !== "apple-health" &&
+    item.key !== "health-connect-app" &&
     item.key !== "document-sources";
   const { data: envelope } = useIntegrationStatuses(
     isAuthenticated && sourceWithEnvelope,
@@ -424,6 +426,8 @@ function IntegrationController({
           </SheetCardContext.Provider>
         </>
       );
+    case "health-connect-app":
+      return <HealthConnectAppConnection />;
     case "document-sources":
       return <DocumentSourcesCard />;
     case "telegram":

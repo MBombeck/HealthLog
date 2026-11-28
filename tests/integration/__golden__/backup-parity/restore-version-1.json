@@ -1162,6 +1162,8 @@
       "fullName": null,
       "insurerName": null,
       "insuranceNumberEncrypted": null,
+      "insuranceNumberCountry": null,
+      "insuranceGroupNumber": null,
       "insurerIkNumber": null
     },
     "AppSettings": {
@@ -1299,6 +1301,8 @@
       "insurerName": null,
       "insuranceNumber": null,
       "insuranceNumberEncrypted": null,
+      "insuranceNumberCountry": null,
+      "insuranceGroupNumber": null,
       "insurerIkNumber": null,
       "lastReportPracticeName": null,
       "avatarBytes": null,

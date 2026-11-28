@@ -54,6 +54,8 @@ const NOT_AN_ONBOARDING_SOURCE: Record<string, string> = {
     "movement context for the environment module, not a source of readings",
   "health-connect-remote":
     "a second way in for the Health Connect export, reached through the Health Connect answer and set up on its import card",
+  "health-connect-app":
+    "the Android sync app, an early preview still in testing; it pairs from its own row under Integrations, not from onboarding",
 };
 
 describe("first-result targets", () => {

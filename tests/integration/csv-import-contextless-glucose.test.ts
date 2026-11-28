@@ -112,7 +112,7 @@ describe("POST /api/import/csv — contextless glucose (real Postgres)", () => {
     // Derived from the shared factor rather than pinned, for the same reason
     // as below: a literal here re-pins whichever copy of the conversion the
     // import path happened to use when it was written.
-    expect(rows[0].value).toBeCloseTo(5.3 * MGDL_PER_MMOL, 3);
+    expect(rows[0].value).toBe(Math.round(5.3 * MGDL_PER_MMOL * 10) / 10);
     expect(rows[0].externalId).toBe("sensor-1");
     expect(rows[0].measuredAt.toISOString()).toBe("2024-04-03T02:15:00.000Z");
   });
@@ -145,7 +145,7 @@ describe("POST /api/import/csv — contextless glucose (real Postgres)", () => {
     // Derived, not pinned: this carried the import path's own copy of the
     // conversion factor, so unifying the two conversions left it asserting a
     // number the code no longer produces.
-    expect(rows[0].value).toBeCloseTo(5.9 * MGDL_PER_MMOL, 3);
+    expect(rows[0].value).toBe(Math.round(5.9 * MGDL_PER_MMOL * 10) / 10);
   });
 
   it("keeps a named context, and still refuses one that is not in the enum", async () => {

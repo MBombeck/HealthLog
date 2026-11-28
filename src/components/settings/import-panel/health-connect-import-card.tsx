@@ -7,25 +7,32 @@
  * background import through `GET /api/import/health-connect-export/status`,
  * which answers the account's latest job, so the outcome is still there
  * after a reload. Health Connect only exports to a cloud storage app, never
- * to the phone's own storage; the card says so up front, because that is
- * where people get stuck.
+ * to the phone's own storage; the (i) says so, because that is
+ * where people get stuck. Fetching the same export from a WebDAV folder is
+ * a connection under Settings › Integrations; the sheet has a row to it.
  */
-import { useCallback, useId, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Loader2, Smartphone, Upload } from "lucide-react";
+import { Smartphone } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { SettingsCardActions } from "@/components/settings/_card-actions";
-import { WrittenOutcomeLine } from "@/components/outcome/written-outcome-line";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
+import { WrittenOutcomeLine } from "@/components/outcome/written-outcome-line";
+import { classifyWrittenOutcome } from "@/lib/outcome/written-outcome";
 import { useTranslations } from "@/lib/i18n/context";
 import { MEASUREMENT_TYPE_LABEL_KEYS } from "@/lib/measurements/type-label-keys";
-import { classifyWrittenOutcome } from "@/lib/outcome/written-outcome";
 import { queryKeys } from "@/lib/query-keys";
-import { cn } from "@/lib/utils";
 import type { MeasurementType } from "@/generated/prisma/client";
-import { ImportCardShell, ImportStatusRegion } from "./import-card-shell";
-import { FileInput } from "@/components/ui/file-picker";
+import { ListGroup, ListItem } from "@/components/ui/list-row";
+import {
+  ImportDetails,
+  ImportPickerRow,
+  ImportSource,
+  useFinishedJobMeta,
+} from "./import-card-shell";
+
+/** The folder source's sheet on the integrations page. */
+const HEALTH_CONNECT_FOLDER_HREF =
+  "/settings/integrations#health-connect-remote";
 
 const TERMINAL_STATES: readonly string[] = ["done", "failed"];
 
@@ -51,6 +58,7 @@ export interface HealthConnectJob {
     skipped?: Record<string, number>;
   } | null;
   failureReason: string | null;
+  completedAt?: string | null;
 }
 
 /** The failure code at the front of a worker reason, when there is one. */
@@ -108,14 +116,14 @@ export function summarizeHealthConnectResult(
   };
 }
 
-export function HealthConnectImportCard() {
+export function HealthConnectImportSource() {
   const { t } = useTranslations();
+  const finishedMeta = useFinishedJobMeta();
+  const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [dragActive, setDragActive] = useState(false);
-  const dropDescId = useId();
 
   const statusQuery = useQuery({
     queryKey: queryKeys.healthConnectImportStatus(),
@@ -192,210 +200,145 @@ export function HealthConnectImportCard() {
     return t(`settings.sections.export.import.healthConnect.failure.${kind}`);
   })();
 
+  // The picker row's meta says where things stand; with nothing running it
+  // says what the row takes.
+  const pickerMeta: React.ReactNode =
+    uploadError || isFailed ? (
+      <span
+        data-testid="import-health-connect-error"
+        role="alert"
+        className="text-destructive"
+      >
+        {uploadError ??
+          failureText ??
+          t("settings.sections.export.import.healthConnect.uploadFailed")}
+      </span>
+    ) : uploading ? (
+      t("settings.sections.export.import.healthConnect.uploading")
+    ) : isRunning ? (
+      <span data-testid="import-health-connect-progress">
+        {typeof job?.progress?.rowsUpserted === "number"
+          ? t("settings.sections.export.import.healthConnect.rowsSoFar", {
+              count: job.progress.rowsUpserted,
+            })
+          : t(
+              `settings.sections.export.import.healthConnect.phase.${job?.status ?? "queued"}`,
+            )}
+      </span>
+    ) : isDone ? (
+      <WrittenOutcomeLine
+        outcome={classifyWrittenOutcome({
+          written: summary.written,
+          skipped: summary.refused,
+        })}
+        message={
+          summary.written > 0
+            ? t("settings.sections.export.import.healthConnect.doneSummary", {
+                count: summary.written,
+              })
+            : t("settings.sections.export.import.healthConnect.doneNothing")
+        }
+        testId="import-health-connect-result"
+      />
+    ) : (
+      t("settings.sections.export.import.healthConnect.fileHint")
+    );
+  const workouts = job?.result?.workouts?.inserted ?? 0;
+  const notes = isDone
+    ? [
+        summary.leftOutRecords > 0 &&
+          t("settings.sections.export.import.healthConnect.leftOutConnected", {
+            count: summary.leftOutRecords,
+          }),
+        job?.result?.nutrients?.moduleOff &&
+          t("settings.sections.export.import.healthConnect.nutrientsModuleOff"),
+        job?.result?.cycle?.moduleOff &&
+          t("settings.sections.export.import.healthConnect.cycleModuleOff"),
+      ].filter((note): note is string => typeof note === "string")
+    : [];
+
+  const rowMeta = uploading
+    ? t("settings.sections.export.import.healthConnect.uploading")
+    : isRunning
+      ? t(
+          `settings.sections.export.import.healthConnect.phase.${job?.status ?? "queued"}`,
+        )
+      : (finishedMeta(job ? { ...job, written: summary.written } : null) ??
+        t("settings.sections.export.import.healthConnect.fileHint"));
+
   return (
-    <ImportCardShell
+    <ImportSource
       testId="import-card-health-connect"
       anchor="import-health-connect"
       icon={Smartphone}
       title={t("settings.sections.export.import.healthConnect.title")}
-      description={t(
-        "settings.sections.export.import.healthConnect.description",
-      )}
-    >
-      <ol className="text-foreground list-decimal space-y-1 pl-4 text-xs">
-        <li>
-          {t("settings.sections.export.import.healthConnect.steps.export")}
-        </li>
-        <li>
-          {t("settings.sections.export.import.healthConnect.steps.cloud")}
-        </li>
-        <li>
-          {t("settings.sections.export.import.healthConnect.steps.upload")}
-        </li>
-      </ol>
-
-      <div
-        role="button"
-        tabIndex={0}
-        aria-describedby={dropDescId}
-        aria-disabled={busy}
-        onClick={() => !busy && fileInputRef.current?.click()}
-        onKeyDown={(e) => {
-          if ((e.key === "Enter" || e.key === " ") && !busy) {
-            e.preventDefault();
-            fileInputRef.current?.click();
-          }
-        }}
-        onDragOver={(e) => {
-          e.preventDefault();
-          if (!busy) setDragActive(true);
-        }}
-        onDragLeave={() => setDragActive(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragActive(false);
-          const file = e.dataTransfer.files?.[0];
-          if (file && !busy) void upload(file);
-        }}
-        className={cn(
-          "border-border bg-muted/20 hover:bg-muted/40 focus-visible:ring-ring/50 flex min-h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed p-4 text-center transition-colors focus-visible:ring-2 focus-visible:outline-none",
-          dragActive && "border-primary bg-primary/5",
-          busy && "pointer-events-none opacity-60",
-        )}
-      >
-        <Upload className="text-muted-foreground h-5 w-5" aria-hidden="true" />
-        <span className="text-foreground text-sm font-medium">
-          {t("settings.sections.export.import.healthConnect.dropLabel")}
-        </span>
-        <span id={dropDescId} className="text-muted-foreground text-xs">
-          {t("settings.sections.export.import.healthConnect.dropHint")}
-        </span>
-      </div>
-      <FileInput
-        ref={fileInputRef}
-        accept=".zip,application/zip"
-        className="sr-only"
-        aria-label={t(
+      info={[
+        t("settings.sections.export.import.healthConnect.description"),
+        t("settings.sections.export.import.healthConnect.steps.export"),
+        t("settings.sections.export.import.healthConnect.steps.cloud"),
+        t("settings.sections.export.import.healthConnect.steps.upload"),
+        t("settings.sections.export.import.healthConnect.privacyNote"),
+      ]}
+      meta={rowMeta}
+      status={busy ? "running" : uploadError || isFailed ? "failed" : null}
+      open={open}
+      onOpenChange={setOpen}
+      query={statusQuery}
+      chooseTestId="import-choose-health-connect"
+      fileInputRef={fileInputRef}
+      file={{
+        accept: ".zip,application/zip",
+        inputLabel: t(
           "settings.sections.export.import.healthConnect.fileInputLabel",
-        )}
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) void upload(file);
-          e.target.value = "";
-        }}
-      />
-
-      <p className="text-muted-foreground text-xs">
-        {t("settings.sections.export.import.healthConnect.privacyNote")}
-      </p>
-
-      <ImportStatusRegion query={statusQuery}>
-        {uploading && (
-          <p className="text-muted-foreground flex items-center gap-2 text-xs">
-            <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-            {t("settings.sections.export.import.healthConnect.uploading")}
-          </p>
-        )}
-        {isRunning && (
-          <div
-            data-testid="import-health-connect-progress"
-            className="space-y-1"
-          >
-            <p className="text-muted-foreground flex items-center gap-2 text-xs">
-              <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-              {t(
-                `settings.sections.export.import.healthConnect.phase.${job?.status ?? "queued"}`,
-              )}
-            </p>
-            {typeof job?.progress?.rowsUpserted === "number" && (
-              <p className="text-muted-foreground text-xs">
-                {t("settings.sections.export.import.healthConnect.rowsSoFar", {
-                  count: job.progress.rowsUpserted,
-                })}
-              </p>
-            )}
-          </div>
-        )}
-        {isDone && (
-          <WrittenOutcomeLine
-            outcome={classifyWrittenOutcome({
-              written: summary.written,
-              skipped: summary.refused,
-            })}
-            message={
-              summary.written > 0
-                ? t(
-                    "settings.sections.export.import.healthConnect.doneSummary",
-                    { count: summary.written },
-                  )
-                : t("settings.sections.export.import.healthConnect.doneNothing")
-            }
-            testId="import-health-connect-result"
+        ),
+        onFiles: ([file]) => void upload(file!),
+      }}
+    >
+      <ListGroup aria-live="polite">
+        <ImportPickerRow
+          busy={busy}
+          inputRef={fileInputRef}
+          meta={pickerMeta}
+          actionTestId="import-action-health-connect"
+          onFiles={([file]) => void upload(file!)}
+        />
+        {isDone &&
+          summary.types.map(({ type, written }) => (
+            <ListItem
+              key={type}
+              data-testid="import-health-connect-type"
+              title={
+                MEASUREMENT_TYPE_LABEL_KEYS[type as MeasurementType]
+                  ? t(MEASUREMENT_TYPE_LABEL_KEYS[type as MeasurementType])
+                  : type
+              }
+              trailing={written}
+            />
+          ))}
+        {isDone && workouts > 0 && (
+          <ListItem
+            title={t("settings.sections.export.import.healthConnect.workouts")}
+            trailing={workouts}
           />
         )}
-        {isDone && summary.types.length > 0 && (
-          <ul
-            data-testid="import-health-connect-types"
-            className="text-muted-foreground space-y-0.5 text-xs"
-          >
-            {summary.types.map(({ type, written }) => (
-              <li key={type} className="flex justify-between gap-2">
-                <span className="text-foreground">
-                  {MEASUREMENT_TYPE_LABEL_KEYS[type as MeasurementType]
-                    ? t(MEASUREMENT_TYPE_LABEL_KEYS[type as MeasurementType])
-                    : type}
-                </span>
-                <span className="tabular-nums">{written}</span>
-              </li>
-            ))}
-            {(job?.result?.workouts?.inserted ?? 0) > 0 && (
-              <li className="flex justify-between gap-2">
-                <span className="text-foreground">
-                  {t("settings.sections.export.import.healthConnect.workouts")}
-                </span>
-                <span className="tabular-nums">
-                  {job?.result?.workouts?.inserted}
-                </span>
-              </li>
-            )}
-          </ul>
-        )}
-        {isDone && summary.leftOutRecords > 0 && (
-          <p className="text-muted-foreground text-xs">
-            {t(
-              "settings.sections.export.import.healthConnect.leftOutConnected",
-              { count: summary.leftOutRecords },
-            )}
-          </p>
-        )}
-        {isDone && job?.result?.nutrients?.moduleOff && (
-          <p className="text-muted-foreground text-xs">
-            {t(
-              "settings.sections.export.import.healthConnect.nutrientsModuleOff",
-            )}
-          </p>
-        )}
-        {isDone && job?.result?.cycle?.moduleOff && (
-          <p className="text-muted-foreground text-xs">
-            {t("settings.sections.export.import.healthConnect.cycleModuleOff")}
-          </p>
-        )}
-        {(isFailed || uploadError) && (
-          <p
-            data-testid="import-health-connect-error"
-            role="alert"
-            className="text-destructive flex items-start gap-2 text-sm"
-          >
-            <AlertCircle
-              className="mt-0.5 h-3.5 w-3.5 shrink-0"
-              aria-hidden="true"
-            />
-            <span>
-              {uploadError ??
-                failureText ??
-                t("settings.sections.export.import.healthConnect.uploadFailed")}
-            </span>
-          </p>
-        )}
-      </ImportStatusRegion>
-
-      <SettingsCardActions className="mt-auto">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={busy}
-          onClick={() => fileInputRef.current?.click()}
-          data-testid="import-action-health-connect"
-        >
-          {busy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <Upload className="h-3.5 w-3.5" />
-          )}
-          {t("settings.sections.export.import.healthConnect.choose")}
-        </Button>
-      </SettingsCardActions>
-    </ImportCardShell>
+      </ListGroup>
+      {notes.length > 0 && (
+        <ImportDetails>
+          {notes.map((note) => (
+            <p key={note}>{note}</p>
+          ))}
+        </ImportDetails>
+      )}
+      {/* The same export fetched from a WebDAV folder on a schedule is a
+          connection, set up under Integrations; this row leads there. */}
+      <ListGroup>
+        <ListItem
+          data-testid="import-health-connect-folder"
+          href={HEALTH_CONNECT_FOLDER_HREF}
+          title={t("settings.sections.export.import.healthConnect.folderRow")}
+          meta={t("settings.sections.export.import.healthConnect.folderMeta")}
+        />
+      </ListGroup>
+    </ImportSource>
   );
 }

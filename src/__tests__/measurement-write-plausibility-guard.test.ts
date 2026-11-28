@@ -88,10 +88,10 @@ const WRITERS: Record<string, Disposition> = {
   "lib/measurements/import-apple-health-export-writer.ts": {
     kind: "validator",
   },
-  // v1.42 — the Health Connect export import. Spot rows go through the bulk
-  // insert after `validateMeasurementRange`; day totals through the gated
-  // reconcile seam.
-  "lib/import/health-connect/import.ts": { kind: "validator" },
+  // v1.42 — the Health Connect write path, shared by the export import and
+  // the live sync since v1.50. Spot rows go through the bulk insert after
+  // `validateMeasurementRange`; day totals through the gated reconcile seam.
+  "lib/import/health-connect/sink.ts": { kind: "validator" },
   "lib/import/file-import/write-measurements.ts": { kind: "validator" },
   "lib/import/csv-write.ts": {
     kind: "upstream",
