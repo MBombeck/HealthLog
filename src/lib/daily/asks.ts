@@ -140,6 +140,9 @@ export type DailyAskTier = (typeof DAILY_ASK_TIERS)[number];
 
 /** The admin questions an ask can carry beside the digest's own kinds. */
 export const ADMIN_ASK_KINDS = ["push_relay", "server_setup"] as const;
+
+/** The server setup ask's item key, and the key its "later" sets aside. */
+const SERVER_SETUP_ASK_KEY = "server_setup:notice";
 export type AdminAskKind = (typeof ADMIN_ASK_KINDS)[number];
 
 /** The digest kinds that can ask. Everything else is information. */
@@ -350,7 +353,9 @@ export function resolveDailyAsks(input: ResolveDailyAsksInput): DailyAsk[] {
 
   // The admin question first: inside the decision tier it is the one that
   // holds up the server for everyone (reminders on the iPhone, Wallet).
-  if (input.adminAsk) push(input.adminAsk);
+  if (input.adminAsk && !input.snoozedItemKeys.has(input.adminAsk.itemKey)) {
+    push(input.adminAsk);
+  }
   for (const candidate of input.candidates) {
     const tier = askTier(candidate, input.now);
     if (tier === null) continue;
@@ -396,15 +401,21 @@ type Translate = (
 /**
  * The one admin question, worded: the unfinished server setup first, else
  * the open push-relay question. The setup is a reminder: Set up, or Later,
- * which sets the notice aside as the admin start page does. The relay is a
- * consent: No and Yes, the answers the admin start page records.
+ * which sets it aside for the rest of the local day like every other ask
+ * (`ask.later`), so it comes back tomorrow and the relay question behind it
+ * is never lost. The relay is a consent: No and Yes, the answers the admin
+ * start page records.
  */
-export function buildAdminAsk(kind: AdminAskKind, t: Translate): DailyAsk {
+export function buildAdminAsk(
+  kind: AdminAskKind,
+  t: Translate,
+  today: string,
+): DailyAsk {
   if (kind === "server_setup") {
     return {
       kind,
       tier: "decision",
-      itemKey: "server_setup:notice",
+      itemKey: SERVER_SETUP_ASK_KEY,
       title: t("daily.ask.setupTitle"),
       body: t("daily.ask.setupMeta"),
       subject: null,
@@ -414,7 +425,10 @@ export function buildAdminAsk(kind: AdminAskKind, t: Translate): DailyAsk {
           intent: ASK_INTENT.setupOpen,
           href: "/onboarding/server",
         },
-        { labelKey: "daily.action.later", intent: ASK_INTENT.noticeLater },
+        {
+          labelKey: "daily.action.later",
+          intent: `${ASK_INTENT.later}:${askLaterKey(today, SERVER_SETUP_ASK_KEY)}`,
+        },
       ],
       learnMore: null,
     };
@@ -518,7 +532,9 @@ export function asksFromDigest(
             : undefined,
       };
     }),
-    adminAsk: input.adminAsk ? buildAdminAsk(input.adminAsk, t) : null,
+    adminAsk: input.adminAsk
+      ? buildAdminAsk(input.adminAsk, t, input.todayLocalDate)
+      : null,
     enabledKinds: input.enabledHeroItemKinds,
     snoozedItemKeys: input.snoozedDoseItemKeys ?? new Set(),
     today: input.todayLocalDate,

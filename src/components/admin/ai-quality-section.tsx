@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * `<AiQualitySection>` — admin AI quality preview (v1.4.16 phase B5e).
+ * `<AiQualitySection>` — admin AI quality preview (v1.4.16).
  *
  * Surfaces the aggregator-written helpful-rate per (severity x
  * provider x prompt-version) bucket. The pg-boss `feedback-aggregator`

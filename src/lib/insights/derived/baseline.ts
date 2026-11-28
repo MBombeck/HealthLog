@@ -2,8 +2,8 @@
  * v1.10.0 — the FLAGSHIP shared baseline engine (catalogue metric #1:
  * personal typical-range / vitals baseline).
  *
- * `computeVitalsBaseline(userId, profile, opts)` is the one real metric
- * Wave 1 ships end-to-end. It returns the band of values that is "normal
+ * `computeVitalsBaseline(userId, profile, opts)` is the one metric
+ * implemented end-to-end. It returns the band of values that is "normal
  * for you" for a single vital, computed as a rolling personal baseline:
  *
  *   - **center** = median of the per-day means over the window. The DAY
@@ -72,6 +72,17 @@ const DEFAULT_MAD_K = 3;
 const MAD_SIGMA_SCALE = 1.4826;
 /** Default trailing window (days). Apple establishes the band after ≥7. */
 const DEFAULT_WINDOW_DAYS = 30;
+/** Fewest reading days a band is built from. */
+export const BASELINE_MIN_HISTORY_DAYS = 7;
+/**
+ * How far back the default band reaches for a metric that is logged, but not
+ * every day. Blood pressure from a cuff, weight from a scale used on
+ * weekends: a few readings a month is the normal rhythm, and a trailing
+ * 30-day window then never holds seven reading days, however many years of
+ * readings exist. Such a metric is banded from its newest
+ * `DEFAULT_WINDOW_DAYS` reading days within this lookback instead.
+ */
+export const BASELINE_SPARSE_LOOKBACK_DAYS = 365;
 
 /** The successful `value` payload for a vitals baseline. */
 export interface VitalsBaselineValue {
@@ -184,7 +195,13 @@ export async function loadBaselineProfile(
 export interface VitalsBaselineOpts {
   /** Which vital to baseline. */
   type: MeasurementType;
-  /** Trailing window in days. Defaults to 30. */
+  /**
+   * Trailing window in days. Defaults to 30. Left unset, a metric with a
+   * reading in the last 30 days but fewer than seven reading days there is
+   * banded from its newest 30 reading days within the past year (see
+   * `BASELINE_SPARSE_LOOKBACK_DAYS`). A caller that sets it gets exactly
+   * that window.
+   */
   windowDays?: number;
   /** k for the MAD band. Defaults to 3. */
   k?: number;
@@ -337,7 +354,7 @@ export async function readDayMeanSeries(
 }
 
 /**
- * FLAGSHIP — the one real Wave 1 metric. Pure `(userId, profile, opts) =>
+ * FLAGSHIP — the one implemented derived metric. Pure `(userId, profile, opts) =>
  * Promise<Derived<VitalsBaselineValue>>`: rolling personal baseline
  * (median ± k·MAD) for a single vital, reading the rollup tier with a
  * per-type live fallback on a coverage miss. Below the min-history floor
@@ -349,20 +366,43 @@ export async function computeVitalsBaseline(
   profile: BaselineProfile,
   opts: VitalsBaselineOpts,
 ): Promise<Derived<VitalsBaselineValue>> {
-  const windowDays = opts.windowDays ?? DEFAULT_WINDOW_DAYS;
+  let windowDays = opts.windowDays ?? DEFAULT_WINDOW_DAYS;
   const k = opts.k ?? DEFAULT_MAD_K;
   const now = opts.now ?? new Date();
   const type = opts.type;
-  const minHistoryDays = 7;
+  const minHistoryDays = BASELINE_MIN_HISTORY_DAYS;
 
   const coverage = opts.coverage ?? (await probeRollupCoverage(userId));
-  const { points, source } = await readDayMeanSeries(
+  let { points, source } = await readDayMeanSeries(
     userId,
     type,
     windowDays,
     now,
     coverage,
   );
+
+  // A metric logged recently, but on too few days for the trailing window,
+  // reaches back for its newest reading days rather than staying "still
+  // learning" for good. A metric with nothing in the window is not current
+  // and stays without a band.
+  if (
+    opts.windowDays === undefined &&
+    points.length > 0 &&
+    points.length < minHistoryDays
+  ) {
+    const wider = await readDayMeanSeries(
+      userId,
+      type,
+      BASELINE_SPARSE_LOOKBACK_DAYS,
+      now,
+      coverage,
+    );
+    if (wider.points.length > points.length) {
+      points = wider.points.slice(-DEFAULT_WINDOW_DAYS);
+      source = wider.source;
+      windowDays = BASELINE_SPARSE_LOOKBACK_DAYS;
+    }
+  }
 
   const historyDays = points.length;
   const computedAt = nowProvenanceTimestamp(now);

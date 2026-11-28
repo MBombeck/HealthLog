@@ -27,7 +27,7 @@
  * medication) and "Later" snoozes it the way the medication card does; a
  * coach check-in is answered in the Coach; a check-up, a visit and a broken
  * connection open where they live; an admin answers the relay question (No,
- * Yes) or sets the setup notice aside; any other "Later" sets the ask aside
+ * Yes); any other "Later", the server setup's included, sets the ask aside
  * until tomorrow.
  */
 import { useId } from "react";
@@ -56,7 +56,6 @@ import { ASK_INTENT } from "@/lib/daily/ask-intents";
 import type { DailyAsk, DailyAskKind } from "@/lib/daily/asks";
 import { apiPost } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
-import { useDismissServerSetupNotice } from "@/lib/queries/use-server-setup";
 import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 
@@ -123,7 +122,6 @@ function AskRow({ ask, onLogDose }: { ask: DailyAsk; onLogDose?: () => void }) {
       apiPost("/api/daily/digest/dismiss", { itemKey }),
     onSuccess: refreshAsks,
   });
-  const dismissNotice = useDismissServerSetupNotice();
   const relay = usePushRelayAnswer(refreshAsks);
 
   // The dose's own snooze, as the medication card offers it: only while a
@@ -141,8 +139,7 @@ function AskRow({ ask, onLogDose }: { ask: DailyAsk; onLogDose?: () => void }) {
   });
 
   const sheetAvailable = Boolean(onLogDose) && canWriteDomain("medications");
-  const pending =
-    later.isPending || dismissNotice.isPending || relay.pending || snooze.busy;
+  const pending = later.isPending || relay.pending || snooze.busy;
 
   const resolve = (action: DailyAsk["actions"][number]): AskAction | null => {
     const label = t(action.labelKey);
@@ -171,14 +168,6 @@ function AskRow({ ask, onLogDose }: { ask: DailyAsk; onLogDose?: () => void }) {
     }
     if (action.intent === ASK_INTENT.relayNo) {
       return { key, label, onClick: relay.no };
-    }
-    if (action.intent === ASK_INTENT.noticeLater) {
-      return {
-        key,
-        label,
-        onClick: () =>
-          dismissNotice.mutate(undefined, { onSuccess: refreshAsks }),
-      };
     }
     return null;
   };

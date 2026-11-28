@@ -35,8 +35,6 @@
  * v1.42 (#972): the same walker pulls `health_connect_export.db` out of an
  * Android Health Connect export (`extractHealthConnectDb`), under its own,
  * lower size ceiling.
- *
- * Locks per `.planning/research/v1434-r-1-xml-import.md` §6.1.
  */
 import {
   createReadStream,

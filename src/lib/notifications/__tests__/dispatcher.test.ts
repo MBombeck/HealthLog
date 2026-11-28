@@ -1,5 +1,5 @@
 /**
- * Dispatcher reliability tests (v1.4.15 Phase B3).
+ * Dispatcher reliability tests (v1.4.15).
  *
  * Drives the dispatcher through the four critical state transitions:
  *  1. Hard reject (web-push 410) → auto-disable + audit log + no retry.

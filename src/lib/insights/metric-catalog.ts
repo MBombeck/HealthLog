@@ -197,8 +197,7 @@ function buildMetricEntries(): CatalogEntry[] {
  * ECG recordings (v1.28.50) carry no `MeasurementType` — the section reads
  * a dedicated `hasRecordings` flag off `GET /api/insights/ecg`, not
  * `summaries[…].count` — so it is not a `SUB_PAGE_SLUGS` entry and needs
- * its own catalog row. Source is Withings ScanWatch today (see
- * `.planning/ios-coord/v1.28.50-server-to-ios-ecg.md`) — Apple Watch ECG
+ * its own catalog row. Source is Withings ScanWatch today; Apple Watch ECG
  * (`HKElectrocardiogramType`) is explicitly deferred in the HealthKit
  * ingest map, so the copy names ScanWatch only rather than overclaiming.
  */

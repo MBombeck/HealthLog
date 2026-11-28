@@ -1574,3 +1574,58 @@ describe("computeIllnessCorrelation — sleep-as-context observation", () => {
     expect(out.value.sleepContext?.nightsCounted).toBe(3);
   });
 });
+
+describe("computeIllnessCorrelation — notable means 2 robust SDs", () => {
+  // A resting pulse of 55 that swings ±2 bpm day to day (σ ≈ 1.5) and runs
+  // 5 to 6 bpm high through a cold: 3 to 4 σ, a plain illness signal. The
+  // deviation used to be divided by the band's whole half-width (3σ), so it
+  // took a 6σ move to count, and an ordinary cold counted for nothing.
+  const type: MeasurementType = "RESTING_HEART_RATE";
+  const baselineDays = jitteredBaseline(55, 2, 30, "2026-01-02");
+  const cold: VitalDayPoint[] = [
+    { day: "2026-01-10", mean: 60 },
+    { day: "2026-01-11", mean: 61 },
+    { day: "2026-01-12", mean: 61 },
+    { day: "2026-01-13", mean: 60 },
+    { day: "2026-01-14", mean: 60 },
+    { day: "2026-01-15", mean: 55 },
+    { day: "2026-01-16", mean: 55 },
+    { day: "2026-01-17", mean: 56 },
+    { day: "2026-01-18", mean: 55 },
+  ];
+
+  it("counts a 3σ day as notable and adverse", () => {
+    const out = computeIllnessCorrelation(
+      input({
+        window: {
+          onsetDay: "2026-01-10",
+          feltBetterDay: "2026-01-13",
+          lifecycle: "ACUTE",
+        },
+        series: [{ type, baselineDays, episodeDays: cold }],
+      }),
+    );
+    expect(out.status).toBe("ok");
+    if (out.status !== "ok") return;
+    expect(out.value.adverseCoverageDays).toBe(5);
+    expect(out.value.nadir[0]?.deviationSd).toBeGreaterThanOrEqual(3);
+    expect(out.value.returns[0]?.returnedDay).toBe("2026-01-15");
+    expect(out.value.recoveryGapDays).toBe(2);
+  });
+
+  it("does not count ordinary day-to-day wobble", () => {
+    const out = computeIllnessCorrelation(
+      input({
+        series: [
+          {
+            type,
+            baselineDays,
+            episodeDays: cold.map((p) => ({ ...p, mean: 55 + (p.mean % 2) })),
+          },
+        ],
+      }),
+    );
+    expect(out.status).toBe("ok");
+    if (out.status === "ok") expect(out.value.adverseCoverageDays).toBe(0);
+  });
+});

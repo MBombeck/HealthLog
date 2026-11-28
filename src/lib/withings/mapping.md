@@ -6,9 +6,6 @@ guide ([Data API → All Available Health Data][1], [Measure-Getmeas][2]) and
 either extend `MEASURE_TYPE_MAP` here or add a new `MeasurementType` enum
 value via `prisma/schema.prisma` + a new migration.
 
-Audit + scoring of the full surface lives in
-[`.planning/research/withings-api-coverage.md`](../../../.planning/research/withings-api-coverage.md).
-
 ## Ingested today (v1.4.25)
 
 | meastype | Withings name               | DB enum               | DB unit     | Source devices                                                                                                                                 |
@@ -82,8 +79,7 @@ devices badge (`User v2-Getdevice`), and Height (4) into `User.heightCm`.
 
 - **Withings+ derived metrics** (Health Improvement Score, Vitality,
   Cardio Check-Up review) — not exposed by the public API. HealthLog
-  computes its own Health Score / Coach / Briefing. See
-  `.planning/research/withings-plus-comparison.md` §6.
+  computes its own Health Score / Coach / Briefing.
 - **Sleep events** `appli=50/51/52` (bed-in / bed-out / inflate) — niche
   Sleep Analyzer mat events. No plan today.
 
