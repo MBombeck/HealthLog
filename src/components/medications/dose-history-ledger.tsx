@@ -270,13 +270,8 @@ function LedgerSummary({
 }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
-  if (!compliance || compliance.denominator === 0) {
-    return (
-      <p className="text-muted-foreground text-sm" data-slot="ledger-summary">
-        {t("medications.detail.verlauf.summaryEmpty")}
-      </p>
-    );
-  }
+  // Nothing to score (an as-needed plan, a plan with no dose yet): no line.
+  if (!compliance || compliance.denominator === 0) return null;
   const { takenOnTime, takenLate, missed, rate } = compliance;
   const counts = [
     t("medications.detail.overview.legend.taken", { count: takenOnTime }),
@@ -326,8 +321,10 @@ function LedgerWeeks({
   const [shownWeeks, setShownWeeks] = useState(WEEKS_FIRST);
   const [open, setOpen] = useState<LedgerDose | null>(null);
   const weeks = useMemo(() => ledgerWeeks(groups), [groups]);
-  // The dose time joins the day only when a day has more than one dose.
-  const multiSlot = ledgerColumns(groups).length > 1;
+  // The dose time joins the day only when a day has more than one dose; an
+  // off-schedule take says so only beside a plan (as needed, every take is).
+  const slotTimes = ledgerColumns(groups).length;
+  const multiSlot = slotTimes > 1;
 
   const doseOf = (
     group: LedgerDayGroup,
@@ -340,7 +337,9 @@ function LedgerWeeks({
     );
     const suffix =
       row.kind === "ad_hoc"
-        ? t("medications.detail.verlauf.extraColumn")
+        ? slotTimes > 0
+          ? t("medications.detail.verlauf.extraColumn")
+          : null
         : multiSlot && row.timeOfDay
           ? fmt.wallTime(row.timeOfDay)
           : null;

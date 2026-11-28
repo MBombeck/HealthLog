@@ -386,7 +386,9 @@ function TodayActions({
           {t(DOSE_ACTION_TERM.snooze, { minutes: snooze.minutes })}
         </InlineAction>
       ) : null}
-      <ActionPair pairClassName="w-full">
+      {/* Halves of the card's width, like the other cards; an extra take's
+          longer label falls back to the pair's own measured stacking. */}
+      <ActionPair pairClassName={extra ? undefined : "w-full"}>
         {asNeeded ? (
           backfill
         ) : (
