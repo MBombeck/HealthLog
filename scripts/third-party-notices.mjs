@@ -25,8 +25,13 @@
  *                      decision, recorded by running --write and reviewing
  *                      the diff.
  *   --write            Rewrite the generated sections of THIRD_PARTY_NOTICES.md.
- *   --bundle-pnpm OUT  Write every shipped pnpm package with its licence
- *                      files to OUT. Runs in the image's builder stage.
+ *   --bundle-pnpm OUT --traced DIR
+ *                      Write every shipped pnpm package with its licence
+ *                      files to OUT. Runs in the image's builder stage, after
+ *                      `next build`. DIR is the pnpm store of the standalone
+ *                      output (`.next/standalone/node_modules/.pnpm`): every
+ *                      package the tracer copied there ships, whatever the
+ *                      lockfile says, and is listed and held to the policy.
  *   --bundle-npm DIR --out OUT
  *                      The same for the npm tree installed in DIR (the
  *                      migration CLI stage). Needs nothing but Node.
@@ -269,11 +274,37 @@ function repositoryOf(pkg) {
   return url;
 }
 
-/** The pnpm part of the inventory: one entry per shipped package. */
-function pnpmInventory(lockText, storeDir, parseYaml) {
+/**
+ * The pnpm part of the inventory: one entry per shipped package.
+ *
+ * The lockfile's production closure cannot predict what Next's file tracer
+ * copies. A production package that requires a name it does not declare
+ * resolves through pnpm's hoisted `.pnpm/node_modules` link, which can point
+ * at a copy only a dev dependency asked for; the tracer follows it and that
+ * copy ships. 1.49.1 shipped `semver@7.8.5` that way, reached in the lockfile
+ * only through dev tooling. So with `tracedStoreDir` every package present in
+ * the traced store is added as well, its licence read from the full install.
+ */
+export function pnpmInventory(
+  lockText,
+  storeDir,
+  parseYaml,
+  tracedStoreDir = null,
+) {
   const lock = parseYaml(lockText);
   const { shipped, parents } = pnpmShipped(lock);
   const installed = installedPnpmPackages(storeDir);
+  if (tracedStoreDir !== null) {
+    if (!existsSync(tracedStoreDir)) {
+      throw new Error(`traced store ${tracedStoreDir} does not exist`);
+    }
+    for (const [key, copy] of installedPnpmPackages(tracedStoreDir)) {
+      shipped.add(key);
+      // The tracer copies only the files a module needs, so licence files
+      // usually stay behind; the full install holds them.
+      if (!installed.has(key)) installed.set(key, copy);
+    }
+  }
   const entries = [];
   for (const key of [...shipped].sort()) {
     const { name, version } = splitKey(key);
@@ -533,11 +564,15 @@ async function main() {
   }
   if (process.argv.includes("--bundle-pnpm")) {
     const out = arg("--bundle-pnpm");
+    const traced = arg("--traced");
+    if (!traced)
+      fail(["--bundle-pnpm needs --traced <standalone pnpm store>."]);
     const parse = await loadYaml();
     const entries = pnpmInventory(
       readFileSync(join(ROOT, "pnpm-lock.yaml"), "utf8"),
       join(ROOT, "node_modules", ".pnpm"),
       parse,
+      traced,
     );
     const failures = policyFailures(entries.filter((e) => e.installed));
     if (failures.length > 0) fail(["Licence policy refuses:", ...failures]);

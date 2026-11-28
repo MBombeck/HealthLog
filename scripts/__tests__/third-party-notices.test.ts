@@ -4,7 +4,11 @@
  * The CI step runs the script against the installed tree; these cases pin
  * the pieces it is made of, and break each rule once to show it can fail.
  */
-import { describe, expect, it } from "vitest";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+import { afterEach, describe, expect, it } from "vitest";
 import { parse } from "yaml";
 
 import {
@@ -12,6 +16,7 @@ import {
   licenceOf,
   licenceSummary,
   npmInventory,
+  pnpmInventory,
   pnpmShipped,
   policyFailures,
   renderBundle,
@@ -250,5 +255,100 @@ describe("the SBOM check", () => {
       },
     };
     expect(sbomGaps(sbom, bundlePackages(bundle))).toEqual(["left-pad@1.3.0"]);
+  });
+});
+
+describe("pnpmInventory with the traced standalone store", () => {
+  const lockText = `
+importers:
+  .:
+    dependencies:
+      app-dep:
+        specifier: 1.0.0
+        version: 1.0.0
+    devDependencies:
+      dev-tool:
+        specifier: 1.0.0
+        version: 1.0.0
+      "@tesseract.js-data/deu": { specifier: 1.0.0, version: 1.0.0 }
+      "@tesseract.js-data/eng": { specifier: 1.0.0, version: 1.0.0 }
+      pdfjs-dist: { specifier: 5.0.0, version: 5.0.0 }
+      tailwindcss: { specifier: 4.0.0, version: 4.0.0 }
+      tw-animate-css: { specifier: 1.0.0, version: 1.0.0 }
+snapshots:
+  app-dep@1.0.0: {}
+  dev-tool@1.0.0:
+    dependencies:
+      semver: 7.8.5
+  semver@7.8.5: {}
+`;
+  const dirs: string[] = [];
+  afterEach(() => {
+    for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
+  });
+
+  /** A pnpm store with one real directory per `[name, version, licence]`. */
+  function store(packages: [string, string, string][], licenceFile: boolean) {
+    const dir = mkdtempSync(join(tmpdir(), "tpn-store-"));
+    dirs.push(dir);
+    for (const [name, version, license] of packages) {
+      const pkgDir = join(dir, `${name}@${version}`, "node_modules", name);
+      mkdirSync(pkgDir, { recursive: true });
+      writeFileSync(
+        join(pkgDir, "package.json"),
+        JSON.stringify({ name, version, license }),
+      );
+      if (licenceFile)
+        writeFileSync(join(pkgDir, "LICENSE"), `${license} text`);
+    }
+    return dir;
+  }
+
+  const full = () =>
+    store(
+      [
+        ["app-dep", "1.0.0", "MIT"],
+        ["dev-tool", "1.0.0", "MIT"],
+        ["semver", "7.8.5", "ISC"],
+      ],
+      true,
+    );
+
+  it("lists a dev-graph package the tracer copied, with the full install's licence file", () => {
+    // The tracer reached semver@7.8.5 through pnpm's hoisted link; the
+    // lockfile's production graph never names it.
+    const traced = store(
+      [
+        ["app-dep", "1.0.0", "MIT"],
+        ["semver", "7.8.5", "ISC"],
+      ],
+      false,
+    );
+    const entries = pnpmInventory(lockText, full(), parse, traced);
+    const listed = bundlePackages(renderBundle("test", entries));
+    expect(listed).toEqual(new Set(["app-dep@1.0.0", "semver@7.8.5"]));
+    expect(renderBundle("test", entries)).toContain("ISC text");
+    // Without the traced store the same package is missing: the 1.49.1 gap.
+    expect(
+      bundlePackages(
+        renderBundle("test", pnpmInventory(lockText, full(), parse)),
+      ),
+    ).toEqual(new Set(["app-dep@1.0.0"]));
+  });
+
+  it("holds a traced package to the licence policy", () => {
+    const traced = store([["semver", "7.8.5", "GPL-3.0-only"]], false);
+    const fullDir = store([["app-dep", "1.0.0", "MIT"]], true);
+    const entries = pnpmInventory(lockText, fullDir, parse, traced);
+    // The bundle step holds the installed entries to the policy.
+    expect(policyFailures(entries.filter((e) => e.installed))).toEqual([
+      "semver@7.8.5: licence GPL-3.0-only",
+    ]);
+  });
+
+  it("refuses a traced store that is not there", () => {
+    expect(() =>
+      pnpmInventory(lockText, full(), parse, join(tmpdir(), "tpn-missing-x")),
+    ).toThrow(/does not exist/);
   });
 });

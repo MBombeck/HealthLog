@@ -73,8 +73,11 @@ RUN NODE_OPTIONS=--max-old-space-size=8192 pnpm build
 # production tree and the build packages whose files are in the output
 # (THIRD_PARTY_NOTICES.md). Written from this stage's install, so it lists the
 # platform builds of this architecture; a licence the policy refuses fails the
-# build. The release pipeline checks the image's SBOM against this file.
-RUN node scripts/third-party-notices.mjs --bundle-pnpm /app/THIRD_PARTY_LICENSES.txt
+# build. Every package the tracer copied into the standalone output is added,
+# since tracing can reach copies the lockfile's production graph does not. The
+# release pipeline checks the image's SBOM against this file.
+RUN node scripts/third-party-notices.mjs --bundle-pnpm /app/THIRD_PARTY_LICENSES.txt \
+      --traced /app/.next/standalone/node_modules/.pnpm
 
 # Record which pdfjs-dist the top-level dependency actually resolves to. pnpm
 # links a direct dependency at `node_modules/<name>`, so this reads the exact
