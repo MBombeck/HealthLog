@@ -332,7 +332,7 @@ export function ActivityCalendarCard({
               ) : null}
             </div>
 
-            <ul
+            <dl
               data-slot="activity-calendar-summary"
               className={cn(
                 "grid grid-cols-3 gap-3 border-t pt-4",
@@ -342,7 +342,7 @@ export function ActivityCalendarCard({
               {FIGURES.filter((m) => data.available[m]).map((m) => {
                 const s = data.summary[m];
                 return (
-                  <li
+                  <div
                     key={m}
                     data-slot="activity-calendar-figure"
                     data-metric={m}
@@ -352,13 +352,13 @@ export function ActivityCalendarCard({
                       m === "load" && "hidden md:grid",
                     )}
                   >
-                    <span className="text-muted-foreground truncate text-xs md:text-sm">
+                    <dt className="text-muted-foreground truncate text-xs md:text-sm">
                       {t(`activityCalendar.metric.${m}`)}
-                    </span>
-                    <span className="text-lg font-semibold tabular-nums md:text-right md:text-2xl">
+                    </dt>
+                    <dd className="text-lg font-semibold tabular-nums md:text-right md:text-2xl">
                       {s.value === null ? "–" : formatValue(m, s.value)}
-                    </span>
-                    <span
+                    </dd>
+                    <dd
                       data-slot="activity-calendar-change"
                       className={cn(
                         "min-h-4 text-xs font-medium tabular-nums md:text-right",
@@ -370,11 +370,11 @@ export function ActivityCalendarCard({
                       {s.change === null
                         ? null
                         : `${s.change > 0 ? "+" : ""}${fmt.percent(s.change)}`}
-                    </span>
-                  </li>
+                    </dd>
+                  </div>
                 );
               })}
-            </ul>
+            </dl>
           </div>
         )}
       </CardContent>
