@@ -29,6 +29,39 @@ export const HC_DEVICE_BUNDLE_ID = "dev.healthlog.sync";
 
 const DAY_MS = 86_400_000;
 
+/**
+ * The one rule for "paired": an Android device is paired while the token it
+ * was paired with lives, neither revoked nor expired. The token, not the row,
+ * is what lets the phone in, so a device whose token was revoked in the token
+ * list or ran out on a lost phone is no connection and has no stall to tell.
+ */
+export function pairedDeviceWhere(now: Date) {
+  return {
+    platform: HC_DEVICE_PLATFORM,
+    apiToken: {
+      is: {
+        revoked: false,
+        OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+      },
+    },
+  } satisfies Prisma.DeviceWhereInput;
+}
+
+/** The Android devices the rule above no longer counts as paired. */
+export function unpairedDeviceWhere(now: Date) {
+  return {
+    platform: HC_DEVICE_PLATFORM,
+    OR: [
+      { apiTokenId: null },
+      {
+        apiToken: {
+          is: { OR: [{ revoked: true }, { expiresAt: { lte: now } }] },
+        },
+      },
+    ],
+  } satisfies Prisma.DeviceWhereInput;
+}
+
 /** A fresh `hcp_<32 hex>` code. Shown once, stored as its hash. */
 export function generatePairingCode(): string {
   return `hcp_${randomBytes(16).toString("hex")}`;

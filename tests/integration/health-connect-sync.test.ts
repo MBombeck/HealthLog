@@ -28,6 +28,9 @@ import { POST as pair } from "@/app/api/health-connect/pair/route";
 import { GET as readState } from "@/app/api/health-connect/state/route";
 import { POST as postBatch } from "@/app/api/health-connect/batch/route";
 import { DELETE as deleteDevice } from "@/app/api/auth/me/devices/[id]/route";
+import { DELETE as revokeToken } from "@/app/api/tokens/[id]/route";
+import { loadConnectionFacts } from "@/lib/integrations/connection-health-load";
+import { runDeviceStallPass } from "@/lib/sync-stall/devices";
 
 vi.mock("@/lib/insights/status-invalidation", () => ({
   invalidateStatusInsightsForTypes: vi.fn().mockResolvedValue(undefined),
@@ -416,6 +419,86 @@ describe("pairing", () => {
       contract: { skip: "401 from the generic gate" },
     });
     expect(after.status).toBe(401);
+  });
+});
+
+describe("paired means a living token", () => {
+  async function connected(userId: string, now = new Date()) {
+    const facts = await loadConnectionFacts(
+      userId,
+      ["health-connect-app"],
+      now,
+    );
+    return facts.get("health-connect-app")?.connected;
+  }
+
+  it("revoking the device's token in the token list unpairs the device", async () => {
+    const p = await pairDevice();
+    const session = await makeSession({ id: p.userId });
+    await getPrismaClient().appSettings.upsert({
+      where: { id: "singleton" },
+      create: { id: "singleton", apiGlobal: true },
+      update: { apiGlobal: true },
+    });
+    expect(await connected(p.userId)).toBe(true);
+
+    const res = await callRoute(revokeToken, {
+      method: "DELETE",
+      route: "/api/tokens/{id}",
+      params: { id: p.auth.tokenId },
+      auth: session,
+    });
+    expect(res.status).toBe(200);
+
+    const token = await getPrismaClient().apiToken.findUniqueOrThrow({
+      where: { id: p.auth.tokenId },
+    });
+    expect(token.revoked).toBe(true);
+    expect(
+      await getPrismaClient().device.findUnique({ where: { id: p.deviceId } }),
+    ).toBeNull();
+    expect(await connected(p.userId)).toBe(false);
+  });
+
+  it("a device whose token ran out is no connection and no stall", async () => {
+    const p = await pairDevice();
+    const now = new Date();
+    const db = getPrismaClient();
+    // A lost phone: it delivered, went quiet, was flagged, then its token
+    // reached its end.
+    await db.device.update({
+      where: { id: p.deviceId },
+      data: {
+        healthIngestAt: new Date(now.getTime() - 10 * DAY),
+        healthQuietSince: new Date(now.getTime() - 9 * DAY),
+      },
+    });
+    expect(await connected(p.userId, now)).toBe(true);
+    await db.apiToken.update({
+      where: { id: p.auth.tokenId },
+      data: { expiresAt: new Date(now.getTime() - 1000) },
+    });
+
+    expect(await connected(p.userId, now)).toBe(false);
+    const facts = await runDeviceStallPass(db, now);
+    expect(facts.judged).toBe(0);
+    expect(facts.flagged).toBe(0);
+    const device = await db.device.findUniqueOrThrow({
+      where: { id: p.deviceId },
+    });
+    expect(device.healthQuietSince).toBeNull();
+  });
+
+  it("a paired device that went quiet is still judged", async () => {
+    const p = await pairDevice();
+    const now = new Date();
+    const db = getPrismaClient();
+    await db.device.update({
+      where: { id: p.deviceId },
+      data: { healthIngestAt: new Date(now.getTime() - 10 * DAY) },
+    });
+    const facts = await runDeviceStallPass(db, now);
+    expect(facts.judged).toBe(1);
   });
 });
 

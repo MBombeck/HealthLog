@@ -22,6 +22,10 @@
  */
 import type { PrismaClient } from "@/generated/prisma/client";
 import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
+import {
+  pairedDeviceWhere,
+  unpairedDeviceWhere,
+} from "@/lib/health-connect/pairing";
 import { HISTORY_DAYS, judgeStall, learnCadence } from "./cadence";
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -67,6 +71,14 @@ export async function runDeviceStallPass(
     pruned: 0,
   };
   const floorAgo = new Date(now.getTime() - DEVICE_STALL_FLOOR_MS);
+  // An Android device whose token was revoked or ran out is no longer
+  // paired (`pairedDeviceWhere`): its silence is the person's own doing or a
+  // lost phone, not a stall. Its flag goes, and it is not judged.
+  const unpaired = await prisma.device.updateMany({
+    where: { ...unpairedDeviceWhere(now), healthQuietSince: { not: null } },
+    data: { healthQuietSince: null, healthQuietNotifiedAt: null },
+  });
+  facts.cleared += unpaired.count;
   // A device that delivered within the floor is fresh, and its delivery
   // already cleared any flag; only the rest need a look.
   const devices = await prisma.device.findMany({
@@ -79,6 +91,7 @@ export async function runDeviceStallPass(
         { healthQuietSince: { not: null } },
       ],
       ...OWNED_BY_ACTIVE_ACCOUNT,
+      AND: [{ OR: [{ platform: "ios" }, pairedDeviceWhere(now)] }],
     },
     select: { id: true, healthIngestAt: true, healthQuietSince: true },
   });
