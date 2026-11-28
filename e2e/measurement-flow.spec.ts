@@ -78,12 +78,15 @@ test.describe("add measurement flow", () => {
   }) => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
 
-    // The quick-entry trigger sits at the top of `<main>`. Waiting for it,
-    // rather than for the route skeleton to go, is waiting for the thing the
-    // next line clicks.
+    // The quick-entry trigger: the header's "Add" on a wide screen, the
+    // bottom bar's plus on a phone (the phone header has none). Waiting for
+    // it, rather than for the route skeleton to go, is waiting for the thing
+    // the next line clicks.
     const addTrigger = page
       .locator("main")
       .getByRole("button", { name: /^add$|hinzufügen|hinzufuegen/i })
+      .or(page.getByTestId("bottom-nav-capture"))
+      .filter({ visible: true })
       .first();
     await expect(addTrigger).toBeVisible({ timeout: 60_000 });
     // The account holds no weight yet, so whatever the surfaces below show

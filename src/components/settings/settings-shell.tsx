@@ -24,6 +24,8 @@ import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DESTINATION_ICONS as ICON } from "@/components/layout/destination-icons";
 import { PageHeader } from "@/components/ui/page-header";
+import { ApiNewTokenButton } from "@/components/settings/api-new-token-button";
+import { IntegrationsAddButton } from "@/components/settings/integrations/integrations-add-button";
 import { SUB_SHELL_GRID_FLOOR } from "@/components/layout/shell-metrics";
 import { useAuth } from "@/hooks/use-auth";
 import { useMounted } from "@/hooks/use-mounted";
@@ -357,6 +359,16 @@ const LAYOUT_CHILD_SLUGS: ReadonlySet<string> = new Set([
   "vorsorge",
 ]);
 
+/**
+ * The page's one button, beside its title: Integrations and API & tokens are
+ * lists whose "add" lives there.
+ */
+function headingAccessoryFor(slug: SettingsSectionSlug): React.ReactNode {
+  if (slug === "integrations") return <IntegrationsAddButton />;
+  if (slug === "api") return <ApiNewTokenButton />;
+  return undefined;
+}
+
 /** Map a Layout child editor onto the Layout hub for nav highlighting. */
 function navHighlightSlug(slug: SettingsSectionSlug): SettingsSectionSlug {
   return LAYOUT_CHILD_SLUGS.has(slug) ? "layout" : slug;
@@ -458,7 +470,7 @@ export function SettingsShell({
               labelKey="settings.sections.layout.backToHub"
             />
           ) : undefined,
-          headingAccessory: undefined,
+          headingAccessory: headingAccessoryFor(activeSection.slug),
         }
       : null);
 

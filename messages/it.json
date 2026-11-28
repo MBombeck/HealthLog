@@ -805,13 +805,6 @@
   },
   "dashboard": {
     "title": "Cruscotto",
-    "greeting": {
-      "morning": "Buongiorno",
-      "day": "Ciao",
-      "evening": "Buonasera"
-    },
-    "welcomeBack": "{greeting}, bentornato.",
-    "welcomeBackWithName": "{greeting}, {name}, bentornato.",
     "greetingSalutation": "Ciao, {name}",
     "streakLabel": "giorni di fila",
     "weight": "Peso",
@@ -948,9 +941,6 @@
       "body": "Senza copie delle chiavi usate da questo server, i suoi dati non si possono recuperare dopo una reinstallazione. Ci vogliono pochi minuti.",
       "action": "Apri il kit"
     },
-    "greetingOnly": "{greeting}.",
-    "welcomeNew": "Ti diamo il benvenuto.",
-    "welcomeNewWithName": "Ti diamo il benvenuto, {name}.",
     "quickAddSeizure": "Registra crisi",
     "morning": {
       "heroItemsTitle": "Da fare oggi",
@@ -5877,9 +5867,7 @@
       },
       "integrations": {
         "title": "Integrazioni",
-        "connectionsHeading": "Connessioni",
-        "channelsHeading": "Canali di recapito",
-        "matrixLink": "Notifiche per canale"
+        "channelsHeading": "Canali di recapito"
       },
       "notifications": {
         "title": "Notifiche",
@@ -7384,9 +7372,7 @@
       "description": "Configurato su questo account ma senza una scheda di impostazioni propria."
     },
     "healthConnectFolder": {
-      "name": "Health Connect da una cartella",
-      "description": "Prelevato dalla tua cartella WebDAV o Nextcloud ogni sei ore. Si configura e si modifica in Importa.",
-      "manage": "Apri le impostazioni della cartella"
+      "name": "Health Connect da una cartella"
     },
     "healthConnectApp": {
       "connect": "Collega dispositivo Android",
@@ -7396,39 +7382,25 @@
       "qrAlt": "Codice QR per HealthLog Sync",
       "preview": "HealthLog Sync per Android, anteprima",
       "disconnectTitle": "Scollegare {device}?",
-      "disconnectBody": "Il telefono smette di sincronizzare finché non lo colleghi di nuovo."
+      "disconnectBody": "Il telefono smette di sincronizzare finché non lo colleghi di nuovo.",
+      "name": "HealthLog Sync"
     },
     "withingsViewData": "Vedi le tue misurazioni",
     "whoopViewData": "Vedi il tuo recupero",
     "googleHealthViewData": "Vedi i tuoi passi",
-    "apiTokens": "Token API",
     "measurementsToken": {
-      "title": "Token per misurazioni",
-      "description": "Crea un token perché una bilancia, un orologio, un'app per l'alimentazione o la tua domotica aggiungano misurazioni, valori delle tue metriche personalizzate e totali giornalieri di nutrienti.",
-      "scopeNote": "Può solo aggiungere misurazioni alla tua cartella, valori alle metriche personalizzate che hai già creato e totali giornalieri di nutrienti finché il modulo nutrienti è attivo; non può leggere, modificare o eliminare nulla. Misurazioni e totali di nutrienti vengono contrassegnati come esterni. L'ID di una metrica personalizzata è la parte che segue /custom-metrics/ nell'indirizzo della sua pagina.",
-      "nutrientsLink": "Vedi apporto di nutrienti",
-      "createFailed": "Non è stato possibile creare il token. Riprova.",
       "namePlaceholder": "Nome, ad es. Home Assistant",
       "appleHealth": {
         "label": "Scrivi le misurazioni in Apple Health",
         "createHint": "L'app HealthLog sul tuo iPhone aggiungerà quindi le misurazioni di questo token ad Apple Health.",
-        "toggleAria": "Scrivi le misurazioni di {name} in Apple Health",
         "updateFailed": "Non è stato possibile modificare l'impostazione di Apple Health. Riprova.",
         "unattributed": "Le misurazioni inviate prima che esistesse questa impostazione non si possono associare a un token, quindi restano fuori da Apple Health."
       }
     },
     "workoutsToken": {
-      "title": "Token per allenamenti",
-      "description": "Crea un token perché un ponte dell'orologio o uno script di sincronizzazione aggiungano i tuoi allenamenti.",
-      "scopeNote": "Può soltanto aggiungere nuovi allenamenti alla tua cartella. Non può leggere i tuoi dati, modificare o eliminare nulla, né creare un altro token. Gli allenamenti che aggiunge vengono contrassegnati come provenienti da un dispositivo esterno e, se il telefono ha registrato la stessa sessione, vedi la copia del telefono.",
-      "createFailed": "Non è stato possibile creare il token. Riprova.",
       "namePlaceholder": "Nome, ad es. Garmin"
     },
     "documentsToken": {
-      "title": "Token per documenti",
-      "description": "Crea un token perché Paperless-ngx, Papra o lo script di importazione aggiungano documenti al tuo archivio.",
-      "scopeNote": "Può soltanto aggiungere nuovi documenti al tuo archivio. Non può elencare, aprire, scaricare, modificare o eliminare nulla, né creare un altro token. Riceve solo l'informazione se un file è stato salvato, non come l'hai archiviato.",
-      "createFailed": "Non è stato possibile creare il token. Riprova.",
       "namePlaceholder": "Nome, ad es. Paperless-ngx"
     },
     "tokenCreated": "Token creato: copialo ora! Non verrà mostrato di nuovo.",
@@ -7446,17 +7418,11 @@
     "revokedTokensTitle": "Token revocati ({count})",
     "tokenTableName": "Nome",
     "tokenTablePermissions": "Autorizzazioni",
-    "tokenTableStatus": "Stato",
     "tokenTableCreated": "Creato",
     "tokenTableLastUsed": "Ultimo utilizzo",
     "tokenTableActions": "Azioni",
     "noActiveTokens": "Nessun token attivo disponibile.",
     "tokenNeverUsed": "Mai",
-    "apiEndpointsTitle": "Endpoint API",
-    "apiEndpointMethod": "Metodo",
-    "apiEndpointPath": "Percorso",
-    "apiEndpointAuth": "Autenticazione",
-    "apiEndpointExample": "Esempio di body",
     "dangerZone": "Elimina tutti i dati",
     "dangerZoneDescription": "Cancella l’intera cartella sanitaria e ogni connessione di integrazione.",
     "dangerZoneConfirm": "Eliminare tutti i dati?",
@@ -8281,7 +8247,115 @@
     },
     "passkeyRenameFailed": "Impossibile rinominare la passkey.",
     "passkeyRemoveFailed": "Impossibile rimuovere la passkey.",
-    "apiEndpointsShow": "Mostra gli endpoint"
+    "integrationList": {
+      "channels": "Canali di recapito",
+      "sources": "Fonti di dati",
+      "addTitle": "Aggiungi",
+      "allAdded": "Tutto ciò che offre questo server è configurato.",
+      "noSources": "Ancora nessuna fonte di dati",
+      "noChannels": "Ancora nessun canale di consegna",
+      "ownCredentials": "Servono le tue credenziali dell’app",
+      "syncNow": "Sincronizza ora",
+      "lastAt": "Ultima volta: {when}",
+      "never": "Non ancora",
+      "apns": "App per iPhone",
+      "facts": {
+        "status": "Stato",
+        "reason": "Motivo",
+        "lastSync": "Ultima sincronizzazione",
+        "lastDelivery": "Ultima consegna",
+        "brings": "Porta",
+        "delivers": "Consegna a",
+        "lastFailure": "Ultimo errore",
+        "lastFailureWith": "{when}, {reason}",
+        "setup": "Configurazione"
+      },
+      "reason": {
+        "dataArriving": "I dati arrivano",
+        "firstSyncPending": "Prima sincronizzazione in attesa",
+        "planLimited": "Il piano non include tutto",
+        "permissionLimited": "Mancano alcuni permessi",
+        "providerErrors": "Il fornitore non risponde bene",
+        "syncStalled": "La sincronizzazione è ferma",
+        "noNewData": "Nessun dato nuovo",
+        "unexpectedSilence": "Nessun dato da un po’",
+        "reauthRequired": "Accesso scaduto",
+        "pausedAfterErrors": "In pausa dopo errori",
+        "notConnected": "Non collegato",
+        "paused": "In pausa",
+        "switchedOff": "Disattivato",
+        "autoDisabled": "Disattivato dopo un rifiuto",
+        "sendingPaused": "Invio in pausa",
+        "deliveryFailing": "Ultima consegna non riuscita"
+      },
+      "brings": {
+        "appleHealth": "Tutto da Salute, tramite l’app per iPhone",
+        "withings": "Peso, pressione arteriosa, sonno",
+        "whoop": "Recupero, sonno, sforzo",
+        "googleHealth": "Fitbit e Pixel Watch",
+        "garmin": "Sonno, HRV, stress, attività",
+        "oura": "Prontezza, sonno, HRV",
+        "polar": "Recupero, sonno, allenamento",
+        "strava": "Attività come allenamenti",
+        "nightscout": "Glucosio continuo",
+        "dawarich": "Luoghi e percorsi come contesto",
+        "healthConnectFolder": "Esportazione Health Connect da WebDAV o Nextcloud",
+        "documentSources": "Documenti da Paperless-ngx o Papra",
+        "telegram": "Una chat Telegram tramite il tuo bot",
+        "ntfy": "Un argomento ntfy",
+        "webPush": "Questo browser",
+        "webhook": "JSON a un tuo indirizzo",
+        "email": "Promemoria via e-mail",
+        "apns": "Notifiche su iPhone",
+        "healthConnectApp": "Health Connect, tramite l’app Android"
+      }
+    },
+    "tokenList": {
+      "title": "Token",
+      "newToken": "Nuovo token",
+      "empty": "Ancora nessun token",
+      "caption": "I tuoi token",
+      "scopeColumn": "Accesso",
+      "more": "Altro",
+      "scopeMoreLabel": "Cosa consente questo accesso",
+      "mirrorMoreLabel": "Cosa significa scrivere in Apple Salute",
+      "revoked": "Revocato",
+      "hideRevoked": "Nascondi revocati",
+      "menuLabel": "Azioni per {name}",
+      "copied": "Copiato",
+      "scope": {
+        "all": "Accesso completo",
+        "measurements": "Valori misurati",
+        "workouts": "Allenamenti",
+        "documents": "Documenti",
+        "medication": "Farmaco",
+        "mcpRead": "MCP, lettura",
+        "mcpWrite": "MCP, scrittura",
+        "fhir": "FHIR",
+        "profile": "Profilo"
+      },
+      "scopeInfo": {
+        "measurements": "Aggiunge valori misurati, valori di metriche personalizzate e totali giornalieri dei nutrienti alla tua cartella. Non può leggere, modificare né eliminare nulla.",
+        "workouts": "Aggiunge nuovi allenamenti alla tua cartella. Non può leggere, modificare né eliminare nulla.",
+        "documents": "Aggiunge nuovi documenti al tuo archivio. Non può elencare, aprire, modificare né eliminare nulla."
+      },
+      "create": {
+        "failed": "Impossibile creare il token. Riprova.",
+        "createdTitle": "Token creato",
+        "done": "Fatto",
+        "shownOnce": "Il token viene mostrato solo ora.",
+        "expiry": "Valido per",
+        "expiryYear": "1 anno",
+        "expiryDays": "{days, plural, one {# giorno} other {# giorni}}"
+      },
+      "api": {
+        "title": "API",
+        "address": "Indirizzo",
+        "copyAddress": "Copia indirizzo API",
+        "endpoints": "Endpoint",
+        "openReference": "Apri riferimento"
+      }
+    }
   },
   "admin": {
     "title": "Administration",
@@ -9504,8 +9578,6 @@
       },
       "question": {
         "title": "Usare il relay push di HealthLog?",
-        "askTitle": "Notifiche tramite relay push?",
-        "askBody": "Il contenuto resta crittografato.",
         "body": "Notifiche per l'app dell'App Store, crittografate end-to-end: il relay vede solo quando ne viene inviata una.",
         "yes": "Sì",
         "no": "No",
@@ -9589,7 +9661,6 @@
       "notice": {
         "title": "Configura questo server",
         "body": "Cinque brevi passaggi su registrazioni, notifiche, IA e privacy; puoi saltarli o cambiarli più tardi.",
-        "bodyShort": "Cinque brevi passaggi su registrazioni, notifiche, IA e privacy.",
         "open": "Inizia la configurazione",
         "dismiss": "Non ora"
       }
@@ -13549,7 +13620,6 @@
       },
       "syncIssue": {
         "title": "La sincronizzazione richiede attenzione",
-        "askTitle": "Sincronizzazione ferma",
         "body": "{integration} non si sincronizza. Riconnettilo per mantenere aggiornati i tuoi dati."
       },
       "sourceQuiet": {
@@ -13603,10 +13673,9 @@
       "logDose": "Assumi",
       "later": "Più tardi",
       "answer": "Rispondi",
-      "learnMore": "Altro",
       "open": "Apri",
       "setUp": "Configura",
-      "reconnectShort": "Riconnetti",
+      "reconnectShort": "Connetti",
       "reconnect": "Riconnetti",
       "viewCheckups": "Vedi controlli",
       "checkinKeep": "Mantieni",
@@ -13617,6 +13686,23 @@
       "viewEcg": "Vedi registrazione",
       "viewSteps": "Vedi i passi",
       "openSource": "Apri"
+    },
+    "ask": {
+      "medication": "Farmaco",
+      "overdue": "In ritardo {time}",
+      "overdueNow": "In ritardo",
+      "due": "Alle {time}",
+      "dueNow": "Da assumere ora",
+      "checkupDue": "Da fare",
+      "visitToday": "Visita oggi",
+      "visitTomorrow": "Visita domani",
+      "signedOut": "Disconnesso",
+      "planFallback": "Il tuo piano",
+      "planReview": "Da rivedere",
+      "setupTitle": "Questo server",
+      "setupMeta": "Da configurare",
+      "relayTitle": "Relay push?",
+      "relayMeta": "Crittografato"
     },
     "today": {
       "deltaShort": "{delta} vs riferimento",
@@ -16023,10 +16109,10 @@
       "fieldsLabel": "Cosa mostra il link",
       "expiryLabel": "Scadenza del link",
       "expiry": {
-        "none": "Mai, fino alla revoca",
         "30": "Tra 30 giorni",
         "365": "Tra un anno",
-        "730": "Tra due anni"
+        "730": "Tra due anni",
+        "none": "Mai, fino alla revoca"
       },
       "create": "Crea il link",
       "qrAlt": "Codice QR del link alla tessera di emergenza",

@@ -805,13 +805,6 @@
   },
   "dashboard": {
     "title": "总览",
-    "greeting": {
-      "morning": "早上好",
-      "day": "你好",
-      "evening": "晚上好"
-    },
-    "welcomeBack": "{greeting}，欢迎回来。",
-    "welcomeBackWithName": "{greeting}，{name}，欢迎回来。",
     "greetingSalutation": "你好，{name}",
     "streakLabel": "天连续",
     "weight": "体重",
@@ -948,9 +941,6 @@
       "body": "没有这台服务器所用密钥的副本，重装之后数据将无法恢复。只需几分钟。",
       "action": "打开工具包"
     },
-    "greetingOnly": "{greeting}。",
-    "welcomeNew": "欢迎。",
-    "welcomeNewWithName": "欢迎，{name}。",
     "quickAddSeizure": "记录发作",
     "morning": {
       "heroItemsTitle": "今日待办",
@@ -5877,9 +5867,7 @@
       },
       "integrations": {
         "title": "集成",
-        "connectionsHeading": "连接",
-        "channelsHeading": "投递渠道",
-        "matrixLink": "各渠道的通知"
+        "channelsHeading": "投递渠道"
       },
       "notifications": {
         "title": "通知",
@@ -7384,9 +7372,7 @@
       "description": "已在此账户上配置，但没有独立的设置卡片。"
     },
     "healthConnectFolder": {
-      "name": "从文件夹导入 Health Connect",
-      "description": "每六小时从你的 WebDAV 或 Nextcloud 文件夹获取。请在“导入”中设置与更改。",
-      "manage": "打开文件夹设置"
+      "name": "从文件夹导入 Health Connect"
     },
     "healthConnectApp": {
       "connect": "连接 Android 设备",
@@ -7396,39 +7382,25 @@
       "qrAlt": "HealthLog Sync 的二维码",
       "preview": "HealthLog Sync for Android，预览版",
       "disconnectTitle": "断开 {device} 的连接？",
-      "disconnectBody": "在你重新配对之前，这部手机将停止同步。"
+      "disconnectBody": "在你重新配对之前，这部手机将停止同步。",
+      "name": "HealthLog Sync"
     },
     "withingsViewData": "查看你的测量",
     "whoopViewData": "查看你的恢复度",
     "googleHealthViewData": "查看你的步数",
-    "apiTokens": "API 令牌",
     "measurementsToken": {
-      "title": "测量令牌",
-      "description": "铸造一个令牌，让体重秤、手表桥接、饮食记录应用或你的家庭自动化可以添加读数、自定义指标数值与每日营养素总量。",
-      "scopeNote": "它只能向你自己的记录添加读数、向你已创建的自定义指标添加数值，以及在营养素模块开启时添加每日营养素总量；无法读取、修改或删除任何内容。读数与营养素总量会标记为外部来源。自定义指标的 ID 是其页面地址中 /custom-metrics/ 之后的部分。",
-      "nutrientsLink": "查看营养素摄入",
-      "createFailed": "无法创建该令牌，请重试。",
       "namePlaceholder": "名称，例如 Home Assistant",
       "appleHealth": {
         "label": "将读数写入 Apple Health",
         "createHint": "iPhone 上的 HealthLog 应用随后会把该令牌的读数加入 Apple Health。",
-        "toggleAria": "将来自 {name} 的读数写入 Apple Health",
         "updateFailed": "无法更改 Apple Health 设置，请重试。",
         "unattributed": "在此设置存在之前发送的读数无法对应到具体令牌，因此不会进入 Apple Health。"
       }
     },
     "workoutsToken": {
-      "title": "运动令牌",
-      "description": "铸造一个令牌，让手表桥接或同步脚本可以添加你的运动记录。",
-      "scopeNote": "它只能向你自己的记录添加新运动。无法读取你的数据、修改或删除任何内容，也无法创建另一个令牌。它添加的运动会被标记为来自外部设备；当你的手机记录了同一场次时，你看到的是手机那一份。",
-      "createFailed": "无法创建该令牌，请重试。",
       "namePlaceholder": "名称，例如 Garmin"
     },
     "documentsToken": {
-      "title": "文档令牌",
-      "description": "铸造一个令牌，让 Paperless-ngx、Papra 或导入脚本可以向你的文档库添加文档。",
-      "scopeNote": "它只能向你自己的文档库添加新文档。无法列出、打开、下载、修改或删除任何内容，也无法创建另一个令牌。它得到的结果只是文件是否已保存，而不是你如何归档它。",
-      "createFailed": "无法创建该令牌，请重试。",
       "namePlaceholder": "名称，例如 Paperless-ngx"
     },
     "tokenCreated": "令牌已创建。现在复制它！它不会再显示。",
@@ -7446,17 +7418,11 @@
     "revokedTokensTitle": "已撤销的令牌（{count}）",
     "tokenTableName": "名称",
     "tokenTablePermissions": "权限",
-    "tokenTableStatus": "状态",
     "tokenTableCreated": "创建时间",
     "tokenTableLastUsed": "上次使用",
     "tokenTableActions": "操作",
     "noActiveTokens": "没有有效的令牌。",
     "tokenNeverUsed": "从未",
-    "apiEndpointsTitle": "API 端点",
-    "apiEndpointMethod": "方法",
-    "apiEndpointPath": "路径",
-    "apiEndpointAuth": "认证",
-    "apiEndpointExample": "请求体示例",
     "dangerZone": "删除全部数据",
     "dangerZoneDescription": "抹除你的整份健康记录与所有集成连接。",
     "dangerZoneConfirm": "删除全部数据？",
@@ -8281,7 +8247,115 @@
     },
     "passkeyRenameFailed": "无法重命名该通行密钥。",
     "passkeyRemoveFailed": "无法移除该通行密钥。",
-    "apiEndpointsShow": "显示端点"
+    "integrationList": {
+      "channels": "推送渠道",
+      "sources": "数据来源",
+      "addTitle": "添加",
+      "allAdded": "此服务器提供的一切都已设置。",
+      "noSources": "还没有数据来源",
+      "noChannels": "还没有推送渠道",
+      "ownCredentials": "需要你自己的应用凭据",
+      "syncNow": "立即同步",
+      "lastAt": "上次：{when}",
+      "never": "尚未",
+      "apns": "iPhone 应用",
+      "facts": {
+        "status": "状态",
+        "reason": "原因",
+        "lastSync": "上次同步",
+        "lastDelivery": "上次送达",
+        "brings": "带入",
+        "delivers": "送达至",
+        "lastFailure": "上次失败",
+        "lastFailureWith": "{when}，{reason}",
+        "setup": "设置"
+      },
+      "reason": {
+        "dataArriving": "数据正在到达",
+        "firstSyncPending": "等待首次同步",
+        "planLimited": "套餐限制了部分数据",
+        "permissionLimited": "缺少部分权限",
+        "providerErrors": "提供商响应不稳定",
+        "syncStalled": "同步已停滞",
+        "noNewData": "没有新数据",
+        "unexpectedSilence": "一段时间没有数据",
+        "reauthRequired": "登录已过期",
+        "pausedAfterErrors": "出错后已暂停",
+        "notConnected": "未连接",
+        "paused": "已暂停",
+        "switchedOff": "已关闭",
+        "autoDisabled": "被拒绝后已关闭",
+        "sendingPaused": "发送已暂停",
+        "deliveryFailing": "上次送达失败"
+      },
+      "brings": {
+        "appleHealth": "健康 App 中的所有数据，经由 iPhone 应用",
+        "withings": "体重、血压、睡眠",
+        "whoop": "恢复、睡眠、负荷",
+        "googleHealth": "Fitbit 和 Pixel Watch",
+        "garmin": "睡眠、HRV、压力、活动",
+        "oura": "准备度、睡眠、HRV",
+        "polar": "恢复、睡眠、训练",
+        "strava": "将活动作为训练",
+        "nightscout": "连续血糖",
+        "dawarich": "地点和路线作为背景",
+        "healthConnectFolder": "来自 WebDAV 或 Nextcloud 的 Health Connect 导出",
+        "documentSources": "来自 Paperless-ngx 或 Papra 的文档",
+        "telegram": "通过你的机器人发送到 Telegram 聊天",
+        "ntfy": "一个 ntfy 主题",
+        "webPush": "此浏览器",
+        "webhook": "以 JSON 发送到你自己的地址",
+        "email": "通过电子邮件提醒",
+        "apns": "iPhone 上的通知",
+        "healthConnectApp": "Health Connect，经由 Android 应用"
+      }
+    },
+    "tokenList": {
+      "title": "API 和令牌",
+      "newToken": "新令牌",
+      "empty": "还没有令牌",
+      "caption": "你的令牌",
+      "scopeColumn": "权限",
+      "more": "更多",
+      "scopeMoreLabel": "此权限允许什么",
+      "mirrorMoreLabel": "写入 Apple 健康意味着什么",
+      "revoked": "已撤销",
+      "hideRevoked": "隐藏已撤销",
+      "menuLabel": "{name} 的操作",
+      "copied": "已复制",
+      "scope": {
+        "all": "完全访问",
+        "measurements": "测量数据，写入",
+        "workouts": "训练，写入",
+        "documents": "文档，写入",
+        "medication": "用药，写入",
+        "mcpRead": "MCP，读取",
+        "mcpWrite": "MCP，写入",
+        "fhir": "FHIR",
+        "profile": "档案，读取"
+      },
+      "scopeInfo": {
+        "measurements": "向你的记录添加测量值、自定义指标值和每日营养素总量。它不能读取、更改或删除任何内容。",
+        "workouts": "向你的记录添加新的训练。它不能读取、更改或删除任何内容。",
+        "documents": "向你的文档库添加新文档。它不能列出、打开、更改或删除任何内容。"
+      },
+      "create": {
+        "failed": "无法创建令牌。请重试。",
+        "createdTitle": "令牌已创建",
+        "done": "完成",
+        "shownOnce": "令牌只在此刻显示。",
+        "expiry": "有效期",
+        "expiryYear": "1 年",
+        "expiryDays": "{days, plural, other {# 天}}"
+      },
+      "api": {
+        "title": "API",
+        "address": "API 地址",
+        "copyAddress": "复制 API 地址",
+        "endpoints": "端点",
+        "openReference": "打开参考文档"
+      }
+    }
   },
   "admin": {
     "title": "管理",
@@ -9504,8 +9578,6 @@
       },
       "question": {
         "title": "使用 HealthLog 推送中继？",
-        "askTitle": "通过推送中继发送通知？",
-        "askBody": "内容保持加密。",
         "body": "为 App Store 版应用提供的通知，端到端加密：中继只能看到通知何时被发送。",
         "yes": "是",
         "no": "否",
@@ -9589,7 +9661,6 @@
       "notice": {
         "title": "设置这台服务器",
         "body": "五个简短步骤：注册、通知、AI 与隐私；任何一步之后都可以跳过或更改。",
-        "bodyShort": "五个简短步骤：注册、通知、AI 与隐私。",
         "open": "开始设置",
         "dismiss": "暂不"
       }
@@ -13549,7 +13620,6 @@
       },
       "syncIssue": {
         "title": "同步需要处理",
-        "askTitle": "同步已停止",
         "body": "{integration} 没有在同步。请重新连接以保持数据最新。"
       },
       "sourceQuiet": {
@@ -13603,10 +13673,9 @@
       "logDose": "服用",
       "later": "稍后",
       "answer": "回答",
-      "learnMore": "更多",
       "open": "打开",
       "setUp": "设置",
-      "reconnectShort": "重新连接",
+      "reconnectShort": "连接",
       "reconnect": "重新连接",
       "viewCheckups": "打开保健",
       "checkinKeep": "继续",
@@ -13617,6 +13686,23 @@
       "viewEcg": "查看记录",
       "viewSteps": "查看步数",
       "openSource": "打开"
+    },
+    "ask": {
+      "medication": "药物",
+      "overdue": "{time} 已逾期",
+      "overdueNow": "已逾期",
+      "due": "{time} 服用",
+      "dueNow": "现在服用",
+      "checkupDue": "该做体检了",
+      "visitToday": "今天就诊",
+      "visitTomorrow": "明天就诊",
+      "signedOut": "已断开",
+      "planFallback": "你的计划",
+      "planReview": "该回顾了",
+      "setupTitle": "此服务器",
+      "setupMeta": "未设置",
+      "relayTitle": "推送中继？",
+      "relayMeta": "已加密"
     },
     "today": {
       "deltaShort": "对比基线 {delta}",
@@ -16023,10 +16109,10 @@
       "fieldsLabel": "链接显示的内容",
       "expiryLabel": "链接到期",
       "expiry": {
-        "none": "永不，直到被撤销",
         "30": "30 天后",
         "365": "一年后",
-        "730": "两年后"
+        "730": "两年后",
+        "none": "永不，直到被撤销"
       },
       "create": "生成链接",
       "qrAlt": "急救卡链接的二维码",

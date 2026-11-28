@@ -231,17 +231,14 @@ describe("settings sections — SSR smoke", () => {
     expect(html).toContain("settings-section-ai-title");
   });
 
-  it("<IntegrationsSection> renders Withings card + the delivery-channels group", () => {
+  it("<IntegrationsSection> paints both lists while the overview loads", () => {
     const html = renderFramed(
       "integrations",
       <IntegrationsSection callbackUrls={CALLBACK_URLS} />,
     );
     expect(html).toContain("Integrations");
-    expect(html).toContain("Withings");
-    // v1.25.7 — delivery channels moved here from Notifications: the
-    // `#channels` anchor and the embedded channels panel both render.
-    expect(html).toContain('id="channels"');
-    expect(html).toContain('data-slot="notification-channels-panel"');
+    // Data sources and delivery channels, the two groups of the page.
+    expect(html).toContain("Data sources");
     expect(html).toContain("Delivery channels");
   });
 
