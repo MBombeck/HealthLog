@@ -2,9 +2,9 @@
   "status": 403,
   "body": {
     "data": null,
-    "error": "Account access denied",
+    "error": "This endpoint cannot be used while acting on another account",
     "meta": {
-      "errorCode": "sharing.access.denied",
+      "errorCode": "sharing.not_permitted",
       "requestId": "<requestId>"
     }
   },
@@ -13,12 +13,12 @@
       "status": 403,
       "action": null,
       "meta": {
-        "sharing_refusal": "guardian_only"
+        "sharing_refusal": "undeclared_mode"
       },
       "warnings": null,
       "error": {
-        "type": "SharingAccessDeniedError",
-        "message": "Account access denied"
+        "type": "SharingNotPermittedError",
+        "message": "This endpoint cannot be used while acting on another account"
       }
     }
   ],
