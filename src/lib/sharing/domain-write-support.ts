@@ -62,9 +62,8 @@ export const DOMAIN_WRITE_SUPPORT: Readonly<
   illness: { write: true, manage: true, guardian: false },
   // A mood entry and a screener are created at MANAGE, not at WRITE.
   mind: { write: false, manage: true, guardian: false },
-  // Every cycle write is a MANAGE route; renaming and removing a custom
-  // symptom is the guardian's too (#1615).
-  cycle: { write: false, manage: true, guardian: true },
+  // Every cycle write is a MANAGE route.
+  cycle: { write: false, manage: true, guardian: false },
   // #1403 — the vault is read-only under every adult grant. A managed
   // profile's guardian uploads, files, deletes and restores; sharing, sources
   // and the AI verbs stay with the owner.

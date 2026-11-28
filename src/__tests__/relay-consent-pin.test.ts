@@ -141,6 +141,13 @@ const PINS: ReadonlyArray<{
     covered:
       "The device registration reaches the same end through `endRelayStartedActivitiesBeforeWithdrawal` in `live-activity-registration.ts`, which runs it best effort so the withdrawal is stored even when the end fails. Same occasion, same Live Activity end, nothing new on the wire.",
   },
+  {
+    version: "2026-11-22",
+    fingerprint:
+      "add2360b224d2ce54a09568ed16029f58a8576ec6dccbe190787eb93d424652e",
+    covered:
+      "Both forms of the withdrawal end together: the end lives in `live-activity-relay-end.ts`, and the registration reaches it best effort through `endRelayStartedActivitiesBeforeWithdrawal`. Same occasion, same Live Activity end, nothing new on the wire.",
+  },
 ];
 
 /**

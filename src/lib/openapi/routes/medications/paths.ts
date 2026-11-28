@@ -1280,7 +1280,6 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
       },
       responses: {
-        ...recordRefusal(),
         "200": {
           description: "The updated category.",
           content: {
@@ -1306,7 +1305,6 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         "v1.40 (#1041) — deletes the category and, in the same transaction, moves every medication filed under it to OTHER; `movedCount` says how many moved. No medication is left pointing at a key that no longer exists. Another account's key, or a built-in value, is 404. Owner-only: not delegable, refused under a record switch.",
       requestParams: { path: categoryKeyPath },
       responses: {
-        ...recordRefusal(),
         "200": {
           description: "Deleted.",
           content: {
@@ -1660,7 +1658,6 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         path: z.object({ id: z.string() }),
       },
       responses: {
-        ...recordRefusal(),
         "200": {
           description: "Deletion succeeded.",
           content: {
