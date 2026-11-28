@@ -62,7 +62,8 @@ import {
 } from "@/lib/daily/priority-item-key";
 import { COACH_CHECKIN_ADJUST_INTENT } from "@/lib/daily/coach-checkin-intents";
 import type { EncounterKind } from "@/generated/prisma/client";
-import { makeFormatters } from "@/lib/format-locale";
+import { resolveIntlLocale } from "@/lib/format-locale";
+import { getDateTimeFormat } from "@/lib/intl/formatter-cache";
 import type { Locale } from "@/lib/i18n/config";
 import { encounterKindLabelKey } from "@/lib/encounters/kind-label";
 
@@ -594,7 +595,12 @@ function ownClock(
 ): string | null {
   const at = iso ? Date.parse(iso) : NaN;
   if (!locale || !Number.isFinite(at)) return null;
-  return makeFormatters(locale, "UTC", "AUTO", "AUTO").time(new Date(at));
+  // The language's default hour cycle: no preference applied, and no date.
+  return getDateTimeFormat(resolveIntlLocale(locale), {
+    timeZone: "UTC",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(at));
 }
 
 /** How many due check-ups a title names before it counts the rest. */
