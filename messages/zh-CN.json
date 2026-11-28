@@ -2220,7 +2220,9 @@
         },
         "viewRecent90": "最近 90 天",
         "viewAll": "完整历史",
-        "viewToggleLabel": "历史范围"
+        "viewToggleLabel": "历史范围",
+        "viewRecentShort": "90天",
+        "viewAllShort": "全部"
       },
       "verlauf": {
         "loading": "正在加载历史……",
@@ -2249,7 +2251,13 @@
           "confirmBody": "这次服药会计入该时段，与直接在该时段记录完全一样：按实际服用时间判定准时或延迟，因此依从率不会被虚高。你可随时解除归属。",
           "confirmCancel": "取消",
           "confirmAction": "归属"
-        }
+        },
+        "backfill": "补记过去的服药",
+        "extraColumn": "追加",
+        "takenAt": "{time}已服",
+        "weekOf": "{date}当周",
+        "thisWeek": "本周",
+        "showEarlier": "显示更早的周"
       },
       "notifications": {
         "title": "通知",
@@ -2367,7 +2375,8 @@
         "verlauf": "历史",
         "injektion": "注射",
         "erweitert": "高级",
-        "wirkung": "效果"
+        "wirkung": "效果",
+        "einstellungen": "设置"
       },
       "shell": {
         "loadFailed": "无法加载此药物。",
@@ -2540,6 +2549,58 @@
           "orderError": "开始必须早于结束。",
           "noTimes": "还没有设定服药时间。"
         }
+      },
+      "menu": {
+        "label": "用药操作",
+        "resume": "继续"
+      },
+      "settingsTab": {
+        "groups": {
+          "period": "周期"
+        },
+        "rows": {
+          "history": "历史",
+          "medication": "用药",
+          "export": "导出",
+          "import": "导入",
+          "api": "API 访问",
+          "codes": "临床编码",
+          "channels": "通知渠道"
+        },
+        "intakeCount": "{count, plural, other {#条服药记录}}",
+        "withAllData": "及其全部数据",
+        "courseCount": "{count, plural, other {#个疗程}}"
+      },
+      "overview": {
+        "changeMetric": "更换测量指标",
+        "metricField": "测量指标",
+        "details": "详情",
+        "since": "从那时起",
+        "daysChip": "{days, plural, other {#天}}",
+        "today": {
+          "progress": "{taken}/{total}",
+          "noneToday": "今天没有计划服药。",
+          "asNeededTaken": "今天已服{count, plural, other {#次}}。"
+        },
+        "intake": {
+          "title": "服药记录",
+          "missedNone": "{days, plural, other {#天}}内没有漏服。",
+          "missedSome": "{days, plural, other {#天}}内漏服{count, plural, other {#次}}。",
+          "asNeededCount": "{count, plural, =0 {近{days}天未服。} other {近{days}天服过#次。}}"
+        },
+        "legend": {
+          "taken": "{count, plural, other {已服#次}}",
+          "late": "{count, plural, other {迟服#次}}",
+          "missed": "{count, plural, other {漏服#次}}",
+          "skipped": "{count, plural, other {跳过#次}}"
+        },
+        "plan": {
+          "title": "方案",
+          "since": "自{date}起",
+          "range": "{start}至{end}",
+          "autoRecorded": "自动记录",
+          "reminderOn": "开启，提前{minutes, plural, other {#分钟}}"
+        }
       }
     },
     "logInjectionSiteTitle": "记录注射部位",
@@ -2638,7 +2699,8 @@
         "needAfter": "开始时的变化要求开始后至少 {days, plural, other {# 天}}有读数，且分布在 {span, plural, other {# 天}}之内，并落在已服药的日子里。",
         "fitFailed": "这些读数无法拟合，因此不显示开始时的变化。",
         "autocorrelation": "每日数值在相邻日之间相关很强，因此即便是这些区间也可能偏窄。"
-      }
+      },
+      "method": "计算方式"
     },
     "import": {
       "resultSuccess": "{imported, plural, other {已导入 # 条服药}}",
@@ -2870,7 +2932,8 @@
       "urlInvalid": "请输入以 https:// 开头的链接",
       "savedToast": "说明书链接已保存",
       "removedToast": "说明书链接已移除",
-      "saveError": "无法保存该说明书链接"
+      "saveError": "无法保存该说明书链接",
+      "searchShort": "搜索"
     }
   },
   "charts": {
@@ -16262,10 +16325,10 @@
       "fieldsLabel": "链接显示的内容",
       "expiryLabel": "链接到期",
       "expiry": {
-        "none": "永不，直到被撤销",
         "30": "30 天后",
         "365": "一年后",
-        "730": "两年后"
+        "730": "两年后",
+        "none": "永不，直到被撤销"
       },
       "create": "生成链接",
       "qrAlt": "急救卡链接的二维码",
@@ -16539,6 +16602,15 @@
     "metricLabels": {
       "systolicBloodPressure": "收缩压",
       "diastolicBloodPressure": "舒张压"
+    },
+    "efficacyResult": {
+      "lower": "自开始以来，平均值降低了 {amount}。",
+      "higher": "自开始以来，平均值升高了 {amount}。",
+      "unchanged": "自开始以来，平均值基本持平。",
+      "needBefore": "开始前的读数还不足以比较。",
+      "needAfter": "开始后的读数还不足以比较。",
+      "needStart": "添加开始日期才能比较前后。",
+      "needData": "读数还不足以比较。"
     }
   }
 }
