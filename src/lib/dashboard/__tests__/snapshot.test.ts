@@ -151,6 +151,7 @@ function moduleMap(
     vaccinations: true,
     timeline: true,
     seizures: true,
+    imaging: true,
   };
   return { ...base, ...overrides };
 }

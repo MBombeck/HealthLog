@@ -945,6 +945,14 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "labs",
     why: "One lab result of the record, fetched by id then guarded against the resolved user before anything is serialised.",
   },
+  "app/api/imaging/route.ts": {
+    domain: "labs",
+    why: "The record's imaging exams, and recording one. A finding read beside the lab results. The filed documents are read through the exam's own link rows, both ends narrowed to the resolved user, and their names are withheld from a grant that does not reach the vault. The create arm is a delegable write.",
+  },
+  "app/api/imaging/[id]/route.ts": {
+    domain: "labs",
+    why: "One imaging exam of the record, fetch-then-guard against the resolved user; another record's id is a 404.",
+  },
   "app/api/labs/overview/route.ts": {
     domain: "labs",
     why: "The Labs list's per-marker overview of the record: the newest reading of each biomarker, its count and a short trend. The same rows and the same biomarker include as `GET /api/labs`, grouped server-side; read only. The category order it applies comes from the caller's own list layout, never the owner's, so it reveals nothing about the record.",
@@ -1802,6 +1810,8 @@ const DELEGABLE_WRITE_ROUTES: Record<string, string> = {
     "Entering a reading. Both POST arms — single and batch — land rows under the resolved record; the safety-floor check, the reminder satisfaction and the rollup recompute all address the same record and are correct under substitution. The narrow ingest scope this route also names never reaches the substitution: it is refused a selector outright, so every row it writes is its own holder's.",
   "app/api/labs/route.ts":
     "Entering a lab result. The free-text path may mint a biomarker, and mints it into the RECORD's catalogue — a result added to somebody's record that left the marker on the helper's account would be worse than useless to the owner.",
+  "app/api/imaging/route.ts":
+    "Recording an imaging exam. The document ids the body may carry are re-narrowed to the resolved record by the link service before anything is filed, so a delegate cannot attach one record's report to another's exam.",
   "app/api/biomarkers/route.ts":
     "Adding an analyte to the record's catalogue. A name the record already tracks is the ordinary 409 from the same `(userId, name)` uniqueness the owner would hit themselves.",
   "app/api/illness/episodes/route.ts":
@@ -1904,6 +1914,11 @@ const DELEGABLE_MANAGE_ROUTES: Record<string, ManageEntry> = {
     domain: "labs",
     conditions: ["C4"],
     why: "Editing and deleting a lab result. The delete soft-deletes with a restore route beside it; the edit takes C4.",
+  },
+  "app/api/imaging/[id]/route.ts": {
+    domain: "labs",
+    conditions: ["C3", "C4"],
+    why: "Correcting and removing one imaging exam. The delete is hard, so C3 files the model, id, modality and day; the documents stay in the vault. C4 on the edit over the modality, day and side, the sealed text never quoted.",
   },
   "app/api/labs/restore/route.ts": {
     domain: "labs",
@@ -2677,8 +2692,11 @@ const ACTOR_ROUTES: Record<string, string> = {
  * #1615 reached the managed profile's guardian through the owner rule
  * (`requireAuth`), so the medication DELETE and the custom category and
  * symptom edits join no list here.
+ *
+ * Imaging exams (#1672) join the record, write and manage lists: the list and
+ * detail routes, the create arm, and the edit and delete. 360 -> 364.
  */
-const FROZEN_ENTRY_COUNT = 360;
+const FROZEN_ENTRY_COUNT = 364;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —
@@ -3457,7 +3475,7 @@ describe("(g) the MANAGE route set is frozen", () => {
 
   it("keeps the admitted mutation inventory complete and discoverable", () => {
     expect(ADMITTED_MUTATING_HANDLERS.length).toBeGreaterThan(0);
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(110);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(113);
 
     const expected = ADMITTED_MUTATING_HANDLERS.map(
       ({ handlerModule, action, level }) =>

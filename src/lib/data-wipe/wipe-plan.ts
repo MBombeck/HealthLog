@@ -136,6 +136,12 @@ export const WIPE_MODELS = [
   // which point at them with SetNull, so neither count reads short.
   "CustomVaccine",
 
+  // ── Imaging exams ───────────────────────────────────────────────────────
+  // The document link cascades from the exam and from the stored document,
+  // so it goes first for a truthful count.
+  "ImagingExamDocumentLink",
+  "ImagingExam",
+
   // ── Clinical record ─────────────────────────────────────────────────────
   "MentalHealthAssessment",
   "LabResult",

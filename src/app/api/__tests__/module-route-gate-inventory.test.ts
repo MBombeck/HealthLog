@@ -202,6 +202,10 @@ const MODULE_ROUTE_TREES_BY_KEY: Readonly<
   // through `requireSeizuresEnabled`, data routes included: the diary is off
   // by default and nothing outside it writes these rows.
   seizures: ["src/app/api/seizures"],
+  // v1.50 (#1672) — imaging exams. SURFACE-gated like vaccinations: both
+  // `/api/imaging/*` routes are raw CRUD over the person's own exams, EXEMPT
+  // below.
+  imaging: ["src/app/api/imaging"],
 };
 
 /** Every declared tree, de-duplicated — the set this inventory walks. */
@@ -473,6 +477,12 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   // while the nav entry, the picker and the report leaf hide.
   "src/app/api/vaccinations/[id]/booster/route.ts",
   "src/app/api/vaccinations/suggest/route.ts",
+  // ── DATA LAYER (imaging) ──────────────────────────────────────────
+  // v1.50 (#1672) — imaging exams are SURFACE-gated (nav entry, add menu,
+  // search, report leaf). The row store stays reachable so a restore keeps
+  // working with the module off and re-enabling finds every exam intact.
+  "src/app/api/imaging/route.ts",
+  "src/app/api/imaging/[id]/route.ts",
   // ── DATA LAYER (timeline) ─────────────────────────────────────────
   // v1.42 (#613) — the record's life events. Raw CRUD over the person's own
   // rows: the module decides whether they SURFACE (the timeline, the day's

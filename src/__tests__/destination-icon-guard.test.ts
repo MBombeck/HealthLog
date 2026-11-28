@@ -42,6 +42,7 @@ const NAV: Record<string, DestinationId> = {
   "/illness": "illness",
   "/seizures": "seizures",
   "/vaccinations": "vaccinations",
+  "/imaging": "imaging",
   "/documents": "documents",
   "/timeline": "timeline",
   "/insights": "insights",
@@ -120,6 +121,7 @@ const MODULES: Record<ModuleKey, DestinationId> = {
   vaccinations: "vaccinations",
   timeline: "timeline",
   seizures: "seizures",
+  imaging: "imaging",
 };
 
 type Row = { surface: string; key: string; icon: unknown };

@@ -47,6 +47,7 @@ type DomainDataClient = Pick<
   | "vaccinationRecord"
   | "lifeEvent"
   | "seizureEvent"
+  | "imagingExam"
 >;
 
 type DomainProbe = (
@@ -221,6 +222,13 @@ const MODULE_DOMAIN_PROBES: Record<OwnedModuleKey, DomainProbe> = {
   seizures: (client, recordId) =>
     anyRow(
       client.seizureEvent.findFirst({
+        where: { userId: recordId },
+        select: { id: true },
+      }),
+    ),
+  imaging: (client, recordId) =>
+    anyRow(
+      client.imagingExam.findFirst({
         where: { userId: recordId },
         select: { id: true },
       }),

@@ -31,4 +31,5 @@ export const MODULE_ICONS: Record<ModuleKey, LucideIcon> = {
   vaccinations: ICON.vaccinations,
   timeline: ICON.timeline,
   seizures: ICON.seizures,
+  imaging: ICON.imaging,
 };

@@ -18,7 +18,8 @@ export type LinkSourceKind =
   | "vaccination"
   | "conditionEpisode"
   | "medication"
-  | "labResult";
+  | "labResult"
+  | "imagingExam";
 
 /** The record a link points at. */
 export type LinkTargetKind =
@@ -186,6 +187,13 @@ const SOURCES: Record<
     delegate: (tx) => narrow<OwnedRowDelegate>(tx.labResult),
     relationField: "labResult",
     softDeletes: true,
+  },
+  // v1.50 — an imaging exam files its report and its pictures. Hard-deleted,
+  // so there is no tombstone to filter on.
+  imagingExam: {
+    delegate: (tx) => narrow<OwnedRowDelegate>(tx.imagingExam),
+    relationField: "exam",
+    softDeletes: false,
   },
 };
 
@@ -434,6 +442,15 @@ const LINK_TABLES: Partial<
     sourceColumn: "episodeId",
     targetColumn: "medicationId",
     target: MEDICATION_ENDPOINT,
+  },
+  // v1.50 — `imaging_exam_document_links`: an exam's report and pictures,
+  // written and read from the exam. Imaging is not one of the six kinds of
+  // the relation matrix; the exam is its only reader.
+  "imagingExam:document": {
+    delegate: (tx) => narrow<LinkRowDelegate>(tx.imagingExamDocumentLink),
+    sourceColumn: "examId",
+    targetColumn: "documentId",
+    target: DOCUMENT_ENDPOINT,
   },
 };
 

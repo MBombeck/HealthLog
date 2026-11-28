@@ -1238,6 +1238,11 @@ model User {
   // `vaccinations` module key, which governs the surfaces and not the store.
   vaccinationRecords                        VaccinationRecord[]
   vaccinationDocumentLinks                  VaccinationDocumentLink[]
+  // v1.50 — imaging exams (MRI, CT, X-ray, ...), one row per exam, with the
+  // report and the pictures filed in the document vault beside it. Gated by
+  // the `imaging` module key, which governs the surfaces and not the store.
+  imagingExams                              ImagingExam[]
+  imagingExamDocumentLinks                  ImagingExamDocumentLink[]
   // v1.42 — user-defined vaccines for products the shipped catalogue does
   // not list (#1005).
   customVaccines                            CustomVaccine[]
@@ -10541,6 +10546,9 @@ model InboundDocument {
   /// Impfpass page carries many doses, and a dose may be evidenced by more
   /// than one page.
   vaccinationLinks VaccinationDocumentLink[]
+  /// Imaging exam memberships (m:n via `ImagingExamDocumentLink`): the
+  /// written report and the pictures of one exam.
+  imagingExamLinks ImagingExamDocumentLink[]
 
   @@index([userId, createdAt])
   // The list always filters `deletedAt: null` and sorts by `documentDate`, so
@@ -12226,4 +12234,94 @@ model HealthConnectRemoteSource {
 
   @@index([enabled, nextAttemptAt])
   @@map("health_connect_remote_sources")
+}
+
+// ─── Imaging exams ────────────────────────────────────────────
+
+/// v1.50 — the kind of imaging exam. Closed and small on purpose; OTHER
+/// absorbs the rest (PET, scintigraphy, DEXA, ...) until a value earns its
+/// own entry, which is an append to this enum.
+enum ImagingModality {
+  MRI
+  CT
+  X_RAY
+  ULTRASOUND
+  MAMMOGRAPHY
+  OTHER
+
+  @@map("imaging_modality")
+}
+
+/// Which side of the body an exam covered. NULL on the exam = not sided
+/// (a skull, the abdomen) or not recorded.
+enum ImagingSide {
+  LEFT
+  RIGHT
+  BOTH
+
+  @@map("imaging_side")
+}
+
+/// v1.50 — one imaging exam (MRI, CT, X-ray, ultrasound, mammography).
+///
+/// The files are not here. The written report and the pictures stay in the
+/// document vault (`InboundDocument`) and are filed against the exam through
+/// `ImagingExamDocumentLink`, the shape lab results and vaccinations use. No
+/// second file store, no viewer, no reading of the pictures.
+///
+/// Every free-text field is the person's own health text and is sealed at
+/// rest (AES-256-GCM, the `*Encrypted` Bytes convention). The modality, the
+/// date and the side are structured and stay plaintext so the list can sort
+/// and the FHIR export can code them.
+///
+/// Hard-deleted, like a medication's history is not: an exam has no
+/// downstream state to rewind, and the audit log keeps the fact of the delete.
+///
+/// Module gate: `"imaging"`, SURFACE-gated like `vaccinations`. The data
+/// routes stay reachable so a restore keeps working and re-enabling the
+/// module finds every row intact.
+model ImagingExam {
+  id                        String          @id @default(cuid())
+  userId                    String          @map("user_id")
+  modality                  ImagingModality
+  /// The day of the exam, at UTC midnight. A report carries a date; the time
+  /// is not collected.
+  performedAt               DateTime        @map("performed_at")
+  side                      ImagingSide?
+  /// The body part as the person types it ("Knee", "Lumbar spine").
+  bodyPartEncrypted         Bytes?          @map("body_part_encrypted")
+  /// The clinic, practice or lab that performed the exam.
+  facilityEncrypted         Bytes?          @map("facility_encrypted")
+  /// The doctor who requested the exam.
+  requestingDoctorEncrypted Bytes?          @map("requesting_doctor_encrypted")
+  /// The person's own short summary of the result.
+  conclusionEncrypted       Bytes?          @map("conclusion_encrypted")
+  createdAt                 DateTime        @default(now()) @map("created_at")
+  updatedAt                 DateTime        @updatedAt @map("updated_at")
+
+  user          User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documentLinks ImagingExamDocumentLink[]
+
+  @@index([userId, performedAt])
+  @@map("imaging_exams")
+}
+
+/// Exam ↔ stored document, the `LabResultDocumentLink` shape. m:n because an
+/// exam has a report and several pictures, and one PDF may hold two exams.
+/// Never mandatory. `userId` is denormalised for the owner-scoped list query.
+model ImagingExamDocumentLink {
+  id         String   @id @default(cuid())
+  examId     String   @map("exam_id")
+  documentId String   @map("document_id")
+  userId     String   @map("user_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  exam     ImagingExam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  document InboundDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, documentId])
+  @@index([documentId])
+  @@index([userId])
+  @@map("imaging_exam_document_links")
 }

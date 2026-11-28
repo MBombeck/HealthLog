@@ -742,6 +742,18 @@ async function main() {
       await rotateBytesColumn("SeizureEvent", field, prisma.seizureEvent),
     );
   }
+  // Imaging exams (#1672): body part, facility, requesting doctor and
+  // conclusion. NULL columns are skipped by the walk.
+  for (const field of [
+    "bodyPartEncrypted",
+    "facilityEncrypted",
+    "requestingDoctorEncrypted",
+    "conclusionEncrypted",
+  ] as const) {
+    results.push(
+      await rotateBytesColumn("ImagingExam", field, prisma.imagingExam),
+    );
+  }
   // v1.42 — a life event's title and note. The note is NULL on most rows,
   // which the walk skips.
   results.push(

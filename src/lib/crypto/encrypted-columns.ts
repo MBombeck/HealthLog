@@ -399,6 +399,11 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
   { model: "SeizureEvent", field: "auraEncrypted", kind: "bytes" },
   { model: "SeizureEvent", field: "witnessNoteEncrypted", kind: "bytes" },
   { model: "SeizureEvent", field: "noteEncrypted", kind: "bytes" },
+  // Imaging exams (#1672): the person's own words about one exam.
+  { model: "ImagingExam", field: "bodyPartEncrypted", kind: "bytes" },
+  { model: "ImagingExam", field: "facilityEncrypted", kind: "bytes" },
+  { model: "ImagingExam", field: "requestingDoctorEncrypted", kind: "bytes" },
+  { model: "ImagingExam", field: "conclusionEncrypted", kind: "bytes" },
   // v1.42 — a life event's title and note, in the person's own words.
   { model: "LifeEvent", field: "titleEncrypted", kind: "bytes" },
   { model: "LifeEvent", field: "noteEncrypted", kind: "bytes" },
@@ -728,6 +733,7 @@ export const UPDATED_AT_MODELS: ReadonlySet<string> = new Set([
   "InboundDocument",
   "InsightNarrative",
   "InsightStatusCache",
+  "ImagingExam",
   "IntegrationStatus",
   "LabResult",
   "LifeEvent",

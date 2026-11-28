@@ -81,6 +81,8 @@ export const MODULE_SHARE_DOMAIN: Readonly<
   timeline: null,
   // The seizure diary rides the illness section (see `scope.ts`).
   seizures: "illness",
+  // An imaging exam is a finding, read in the labs section beside results.
+  imaging: "labs",
 });
 
 /** Does a grant carrying these sections open this one? `null` is the whole record. */
