@@ -33,7 +33,7 @@ const EN_PATH = join(MESSAGES_DIR, "en.json");
 // intentionally excluded — it carries accepted anglicisms (e.g. "Health
 // Score") that would be noise here, and is covered by its own pinned checks in
 // `i18n-locale-integrity`.
-const LEAK_LOCALES = ["es", "fr", "it", "pl", "ko", "nl", "pt-BR"] as const;
+const LEAK_LOCALES = ["es", "fr", "it", "pl", "ko", "nl", "pt-BR", "zh-CN"] as const;
 
 function flattenValues(
   obj: unknown,
@@ -75,6 +75,8 @@ function isMaskPlaceholder(words: string[]): boolean {
  * reason. Prune an entry only when the value genuinely diverges in a locale.
  */
 const LEGIT_IDENTICAL = new Set<string>([
+  // Telegram calls the field "Chat ID" in Chinese too.
+  "settings.chatId",
   // A device's own name for its score, which the vendor does not translate
   // ("WHOOP Recovery", "Polar Nightly Recharge"): the morning card names the
   // value the way the device's own app does.
