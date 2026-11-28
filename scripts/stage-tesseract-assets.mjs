@@ -50,6 +50,10 @@ const files = [
     "tesseract-core-relaxedsimd-lstm.wasm.js",
   ].map((file) => [join(coreDir, file), join("core", file)]),
   // Literal specifiers, so the dependency is visible to static analysis.
+  // `4.0.0_best_int` is the build every language uses: the compressed
+  // integer one, 1.6 MB for Chinese against 19 MB for the package's other
+  // build, so the Chinese reader adds a size the image already pays for a
+  // Latin language.
   ...[
     ["deu", require.resolve("@tesseract.js-data/deu/package.json")],
     ["eng", require.resolve("@tesseract.js-data/eng/package.json")],
@@ -61,6 +65,7 @@ const files = [
     ["por", require.resolve("@tesseract.js-data/por/package.json")],
     ["rus", require.resolve("@tesseract.js-data/rus/package.json")],
     ["kor", require.resolve("@tesseract.js-data/kor/package.json")],
+    ["chi_sim", require.resolve("@tesseract.js-data/chi_sim/package.json")],
   ].map(([lang, manifest]) => [
     join(dirname(manifest), "4.0.0_best_int", `${lang}.traineddata.gz`),
     join("lang", `${lang}.traineddata.gz`),

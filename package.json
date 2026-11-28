@@ -114,6 +114,7 @@
     "@stryker-mutator/core": "10.1.1",
     "@stryker-mutator/vitest-runner": "10.0.0",
     "@tailwindcss/postcss": "^4",
+    "@tesseract.js-data/chi_sim": "1.0.0",
     "@tesseract.js-data/deu": "1.0.0",
     "@tesseract.js-data/eng": "1.0.0",
     "@tesseract.js-data/fra": "1.0.0",
