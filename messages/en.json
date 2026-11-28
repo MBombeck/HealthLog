@@ -2365,7 +2365,6 @@
       },
       "uebersicht": {
         "nextDoseLabel": "Next dose",
-        "nextDoseAsNeeded": "As needed, no planned dose.",
         "nextDoseNotTracked": "Not tracked, kept as a record.",
         "pausedHint": "Paused: no reminders.",
         "reminderLabel": "Reminder",

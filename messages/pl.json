@@ -2365,7 +2365,6 @@
       },
       "uebersicht": {
         "nextDoseLabel": "Następna dawka",
-        "nextDoseAsNeeded": "W razie potrzeby, brak zaplanowanej dawki.",
         "nextDoseNotTracked": "Przyjęcia nie są rejestrowane, tylko zapis.",
         "pausedHint": "Wstrzymano, brak przypomnień.",
         "reminderLabel": "Przypomnienie",

@@ -2365,7 +2365,6 @@
       },
       "uebersicht": {
         "nextDoseLabel": "Volgende dosis",
-        "nextDoseAsNeeded": "Zo nodig, geen geplande dosis.",
         "nextDoseNotTracked": "Niet bijgehouden, alleen ter registratie.",
         "pausedHint": "Gepauzeerd: geen herinneringen.",
         "reminderLabel": "Herinnering",

@@ -2365,7 +2365,6 @@
       },
       "uebersicht": {
         "nextDoseLabel": "Следующая доза",
-        "nextDoseAsNeeded": "По потребности, запланированной дозы нет.",
         "nextDoseNotTracked": "Не отслеживается, хранится как запись.",
         "pausedHint": "На паузе: без напоминаний.",
         "reminderLabel": "Напоминание",

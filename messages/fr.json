@@ -2365,7 +2365,6 @@
       },
       "uebersicht": {
         "nextDoseLabel": "Prochaine dose",
-        "nextDoseAsNeeded": "Au besoin, aucune dose planifiée.",
         "nextDoseNotTracked": "Prises non suivies, conservé pour mémoire.",
         "pausedHint": "En pause, aucun rappel.",
         "reminderLabel": "Rappel",

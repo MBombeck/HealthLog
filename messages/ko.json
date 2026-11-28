@@ -2365,7 +2365,6 @@
       },
       "uebersicht": {
         "nextDoseLabel": "다음 복용",
-        "nextDoseAsNeeded": "필요시 복용: 예정된 복용이 없어요.",
         "nextDoseNotTracked": "복용을 기록하지 않아요. 기록으로만 남겨요.",
         "pausedHint": "일시중지: 알림이 오지 않아요.",
         "reminderLabel": "알림",
