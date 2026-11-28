@@ -39,7 +39,6 @@ const REMAINING = [
   "components/insights/workout-detail/day-context.tsx: insights.workouts.detail.dayMoodNone",
   "components/insights/workout-detail/day-context.tsx: insights.workouts.detail.daySleepNone",
   "components/labs/biomarker-aliases.tsx: labs.aliases.empty",
-  "components/medications/dose-history-ledger.tsx: medications.detail.verlauf.summaryEmpty",
   "components/medications/scheduling/dose-window-editor.tsx: medications.detail.zeitplan.window.noTimes",
   "components/medications/sections/composition-section.tsx: medications.composition.editorEmpty",
   "components/records/screening-hints-card.tsx: records.life.screening.noReminder",

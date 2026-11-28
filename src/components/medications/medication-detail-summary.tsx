@@ -1,26 +1,25 @@
 "use client";
 
 /**
- * v1.7.2 — compact, non-editable medication-detail header.
+ * The medication detail page's header, in one line: the name, the status
+ * chip, the dose and the cadence, with the page's menu on the right. On a
+ * phone the dose and cadence wrap under the name.
  *
- * Supersedes the v1.7.0 `<MedicationDetailHeader>` (Edit / History /
- * Advanced action row) and the `<CadenceSummaryRow>` "Rhythmus" block.
- * The detail page is now history-centric: editing and advanced settings
- * are reached from the medications-list card kebab only, so this header
- * carries NO action buttons. It is a read-only summary line:
- *
- *   name (H1) → dose (muted) → status pill → plain-language cadence line
- *
- * One-shot medications render `Einmalig am …` in place of the cadence
- * summary; a pending one-shot falls back to the pending copy.
+ * The course window (start, end) and the person's note moved into the plan
+ * card on the overview; the header names the medication and how it is taken,
+ * nothing more. One-shot medications read "Einmalig am …" in place of the
+ * cadence; as-needed ones read "Bei Bedarf".
  */
 
+import type { ReactNode } from "react";
+
 import { Badge } from "@/components/ui/badge";
-import { MedicationNote } from "@/components/medications/medication-note";
 import {
+  cadenceLineFor,
   hydrateWizardPayload,
-  summariseCadence,
+  sortTimes,
   type MedicationPayload,
+  type WizardPayload,
 } from "@/components/medications/wizard/wizard-payload";
 import {
   useTranslations,
@@ -48,11 +47,8 @@ export interface MedicationDetailSummaryProps {
   startsOn?: string | null;
   /** v1.39.1 (#1033) — intake tracking off: a "Record only" badge. */
   recordOnly?: boolean;
-  /**
-   * #1371 — the person's own note ("30 to 60 minutes before food"), shown
-   * under the cadence line. Null or empty renders nothing.
-   */
-  note?: string | null;
+  /** The page menu (edit, pause, end), right of the line. */
+  menu?: ReactNode;
 }
 
 type Status = "active" | "paused" | "ended";
@@ -65,6 +61,76 @@ function resolveStatus(
   return active ? "active" : "paused";
 }
 
+/**
+ * The cadence and its times without the course window ("Jeden Tag, um 08:00
+ * und 20:00"): the start and end dates live in the plan below the header.
+ */
+export function summariseCadenceShort(
+  payload: WizardPayload,
+  t: (key: string, params?: Record<string, string | number>) => string,
+  wallTime: (hhmm: string) => string,
+  joinTimes: (times: string[]) => string,
+): string {
+  const cadenceLine = cadenceLineFor(payload, t);
+  const timesPhrase =
+    payload.mode !== "oneShot" &&
+    payload.mode !== "asNeeded" &&
+    payload.timesOfDay.length > 0
+      ? t("medications.wizard.summary.times", {
+          times: joinTimes(sortTimes(payload.timesOfDay).map(wallTime)),
+        })
+      : "";
+  return [cadenceLine, timesPhrase].filter(Boolean).join(", ");
+}
+
+/** Clock times as a list in the reader's language: "08:00 und 20:00". */
+export function useJoinTimes(): (times: string[]) => string {
+  const { locale } = useTranslations();
+  return (times) => {
+    try {
+      return new Intl.ListFormat(locale, {
+        style: "long",
+        type: "conjunction",
+      }).format(times);
+    } catch {
+      return times.join(", ");
+    }
+  };
+}
+
+/** The cadence in one line, as the header says it. */
+export function useCadenceLine({
+  payload,
+  oneShot,
+  asNeeded,
+  startsOn,
+}: {
+  payload: MedicationPayload;
+  oneShot: boolean;
+  asNeeded: boolean;
+  startsOn?: string | null;
+}): string {
+  const { t, locale } = useTranslations();
+  const formatters = useFormatters();
+  const dateFormatPref = useDateFormatPreference();
+  const joinTimes = useJoinTimes();
+  // Issue #490 — `startsOn` is a calendar date: rendered UTC-pinned.
+  return oneShot
+    ? startsOn
+      ? t("medications.detail.cadence.oneShotOn", {
+          date: formatCalendarDate(new Date(startsOn), dateFormatPref, locale),
+        })
+      : t("medications.detail.cadence.oneShotPending")
+    : asNeeded
+      ? t("medications.detail.cadence.asNeeded")
+      : summariseCadenceShort(
+          hydrateWizardPayload(payload),
+          t,
+          formatters.wallTime,
+          joinTimes,
+        );
+}
+
 export function MedicationDetailSummary({
   name,
   dose,
@@ -75,12 +141,11 @@ export function MedicationDetailSummary({
   asNeeded = false,
   startsOn,
   recordOnly = false,
-  note = null,
+  menu,
 }: MedicationDetailSummaryProps) {
-  const { t, locale } = useTranslations();
-  const formatters = useFormatters();
-  const dateFormatPref = useDateFormatPreference();
+  const { t } = useTranslations();
   const status = resolveStatus(active, courseStatus);
+  const cadenceLine = useCadenceLine({ payload, oneShot, asNeeded, startsOn });
 
   const statusLabel =
     status === "active"
@@ -89,10 +154,6 @@ export function MedicationDetailSummary({
         ? t("medications.detail.status.paused")
         : t("medications.detail.status.ended");
 
-  // v1.12.2 — use the semantic `bg-success` / `bg-warning` utilities (each a
-  // straight alias over the same colour the raw `hsl(var(--…))` resolved to)
-  // so the detail status dot speaks the same token vocabulary as the card
-  // status pill and streak instead of the raw HSL var form.
   const dotClass =
     status === "active"
       ? "bg-success"
@@ -100,60 +161,43 @@ export function MedicationDetailSummary({
         ? "bg-warning"
         : "bg-muted-foreground";
 
-  // Issue #490 — `Medication.startsOn` is a `@db.Date` calendar date
-  // (serialised as UTC midnight). The old `formatters.dateTime(startsOn)`
-  // re-read that instant in the display zone: it invented a meaningless
-  // clock time and shifted the day for zones west of UTC. A calendar date
-  // renders UTC-pinned (date only), correct in every zone.
-  const cadenceLine = oneShot
-    ? startsOn
-      ? t("medications.detail.cadence.oneShotOn", {
-          date: formatCalendarDate(new Date(startsOn), dateFormatPref, locale),
-        })
-      : t("medications.detail.cadence.oneShotPending")
-    : asNeeded
-      ? t("medications.detail.cadence.asNeeded")
-      : summariseCadence(
-          hydrateWizardPayload(payload),
-          t,
-          formatters.date,
-          formatters.wallTime,
-        );
-
   return (
-    <div className="space-y-1.5" data-slot="medication-detail-summary">
-      <PageHeader title={name} meta={dose} />
-      <div
-        className="text-muted-foreground flex items-center gap-2 text-xs"
-        data-slot="medication-detail-status-row"
-      >
-        <Badge variant="secondary" className="gap-1.5">
-          <span
-            aria-hidden="true"
-            className={`inline-block h-2 w-2 rounded-full ${dotClass}`}
-          />
-          {statusLabel}
-        </Badge>
-        {recordOnly && (
-          <Badge
-            variant="secondary"
-            data-slot="medication-detail-record-only-badge"
-          >
-            {t("medications.recordOnlyBadge")}
-          </Badge>
-        )}
-      </div>
-      <p
-        className="text-muted-foreground text-sm"
-        data-slot="medication-detail-cadence-line"
-      >
-        {cadenceLine}
-      </p>
-      <MedicationNote
-        note={note}
-        slot="medication-detail-note"
-        icon
-        className="pt-1"
+    <div data-slot="medication-detail-summary">
+      <PageHeader
+        title={name}
+        actions={menu}
+        titleAccessory={
+          <>
+            <Badge
+              variant="secondary"
+              className="gap-1.5"
+              data-slot="medication-detail-status"
+            >
+              <span
+                aria-hidden="true"
+                className={`inline-block size-2 rounded-full ${dotClass}`}
+              />
+              {statusLabel}
+            </Badge>
+            {recordOnly && (
+              <Badge
+                variant="secondary"
+                data-slot="medication-detail-record-only-badge"
+              >
+                {t("medications.recordOnlyBadge")}
+              </Badge>
+            )}
+            <p
+              className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-sm max-sm:basis-full"
+              data-slot="medication-detail-cadence-line"
+            >
+              {dose && (
+                <span className="text-foreground font-semibold">{dose}</span>
+              )}
+              <span className="text-muted-foreground">{cadenceLine}</span>
+            </p>
+          </>
+        }
       />
     </div>
   );

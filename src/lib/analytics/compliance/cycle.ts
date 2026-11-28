@@ -1,6 +1,7 @@
 // Extracted from the former single-file `compliance.ts`. See `../compliance.ts`
 // (the barrel) for the module map. Pure move — no logic changes.
 
+import { effectiveGraceMinutes } from "@/lib/medications/scheduling/grace";
 import { dayKeyOfDate } from "@/lib/medications/course-window";
 import { userDayKey } from "@/lib/tz/format";
 import {
@@ -192,7 +193,7 @@ export function buildCurrentCycle(
         open = new Date(open.getTime() + n * DAY_MS);
       }
       if (ctx.endsOn && open.getTime() > ctx.endsOn.getTime()) continue;
-      const graceMs = (canonical.reminderGraceMinutes ?? 60) * 60 * 1000;
+      const graceMs = effectiveGraceMinutes(canonical) * 60 * 1000;
       consider(open, new Date(open.getTime() + graceMs));
       continue;
     }

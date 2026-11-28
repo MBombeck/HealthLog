@@ -1,12 +1,23 @@
 /**
- * Which dashboard tiles have something to say today (`TileAttention`), from
- * the reads the snapshot already holds: the summaries, the last-seen
- * timestamps and the resolved target bands. No query of its own.
+ * Which dashboard tiles have something to say today (`TileAttention`), and
+ * where their comparison lines sit against the target band
+ * (`tiles.comparison`), from the reads the snapshot already holds: the
+ * summaries, the last-seen timestamps and the resolved target bands. No
+ * query of its own.
  */
 import type { DataSummary } from "@/lib/analytics/trends";
+import type { TrafficRange } from "@/lib/analytics/value-bands";
 import type { DashboardTargetBands } from "@/lib/dashboard/bands";
 import type { DashboardLayout } from "@/lib/dashboard-layout";
 import { userDayKey } from "@/lib/tz/format";
+
+import {
+  rangeTone,
+  resolveTileComparison,
+  type TileComparisonMap,
+} from "./tile-comparison";
+
+export type { TileComparisonMap };
 
 import {
   orderStripWidgets,
@@ -42,12 +53,13 @@ const CHANGE_MIN_SHARE = 0.05;
 /** A reading older than this says nothing about today. */
 const FRESH_DAYS = 7;
 
-type GreenRange = { greenMin: number; greenMax: number } | null | undefined;
+type Range = TrafficRange | null | undefined;
 
-const outside = (value: number | null | undefined, range: GreenRange) =>
-  value != null &&
-  range != null &&
-  (value < range.greenMin || value > range.greenMax);
+/** Outside the green band, by the one tile band rule (`rangeTone`). */
+const outside = (value: number | null | undefined, range: Range) => {
+  const band = rangeTone(value, range).band;
+  return band === "fair" || band === "low";
+};
 
 function clearChange(s: DataSummary): boolean {
   const slope = s.slope7;
@@ -65,7 +77,7 @@ export function resolveTileAttention(input: {
 }): TileAttentionMap {
   const { summaries, lastSeenByType, bands, now, timezone } = input;
   const todayKey = userDayKey(now, timezone);
-  const ranges: Record<string, GreenRange> = {
+  const ranges: Record<string, Range> = {
     WEIGHT: bands.weightRange,
     BLOOD_PRESSURE_SYS: bands.bpSysRange,
     BLOOD_PRESSURE_DIA: bands.bpDiaRange,
@@ -100,8 +112,9 @@ export function resolveTileAttention(input: {
 }
 
 /**
- * The snapshot with `tiles.attention` and `tiles.order` filled in, from the
- * bands, summaries, last-seen times and layout it already carries.
+ * The snapshot with `tiles.attention`, `tiles.order` and `tiles.comparison`
+ * filled in, from the bands, summaries, last-seen times and layout it
+ * already carries; `t` words the comparison's deviation line in the response language.
  */
 export function withTileOrder<
   S extends {
@@ -114,9 +127,10 @@ export function withTileOrder<
       lastSeenByType: Record<string, { lastSeenAt: string } | null>;
       attention?: TileAttentionMap;
       order?: string[];
+      comparison?: TileComparisonMap;
     };
   },
->(snapshot: S): S {
+>(t: (key: string) => string, snapshot: S): S {
   const attention = resolveTileAttention({
     summaries: snapshot.tiles.summaries,
     lastSeenByType: snapshot.tiles.lastSeenByType,
@@ -130,6 +144,12 @@ export function withTileOrder<
       ...snapshot.tiles,
       attention,
       order: orderStripWidgets(snapshot.layout, attention),
+      comparison: resolveTileComparison({
+        summaries: snapshot.tiles.summaries,
+        bands: snapshot.targetBands,
+        attention,
+        t,
+      }),
     },
   };
 }

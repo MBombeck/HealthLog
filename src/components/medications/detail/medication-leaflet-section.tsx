@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The medication's "Leaflet" section on the overview tab (#1430, step 1).
+ * The medication's leaflet, one line of the overview's plan (#1430).
  *
  *  - "Find leaflet" opens the official registry search of the person's
  *    chosen country in a new tab, with the name (and strength where the
@@ -18,13 +18,17 @@ import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { ExternalLink } from "lucide-react";
 
-import { MedicationDetailSection } from "@/components/medications/medication-detail-section";
 import { MedicineRegistrySelect } from "@/components/settings/medicine-registry-card";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { Button } from "@/components/ui/button";
 import { InlineAction } from "@/components/ui/inline-action";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useAuth } from "@/hooks/use-auth";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { apiPut } from "@/lib/api/api-fetch";
@@ -56,10 +60,22 @@ function hostOf(url: string): string {
   }
 }
 
-export function MedicationLeafletSection({
+/**
+ * The leaflet as one line of the plan: "Beipackzettel" on the left; on the
+ * right the saved leaflet as a chip, or "Suchen" for the registry search,
+ * and "Mehr" for the rest (where the search opens, the registry choice, the
+ * registry reminder, saving a link). No filled button: the page's primary
+ * actions are the overview cards' button pairs.
+ *
+ * Rendered as a `<div>` of a description list (`dt` + `dd`), so it sits in
+ * the plan card's list like every other row.
+ */
+export function MedicationLeafletRow({
   medication,
+  className,
 }: {
   medication: LeafletSectionMedication;
+  className?: string;
 }) {
   const { t } = useTranslations();
   const { isAuthenticated } = useAuth();
@@ -69,73 +85,105 @@ export function MedicationLeafletSection({
   const saved = medication.leafletUrl ?? null;
 
   return (
-    <MedicationDetailSection
-      titleId="medication-uebersicht-leaflet-heading"
-      title={t("medications.leaflet.title")}
-      dataSlot="medication-leaflet"
-    >
-      <div className="space-y-4">
-        {saved && (
-          <div
-            className="flex items-start justify-between gap-3"
-            data-slot="medication-leaflet-saved"
+    <div className={className} data-slot="medication-leaflet">
+      <dt className="text-muted-foreground shrink-0">
+        {t("medications.leaflet.title")}
+      </dt>
+      <dd className="flex min-w-0 flex-wrap items-center justify-end gap-x-3 gap-y-1">
+        {saved ? (
+          <a
+            href={saved}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-muted text-foreground focus-visible:ring-ring/50 inline-flex max-w-full min-w-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium outline-none focus-visible:ring-[3px]"
+            data-slot="medication-leaflet-saved-link"
           >
-            <div className="min-w-0 flex-1 space-y-0.5">
-              <p className="text-sm font-medium">
-                {t("medications.leaflet.saved")}
-              </p>
-              <p className="text-muted-foreground truncate text-xs">
-                {hostOf(saved)}
-              </p>
-            </div>
-            <Button variant="outline" size="sm" className="min-h-11" asChild>
-              <a
-                href={saved}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-slot="medication-leaflet-saved-link"
-              >
-                <ExternalLink aria-hidden="true" />
-                {t("medications.leaflet.open")}
-                <span className="sr-only">
-                  {t("medications.leaflet.newTab")}
-                </span>
-              </a>
-            </Button>
-          </div>
-        )}
-
-        {search ? (
-          <FindLeaflet
-            search={search}
-            name={medication.name}
-            inSharedRecord={inSharedRecord}
-          />
-        ) : (
-          <div className="space-y-2" data-slot="medication-leaflet-no-registry">
-            <p className="text-sm">{t("medications.leaflet.noRegistry")}</p>
-            {/* The registry is the person's own setting: chosen right here,
-                and the search appears in place once it is saved. Inside
-                somebody else's record it stays theirs to choose. */}
-            {inSharedRecord ? null : (
-              <MedicineRegistrySelect
-                isAuthenticated={isAuthenticated}
-                id={`medication-leaflet-registry-${medication.id}`}
-                labelKey="medications.leaflet.chooseRegistry"
-              />
+            <ExternalLink aria-hidden="true" className="size-3.5 shrink-0" />
+            <span className="truncate">{hostOf(saved)}</span>
+            <span className="sr-only">
+              {t("medications.leaflet.saved")},{" "}
+              {t("medications.leaflet.newTab")}
+            </span>
+          </a>
+        ) : search ? (
+          <InlineAction asChild>
+            <a
+              href={search.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-slot="medication-leaflet-find-link"
+              data-registry={search.registry}
+              data-prefill={search.prefill}
+            >
+              {t("medications.leaflet.searchShort")}
+              <ExternalLink aria-hidden="true" className="size-3.5" />
+              <span className="sr-only">{t("medications.leaflet.newTab")}</span>
+            </a>
+          </InlineAction>
+        ) : null}
+        <Popover>
+          <PopoverTrigger asChild>
+            <InlineAction tone="muted" data-slot="medication-leaflet-more">
+              {t("nav.more")}
+            </InlineAction>
+          </PopoverTrigger>
+          <PopoverContent
+            align="end"
+            className="w-80 space-y-3 text-left"
+            data-slot="medication-leaflet-more-content"
+          >
+            {saved && search && (
+              <InlineAction asChild>
+                <a
+                  href={search.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-slot="medication-leaflet-find-link"
+                  data-registry={search.registry}
+                  data-prefill={search.prefill}
+                >
+                  {t("medications.leaflet.find")}
+                  <ExternalLink aria-hidden="true" className="size-3.5" />
+                  <span className="sr-only">
+                    {t("medications.leaflet.newTab")}
+                  </span>
+                </a>
+              </InlineAction>
             )}
-          </div>
-        )}
-
-        <p className="text-sm" data-slot="medication-leaflet-disclaimer">
-          {t("medications.leaflet.disclaimer")}
-        </p>
-
-        {canEdit && (
-          <SavedLeafletEditor medicationId={medication.id} saved={saved} />
-        )}
-      </div>
-    </MedicationDetailSection>
+            {search ? (
+              <FindLeaflet
+                search={search}
+                name={medication.name}
+                inSharedRecord={inSharedRecord}
+              />
+            ) : (
+              <div
+                className="space-y-2"
+                data-slot="medication-leaflet-no-registry"
+              >
+                <p className="text-sm">{t("medications.leaflet.noRegistry")}</p>
+                {/* The registry is the person's own setting: chosen right
+                    here, and the search appears in place once it is saved.
+                    Inside somebody else's record it stays theirs to choose. */}
+                {inSharedRecord ? null : (
+                  <MedicineRegistrySelect
+                    isAuthenticated={isAuthenticated}
+                    id={`medication-leaflet-registry-${medication.id}`}
+                    labelKey="medications.leaflet.chooseRegistry"
+                  />
+                )}
+              </div>
+            )}
+            <p className="text-sm" data-slot="medication-leaflet-disclaimer">
+              {t("medications.leaflet.disclaimer")}
+            </p>
+            {canEdit && (
+              <SavedLeafletEditor medicationId={medication.id} saved={saved} />
+            )}
+          </PopoverContent>
+        </Popover>
+      </dd>
+    </div>
   );
 }
 
@@ -151,20 +199,6 @@ function FindLeaflet({
   const { t } = useTranslations();
   return (
     <div className="space-y-2" data-slot="medication-leaflet-find">
-      <Button size="sm" className="min-h-11" asChild>
-        <a
-          href={search.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          data-slot="medication-leaflet-find-link"
-          data-registry={search.registry}
-          data-prefill={search.prefill}
-        >
-          <ExternalLink aria-hidden="true" />
-          {t("medications.leaflet.find")}
-          <span className="sr-only">{t("medications.leaflet.newTab")}</span>
-        </a>
-      </Button>
       {search.prefill === "none" ? (
         <p className="text-sm" data-slot="medication-leaflet-search-hint">
           {t("medications.leaflet.searchThere", {

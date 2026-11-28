@@ -36,6 +36,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
+import { ReminderPlanLine } from "@/components/medications/detail/overview-status-section";
 import {
   Select,
   SelectContent,
@@ -171,6 +172,7 @@ export function PhaseConfigSheet({
       onOpenChange={onOpenChange}
       title={t("medications.phaseConfig")}
       description={t("medications.phaseConfigDescription")}
+      subheader={<ReminderPlanLine medicationId={medicationId} />}
     >
       {isLoading ? (
         <div

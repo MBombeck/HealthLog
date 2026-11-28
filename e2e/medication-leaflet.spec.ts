@@ -75,8 +75,14 @@ test.describe("medication leaflet (#1430)", () => {
     });
 
     await page.goto(`/medications/${ID}`);
-    const section = page.locator('[data-slot="medication-leaflet"]');
-    await expect(section).toBeVisible();
+    const row = page.locator('[data-slot="medication-leaflet"]');
+    await expect(row).toBeVisible();
+    // The saved leaflet is the row's chip; the registry search, the
+    // reminder and the editor sit behind "More".
+    await row.locator('[data-slot="medication-leaflet-more"]').click();
+    const section = page.locator(
+      '[data-slot="medication-leaflet"], [data-slot="medication-leaflet-more-content"]',
+    );
 
     const find = section.locator('[data-slot="medication-leaflet-find-link"]');
     await expect(find).toHaveAttribute("data-registry", "PL");

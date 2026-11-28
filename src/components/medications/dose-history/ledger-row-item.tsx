@@ -1,48 +1,58 @@
 "use client";
 
+/**
+ * The dose history's pieces: one list row per dose, and the sheet a row
+ * opens with every action on that dose.
+ *
+ * A row is the shared `ListItem`: the day (and the dose time when the plan
+ * has more than one a day) as its title, the state at the end, and a second
+ * line only when what happened differs from the plan: the time it was taken,
+ * a dose other than the planned one, a take pinned to its slot. A dose taken
+ * on time is a check and nothing else, so the history reads as a record, not
+ * as "planned 20:00, taken 20:00" sixty times.
+ *
+ * A tap opens the dose's sheet: take or skip a dose still open, pin an
+ * off-schedule take to its slot or release it, edit, the skipped/taken
+ * toggle, open the day, delete. A write delegate gets take and skip (one
+ * admitted verb); editing, re-attribution and delete are the owner's. A row
+ * with nothing to do opens nothing.
+ */
+
 import {
+  CalendarDays,
   Check,
   Link2,
-  Loader2,
-  MoreVertical,
   Pencil,
-  Plus,
   SkipForward,
   Trash2,
   Unlink,
+  type LucideIcon,
 } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ListGroup, ListItem } from "@/components/ui/list-row";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { cn } from "@/lib/utils";
 
-import { DoseStateLabel } from "@/components/medications/dose-state-label";
+import {
+  DOSE_STATE_LOOK,
+  DoseStateLabel,
+} from "@/components/medications/dose-state-label";
 import type { DeletedIntakeSnapshot } from "@/components/medications/use-medication-intake";
 import { intakeDeleteLabel } from "@/components/medications/intake-dose-label";
-import type { DoseState } from "@/lib/medications/dose-state/resolve";
 import {
   DOSE_ACTION_TERM,
+  DOSE_STATE_TERM,
   doseStateOfHistoryRow,
 } from "@/lib/medications/dose-state/terms";
 
 import {
-  formatSlotDelta,
   isSlotActionable,
   type LedgerRow,
 } from "../dose-history-ledger-compute";
 
-interface LedgerRowItemProps {
-  row: LedgerRow;
-  marking: string | null;
-  isToday: boolean;
+export interface LedgerRowHandlers {
   onMark: (row: LedgerRow, action: "taken" | "skipped") => void;
   onToggleSkipped: (intake: {
     id: string;
@@ -63,416 +73,360 @@ interface LedgerRowItemProps {
   onUnpin: (eventId: string) => void;
 }
 
+/** One dose as the list shows it, with what its sheet needs. */
+export interface LedgerDose {
+  row: LedgerRow;
+  /** "Fri, 27 Nov" or "Fri, 27 Nov, 08:00". */
+  title: string;
+  /** Absent for a day that cannot be opened (a planned future day). */
+  onOpenDay?: () => void;
+}
+
+export type LedgerDoseActionKind =
+  "take" | "skip" | "pin" | "unpin" | "edit" | "toggle" | "openDay" | "delete";
+
 /**
- * One ledger row: time + status (colour + glyph + text) + (when an intake is
- * attributed) its real take time, plus the row actions.
- *
- * Action shape: an actionable slot that is still in play
- * (upcoming, or missed TODAY) carries exactly ONE visible [Genommen] button —
- * label visible on every viewport — plus the overflow kebab (Übersprungen).
- * Every settled row (taken / skipped / a past missed day / ad-hoc) carries
- * ONLY the kebab: Bearbeiten, the Übersprungen↔Genommen toggle, Löschen —
- * and, for a past missed slot, the Genommen / Übersprungen backfill marks.
- *
- * .x — exported for the delegated-affordance suite. The row's capability
- * gating is the interesting part and the ledger around it needs a payload, a
- * medication and a query client to paint one row.
+ * What the dose's sheet offers, in its order. Pure, so the capability split
+ * is tested without a sheet: `write` may mark a dose taken or skipped,
+ * `manage` may change and delete what is recorded.
  */
-export function LedgerRowItem({
-  row,
-  marking,
-  isToday,
-  onMark,
-  onToggleSkipped,
-  onEdit,
-  onDelete,
-  onPin,
-  onUnpin,
-}: LedgerRowItemProps) {
-  const { t } = useTranslations();
-  const { canWriteDomain, canManageDomain } = useRecordCapabilities();
-  const canAddIntake = canWriteDomain("medications");
-  const canManageMedications = canManageDomain("medications");
-  const fmt = useFormatters();
-
-  const actionable = isSlotActionable(row);
-  const rowState = doseStateOfHistoryRow(row);
-  // A missed slot from an earlier day stays markable, but only through the
-  // kebab — the visible button is reserved for doses still in play.
-  const showTakenButton = actionable && (row.status === "upcoming" || isToday);
+export function doseActionsOf(
+  row: LedgerRow,
+  can: { write: boolean; manage: boolean },
+  openDay: boolean,
+): LedgerDoseActionKind[] {
   const intake = row.intake;
-  const takeBusy = marking === `${row.at}:taken`;
-  const skipBusy = marking === `${row.at}:skipped`;
+  const actions: LedgerDoseActionKind[] = [];
+  if (isSlotActionable(row) && (can.write || can.manage)) {
+    actions.push("take", "skip");
+  }
+  if (!can.manage) return actions;
+  if (
+    row.kind === "ad_hoc" &&
+    intake?.id &&
+    intake.takenAt &&
+    row.nearestSlot &&
+    !row.nearestSlot.filled
+  ) {
+    actions.push("pin");
+  }
+  if (row.kind === "slot" && row.pinned && intake?.id) actions.push("unpin");
+  if (intake?.id) actions.push("edit");
+  if (
+    intake?.id &&
+    (row.status === "skipped" ||
+      row.status === "taken_on_time" ||
+      row.status === "taken_late")
+  ) {
+    actions.push("toggle");
+  }
+  if (openDay) actions.push("openDay");
+  if (intake?.id) actions.push("delete");
+  return actions;
+}
 
-  // The leading time label: the slot's HH:mm for a slot row, else the ad-hoc
-  // take's real clock time.
-  const timeLabel = row.timeOfDay
-    ? fmt.wallTime(row.timeOfDay)
-    : fmt.time(new Date(intake?.takenAt ?? row.at));
+/**
+ * The row's second line: only what differs from the plan. The time a slot
+ * was taken when it is not the planned time, the dose when it is not the
+ * planned one, and that a take is pinned to its slot.
+ */
+function useDeviation(row: LedgerRow): string | null {
+  const { t } = useTranslations();
+  const fmt = useFormatters();
+  const intake = row.intake;
+  const parts: string[] = [];
+  if (intake?.takenAt && !intake.skipped) {
+    const taken = fmt.time(new Date(intake.takenAt));
+    const planned =
+      row.kind === "slot" && row.timeOfDay ? fmt.wallTime(row.timeOfDay) : null;
+    if (taken !== planned) {
+      parts.push(t("medications.detail.verlauf.takenAt", { time: taken }));
+    }
+  }
+  if (intake?.doseTaken) {
+    parts.push(
+      t("medications.detail.verlauf.doseTaken", { dose: intake.doseTaken }),
+    );
+  }
+  if (row.kind === "slot" && row.pinned) {
+    parts.push(t("medications.detail.verlauf.pin.pinnedTag"));
+  }
+  return parts.length > 0 ? parts.join(", ") : null;
+}
 
-  // When a take lands away from its slot, show both anchors so the row reads
-  // "geplant 07:00 · genommen 11:29".
-  const showTakeDetail =
-    row.kind === "slot" &&
-    intake?.takenAt &&
-    (row.status === "taken_on_time" || row.status === "taken_late");
-
-  // An ad-hoc take with a due-context shows WHEN the dose would
-  // have been due; the pin action additionally needs the slot unserved and a
-  // real persisted event to re-anchor.
-  const dueContext =
-    row.kind === "ad_hoc" && intake?.takenAt && row.nearestSlot
-      ? row.nearestSlot
-      : null;
-  const canPin = Boolean(dueContext && !dueContext.filled && intake?.id);
-  const canUnpin = Boolean(row.kind === "slot" && row.pinned && intake?.id);
-
+/** One dose in its group. */
+export function LedgerDoseRow({
+  dose,
+  onOpen,
+}: {
+  dose: LedgerDose;
+  /** Absent when the dose's sheet would offer nothing. */
+  onOpen?: () => void;
+}) {
+  const { t } = useTranslations();
+  const { row } = dose;
+  const state = doseStateOfHistoryRow(row);
+  const meta = useDeviation(row);
+  // On time is the rule: a check, its word for a screen reader only. Every
+  // other state is the exception and says its word.
+  const onTime =
+    state === "taken" ||
+    (row.kind === "ad_hoc" && Boolean(row.intake?.takenAt));
+  const takenLook = DOSE_STATE_LOOK.taken;
+  const trailing = onTime ? (
+    <span className="inline-flex items-center" data-slot="ledger-status">
+      <takenLook.icon
+        aria-hidden="true"
+        className={cn("size-4", takenLook.tone)}
+      />
+      <span className="sr-only">{t(DOSE_STATE_TERM.taken)}</span>
+    </span>
+  ) : state ? (
+    <DoseStateLabel state={state} className="text-sm" slot="ledger-status" />
+  ) : null;
   return (
-    <li
-      className="flex items-center justify-between gap-2 px-3 py-2"
+    <ListItem
       data-slot="ledger-row"
       data-status={row.status}
       data-kind={row.kind}
-    >
-      <div className="min-w-0 space-y-0.5">
-        <div className="flex items-center gap-2">
-          <span className="text-foreground text-sm font-medium tabular-nums">
-            {timeLabel}
-          </span>
-          <LedgerRowStatus state={rowState} />
-          {row.kind === "ad_hoc" && (
-            <Badge variant="outline" className="text-2xs">
-              {t("medications.detail.verlauf.adHocTag")}
-            </Badge>
-          )}
-          {/* The "zugeordnet" badge only when the row is actually
-              bound to a slot. A released ("Zuordnung lösen") USER_PIN take
-              surfaces as an ad-hoc row that also carries `pinned`; badging
-              it "zugeordnet" would claim the binding the user just released. */}
-          {row.kind === "slot" && row.pinned && (
-            <Badge
-              variant="outline"
-              className="text-2xs"
-              data-slot="ledger-pinned-badge"
-            >
-              {t("medications.detail.verlauf.pin.pinnedTag")}
-            </Badge>
-          )}
-        </div>
-        {showTakeDetail && (
-          <p className="text-muted-foreground text-xs">
-            {t("medications.detail.verlauf.takenDetail", {
-              planned: row.timeOfDay
-                ? fmt.wallTime(row.timeOfDay)
-                : fmt.time(new Date(row.at)),
-              taken: fmt.time(new Date(intake!.takenAt!)),
-            })}
-          </p>
-        )}
-        {/* Quiet per-intake dose override note. Only rows whose
-            take recorded a deviating dose carry one; the configured dose
-            stays implicit, so the ledger's rhythm is undisturbed. */}
-        {intake?.doseTaken && (
-          <p
-            className="text-muted-foreground text-xs"
-            data-slot="ledger-dose-taken"
-          >
-            {t("medications.detail.verlauf.doseTaken", {
-              dose: intake.doseTaken,
-            })}
-          </p>
-        )}
-        {dueContext && (
-          <p
-            className="text-muted-foreground text-xs"
-            data-slot="ledger-due-context"
-          >
-            {t("medications.detail.verlauf.pin.dueContext", {
-              time: fmt.time(new Date(dueContext.at)),
-              delta: formatSlotDelta(intake!.takenAt!, dueContext.at),
-            })}
-          </p>
-        )}
-      </div>
-
-      <div className="flex shrink-0 items-center gap-1">
-        {showTakenButton && canAddIntake && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onMark(row, "taken")}
-            disabled={takeBusy || skipBusy}
-            aria-busy={takeBusy || undefined}
-            className="min-h-9"
-            data-slot="ledger-mark-taken"
-          >
-            {takeBusy ? (
-              <Loader2
-                aria-hidden="true"
-                className="size-4 animate-spin motion-reduce:animate-none"
-              />
-            ) : (
-              <Check aria-hidden="true" className="size-4" />
-            )}
-            {t(DOSE_ACTION_TERM.take)}
-          </Button>
-        )}
-        {/* .x — the other half of the same admitted verb. Marking a dose
-            taken OR skipped is one capability, and the medication card offers
-            both; this ledger offered a delegate only the first, because skip
-            lives in the kebab and the kebab is owner-only (it also holds edit,
-            re-attribute and delete). Rather than mix admitted and withheld
-            items in one menu, a delegate gets skip as its own control beside
-            take, which is the shape the card already uses. The owner keeps it
-            where it was. */}
-        {showTakenButton && canAddIntake && !canManageMedications && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onMark(row, "skipped")}
-            disabled={takeBusy || skipBusy}
-            aria-busy={skipBusy || undefined}
-            className="min-h-9"
-            data-slot="ledger-mark-skipped"
-          >
-            {skipBusy ? (
-              <Loader2
-                aria-hidden="true"
-                className="size-4 animate-spin motion-reduce:animate-none"
-              />
-            ) : (
-              <SkipForward aria-hidden="true" className="size-4" />
-            )}
-            {t(DOSE_ACTION_TERM.skip)}
-          </Button>
-        )}
-        {canManageMedications && (
-          <LedgerRowMenu
-            row={row}
-            actionable={actionable}
-            showTakenButton={showTakenButton}
-            skipBusy={skipBusy}
-            canPin={canPin}
-            canUnpin={canUnpin}
-            dueContext={dueContext}
-            timeLabel={timeLabel}
-            onMark={onMark}
-            onToggleSkipped={onToggleSkipped}
-            onEdit={onEdit}
-            onDelete={onDelete}
-            onPin={onPin}
-            onUnpin={onUnpin}
-          />
-        )}
-      </div>
-    </li>
+      title={<span className="tabular-nums">{dose.title}</span>}
+      meta={meta ?? undefined}
+      trailing={trailing ?? undefined}
+      onSelect={onOpen}
+      actionLabel={
+        onOpen
+          ? t("medications.detail.verlauf.rowActionsLabel", {
+              time: dose.title,
+            })
+          : undefined
+      }
+    />
   );
 }
 
+interface DoseAction {
+  label: string;
+  slot: string;
+  icon: LucideIcon;
+  onSelect: () => void;
+  destructive?: boolean;
+  actionLabel?: string;
+}
+
 /**
- * The owner's row menu: the backfill marks for a slot no longer in play,
- * pin and release, edit, the skipped/taken toggle, delete.
+ * The dose's actions as rows. Exported for the delegated-affordance suite:
+ * the capability gating is the interesting part.
  */
-function LedgerRowMenu({
-  row,
-  actionable,
-  showTakenButton,
-  skipBusy,
-  canPin,
-  canUnpin,
-  dueContext,
-  timeLabel,
-  onMark,
-  onToggleSkipped,
-  onEdit,
-  onDelete,
-  onPin,
-  onUnpin,
-}: Pick<
-  LedgerRowItemProps,
-  | "row"
-  | "onMark"
-  | "onToggleSkipped"
-  | "onEdit"
-  | "onDelete"
-  | "onPin"
-  | "onUnpin"
-> & {
-  actionable: boolean;
-  showTakenButton: boolean;
-  skipBusy: boolean;
-  canPin: boolean;
-  canUnpin: boolean;
-  dueContext: LedgerRow["nearestSlot"] | null;
-  timeLabel: string;
+export function LedgerDoseActions({
+  dose,
+  handlers,
+  marking,
+  onDone,
+}: {
+  dose: LedgerDose;
+  handlers: LedgerRowHandlers;
+  marking: string | null;
+  /** Close the sheet once an action ran. */
+  onDone: () => void;
 }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
+  const { canWriteDomain, canManageDomain } = useRecordCapabilities();
+  const { row } = dose;
   const intake = row.intake;
-  // What the delete removes, named by its own slot and take time, so the
-  // menu and the toast both say which dose it is.
-  const deleted: DeletedIntakeSnapshot | null = intake?.id
-    ? {
-        id: intake.id,
-        takenAt: intake.takenAt,
-        skipped: intake.skipped,
-        scheduledFor: row.kind === "slot" ? intake.scheduledFor : null,
+  const kinds = doseActionsOf(
+    row,
+    {
+      write: canWriteDomain("medications"),
+      manage: canManageDomain("medications"),
+    },
+    Boolean(dose.onOpenDay),
+  );
+  if (kinds.length === 0) return null;
+  const busy = marking !== null && marking.startsWith(`${row.at}:`);
+
+  const run = (fn: () => void) => () => {
+    fn();
+    onDone();
+  };
+  const ownIntake = intake?.id ? { ...intake, id: intake.id } : null;
+
+  const actionOf = (kind: LedgerDoseActionKind): DoseAction | null => {
+    if (kind === "take") {
+      return {
+        label: t(DOSE_ACTION_TERM.take),
+        slot: "ledger-mark-taken",
+        icon: Check,
+        onSelect: run(() => handlers.onMark(row, "taken")),
+      };
+    }
+    if (kind === "skip") {
+      return {
+        label: t(DOSE_ACTION_TERM.skip),
+        slot: "ledger-mark-skipped",
+        icon: SkipForward,
+        onSelect: run(() => handlers.onMark(row, "skipped")),
+      };
+    }
+    if (kind === "openDay") {
+      return {
+        label: t("day.openDay"),
+        slot: "ledger-open-day",
+        icon: CalendarDays,
+        onSelect: run(() => dose.onOpenDay?.()),
+      };
+    }
+    if (!ownIntake) return null;
+    if (kind === "pin" && row.nearestSlot) {
+      const slotAt = row.nearestSlot.at;
+      return {
+        label: t("medications.detail.verlauf.pin.action", {
+          time: fmt.time(new Date(slotAt)),
+        }),
+        slot: "ledger-pin",
+        icon: Link2,
+        onSelect: run(() => handlers.onPin(ownIntake.id, slotAt)),
+      };
+    }
+    if (kind === "unpin") {
+      return {
+        label: t("medications.detail.verlauf.pin.release"),
+        slot: "ledger-unpin",
+        icon: Unlink,
+        onSelect: run(() => handlers.onUnpin(ownIntake.id)),
+      };
+    }
+    if (kind === "edit") {
+      return {
+        label: t("medications.detail.intake.rowActions.edit"),
+        slot: "ledger-edit",
+        icon: Pencil,
+        onSelect: run(() =>
+          handlers.onEdit({
+            id: ownIntake.id,
+            takenAt: ownIntake.takenAt,
+            skipped: ownIntake.skipped,
+            scheduledFor: ownIntake.scheduledFor,
+          }),
+        ),
+      };
+    }
+    if (kind === "toggle") {
+      return {
+        label: ownIntake.skipped
+          ? t("medications.detail.verlauf.markAsTaken")
+          : t("medications.detail.verlauf.markAsSkipped"),
+        slot: "ledger-toggle-skipped",
+        icon: ownIntake.skipped ? Check : SkipForward,
+        onSelect: run(() =>
+          handlers.onToggleSkipped({
+            id: ownIntake.id,
+            skipped: ownIntake.skipped,
+            scheduledFor: ownIntake.scheduledFor,
+          }),
+        ),
+      };
+    }
+    if (kind === "delete") {
+      const deleted: DeletedIntakeSnapshot = {
+        id: ownIntake.id,
+        takenAt: ownIntake.takenAt,
+        skipped: ownIntake.skipped,
+        scheduledFor: row.kind === "slot" ? ownIntake.scheduledFor : null,
         slotTime: row.kind === "slot" ? row.timeOfDay : null,
-        doseTaken: intake.doseTaken ?? null,
-        autoMissed: intake.autoMissed,
-      }
-    : null;
+        doseTaken: ownIntake.doseTaken ?? null,
+        autoMissed: ownIntake.autoMissed,
+      };
+      return {
+        label: t("medications.detail.intake.rowActions.delete"),
+        slot: "ledger-delete",
+        icon: Trash2,
+        destructive: true,
+        actionLabel: intakeDeleteLabel(
+          {
+            slotAt: deleted.scheduledFor,
+            slotTime: deleted.slotTime,
+            takenAt: deleted.takenAt,
+            skipped: deleted.skipped,
+          },
+          {
+            t,
+            formatTime: (at) => fmt.time(at),
+            wallTime: fmt.wallTime,
+          },
+        ),
+        onSelect: run(() => handlers.onDelete(deleted)),
+      };
+    }
+    return null;
+  };
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="min-h-11 min-w-11 sm:min-h-9 sm:min-w-9"
-          aria-label={t("medications.detail.verlauf.rowActionsLabel", {
-            time: timeLabel,
-          })}
-          data-slot="ledger-row-menu"
-        >
-          <MoreVertical aria-hidden="true" className="size-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" data-slot="ledger-row-menu-content">
-        {actionable && !showTakenButton && (
-          <DropdownMenuItem
-            onClick={() => onMark(row, "taken")}
-            data-slot="ledger-menu-taken"
-          >
-            <Check aria-hidden="true" className="mr-2 size-4" />
-            {t(DOSE_ACTION_TERM.take)}
-          </DropdownMenuItem>
-        )}
-        {actionable && (
-          <DropdownMenuItem
-            onClick={() => onMark(row, "skipped")}
-            data-slot="ledger-mark-skipped"
-          >
-            {skipBusy ? (
-              <Loader2
-                aria-hidden="true"
-                className="mr-2 size-4 animate-spin motion-reduce:animate-none"
-              />
-            ) : (
-              <SkipForward aria-hidden="true" className="mr-2 size-4" />
-            )}
-            {t(DOSE_ACTION_TERM.skip)}
-          </DropdownMenuItem>
-        )}
-        {canPin && (
-          <DropdownMenuItem
-            onClick={() => onPin(intake!.id as string, dueContext!.at)}
-            data-slot="ledger-pin"
-          >
-            <Link2 aria-hidden="true" className="mr-2 size-4" />
-            {t("medications.detail.verlauf.pin.action", {
-              time: fmt.time(new Date(dueContext!.at)),
-            })}
-          </DropdownMenuItem>
-        )}
-        {canUnpin && (
-          <DropdownMenuItem
-            onClick={() => onUnpin(intake!.id as string)}
-            data-slot="ledger-unpin"
-          >
-            <Unlink aria-hidden="true" className="mr-2 size-4" />
-            {t("medications.detail.verlauf.pin.release")}
-          </DropdownMenuItem>
-        )}
-        {intake?.id && (
-          <>
-            <DropdownMenuItem
-              onClick={() =>
-                onEdit({
-                  id: intake.id as string,
-                  takenAt: intake.takenAt,
-                  skipped: intake.skipped,
-                  scheduledFor: intake.scheduledFor,
-                })
-              }
-              data-slot="ledger-edit"
-            >
-              <Pencil aria-hidden="true" className="mr-2 size-4" />
-              {t("medications.detail.intake.rowActions.edit")}
-            </DropdownMenuItem>
-            {(row.status === "skipped" ||
-              row.status === "taken_on_time" ||
-              row.status === "taken_late") && (
-              <DropdownMenuItem
-                onClick={() =>
-                  onToggleSkipped({
-                    id: intake.id as string,
-                    skipped: intake.skipped,
-                    scheduledFor: intake.scheduledFor,
-                  })
-                }
-                data-slot="ledger-toggle-skipped"
-              >
-                {intake.skipped ? (
-                  <Check aria-hidden="true" className="mr-2 size-4" />
-                ) : (
-                  <SkipForward aria-hidden="true" className="mr-2 size-4" />
+    <ListGroup data-slot="ledger-dose-actions" aria-busy={busy || undefined}>
+      {kinds.map((kind) => {
+        const action = actionOf(kind);
+        if (!action) return null;
+        const Icon = action.icon;
+        return (
+          <ListItem
+            key={kind}
+            data-slot={action.slot}
+            icon={
+              <span
+                className={cn(
+                  "bg-muted flex size-8 items-center justify-center rounded-lg",
+                  action.destructive && "text-destructive",
                 )}
-                {intake.skipped
-                  ? t("medications.detail.verlauf.markAsTaken")
-                  : t("medications.detail.verlauf.markAsSkipped")}
-              </DropdownMenuItem>
-            )}
-            {deleted && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => onDelete(deleted)}
-                  aria-label={intakeDeleteLabel(
-                    {
-                      slotAt: deleted.scheduledFor,
-                      slotTime: deleted.slotTime,
-                      takenAt: deleted.takenAt,
-                      skipped: deleted.skipped,
-                    },
-                    {
-                      t,
-                      formatTime: (at) => fmt.time(at),
-                      wallTime: fmt.wallTime,
-                    },
-                  )}
-                  data-slot="ledger-delete"
-                >
-                  <Trash2 aria-hidden="true" className="mr-2 size-4" />
-                  {t("medications.detail.intake.rowActions.delete")}
-                </DropdownMenuItem>
-              </>
-            )}
-          </>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+              >
+                <Icon className="size-4" aria-hidden />
+              </span>
+            }
+            title={
+              <span className={cn(action.destructive && "text-destructive")}>
+                {action.label}
+              </span>
+            }
+            actionLabel={action.actionLabel}
+            onSelect={busy ? undefined : action.onSelect}
+            chevron={false}
+          />
+        );
+      })}
+    </ListGroup>
   );
 }
 
-/**
- * The row's state in the shared dose vocabulary. An open slot reads pending,
- * due or overdue as the server resolved it; an off-schedule take carries the
- * "off-schedule" tag instead.
- */
-function LedgerRowStatus({ state }: { state: DoseState | null }) {
-  const { t } = useTranslations();
-  if (state) {
-    return (
-      <DoseStateLabel state={state} className="text-xs" slot="ledger-status" />
-    );
-  }
+/** The sheet a dose row opens. */
+export function LedgerDoseSheet({
+  dose,
+  onClose,
+  handlers,
+  marking,
+}: {
+  dose: LedgerDose | null;
+  onClose: () => void;
+  handlers: LedgerRowHandlers;
+  marking: string | null;
+}) {
   return (
-    <span
-      className="text-primary inline-flex items-center gap-1 text-xs font-medium"
-      data-slot="ledger-status"
+    <ResponsiveSheet
+      open={dose !== null}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title={dose?.title ?? ""}
+      contentWidth="md"
     >
-      <Plus aria-hidden="true" className="size-3.5 shrink-0" />
-      {t("medications.detail.verlauf.status.ad_hoc")}
-    </span>
+      {dose ? (
+        <div data-slot="ledger-dose-sheet">
+          <LedgerDoseActions
+            dose={dose}
+            handlers={handlers}
+            marking={marking}
+            onDone={onClose}
+          />
+        </div>
+      ) : null}
+    </ResponsiveSheet>
   );
 }

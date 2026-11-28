@@ -1,39 +1,35 @@
 "use client";
 
 /**
- * v1.15.18 — medication detail full-page tabbed shell.
+ * The medication detail page: a one-line header with the page menu, then
+ * four tabs (Übersicht, Verlauf, Wirkung, Einstellungen), with Injektion as a
+ * fifth for an injectable medication.
  *
- * Promotes the detail page from a read-only history view to the
- * canonical home for ONE medication. The modal `<AdvancedSettingsSheet>`
- * is dissolved into the Erweitert tab (no more five-card stack in a
- * sheet) and the separate `/history` route folds into the history tab
- * (the route now redirects to `?tab=history`).
+ *   Übersicht      three cards built the same way (today, intake, effect)
+ *                  and the plan; then the composition, the related records
+ *                  and the leaflet.
+ *   Verlauf        the dose history, one row per day, or the full intake
+ *                  list.
+ *   Wirkung        the effect view: the result sentence first, the chart,
+ *                  the method behind a fold.
+ *   Einstellungen  every setting in one line each; the schedule, supply and
+ *                  advanced tabs folded into it in v1.50.
  *
- * Tab state lives in the URL (`?tab=<slug>`), so a tab is deep-linkable,
- * survives reload, and is reachable from the medications-list card kebab
- * (History). The kebab's Edit arrives as `?edit=1`, which opens
- * the wizard in edit mode on top of the landing tab. Slugs are ASCII /
- * locale-independent; the visible labels are i18n.
- *
- * v1.15.20 — six tabs: the former Erinnerung tab dissolved into Zeitplan
- * (a "Erinnerung" card under the times editor owns the notifications
- * switch + the reminder grace), and Übersicht grew from a lone
- * compliance bar into the status landing surface (next due dose,
- * reminder state, supply runway — each with a jump link into its owner
- * tab). Stale `?tab=erinnerung` deep-links land on the schedule tab.
- *
- * Only the active tab body mounts (Radix `Tabs` default) so inactive tabs
- * do not fetch. The hero stays above the tabs as the always-visible
- * read-only summary plus the "Vollständig bearbeiten" jump into the
- * creation/edit wizard (the structural-edit tool — name / class /
- * cadence kind / schedules). Everyday levers (reminders, supply, history)
- * live inline in the tabs. Injektion is gated to injectable routes of
- * administration.
+ * Tab state lives in the URL (`?tab=<slug>`); old slugs resolve through
+ * `LEGACY_TAB_SLUGS`, and an old supply link opens the supply sheet. The
+ * medications list's "Bearbeiten" arrives as `?edit=1` and opens the wizard.
+ * Only the active tab body mounts (Radix `Tabs`), so inactive tabs do not
+ * fetch. Every value shown is the server's (`nextDueAt`, the compliance read,
+ * the dose-history ledger, the efficacy DTO with its result sentence).
  */
 
-import { shownAdherence } from "@/lib/medications/shown-adherence";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import dynamic from "next/dynamic";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowLeft, MoreVertical } from "lucide-react";
+
 import type { MedicationCourseWire } from "@/components/medications/course-fields";
-import { GuardianCoursesSection } from "@/components/medications/sections/courses-section";
 import {
   COMPOSITION_CATEGORIES,
   CompositionSection,
@@ -44,72 +40,85 @@ import {
   holdsGuardianSurfaces,
   useRecordCapabilities,
 } from "@/hooks/use-record-capabilities";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import dynamic from "next/dynamic";
 import { useUrlSearch, writeUrlState } from "@/lib/url-state";
-import { ArrowLeft } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Segmented } from "@/components/ui/segmented";
 import { MedicationDetailSummary } from "@/components/medications/medication-detail-summary";
 import { EfficacyTab } from "@/components/medications/detail/efficacy/efficacy-tab";
+import {
+  RetargetSheet,
+  useMayRetarget,
+} from "@/components/medications/detail/efficacy/retarget-sheet";
 import { resolveMedicationTargets } from "@/lib/medications/med-target-map";
-import { MedicationDetailSection } from "@/components/medications/medication-detail-section";
-import {
-  MedicationComplianceBars,
-  MedicationComplianceNotApplicable,
-} from "@/components/medications/card-parts/medication-compliance-bars";
-import { DoseHistoryLedger } from "@/components/medications/dose-history-ledger";
-import { IntakeHistoryListV2 } from "@/components/medications/intake-history-list-v2";
-import { Segmented } from "@/components/ui/segmented";
-import { ScheduleTimesEditor } from "@/components/medications/scheduling/schedule-times-editor";
-import { ScheduleHistoryTimeline } from "@/components/medications/scheduling/schedule-history-timeline";
+import { LedgerAddDialog } from "@/components/medications/dose-history-add-dialog";
 import type { DoseWindowEntry } from "@/components/medications/scheduling/dose-window";
-import { InventorySection } from "@/components/medications/sections/inventory-section";
 import {
-  ManageChannelsLink,
-  NotificationsBody,
-} from "@/components/medications/sections/notifications-section";
-import {
-  GraceRow,
-  PhasesRow,
-} from "@/components/medications/sections/settings-section";
-import { MedicationAdvancedTab } from "@/components/medications/detail/medication-advanced-tab";
-import { PhaseConfigSheet } from "@/components/medications/sections/phase-config-sheet";
+  EndCourseDialog,
+  usePauseToggle,
+} from "@/components/medications/sections/destructive-zone-section";
 import { SideEffectsSection } from "@/components/medications/side-effects-section";
 import { ChartSkeleton } from "@/components/charts/chart-skeleton";
 import { TitrationTimeline } from "@/components/medications/titration-timeline";
 import { MedicationWizardDialog } from "@/components/medications/wizard/medication-wizard-dialog";
-import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
 import { formatDose } from "@/lib/medications/format-dose";
-import type { ComplianceDisplay } from "@/lib/analytics/compliance";
-import { AutoMarkTakenBody } from "@/components/medications/sections/auto-mark-taken-section";
-import { IntakeTrackingBody } from "@/components/medications/sections/intake-tracking-section";
+import type { MedicationEfficacyDTO } from "@/lib/medications/efficacy/build-efficacy";
 import { MedicationRelatedSection } from "@/components/medications/detail/medication-related-section";
-import { MedicationLeafletSection } from "@/components/medications/detail/medication-leaflet-section";
 import { snapshotToWizardPayload } from "@/components/medications/detail/snapshot-wizard-payload";
 import type { LeafletSearch } from "@/lib/medications/leaflet-registries";
-import {
-  OverviewStatusSection,
-  ReminderPlanLine,
-} from "@/components/medications/detail/overview-status-section";
 import type { RelatedLink } from "@/lib/links/related";
-import { EmptyState } from "@/components/ui/empty-state";
 import {
+  LEGACY_TAB_SHEETS,
   resolveTabSlug,
   scrollActiveIntoRow,
   TAB_LABEL_KEYS,
   TAB_SLUGS,
   type TabSlug,
 } from "@/components/medications/detail/tab-slugs";
+import type { OverviewCompliance } from "@/components/medications/detail/overview/anatomy";
+import { EffectCard } from "@/components/medications/detail/overview/effect-card";
+import {
+  GRID_DAYS,
+  IntakeCard,
+  useOverviewLedger,
+} from "@/components/medications/detail/overview/intake-card";
+import { PlanCard } from "@/components/medications/detail/overview/plan-card";
+import {
+  TodayCard,
+  useTodayDoses,
+} from "@/components/medications/detail/overview/today-card";
+import { useTodayKey } from "@/components/day/use-today-key";
 
-// v1.15.20 — Recharts stays out of the detail page's initial bundle:
-// both chart bodies load through `next/dynamic` (client-only) with the
-// shared chart skeleton standing in while the chunk streams.
+// Recharts stays out of the detail page's initial bundle: both chart bodies
+// load through `next/dynamic` (client-only) with the shared chart skeleton
+// standing in while the chunk streams.
+// The History and Settings tabs load when opened: the overview is the first
+// paint, and neither tab's lists, sheets and editors belong in it.
+const DoseHistoryLedger = dynamic(() =>
+  import("@/components/medications/dose-history-ledger").then((mod) => ({
+    default: mod.DoseHistoryLedger,
+  })),
+);
+const IntakeHistoryListV2 = dynamic(() =>
+  import("@/components/medications/intake-history-list-v2").then((mod) => ({
+    default: mod.IntakeHistoryListV2,
+  })),
+);
+const MedicationSettingsTab = dynamic(() =>
+  import("@/components/medications/detail/settings/settings-tab").then(
+    (mod) => ({ default: mod.MedicationSettingsTab }),
+  ),
+);
+
 const DrugLevelChart = dynamic(
   () =>
     import("@/components/charts/chart-runtime").then((mod) => ({
@@ -210,33 +219,22 @@ export interface MedicationDetailSnapshot {
 }
 
 /**
- * Tabs whose entire content is owner-only work: the schedule editor and its
- * plan history, the supply ledger, the external-token row, and the advanced
- * surface (wizard, import, pause, end, purge, delete). A delegation admits
- * none of it at any level.
+ * Whether the settings tab has anything for this viewer. In somebody else's
+ * record its plan rows need the schedule (a managed profile's guardian,
+ * #1408) or the supply (a MANAGE grant under `medications`); its period,
+ * data and delete groups are the owner's.
  */
-const OWNER_ONLY_TABS: ReadonlySet<TabSlug> = new Set([
-  // Schedule times are a MANAGE route, but the tab also carries the reminder
-  // and notification settings, which resolve the caller. #1408 — a managed
-  // profile's guardian is the exception: they run the profile's schedule, the
-  // tab's writes are MANAGE or `"guardian"` routes, and the caller-resolving
-  // reads inside it stay quiet in a shared record. See `runsSchedule`.
-  "schedule",
-  // Phase config, export and the per-medication tokens (a credential
-  // surface, never delegated) resolve the caller. #1615 — a managed
-  // profile's guardian gets the tab for its lifecycle, editor and danger
-  // zone (pause, end, purge, delete), whose routes admit them; the
-  // caller-resolving rows stay hidden inside a shared record.
-  "advanced",
-]);
-
-/**
- * v1.38.12 — tabs whose every write is a MANAGE route under `medications`,
- * so a grant that reaches those routes is shown the tab. The supply ledger
- * is one; the three above are not, because each mixes in a route that
- * resolves the caller and would 403 under a switch.
- */
-const MANAGE_TABS: ReadonlySet<TabSlug> = new Set(["supply"]);
+function offersSettings({
+  inSharedRecord,
+  runsSchedule,
+  canManageMedications,
+}: {
+  inSharedRecord: boolean;
+  runsSchedule: boolean;
+  canManageMedications: boolean;
+}): boolean {
+  return !inSharedRecord || runsSchedule || canManageMedications;
+}
 
 export function MedicationDetailTabs({
   medication: served,
@@ -244,10 +242,8 @@ export function MedicationDetailTabs({
   medication: MedicationDetailSnapshot;
 }) {
   // v1.39.1 (#1033) — a record-only medication arrives with `schedules: []`
-  // (so clients that derive due doses from it stay silent) and its stored
-  // schedule in `recordedSchedules`. This page is where the record is read
-  // and edited, so it works on the stored rows; nothing on it derives a due
-  // dose from them (next-due and compliance come from the server).
+  // and its stored schedule in `recordedSchedules`; this page reads and
+  // edits the stored rows. Nothing here derives a due dose from them.
   const recordOnly = served.trackIntake === false;
   const medication = useMemo<MedicationDetailSnapshot>(
     () =>
@@ -258,33 +254,28 @@ export function MedicationDetailTabs({
   );
   const { t } = useTranslations();
   const recordCaps = useRecordCapabilities();
-  const { canManageDomain, inSharedRecord } = recordCaps;
+  const { canManageDomain, canWriteDomain, inSharedRecord } = recordCaps;
   const canManageMedications = canManageDomain("medications");
-  // #1408 — the owner or a managed profile's guardian; no adult delegate.
+  const canRecord = canWriteDomain("medications");
   const runsSchedule = holdsGuardianSurfaces(recordCaps);
-  // Read live (`@/lib/url-state`): the tab is written here.
   const searchParams = useUrlSearch();
+  const todayKey = useTodayKey();
 
-  // v1.15.20 — the medications-list kebab's "Bearbeiten" arrives as
-  // `?edit=1` and opens the wizard straight away (the same editOpen the
-  // hero button drives). Read synchronously so the wizard mounts open on
-  // the first render; the effect below strips the param so a close +
-  // reload stays closed.
+  // `?edit=1` (the list's "Bearbeiten") opens the wizard on the first
+  // render; the effect below strips it so a close + reload stays closed.
   const shouldOpenEditFromUrl = searchParams?.get("edit") === "1";
   const [editOpen, setEditOpen] = useState(shouldOpenEditFromUrl);
-  const [phaseSheetOpen, setPhaseSheetOpen] = useState(false);
-  // Verlauf tab: the schedule-expanded ledger covers only a trailing 90-day
-  // window; "all" swaps in the full paginated intake history so older doses
-  // stay reachable.
+  const [endOpen, setEndOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [retargetOpen, setRetargetOpen] = useState(false);
+  // Verlauf: the ledger covers a trailing 90-day window; "all" swaps in the
+  // full paginated intake list so older doses stay reachable.
   const [historyView, setHistoryView] = useState<"recent" | "all">("recent");
 
   const id = medication.id;
   const oneShot = medication.oneShot === true;
   const asNeeded = medication.asNeeded === true;
   const isGlp1 = !oneShot && medication.treatmentClass === "GLP1";
-  // v1.43 — the composition: offered up front for a vitamin or a supplement,
-  // shown for any medication that has one, and possible for every other one
-  // from the lifecycle group. Behind the opt-in nutrients module.
   const { user: account } = useAuth();
   const nutrientsOn = account?.modules?.nutrients === true;
   const ingredients = medication.ingredients ?? [];
@@ -293,10 +284,9 @@ export function MedicationDetailTabs({
     (COMPOSITION_CATEGORIES.has(medication.category) || ingredients.length > 0);
   const isInjectable = medication.deliveryForm === "INJECTION";
 
-  // v1.28 — the "Wirkung" tab appears only when the medication resolves to a
-  // known outcome target (ATC class prefix → whole-word name inference) and is
-  // not a single-dose med. Same pure resolver the server efficacy builder's
-  // derived tier uses, so the tab's presence agrees with the DTO's eligibility.
+  // The effect tab and card appear only when the medication resolves to a
+  // known outcome target and is not a single dose: the same resolver the
+  // server's efficacy builder uses.
   const hasEfficacyTarget = useMemo(
     () =>
       !oneShot &&
@@ -313,36 +303,21 @@ export function MedicationDetailTabs({
     [medication],
   );
 
-  // Only the active tab body mounts, but the tab REGISTRY must agree with
-  // whatever `?tab=` carries — Injektion is absent for non-injectable
-  // medications, so a stale `?tab=injection` deep-link falls back to the
-  // landing tab instead of rendering an empty surface.
-  // v1.16.11 — an as-needed medication has no schedule and never
-  // reminds, so the Zeitplan tab (times editor + reminder card +
-  // plan-history) does not apply and is dropped from the registry; a
-  // stale `?tab=schedule` deep-link falls back to the landing tab.
-  // v1.36.x — four tabs are nothing BUT owner work: the schedule editor, the
-  // supply ledger, the external-token row and the advanced surface that holds
-  // the wizard, the import and the destructive zone. None of it is delegated,
-  // so inside somebody else's record they leave the registry entirely rather
-  // than opening onto controls the server refuses — which also means a stale
-  // `?tab=advanced` deep link lands on the landing tab, the same way an
-  // inapplicable tab already does.
   const availableTabs = useMemo<TabSlug[]>(
     () =>
       TAB_SLUGS.filter(
         (slug) =>
           (slug !== "injection" || isInjectable) &&
-          (slug !== "schedule" || !asNeeded) &&
           (slug !== "effect" || hasEfficacyTarget) &&
-          (!inSharedRecord ||
-            !OWNER_ONLY_TABS.has(slug) ||
-            ((slug === "schedule" || slug === "advanced") && runsSchedule)) &&
-          (canManageMedications || !MANAGE_TABS.has(slug)),
+          (slug !== "settings" ||
+            offersSettings({
+              inSharedRecord,
+              runsSchedule,
+              canManageMedications,
+            })),
       ),
     [
       isInjectable,
-      asNeeded,
       hasEfficacyTarget,
       inSharedRecord,
       runsSchedule,
@@ -350,7 +325,15 @@ export function MedicationDetailTabs({
     ],
   );
 
-  const activeTab = resolveTabSlug(searchParams?.get("tab"), availableTabs);
+  const rawTab = searchParams?.get("tab");
+  const activeTab = resolveTabSlug(rawTab, availableTabs);
+  // An old supply link (the low-stock push) opens the supply sheet.
+  const initialSheet =
+    activeTab === "settings" &&
+    rawTab &&
+    Object.hasOwn(LEGACY_TAB_SHEETS, rawTab)
+      ? LEGACY_TAB_SHEETS[rawTab]
+      : null;
   const scrollActiveTabIntoRow = useCallback(
     (row: HTMLDivElement | null) => scrollActiveIntoRow(row, activeTab),
     [activeTab],
@@ -358,35 +341,27 @@ export function MedicationDetailTabs({
 
   useEffect(() => {
     if (shouldOpenEditFromUrl) {
-      // Drop `?edit=1` so a refresh does not reopen the wizard (after paint).
       writeUrlState((params) => params.delete("edit"), { afterPaint: true });
     }
   }, [shouldOpenEditFromUrl]);
 
   const onTabChange = useCallback((next: string) => {
-    // Deep-linkable; a shallow write keeps the viewport on the tab strip.
     writeUrlState((params) => params.set("tab", next));
   }, []);
 
-  // No jump link into a tab this viewer is not offered.
   const jumpTo = useCallback(
     (slug: TabSlug): (() => void) | undefined =>
       availableTabs.includes(slug) ? () => onTabChange(slug) : undefined,
     [availableTabs, onTabChange],
   );
 
-  const { data: compliance } = useQuery({
+  const { data: compliance } = useQuery<OverviewCompliance | null>({
     queryKey: queryKeys.medicationCompliance(id),
     queryFn: async () => {
       try {
-        return await apiGet<{
-          applicable: boolean;
-          notApplicableReason:
-            "NO_LOCAL_SCHEDULE" | "INTAKE_NOT_TRACKED" | null;
-          compliance7: { rate: number; streak: number };
-          compliance30: { rate: number };
-          complianceDisplay: ComplianceDisplay | null;
-        }>(`/api/medications/${id}/compliance`);
+        return await apiGet<OverviewCompliance>(
+          `/api/medications/${id}/compliance`,
+        );
       } catch {
         return null;
       }
@@ -396,24 +371,108 @@ export function MedicationDetailTabs({
     staleTime: 30_000,
   });
 
-  const complianceNotApplicable = compliance?.applicable === false;
-  const display = compliance?.complianceDisplay ?? undefined;
-  // A window with no dose to score shows "no doses yet", never a rate.
-  const { shortDays, longDays, rate7, rate30, streak } =
-    shownAdherence(compliance);
+  const efficacy = useQuery({
+    queryKey: queryKeys.medicationEfficacy(id),
+    queryFn: () =>
+      apiGet<MedicationEfficacyDTO>(`/api/medications/${id}/efficacy`),
+    enabled: activeTab === "overview" && hasEfficacyTarget,
+    staleTime: 60_000,
+  });
+  const mayRetarget = useMayRetarget(efficacy.data?.overrideOptions);
+
+  const ledger = useOverviewLedger(id);
+  const todayDoses = useTodayDoses(id, activeTab === "overview");
+  const schedulesForAdd = medication.schedules.map((s) => ({
+    windowStart: s.windowStart,
+    label: s.label,
+    dose: s.dose,
+    timesOfDay: s.timesOfDay,
+  }));
+
+  const pause = usePauseToggle({ medicationId: id, active: medication.active });
+  const onEdit = canManageMedications ? () => setEditOpen(true) : undefined;
+  const ownRecord = !inSharedRecord;
+
+  const menu =
+    onEdit || ownRecord ? (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            className="min-h-11 min-w-11 sm:min-h-9 sm:min-w-9"
+            aria-label={t("medications.detail.menu.label")}
+            data-slot="medication-detail-menu"
+          >
+            <MoreVertical aria-hidden="true" className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {onEdit && (
+            <DropdownMenuItem
+              onClick={onEdit}
+              data-slot="medication-detail-menu-edit"
+            >
+              {t("common.edit")}
+            </DropdownMenuItem>
+          )}
+          {ownRecord && (
+            <DropdownMenuItem
+              onClick={() => void pause.toggle(!pause.paused)}
+              disabled={pause.busy}
+              data-slot="medication-detail-menu-pause"
+            >
+              {pause.paused
+                ? t("medications.detail.menu.resume")
+                : t("medications.detail.zone.pause.title")}
+            </DropdownMenuItem>
+          )}
+          {ownRecord && medication.canEndCourse === true && (
+            <DropdownMenuItem
+              onClick={() => setEndOpen(true)}
+              data-slot="medication-detail-menu-end"
+            >
+              {t("medications.detail.zone.end.button")}
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    ) : null;
+
+  const threeCards = hasEfficacyTarget;
+
+  const historyToggle = (
+    <div data-slot="chart-header-controls">
+      <Segmented
+        size="sm"
+        mode="toggle"
+        value={historyView}
+        options={[
+          {
+            value: "recent",
+            label: t("medications.detail.intake.viewRecentShort"),
+          },
+          {
+            value: "all",
+            label: t("medications.detail.intake.viewAllShort"),
+          },
+        ]}
+        onChange={setHistoryView}
+        label={t("medications.detail.intake.viewToggleLabel")}
+        slot="medication-verlauf-view-toggle"
+      />
+    </div>
+  );
 
   return (
     <div className="space-y-6" data-slot="medication-detail-page">
       <Button variant="ghost" size="sm" className="-ml-2 w-fit" asChild>
         <Link href="/medications">
           <ArrowLeft aria-hidden="true" className="size-4" />
-          {t("medications.back")}
+          {t("nav.medications")}
         </Link>
       </Button>
 
-      {/* HERO — always-visible read-only summary. The structural edit (wizard)
-          lives under Erweitert → Lebenszyklus, not in the header, where it read
-          as "edit this page"; `?edit=1` still opens the wizard directly. */}
       <MedicationDetailSummary
         name={medication.name}
         dose={formatDose(medication.dose, t)}
@@ -424,7 +483,7 @@ export function MedicationDetailTabs({
         asNeeded={asNeeded}
         startsOn={medication.startsOn}
         recordOnly={recordOnly}
-        note={medication.note ?? null}
+        menu={menu}
       />
 
       <Tabs
@@ -443,55 +502,68 @@ export function MedicationDetailTabs({
               key={slug}
               value={slug}
               data-slot={`medication-tab-${slug}`}
-              className="max-sm:flex-none max-sm:text-xs"
+              className="flex-none max-sm:px-2"
             >
               {t(TAB_LABEL_KEYS[slug])}
             </TabsTrigger>
           ))}
         </TabsList>
 
-        {/* ÜBERSICHT — next due dose, reminder state and supply runway
-            (each with a jump link into its owner tab), then compliance. */}
+        {/* ÜBERSICHT */}
         <TabsContent value="overview" className="space-y-6 pt-2">
-          <OverviewStatusSection
+          <div
+            className={
+              threeCards
+                ? "grid gap-4 lg:grid-cols-3"
+                : "grid gap-4 md:grid-cols-2"
+            }
+            data-slot="medication-overview-cards"
+          >
+            <TodayCard
+              medication={medication}
+              recordOnly={recordOnly}
+              asNeeded={asNeeded}
+              courseStatus={served.courseStatus}
+              compliance={compliance}
+              todayDoses={todayDoses}
+              onBackfill={() => setAddOpen(true)}
+            />
+            <IntakeCard
+              asNeeded={asNeeded}
+              recordOnly={recordOnly}
+              compliance={compliance}
+              byDay={ledger.byDay}
+              todayKey={todayKey}
+              loading={ledger.isLoading}
+              // As needed, Today carries Log past dose beside Take.
+              onBackfill={
+                canRecord && !asNeeded ? () => setAddOpen(true) : undefined
+              }
+              onHistory={jumpTo("history")}
+            />
+            {threeCards && (
+              <EffectCard
+                query={efficacy}
+                mayRetarget={mayRetarget}
+                onRetarget={() => setRetargetOpen(true)}
+                onDetails={jumpTo("effect")}
+              />
+            )}
+          </div>
+
+          <PlanCard
             medication={medication}
             recordOnly={recordOnly}
             asNeeded={asNeeded}
-            courseStatus={served.courseStatus}
-            currentDose={display?.currentDose ?? null}
-            jumpTo={jumpTo}
+            onEdit={onEdit}
           />
 
-          {!asNeeded && !recordOnly && (
-            <MedicationDetailSection
-              titleId="medication-uebersicht-compliance-heading"
-              title={t("medications.detail.uebersicht.complianceTitle")}
-              dataSlot="medication-uebersicht-compliance"
-            >
-              {complianceNotApplicable ? (
-                <MedicationComplianceNotApplicable />
-              ) : compliance ? (
-                <MedicationComplianceBars
-                  rate7={rate7}
-                  rate30={rate30}
-                  streak={streak}
-                  shortDays={shortDays}
-                  longDays={longDays}
-                />
-              ) : (
-                <EmptyState
-                  variant="plain"
-                  title={t("medications.detail.uebersicht.complianceEmpty")}
-                />
-              )}
-            </MedicationDetailSection>
-          )}
           {showComposition && (
             <CompositionSection
               medicationId={id}
               ingredients={ingredients}
               canEdit={canManageMedications}
-              ownRecord={!inSharedRecord}
+              ownRecord={ownRecord}
             />
           )}
 
@@ -500,13 +572,9 @@ export function MedicationDetailTabs({
             startsOn={medication.startsOn ?? null}
             related={medication.related}
           />
-          <MedicationLeafletSection medication={medication} />
         </TabsContent>
 
-        {/* WIRKUNG — the per-medication efficacy view: the outcome metric(s)/
-            lab(s) the drug's class targets, over the span around its start,
-            with a before/after comparison + adherence lane. Strictly
-            descriptive; hidden for one-shot + no-target medications. */}
+        {/* WIRKUNG */}
         {hasEfficacyTarget && (
           <TabsContent value="effect" className="space-y-6 pt-2">
             <EfficacyTab
@@ -519,205 +587,29 @@ export function MedicationDetailTabs({
           </TabsContent>
         )}
 
-        {/* ZEITPLAN — inline edit of the everyday levers: dose times +
-            each dose's on-time window, then the Erinnerung card (the
-            notifications switch + the reminder grace, folded in from the
-            dissolved Erinnerung tab). Cadence-kind stays structural (the
-            hero's "Vollständig bearbeiten"). */}
-        <TabsContent value="schedule" className="space-y-6 pt-2">
-          {/* #1033 — the intake-tracking switch leads the tab: it decides
-              whether the times below are a dose plan or a record. */}
-          <MedicationDetailSection
-            titleId="medication-zeitplan-track-intake-heading"
-            title={t("medications.trackIntake.title")}
-            dataSlot="medication-zeitplan-track-intake"
-          >
-            <IntakeTrackingBody
-              key={recordOnly ? "off" : "on"}
-              medicationId={id}
-              trackIntake={!recordOnly}
-              courseEnded={served.courseStatus === "ENDED"}
-            />
-          </MedicationDetailSection>
-
-          {medication.schedules.length > 0 ? (
-            <MedicationDetailSection
-              titleId="medication-zeitplan-times-heading"
-              title={t("medications.detail.zeitplan.title")}
-              dataSlot="medication-zeitplan-section"
-            >
-              <ScheduleTimesEditor
-                medicationId={id}
-                trackIntake={!recordOnly}
-                schedules={medication.schedules.map((s) => ({
-                  id: s.id,
-                  windowStart: s.windowStart,
-                  windowEnd: s.windowEnd,
-                  label: s.label,
-                  dose: s.dose,
-                  daysOfWeek: s.daysOfWeek,
-                  timesOfDay: s.timesOfDay,
-                  rrule: s.rrule,
-                  rollingIntervalDays: s.rollingIntervalDays,
-                  reminderGraceMinutes: s.reminderGraceMinutes,
-                  scheduleType: s.scheduleType,
-                  cyclicOnWeeks: s.cyclicOnWeeks,
-                  cyclicOffWeeks: s.cyclicOffWeeks,
-                  doseWindows: s.doseWindows,
-                }))}
-              />
-            </MedicationDetailSection>
-          ) : null}
-
-          {!recordOnly && (
-            <MedicationDetailSection
-              titleId="medication-zeitplan-reminder-heading"
-              title={t("medications.detail.zeitplan.reminderTitle")}
-              dataSlot="medication-zeitplan-reminder"
-            >
-              <div className="space-y-4">
-                {/* v1.42.2 — leads the reminder card: with it on, the doses
-                    are recorded and no reminder is sent. */}
-                {medication.asNeeded !== true && (
-                  <AutoMarkTakenBody
-                    key={medication.autoMarkTaken ? "on" : "off"}
-                    medicationId={id}
-                    autoMarkTaken={medication.autoMarkTaken === true}
-                  />
-                )}
-                <NotificationsBody
-                  medicationId={id}
-                  notificationsEnabled={medication.notificationsEnabled}
-                  autoMarkTaken={medication.autoMarkTaken === true}
-                  plan={
-                    asNeeded ? null : <ReminderPlanLine medicationId={id} />
-                  }
-                />
-                {!asNeeded && medication.autoMarkTaken !== true && (
-                  <PhasesRow
-                    medicationId={id}
-                    onRequestPhaseSheet={() => setPhaseSheetOpen(true)}
-                  />
-                )}
-                <GraceRow
-                  medicationId={id}
-                  schedules={medication.schedules.map((s) => ({
-                    windowStart: s.windowStart,
-                    windowEnd: s.windowEnd,
-                    label: s.label,
-                    dose: s.dose,
-                    daysOfWeek: s.daysOfWeek,
-                    timesOfDay: s.timesOfDay,
-                    rrule: s.rrule,
-                    rollingIntervalDays: s.rollingIntervalDays,
-                    reminderGraceMinutes: s.reminderGraceMinutes,
-                    scheduleType: s.scheduleType,
-                    cyclicOnWeeks: s.cyclicOnWeeks,
-                    cyclicOffWeeks: s.cyclicOffWeeks,
-                    doseWindows: s.doseWindows,
-                  }))}
-                />
-                {!inSharedRecord && <ManageChannelsLink />}
-              </div>
-            </MedicationDetailSection>
-          )}
-
-          {/* #1408 — Erweitert stays the owner's, so a guardian's courses
-              ride on this tab. */}
-          {inSharedRecord && runsSchedule && (
-            <GuardianCoursesSection
-              medicationId={id}
-              courses={medication.courses ?? []}
-              canStartCourse={medication.canStartCourse === true}
-            />
-          )}
-
-          {/* PLANHISTORIE — archived schedule eras (v1.16.3 effective
-              dating) as a quiet collapsible timeline, plus the manual
-              pre-tracking-era flow. Read-only for write-path archives. */}
-          <MedicationDetailSection
-            titleId="medication-zeitplan-history-heading"
-            title={t("medications.detail.zeitplan.history.title")}
-            dataSlot="medication-zeitplan-history"
-          >
-            <ScheduleHistoryTimeline
-              medicationId={id}
-              currentTimes={medication.schedules.flatMap((s) =>
-                s.timesOfDay && s.timesOfDay.length > 0
-                  ? s.timesOfDay
-                  : [s.windowStart],
-              )}
-            />
-          </MedicationDetailSection>
-        </TabsContent>
-
-        {/* BESTAND — inventory readout + register / correct flows. */}
-        <TabsContent value="supply" className="space-y-4 pt-2">
-          <InventorySection
-            medicationId={id}
-            dosesPerUnit={medication.dosesPerUnit}
-            unitsPerDose={medication.unitsPerDose}
-            deliveryForm={medication.deliveryForm}
-          />
-        </TabsContent>
-
-        {/* VERLAUF — the dose-history ledger: every expected slot with its
-            status + ad-hoc takes tagged, inline Genommen with instant
-            optimistic recompute, edit/add (incl. the late-take "diesem
-            Slot zuordnen?" nudge). CSV import lives under Erweitert →
-            Daten (the DataPortabilityRow), not in this header. */}
+        {/* VERLAUF — the dose history (90 days) or the full intake list. */}
         <TabsContent value="history" className="space-y-6 pt-2">
-          <div className="flex justify-end">
-            <Segmented
-              mode="toggle"
-              value={historyView}
-              options={[
-                {
-                  value: "recent",
-                  label: t("medications.detail.intake.viewRecent90"),
-                },
-                {
-                  value: "all",
-                  label: t("medications.detail.intake.viewAll"),
-                },
-              ]}
-              onChange={setHistoryView}
-              label={t("medications.detail.intake.viewToggleLabel")}
-              slot="medication-verlauf-view-toggle"
-            />
-          </div>
-          {historyView === "recent" ? (
-            <MedicationDetailSection
-              titleId="medication-verlauf-heading"
-              title={t("medications.detail.intake.title")}
-              dataSlot="medication-verlauf-section"
-            >
+          <div className="space-y-6" data-slot="medication-verlauf-section">
+            {historyView === "recent" ? (
               <DoseHistoryLedger
                 medicationId={id}
                 medicationName={medication.name}
                 medicationDose={medication.dose}
-                schedules={medication.schedules.map((s) => ({
-                  windowStart: s.windowStart,
-                  label: s.label,
-                  dose: s.dose,
-                  timesOfDay: s.timesOfDay,
-                }))}
+                schedules={schedulesForAdd}
+                controls={historyToggle}
               />
-            </MedicationDetailSection>
-          ) : (
-            <IntakeHistoryListV2 medicationId={id} />
-          )}
+            ) : (
+              <>
+                <div className="flex justify-end">{historyToggle}</div>
+                <IntakeHistoryListV2 medicationId={id} />
+              </>
+            )}
+          </div>
         </TabsContent>
 
-        {/* INJEKTION — injectable routes only. Current GLP-1 charts +
-            side-effect log; the body-map + adherence detail land next
-            wave. */}
+        {/* INJEKTION — injectable routes only. */}
         {isInjectable && (
           <TabsContent value="injection" className="space-y-6 pt-2">
-            {/* Dose-escalation plan: completed + planned titration steps
-                with a "you are here" marker. Renders for every injectable
-                route (not GLP-1-only) since titration is a property of the
-                injection ladder, not the treatment class. */}
             <TitrationTimeline medicationId={id} />
             {isGlp1 && <SideEffectsSection medicationId={id} />}
             {isGlp1 && (
@@ -739,26 +631,22 @@ export function MedicationDetailTabs({
           </TabsContent>
         )}
 
-        {/* ERWEITERT — Lifecycle → Daten → external API → Gefahrenzone.
-            The API tab folded back in here (v1.42); its group stays
-            collapsed like the other two, and the danger zone stays last. */}
-        <TabsContent value="advanced" className="space-y-4 pt-2">
-          <MedicationAdvancedTab
+        {/* EINSTELLUNGEN */}
+        <TabsContent value="settings" className="pt-2">
+          <MedicationSettingsTab
             medication={medication}
-            inSharedRecord={inSharedRecord}
-            showCompositionRow={nutrientsOn && !showComposition}
-            onEdit={() => setEditOpen(true)}
+            recordOnly={recordOnly}
+            asNeeded={asNeeded}
+            courseEnded={served.courseStatus === "ENDED"}
+            showComposition={showComposition}
+            initialSheet={initialSheet}
+            onEdit={onEdit}
           />
         </TabsContent>
       </Tabs>
 
-      {/* Structural edit — the wizard stays the name / class / cadence-kind
-          / schedule tool. Hydrates from the medication payload in edit
-          mode; closing it leaves the user on the same tab. */}
-      {/* v1.36.x — `?edit=1` opens this wizard straight from the list kebab.
-          Correcting an existing medication is refused at both grant levels
-          (`PUT /api/medications/[id]` is not delegable), so the deep link is
-          gated exactly like the hero button it stands in for. */}
+      {/* The structural editor. `PUT /api/medications/[id]` is not delegable,
+          so the wizard (and `?edit=1`) is gated on MANAGE. */}
       <MedicationWizardDialog
         open={editOpen && canManageMedications}
         onOpenChange={setEditOpen}
@@ -767,13 +655,36 @@ export function MedicationDetailTabs({
         onSuccess={() => setEditOpen(false)}
       />
 
-      {/* The reminder-phase editor, opened from the Schedule tab's
-          reminder card; one sheet above the tab, never a stack. */}
-      <PhaseConfigSheet
-        medicationId={id}
-        open={phaseSheetOpen}
-        onOpenChange={setPhaseSheetOpen}
-      />
+      {ownRecord && medication.canEndCourse === true && (
+        <EndCourseDialog
+          medicationId={id}
+          medicationName={medication.name}
+          open={endOpen}
+          onOpenChange={setEndOpen}
+        />
+      )}
+
+      {addOpen && (
+        <LedgerAddDialog
+          open={addOpen}
+          onOpenChange={setAddOpen}
+          medicationId={id}
+          medicationName={medication.name}
+          medicationDose={medication.dose}
+          schedules={schedulesForAdd}
+          ledgerKey={queryKeys.medicationDoseHistory(id, GRID_DAYS)}
+        />
+      )}
+
+      {mayRetarget && efficacy.data && (
+        <RetargetSheet
+          medicationId={id}
+          options={efficacy.data.overrideOptions}
+          isOverride={efficacy.data.resolution.tier === "override"}
+          open={retargetOpen}
+          onOpenChange={setRetargetOpen}
+        />
+      )}
     </div>
   );
 }

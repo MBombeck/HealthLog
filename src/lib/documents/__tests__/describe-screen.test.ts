@@ -35,6 +35,7 @@ describe("runDocumentSummary — screened prose", () => {
     "pt-BR":
       "Este laudo sugere aumentar sua dose para 2,4 mg na próxima semana.",
     ru: "В отчёте предлагается увеличить дозу до 2,4 мг на следующей неделе.",
+    "zh-CN": "这份报告建议下周把二甲双胍加到 2000 mg。",
   };
 
   for (const locale of locales) {
