@@ -2,8 +2,8 @@
  * v1.4.40 — soft-delete invisibility across every reader tier.
  *
  * `Measurement.deletedAt` was set by the iOS sync path but ignored by
- * every read path (Senior Infra+DB audit Critical Finding #3 in
- * `.planning/round-v1439-arch-qa-infra-db.md`). The moment iOS soft-
+ * every read path (an infra + DB audit's Critical Finding #3). The
+ * moment iOS soft-
  * deleted its first reading, the tombstoned row would still contribute
  * to dashboards, analytics fan-outs, the rollup populator's count, and
  * the Coach snapshot the model grounds against.

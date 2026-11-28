@@ -1,5 +1,5 @@
 /**
- * Notification dispatcher retry policy (v1.4.15 Phase B3).
+ * Notification dispatcher retry policy (v1.4.15).
  *
  * Two failure classes:
  *  - HARD reject (`hardReject: true`)        → channel is dead, do NOT retry,

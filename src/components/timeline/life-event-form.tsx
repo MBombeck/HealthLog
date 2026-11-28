@@ -12,12 +12,15 @@
  */
 import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, Loader2, Lock, Plus, Trash2, X } from "lucide-react";
+import { Loader2, Lock, Plus, Trash2, X } from "lucide-react";
 
 import { FieldError } from "@/components/forms/field-error";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
+import { ActionMenu } from "@/components/ui/action-menu";
+import { ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
-import { ConfirmButton } from "@/components/ui/confirm-button";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { ConfirmDialog } from "@/components/ui/confirm-button";
 import { DateField } from "@/components/ui/date-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -232,6 +235,7 @@ export function LifeEventForm({
   }, [dirty, onDirtyChange]);
   const [errors, setErrors] = useState<LifeEventDraftErrors>({});
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const { create, update, remove } = useLifeEventMutations();
   const saving = create.isPending || update.isPending || remove.isPending;
 
@@ -278,30 +282,22 @@ export function LifeEventForm({
   }
 
   const footer = (
-    <div className="flex w-full flex-wrap items-center justify-end gap-2">
+    <ActionPair>
       {event && (
-        <ConfirmButton
-          label={t("lifeEvents.delete")}
-          title={t("lifeEvents.deleteConfirm.title")}
-          body={t("lifeEvents.deleteConfirm.body")}
-          confirmLabel={t("lifeEvents.delete")}
-          onConfirm={() => void destroy()}
-          pending={remove.isPending}
-          disabled={saving}
-          size="sm"
-          variant="destructive"
-          className="mr-auto min-h-11 sm:min-h-9"
-          icon={<Trash2 className="size-4" aria-hidden="true" />}
-          slot="life-event-delete"
-          destructive
-        />
+        <ActionMenu disabled={saving || remove.isPending}>
+          <DropdownMenuItem
+            data-slot="life-event-delete"
+            onClick={() => setConfirmDelete(true)}
+          >
+            <Trash2 className="mr-2 size-4" aria-hidden="true" />
+            {t("lifeEvents.delete")}
+          </DropdownMenuItem>
+        </ActionMenu>
       )}
       {onCancel && (
         <Button
           type="button"
           variant="outline"
-          size="sm"
-          className="min-h-11 sm:min-h-9"
           onClick={onCancel}
           disabled={saving}
         >
@@ -311,8 +307,6 @@ export function LifeEventForm({
       <Button
         type="submit"
         form={ids.form}
-        size="sm"
-        className="min-h-11 sm:min-h-9"
         disabled={saving}
         data-slot="life-event-save"
       >
@@ -321,14 +315,10 @@ export function LifeEventForm({
             className="size-4 animate-spin motion-reduce:animate-none"
             aria-hidden="true"
           />
-        ) : event ? (
-          <Check className="size-4" aria-hidden="true" />
-        ) : (
-          <Plus className="size-4" aria-hidden="true" />
-        )}
+        ) : null}
         {t("lifeEvents.save")}
       </Button>
-    </div>
+    </ActionPair>
   );
 
   return (
@@ -482,6 +472,17 @@ export function LifeEventForm({
       )}
 
       {footerSlot ? createPortal(footer, footerSlot) : footer}
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title={t("lifeEvents.deleteConfirm.title")}
+        body={t("lifeEvents.deleteConfirm.body")}
+        confirmLabel={t("lifeEvents.delete")}
+        onConfirm={() => void destroy()}
+        pending={remove.isPending}
+        slot="life-event-delete"
+        destructive
+      />
     </form>
   );
 }

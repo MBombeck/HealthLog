@@ -30,7 +30,7 @@
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
-import { coerceLocale } from "@/lib/i18n/config";
+import type { Locale } from "@/lib/i18n/config";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { annotate } from "@/lib/logging/context";
 import type { EntryResult } from "@/lib/measurements/batch-ingest/entries";
@@ -133,7 +133,7 @@ export function classifySymptomEntry(
  */
 async function resolveBuiltinDefinitions(
   userId: string,
-  locale: string | null,
+  locale: Locale,
   codes: SymptomBuiltinCode[],
 ): Promise<Map<string, string>> {
   const byCode = new Map<string, string>();
@@ -146,7 +146,7 @@ async function resolveBuiltinDefinitions(
   const missing = codes.filter((code) => !byCode.has(code));
   if (missing.length === 0) return byCode;
 
-  const translator = getServerTranslator(coerceLocale(locale));
+  const translator = getServerTranslator(locale);
   let sortOrder = await nextSymptomDefinitionSortOrder(userId);
   for (const code of missing) {
     try {
@@ -182,7 +182,8 @@ async function resolveBuiltinDefinitions(
 
 export async function ingestSymptomBatch(args: {
   userId: string;
-  locale: string | null;
+  /** The request's language (`resolveServerLocale`): built-in labels are named in it. */
+  locale: Locale;
   entries: SymptomBatchEntry[];
   ipAddress: string | null;
 }): Promise<SymptomBatchResult> {

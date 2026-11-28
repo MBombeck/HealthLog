@@ -125,7 +125,7 @@ interface NotificationsPreferences {
 }
 
 function readExpanded(): boolean {
-  // Default = collapsed. v1.4.15 phase-A3 fix #3: the card auto-opening
+  // Default = collapsed. v1.4.15: the card auto-opening
   // on every page-load was the dominant complaint after the flicker —
   // it pushed the actual dashboard tiles below the fold every visit.
   // We persist the user's last choice so a deliberate expand survives

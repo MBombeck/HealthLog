@@ -11,7 +11,19 @@ import {
   type ReactNode,
 } from "react";
 
-import { TargetEditSheet } from "@/components/targets/target-edit-sheet";
+import dynamic from "next/dynamic";
+
+import { importWithRetry } from "@/lib/retry-import";
+
+// Loaded when a target is opened: every Insights metric page mounts this
+// provider, and the editor sheet is a tap away behind the header gear.
+const TargetEditSheet = dynamic(
+  () =>
+    importWithRetry(
+      () => import("@/components/targets/target-edit-sheet"),
+    ).then((mod) => ({ default: mod.TargetEditSheet })),
+  { ssr: false },
+);
 
 /**
  * Insights target-adjust context.

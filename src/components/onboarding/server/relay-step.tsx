@@ -309,7 +309,7 @@ function RelayConfirmations({
       />
       {showInvite ? (
         <div className="space-y-1">
-          <Label htmlFor="push-relay-invite" noColon>
+          <Label htmlFor="push-relay-invite">
             {t("admin.pushRelay.invite.label")}
           </Label>
           <Input

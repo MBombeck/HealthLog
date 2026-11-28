@@ -39,7 +39,7 @@
  * apart is the whole reason an admin can review what they uploaded
  * before pulling the trigger.
  *
- * Phase B1 / criterion 2 of the v1.4.15 backup-completeness work.
+ * Part of the v1.4.15 backup-completeness work.
  */
 import { Readable } from "node:stream";
 

@@ -104,7 +104,7 @@ export function UnitsScreen({
       />
       <div className="space-y-6">
         <div className="space-y-2">
-          <Label htmlFor="onboarding-display-name" noColon>
+          <Label htmlFor="onboarding-display-name">
             {t("setup.person.units.name")}
           </Label>
           <Input
@@ -117,9 +117,7 @@ export function UnitsScreen({
         </div>
 
         <div className="space-y-2" data-slot="onboarding-question-timezone">
-          <Label htmlFor="onboarding-timezone" noColon>
-            {t("settings.timezone")}
-          </Label>
+          <Label htmlFor="onboarding-timezone">{t("settings.timezone")}</Label>
           <NativeSelect
             id="onboarding-timezone"
             value={timezone}

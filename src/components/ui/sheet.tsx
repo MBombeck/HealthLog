@@ -5,6 +5,7 @@ import { XIcon } from "lucide-react";
 import { Dialog as SheetPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
+import { ActionPair } from "@/components/ui/action-pair";
 import { useTranslations } from "@/lib/i18n/context";
 import {
   BottomSheetContent,
@@ -151,13 +152,20 @@ function SheetHeader({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
-function SheetFooter({ className, ...props }: React.ComponentProps<"div">) {
+/** The sheet's actions, laid out by `ActionPair` (see `DialogFooter`). */
+function SheetFooter({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="sheet-footer"
-      className={cn("mt-auto flex flex-col gap-2 p-4", className)}
+      className={cn("mt-auto flex p-4", className)}
       {...props}
-    />
+    >
+      <ActionPair>{children}</ActionPair>
+    </div>
   );
 }
 

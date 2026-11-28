@@ -23,6 +23,7 @@ import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { integrationBackfillSourceOptions } from "@/lib/jobs/integration-backfill-admission";
 import { isReauthRequired } from "@/lib/integrations/status";
 import {
+  backfillIncomplete,
   backfillVerdict,
   withPageWalkLedger,
 } from "@/lib/integrations/page-walk";
@@ -42,9 +43,9 @@ export interface WhoopBackfillPayload {
  *
  * Verdict-gated (`backfillVerdict`, `integrations/page-walk.ts`): a partial
  * hard failure (a dead token, a write failing, a fetch hard-fail) THROWS so
- * pg-boss retries the job — stamping the marker over a partial multi-year
- * walk would freeze the history gap forever and the configured `retryLimit`
- * would be dead code. A collection whose walk reached its page ceiling leaves
+ * the job is tried again (an outage by the drain's backoff, anything else by
+ * the pg-boss retry) — stamping the marker over a partial multi-year walk
+ * would freeze the history gap forever. A collection whose walk reached its page ceiling leaves
  * the marker unset WITHOUT a retry: nothing failed, and boot discovery offers
  * the account again. A connection parked at `error_reauth` is NOT clean
  * either, but throwing against a dead grant would just burn the retry budget
@@ -70,6 +71,7 @@ export async function runWhoopBackfillForUser(
   const {
     result: { imported, failed },
     truncated,
+    failure,
   } = await withPageWalkLedger(() => syncUserWhoop(userId, { fullSync: true }));
   const verdict = backfillVerdict({ failed, truncated });
 
@@ -87,11 +89,13 @@ export async function runWhoopBackfillForUser(
   }
 
   if (verdict === "retry") {
-    // Surface through the pg-boss retry path (retryLimit + backoff set by
-    // `integrationBackfillSourceOptions`). If the failure parked the connection
-    // at error_reauth meanwhile, the next attempt takes the reauth return above.
-    throw new Error(
+    // The collection's error rides as the cause: the drain sends the run
+    // again after an outage (`integration-backfill-retry.ts`), anything else
+    // goes to the pg-boss retry. If the failure parked the connection at
+    // error_reauth meanwhile, the next attempt takes the reauth return above.
+    throw backfillIncomplete(
       `whoop backfill incomplete for user ${userId} — marker not stamped`,
+      failure,
     );
   }
 

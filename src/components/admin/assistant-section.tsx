@@ -200,7 +200,7 @@ export function AssistantSection() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <Label
               htmlFor="admin-reasoning-max"
-              noColon
+
               className="text-sm font-medium"
             >
               {t(REASONING_ADMIN_KEYS.max)}

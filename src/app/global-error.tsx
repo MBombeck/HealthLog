@@ -65,7 +65,7 @@ export default function GlobalError({
       <body
         style={{
           fontFamily: "system-ui, sans-serif",
-          backgroundColor: "#1e1f29",
+          backgroundColor: "#101113",
           color: "#f8f8f2",
           margin: 0,
           // v1.4.27 — `100dvh` follows the dynamic viewport on
@@ -101,13 +101,13 @@ export default function GlobalError({
           </p>
           <pre
             style={{
-              background: "#282a36",
+              background: "#1a1b1f",
               padding: 12,
               borderRadius: 6,
               fontSize: 12,
               overflow: "auto",
               marginBottom: 16,
-              border: "1px solid #44475a",
+              border: "1px solid #3b3c41",
             }}
           >
             {error.message || "Unknown error"}
@@ -133,7 +133,7 @@ export default function GlobalError({
                 style={{
                   background: "transparent",
                   color: "#f8f8f2",
-                  border: "1px solid #44475a",
+                  border: "1px solid #3b3c41",
                   borderRadius: 6,
                   minHeight: 44,
                   padding: "6px 12px",
@@ -149,8 +149,8 @@ export default function GlobalError({
             <button
               onClick={reset}
               style={{
-                background: "#bd93f9",
-                color: "#282a36",
+                background: "#ebebf5",
+                color: "#101113",
                 border: "none",
                 borderRadius: 6,
                 // v1.4.27 — 44 px minimum height matches the
@@ -170,7 +170,7 @@ export default function GlobalError({
               style={{
                 background: "transparent",
                 color: "#f8f8f2",
-                border: "1px solid #44475a",
+                border: "1px solid #3b3c41",
                 borderRadius: 6,
                 minHeight: 44,
                 padding: "10px 16px",

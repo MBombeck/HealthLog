@@ -129,7 +129,6 @@ export function RecoveryStep() {
         />
         <Label
           htmlFor={confirmId}
-          noColon
           className="text-foreground text-sm leading-relaxed font-normal"
         >
           {t("setup.server.recovery.kept")}

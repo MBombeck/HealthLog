@@ -67,7 +67,6 @@ export function ProfileScreen({
         description={t("setup.person.profile.body")}
       />
       <ManagedProfileCreateForm
-        noColons
         onCreated={(profile) => void done(profile.id)}
         renderActions={({ disabled, pending }) => (
           <StepActions

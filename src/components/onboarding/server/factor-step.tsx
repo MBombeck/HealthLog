@@ -135,7 +135,7 @@ export function FactorStep() {
 
   const passwordField = (
     <div className="space-y-2">
-      <Label htmlFor="server-setup-factor-password" noColon>
+      <Label htmlFor="server-setup-factor-password">
         {t("setup.server.factor.password")}
       </Label>
       <PasswordInput
@@ -264,7 +264,7 @@ function TotpCode({
         </div>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="server-setup-factor-code" noColon>
+        <Label htmlFor="server-setup-factor-code">
           {t("setup.server.factor.code")}
         </Label>
         <Input

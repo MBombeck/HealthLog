@@ -25,7 +25,7 @@ import {
 
 describe("PROMPT_VERSION", () => {
   it("is at least 4.16.0 for the v1.4.16 medical-reference grounding update", () => {
-    // v1.4.16 phase B5a anchored at 4.16.0; phase B8 bumped the
+    // v1.4.16 anchored at 4.16.0, then bumped the
     // patch component to 4.16.1 when the comparison-mode narrative
     // ground rule landed. v1.4.19 bumped to 4.19.0 when the
     // no-default-positivity opener ground rule landed. Use a numeric
@@ -113,8 +113,8 @@ describe("buildSystemPromptWithReferences()", () => {
   it("contains the bumped PROMPT_VERSION", () => {
     const prompt = buildSystemPromptWithReferences("en", ["bp"]);
     expect(prompt).toContain(PROMPT_VERSION);
-    // v1.4.16: phase B5a was 4.16.0; phase B8 bumped to 4.16.1.
-    // v1.4.19 bumped to 4.19.0; v1.22 (W6) bumped to 5.0.0.
+    // v1.4.16 started at 4.16.0 and bumped to 4.16.1.
+    // v1.4.19 bumped to 4.19.0; v1.22 bumped to 5.0.0.
     expect(prompt).toMatch(/[45]\.\d+\.\d+/);
   });
 });

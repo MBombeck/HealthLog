@@ -124,7 +124,6 @@ export function WhoScreen({
         />
         <Label
           htmlFor={disclaimerId}
-          noColon
           className="text-foreground text-sm leading-relaxed font-normal"
         >
           {t("onboarding.disclaimer.acknowledge")}

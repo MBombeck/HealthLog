@@ -282,9 +282,7 @@ function ServerKeyFields({
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="server-setup-ai-key" noColon>
-          {t("setup.server.ai.key")}
-        </Label>
+        <Label htmlFor="server-setup-ai-key">{t("setup.server.ai.key")}</Label>
         <PasswordInput
           id="server-setup-ai-key"
           value={apiKey}
@@ -300,7 +298,7 @@ function ServerKeyFields({
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="server-setup-ai-model" noColon>
+        <Label htmlFor="server-setup-ai-model">
           {t("admin.aiServerKey.modelLabel")}
         </Label>
         <Input

@@ -59,6 +59,7 @@ interface Tally {
   changed: number;
   accepted: number;
   dropped: number;
+  unreadable: number;
   rejected: number;
   deferred: number;
   failed: number;
@@ -69,6 +70,7 @@ const emptyTally = (): Tally => ({
   changed: 0,
   accepted: 0,
   dropped: 0,
+  unreadable: 0,
   rejected: 0,
   deferred: 0,
   failed: 0,
@@ -88,6 +90,7 @@ async function refreshAndPush(
     const pushed = await pushOwedWalletUpdates(walletPassId, { throttle });
     tally.accepted += pushed.accepted;
     tally.dropped += pushed.dropped;
+    tally.unreadable += pushed.unreadable;
     tally.rejected += pushed.rejected;
     if (pushed.deferredUntil) {
       tally.deferred += 1;
@@ -126,15 +129,18 @@ export async function handleWalletPassRefresh(
       wallet_passes_changed: tally.changed,
       wallet_pushes_accepted: tally.accepted,
       wallet_registrations_dropped: tally.dropped,
+      wallet_registrations_unreadable: tally.unreadable,
       wallet_pushes_rejected: tally.rejected,
       wallet_passes_deferred: tally.deferred,
       items_failed: tally.failed,
     };
-    if (tally.failed > 0 || tally.rejected > 0) {
+    if (tally.failed > 0 || tally.rejected > 0 || tally.unreadable > 0) {
       return jobFailed(
         tally.rejected > 0
           ? "wallet pass push refused by Apple"
-          : "wallet pass refresh failed",
+          : tally.unreadable > 0
+            ? "wallet pass push token unreadable (check ENCRYPTION_KEYS)"
+            : "wallet pass refresh failed",
         undefined,
         did,
       );
@@ -206,6 +212,7 @@ export async function handleWalletPassSweep(
         wallet_passes_changed: tally.changed,
         wallet_pushes_accepted: tally.accepted,
         wallet_registrations_dropped: tally.dropped,
+        wallet_registrations_unreadable: tally.unreadable,
         wallet_pushes_rejected: tally.rejected,
         wallet_passes_deferred: tally.deferred,
         wallet_ready_pushes_sent: ready.sent,
@@ -264,6 +271,7 @@ export async function handleWalletPassVoidPush(
         wallet_passes_changed: tally.changed,
         wallet_pushes_accepted: tally.accepted,
         wallet_registrations_dropped: tally.dropped,
+        wallet_registrations_unreadable: tally.unreadable,
         wallet_pushes_rejected: tally.rejected,
         wallet_passes_deferred: tally.deferred,
         items_failed: tally.failed,

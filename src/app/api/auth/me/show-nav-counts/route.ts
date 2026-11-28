@@ -12,8 +12,12 @@
  * limit, a 1 KB body cap, Zod safeParse with a 422, an audit row, a
  * field-by-field write, and the resolved next state as the answer.
  * Idempotent.
+ *
+ * Resolved on the caller (`requireActorAuth`), the same account
+ * `/api/auth/me` publishes the value from, so a guardian inside a managed
+ * profile changes their own navigation rather than the profile's row.
  */
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireActorAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
@@ -28,7 +32,7 @@ const PATCH_RATE_LIMIT = 60;
 const PATCH_WINDOW_MS = 60_000;
 
 export const PATCH = apiHandler(async (req: Request) => {
-  const { user } = await requireAuth();
+  const { user } = await requireActorAuth();
 
   const rl = await checkRateLimit(
     `show-nav-counts:patch:${user.id}`,

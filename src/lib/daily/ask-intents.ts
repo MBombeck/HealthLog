@@ -11,8 +11,6 @@ export const ASK_INTENT = {
   relayYes: "relay.yes",
   /** Answers the relay question with no, for the whole server. */
   relayNo: "relay.no",
-  /** Sets the admin notice aside, as the admin start page does. */
-  noticeLater: "admin.notice.later",
   /** Opens the server setup. */
   setupOpen: "admin.setup.open",
   /**

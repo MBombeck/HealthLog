@@ -57,6 +57,7 @@ export const SERVER_FEATURES = [
   "daily.asks",
   "setup.resolved-state",
   "daily.scores-short-labels",
+  "insights.scores-short-labels",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -163,4 +164,6 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "GET /api/setup resolves where the person setup stands (status, currentStep, the pinned segments with their screens and statuses) and the setup rows (tasks: id, status todo | done | declined | warning, value, deadline with deadlineDate and deadlineTimeZone in the profile zone, count), firstRunOwed (the first-run gate), and the card's shown and dismissed state; PATCH /api/setup takes cardDismissed. PATCH /api/onboarding/answers confirms the flow itself once nothing is owed (confirm takes managedRecordId) and merges sources additively. Ids are closed lists; skip an unknown one. instance is null on a Bearer token.",
   "daily.scores-short-labels":
     "Each start-page score carries shortLabel, its short name for a tile from the score registry, worded in the response language: GET /api/daily/morning scores.sleep and scores.readiness, and GET /api/daily/digest score (the Health score). Render it as is; the web shows the same words.",
+  "insights.scores-short-labels":
+    "Every score payload carries shortLabel, the score's short name for a tile from the glossary's short form through the score registry, worded in the response language: GET /api/insights/derived and each GET /api/insights/derived/batch entry (null for a metric that is no HealthLog score), GET /api/insights/score-history, healthScore on GET /api/analytics, and on GET /api/dashboard/snapshot healthScore and each scoreRings entry (null on MED_COMPLIANCE). Render it as given, never a short name of the client's own.",
 };

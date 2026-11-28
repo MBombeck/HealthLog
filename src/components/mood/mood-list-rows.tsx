@@ -213,7 +213,7 @@ export function MoodCardRow({
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-1">
-        {/* Phase A5 mobile audit: bumped from h-8 w-8 (32px)
+        {/* Mobile audit: bumped from h-8 w-8 (32px)
           to min-h-11 min-w-11 (44px) so the per-row edit
           and delete actions meet WCAG 2.5.5 on touch
           devices. The desktop table keeps its denser

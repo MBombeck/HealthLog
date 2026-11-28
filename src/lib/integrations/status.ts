@@ -1,7 +1,7 @@
 /**
  * Per-(user, integration) sync-status bookkeeping.
  *
- * v1.4.15 Phase B2 introduces three responsibilities for every sync attempt:
+ * v1.4.15 introduces three responsibilities for every sync attempt:
  *
  *   1. Record success / failure timestamps so Settings → Integrations
  *      can show "last sync 23 minutes ago" instead of guessing from

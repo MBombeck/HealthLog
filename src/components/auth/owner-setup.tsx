@@ -90,9 +90,7 @@ function SetupCode() {
           description={t("setup.server.claim.body")}
         />
         <div className="space-y-2">
-          <Label htmlFor="setup-token" noColon>
-            {t("auth.setup.tokenLabel")}
-          </Label>
+          <Label htmlFor="setup-token">{t("auth.setup.tokenLabel")}</Label>
           <Input
             id="setup-token"
             type="password"
@@ -259,9 +257,7 @@ function OwnerAccount() {
         />
         <div className="space-y-5">
           <div className="space-y-2">
-            <Label htmlFor="email" noColon>
-              {t("auth.email")}
-            </Label>
+            <Label htmlFor="email">{t("auth.email")}</Label>
             <Input
               id="email"
               type="email"
@@ -277,9 +273,7 @@ function OwnerAccount() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="username" noColon>
-              {t("auth.username")}
-            </Label>
+            <Label htmlFor="username">{t("auth.username")}</Label>
             <Input
               id="username"
               value={username}
@@ -295,9 +289,7 @@ function OwnerAccount() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password" noColon>
-              {t("auth.password")}
-            </Label>
+            <Label htmlFor="password">{t("auth.password")}</Label>
             <PasswordInput
               id="password"
               value={password}

@@ -37,19 +37,20 @@ type CalendarDay = ActivityCalendarResponse["days"][number];
 type DayLevel = CalendarDay["level"]["steps"];
 
 /**
- * One hue, rising intensity: the calendar shows more and less than usual,
- * not good and bad, so no status colour takes part. The bar is a graphic
- * (3:1 floor), the day number beside it stays foreground text.
+ * The series ink, rising intensity: the calendar shows more and less than
+ * usual, not good and bad, so neither a status colour nor a hue takes part.
+ * The bar is a graphic; the day number beside it is text and never dimmed
+ * by opacity, so it keeps its contrast on every surface.
  */
 const LEVEL_BAR: Record<DayLevel, string> = {
   none: "bg-transparent",
   unrated: "bg-muted-foreground/60",
   in_progress: "bg-muted-foreground/30",
-  low: "bg-chart-2/20",
-  below: "bg-chart-2/40",
-  usual: "bg-chart-2/60",
-  above: "bg-chart-2/80",
-  high: "bg-chart-2",
+  low: "bg-chart-1/20",
+  below: "bg-chart-1/40",
+  usual: "bg-chart-1/60",
+  above: "bg-chart-1/80",
+  high: "bg-chart-1",
 };
 
 const LEGEND_LEVELS: DayLevel[] = ["low", "below", "usual", "above", "high"];
@@ -316,7 +317,6 @@ export function ActivityCalendarCard() {
                             aria-label={dayLabel(day)}
                             className={cn(
                               "flex min-h-11 flex-1 flex-col items-center gap-1 rounded-lg border px-0.5 py-1",
-                              !day.inPeriod && "opacity-50",
                               day.date === data.today && "border-primary",
                             )}
                           >
@@ -324,7 +324,7 @@ export function ActivityCalendarCard() {
                               aria-hidden="true"
                               className={cn(
                                 "text-xs tabular-nums",
-                                day.future
+                                day.future || !day.inPeriod
                                   ? "text-muted-foreground"
                                   : "text-foreground",
                               )}
@@ -336,6 +336,7 @@ export function ActivityCalendarCard() {
                               className={cn(
                                 "h-1.5 w-full max-w-8 rounded-full",
                                 LEVEL_BAR[level],
+                                !day.inPeriod && "opacity-50",
                               )}
                             />
                             {period === "week" && value !== null ? (
