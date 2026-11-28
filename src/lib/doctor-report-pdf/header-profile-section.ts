@@ -19,6 +19,7 @@ export function buildHeaderProfileSection(
     fmtCalendarDate,
     now,
     insuranceNumber,
+    insuranceGroupNumber,
     margin,
     pageWidth,
     contentMaxY,
@@ -101,6 +102,11 @@ export function buildHeaderProfileSection(
   if (insuranceNumber) {
     patientInfo.push(
       `${t("doctorReport.insuranceNumber")}: ${insuranceNumber}`,
+    );
+  }
+  if (insuranceNumber && insuranceGroupNumber) {
+    patientInfo.push(
+      `${t("doctorReport.insuranceGroupNumber")}: ${insuranceGroupNumber}`,
     );
   }
   // Reporting period uses the explicit `start`/`end` from the data payload

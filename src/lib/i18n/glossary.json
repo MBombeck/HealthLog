@@ -2453,6 +2453,11 @@
           "key": "onboarding.tour.steps.export.title",
           "form": "name",
           "match": "exact"
+        },
+        {
+          "key": "settings.sections.health-record.title",
+          "form": "name",
+          "match": "exact"
         }
       ],
       "forbidden": {
@@ -2508,62 +2513,6 @@
           "врачебный отчёт",
           "врачебный отчет"
         ]
-      }
-    },
-    {
-      "id": "doctorReportAndExport",
-      "description": "The settings section that builds the doctor report and exports the record. A web settings section: a client that splits the doctor report and the export into other places has no section to name, and keeps its own section names.",
-      "wire": "settings section id health-record",
-      "terms": {
-        "de": {
-          "name": "Arztbericht und Export"
-        },
-        "en": {
-          "name": "Doctor report and export"
-        },
-        "fr": {
-          "name": "Rapport médical et export"
-        },
-        "es": {
-          "name": "Informe médico y exportación"
-        },
-        "it": {
-          "name": "Referto medico ed esportazione"
-        },
-        "pl": {
-          "name": "Raport dla lekarza i eksport"
-        },
-        "ko": {
-          "name": "진료용 리포트 및 내보내기"
-        },
-        "nl": {
-          "name": "Artsenrapport en export"
-        },
-        "pt-BR": {
-          "name": "Relatório médico e exportação"
-        },
-        "ru": {
-          "name": "Отчёт для врача и экспорт"
-        }
-      },
-      "anchors": [
-        {
-          "key": "settings.sections.health-record.title",
-          "form": "name",
-          "match": "exact"
-        }
-      ],
-      "forbidden": {
-        "de": [],
-        "en": [],
-        "fr": [],
-        "es": [],
-        "it": [],
-        "pl": [],
-        "ko": [],
-        "nl": [],
-        "pt-BR": [],
-        "ru": []
       }
     },
     {

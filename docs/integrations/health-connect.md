@@ -171,7 +171,8 @@ is never counted twice.
 
 Health Connect can export on a schedule into a cloud app. When that cloud is
 a WebDAV server or Nextcloud, HealthLog can fetch the file on its own, so
-nothing has to be downloaded and uploaded by hand.
+nothing has to be downloaded and uploaded by hand. For Google Drive, see
+[a Google Drive folder through rclone](../self-hosting/google-drive-webdav.md).
 
 1. On the phone, set up a **Scheduled export** into the Nextcloud app (or
    any app that writes to a WebDAV folder), for example daily.

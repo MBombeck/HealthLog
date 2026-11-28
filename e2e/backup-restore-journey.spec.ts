@@ -415,6 +415,8 @@ test.describe("Backup and restore, through the settings surfaces", () => {
     await expect(page.getByTestId("export-card-full-backup")).toBeVisible({
       timeout: 30_000,
     });
+    // The row opens the backup's sheet: its options and Download.
+    await page.getByTestId("export-card-full-backup").click();
     await page.getByTestId("export-full-backup-encrypt").click();
     await page
       .getByTestId("export-full-backup-passphrase")
@@ -748,6 +750,7 @@ test.describe("Backup and restore, through the settings surfaces", () => {
         await expect(own.getByTestId("export-card-full-backup")).toBeVisible({
           timeout: 30_000,
         });
+        await own.getByTestId("export-card-full-backup").click();
         const download = own.waitForEvent("download");
         await actWithReproof(own, person.password, () =>
           own.getByTestId("export-action-full-backup").click(),

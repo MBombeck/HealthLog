@@ -14,17 +14,93 @@ import {
   HEALTHKIT_CODESYSTEM,
   type LoincMapping,
 } from "@/lib/fhir/loinc-map";
-import type { FhirCodeableConcept, FhirReference } from "@/lib/fhir/types";
+import type {
+  FhirCodeableConcept,
+  FhirIdentifier,
+  FhirReference,
+} from "@/lib/fhir/types";
+import {
+  insuranceNumberRule,
+  resolveInsuranceNumberCountry,
+  type InsuranceNumberRule,
+} from "@/lib/validations/insurance-number";
 import { ownValue } from "@/lib/own-key";
 
-/** Patient identity not carried in `DoctorReportData` (KVNR is encrypted). */
+/** Patient identity not carried in `DoctorReportData` (the number is encrypted). */
 export interface FhirPatientIdentity {
-  /** German KVNR (decrypted by the route). */
+  /** The insurance number as stored (decrypted by the route). */
   insuranceNumber: string | null;
+  /** ISO 3166-1 alpha-2 country the number follows; absent or null is DE. */
+  insuranceNumberCountry?: string | null;
+  /** The US plan's group number. */
+  insuranceGroupNumber?: string | null;
 }
 
 /** KVNR identifier namespace per the gematik SID. */
 export const KVNR_SYSTEM = "http://fhir.de/sid/gkv/kvid-10";
+
+/** Austrian SVNR for eHealth use, per the Austrian OID registry (svnr-eHealth). */
+export const SVNR_SYSTEM = "urn:oid:1.2.40.0.10.1.4.3.1";
+
+/** Swiss AHVN13, the NamingSystem fixed by HL7 Switzerland (CH Core). */
+export const AHVN13_SYSTEM = "urn:oid:2.16.756.5.32";
+
+/** Dutch BSN, the NamingSystem fixed by the Nictiz profiles. */
+export const BSN_SYSTEM = "http://fhir.nl/fhir/NamingSystem/bsn";
+
+/** French INS-NIR, the OID of the national health identifier authority. */
+export const INS_NIR_SYSTEM = "urn:oid:1.2.250.1.213.1.4.8";
+
+/** HL7 v2 table 0203 (identifier type) and its member-number code. */
+export const V2_IDENTIFIER_TYPE_SYSTEM =
+  "http://terminology.hl7.org/CodeSystem/v2-0203";
+
+/** R4 coverage-class code system (`group`, `plan`, ...). */
+export const COVERAGE_CLASS_SYSTEM =
+  "http://terminology.hl7.org/CodeSystem/coverage-class";
+
+const NATIONAL_INSURANCE_SYSTEMS: Record<
+  Exclude<InsuranceNumberRule, "generic">,
+  string
+> = {
+  DE: KVNR_SYSTEM,
+  AT: SVNR_SYSTEM,
+  CH: AHVN13_SYSTEM,
+  NL: BSN_SYSTEM,
+  FR: INS_NIR_SYSTEM,
+};
+
+/**
+ * The insurance number as a FHIR identifier: under its country's national
+ * system where one exists, else as a member number (`MB`) with no system,
+ * since a member id from an insurer's card belongs to no national namespace.
+ */
+export function insuranceIdentifier(
+  identity: FhirPatientIdentity,
+): FhirIdentifier | null {
+  if (!identity.insuranceNumber) return null;
+  const rule = insuranceNumberRule(
+    resolveInsuranceNumberCountry(identity.insuranceNumberCountry),
+  );
+  if (rule !== "generic") {
+    return {
+      system: NATIONAL_INSURANCE_SYSTEMS[rule],
+      value: identity.insuranceNumber,
+    };
+  }
+  return {
+    type: {
+      coding: [
+        {
+          system: V2_IDENTIFIER_TYPE_SYSTEM,
+          code: "MB",
+          display: "Member Number",
+        },
+      ],
+    },
+    value: identity.insuranceNumber,
+  };
+}
 
 /** German insurer institution-number (IKNR) identifier namespace. */
 export const IKNR_SYSTEM = "http://fhir.de/sid/arge-ik/iknr";

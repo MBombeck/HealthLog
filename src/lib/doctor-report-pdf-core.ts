@@ -12,6 +12,11 @@
  * The text is drawn in embedded Unicode fonts read from disk
  * (`doctor-report-pdf/fonts.ts`), which ties the renderer to Node.
  */
+import {
+  countryHasGroupNumber,
+  displayInsuranceNumber,
+  resolveInsuranceNumberCountry,
+} from "@/lib/validations/insurance-number";
 import { jsPDF } from "jspdf";
 import type { MeasurementType } from "@/generated/prisma/client";
 import {
@@ -85,12 +90,16 @@ export interface DoctorReportRenderOptions {
   /** The user's date-order preference (AUTO / DMY / MDY / YMD). */
   dateFormat: DateFormatPreference;
   /**
-   * v1.7.0 — decrypted KVNR (German insurance number). Printed on the
-   * cover when present; the column is encrypted at rest, so the route
-   * decrypts it and hands the plaintext in here. Null/undefined omits
-   * the cover line exactly like an unset practice name.
+   * The decrypted insurance number, printed on the cover in its country's
+   * form (`insuranceNumberCountry`, absent or null is DE). The column is
+   * encrypted at rest, so the route decrypts it and hands the plaintext in
+   * here. Null/undefined omits the cover line exactly like an unset
+   * practice name.
    */
   insuranceNumber?: string | null;
+  insuranceNumberCountry?: string | null;
+  /** The US plan's group number, printed beside the member ID. */
+  insuranceGroupNumber?: string | null;
   /**
    * v1.7.0 — embed jsPDF-native trend sparklines per primary vital.
    * Defaults to `true`. Off produces a compact text-only report.
@@ -142,6 +151,8 @@ export function buildDoctorReportPdfDocument(
     timeFormat,
     dateFormat,
     insuranceNumber = null,
+    insuranceNumberCountry = null,
+    insuranceGroupNumber = null,
     includeCharts = true,
   } = options;
   const formatters = makeFormatters(locale, userTz, timeFormat, dateFormat);
@@ -195,7 +206,15 @@ export function buildDoctorReportPdfDocument(
     dateShort: formatters.dateShort,
     dateTime: formatters.dateTime,
     now,
-    insuranceNumber,
+    insuranceNumber: displayInsuranceNumber({
+      insuranceNumber,
+      insuranceNumberCountry,
+    }),
+    insuranceGroupNumber: countryHasGroupNumber(
+      resolveInsuranceNumberCountry(insuranceNumberCountry),
+    )
+      ? insuranceGroupNumber
+      : null,
     includeCharts,
     footerTz,
     margin,

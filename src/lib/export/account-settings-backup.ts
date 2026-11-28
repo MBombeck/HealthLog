@@ -71,6 +71,7 @@ import {
   unitPreferencePatchSchema,
 } from "@/lib/validations/user-prefs";
 import { ownValue } from "@/lib/own-key";
+import { ISO_COUNTRY_CODES } from "@/lib/validations/insurance-number";
 
 export interface AccountSettingsBackupOptions {
   purpose?: "portable-export" | "disaster-recovery";
@@ -567,6 +568,12 @@ const ACCOUNT_SETTING_CODECS = {
   fullName: plain("fullName"),
   insurerName: plain("insurerName"),
   insuranceNumberEncrypted: insuranceNumber,
+  insuranceNumberCountry: oneOf(
+    "insuranceNumberCountry",
+    ISO_COUNTRY_CODES,
+    true,
+  ),
+  insuranceGroupNumber: plain("insuranceGroupNumber"),
   insurerIkNumber: plain("insurerIkNumber"),
   lastReportPracticeName: plain("lastReportPracticeName"),
   avatarBytes: avatar,

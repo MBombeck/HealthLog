@@ -27,7 +27,7 @@ import { IntakeImportSkipGroups } from "@/components/medications/intake-import-r
 
 import { DoseHistoryColumnRulings } from "../dose-history-columns";
 import {
-  DoseHistoryImportCard,
+  DoseHistoryImportSource,
   shouldShowDoseHistoryVerdict,
 } from "../dose-history-import-card";
 import {
@@ -74,14 +74,18 @@ describe("<DoseHistoryColumnRulings>", () => {
   });
 });
 
-describe("<DoseHistoryImportCard>", () => {
-  const html = render(<DoseHistoryImportCard />);
+describe("<DoseHistoryImportSource>", () => {
+  const html = render(
+    <ul>
+      <DoseHistoryImportSource />
+    </ul>,
+  );
 
-  it("shows the column verdicts and both actions with no result claimed yet", () => {
+  it("is a row that opens its step, with no result claimed yet", () => {
     expect(html).toContain('data-testid="import-card-dose-history"');
-    expect(html).toContain('data-testid="dose-history-columns"');
-    expect(html).toContain('data-testid="import-dose-history-preview"');
-    expect(html).toContain('data-testid="import-action-dose-history"');
+    expect(html).toContain('data-testid="import-choose-dose-history"');
+    // The step (columns, preview, import) is in the closed sheet.
+    expect(html).not.toContain('data-testid="import-action-dose-history"');
     // Nothing has run, so no outcome and no success affordance.
     expect(html).not.toContain('data-testid="dose-history-verdict"');
     expect(html).not.toContain('data-outcome="success"');

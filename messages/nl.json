@@ -72,7 +72,8 @@
     "status": {
       "active": "Actief",
       "error": "Fout",
-      "off": "Uit"
+      "off": "Uit",
+      "running": "Bezig"
     }
   },
   "apiErrors": {
@@ -432,6 +433,7 @@
     "practiceLabel": "Praktijk",
     "insurer": "Zorgverzekeraar",
     "insuranceNumber": "Verzekeringsnr.",
+    "insuranceGroupNumber": "Groepsnr.",
     "summaryTitle": "Klinische samenvatting",
     "summaryReadings": "Vastgelegd over {days, plural, one {# dag} other {# dagen}}: {count, plural, one {# meting} other {# metingen}} van {params, plural, one {# parameter} other {# parameters}}.",
     "summaryTrend": "{label}: laatste {latest} {arrow}",
@@ -6230,7 +6232,6 @@
       },
       "export": {
         "title": "Exporteren en importeren",
-        "otherOptionsHeading": "Andere exportopties",
         "downloadFailed": "De export kon niet worden gedownload. Probeer het opnieuw.",
         "actions": {
           "download": "Downloaden"
@@ -6241,14 +6242,17 @@
         },
         "cards": {
           "measurementsCsv": {
-            "title": "Metingen"
+            "title": "Metingen (CSV)",
+            "description": "Periode naar keuze"
           },
           "medicationsCsv": {
-            "title": "Medicatie",
-            "includeIntake": "Innamegeschiedenis meenemen"
+            "title": "Medicatie (CSV)",
+            "includeIntake": "Innamegeschiedenis meenemen",
+            "description": "Desgewenst met elke inname"
           },
           "moodCsv": {
-            "title": "Stemming"
+            "title": "Stemming (CSV)",
+            "description": "Periode naar keuze"
           },
           "fullBackup": {
             "title": "Volledige back-up",
@@ -6257,20 +6261,22 @@
             "passphrasePlaceholder": "Wachtzin (min. 12 tekens)",
             "passphraseHelp": "Leidt de archiefsleutel af met Argon2id en versleutelt het archief met AES-256-GCM. Sla het bestand op met de extensie .hlx.",
             "noRecoveryWarning": "Herstellen is niet mogelijk. Als je deze wachtzin kwijtraakt, kan het archief niet worden geopend. Bewaar hem op een veilige plek.",
-            "detail": "Een draagbare kopie van je dossier om te bewaren en te lezen: waarden als gewone JSON, documenten alleen als metadata."
+            "detail": "Een draagbare kopie van je dossier om te bewaren en te lezen: waarden als gewone JSON, documenten alleen als metadata.",
+            "description": "Alles, desgewenst versleuteld"
+          },
+          "doctorReport": {
+            "title": "Artsenrapport",
+            "description": "PDF, FHIR of ZIP"
           }
         },
         "import": {
           "heading": "Importeren",
-          "description": "Geüploade bestanden worden van de server verwijderd zodra de import klaar is, en hetzelfde bestand opnieuw importeren voegt niets dubbel toe.",
+          "description": "De server wist elk bestand na de import, en hetzelfde bestand twee keer voegt niets dubbel toe.",
           "charCount": "{used} / {max, plural, one {# teken} other {# tekens}}",
           "appleHealth": {
             "title": "Apple Health",
             "description": "De export.zip uit de Gezondheid-app op de iPhone.",
-            "dropLabel": "Sleep export.zip hierheen",
-            "dropHint": "of klik om een bestand te kiezen",
             "fileInputLabel": "Kies een export.zip-bestand van Apple Health",
-            "choose": "Bestand kiezen",
             "idempotencyNote": "Grote archieven worden op de achtergrond verwerkt.",
             "uploading": "Uploaden…",
             "uploadFailed": "Uploaden mislukt. Probeer het opnieuw.",
@@ -6333,16 +6339,15 @@
             "skipBreakdownMore": "+ nog {count, plural, one {# type} other {# typen}}",
             "cycleSummary": "{samples, plural, one {# cyclussample} other {# cyclussamples}} samengevoegd in {days, plural, one {# dagregistratie} other {# dagregistraties}}.",
             "cycleModuleOff": "{count, plural, one {# cyclussample overgeslagen} other {# cyclussamples overgeslagen}} omdat cyclusregistratie voor dit account uitstaat.",
-            "cycleDaysFailed": "{count, plural, one {# cyclusdag kon niet worden opgeslagen} other {# cyclusdagen konden niet worden opgeslagen}}: {reason}"
+            "cycleDaysFailed": "{count, plural, one {# cyclusdag kon niet worden opgeslagen} other {# cyclusdagen konden niet worden opgeslagen}}: {reason}",
+            "fileHint": "export.zip, tot 1,5 GB"
           },
           "json": {
-            "title": "Metingen en stemming (JSON)",
+            "title": "JSON-bestand",
             "description": "Metingen en stemmingsregistraties als JSON.",
-            "pasteLabel": "JSON plakken",
             "fileInputLabel": "Kies een JSON-bestand om te importeren",
             "schemaHint": "Twee arrays: measurements en moodEntries.",
             "docsLink": "Bekijk het schema en een voorbeeld.",
-            "uploadFile": "Bestand kiezen",
             "downloadExample": "Voorbeeld downloaden",
             "import": "Importeren",
             "invalidJson": "Dat is geen geldige JSON. Controleer de syntaxis en probeer het opnieuw.",
@@ -6356,16 +6361,18 @@
             "keptLabels": "Dit account heeft al tags of groepen met deze sleutels onder een eigen naam, die zijn behouden: {keys}",
             "resultNothing": "Er is niets geïmporteerd. {skipped, plural, one {De # registratie is overgeslagen} other {Alle # registraties zijn overgeslagen}}.",
             "resultEmpty": "Dat bestand bevatte geen metingen en geen stemmingsregistraties.",
-            "limitsHint": "Tot {mb} MB en tot {rows, plural, one {# item} other {# items}} per lijst."
+            "limitsHint": "Tot {mb} MB en tot {rows, plural, one {# item} other {# items}} per lijst.",
+            "rowMeta": "Metingen en stemming",
+            "fileMeta": ".json, tot {mb} MB",
+            "partial": "De import stopte halverwege. Opnieuw importeren is veilig, er komt niets dubbel bij.",
+            "partialCounts": "Al opgeslagen: {measurements, plural, one {# meting} other {# metingen}} en {moods, plural, one {# stemmingsitem} other {# stemmingsitems}}."
           },
           "csv": {
             "title": "CSV-bestand",
             "description": "Metingen uit een spreadsheet of meterexport.",
-            "pasteLabel": "CSV plakken",
             "fileInputLabel": "Kies een CSV-bestand om te importeren",
             "schemaHint": "Kolommen: type, value, unit, measuredAt (met tijdzoneverschil), en optioneel glucoseContext, notes, externalId.",
             "docsLink": "Bekijk het kolomschema en een voorbeeld.",
-            "uploadFile": "Bestand kiezen",
             "downloadExample": "Voorbeeld downloaden",
             "preview": "Voorbeeld",
             "import": "Importeren",
@@ -6401,14 +6408,15 @@
             "reasonUnstableExternalId": "externe ID is niet stabiel tussen exports",
             "reasonDuplicate": "al geïmporteerd",
             "reasonUnknown": "overgeslagen",
-            "detail": "Eén rij per meting."
+            "detail": "Eén rij per meting.",
+            "rowMeta": "Metingen uit een spreadsheet",
+            "fileMeta": ".csv, tot 16 MB",
+            "guideMeta": "type, value, unit, measuredAt met offset"
           },
           "doseHistory": {
             "title": "Doseringsgeschiedenis medicatie",
             "description": "Een innamegeschiedenis uit een andere medicatie-app.",
-            "pasteLabel": "Export plakken",
             "fileInputLabel": "Kies een exportbestand met doseringsgeschiedenis",
-            "uploadFile": "Bestand kiezen",
             "preview": "Voorbeeld",
             "import": "Importeren",
             "empty": "Plak eerst de export of kies een bestand.",
@@ -6457,12 +6465,13 @@
               "jsonNoIntakeTime": "De JSON-export legt vast wanneer een dosis gepland was, maar niet wanneer die is ingenomen, en een gepland tijdstip wordt niet opgeslagen alsof het de inname was. Exporteer in plaats daarvan de CSV, die beide bevat.",
               "tooManyRows": "Dat bestand bevat meer rijen dan één import aankan. Splits het en importeer de delen."
             },
-            "detail": "Eén bestand omvat alle medicatie die erin staat."
+            "detail": "Eén bestand omvat alle medicatie die erin staat.",
+            "rowMeta": "Uit een andere app",
+            "fileMeta": ".csv of .json, tot 16 MB"
           },
           "healthConnect": {
-            "title": "Health Connect-export",
+            "title": "Health Connect",
             "description": "De ZIP die Health Connect op Android schrijft.",
-            "choose": "Bestand kiezen",
             "uploading": "Uploaden…",
             "uploadFailed": "Het uploaden is mislukt. Probeer het opnieuw.",
             "tooLarge": "Het bestand is groter dan deze server accepteert.",
@@ -6481,8 +6490,6 @@
               "cloud": "Health Connect slaat de export alleen op in een cloudopslag-app zoals Google Drive, Dropbox of Nextcloud, nooit op de telefoon zelf.",
               "upload": "Download het ZIP-bestand uit die cloud naar dit apparaat en upload het hier."
             },
-            "dropLabel": "Sleep het Health Connect-ZIP-bestand hierheen",
-            "dropHint": "of klik om het te kiezen. Maximaal 1 GB.",
             "fileInputLabel": "ZIP-bestand van Health Connect-export",
             "privacyNote": "Gegevens van apps die je al rechtstreeks koppelt, zoals Withings, worden overgeslagen, zodat niets dubbel binnenkomt.",
             "rateLimited": "Te veel uploads in korte tijd. Wacht een minuut en probeer het opnieuw.",
@@ -6500,23 +6507,20 @@
               "tooLarge": "De export is groter dan deze server accepteert.",
               "stagingMissing": "Het geüploade bestand stond niet meer op de server. Upload het opnieuw.",
               "interrupted": "De import is onderbroken doordat de server opnieuw is gestart. Upload het bestand opnieuw."
-            }
+            },
+            "folderRow": "Automatisch uit een map",
+            "folderMeta": "WebDAV of Nextcloud, onder Integraties",
+            "fileHint": "ZIP, tot 1 GB"
           },
           "fit": {
             "title": "Activiteitsbestand (FIT)",
-            "description": "Een training van een horloge of fietscomputer.",
-            "choose": "Bestand kiezen",
+            "description": "Trainingen van een horloge of fietscomputer.",
             "uploading": "Uploaden…",
             "uploadFailed": "Het uploaden is mislukt. Probeer het opnieuw.",
-            "tooLarge": "Het bestand is groter dan 10 MB.",
-            "rateLimited": "Te veel uploads in korte tijd. Wacht een minuut en probeer het opnieuw.",
-            "busy": "Er loopt al een import voor je account. Wacht tot die klaar is.",
             "failed": "De import is mislukt. Probeer het opnieuw.",
             "doneSummary": "Het activiteitsbestand is geïmporteerd.",
             "doneNothing": "De import is klaar, maar er was niets nieuws toe te voegen.",
-            "dropLabel": "Zet het activiteitsbestand hier neer",
-            "dropHint": "of klik om het te kiezen: een .fit-, .fit.gz- of .zip-bestand tot 10 MB.",
-            "fileInputLabel": "Activiteitsbestand",
+            "fileInputLabel": "Activiteitsbestanden",
             "privacyNote": "Het GPS-spoor wordt alleen bewaard als Trainingsroutes aan staat.",
             "steps": {
               "garmin": "Garmin Connect: open de activiteit op de website, kies het tandwielmenu en daarna Origineel exporteren.",
@@ -6547,16 +6551,34 @@
               "noSession": "Het bestand bevat geen leesbare training.",
               "stagingMissing": "Het geüploade bestand stond niet meer op de server. Upload het opnieuw.",
               "interrupted": "De import werd onderbroken door een herstart van de server. Upload het bestand opnieuw."
-            }
+            },
+            "batch": {
+              "waiting": "Wacht",
+              "imported": "Geïmporteerd",
+              "duplicate": "Al geïmporteerd",
+              "progress": "{done} van {total}",
+              "capped": "Alleen de eerste 100 bestanden worden geïmporteerd.",
+              "reason": {
+                "tooLarge": "Groter dan 10 MB",
+                "unsupported": "Geen FIT-bestand",
+                "damaged": "Bestand beschadigd",
+                "notActivity": "Geen activiteit",
+                "noWorkout": "Geen training gevonden",
+                "busy": "Er loopt al een andere import",
+                "retry": "Mislukt, probeer opnieuw"
+              }
+            },
+            "fileHint": ".fit, .fit.gz of .zip, elk tot 10 MB"
           },
           "recordFile": {
             "gadgetbridge": {
-              "title": "Gadgetbridge-database",
+              "title": "Gadgetbridge",
               "description": "De database die Gadgetbridge op Android exporteert.",
               "steps": {
                 "export": "Open in Gadgetbridge Instellingen, dan Gegevensbeheer, dan Database exporteren.",
                 "upload": "Upload hier het bestand met de naam Gadgetbridge. Tot 512 MB."
-              }
+              },
+              "fileHint": "Database, tot 512 MB"
             },
             "fhirBundle": {
               "title": "Patiëntendossier (FHIR)",
@@ -6564,9 +6586,9 @@
               "steps": {
                 "export": "Exporteer in je patiëntenportaal je dossier als FHIR R4 (JSON).",
                 "upload": "Upload hier het .json-bestand. Tot 32 MB."
-              }
+              },
+              "fileHint": ".json, tot 32 MB"
             },
-            "choose": "Bestand kiezen",
             "uploading": "Uploaden…",
             "running": "Importeren op de achtergrond…",
             "doneSummary": "Het bestand is geïmporteerd.",
@@ -6631,8 +6653,18 @@
             "remove": "Map verwijderen",
             "removeTitle": "Deze map verwijderen?",
             "removeBody": "HealthLog haalt daar niets meer op en vergeet het wachtwoord. Wat al geïmporteerd is, blijft."
-          }
-        }
+          },
+          "row": {
+            "done": "{date}, {count, plural, one {# item} other {# items}}",
+            "failed": "{date}, niet geïmporteerd"
+          },
+          "pasteOr": "Of plakken",
+          "guideTitle": "Voorbeeld en kolommen",
+          "pickerFile": "Bestand",
+          "pickerFiles": "Bestanden",
+          "pickerChoose": "Kiezen"
+        },
+        "exportHeading": "Exporteren"
       },
       "about": {
         "title": "Over deze app"
@@ -6682,7 +6714,7 @@
         }
       },
       "health-record": {
-        "title": "Artsenrapport en export"
+        "title": "Artsenrapport"
       },
       "coach": {
         "title": "Coach"
@@ -6860,7 +6892,13 @@
       "other": "Deze waarde is niet geaccepteerd. Controleer hem en probeer het opnieuw.",
       "reproofRequired": "Voer je huidige wachtwoord in om het e-mailadres te wijzigen.",
       "reproofFailed": "Dat wachtwoord is onjuist, dus het e-mailadres is niet gewijzigd.",
-      "secondFactorRequired": "Bevestig met je tweede factor of een passkey om het e-mailadres te wijzigen."
+      "secondFactorRequired": "Bevestig met je tweede factor of een passkey om het e-mailadres te wijzigen.",
+      "invalidKvnr": "Dat is geen geldig KVNR. Controleer de letter en de negen cijfers.",
+      "invalidSvnr": "Dat is geen geldig SVNR. Controleer de tien cijfers.",
+      "invalidAhv": "Dat is geen geldig AHV-nummer. Het heeft 13 cijfers en begint met 756.",
+      "invalidBsn": "Dat is geen geldig BSN. Controleer de negen cijfers.",
+      "invalidNir": "Dat is geen geldig NIR. Controleer de 13 tekens en de sleutel van twee cijfers.",
+      "invalidMemberId": "Gebruik 3 tot 30 letters, cijfers, spaties, streepjes of punten."
     },
     "avatar": {
       "title": "Profielfoto",
@@ -7673,8 +7711,17 @@
       "fullNamePlaceholder": "bijv. Jan Jansen",
       "insurer": "Zorgverzekeraar",
       "insurerPlaceholder": "bijv. AOK Bayern",
-      "insuranceNumber": "Verzekeringsnummer (KVNR)",
-      "insuranceNumberHint": "10 tekens: één letter + negen cijfers (bijv. A123456780)."
+      "insuranceNumber": "Verzekeringsnummer",
+      "insuranceCountry": "Land",
+      "numberLabel": {
+        "DE": "Verzekeringsnummer (KVNR)",
+        "AT": "Socialeverzekeringsnummer (SVNR)",
+        "CH": "AHV-nummer",
+        "NL": "Burgerservicenummer (BSN)",
+        "FR": "Socialezekerheidsnummer (NIR)",
+        "US": "Lidnummer"
+      },
+      "insuranceGroupNumber": "Groepsnummer"
     },
     "healthRecord": {
       "title": "Gezondheidsdossier exporteren",
@@ -15591,13 +15638,6 @@
     "metricLink": "Waar deze waarden vandaan komen"
   },
   "recordImport": {
-    "title": "Labuitslagen en medicijnen uit een spreadsheet",
-    "description": "Haal jaren aan labuitslagen of een medicijnlijst binnen uit een CSV-bestand.",
-    "detail": "Jij kiest welke kolom wat bevat; HealthLog controleert eerst elke rij en importeert pas als je bevestigt.",
-    "kind": {
-      "labs": "Labuitslagen",
-      "medications": "Medicijnen"
-    },
     "sheetTitle": {
       "labs": "Labuitslagen importeren",
       "medications": "Medicijnen importeren"
@@ -15689,7 +15729,12 @@
       "startsOn": "Begin",
       "endsOn": "Einde"
     },
-    "unitlessHint": "Een verhouding of index zonder eenheid (INR, cholesterol/HDL): vul 1 in de eenheidskolom in. Een lege eenheid blijft een fout."
+    "unitlessHint": "Een verhouding of index zonder eenheid (INR, cholesterol/HDL): vul 1 in de eenheidskolom in. Een lege eenheid blijft een fout.",
+    "row": {
+      "labs": "Labuitslagen (CSV)",
+      "medications": "Medicijnen (CSV)"
+    },
+    "rowMeta": "Je wijst de kolommen zelf toe"
   },
   "seizures": {
     "ilae": {

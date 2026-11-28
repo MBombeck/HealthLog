@@ -441,6 +441,8 @@ export const USER_RESET = {
   displayName: null,
   insurerName: null,
   insuranceNumberEncrypted: null,
+  insuranceNumberCountry: null,
+  insuranceGroupNumber: null,
   insurerIkNumber: null,
   lastReportPracticeName: null,
   avatarBytes: null,

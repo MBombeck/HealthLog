@@ -203,21 +203,32 @@ async function measureHeader(
  */
 async function measureCards(page: import("@playwright/test").Page) {
   return page.evaluate(() => {
-    const out: { gap: number; bodyInset: number }[] = [];
+    const out: { gap: number; bodyInset: number; rows: boolean }[] = [];
     for (const card of document.querySelectorAll('[data-slot="card"]')) {
       const header = card.querySelector(":scope > header");
       if (!header) continue;
-      const next = header.nextElementSibling as HTMLElement | null;
+      let next = header.nextElementSibling as HTMLElement | null;
+      // A status read that failed puts its row between header and body; the
+      // body is what follows it.
+      while (next && next.getBoundingClientRect().height === 0)
+        next = next.nextElementSibling as HTMLElement | null;
       if (!next) continue;
-      if (next.getBoundingClientRect().height === 0) continue;
       const cardBox = card.getBoundingClientRect();
       const cardStyle = getComputedStyle(card);
       const cardInnerLeft = cardBox.left + parseFloat(cardStyle.paddingLeft);
+      // The rows form: a padded header over rows that run edge to edge, the
+      // line between them the rows' own (the import cards). Its step is that
+      // line, so the gap is zero rather than the padded card's gap.
+      const rows =
+        parseFloat(cardStyle.paddingTop) === 0 &&
+        next.matches('[data-slot="list-group"], details[data-fold]') &&
+        parseFloat(getComputedStyle(next).borderTopWidth) > 0;
       out.push({
         gap:
           next.getBoundingClientRect().top -
           header.getBoundingClientRect().bottom,
         bodyInset: next.getBoundingClientRect().left - cardInnerLeft,
+        rows,
       });
     }
     return out;
@@ -578,6 +589,7 @@ for (const locale of ["en", "de"] as const) {
       ]);
 
       const gaps: number[] = [];
+      const rowGaps: number[] = [];
       const insets: number[] = [];
       const expectedGap = cardGapFor(page.viewportSize()?.width ?? 1280);
       for (const route of ROUTES) {
@@ -597,7 +609,7 @@ for (const locale of ["en", "de"] as const) {
         }
         await settleBeforeMeasure(page, page.locator("main").first());
         for (const card of await measureCards(page)) {
-          gaps.push(card.gap);
+          (card.rows ? rowGaps : gaps).push(card.gap);
           insets.push(card.bodyInset);
         }
       }
@@ -612,6 +624,10 @@ for (const locale of ["en", "de"] as const) {
       );
 
       expect(offGap, "header→body gap is not the card's own gap").toEqual([]);
+      expect(
+        rowGaps.filter((g) => Math.abs(g) > TOLERANCE),
+        "rows card: the first row does not start at the header's line",
+      ).toEqual([]);
       expect(offEdge, "card body does not start at the card edge").toEqual([]);
     });
 

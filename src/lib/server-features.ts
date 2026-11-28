@@ -57,6 +57,7 @@ export const SERVER_FEATURES = [
   "daily.asks",
   "daily.scores-short-labels",
   "insights.scores-short-labels",
+  "profile.insurance-number-country",
   "dashboard.tile-comparison-bands",
 ] as const;
 
@@ -164,6 +165,8 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "Each start-page score carries shortLabel, its short name for a tile from the score registry, worded in the response language: GET /api/daily/morning scores.sleep and scores.readiness, and GET /api/daily/digest score (the Health score). Render it as is; the web shows the same words.",
   "insights.scores-short-labels":
     "Every score payload carries shortLabel, the score's short name for a tile from the glossary's short form through the score registry, worded in the response language: GET /api/insights/derived and each GET /api/insights/derived/batch entry (null for a metric that is no HealthLog score), GET /api/insights/score-history, healthScore on GET /api/analytics, and on GET /api/dashboard/snapshot healthScore and each scoreRings entry (null on MED_COMPLIANCE). Render it as given, never a short name of the client's own.",
+  "profile.insurance-number-country":
+    "The profile (GET/PATCH /api/user/profile, PUT /api/auth/profile, GET /api/auth/me) carries insuranceNumberCountry (ISO 3166-1 alpha-2; a number stored without one is DE) and insuranceGroupNumber (US only, else null); GET /api/user/profile also carries insuranceNumberDisplay, the number in its country's form. insuranceNumber is checked under its country: DE KVNR, AT SVNR, CH AHV number, NL BSN and FR NIR by check digit, every other country 3 to 30 letters, digits, spaces, hyphens or dots as entered. A refused value comes back in rejectedFields with code invalid_kvnr, invalid_svnr, invalid_ahv, invalid_bsn, invalid_nir or invalid_member_id; a country change the stored number would fail is refused on insuranceNumberCountry. The FHIR Patient identifier uses the country's national system where one is verified, else type MB with no system, and a US group number rides Coverage.class (group).",
   "dashboard.tile-comparison-bands":
     "GET /api/dashboard/snapshot carries tiles.comparison: per ranged tile (weight, bp, pulse when it shows the resting heart rate) avg7 and avg30 as { band: good | fair | low | null, side: above | below | null }, placed in targetBands by the same rule as tiles.attention (bp is the side further from its band), and line, the deviation line in the response language, non-null only while tiles.attention[id] is range (avg7's side, else avg30's). Colour the comparison lines and show the line as served.",
 };
