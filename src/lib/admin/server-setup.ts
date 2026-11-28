@@ -17,16 +17,32 @@
  * all read the same vocabulary.
  */
 
-/** The steps, in the order the setup asks them. Additive like the person flow. */
+/**
+ * The steps, in the order the setup asks them (1.50). The owner account
+ * itself is created on `/auth/register` before any of these; `account-mfa`
+ * is its second factor, the rest are one decision each.
+ */
 export const SERVER_SETUP_STEP_IDS = [
-  "accounts",
-  "notifications",
+  "account-mfa",
+  "signups",
+  "relay",
   "ai",
-  "privacy",
-  "health",
+  "recovery",
 ] as const;
 
 export type ServerSetupStepId = (typeof SERVER_SETUP_STEP_IDS)[number];
+
+/**
+ * The 1.49 step ids, read as their 1.50 successors so a setup that was open
+ * across the upgrade resumes where it stood. `privacy` has no successor: its
+ * cards stay under Admin.
+ */
+const LEGACY_STEP_IDS: Readonly<Record<string, ServerSetupStepId>> = {
+  accounts: "signups",
+  notifications: "relay",
+  ai: "ai",
+  health: "recovery",
+};
 
 export const SERVER_SETUP_STEP_STATUSES = [
   "pending",
@@ -39,6 +55,13 @@ export type ServerSetupStepStatus = (typeof SERVER_SETUP_STEP_STATUSES)[number];
 export interface ServerSetupStepState {
   id: ServerSetupStepId;
   status: ServerSetupStepStatus;
+  /**
+   * When a step was passed with "Later" or "Not now", and by whom. Only a
+   * pass the admin made carries these: the second-factor banner and the
+   * recovery kit banner wait for that answer, never for an inferred one.
+   */
+  at?: string;
+  by?: string;
 }
 
 /** The docs pages the steps link to (the public docs site). */
@@ -68,27 +91,49 @@ export function isServerSetupStepId(value: string): value is ServerSetupStepId {
 /**
  * Read the stored steps as the full ordered list, fail-soft: an unknown id or
  * status is dropped, a missing step reads as pending.
+ *
+ * A 1.49 setup that was still open is read through its old ids. It never had
+ * a second-factor step, and asking it now would be the second time for an
+ * owner who already met the policy elsewhere: it reads as passed, without
+ * an `at`, so no banner waits on it.
  */
 export function parseServerSetupSteps(value: unknown): ServerSetupStepState[] {
-  const stored = new Map<string, ServerSetupStepStatus>();
+  const stored = new Map<string, ServerSetupStepState>();
+  let legacy = false;
   if (Array.isArray(value)) {
     for (const entry of value) {
       if (typeof entry !== "object" || entry === null) continue;
-      const { id, status } = entry as { id?: unknown; status?: unknown };
+      const raw = entry as {
+        id?: unknown;
+        status?: unknown;
+        at?: unknown;
+        by?: unknown;
+      };
       if (
-        typeof id === "string" &&
-        isServerSetupStepId(id) &&
-        typeof status === "string" &&
-        (SERVER_SETUP_STEP_STATUSES as readonly string[]).includes(status)
+        typeof raw.id !== "string" ||
+        typeof raw.status !== "string" ||
+        !(SERVER_SETUP_STEP_STATUSES as readonly string[]).includes(raw.status)
       ) {
-        stored.set(id, status as ServerSetupStepStatus);
+        continue;
       }
+      const current = isServerSetupStepId(raw.id) ? raw.id : null;
+      const id = current ?? LEGACY_STEP_IDS[raw.id];
+      if (!current && (id || raw.id === "privacy")) legacy = true;
+      if (!id || (current === null && stored.has(id))) continue;
+      stored.set(id, {
+        id,
+        status: raw.status as ServerSetupStepStatus,
+        ...(typeof raw.at === "string" ? { at: raw.at } : {}),
+        ...(typeof raw.by === "string" ? { by: raw.by } : {}),
+      });
     }
   }
-  return SERVER_SETUP_STEP_IDS.map((id) => ({
-    id,
-    status: stored.get(id) ?? "pending",
-  }));
+  if (legacy && !stored.has("account-mfa")) {
+    stored.set("account-mfa", { id: "account-mfa", status: "skipped" });
+  }
+  return SERVER_SETUP_STEP_IDS.map(
+    (id) => stored.get(id) ?? { id, status: "pending" },
+  );
 }
 
 /** One step answered or passed; the others stay as they were. */
@@ -96,8 +141,13 @@ export function applyServerSetupStep(
   steps: readonly ServerSetupStepState[],
   id: ServerSetupStepId,
   status: Exclude<ServerSetupStepStatus, "pending">,
+  pass?: { at: string; by: string },
 ): ServerSetupStepState[] {
-  return steps.map((step) => (step.id === id ? { ...step, status } : step));
+  return steps.map((step) =>
+    step.id === id
+      ? { id, status, ...(status === "skipped" && pass ? pass : {}) }
+      : step,
+  );
 }
 
 export function everyServerSetupStepSettled(
@@ -110,20 +160,38 @@ export function everyServerSetupStepSettled(
 export function serverSetupResumeStep(
   steps: readonly ServerSetupStepState[],
 ): ServerSetupStepId {
-  return steps.find((step) => step.status === "pending")?.id ?? "accounts";
+  return steps.find((step) => step.status === "pending")?.id ?? "account-mfa";
 }
 
+/** The stepper's segments: the owner account, then one per decision. */
+export const SERVER_SETUP_SEGMENTS = [
+  "account",
+  "signups",
+  "relay",
+  "ai",
+  "recovery",
+] as const;
+
+export type ServerSetupSegment = (typeof SERVER_SETUP_SEGMENTS)[number];
+
 /**
- * The server setup's counter, from the same list its bar is drawn from
- * (`SERVER_SETUP_STEP_IDS`), so "Step 2 of 5" and the segments agree.
+ * Where a step stands on the stepper. The "account" segment has two parts:
+ * the owner account itself (`/auth/register`, `"register"` here) fills half
+ * of it, the second factor the rest.
  */
-export function serverSetupCounter(id: ServerSetupStepId): {
+export function serverSetupStepper(step: ServerSetupStepId | "register"): {
+  segments: readonly ServerSetupSegment[];
+  segment: ServerSetupSegment;
   current: number;
-  total: number;
+  fraction: number;
 } {
+  const segment: ServerSetupSegment =
+    step === "register" || step === "account-mfa" ? "account" : step;
   return {
-    current: SERVER_SETUP_STEP_IDS.indexOf(id) + 1,
-    total: SERVER_SETUP_STEP_IDS.length,
+    segments: SERVER_SETUP_SEGMENTS,
+    segment,
+    current: SERVER_SETUP_SEGMENTS.indexOf(segment),
+    fraction: step === "register" ? 0.5 : 1,
   };
 }
 

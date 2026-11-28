@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { ListChecks, Loader2 } from "lucide-react";
@@ -7,10 +8,20 @@ import { ListChecks, Loader2 } from "lucide-react";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 
 import { Button } from "@/components/ui/button";
+import { InlineAction } from "@/components/ui/inline-action";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
+import {
+  PERSON_TASK_ROWS,
+  SetupTaskRow,
+} from "@/components/onboarding/setup-task-rows";
 import { useOnboardingRestart } from "@/components/onboarding/use-onboarding-flow";
+import {
+  useSetupCardDismissal,
+  useSetupState,
+} from "@/components/onboarding/use-setup-state";
+import { useAuth } from "@/hooks/use-auth";
 import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
 import { useDismissedHints } from "@/hooks/use-dismissed-hints";
@@ -18,20 +29,23 @@ import { hintId } from "@/lib/hints/dismissible-hints";
 import { markChecklistExpanded } from "@/lib/onboarding/checklist-storage";
 
 /**
- * v1.39 — Settings → Account → Setup.
+ * Settings › Account › Setup.
  *
- * The two ways back into the first-run experience (design spec §Principles 4
- * and §After the flow). "Set up again" asks the questions once more through
- * the restart route, which resets the ledger and keeps the answers as
- * prefill — and writes no module state, so a module switched on by hand is
- * never switched off by a re-run. "Show the checklist again" forgets what
- * this browser hid; the checklist's dismissals live in the browser, so the
- * button lives on the same origin.
+ * The same rows the dashboard's setup card lists (1.50), always, whether or
+ * not the card is hidden, each leading to where it is done; an admin finds
+ * the server's own rows one link away. "Show on the dashboard again" brings
+ * back a hidden card (or the older checklist this browser hid), and "Set up
+ * again" asks the questions once more through the restart route, which keeps
+ * the answers as prefill and writes no module state.
  */
 export function SetupCard() {
   const { t } = useTranslations();
   const router = useRouter();
+  const { user } = useAuth();
   const restart = useOnboardingRestart();
+  const setup = useSetupState();
+  const dismissal = useSetupCardDismissal();
+  const person = setup.data?.person;
   const hints = useDismissedHints();
 
   async function setUpAgain() {
@@ -46,23 +60,43 @@ export function SetupCard() {
     }
   }
 
-  async function showChecklist() {
-    // Something was hidden and is back: a written outcome. Nothing was
-    // hidden: an empty one — there was nothing to bring back.
+  async function showOnDashboard() {
+    // The older checklist's hide lives with the dismissed hints; the new
+    // card's on the setup state. Bring back whichever is hidden.
     const family = hintId("getting-started");
-    const hidden = hints.ids.some(
+    const checklistHidden = hints.ids.some(
       (id) => id === family || id.startsWith(`${family}.`),
     );
     markChecklistExpanded();
-    if (!hidden) {
-      toastWrittenOutcome("empty", t("settings.setup.checklistNothingHidden"));
-      return;
+    let back = false;
+    if (checklistHidden) {
+      if (!(await hints.restore(family))) {
+        showErrorToast(t("settings.savingError"));
+        return;
+      }
+      back = true;
     }
-    if (await hints.restore(family)) {
-      toastWrittenOutcome("success", t("settings.setup.checklistShown"));
-    } else {
-      showErrorToast(t("settings.savingError"));
+    if (person?.planned && person.cardDismissed) {
+      try {
+        await dismissal.mutateAsync(false);
+        back = true;
+      } catch (err) {
+        showErrorToast(localizedApiError(err, t, "onboarding.errorGeneric"), {
+          cause: err,
+        });
+        return;
+      }
     }
+    // Something was hidden and is back: a written outcome. Nothing was
+    // hidden: an empty one, there was nothing to bring back.
+    toastWrittenOutcome(
+      back ? "success" : "empty",
+      t(
+        back
+          ? "settings.setup.checklistShown"
+          : "settings.setup.checklistNothingHidden",
+      ),
+    );
   }
 
   return (
@@ -72,12 +106,39 @@ export function SetupCard() {
         title={t("settings.setup.title")}
         description={t("settings.setup.description")}
       />
+      {person && person.tasks.length > 0 ? (
+        <ul
+          className="border-border divide-border -mx-4 divide-y border-y md:-mx-6"
+          data-slot="settings-setup-tasks"
+        >
+          {person.tasks.map((task) => {
+            const row = PERSON_TASK_ROWS[task.id];
+            return (
+              <SetupTaskRow
+                key={task.id}
+                task={task}
+                kind="person"
+                href={row.href}
+                Icon={row.Icon}
+              />
+            );
+          })}
+        </ul>
+      ) : null}
+      {user?.role === "ADMIN" ? (
+        <p className="text-sm">
+          <InlineAction asChild size="sm">
+            <Link href="/admin/setup">{t("setup.admin.link")}</Link>
+          </InlineAction>
+        </p>
+      ) : null}
       <SettingsCardActions>
         <Button
           type="button"
           variant="outline"
           size="sm"
-          onClick={showChecklist}
+          onClick={() => void showOnDashboard()}
+          disabled={dismissal.isPending}
           data-slot="settings-show-checklist"
         >
           {t("settings.setup.showChecklist")}

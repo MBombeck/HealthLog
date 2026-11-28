@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { ReactElement } from "react";
 
 import {
   defaultOnboardingSteps,
@@ -10,11 +9,9 @@ import {
 } from "@/lib/onboarding/needs";
 
 /**
- * v1.39 — the setup flow's front door.
- *
- * Three ways in, decided by the step machine: a record that never entered
- * the flow sees the welcome screen, a record mid-way is sent to the step it
- * owes, and a finished record sees the welcome's "again" variant. No session
+ * 1.50 — the setup flow's front door holds no screen of its own: it sends
+ * an admin with an open server setup there first, everybody else to the
+ * screen they owe, and a finished account to the dashboard. No session
  * mirrors the proxy's gate.
  */
 
@@ -33,19 +30,12 @@ vi.mock("@/lib/onboarding/load-flow-state", () => ({
   loadOnboardingFlowState: () => loadMock(),
 }));
 
-// The shell resolves a locale from cookies; the tree is inspected, not
-// rendered, so a plain passthrough is all the test needs.
-vi.mock("@/components/onboarding/onboarding-shell", () => ({
-  OnboardingShell: ({ children }: { children: ReactElement }) => children,
-}));
-
 const pendingHandoverMock = vi.fn(async () => false);
 vi.mock("@/lib/managed-profiles/handover", () => ({
   hasPendingHandoverDecision: () => pendingHandoverMock(),
 }));
 
 import OnboardingRootPage from "../page";
-import { WelcomeScreen } from "@/components/onboarding/welcome-screen";
 
 beforeEach(() => {
   redirectMock.mockClear();
@@ -57,7 +47,6 @@ beforeEach(() => {
 function state(
   statuses: Partial<Record<OnboardingStepId, OnboardingStepStatus>> = {},
   needs: Partial<OnboardingStateDto["needs"]> = {},
-  completedAt: string | null = null,
 ): OnboardingStateDto {
   return {
     steps: defaultOnboardingSteps().map((step) => ({
@@ -65,115 +54,105 @@ function state(
       status: statuses[step.id] ?? step.status,
     })),
     needs: { ...emptyOnboardingNeeds(), ...needs },
-    completedAt,
+    completedAt: null,
     firstResult: null,
     offers: { ai: false },
   };
 }
 
-type ShellElement = ReactElement<{
-  children: ReactElement<{ variant: string }>;
-}>;
-
-async function run(
-  searchParams?: Record<string, string>,
-): Promise<{ redirect: string } | { element: ShellElement }> {
+async function landing(): Promise<string> {
   try {
-    const element = (await OnboardingRootPage(
-      searchParams
-        ? { searchParams: Promise.resolve(searchParams) }
-        : undefined,
-    )) as ShellElement;
-    return { element };
-  } catch (e) {
-    const tagged = e as Error & { __redirect__?: string };
-    if (tagged.__redirect__) return { redirect: tagged.__redirect__ };
-    throw e;
+    await OnboardingRootPage();
+  } catch (err) {
+    const href = (err as { __redirect__?: string }).__redirect__;
+    if (href) return href;
+    throw err;
   }
+  throw new Error("the front door rendered instead of redirecting");
 }
 
-function welcomeVariant(element: ShellElement): string {
-  const child = element.props.children;
-  expect(child.type).toBe(WelcomeScreen);
-  return child.props.variant;
+function flow(
+  onboarding: OnboardingStateDto,
+  extra: { serverSetupOpen?: boolean; accountCompleted?: boolean } = {},
+) {
+  return {
+    userId: "u1",
+    userLocale: "en",
+    state: onboarding,
+    plan: null,
+    serverSetupOpen: extra.serverSetupOpen ?? false,
+    accountCompleted: extra.accountCompleted ?? true,
+  };
 }
 
-describe("<OnboardingRootPage>", () => {
-  it("sends an account with a handover decision waiting to that screen first", async () => {
-    pendingHandoverMock.mockResolvedValue(true);
-    loadMock.mockResolvedValueOnce({
-      userId: "u1",
-      userLocale: "en",
-      state: state(),
-    });
-    expect(await run()).toEqual({ redirect: "/onboarding/handover" });
+describe("the setup front door", () => {
+  it("sends a visitor without a session to sign in", async () => {
+    loadMock.mockResolvedValue(null);
+    expect(await landing()).toBe("/auth/login");
   });
 
-  it("lets the handover screen's own 'later' through to the welcome", async () => {
-    pendingHandoverMock.mockResolvedValue(true);
-    loadMock.mockResolvedValueOnce({
-      userId: "u1",
-      userLocale: "en",
-      state: state(),
-    });
-    const result = await run({ handover: "later" });
-    expect("element" in result && welcomeVariant(result.element)).toBe("fresh");
+  it("starts a fresh account on who", async () => {
+    loadMock.mockResolvedValue(flow(state()));
+    expect(await landing()).toBe("/onboarding/who");
   });
 
-  it("redirects to /auth/login when there is no session", async () => {
-    loadMock.mockResolvedValueOnce(null);
-    expect(await run()).toEqual({ redirect: "/auth/login" });
+  it("sends an admin with an open server setup there first", async () => {
+    loadMock.mockResolvedValue(flow(state(), { serverSetupOpen: true }));
+    expect(await landing()).toBe("/onboarding/server");
   });
 
-  it("shows the welcome screen to a record that never entered the flow", async () => {
-    loadMock.mockResolvedValueOnce({
-      userId: "u1",
-      userLocale: "en",
-      state: state(),
-    });
-    const result = await run();
-    expect("element" in result && welcomeVariant(result.element)).toBe("fresh");
+  it("resumes on the screen still owed", async () => {
+    loadMock.mockResolvedValue(
+      flow(state({ who: "done", areas: "done" }, { recordTarget: "me" })),
+    );
+    expect(await landing()).toBe("/onboarding/units");
   });
 
-  it("sends a record mid-way to the step it owes", async () => {
-    loadMock.mockResolvedValueOnce({
-      userId: "u1",
-      userLocale: "en",
-      state: state({ who: "done", areas: "done" }, { recordTarget: "me" }),
-    });
-    expect(await run()).toEqual({ redirect: "/onboarding/medication" });
-  });
-
-  it("sends a confirmed flow with an open first result to that screen", async () => {
-    loadMock.mockResolvedValueOnce({
-      userId: "u1",
-      userLocale: "en",
-      state: state(
-        {
-          who: "done",
-          areas: "done",
-          medication: "done",
-          sources: "done",
-          visit: "done",
-          confirm: "done",
-        },
-        { recordTarget: "me", areas: ["blood-pressure"] },
-        "2026-09-10T08:00:00.000Z",
+  it("opens the dashboard once nothing is owed", async () => {
+    loadMock.mockResolvedValue(
+      flow(
+        state(
+          {
+            who: "done",
+            areas: "done",
+            units: "done",
+            sources: "skipped",
+            reminders: "done",
+          },
+          { recordTarget: "me" },
+        ),
       ),
-    });
-    expect(await run()).toEqual({ redirect: "/onboarding/first-result" });
+    );
+    expect(await landing()).toBe("/");
   });
 
-  it("offers the questions again to a finished record", async () => {
-    const done = Object.fromEntries(
-      defaultOnboardingSteps().map((s) => [s.id, "done" as const]),
-    ) as Record<OnboardingStepId, OnboardingStepStatus>;
-    loadMock.mockResolvedValueOnce({
-      userId: "u1",
-      userLocale: "en",
-      state: state(done, { recordTarget: "me" }, "2026-09-10T08:00:00.000Z"),
-    });
-    const result = await run();
-    expect("element" in result && welcomeVariant(result.element)).toBe("again");
+  it("sends an account nothing is owed by but still unstamped to its last screen, not into a loop with the dashboard", async () => {
+    // A flow begun before this one stopped past its sources screen: every
+    // step is settled, the account was never stamped, so the first-run
+    // redirect would bounce "/" straight back here.
+    loadMock.mockResolvedValue(
+      flow(
+        state(
+          {
+            who: "done",
+            areas: "done",
+            units: "done",
+            sources: "done",
+            reminders: "done",
+          },
+          { recordTarget: "me" },
+        ),
+        { accountCompleted: false },
+      ),
+    );
+    const href = await landing();
+    expect(href).not.toBe("/");
+    expect(href).toMatch(/^\/onboarding\/[a-z-]+$/);
+  });
+
+  it("asks a claimed profile's handover decision first", async () => {
+    loadMock.mockResolvedValue(flow(state()));
+    pendingHandoverMock.mockResolvedValue(true);
+    expect(await landing()).toBe("/onboarding/handover");
   });
 });

@@ -110,7 +110,12 @@ export const onboardingAnswerSchema = z.union([
   }),
   answered("visit", { visit: z.enum(ONBOARDING_VISIT_ANSWERS) }),
   answered("units", { units: onboardingUnitsSchema }),
-  answered("confirm", {}),
+  // "Someone I look after": the profile the person just created, so the
+  // answers land on that record. Without it the confirm stamps the flow and
+  // derives nothing (the profile can follow later from Settings).
+  answered("confirm", {
+    managedRecordId: z.string().trim().min(1).max(64).optional(),
+  }),
   // The two follow-ups (1.49) record only that the screen was answered: what
   // they change has its own route (the channel cards, the AI consent and the
   // Coach switch), so the ledger never becomes a second writer of it.

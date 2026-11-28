@@ -547,8 +547,9 @@ export const ONBOARDING_ALWAYS_ON_MODULES: readonly ModuleKey[] = [
 export interface OnboardingModuleNeeds {
   recordTarget: "me" | "someone-else" | "both";
   areas: readonly OnboardingAreaKey[];
-  medication: "yes" | "no" | "sometimes";
-  visit: "within-a-month" | "later" | "no";
+  /** `null` when the question was not asked or was skipped. */
+  medication: "yes" | "no" | "sometimes" | null;
+  visit: "within-a-month" | "later" | "no" | null;
 }
 
 /** A toggleable module whose state `modulePreferencesJson` really owns. */
@@ -596,14 +597,14 @@ export function deriveOnboardingModuleDefaults(
   for (const area of needs.areas) {
     for (const key of ONBOARDING_AREA_MODULES[area] ?? []) on.add(key);
   }
-  if (needs.medication === "yes" || needs.medication === "sometimes") {
-    on.add("medications");
-  }
+  // Only an explicit "no" switches the medication surface off. A question
+  // that was not asked (or was skipped) says nothing, so the module keeps
+  // its default, which is on.
+  if (needs.medication !== "no") on.add("medications");
   // A visit that is coming at all is what the doctor report is for; "no" is
-  // the only answer that leaves the export surface off.
-  if (needs.visit === "within-a-month" || needs.visit === "later") {
-    on.add("doctorReport");
-  }
+  // the only answer that leaves the export surface off, and an unasked
+  // question leaves it at its default.
+  if (needs.visit !== "no") on.add("doctorReport");
   // A record somebody else runs is usually a child's or a parent's, and the
   // immunization log is the part of it that matters most there.
   if (needs.recordTarget === "someone-else" || needs.recordTarget === "both") {

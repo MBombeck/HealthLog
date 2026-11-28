@@ -80,8 +80,3 @@ export function useOnboardingRestart() {
     },
   });
 }
-
-/** The route of one setup screen. */
-export function screenHref(screen: string): string {
-  return screen === "welcome" ? "/onboarding" : `/onboarding/${screen}`;
-}

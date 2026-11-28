@@ -88,6 +88,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
       completedAt: null,
       modulesDerivedAt: null,
       firstResultJson: Prisma.DbNull,
+      // The plan is pinned again by the next answer to "who".
+      planJson: Prisma.DbNull,
     },
     select: ONBOARDING_RECORD_SELECT,
   });

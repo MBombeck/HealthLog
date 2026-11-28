@@ -52,11 +52,6 @@ const ALLOWLIST: readonly Allowed[] = [
       "Deep-link resolution: the newest reading under one analyte name, used only to find its marker page.",
   },
   {
-    file: "components/onboarding/first-result-screen.tsx",
-    limit: 1,
-    reason: "Asks only whether a type has a reading, and which is newest.",
-  },
-  {
     file: "components/insights/glp1-substance-curve-summary.tsx",
     limit: 1,
     reason:

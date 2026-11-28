@@ -122,6 +122,8 @@ export interface SystemStatus {
 
 export interface AdminSettings {
   registrationEnabled: boolean;
+  /** The assistant master switch (Admin › Coach, the server setup's AI step). */
+  assistantEnabled: boolean;
   // v1.23 — instance-wide "require a second factor" policy.
   mfaRequired: boolean;
   // The same for admin accounts, and the grace period in days.
