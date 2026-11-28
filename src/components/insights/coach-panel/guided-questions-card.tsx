@@ -44,14 +44,14 @@ export function GuidedQuestionsCard({
     <div
       data-slot="coach-guided-offer"
       className={cn(
-        "border-primary/30 from-primary/10 to-brand-pink/5",
-        "mb-2 rounded-lg border bg-gradient-to-r px-3 py-2.5",
+        "border-primary/30 bg-primary/5",
+        "mb-2 rounded-lg border px-3 py-2.5",
       )}
     >
       <div className="flex items-start gap-2.5">
         <div
           aria-hidden="true"
-          className="from-primary to-brand-pink mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br"
+          className="bg-primary mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full"
         >
           <MessageCircleQuestion className="text-background size-3.5" />
         </div>

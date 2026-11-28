@@ -62,7 +62,7 @@ export function CoachHero({ composer }: CoachHeroProps) {
         <div
           aria-hidden="true"
           className={cn(
-            "from-primary to-brand-pink flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br shadow-sm",
+            "bg-primary flex size-12 items-center justify-center rounded-2xl shadow-sm",
             "motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-95 motion-safe:duration-500",
           )}
         >

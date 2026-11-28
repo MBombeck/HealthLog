@@ -68,7 +68,7 @@ export { errorCodeToI18nKey } from "./coach-error-key";
  * meanwhile never pulls the view down by itself.
  *
  * Visual identity: user bubbles right-aligned, Dracula purple accent;
- * assistant bubbles left-aligned with the gradient sparkle avatar
+ * assistant bubbles left-aligned with the ink sparkle avatar
  * from the artboard.
  */
 export interface MessageThreadProps {
@@ -622,7 +622,7 @@ export function MessageThread({
       >
         <div
           aria-hidden="true"
-          className="from-primary to-brand-pink flex size-12 items-center justify-center rounded-full bg-gradient-to-br"
+          className="bg-primary flex size-12 items-center justify-center rounded-full"
         >
           <Sparkles className="text-background size-5" />
         </div>

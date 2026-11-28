@@ -91,7 +91,7 @@ export function SuggestedActionCard({
       <div className="flex items-start gap-2">
         <div
           aria-hidden="true"
-          className="from-primary to-info mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br"
+          className="bg-primary mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full"
         >
           <Sparkles className="text-background size-3.5" />
         </div>

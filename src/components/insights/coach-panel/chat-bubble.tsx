@@ -466,7 +466,7 @@ function ChatBubbleImpl({
       >
         <div
           aria-hidden="true"
-          className="from-primary to-brand-pink mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br"
+          className="bg-primary mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full"
         >
           <Sparkles className="text-background size-3.5" />
         </div>
@@ -550,7 +550,7 @@ function ChatBubbleImpl({
     >
       <div
         aria-hidden="true"
-        className="from-primary to-brand-pink mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br"
+        className="bg-primary mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full"
       >
         {providerType === "refusal" ? (
           <Bot className="text-background size-3.5" />
