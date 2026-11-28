@@ -4289,6 +4289,16 @@
         "energy": "Energy",
         "pulse": "Pulse",
         "duration": "Duration"
+      },
+      "load": {
+        "title": "Training load",
+        "fitness": "Fitness",
+        "fatigue": "Fatigue",
+        "form": "Form",
+        "explainer": "Fitness is your heart-rate training impulse averaged over about six weeks, fatigue over about one week, and form is the difference. The numbers compare with your own past, not with other people or other apps.",
+        "warmingUp": "Based on {days, plural, one {# day} other {# days}} so far: until six weeks are covered, fitness reads lower than it is.",
+        "coverage": "{rated} of the last {days, plural, one {# day} other {# days}} could be rated. A day with no activity data, or with a workout that could not be scored, is left out rather than counted as rest.",
+        "asOf": "As of {date}, the last day that could be rated."
       }
     },
     "bloodGlucose": {

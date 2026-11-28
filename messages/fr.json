@@ -4289,6 +4289,16 @@
         "energy": "Énergie",
         "pulse": "Pouls",
         "duration": "Durée"
+      },
+      "load": {
+        "title": "Charge d'entraînement",
+        "fitness": "Condition",
+        "fatigue": "Fatigue",
+        "form": "Fraîcheur",
+        "explainer": "La condition est votre impulsion d'entraînement par fréquence cardiaque moyennée sur environ six semaines, la fatigue sur environ une semaine, et la fraîcheur est la différence. Les chiffres se comparent à votre propre passé, pas à d'autres personnes ni à d'autres apps.",
+        "warmingUp": "Sur {days, plural, one {# jour} other {# jours}} pour l'instant : tant que six semaines ne sont pas couvertes, la condition paraît plus basse qu'elle ne l'est.",
+        "coverage": "{rated} {days, plural, =1 {du dernier jour} other {des # derniers jours}} ont pu être évalués. Un jour sans données d'activité, ou avec un entraînement qui n'a pas pu être évalué, est écarté au lieu de compter comme repos.",
+        "asOf": "Au {date}, le dernier jour qui a pu être évalué."
       }
     },
     "bloodGlucose": {

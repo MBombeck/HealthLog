@@ -4289,6 +4289,16 @@
         "energy": "Energía",
         "pulse": "Pulso",
         "duration": "Duración"
+      },
+      "load": {
+        "title": "Carga de entrenamiento",
+        "fitness": "Forma de base",
+        "fatigue": "Fatiga",
+        "form": "Estado",
+        "explainer": "La forma de base es tu impulso de entrenamiento por frecuencia cardiaca promediado en unas seis semanas, la fatiga en una semana, y el estado es la diferencia. Las cifras se comparan con tu propio pasado, no con otras personas ni otras apps.",
+        "warmingUp": "Con {days, plural, one {# día} other {# días}} hasta ahora: hasta cubrir seis semanas, la forma de base aparece más baja de lo que es.",
+        "coverage": "Se pudieron valorar {rated} {days, plural, =1 {del último día} other {de los últimos # días}}. Un día sin datos de actividad, o con un entrenamiento que no se pudo puntuar, se omite en lugar de contar como descanso.",
+        "asOf": "A fecha de {date}, el último día que se pudo valorar."
       }
     },
     "bloodGlucose": {

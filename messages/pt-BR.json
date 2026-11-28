@@ -4289,6 +4289,16 @@
         "energy": "Energia",
         "pulse": "Pulso",
         "duration": "Duração"
+      },
+      "load": {
+        "title": "Carga de treino",
+        "fitness": "Condicionamento",
+        "fatigue": "Fadiga",
+        "form": "Forma",
+        "explainer": "O condicionamento é o seu impulso de treino pela frequência cardíaca em média ao longo de cerca de seis semanas, a fadiga ao longo de cerca de uma semana, e a forma é a diferença entre os dois. Os números comparam você com o seu próprio passado, não com outras pessoas ou outros apps.",
+        "warmingUp": "Com base em {days, plural, one {# dia} other {# dias}} até agora: até completar seis semanas, o condicionamento aparece mais baixo do que é.",
+        "coverage": "{rated} {days, plural, one {do último # dia} other {dos últimos # dias}} puderam ser avaliados. Um dia sem dados de atividade, ou com um treino que não pôde ser pontuado, fica de fora em vez de contar como descanso.",
+        "asOf": "Em {date}, o último dia que pôde ser avaliado."
       }
     },
     "bloodGlucose": {

@@ -18,6 +18,7 @@ import { RowValue } from "@/components/ui/row-value";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ManualWorkoutSheet } from "@/components/workouts/manual-workout-sheet";
 import { WorkoutsCustomizeSheet } from "@/components/workouts/workouts-customize-sheet";
+import { TrainingLoadCard } from "@/components/workouts/training-load-card";
 import { useAuth } from "@/hooks/use-auth";
 import { useInfiniteWorkouts } from "@/hooks/use-workouts";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
@@ -72,7 +73,7 @@ export default function InsightsWorkoutsPageClient() {
   } = useInfiniteWorkouts({ limit: WORKOUTS_PAGE_SIZE, sportType });
   // The sport filter's vocabulary and the sources come with the unfiltered
   // first page; under a filter that cell stays cached beside the filtered one.
-  const { sports, sources } = useInfiniteWorkouts({
+  const { sports, sources, trainingLoad } = useInfiniteWorkouts({
     limit: WORKOUTS_PAGE_SIZE,
   });
 
@@ -129,6 +130,10 @@ export default function InsightsWorkoutsPageClient() {
           onMeasureChange={setSummaryMeasure}
         />
       ) : null}
+
+      {/* Where the training-load card belongs is still open; until it is
+          decided it stays on this page, between the summary and the list. */}
+      <TrainingLoadCard trainingLoad={trainingLoad} />
 
       {/* Zone 4: the records. */}
       <section aria-labelledby="workouts-heading" className="space-y-3">

@@ -192,6 +192,8 @@ export interface UseInfiniteWorkoutsResult {
   sports: Array<{ sportType: string; count: number }>;
   /** The sources the history comes from, from the first page. */
   sources: string[];
+  /** Fitness, fatigue and form, from the first page. */
+  trainingLoad: TrainingLoad | undefined;
   error: Error | null;
   /** True when the first page failed and there is no history to preserve. */
   isError: boolean;
@@ -234,6 +236,7 @@ export function useInfiniteWorkouts(
   const firstPage = query.data?.pages[0];
   const sports = useMemo(() => firstPage?.sports ?? [], [firstPage]);
   const sources = useMemo(() => firstPage?.sources ?? [], [firstPage]);
+  const trainingLoad = firstPage?.trainingLoad;
   const isEmpty =
     Boolean(isAuthenticated) &&
     query.data !== undefined &&
@@ -246,6 +249,7 @@ export function useInfiniteWorkouts(
     isEmpty,
     sports,
     sources,
+    trainingLoad,
     error: query.error as Error | null,
     isError: query.isError && query.data === undefined,
     isFetchNextPageError: query.isFetchNextPageError,
