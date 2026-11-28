@@ -53,6 +53,7 @@ import { runIntegrationWatchdog } from "@/lib/integrations/watchdog";
 import { recordSyncSuccess } from "@/lib/integrations/status";
 import { runSyncStallPass } from "@/lib/sync-stall/notice";
 import { loadQuietSources } from "@/lib/sync-stall/quiet-load";
+import type { DailyAsk } from "@/lib/daily/asks";
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
@@ -376,6 +377,34 @@ describe("an integration the watchdog flagged", () => {
     expect(await loadQuietSources(userId, T0)).toEqual([
       { source: "oura", since: ouraLast },
       { source: "apple-health", since: at(T0, -30 * HOUR) },
+    ]);
+    // And so does the start page's ask card: one row per quiet source, its
+    // days counted on the owner's local calendar.
+    const { GET: digest } = await import("@/app/api/daily/digest/route");
+    const res = await digest(
+      new NextRequest("http://localhost/api/daily/digest"),
+      { params: Promise.resolve({}) },
+    );
+    expect(res.status).toBe(200);
+    const asks = ((await res.json()) as { data: { asks: DailyAsk[] } }).data
+      .asks;
+    expect(
+      asks
+        .filter((a) => a.kind === "source_stalled")
+        .map((a) => [a.itemKey, a.title, a.body, a.actions[0].href]),
+    ).toEqual([
+      [
+        "source_stalled:oura",
+        "Oura",
+        "3 days quiet",
+        "/settings/integrations#oura",
+      ],
+      [
+        "source_stalled:apple-health",
+        "Apple Health",
+        "1 day quiet",
+        "/settings/integrations#apple-health",
+      ],
     ]);
     expect(stallCalls().map((c) => c.metadata.source)).toEqual(["oura"]);
     expect(stallCalls()[0]!.message).toMatch(/^Oura has sent nothing since/);
