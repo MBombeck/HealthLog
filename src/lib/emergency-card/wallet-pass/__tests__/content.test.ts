@@ -3,7 +3,8 @@ import { describe, expect, it } from "vitest";
 import { locales } from "@/lib/i18n/config";
 
 import { buildPassContent, firstPhoneNumber, FOOTER_MAX } from "../content";
-import { buildPassFiles } from "../bundle";
+import { buildPassFiles, WALLET_PASS_LOCALES } from "../bundle";
+import { WALLET_MANIFEST_RULES } from "../manifest-rules";
 import {
   assertWalletPassJson,
   type PassField,
@@ -395,8 +396,9 @@ describe("pass.strings", () => {
     return parsePassStrings(new TextDecoder().decode(bytes));
   }
 
-  it("exists for every language, with the nonce first", () => {
-    for (const locale of locales) {
+  it("exists for every language the signing service accepts, with the nonce first", () => {
+    expect(WALLET_PASS_LOCALES.length).toBeGreaterThan(1);
+    for (const locale of WALLET_PASS_LOCALES) {
       const text = new TextDecoder().decode(
         files.get(`${locale}.lproj/pass.strings`),
       );
@@ -414,10 +416,19 @@ describe("pass.strings", () => {
       if (f.label) texts.add(f.label);
       if (!f.dateStyle) texts.add(f.value);
     }
-    for (const locale of locales) {
+    for (const locale of WALLET_PASS_LOCALES) {
       const entries = table(locale);
       const missing = [...texts].filter((t) => !entries.has(t));
       expect(missing, locale).toEqual([]);
+    }
+  });
+
+  it("carries no table for a language the signing service does not list", () => {
+    const accepted: readonly string[] = WALLET_MANIFEST_RULES.localizedLocales;
+    for (const locale of locales) {
+      expect(files.has(`${locale}.lproj/pass.strings`), locale).toBe(
+        accepted.includes(locale),
+      );
     }
   });
 

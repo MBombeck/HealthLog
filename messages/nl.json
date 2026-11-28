@@ -955,6 +955,10 @@
     "morning": {
       "heroItemsTitle": "Vandaag te doen",
       "heroItemsDescription": "Kies welke soorten items in “Vandaag te doen” kunnen verschijnen."
+    },
+    "tileComparison": {
+      "above": "Boven het doelbereik",
+      "below": "Onder het doelbereik"
     }
   },
   "measurements": {

@@ -25,6 +25,7 @@ const DOSE_VIOLATION: Record<string, string> = {
   nl: '{"summary":"Verhoog je dosis volgende week naar 2,4 mg."}',
   ru: '{"summary":"Подумайте об увеличении дозы до 10 мг на следующей неделе."}',
   "pt-BR": '{"summary":"Aumente sua dose para 2,4 mg na próxima semana."}',
+  "zh-CN": '{"summary":"下周把二甲双胍加到 2000 mg。"}',
 };
 
 const CAUSAL_VIOLATION: Record<string, string> = {
@@ -38,6 +39,7 @@ const CAUSAL_VIOLATION: Record<string, string> = {
   nl: '{"summary":"Je gewicht daalde omdat je meer sliep."}',
   ru: '{"summary":"Ваш вес снизился, потому что вы больше спали."}',
   "pt-BR": '{"summary":"Seu peso caiu porque você dormiu mais."}',
+  "zh-CN": '{"summary":"你的体重下降是因为你睡得更多。"}',
 };
 
 const CLEAN: Record<string, string> = {
@@ -52,6 +54,7 @@ const CLEAN: Record<string, string> = {
   ru: '{"summary":"Ваш вес на этой неделе в среднем 82 кг, стабильно к прошлому месяцу."}',
   "pt-BR":
     '{"summary":"Seu peso está em média em 82 kg nesta semana, estável em relação ao mês passado."}',
+  "zh-CN": '{"summary":"这周你的体重平均 82 kg，与上月持平。"}',
 };
 
 describe("finalizeStatusSummary — dose prescriptions are withheld", () => {

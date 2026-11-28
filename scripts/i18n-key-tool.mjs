@@ -11,7 +11,10 @@
  */
 import { readFileSync, writeFileSync } from "node:fs";
 
-const LOCALES = ["de", "en", "es", "fr", "it", "pl", "ko", "nl", "pt-BR", "ru"];
+// Every shipped locale, from the inlang project (held equal to the config).
+const LOCALES = JSON.parse(
+  readFileSync("project.inlang/settings.json", "utf8"),
+).locales;
 const file = (loc) => `messages/${loc}.json`;
 
 function read(loc) {

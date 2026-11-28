@@ -1,4 +1,16 @@
-import { de, enUS, es, fr, it, ko, nl, pl, ptBR, ru } from "date-fns/locale";
+import {
+  de,
+  enUS,
+  es,
+  fr,
+  it,
+  ko,
+  nl,
+  pl,
+  ptBR,
+  ru,
+  zhCN,
+} from "date-fns/locale";
 import type { Locale as DateFnsLocale } from "date-fns";
 
 import type { Locale } from "@/lib/i18n/config";
@@ -29,6 +41,8 @@ export function resolveDateFnsLocale(locale: Locale): DateFnsLocale {
       return ptBR;
     case "ru":
       return ru;
+    case "zh-CN":
+      return zhCN;
     default:
       return enUS;
   }

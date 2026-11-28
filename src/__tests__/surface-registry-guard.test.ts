@@ -14,8 +14,8 @@
  *      not to need one.
  *   2. Entered. Every entry has a navigation, menu, Settings or Admin row.
  *   3. Searchable. Every entry is in the palette's index, and is found by its
- *      own name in each of the ten languages, and by each of its search words.
- *   4. Named. Every entry's name, and its search words, exist in all ten
+ *      own name in each of the eleven languages, and by each of its search words.
+ *   4. Named. Every entry's name, and its search words, exist in all eleven
  *      locales.
  *
  * Context links (the row under a page's header) point at registry entries and
@@ -62,6 +62,7 @@ import nl from "../../messages/nl.json";
 import pl from "../../messages/pl.json";
 import ptBR from "../../messages/pt-BR.json";
 import ru from "../../messages/ru.json";
+import zhCN from "../../messages/zh-CN.json";
 
 const ROOT = process.cwd();
 
@@ -77,6 +78,7 @@ const MESSAGES: Record<string, Messages> = {
   pl,
   "pt-BR": ptBR,
   ru,
+  "zh-CN": zhCN,
 };
 
 function lookup(messages: Messages, key: string): string | undefined {
@@ -389,7 +391,7 @@ describe("3. every entry is in the palette and found by its name and words", () 
 
 // ── 4. Named ─────────────────────────────────────────────────────────────
 
-describe("4. every entry's name and search words exist in all ten locales", () => {
+describe("4. every entry's name and search words exist in all eleven locales", () => {
   it.each(locales)("%s", (locale) => {
     const missing = SURFACE_REGISTRY.flatMap((entry) =>
       [entry.labelKey, entry.keywordsKey]

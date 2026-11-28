@@ -27,6 +27,7 @@ import { bank as nl } from "../outbound-screen/locales/nl";
 import { bank as ko } from "../outbound-screen/locales/ko";
 import { bank as ptBR } from "../outbound-screen/locales/pt-br";
 import { bank as ru } from "../outbound-screen/locales/ru";
+import { bank as zhCN } from "../outbound-screen/locales/zh-cn";
 import type { LocaleBank } from "../outbound-screen/shared";
 
 const BANKS: Record<Locale, LocaleBank> = {
@@ -40,6 +41,7 @@ const BANKS: Record<Locale, LocaleBank> = {
   ko,
   "pt-BR": ptBR,
   ru: ru,
+  "zh-CN": zhCN,
 };
 
 const SENTENCES: Record<Locale, readonly string[]> = {
@@ -462,6 +464,51 @@ const SENTENCES: Record<Locale, readonly string[]> = {
     "Сделайте перерыв в приёме эналаприла.",
     "Добавьте ещё 4 единицы инсулина.",
     "Примите 10 мл сиропа.",
+  ],
+  "zh-CN": [
+    // doseChangeClass: verb first, amount first, both halves of a med clause,
+    // a halved/stopped medication, one more dose, and a liquid volume.
+    "下周把二甲双胍加到 2000 mg。",
+    "2000 mg 加量，下周开始。",
+    "二甲双胍提高到 2000 mg。",
+    "把二甲双胍停用。",
+    "再吃一片吧。",
+    "糖浆 10 毫升，每天两次。",
+    "2000 mg 即可。",
+    // dose: the shapes that carry a target on their own.
+    "加到 2000 mg。",
+    "2000 mg 建议每天一次。",
+    "胰岛素 20 单位。",
+    "20 单位胰岛素。",
+    "试试 2.4 mg。",
+    // risk: a fabricated score in either order, a horizon, and a band.
+    "你的心血管风险是 12%。",
+    "12% 的风险。",
+    "未来 10 年风险是 12%。",
+    "12% 是未来 10 年的水平。",
+    "Framingham 评分 12%。",
+    "12% 的 Framingham。",
+    "Framingham 结果属于高危组。",
+    // causal: every connective the bank blocks.
+    "停药导致血压升高。",
+    "失眠造成疲劳。",
+    "你睡得好，所以精神好。",
+    "这说明你需要休息。",
+    "原因在于睡眠不足。",
+    "由此可知你缺水。",
+    "熬夜使得心率升高。",
+    "正是失眠导致了疲劳。",
+    "因为失眠，所以白天很累。",
+    "由于睡眠不足，你的心率偏高。",
+    "你少睡了，因此白天更累。",
+    "你提前服药，于是症状缓解。",
+    "你之所以疲劳，是睡眠不足。",
+    // The withhold shapes: a prohibitive, a verb-first pause, and a volume
+    // stated before its dosage form.
+    "今晚不要服用阿托伐他汀。",
+    "停用依那普利一段时间。",
+    "服用 10 毫升糖浆。",
+    "继续当前剂量。",
   ],
 };
 

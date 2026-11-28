@@ -262,6 +262,9 @@ export function useDashboardTileContext({
     // The one-row order (pinned, then the tiles with something to say, then
     // the rest), resolved on the server; saving the layout refetches it.
     tileOrder: snapshot?.tiles.order,
+    // Where each ranged tile's means sit against its band, placed on the
+    // server; until the snapshot lands the lines render uncoloured.
+    tileComparison: snapshot?.tiles.comparison,
     weightTrend,
     ...bandsForDisplay(bands, unitDisplay, t),
     displayGlucoseUnit,
