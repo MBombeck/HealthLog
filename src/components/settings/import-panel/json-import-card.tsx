@@ -197,26 +197,17 @@ export function JsonImportSource() {
       onOpenChange={setOpen}
       chooseTestId="import-choose-json"
       footer={
-        <>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setOpen(false)}
-          >
-            {t("common.close")}
-          </Button>
-          <Button
-            type="button"
-            disabled={busy || text.trim().length === 0}
-            onClick={handleImport}
-            data-testid="import-action-json"
-          >
-            {busy ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-            ) : null}
-            {t("settings.sections.export.import.json.import")}
-          </Button>
-        </>
+        <Button
+          type="button"
+          disabled={busy || text.trim().length === 0}
+          onClick={handleImport}
+          data-testid="import-action-json"
+        >
+          {busy ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+          ) : null}
+          {t("settings.sections.export.import.json.import")}
+        </Button>
       }
     >
       <ImportPasteBody

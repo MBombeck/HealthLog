@@ -7804,7 +7804,6 @@
       "pickerDescription": "Durchsuche deinen Tresor und wähle Dokumente zum Teilen. Bis zu {max}.",
       "pickerSearch": "Dokumente suchen",
       "pickerEmpty": "Keine Dokumente gefunden.",
-      "pickerDone": "Fertig",
       "pickerSelectedCount": "{count} von {max} ausgewählt",
       "pickerMaxReached": "Maximum von {max, plural, one {# Dokument} other {# Dokumenten}} erreicht.",
       "scopeTitle": "Was dieser Link enthält",
@@ -8982,7 +8981,6 @@
         "emptyDescription": "Es passen noch keine Events zu den Filtern. Nach etwas Traffic auf Aktualisieren tippen.",
         "refresh": "Aktualisieren",
         "eventDetails": "Event-Details",
-        "closeDetails": "Details schließen",
         "processDetail": "Der Puffer ist flüchtig und auf 500 Einträge begrenzt.",
         "cardTitle": "Letzte Ereignisse",
         "filterErrorId": "Fehler-ID"
@@ -13439,7 +13437,6 @@
       "selectedCount": "{count} von höchstens {max} ausgewählt",
       "importAction": "{count} importieren",
       "importing": "Import läuft, ein Dokument nach dem anderen …",
-      "done": "Fertig",
       "summary": "Importiert: {imported}. Schon vorhanden: {present}. Nicht importiert: {failed}.",
       "stopped": "Abgebrochen: {reason}",
       "result": {
@@ -14766,7 +14763,6 @@
   "links": {
     "picker": {
       "add": "Hinzufügen",
-      "done": "Fertig",
       "selectAll": "Alle auswählen",
       "searchPlaceholder": "Suchen",
       "searchNoMatch": "Kein Treffer",
@@ -15682,7 +15678,6 @@
     "check": "Datei prüfen",
     "runIdle": "Importieren",
     "run": "{count, plural, one {# Zeile} other {# Zeilen}} importieren",
-    "close": "Schließen",
     "summaryCheck": "{rows, plural, one {# Zeile} other {# Zeilen}} gelesen: {inserted} können importiert werden, {duplicates} sind schon da, {failed} haben ein Problem.",
     "summaryDone": "{inserted, plural, one {# Zeile} other {# Zeilen}} importiert. Übersprungen: {duplicates}, die schon da waren, und {failed} mit einem Problem.",
     "markersMatched": "Deinen Markern zugeordnet:",

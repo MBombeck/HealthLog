@@ -7804,7 +7804,6 @@
       "pickerDescription": "Busca en tu archivo y selecciona documentos para compartir. Hasta {max}.",
       "pickerSearch": "Buscar documentos",
       "pickerEmpty": "No se encontraron documentos.",
-      "pickerDone": "Listo",
       "pickerSelectedCount": "{count} de {max} seleccionados",
       "pickerMaxReached": "Has alcanzado el máximo de {max, plural, one {# documento} other {# documentos}}.",
       "scopeTitle": "Qué contiene este enlace",
@@ -8982,7 +8981,6 @@
         "emptyDescription": "Aún no hay eventos que coincidan con los filtros actuales. Pulsa actualizar tras generar algo de tráfico.",
         "refresh": "Actualizar",
         "eventDetails": "Detalles del evento",
-        "closeDetails": "Cerrar detalles",
         "processDetail": "El búfer es volátil y está limitado a 500 entradas.",
         "cardTitle": "Eventos recientes",
         "filterErrorId": "ID de error"
@@ -13439,7 +13437,6 @@
       "selectedCount": "{count} de un máximo de {max} seleccionados",
       "importAction": "Importar {count}",
       "importing": "Importando, un documento tras otro…",
-      "done": "Hecho",
       "summary": "Importados: {imported}. Ya estaban: {present}. No importados: {failed}.",
       "stopped": "Detenido: {reason}",
       "result": {
@@ -14766,7 +14763,6 @@
   "links": {
     "picker": {
       "add": "Añadir",
-      "done": "Listo",
       "selectAll": "Seleccionar todo",
       "searchPlaceholder": "Buscar",
       "searchNoMatch": "Sin coincidencias",
@@ -15682,7 +15678,6 @@
     "check": "Revisar archivo",
     "runIdle": "Importar",
     "run": "Importar {count, plural, one {# fila} other {# filas}}",
-    "close": "Cerrar",
     "summaryCheck": "{rows, plural, one {# fila leída} other {# filas leídas}}: {inserted} se pueden importar, {duplicates} ya están, {failed} con un problema.",
     "summaryDone": "{inserted, plural, one {# fila importada} other {# filas importadas}}. Omitidas: {duplicates} que ya estaban y {failed} con un problema.",
     "markersMatched": "Asignados a tus marcadores:",

@@ -173,23 +173,14 @@ export function HealthConnectAppConnection() {
         onOpenChange={onOpenChange}
         title={title}
         footer={
-          <>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              {t("common.close")}
-            </Button>
-            <Button
-              type="button"
-              disabled={minting}
-              data-testid="health-connect-app-new-code"
-              onClick={() => void mint()}
-            >
-              {t("settings.healthConnectApp.newCode")}
-            </Button>
-          </>
+          <Button
+            type="button"
+            disabled={minting}
+            data-testid="health-connect-app-new-code"
+            onClick={() => void mint()}
+          >
+            {t("settings.healthConnectApp.newCode")}
+          </Button>
         }
       >
         <div

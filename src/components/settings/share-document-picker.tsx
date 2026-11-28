@@ -13,7 +13,6 @@
  * happens here — attaching is the create mutation's job.
  */
 import { DocumentPickerSheet } from "@/components/documents/document-picker-sheet";
-import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
 import type { InboundDocumentDto } from "@/lib/validations/inbound-documents";
 
@@ -69,20 +68,14 @@ export function ShareDocumentPicker({
           >
             {t("settings.sharing.pickerMaxReached", { max })}
           </p>
-        ) : null
-      }
-      footer={
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-muted-foreground text-xs" aria-live="polite">
+        ) : (
+          <p className="text-muted-foreground text-xs" aria-live="polite">
             {t("settings.sharing.pickerSelectedCount", {
               count: selected.length,
               max,
             })}
-          </span>
-          <Button type="button" onClick={() => onOpenChange(false)}>
-            {t("settings.sharing.pickerDone")}
-          </Button>
-        </div>
+          </p>
+        )
       }
     />
   );

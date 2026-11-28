@@ -6,7 +6,6 @@ import { Dialog as DialogPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
 import { ActionPair } from "@/components/ui/action-pair";
-import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
 
 function Dialog({
@@ -130,23 +129,12 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
  */
 function DialogFooter({
   className,
-  showCloseButton = false,
   children,
   ...props
-}: React.ComponentProps<"div"> & {
-  showCloseButton?: boolean;
-}) {
-  const { t } = useTranslations();
+}: React.ComponentProps<"div">) {
   return (
     <div data-slot="dialog-footer" className={cn("flex", className)} {...props}>
-      <ActionPair>
-        {children}
-        {showCloseButton && (
-          <DialogPrimitive.Close asChild>
-            <Button variant="outline">{t("common.close")}</Button>
-          </DialogPrimitive.Close>
-        )}
-      </ActionPair>
+      <ActionPair>{children}</ActionPair>
     </div>
   );
 }

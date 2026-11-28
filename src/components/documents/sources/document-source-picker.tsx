@@ -359,26 +359,15 @@ export function DocumentSourcePicker({
               })}
       </p>
       {finished ? (
-        <div className="flex shrink-0 items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="min-h-11 sm:min-h-9"
-            onClick={startOver}
-            data-slot="document-source-pick-more"
-          >
-            {t("documents.sourcePicker.pickMore")}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            className="min-h-11 sm:min-h-9"
-            onClick={() => onOpenChange(false)}
-          >
-            {t("documents.sourcePicker.done")}
-          </Button>
-        </div>
+        <Button
+          type="button"
+          size="sm"
+          className="min-h-11 shrink-0 sm:min-h-9"
+          onClick={startOver}
+          data-slot="document-source-pick-more"
+        >
+          {t("documents.sourcePicker.pickMore")}
+        </Button>
       ) : (
         <Button
           type="button"

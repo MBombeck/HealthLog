@@ -7804,7 +7804,6 @@
       "pickerDescription": "보관함에서 검색해 공유할 문서를 고르세요. 최대 {max}개예요.",
       "pickerSearch": "문서 검색",
       "pickerEmpty": "문서를 찾지 못했어요.",
-      "pickerDone": "완료",
       "pickerSelectedCount": "{max}개 중 {count}개 선택됨",
       "pickerMaxReached": "최대 {max, plural, other {#개까지만}} 고를 수 있어요.",
       "scopeTitle": "이 링크에 담기는 내용",
@@ -8957,7 +8956,6 @@
         "emptyDescription": "아직 현재 필터에 맞는 이벤트가 없어요. 트래픽을 발생시킨 뒤 새로고침해 주세요.",
         "refresh": "새로고침",
         "eventDetails": "이벤트 상세",
-        "closeDetails": "상세 닫기",
         "processDetail": "버퍼는 휘발성이고 최대 500개까지만 담아요.",
         "cardTitle": "최근 이벤트",
         "filterErrorId": "오류 ID"
@@ -13439,7 +13437,6 @@
       "selectedCount": "최대 {max}개 중 {count}개 선택",
       "importAction": "{count}개 가져오기",
       "importing": "문서를 하나씩 가져오는 중…",
-      "done": "완료",
       "summary": "가져옴: {imported}. 이미 있음: {present}. 가져오지 못함: {failed}.",
       "stopped": "중단됨: {reason}",
       "result": {
@@ -14766,7 +14763,6 @@
   "links": {
     "picker": {
       "add": "추가",
-      "done": "완료",
       "selectAll": "전체 선택",
       "searchPlaceholder": "검색",
       "searchNoMatch": "결과 없음",
@@ -15682,7 +15678,6 @@
     "check": "파일 확인",
     "runIdle": "가져오기",
     "run": "{count, plural, other {#행}} 가져오기",
-    "close": "닫기",
     "summaryCheck": "{rows, plural, other {#행}} 읽음: {inserted}행 가져오기 가능, {duplicates}행 이미 있음, {failed}행 문제 있음.",
     "summaryDone": "{inserted, plural, other {#행을}} 가져왔습니다. 이미 있던 {duplicates}행과 문제가 있는 {failed}행은 건너뛰었습니다.",
     "markersMatched": "내 마커에 연결됨:",

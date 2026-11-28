@@ -7804,7 +7804,6 @@
       "pickerDescription": "Cerca nel tuo archivio e seleziona i documenti da condividere. Fino a {max}.",
       "pickerSearch": "Cerca documenti",
       "pickerEmpty": "Nessun documento trovato.",
-      "pickerDone": "Fatto",
       "pickerSelectedCount": "{count} di {max} selezionati",
       "pickerMaxReached": "Hai raggiunto il massimo di {max, plural, one {# documento} other {# documenti}}.",
       "scopeTitle": "Cosa contiene questo link",
@@ -8982,7 +8981,6 @@
         "emptyDescription": "Nessun evento corrisponde ancora ai filtri attuali. Premi Aggiorna dopo aver generato un po' di traffico.",
         "refresh": "Aggiorna",
         "eventDetails": "Dettagli dell'evento",
-        "closeDetails": "Chiudi dettagli",
         "processDetail": "Il buffer è volatile e limitato a 500 voci.",
         "cardTitle": "Eventi recenti",
         "filterErrorId": "ID errore"
@@ -13439,7 +13437,6 @@
       "selectedCount": "{count} selezionati su un massimo di {max}",
       "importAction": "Importa {count}",
       "importing": "Importazione in corso, un documento alla volta…",
-      "done": "Fatto",
       "summary": "Importati: {imported}. Già presenti: {present}. Non importati: {failed}.",
       "stopped": "Interrotto: {reason}",
       "result": {
@@ -14766,7 +14763,6 @@
   "links": {
     "picker": {
       "add": "Aggiungi",
-      "done": "Fatto",
       "selectAll": "Seleziona tutto",
       "searchPlaceholder": "Cerca",
       "searchNoMatch": "Nessun risultato",
@@ -15682,7 +15678,6 @@
     "check": "Controlla il file",
     "runIdle": "Importa",
     "run": "Importa {count, plural, one {# riga} other {# righe}}",
-    "close": "Chiudi",
     "summaryCheck": "{rows, plural, one {# riga letta} other {# righe lette}}: {inserted} importabili, {duplicates} già presenti, {failed} con un problema.",
     "summaryDone": "{inserted, plural, one {# riga importata} other {# righe importate}}. Saltate: {duplicates} già presenti e {failed} con un problema.",
     "markersMatched": "Abbinati ai tuoi marcatori:",

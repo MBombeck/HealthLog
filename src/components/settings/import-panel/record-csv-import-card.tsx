@@ -260,11 +260,7 @@ function RecordCsvImportSheet({
       title={t(`recordImport.sheetTitle.${kind}`)}
       description={t(`recordImport.sheetDescription.${kind}`)}
       footer={
-        done ? (
-          <Button type="button" onClick={() => onOpenChange(false)}>
-            {t("recordImport.close")}
-          </Button>
-        ) : (
+        done ? null : (
           <>
             <Button
               type="button"

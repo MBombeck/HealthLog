@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ListGroup, ListItem } from "@/components/ui/list-row";
@@ -91,16 +90,7 @@ export function CardFieldRows({
           }
         />
       </ul>
-      <ResponsiveSheet
-        open={open}
-        onOpenChange={setOpen}
-        title={fieldsLabel}
-        footer={
-          <Button type="button" onClick={() => setOpen(false)}>
-            {t("links.picker.done")}
-          </Button>
-        }
-      >
+      <ResponsiveSheet open={open} onOpenChange={setOpen} title={fieldsLabel}>
         <ListGroup data-slot={`${idPrefix}-fields`}>
           {EMERGENCY_CARD_FIELDS.map((f) => (
             <ListItem

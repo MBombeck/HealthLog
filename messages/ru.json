@@ -7804,7 +7804,6 @@
       "pickerDescription": "Найдите в хранилище и выберите документы для публикации. До {max}.",
       "pickerSearch": "Поиск документов",
       "pickerEmpty": "Документы не найдены.",
-      "pickerDone": "Готово",
       "pickerSelectedCount": "Выбрано {count} из {max}",
       "pickerMaxReached": "Достигнут максимум: {max, plural, one {# документ} few {# документа} many {# документов} other {# документа}}.",
       "scopeTitle": "Что содержит эта ссылка",
@@ -8982,7 +8981,6 @@
         "emptyDescription": "Пока нет событий, соответствующих текущим фильтрам. Нажмите «Обновить» после создания трафика.",
         "refresh": "Обновить",
         "eventDetails": "Подробности события",
-        "closeDetails": "Закрыть подробности",
         "processDetail": "Буфер энергозависим и ограничен 500 записями.",
         "cardTitle": "Недавние события",
         "filterErrorId": "ID ошибки"
@@ -13439,7 +13437,6 @@
       "selectedCount": "Выбрано {count} из максимум {max}",
       "importAction": "Импортировать {count}",
       "importing": "Импорт, по одному документу за раз…",
-      "done": "Готово",
       "summary": "Импортировано: {imported}. Уже есть: {present}. Не импортировано: {failed}.",
       "stopped": "Остановлено: {reason}",
       "result": {
@@ -14766,7 +14763,6 @@
   "links": {
     "picker": {
       "add": "Добавить",
-      "done": "Готово",
       "selectAll": "Выбрать все",
       "searchPlaceholder": "Поиск",
       "searchNoMatch": "Нет совпадений",
@@ -15683,7 +15679,6 @@
     "check": "Проверить файл",
     "runIdle": "Импорт",
     "run": "Импортировать {count, plural, one {# строку} few {# строки} many {# строк} other {# строки}}",
-    "close": "Закрыть",
     "summaryCheck": "{rows, plural, one {Прочитана # строка} few {Прочитано # строки} many {Прочитано # строк} other {Прочитано # строки}}. Можно импортировать: {inserted}, уже в ваших записях: {duplicates}, с проблемой: {failed}.",
     "summaryDone": "{inserted, plural, one {Импортирована # строка} few {Импортировано # строки} many {Импортировано # строк} other {Импортировано # строки}}. Пропущено уже в ваших записях: {duplicates}, с проблемой: {failed}.",
     "markersMatched": "Сопоставлено с вашими показателями:",

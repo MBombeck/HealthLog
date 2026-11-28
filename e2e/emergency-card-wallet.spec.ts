@@ -186,7 +186,8 @@ test.describe("emergency card in Apple Wallet", () => {
     await expect(note).toHaveAttribute("aria-checked", "false");
     await note.click();
     await expect(note).toHaveAttribute("aria-checked", "true");
-    await picker.getByRole("button", { name: "Done" }).click();
+    // The choice applies as it is made; the header X closes the picker.
+    await picker.getByRole("button", { name: "Close" }).click();
     await expect(picker).toBeHidden();
 
     // The server signs itself, so no signing notice; the re-proof opens, and

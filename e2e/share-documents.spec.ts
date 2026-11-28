@@ -91,7 +91,8 @@ async function createShareWithDocs(page: Page): Promise<CreatedShare> {
     await row.click();
     await expect(row).toHaveAttribute("aria-pressed", "true");
   }
-  await page.getByRole("button", { name: "Done" }).click();
+  // The picks apply as they are made; the header X closes the picker.
+  await page.getByRole("dialog").getByRole("button", { name: "Close" }).click();
 
   // Three chips staged before create.
   await expect(
