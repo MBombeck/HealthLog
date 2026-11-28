@@ -230,9 +230,14 @@ test.describe("managed profile handover", () => {
         await claimPage
           .locator('[data-slot="handover-decision-submit"]')
           .click();
-        await expect(claimPage).toHaveURL(/\/onboarding(\?|$)/, {
-          timeout: 30_000,
-        });
+        // The decision leads on into the person's own first run, which opens
+        // on its current step's page.
+        await expect(claimPage).toHaveURL(
+          /\/onboarding\/(?!handover)[a-z-]+$/,
+          {
+            timeout: 30_000,
+          },
+        );
 
         // The used link is dead for anyone after.
         const reused = await person.request.post("/api/auth/claim/preview", {

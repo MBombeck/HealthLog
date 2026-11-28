@@ -86,9 +86,14 @@ test.describe("setup flow — a child's managed profile", () => {
     expect(switched.status(), "switching into the child's record").toBe(200);
     try {
       const child = await readMe(page);
-      for (const key of ["glucose", "sleep", "mood", "labs", "medications"]) {
+      for (const key of ["glucose", "sleep", "mood", "labs"]) {
         expect(child.modules[key], `child module ${key}`).toBe(false);
       }
+      // The flow does not ask about medication; an unasked question leaves
+      // the module at its default.
+      expect(child.modules.medications, "child module medications").not.toBe(
+        false,
+      );
       expect(child.onboarding.needs.recordTarget).toBe("someone-else");
     } finally {
       const back = await page.request.post("/api/account/switch", {
