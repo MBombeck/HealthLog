@@ -26,7 +26,7 @@
       "target": 2200
     },
     "/emergency-card": {
-      "budget": 3900,
+      "budget": 2900,
       "target": 2000
     },
     "/admin": {
@@ -106,7 +106,7 @@
       "target": 800
     },
     "/insights/catalog": {
-      "budget": 7300,
+      "budget": 7800,
       "target": 7300
     },
     "/insights/workouts": {
