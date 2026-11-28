@@ -551,11 +551,7 @@ export interface DailyDigestLoadOptions {
   locale?: Locale;
   /** Ask the admin question; a browser session on its own record only. */
   adminAsks?: boolean;
-  /**
-   * The instance origin the request reached, on the reader's own record:
-   * whether a Wallet pass can be made there decides the emergency-wallet
-   * ask. Unset, the ask is not offered (a background caller, a delegate).
-   */
+  /** The origin reached, on the reader's own record: the Wallet ask's. */
   walletOrigin?: string | null;
 }
 

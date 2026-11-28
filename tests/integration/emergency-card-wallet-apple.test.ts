@@ -114,7 +114,10 @@ const routes = async () => ({
 });
 
 /** The kinds the start page asks, as the digest serves them. */
-async function askKinds(auth: RouteAuth, headers = HTTPS) {
+async function askKinds(
+  auth: RouteAuth,
+  headers: Record<string, string> = HTTPS,
+) {
   const { digest } = await routes();
   const res = await callRoute<{
     asks: Array<{ kind: string; actions: Array<{ intent: string }> }>;

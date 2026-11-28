@@ -399,12 +399,7 @@ export interface DailyDigestInput {
   adminAsk?: AdminAskKind | null;
   /** Dose item keys whose snooze is running (`load-digest.ts`). */
   snoozedDoseItemKeys?: ReadonlySet<string>;
-  /**
-   * Offer the emergency card for Wallet (`readEmergencyWalletAsk`): the
-   * reader's own card has something on it, Wallet is available, no pass was
-   * ever made and the offer was not set aside.
-   */
-  emergencyWalletAsk?: boolean;
+  emergencyWalletAsk?: boolean; // the Wallet offer, `readEmergencyWalletAsk`
 }
 
 export interface DailyDigest {
@@ -1155,7 +1150,7 @@ export function buildDailyDigest(
   // Apply the account's hero-content visibility before the rail cap so a
   // hidden high-priority item cannot crowd out an enabled later candidate.
   const enabled = worthALook.filter((item) =>
-    (input.enabledHeroItemKinds as readonly string[]).includes(item.kind),
+    input.enabledHeroItemKinds.includes(item.kind),
   );
 
   // Defence-in-depth: no card ever exceeds the P1 action cap.

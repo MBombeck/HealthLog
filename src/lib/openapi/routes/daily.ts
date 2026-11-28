@@ -119,7 +119,7 @@ const dailyAskSchema = z
           intent: z
             .string()
             .describe(
-              "Stable action token. Beside the rail's tokens: `dose.snooze:<medicationId>` (the medication's own snooze, `POST /api/medications/intake` with status `snoozed`), `relay.yes` / `relay.no` (the relay question), `admin.setup.open` (with `href`), `ask.later:<dismissKey>` (sets the ask aside until the next local day: `POST /api/daily/digest/dismiss` with that key, `ask-later:<YYYY-MM-DD>:<itemKey>`; for `emergency_wallet` the key is `emergency_wallet:offer`, which names no day and sets the offer aside for good), `emergency_wallet.add` (with `href` `/emergency-card#wallet`: the web opens the card's Wallet section, the app its own add flow). Labels are the short verbs under `daily.action.*`. A consent row (`push_relay`) carries exactly No and Yes, never a later.",
+              "Stable action token. Beside the rail's tokens: `dose.snooze:<medicationId>` (the medication's own snooze, `POST /api/medications/intake` with status `snoozed`), `relay.yes` / `relay.no` (the relay question), `admin.setup.open` (with `href`), `ask.later:<dismissKey>` (sets the ask aside until the next local day: `POST /api/daily/digest/dismiss` with that key, `ask-later:<YYYY-MM-DD>:<itemKey>`; for `emergency_wallet` the key is `emergency_wallet:offer`, which names no day and sets the offer aside for good), `emergency_wallet.add` (with `href` the card's Wallet section: the web opens the card's Wallet section, the app its own add flow). Labels are the short verbs under `daily.action.*`. A consent row (`push_relay`) carries exactly No and Yes, never a later.",
             ),
           href: z.string().optional().describe("Deep-link when navigational."),
         }),
@@ -505,7 +505,7 @@ const morningCardSchema = z
             .string()
             .nullable()
             .describe(
-              "The page of the metric the line names (a vital, the sleep score, readiness, a readiness contributor), or `/insights` when that metric has no page of its own. Null when the line names no metric (the night not in yet).",
+              "The page of the metric the line names (a vital, the sleep score, readiness, a readiness contributor), or the Insights page when that metric has no page of its own. Null when the line names no metric (the night not in yet).",
             ),
         }),
       )

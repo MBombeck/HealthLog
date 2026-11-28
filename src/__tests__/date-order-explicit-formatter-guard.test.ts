@@ -275,7 +275,12 @@ const RAW_ALLOWLIST: ReadonlyArray<{ file: string; why: string }> = [
  * is the point: the compiler demands the argument, so an entry here is a
  * written admission that a surface renders in the locale default.
  */
-const AUTO_ALLOWLIST: ReadonlyArray<{ file: string; why: string }> = [];
+const AUTO_ALLOWLIST: ReadonlyArray<{ file: string; why: string }> = [
+  {
+    file: "src/lib/daily/asks.ts",
+    why: "ownClock prints a time on the language's own clock, to tell a forced hour cycle apart; it prints no date, and a pinned date order would swap the locale it measures.",
+  },
+];
 
 describe("numeric dates render in the user's field order", () => {
   const found = scan();
