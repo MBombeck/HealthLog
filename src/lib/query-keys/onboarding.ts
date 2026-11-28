@@ -35,4 +35,10 @@ export const onboardingKeys = {
     ["encounters", "onboarding-upcoming"] as const,
   /** 1.49 — presence behind the checklist's optional "More" group. */
   onboardingExtras: () => ["onboarding", "extras"] as const,
+  /** 1.50 — `GET /api/setup`: the resolved setup state and task rows. */
+  setupState: () => ["setup", "state"] as const,
+  /** 1.50 — `PATCH /api/setup`: the setup card hidden or shown again. */
+  setupCardMutation: () => ["setup", "card"] as const,
+  /** 1.50 — whether this server can send Web Push (`/api/notifications/vapid` answers). */
+  notificationsVapid: () => ["notifications", "vapid-available"] as const,
 };

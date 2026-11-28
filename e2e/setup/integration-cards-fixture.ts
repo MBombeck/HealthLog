@@ -15,6 +15,9 @@ import type { Page } from "@playwright/test";
  *   nightscout     not connected                 (address form)
  *   apple-health   degraded / no_new_data
  *
+ * The list rows (`integrationOverview`) are what the server resolves from the
+ * same situations, plus two channels and the entries "Add" offers.
+ *
  * Timestamps are relative to now, so the sentences read the same on any day.
  */
 const HOUR = 60 * 60 * 1000;
@@ -223,8 +226,118 @@ export function appleHealthStatus() {
   };
 }
 
+/** One overview row, as `GET /api/integrations/overview` publishes it. */
+function row(
+  key: string,
+  group: "source" | "channel",
+  patch: Record<string, unknown> = {},
+) {
+  return {
+    key,
+    group,
+    setUp: false,
+    status: null,
+    reason: null,
+    lastAt: null,
+    offered: true,
+    setupNote: null,
+    ...patch,
+  };
+}
+
+/**
+ * The list rows the server resolves from the envelope above: `ok` and
+ * `limited` read active, `degraded` and `action_required` an error.
+ */
+export const INTEGRATION_ROW_STATUS = {
+  "apple-health": "error",
+  withings: "active",
+  whoop: "error",
+  "google-health": "error",
+  oura: "active",
+  polar: "error",
+  strava: "active",
+  telegram: "active",
+  ntfy: "off",
+} as const;
+
+export function integrationOverview() {
+  return {
+    items: [
+      row("apple-health", "source", {
+        setUp: true,
+        status: "error",
+        reason: "no_new_data",
+        lastAt: ago(60),
+      }),
+      row("withings", "source", {
+        setUp: true,
+        status: "active",
+        reason: "plan_limited",
+        lastAt: ago(1),
+      }),
+      row("whoop", "source", {
+        setUp: true,
+        status: "error",
+        reason: "paused_after_errors",
+        lastAt: ago(50),
+      }),
+      row("google-health", "source", {
+        setUp: true,
+        status: "error",
+        reason: "reauth_required",
+        lastAt: ago(30),
+      }),
+      row("garmin", "source"),
+      row("oura", "source", {
+        setUp: true,
+        status: "active",
+        reason: "permission_limited",
+        lastAt: ago(1),
+      }),
+      row("polar", "source", {
+        setUp: true,
+        status: "error",
+        reason: "provider_errors",
+        lastAt: ago(9),
+      }),
+      row("strava", "source", {
+        setUp: true,
+        status: "active",
+        reason: "data_arriving",
+        lastAt: ago(1),
+      }),
+      row("nightscout", "source"),
+      row("dawarich", "source", { offered: false }),
+      row("health-connect-remote", "source"),
+      row("document-sources", "source", { offered: false }),
+      row("telegram", "channel", {
+        setUp: true,
+        status: "active",
+        lastAt: ago(14),
+      }),
+      row("ntfy", "channel", {
+        setUp: true,
+        status: "off",
+        reason: "switched_off",
+      }),
+      row("web-push", "channel"),
+      row("webhook", "channel"),
+      row("email", "channel", { offered: false }),
+      row("apns", "channel", { offered: false }),
+    ],
+  };
+}
+
 /** Route every read the Integrations page makes onto the fixture. */
 export async function mockIntegrationCards(page: Page): Promise<void> {
+  await page.route("**/api/integrations/overview", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: integrationOverview(), error: null }),
+    }),
+  );
   await page.route("**/api/integrations/status", (route) =>
     route.fulfill({
       status: 200,

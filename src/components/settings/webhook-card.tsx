@@ -103,7 +103,7 @@ export function WebhookCard({ isAuthenticated }: { isAuthenticated: boolean }) {
   });
 
   const statusTone = useChannelStatusTone(
-    null,
+    "webhook",
     isAuthenticated,
     Boolean(settings && settings.enabled && Boolean(settings.url)),
   );

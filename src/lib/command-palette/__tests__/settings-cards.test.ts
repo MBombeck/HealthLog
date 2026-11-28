@@ -4,6 +4,11 @@ import { describe, expect, it } from "vitest";
 
 import { requireFloor } from "@/__tests__/helpers/source-files";
 import en from "../../../../messages/en.json";
+import { INTEGRATION_HASH_ALIASES } from "@/components/settings/integrations/integration-registry";
+import {
+  OVERVIEW_CHANNEL_KEYS,
+  OVERVIEW_SOURCE_KEYS,
+} from "@/lib/integrations/overview";
 import {
   SETTINGS_CARDS,
   SETTINGS_LAYOUT_PAGES,
@@ -55,6 +60,14 @@ function hasKey(key: string): boolean {
   return typeof node === "string";
 }
 
+// Settings → Integrations opens a sheet for any integration key in the hash
+// (and for the older anchors its aliases name), so those anchors land.
+const INTEGRATION_ANCHORS = new Set<string>([
+  ...OVERVIEW_SOURCE_KEYS,
+  ...OVERVIEW_CHANNEL_KEYS,
+  ...Object.keys(INTEGRATION_HASH_ALIASES),
+]);
+
 describe("SETTINGS_CARDS", () => {
   it.each(SETTINGS_CARDS.map((c) => [c.anchor, c] as const))(
     "#%s exists in the settings sources",
@@ -65,7 +78,10 @@ describe("SETTINGS_CARDS", () => {
         `anchor: "${anchor}"`,
         `id: "${anchor}"`,
       ];
-      expect(patterns.some((p) => SETTINGS_SRC.includes(p))).toBe(true);
+      expect(
+        patterns.some((p) => SETTINGS_SRC.includes(p)) ||
+          INTEGRATION_ANCHORS.has(anchor),
+      ).toBe(true);
     },
   );
 

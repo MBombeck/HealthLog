@@ -13,6 +13,7 @@
  *   - >=md: sticky 220px sidebar + content column with `max-w-screen-xl`.
  */
 
+import { SetupReturnLink } from "@/components/onboarding/setup-return-link";
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -184,6 +185,8 @@ export interface AdminShellProps {
    * pass an explicit value so they don't need to mock the router.
    */
   active?: AdminSectionSlug;
+  /** A page outside the sections (Admin › Setup) names itself. */
+  title?: string;
   children: React.ReactNode;
 }
 
@@ -236,7 +239,7 @@ function useActivePillInView(activeSlug: string | null) {
   return stripRef;
 }
 
-export function AdminShell({ active, children }: AdminShellProps) {
+export function AdminShell({ active, title, children }: AdminShellProps) {
   const pathname = usePathname();
   const { t } = useTranslations();
   const { user } = useAuth();
@@ -261,9 +264,10 @@ export function AdminShell({ active, children }: AdminShellProps) {
   // with the top of the first card by construction. `/admin` overview
   // (activeSlug === null) shows the console title; each section shows its own.
   const headingTitle =
-    activeSlug === null
+    title ??
+    (activeSlug === null
       ? t("admin.title")
-      : t(`admin.section.${activeSlug}.title`);
+      : t(`admin.section.${activeSlug}.title`));
 
   // Same two-copy heading as the Settings shell (mobile above the chip strip,
   // desktop inside the grid row) and the same primitive, so the two consoles
@@ -424,7 +428,10 @@ export function AdminShell({ active, children }: AdminShellProps) {
             to carry) over-reserves on short sections and on mobile, scrolling
             the page into a dark band below the last card. AuthShell already
             owns the page's single `<main>` landmark. */}
-        <div className="min-w-0 md:col-start-2">{children}</div>
+        <div className="min-w-0 md:col-start-2">
+          <SetupReturnLink />
+          {children}
+        </div>
       </div>
     </div>
   );

@@ -94,7 +94,6 @@ const SINGLE_FIELD_SUBMITTERS = [
 
 /** Submitters that send several fields and must read the answer. */
 const MULTI_FIELD_SUBMITTERS = [
-  "components/onboarding/baseline-form-utils.ts",
   "components/settings/account-section/index.tsx",
 ];
 

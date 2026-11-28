@@ -67,7 +67,12 @@ export const PATCH = apiHandler(async (request: Request) => {
   });
   if (!parsed.ok) return parsed.error;
 
-  await writeServerSetupStep(parsed.data.step, parsed.data.status);
+  await writeServerSetupStep(
+    parsed.data.step,
+    parsed.data.status,
+    new Date(),
+    user.id,
+  );
   const state = await readServerSetupState(user.id);
 
   await auditLog("admin.server-setup.step", {

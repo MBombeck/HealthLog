@@ -10,12 +10,18 @@ import {
   ASK_INTENT,
   buildAdminAsk,
   CONSENT_ASK_KINDS,
+  doseMeta,
   isMandatoryAsk,
   OPTIONAL_ASK_KINDS,
   DAILY_ASK_KINDS,
   resolveDailyAsks,
   type AskCandidate,
+  type DailyAsk,
 } from "@/lib/daily/asks";
+import {
+  asksFixtureInput,
+  serverAsks,
+} from "../../../../e2e/setup/asks-fixture";
 import { buildDailyDigest, type DailyDigestInput } from "@/lib/daily/digest";
 import {
   isDismissibleItemKey,
@@ -250,15 +256,16 @@ describe("the person's switches", () => {
 });
 
 describe("buildAdminAsk", () => {
-  it("asks the relay question with yes and no only, and learn more", () => {
+  it("asks the relay question with yes and no only, and no link on the row", () => {
     const ask = buildAdminAsk("push_relay", t, "2026-07-16");
-    expect(ask.title).toBe("Notifications via push relay?");
-    expect(ask.body).toBe("The content stays encrypted.");
+    expect(ask.title).toBe("Push relay?");
+    expect(ask.body).toBe("Encrypted");
     expect(ask.actions.map((a) => a.intent)).toEqual([
       ASK_INTENT.relayYes,
       ASK_INTENT.relayNo,
     ]);
-    expect(ask.learnMore?.href).toMatch(/push-relay/);
+    // The relay dialog behind "Yes" links the terms; the row has no room.
+    expect(ask.learnMore).toBeNull();
   });
 
   it("offers the unfinished setup with Set up and Later", () => {
@@ -601,5 +608,146 @@ describe("buildDailyDigest publishes the asks", () => {
     expect(
       buildDailyDigest(input({ adminAsk: "server_setup" }), t).asks[0].kind,
     ).toBe("server_setup");
+  });
+});
+
+describe("an ask says the thing in its title and its state in the body", () => {
+  /** The reader's clock: a fixed UTC rendering, enough to see it is used. */
+  const localTime = (d: Date) => d.toISOString().slice(11, 16);
+  const de = getServerTranslator("de").t;
+
+  it("a dose: its name, then overdue with the time it was due", () => {
+    const [ask] = buildDailyDigest(
+      input({ medsToday: overdueMeds, localTime }),
+      t,
+    ).asks;
+    expect([ask.title, ask.body]).toEqual(["Ramipril", "Overdue 06:00"]);
+    const [deAsk] = buildDailyDigest(
+      input({ medsToday: overdueMeds, localTime }),
+      de,
+    ).asks;
+    expect([deAsk.title, deAsk.body]).toEqual(["Ramipril", "Überfällig 06:00"]);
+  });
+
+  it("a dose without the reader's clock says the state alone", () => {
+    const [ask] = buildDailyDigest(input({ medsToday: overdueMeds }), t).asks;
+    expect(ask.body).toBe("Overdue");
+  });
+
+  it("check-ups: the first by name, the rest counted", () => {
+    const one = buildDailyDigest(
+      input({ preventiveDue: [{ label: "Dental check-up", longCycle: true }] }),
+      t,
+    ).asks[0];
+    expect([one.title, one.body]).toEqual(["Dental check-up", "Check-up due"]);
+    const three = buildDailyDigest(
+      input({
+        preventiveDue: [
+          { label: "Dental check-up", longCycle: true },
+          { label: "Skin check", longCycle: true },
+          { label: "Eye exam", longCycle: true },
+        ],
+      }),
+      t,
+    ).asks[0];
+    expect(three.title).toBe("Dental check-up +2");
+  });
+
+  it("a visit: who it is with, then the day", () => {
+    const visit = (dayOffset: number, hours: number) =>
+      buildDailyDigest(
+        input({
+          upcomingVisits: [
+            {
+              id: "v1",
+              kind: "ROUTINE",
+              occurredAt: new Date(NOW.getTime() + hours * HOUR).toISOString(),
+              practitionerName: "Family practice",
+              dayOffset,
+              timeLabel: "11:00",
+            },
+          ],
+        }),
+        t,
+      ).asks[0];
+    expect([visit(0, 2).title, visit(0, 2).body]).toEqual([
+      "Family practice",
+      "Visit today",
+    ]);
+    expect(visit(1, 20).body).toBe("Visit tomorrow");
+  });
+
+  it("a broken source: its name, then disconnected", () => {
+    const [ask] = buildDailyDigest(
+      input({
+        syncIssues: [
+          {
+            integration: "google-health",
+            state: "error_reauth",
+            lastSuccessAt: new Date(NOW.getTime() - 2 * DAY).toISOString(),
+          },
+        ],
+      }),
+      t,
+    ).asks;
+    expect([ask.title, ask.body]).toEqual(["Google Health", "Disconnected"]);
+  });
+
+  it("a coach check-in: the plan itself, then the check-in", () => {
+    const plan = {
+      id: "p1",
+      status: "active" as const,
+      reviewDate: null,
+      createdAt: new Date(NOW.getTime() - 10 * DAY),
+      updatedAt: new Date(NOW.getTime() - 10 * DAY),
+      planText: "After lunch → walk ten minutes",
+    };
+    const [ask] = buildDailyDigest(input({ coachPlans: [plan] }), t).asks;
+    // The action alone: the "cue → action" arrow never reaches the title.
+    expect([ask.title, ask.body]).toEqual(["Walk ten minutes", "Check-in due"]);
+    const [unnamed] = buildDailyDigest(
+      input({ coachPlans: [{ ...plan, planText: null }] }),
+      t,
+    ).asks;
+    expect(unnamed.title).toBe("Your plan");
+  });
+
+  it("never repeats the title's thing as a sentence in the body", () => {
+    const asks = buildDailyDigest(
+      input({ medsToday: overdueMeds, localTime, adminAsk: "server_setup" }),
+      t,
+    ).asks;
+    for (const ask of asks) {
+      expect(ask.body).not.toMatch(/\.$/);
+      expect(ask.body).not.toContain(ask.title);
+    }
+  });
+});
+
+describe("the browser test's asks are the builder's", () => {
+  it("serverAsks equals buildDailyDigest for the same input, every language", () => {
+    const pick = (asks: DailyAsk[]) =>
+      asks.map((a) => [
+        a.kind,
+        a.tier,
+        a.title,
+        a.body,
+        a.actions.map((x) => x.labelKey),
+      ]);
+    for (const locale of ["de", "en", "ru"] as const) {
+      const input = asksFixtureInput(locale);
+      const built = buildDailyDigest(input, getServerTranslator(locale).t).asks;
+      expect(pick(serverAsks(locale))).toEqual(pick(built));
+      expect(built).toHaveLength(6);
+    }
+  });
+});
+
+describe("a forced hour cycle", () => {
+  it("drops the time when it is longer than the language's own clock", () => {
+    const de = getServerTranslator("de").t;
+    expect(doseMeta(true, "8:00 AM", de, "08:00")).toBe("Überfällig");
+    expect(doseMeta(true, "08:00", de, "08:00")).toBe("Überfällig 08:00");
+    expect(doseMeta(true, "8:00 AM", t, "8:00 AM")).toBe("Overdue 8:00 AM");
   });
 });

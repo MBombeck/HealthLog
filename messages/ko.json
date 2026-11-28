@@ -806,13 +806,6 @@
   },
   "dashboard": {
     "title": "대시보드",
-    "greeting": {
-      "morning": "좋은 아침이에요",
-      "day": "안녕하세요",
-      "evening": "좋은 저녁이에요"
-    },
-    "welcomeBack": "{greeting}, 다시 오셨네요.",
-    "welcomeBackWithName": "{greeting}, {name}님, 다시 오셨네요.",
     "greetingSalutation": "안녕하세요, {name}님",
     "streakLabel": "일 연속",
     "weight": "체중",
@@ -948,9 +941,6 @@
       "body": "이 서버가 사용하는 키의 사본이 없으면 다시 설치한 뒤 데이터를 복구할 수 없습니다. 몇 분이면 됩니다.",
       "action": "키트 열기"
     },
-    "greetingOnly": "{greeting}.",
-    "welcomeNew": "환영합니다.",
-    "welcomeNewWithName": "{name}님, 환영합니다.",
     "quickAddSeizure": "발작 기록",
     "morning": {
       "heroItemsTitle": "오늘 할 일",
@@ -4298,6 +4288,16 @@
         "editAction": "편집",
         "updated": "운동을 업데이트했습니다"
       },
+      "load": {
+        "title": "훈련 부하",
+        "fitness": "체력",
+        "fatigue": "피로",
+        "form": "컨디션",
+        "explainer": "체력은 심박 기반 훈련 자극을 약 6주 동안, 피로는 약 1주 동안 평균한 값이고, 컨디션은 그 차이입니다. 이 숫자는 다른 사람이나 다른 앱이 아니라 내 과거와 비교하는 값입니다.",
+        "warmingUp": "지금까지 {days, plural, other {#일}} 기준: 6주가 채워질 때까지는 체력이 실제보다 낮게 나옵니다.",
+        "coverage": "최근 {days, plural, other {#일}} 중 {rated}일을 평가할 수 있었습니다. 활동 데이터가 없는 날이나 평가할 수 없는 운동이 있는 날은 휴식일로 세지 않고 제외합니다.",
+        "asOf": "{date} 기준, 평가할 수 있었던 마지막 날입니다."
+      },
       "customize": {
         "calendar": "캘린더",
         "calendarShows": "캘린더 표시 항목"
@@ -4308,16 +4308,6 @@
         "energy": "에너지",
         "pulse": "맥박",
         "duration": "시간"
-      },
-      "load": {
-        "title": "훈련 부하",
-        "fitness": "체력",
-        "fatigue": "피로",
-        "form": "컨디션",
-        "explainer": "체력은 심박 기반 훈련 자극을 약 6주 동안, 피로는 약 1주 동안 평균한 값이고, 컨디션은 그 차이입니다. 이 숫자는 다른 사람이나 다른 앱이 아니라 내 과거와 비교하는 값입니다.",
-        "warmingUp": "지금까지 {days, plural, other {#일}} 기준: 6주가 채워질 때까지는 체력이 실제보다 낮게 나옵니다.",
-        "coverage": "최근 {days, plural, other {#일}} 중 {rated}일을 평가할 수 있었습니다. 활동 데이터가 없는 날이나 평가할 수 없는 운동이 있는 날은 휴식일로 세지 않고 제외합니다.",
-        "asOf": "{date} 기준, 평가할 수 있었던 마지막 날입니다."
       }
     },
     "bloodGlucose": {
@@ -5555,85 +5545,17 @@
       "back": "이전",
       "skip": "건너뛰기",
       "next": "계속",
-      "stepOf": "{total}단계 중 {current}단계",
-      "stepsLabel": "설정 단계"
+      "stepOf": "{total}단계 중 {current}단계"
     },
     "baseline": {
-      "title": "나에 대해 조금만",
-      "body": "선택 항목 네 가지가 목표 범위, BMI, 알림을 더 정확하게 만들어요. 나중에 설정에서 언제든 바꿀 수 있어요.",
       "displayNameLabel": "표시 이름",
       "displayNamePlaceholder": "HealthLog가 어떻게 부르면 좋을까요?",
-      "displayNameHint": "대시보드 인사말과 리포트에 표시돼요.",
-      "heightLabel": "키(cm)",
-      "heightLabelFtIn": "키(ft, in)",
-      "genderLabel": "성별",
-      "genderNone": "밝히지 않음",
-      "genderMale": "남성",
-      "genderFemale": "여성",
-      "genderOther": "기타",
-      "dateOfBirthLabel": "생년월일",
-      "dateOfBirthHint": "나이를 반영한 분석에만 써요."
-    },
-    "done": {
-      "title": "준비 끝났어요",
-      "body": "환영해요. 대시보드가 준비됐어요.",
-      "returnCta": "대시보드 열기",
-      "learning": "혈당, 수면 리듬, 혈압 추이, 주기 같은 인사이트는 데이터가 쌓이는 첫 한두 주 동안 점점 또렷해져요. 지금 비어 있는 타일은 아직 기준값을 익히는 중이라는 뜻이에요.",
-      "connectCta": "기기 연결",
-      "logCta": "첫 측정값 기록하기",
-      "importCta": "기존 기록 불러오기",
-      "modulesCta": "모듈 고르기",
-      "aiOptional": "AI는 선택 사항이에요. AI 없이도 모든 기능이 작동해요.",
-      "aiSetupCta": "AI 설정",
-      "relayOptional": "iPhone 앱은 선택 사항인 HealthLog 푸시 릴레이를 통해 이 서버의 알림을 받을 수 있어요. 직접 켜기 전까지는 꺼져 있어요.",
-      "relaySetupCta": "푸시 릴레이 설정",
-      "serverSetup": "이 서버의 설정이 아직 남아 있습니다: 가입, 알림, AI, 개인정보.",
-      "serverSetupCta": "서버 설정"
-    },
-    "welcomeBack": {
-      "title": "다시 오셨네요",
-      "cta": "대시보드 열기"
+      "displayNameHint": "대시보드 인사말과 리포트에 표시돼요."
     },
     "disclaimer": {
-      "acknowledge": "이해했어요. HealthLog는 개인 기록 도구일 뿐, 임상 평가나 진단이 아니에요. 걱정되는 일이 있으면 이 앱이 아니라 의사와 상의할게요.",
-      "learnMore": "자세히 보기"
-    },
-    "anamnesis": {
-      "title": "건강에 대해 (선택)",
-      "subtitle": "HealthLog가 내 숫자를 더 공정하게 읽도록 약간의 맥락을 알려 주세요.",
-      "intro": "원하는 만큼만 알려 주세요. 모든 항목은 선택이고, 설정에서 언제든 바꿀 수 있어요.",
-      "conditionsLabel": "앓고 있는 질환",
-      "conditionsPlaceholder": "예: 고혈압, 2형 당뇨",
-      "conditionsHint": "당연한 값을 경고로 띄우는 대신, 맥락 속에서 측정값을 보게 해 줘요.",
-      "allergiesLabel": "알레르기나 불내성",
-      "allergiesPlaceholder": "예: 페니실린, 유당",
-      "privacyNote": "암호화해 저장하고, 더 나은 맥락을 주는 데만 써요. 여기서 약은 묻지 않아요. 복약 페이지에서 언제든 추가하면 돼요."
-    },
-    "steps": {
-      "who": "이 기록의 대상",
-      "areas": "관심 있게 볼 항목",
-      "medication": "복약",
-      "sources": "측정값의 출처",
-      "visit": "진료 예정",
-      "units": "지역 및 단위",
-      "confirm": "확인",
-      "first-result": "첫 결과",
-      "done": "완료",
-      "reminders": "알림",
-      "ai": "코치"
+      "acknowledge": "이해했어요. HealthLog는 개인 기록 도구일 뿐, 임상 평가나 진단이 아니에요. 걱정되는 일이 있으면 이 앱이 아니라 의사와 상의할게요."
     },
     "flow": {
-      "welcome": {
-        "title": "HealthLog에 오신 것을 환영합니다",
-        "body": "몇 가지 짧은 질문으로 HealthLog가 먼저 보여 줄 내용이 정해집니다. 약 2분이 걸립니다.",
-        "changeLater": "확정되는 것은 없습니다. 모든 선택은 나중에 설정에서 바꿀 수 있습니다.",
-        "setUp": "설정 시작",
-        "skip": "지금은 건너뛰기",
-        "againBody": "설정이 완료되었습니다. HealthLog가 먼저 보여 줄 내용을 바꾸려면 질문에 다시 답하고, 아니면 대시보드로 이동하세요.",
-        "setUpAgain": "다시 설정하기",
-        "serverSetup": "이 서버를 운영하고 계십니다. 서버 설정은 본인 설정 전이나 후에 따로 짧게 진행합니다.",
-        "serverSetupCta": "서버 설정"
-      },
       "who": {
         "title": "이 기록은 누구의 것인가요?",
         "body": "이어지는 답변은 이 기록에 적용됩니다.",
@@ -5649,7 +5571,6 @@
       },
       "areas": {
         "title": "무엇을 관심 있게 보고 싶으신가요?",
-        "body": "원하는 만큼 고르세요. 어떤 모듈을 켤지와 대시보드에 먼저 보일 내용이 정해집니다.",
         "options": {
           "blood-pressure": "혈압",
           "weight-body": "체중과 신체",
@@ -5662,18 +5583,7 @@
           "illness": "질병과 증상"
         }
       },
-      "medication": {
-        "title": "정해진 일정에 따라 약을 복용하시나요?",
-        "body": "일정이 있으면 복약 모듈이 켜져요. 알림은 첫 약을 추가할 때 설정할 수 있어요.",
-        "options": {
-          "yes": "예",
-          "no": "아니요",
-          "sometimes": "가끔"
-        }
-      },
       "sources": {
-        "title": "현재 측정값은 어디에서 오나요?",
-        "body": "원하는 만큼 고르세요. 마지막에 연결 하나를 안내하며, 필수는 아닙니다.",
         "options": {
           "manual": "직접 입력합니다",
           "apple-health": "iPhone의 Apple 건강",
@@ -5686,152 +5596,21 @@
           "strava": "Strava",
           "nightscout": "Nightscout",
           "file": "이미 가지고 있는 파일"
-        },
-        "hints": {
-          "apple-health": "iOS 앱이 동기화하거나 내보내기 파일에서 가져옵니다.",
-          "file": "여기서 마친 뒤 설정에서 가져옵니다.",
-          "fitbit": "이제 Google Health를 통해 연결됩니다."
-        }
-      },
-      "visit": {
-        "title": "예정된 진료가 있나요?",
-        "body": "진료가 있으면 진료용 리포트가 켜지고 준비 항목이 체크리스트에 추가됩니다.",
-        "options": {
-          "within-a-month": "예, 한 달 안에",
-          "later": "나중에",
-          "no": "아니요"
         }
       },
       "units": {
-        "title": "지역과 단위",
-        "body": "하루의 기준과 알림 시간은 시간대를 따릅니다. 측정값은 한 번 저장되고 선택한 단위로 표시됩니다. 모두 나중에 설정에서 바꿀 수 있습니다.",
         "glucoseLegend": "혈당",
         "weightLegend": "체중과 키",
         "options": {
           "metric": "kg과 cm",
           "imperial": "lb와 ft/in"
-        },
-        "timezoneHint": "이 계정의 값을 가져왔습니다. 하루, 차트, 알림이 이 시간대를 따릅니다.",
-        "registryLegend": "첨부문서를 찾을 의약품 등록처"
-      },
-      "confirm": {
-        "title": "답변으로 켜지는 항목입니다",
-        "body": "한 번 확인하면 HealthLog 설정이 끝납니다. 여기서 확정되는 것은 없습니다.",
-        "modulesTitle": "모듈",
-        "switchedOn": "켜짐: {modules}.",
-        "nothingExtra": "답변으로 추가 모듈이 켜지지는 않습니다. 기본 측정값은 항상 있습니다.",
-        "alwaysOn": "항상 켜짐: {modules}, 그리고 기본 측정값(체중, 혈압, 맥박).",
-        "everythingElse": "나머지는 한 번의 클릭으로 열 수 있습니다:",
-        "modulesLink": "설정, 모듈",
-        "switchesOff": "탐색에서 빠집니다: {modules}. 설정, 모듈에서 언제든 다시 켤 수 있습니다.",
-        "glucoseUnit": "혈당",
-        "unitPreference": "단위",
-        "language": "언어",
-        "timezone": "시간대",
-        "changeInSettings": "설정, 계정에서 변경",
-        "cta": "확인하고 계속",
-        "managedTitle": "내가 돌보는 사람",
-        "managedBody": "이 기록에는 별도의 로그인이 없으며 내 계정에서 관리합니다. 만들려면 내 계정에 2차 인증 또는 패스키가 필요합니다.",
-        "managedCreate": "프로필 만들고 마치기",
-        "managedLater": "나중에 설정, 공유 접근에서 만들 수도 있습니다.",
-        "finishWithoutProfile": "프로필 없이 마치기"
-      },
-      "first-result": {
-        "connect-source": {
-          "title": "{target} 연결",
-          "body": "답변을 바탕으로 고른 연결 하나입니다. 이후 측정값은 저절로 들어옵니다.",
-          "howTo": "{target} 연결은 연동 페이지에서 합니다. 마친 뒤 이곳으로 돌아오면 이 화면이 연결을 감지합니다.",
-          "cta": "{target} 연결",
-          "checking": "연결을 확인하는 중입니다.",
-          "waiting": "아직 연결되지 않았습니다.",
-          "openSettings": "설정 > 연동 열기",
-          "noDate": "알 수 없음",
-          "throughGoogleHealth": "{source} 데이터는 이제 {target}를 통해 들어옵니다. 기존 {source} 연결은 종료되었습니다. {source}에 로그인한 Google 계정으로 {target}를 연결하면 측정값이 그곳에서 들어옵니다.",
-          "needsCredentials": {
-            "title": "이 인스턴스에는 아직 {target} 앱이 등록되어 있지 않습니다.",
-            "detail": "설정 > 연동에서 직접 발급받은 인증 정보를 입력하면 연결을 시작할 수 있습니다."
-          },
-          "state": {
-            "pending_first_sync": {
-              "title": "{target}이(가) 연결되었습니다.",
-              "detail": "첫 동기화가 진행 중입니다. 값이 도착하는 대로 대시보드에 표시됩니다."
-            },
-            "fresh": {
-              "title": "{target}은(는) 이미 연결되어 있습니다.",
-              "detail": "마지막 값 {when}. 여기서 더 할 일은 없습니다."
-            },
-            "stale": {
-              "title": "{target}은(는) 연결되어 있지만 지금은 값이 들어오지 않습니다.",
-              "detail": "마지막 값 {when}. 연결 자체에는 문제가 없습니다."
-            },
-            "stalled": {
-              "title": "{target}은(는) 연결되어 있지만 동기화가 멈췄습니다.",
-              "detail": "마지막 시도 {when}. 설정 > 연동에서 연결을 확인하세요."
-            },
-            "failing": {
-              "title": "{target}은(는) 연결되어 있지만 동기화가 계속 실패합니다.",
-              "detail": "{when} 이후로 아무것도 들어오지 않았습니다. 설정 > 연동에서 연결을 확인하세요."
-            },
-            "reauth_required": {
-              "title": "{target} 연결을 갱신해야 합니다.",
-              "detail": "한 번 다시 로그인하면 값이 계속 들어옵니다."
-            },
-            "parked": {
-              "title": "{target} 연결이 일시 중지되었습니다.",
-              "detail": "설정 > 연동에서 연결을 확인하세요."
-            }
-          }
-        },
-        "add-medication": {
-          "title": "첫 약 추가하기",
-          "body": "이름, 용량, 일정을 입력하면 알림이 그 일정을 따릅니다.",
-          "howTo": "약은 몇 단계로 짧게 추가합니다. 나중에 복약 페이지에서 더 추가할 수 있습니다.",
-          "cta": "약 추가",
-          "done": "{name}이(가) 추가되었습니다.",
-          "doneUnnamed": "첫 약이 추가되었습니다.",
-          "nextDose": "다음 복용: {when}.",
-          "reminders": "알림은 설정한 일정을 따릅니다.",
-          "recordOnly": "기록으로만 남겨요: 알림도, 예정된 복용도 없어요.",
-          "asNeeded": "필요시: 알림 없이, 복용할 때 기록하세요."
-        },
-        "log-reading": {
-          "title": "측정값 하나 입력: {target}",
-          "body": "측정값 하나로 대시보드에 첫 값이 표시됩니다. 다섯 번째부터는 추세가 저절로 그려집니다.",
-          "done": "첫 측정값이 타일에 표시되었습니다.",
-          "doneElsewhere": "{target}의 첫 기록이 저장되었습니다.",
-          "elsewhere": "{target}에는 전용 페이지가 있습니다. 열어서 첫 기록을 남긴 뒤 여기로 돌아와 완료로 표시하세요.",
-          "open": "{target} 열기",
-          "markDone": "기록을 남겼습니다"
         }
       },
-      "done": {
-        "tourCta": "짧은 둘러보기",
-        "openRecord": "{name}의 기록 열기",
-        "createProfile": "내가 돌보는 사람의 프로필 만들기"
-      },
       "reminders": {
-        "title": "알림을 어디로 받을까요?",
-        "body": "이 서버가 알림을 보낼 수 있는 방법입니다. 하나, 여러 개를 설정하거나 지금은 건너뛰어도 됩니다.",
-        "app": "iPhone 앱을 쓰시나요? 앱이 자체 알림을 보내므로 이 단계는 건너뛰어도 됩니다."
+        "title": "알림을 어디로 받을까요?"
       },
       "ai": {
-        "title": "코치를 사용할까요?",
-        "body": "코치는 AI 모델로 측정값에 관한 질문에 답합니다.",
-        "whereServer": "질문하면 질문과 필요한 측정값이 이 서버의 계정을 통해 {providers}(으)로 전송됩니다.",
-        "whereOwn": "질문하면 질문과 필요한 측정값이 직접 키로 설정한 AI 서비스로 전송됩니다.",
-        "whereLocal": "질문하면 질문과 필요한 측정값이 직접 운영하는 모델로 전송됩니다.",
-        "whereNone": "아직 설정된 AI 서비스가 없어서 코치가 답할 수 없습니다.",
-        "setUp": "AI 설정",
-        "nothingUntilAsked": "질문하기 전에는 아무것도 전송되지 않습니다.",
-        "options": {
-          "yes": "예, 코치를 사용합니다",
-          "no": "아니요, 끄겠습니다"
-        },
-        "hints": {
-          "yes": "언제든 측정값에 대해 물어볼 수 있습니다.",
-          "no": "코치가 사라집니다. 나머지는 그대로 작동합니다."
-        },
-        "later": "언제든 설정의 AI에서 바꿀 수 있습니다."
+        "title": "코치를 사용할까요?"
       }
     }
   },
@@ -6077,9 +5856,7 @@
       },
       "integrations": {
         "title": "연동",
-        "connectionsHeading": "연결",
-        "channelsHeading": "전송 채널",
-        "matrixLink": "채널별 알림"
+        "channelsHeading": "전송 채널"
       },
       "notifications": {
         "title": "알림",
@@ -7584,9 +7361,7 @@
       "description": "이 계정에 설정돼 있지만 전용 설정 카드는 없어요."
     },
     "healthConnectFolder": {
-      "name": "폴더에서 Health Connect 가져오기",
-      "description": "6시간마다 WebDAV 또는 Nextcloud 폴더에서 가져와요. 설정과 변경은 불러오기에서 해요.",
-      "manage": "폴더 설정 열기"
+      "name": "폴더에서 Health Connect 가져오기"
     },
     "healthConnectApp": {
       "connect": "Android 기기 연결",
@@ -7596,39 +7371,25 @@
       "qrAlt": "HealthLog Sync용 QR 코드",
       "preview": "Android용 HealthLog Sync, 미리 보기",
       "disconnectTitle": "{device} 연결을 해제할까요?",
-      "disconnectBody": "다시 연결할 때까지 휴대폰이 동기화하지 않습니다."
+      "disconnectBody": "다시 연결할 때까지 휴대폰이 동기화하지 않습니다.",
+      "name": "HealthLog Sync"
     },
     "withingsViewData": "측정값 보기",
     "whoopViewData": "회복도 보기",
     "googleHealthViewData": "걸음 수 보기",
-    "apiTokens": "API 토큰",
     "measurementsToken": {
-      "title": "측정 토큰",
-      "description": "체중계나 시계, 식단 기록 앱, 홈 오토메이션이 측정값, 사용자 지표 값, 하루 영양소 합계를 기록할 수 있도록 토큰을 만들어요.",
-      "scopeNote": "본인 기록에 측정값을, 이미 만든 사용자 지표에 값을, 영양소 모듈이 켜져 있는 동안 하루 영양소 합계를 추가하는 것만 할 수 있어요. 무엇도 읽거나 고치거나 지울 수 없어요. 측정값과 영양소 합계는 외부에서 온 것으로 표시돼요. 사용자 지표의 ID는 지표 페이지 주소에서 /custom-metrics/ 뒤에 오는 부분이에요.",
-      "nutrientsLink": "영양소 섭취 보기",
-      "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요.",
       "namePlaceholder": "이름 (예: Home Assistant)",
       "appleHealth": {
         "label": "측정값을 Apple Health에 기록",
         "createHint": "그러면 iPhone의 HealthLog 앱이 이 토큰의 측정값을 Apple Health에 추가해요.",
-        "toggleAria": "{name}의 측정값을 Apple Health에 기록",
         "updateFailed": "Apple Health 설정을 바꾸지 못했어요. 다시 시도해 주세요.",
         "unattributed": "이 설정이 생기기 전에 보낸 측정값은 토큰과 연결할 수 없어서 Apple Health에 기록되지 않아요."
       }
     },
     "workoutsToken": {
-      "title": "운동 토큰",
-      "description": "시계 연동 브리지나 동기화 스크립트가 운동 기록을 추가할 수 있도록 토큰을 만들어요.",
-      "scopeNote": "본인 기록에 새 운동을 추가하는 것만 할 수 있어요. 데이터를 읽거나, 무언가를 고치거나 지우거나, 다른 토큰을 만들 수는 없어요. 이 토큰으로 추가된 운동은 외부 기기에서 온 것으로 표시되고, 휴대폰이 같은 운동을 기록했다면 휴대폰의 기록이 보여요.",
-      "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요.",
       "namePlaceholder": "이름 (예: Garmin)"
     },
     "documentsToken": {
-      "title": "문서 토큰",
-      "description": "Paperless-ngx, Papra 또는 가져오기 스크립트가 문서함에 문서를 추가할 수 있도록 토큰을 만들어요.",
-      "scopeNote": "본인 문서함에 새 문서를 추가하는 것만 할 수 있어요. 목록을 보거나, 열거나, 내려받거나, 고치거나 지울 수 없고, 다른 토큰을 만들 수도 없어요. 파일이 저장됐는지만 알 수 있고, 어떻게 정리했는지는 알 수 없어요.",
-      "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요.",
       "namePlaceholder": "이름 (예: Paperless-ngx)"
     },
     "tokenCreated": "토큰을 만들었어요. 지금 복사하세요! 다시 보여주지 않아요.",
@@ -7646,17 +7407,11 @@
     "revokedTokensTitle": "폐기된 토큰 ({count})",
     "tokenTableName": "이름",
     "tokenTablePermissions": "권한",
-    "tokenTableStatus": "상태",
     "tokenTableCreated": "생성일",
     "tokenTableLastUsed": "마지막 사용",
     "tokenTableActions": "작업",
     "noActiveTokens": "사용 중인 토큰이 없어요.",
     "tokenNeverUsed": "없음",
-    "apiEndpointsTitle": "API 엔드포인트",
-    "apiEndpointMethod": "메서드",
-    "apiEndpointPath": "경로",
-    "apiEndpointAuth": "인증",
-    "apiEndpointExample": "본문 예시",
     "dangerZone": "모든 데이터 삭제",
     "dangerZoneDescription": "건강 기록 전체와 모든 연동 연결을 지워요.",
     "dangerZoneConfirm": "모든 데이터를 삭제할까요?",
@@ -8481,7 +8236,115 @@
     },
     "passkeyRenameFailed": "패스키 이름을 변경하지 못했어요.",
     "passkeyRemoveFailed": "패스키를 삭제하지 못했어요.",
-    "apiEndpointsShow": "엔드포인트 보기"
+    "integrationList": {
+      "channels": "전송 채널",
+      "sources": "데이터 소스",
+      "addTitle": "추가",
+      "allAdded": "이 서버가 제공하는 항목이 모두 설정되었습니다.",
+      "noSources": "아직 데이터 소스가 없습니다",
+      "noChannels": "아직 전달 채널이 없습니다",
+      "ownCredentials": "자체 앱 자격 증명 필요",
+      "syncNow": "지금 동기화",
+      "lastAt": "최근: {when}",
+      "never": "아직 없음",
+      "apns": "iPhone 앱",
+      "facts": {
+        "status": "상태",
+        "reason": "이유",
+        "lastSync": "마지막 동기화",
+        "lastDelivery": "마지막 전달",
+        "brings": "가져오는 데이터",
+        "delivers": "전달 대상",
+        "lastFailure": "마지막 실패",
+        "lastFailureWith": "{when}, {reason}",
+        "setup": "설정"
+      },
+      "reason": {
+        "dataArriving": "데이터 수신 중",
+        "firstSyncPending": "첫 동기화 대기 중",
+        "planLimited": "요금제에 일부 데이터 없음",
+        "permissionLimited": "일부 권한 없음",
+        "providerErrors": "제공업체 응답 불안정",
+        "syncStalled": "동기화 중단됨",
+        "noNewData": "새 데이터 없음",
+        "unexpectedSilence": "한동안 데이터 없음",
+        "reauthRequired": "로그인 만료",
+        "pausedAfterErrors": "오류 후 일시 중지됨",
+        "notConnected": "연결되지 않음",
+        "paused": "일시 중지됨",
+        "switchedOff": "꺼짐",
+        "autoDisabled": "거부 후 꺼짐",
+        "sendingPaused": "전송 일시 중지됨",
+        "deliveryFailing": "마지막 전달 실패"
+      },
+      "brings": {
+        "appleHealth": "iPhone 앱을 통해 건강 앱의 모든 데이터",
+        "withings": "체중, 혈압, 수면",
+        "whoop": "회복, 수면, 스트레인",
+        "googleHealth": "Fitbit 및 Pixel Watch",
+        "garmin": "수면, HRV, 스트레스, 활동",
+        "oura": "준비도, 수면, HRV",
+        "polar": "회복, 수면, 운동",
+        "strava": "활동을 운동으로",
+        "nightscout": "연속 혈당",
+        "dawarich": "맥락을 위한 장소와 경로",
+        "healthConnectFolder": "WebDAV 또는 Nextcloud의 Health Connect 내보내기",
+        "documentSources": "Paperless-ngx 또는 Papra의 문서",
+        "telegram": "내 봇을 통한 Telegram 채팅",
+        "ntfy": "ntfy 토픽",
+        "webPush": "이 브라우저",
+        "webhook": "내 주소로 보내는 JSON",
+        "email": "이메일 알림",
+        "apns": "iPhone 알림",
+        "healthConnectApp": "Android 앱을 통한 Health Connect"
+      }
+    },
+    "tokenList": {
+      "title": "토큰",
+      "newToken": "새 토큰",
+      "empty": "아직 토큰이 없습니다",
+      "caption": "내 토큰",
+      "scopeColumn": "접근",
+      "more": "더 보기",
+      "scopeMoreLabel": "이 접근으로 할 수 있는 일",
+      "mirrorMoreLabel": "Apple 건강에 기록한다는 의미",
+      "revoked": "취소됨",
+      "hideRevoked": "취소된 토큰 숨기기",
+      "menuLabel": "{name} 작업",
+      "copied": "복사됨",
+      "scope": {
+        "all": "전체 접근",
+        "measurements": "측정값",
+        "workouts": "운동",
+        "documents": "문서",
+        "medication": "약",
+        "mcpRead": "MCP, 읽기",
+        "mcpWrite": "MCP, 쓰기",
+        "fhir": "FHIR",
+        "profile": "프로필"
+      },
+      "scopeInfo": {
+        "measurements": "측정값, 사용자 지표 값, 일일 영양소 합계를 기록에 추가합니다. 읽기, 변경, 삭제는 할 수 없습니다.",
+        "workouts": "새 운동을 기록에 추가합니다. 읽기, 변경, 삭제는 할 수 없습니다.",
+        "documents": "새 문서를 보관함에 추가합니다. 목록 보기, 열기, 변경, 삭제는 할 수 없습니다."
+      },
+      "create": {
+        "failed": "토큰을 만들지 못했습니다. 다시 시도하세요.",
+        "createdTitle": "토큰 생성됨",
+        "done": "완료",
+        "shownOnce": "토큰은 지금만 표시됩니다.",
+        "expiry": "유효 기간",
+        "expiryYear": "1년",
+        "expiryDays": "{days, plural, other {#일}}"
+      },
+      "api": {
+        "title": "API",
+        "address": "주소",
+        "copyAddress": "API 주소 복사",
+        "endpoints": "엔드포인트",
+        "openReference": "참조 열기"
+      }
+    }
   },
   "admin": {
     "title": "관리자",
@@ -9681,8 +9544,6 @@
       },
       "question": {
         "title": "HealthLog 푸시 릴레이를 사용할까요?",
-        "askTitle": "푸시 릴레이로 알림을 받을까요?",
-        "askBody": "내용은 암호화된 채로 유지됩니다.",
         "body": "App Store 앱을 위한 종단간 암호화 알림으로, 릴레이는 알림이 언제 보내지는지만 봅니다.",
         "yes": "예",
         "no": "아니요",
@@ -9763,71 +9624,11 @@
       "deliverySummary": "전송 세부 정보"
     },
     "serverSetup": {
-      "stepsLabel": "서버 설정 단계",
-      "finish": "완료",
-      "steps": {
-        "accounts": "계정",
-        "notifications": "알림",
-        "ai": "AI",
-        "privacy": "개인정보",
-        "health": "점검"
-      },
       "notice": {
         "title": "이 서버 설정하기",
         "body": "가입, 알림, AI, 개인정보에 관한 짧은 다섯 단계이며, 어느 단계든 건너뛰거나 나중에 바꿀 수 있습니다.",
-        "bodyShort": "가입, 알림, AI, 개인정보에 관한 짧은 다섯 단계입니다.",
         "open": "설정 시작",
         "dismiss": "나중에"
-      },
-      "accounts": {
-        "title": "이 서버를 사용할 수 있는 사람",
-        "body": "사람들이 직접 가입할 수 있는지, 모든 계정에 2단계 인증이 필요한지 정하세요.",
-        "invites": "가입을 닫아도 초대 링크로는 계속 참여할 수 있습니다.",
-        "invitesLink": "초대 만들기"
-      },
-      "notifications": {
-        "title": "알림이 서버를 나가는 방법",
-        "body": "사용할 수 있는 채널을 정하세요. HealthLog 푸시 릴레이는 직접 켜기 전까지 꺼져 있습니다."
-      },
-      "ai": {
-        "title": "AI가 할 수 있는 일",
-        "body": "AI는 선택 사항입니다. HealthLog는 AI 없이도 모든 기능이 작동합니다.",
-        "off": "끄기: 어떤 AI 서비스로도 아무것도 전송되지 않습니다.",
-        "ownKey": "개인 키: 사용자의 질문과 필요한 측정값이 그 사용자가 설정한 제공자로 전송됩니다.",
-        "serverKey": "이 서버의 키: 질문과 측정값이 여기서 설정한 제공자로 전송되며, 각 사용자에게 먼저 동의를 받습니다.",
-        "local": "로컬 모델: 모든 것이 사용자가 지정한 모델, 즉 내 네트워크 안에 머뭅니다.",
-        "docs": "AI 제공자 작동 방식"
-      },
-      "privacy": {
-        "title": "그 밖에 서버를 나가는 것",
-        "body": "알림과 AI 외에도 세 가지가 데이터를 외부로 보낼 수 있습니다. 모두 직접 결정합니다.",
-        "geoTitle": "로그인 위치",
-        "geoDescription": "IP 주소로 로그인 위치를 알아내는 방법입니다.",
-        "geoBody": "GeoLite2 데이터베이스를 마운트하면 조회가 이 서버에서 이루어집니다. 없으면 모든 로그인 주소가 온라인 서비스로 전송됩니다. IP_GEO_LOOKUP_DISABLED=1로 조회를 끌 수 있습니다.",
-        "geoDocs": "로컬 데이터베이스 설정",
-        "geoLoadError": "조회 설정을 읽을 수 없습니다.",
-        "docs": "HealthLog가 무엇을 어디로 보내는지"
-      },
-      "health": {
-        "title": "설정 점검",
-        "body": "이 서버가 어떻게 설정되어 있는지 읽기 전용으로 보여 줍니다. 관리자 콘솔의 시스템 상태에 계속 남아 있습니다.",
-        "keys": "암호화 키가 있어야만 백업 속 데이터를 읽을 수 있습니다. 이 서버가 아닌 다른 곳에 사본을 보관하세요."
-      },
-      "facts": {
-        "title": "서버 환경 설정",
-        "description": "여기가 아니라 환경 변수에서 설정합니다. 그곳에서 바꾸고 다시 시작하세요.",
-        "oidc": "통합 로그인(OIDC)",
-        "oidcOn": "설정됨, 비밀번호 및 패스키와 함께",
-        "oidcOnly": "설정됨, 유일한 로그인 방법",
-        "oidcOff": "설정 안 됨",
-        "oidcDocs": "통합 로그인 설정",
-        "smtp": "이메일(SMTP)",
-        "smtpOn": "설정됨",
-        "smtpMissing": "설정 안 됨, 누락: {names}",
-        "telegram": "Telegram 응답",
-        "telegramOn": "웹훅 비밀 설정됨",
-        "telegramOff": "웹훅 비밀이 없어 Telegram 메시지의 버튼이 응답하지 않습니다",
-        "channelsDocs": "채널 작동 방식"
       }
     },
     "setupHealth": {
@@ -13767,7 +13568,6 @@
       },
       "syncIssue": {
         "title": "동기화 확인이 필요해요",
-        "askTitle": "동기화 중단",
         "body": "{integration} 동기화가 멈췄어요. 데이터를 최신으로 유지하려면 다시 연결해 주세요."
       },
       "sourceQuiet": {
@@ -13821,7 +13621,6 @@
       "logDose": "복용",
       "later": "나중에",
       "answer": "답하기",
-      "learnMore": "더 보기",
       "open": "열기",
       "setUp": "설정",
       "reconnectShort": "다시 연결",
@@ -13835,6 +13634,23 @@
       "viewEcg": "기록 보기",
       "viewSteps": "걸음 수 보기",
       "openSource": "열기"
+    },
+    "ask": {
+      "medication": "약",
+      "overdue": "{time}부터 지남",
+      "overdueNow": "시간 지남",
+      "due": "{time} 복용 예정",
+      "dueNow": "지금 복용",
+      "checkupDue": "건강검진 시기",
+      "visitToday": "오늘 진료",
+      "visitTomorrow": "내일 진료",
+      "signedOut": "연결 끊김",
+      "planFallback": "내 계획",
+      "planReview": "점검할 때예요",
+      "setupTitle": "이 서버",
+      "setupMeta": "설정 안 됨",
+      "relayTitle": "푸시 릴레이?",
+      "relayMeta": "암호화됨"
     },
     "today": {
       "deltaShort": "기준값 대비 {delta}",
@@ -16492,6 +16308,216 @@
       "needAfter": "비교하려면 시작 후 값이 더 필요해요.",
       "needStart": "전후를 비교하려면 시작일을 입력하세요.",
       "needData": "비교하려면 값이 더 필요해요."
+    }
+  },
+  "setup": {
+    "finishLater": "나중에 마치기",
+    "backToSetup": "설정으로 돌아가기",
+    "notNow": "나중에",
+    "later": "나중에",
+    "done": "완료",
+    "yes": "예",
+    "no": "아니요",
+    "person": {
+      "segments": {
+        "you": "나",
+        "profile": "프로필",
+        "sources": "소스",
+        "reminders": "알림",
+        "ai": "AI"
+      },
+      "areas": {
+        "body": "원하는 만큼 고르세요. 고른 항목에 따라 켜지는 모듈이 정해집니다."
+      },
+      "units": {
+        "title": "지역 및 단위",
+        "body": "앱 전체의 날짜, 시간, 단위가 이 설정을 따릅니다.",
+        "name": "표시 이름",
+        "timezoneHint": "이 브라우저에서 가져왔습니다."
+      },
+      "profile": {
+        "title": "다른 사람의 프로필 만들기",
+        "body": "내 계정에서 관리하는 별도의 기록입니다.",
+        "create": "프로필 만들기"
+      },
+      "sources": {
+        "title": "측정값을 가져올 곳을 연결하세요",
+        "body": "연결하면 이후에는 각각 알아서 동기화됩니다.",
+        "connect": "연결",
+        "connected": "연결됨",
+        "chooseFile": "파일 선택",
+        "showCode": "코드 보기",
+        "hideCode": "코드 숨기기",
+        "scan": "iPhone 카메라로 스캔해 앱을 받으세요",
+        "signInWith": "그다음 앱에서 {address}에 로그인하세요.",
+        "qrAlt": "App Store의 HealthLog 앱 QR 코드",
+        "adminMore": "Withings, Oura 및 기타 서비스 추가",
+        "names": {
+          "withings": "Withings",
+          "oura": "Oura",
+          "whoop": "WHOOP",
+          "polar": "Polar",
+          "google-health": "Google Health",
+          "strava": "Strava"
+        },
+        "hints": {
+          "apple-health": "iPhone 앱을 통해",
+          "withings": "체중계와 혈압계",
+          "oura": "링",
+          "whoop": "밴드",
+          "polar": "시계와 가슴 스트랩",
+          "google-health": "Fitbit 및 Pixel Watch",
+          "strava": "운동",
+          "file": "CSV 또는 Apple Health 내보내기"
+        }
+      },
+      "reminders": {
+        "body": "지금은 한 가지 방법을 고르세요. 나중에 더 추가할 수 있습니다.",
+        "app": "iPhone 앱",
+        "appRelay": "HealthLog 푸시 릴레이를 통해",
+        "appLocal": "앱이 iPhone에서 직접 알려 줍니다",
+        "browser": "이 브라우저",
+        "browserHint": "계속하면 권한을 요청합니다",
+        "tokens": "Telegram과 ntfy는 토큰이 필요해서 설정 목록에서 기다립니다."
+      },
+      "ai": {
+        "whereServer": "이 경우 측정값은 이 서버의 계정을 통해 {providers}(으)로 전송되며, 분석과 질문 답변에 쓰입니다.",
+        "whereOwn": "이 경우 측정값은 직접 키로 설정한 AI 서비스로 전송되며, 분석과 질문 답변에 쓰입니다.",
+        "whereLocal": "이 경우 측정값은 직접 운영하는 모델로 전송되며, 분석과 질문 답변에 쓰입니다."
+      }
+    },
+    "server": {
+      "segments": {
+        "account": "계정",
+        "signups": "가입",
+        "relay": "알림",
+        "ai": "AI",
+        "recovery": "복구 키트"
+      },
+      "claim": {
+        "body": "서버는 시작할 때마다 설정 코드를 로그에 기록합니다. 또는 환경 변수에 설정한 SETUP_TOKEN이 설정 코드입니다.",
+        "accepted": "설정 코드가 확인되었습니다. 이제 관리자 계정을 만듭니다.",
+        "sso": "통합 로그인으로 계속"
+      },
+      "account": {
+        "body": "이 계정은 서버를 관리하며 자체 기록도 가집니다.",
+        "create": "계정 만들기"
+      },
+      "factor": {
+        "title": "2단계 인증 수단 추가",
+        "due": "관리자 계정은 {date}까지 추가해야 합니다.",
+        "body": "누군가 비밀번호를 알게 되어도 계정을 안전하게 지켜 줍니다.",
+        "passkey": "패스키",
+        "passkeyHint": "Face ID, Touch ID, Windows Hello 또는 보안 키",
+        "totp": "인증 앱",
+        "totpHint": "휴대폰 앱의 6자리 코드",
+        "password": "확인을 위한 비밀번호",
+        "addPasskey": "패스키 추가",
+        "addTotp": "앱 설정",
+        "scan": "인증 앱으로 코드를 스캔하거나 아래 키를 입력하세요.",
+        "code": "앱의 코드",
+        "confirm": "확인"
+      },
+      "signups": {
+        "title": "누가 계정을 만들 수 있나요?",
+        "body": "바꾸기 전까지는 초대한 사람만 가능합니다.",
+        "invited": "초대한 사람만",
+        "invitedHint": "각자에게 링크를 보냅니다",
+        "anyone": "이 서버에 접속할 수 있는 누구나"
+      },
+      "relay": {
+        "yesHint": "iPhone의 알림, 실시간 현황, Wallet 카드",
+        "noHint": "알림은 iPhone 자체에서만 울립니다",
+        "unavailable": "이 서버는 릴레이 없이 푸시를 보내므로 여기서 정할 것이 없습니다.",
+        "decidedOn": "이 서버는 릴레이를 사용합니다. 관리자, 푸시와 채널에서 바꿀 수 있습니다.",
+        "decidedOff": "이 서버는 릴레이를 사용하지 않습니다. 관리자, 푸시와 채널에서 바꿀 수 있습니다.",
+        "body": "App Store 앱용 알림입니다.",
+        "more": "더 보기",
+        "detail": "종단 간 암호화: 릴레이는 알림이 언제 전송되는지만 봅니다."
+      },
+      "ai": {
+        "title": "이 서버에서 AI를 제공할까요?",
+        "body": "각자 자신에 대해서는 여전히 거절할 수 있습니다.",
+        "off": "끔",
+        "own": "각자 자신의 키 사용",
+        "ownHint": "설정, AI에서 추가",
+        "server": "모두를 위한 하나의 키",
+        "serverHint": "이 서버의 계정으로 청구",
+        "provider": "제공자",
+        "key": "API 키",
+        "test": "테스트",
+        "testOk": "키가 작동합니다",
+        "testFailed": "제공자가 응답하지 않았습니다."
+      },
+      "recovery": {
+        "title": "복구 키트 보관하기",
+        "body": "이 키가 없으면 다시 설치한 서버가 자신의 데이터를 열 수 없습니다.",
+        "guide": "키를 보관하는 방법",
+        "kept": "각 키의 사본을 이 서버가 아닌 다른 곳에 보관하고 있습니다."
+      }
+    },
+    "card": {
+      "title": "설정 마치기",
+      "progress": "{total}개 중 {done}개 완료",
+      "showDone": "{count, plural, other {완료된 항목 #개 보기}}",
+      "hideDone": "완료된 항목 숨기기",
+      "hide": "이 카드 숨기기"
+    },
+    "admin": {
+      "title": "서버 설정",
+      "cardTitle": "첫 시작",
+      "progress": "{total}개 중 {done}개 결정됨.",
+      "resume": "서버 설정 계속하기",
+      "loadError": "설정을 불러오지 못했습니다.",
+      "link": "서버 설정"
+    },
+    "tasks": {
+      "requiredHere": "이 서버에서 필수",
+      "person": {
+        "resume": "설정 계속하기",
+        "medication": "첫 약 추가",
+        "second-factor": "2단계 인증 수단 추가",
+        "about-you": "병력",
+        "about-youSub": "키, 생년월일, 성별",
+        "reading": "첫 측정 기록",
+        "source": "데이터 소스 연결",
+        "second-channel": "알림을 받을 두 번째 방법",
+        "second-channelSub": "Telegram 또는 ntfy",
+        "coach": "코치",
+        "managed-profile": "돌보는 사람의 프로필 만들기"
+      },
+      "instance": {
+        "second-factor": "2단계 인증 수단",
+        "signups": "가입",
+        "relay": "푸시 릴레이",
+        "ai": "AI",
+        "recovery": "복구 키트",
+        "recoveryKeyAdded": "보관한 뒤 키가 추가되었습니다",
+        "email": "이메일",
+        "sso": "통합 로그인",
+        "services": "Withings, Oura 및 기타 서비스",
+        "backups": "외부 백업",
+        "error-reporting": "오류 보고"
+      }
+    },
+    "values": {
+      "on": "켬",
+      "off": "끔",
+      "passkey": "패스키",
+      "authenticator": "인증 앱",
+      "invited": "초대한 사람만",
+      "anyone": "누구나",
+      "own-keys": "개인 키",
+      "server-key": "모두를 위한 하나의 키",
+      "central-account": "중앙 계정",
+      "saved": "보관됨",
+      "key-added": "미완료",
+      "add-key": "내 키 추가",
+      "done": "완료",
+      "notSetUp": "설정 안 됨",
+      "continue": "계속",
+      "count": "{done}/{total}",
+      "until": "{date}까지"
     }
   },
   "pageCustomize": {

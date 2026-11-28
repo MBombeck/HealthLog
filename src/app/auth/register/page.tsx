@@ -14,10 +14,8 @@ import { useTranslations } from "@/lib/i18n/context";
 import { detectBrowserTimezone } from "@/lib/tz/format";
 import { ApiError, apiPost } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
-import {
-  FirstAccountSetupCard,
-  useFirstAccountSetupPending,
-} from "@/components/auth/first-account-setup";
+import { OwnerSetup } from "@/components/auth/owner-setup";
+import { useRegistrationStatus } from "@/hooks/use-registration-status";
 import {
   clearCachesForSessionEnd,
   signOutRequest,
@@ -46,7 +44,10 @@ export default function RegisterPage() {
   // endpoint that is failing. A payload in hand is the only positive evidence
   // of a session, and it is absent while the probe is in flight.
   const { user } = useAuth();
-  const setupPending = useFirstAccountSetupPending();
+  // 1.50 — a server without an account: the owner setup instead of the
+  // form (the setup code, then the owner account, as the server setup's
+  // first step).
+  const { data: registrationStatus } = useRegistrationStatus();
   const [signingOut, setSigningOut] = useState(false);
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -169,7 +170,9 @@ export default function RegisterPage() {
     );
   }
 
-  if (setupPending) return <FirstAccountSetupCard />;
+  if (registrationStatus?.setupRequired) {
+    return <OwnerSetup proven={registrationStatus.setupProven} />;
+  }
   return (
     <div className="w-full max-w-sm">
       {/* v1.4.27 — drop `p-8` to `p-6 sm:p-8` so the

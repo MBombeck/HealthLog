@@ -6,7 +6,7 @@
  * carries only the source key and the client builds the same path, as the
  * `notifications.sync-stalled` feature doc publishes. Three things can drift
  * apart without any other test noticing: the set of sources that can stall,
- * the anchor a source's card carries on the integrations page, and the key
+ * the anchor that opens a source's sheet on the integrations page, and the key
  * the iOS metadata filter lets through. A missing anchor would open the page
  * at its top; a key the filter drops would leave a relay push without a
  * source to build the link from.
@@ -17,11 +17,22 @@ import { pickIosMetadata } from "@/lib/notifications/senders/ios-metadata";
 import { SERVER_FEATURE_DOCS } from "@/lib/server-features";
 import { STALL_SOURCES, stallTapUrl } from "@/lib/sync-stall/quiet";
 
-import { readSource } from "./helpers/source-files";
+import { overviewKeyFromHash } from "@/components/settings/integrations/integration-registry";
+import {
+  OVERVIEW_SOURCE_KEYS,
+  resolveSourceItem,
+} from "@/lib/integrations/overview";
 
-const PANEL = readSource(
-  "src/components/settings/integrations/connections-panel.tsx",
-  'data-slot="connections-panel"',
+// Every source as the overview publishes it; the page opens the sheet of the
+// key an anchor names, set up or not.
+const ITEMS = OVERVIEW_SOURCE_KEYS.map((key) =>
+  resolveSourceItem({
+    key,
+    connected: false,
+    configured: false,
+    health: null,
+    offered: true,
+  }),
 );
 
 describe("SYNC_STALLED deep links", () => {
@@ -39,12 +50,15 @@ describe("SYNC_STALLED deep links", () => {
     ]);
   });
 
-  it.each([...STALL_SOURCES])("%s opens its own card", (source) => {
+  it.each([...STALL_SOURCES])("%s opens its own sheet", (source) => {
     expect(stallTapUrl(source)).toBe(`/settings/integrations#${source}`);
     expect(
-      PANEL,
-      `no id="${source}" anchor on the integrations page`,
-    ).toContain(`id="${source}"`);
+      overviewKeyFromHash(
+        new URL(stallTapUrl(source), "https://x").hash,
+        ITEMS,
+      ),
+      `#${source} opens no sheet on the integrations page`,
+    ).toBe(source);
     expect(pickIosMetadata({ source, url: stallTapUrl(source) })).toMatchObject(
       { source },
     );

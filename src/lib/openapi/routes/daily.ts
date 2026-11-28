@@ -95,8 +95,17 @@ const dailyAskSchema = z
       .describe(
         "Stable identity, namespaced `<kind>:...`; the rail item's own key for the rail kinds.",
       ),
-    title: z.string().describe("Localised headline (resolved server-side)."),
-    body: z.string().nullable().describe("One sentence, plain text, or null."),
+    title: z
+      .string()
+      .describe(
+        "The thing asked about, one line: a medication's name, a check-up, who a visit is with, a source, the coach plan's text, or the admin question (`Push relay?`, `This server`). Localised on the server; what the server words itself is at most 14 characters. A name the person typed can be longer; a client cuts only the title, with an ellipsis, and keeps the full text as its accessible name.",
+      ),
+    body: z
+      .string()
+      .nullable()
+      .describe(
+        "The title's state, one short line, never a sentence: `Overdue 8:00 AM` (a dose past its time, `tier: safety`), `Due 8:00 AM`, `Check-up due`, `Visit today` / `Visit tomorrow`, `Disconnected` (a sign-in to renew), `Check-in due`, `Not set up`, `Encrypted` (the relay question). Times are on the reader's own clock and hour cycle; a time that would break the budget is left out (`Overdue`). At most 16 characters in every language, so it fits one line beside the icon and the button pair on a 360 px phone; a client shows it on one line and never wraps or cuts it. Null only from an older server.",
+      ),
     subject: z
       .string()
       .nullable()
@@ -123,7 +132,9 @@ const dailyAskSchema = z
         href: z.string().describe("Documentation page."),
       })
       .nullable()
-      .describe("A link set at the end of `body`, or null."),
+      .describe(
+        "A link set at the end of `body`, or null. Null on every ask since the compact layout (`daily.asks-compact`): the line has no room for it.",
+      ),
   })
   .meta({
     id: "DailyAsk",

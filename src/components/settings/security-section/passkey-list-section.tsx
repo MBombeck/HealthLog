@@ -105,7 +105,10 @@ export function passkeyProofChoices(
  * finishes before the first registration challenge is requested, so a
  * cancelled or failed proof leaves no enrollable challenge behind.
  */
-async function addPasskey(method: ReauthMethod, secret: string): Promise<void> {
+export async function addPasskey(
+  method: ReauthMethod,
+  secret: string,
+): Promise<void> {
   const webauthn = await import("@simplewebauthn/browser");
   let freshFactor: ExistingFactorProof;
 

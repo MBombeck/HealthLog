@@ -806,13 +806,6 @@
   },
   "dashboard": {
     "title": "Tableau de bord",
-    "greeting": {
-      "morning": "Bonjour",
-      "day": "Bonjour",
-      "evening": "Bonsoir"
-    },
-    "welcomeBack": "{greeting}, content de vous revoir.",
-    "welcomeBackWithName": "{greeting}, {name}, content de vous revoir.",
     "greetingSalutation": "Bonjour, {name}",
     "streakLabel": "jours d’affilée",
     "weight": "Poids",
@@ -948,9 +941,6 @@
       "body": "Sans copies des clés utilisées par ce serveur, ses données ne peuvent pas être récupérées après une réinstallation. Ça prend quelques minutes.",
       "action": "Ouvrir le kit"
     },
-    "greetingOnly": "{greeting}.",
-    "welcomeNew": "Bienvenue.",
-    "welcomeNewWithName": "Bienvenue, {name}.",
     "quickAddSeizure": "Enregistrer une crise",
     "morning": {
       "heroItemsTitle": "À faire aujourd'hui",
@@ -4298,6 +4288,16 @@
         "editAction": "Modifier",
         "updated": "Entraînement mis à jour"
       },
+      "load": {
+        "title": "Charge d'entraînement",
+        "fitness": "Condition",
+        "fatigue": "Fatigue",
+        "form": "Fraîcheur",
+        "explainer": "La condition est votre impulsion d'entraînement par fréquence cardiaque moyennée sur environ six semaines, la fatigue sur environ une semaine, et la fraîcheur est la différence. Les chiffres se comparent à votre propre passé, pas à d'autres personnes ni à d'autres apps.",
+        "warmingUp": "Sur {days, plural, one {# jour} other {# jours}} pour l'instant : tant que six semaines ne sont pas couvertes, la condition paraît plus basse qu'elle ne l'est.",
+        "coverage": "{rated} {days, plural, =1 {du dernier jour} other {des # derniers jours}} ont pu être évalués. Un jour sans données d'activité, ou avec un entraînement qui n'a pas pu être évalué, est écarté au lieu de compter comme repos.",
+        "asOf": "Au {date}, le dernier jour qui a pu être évalué."
+      },
       "customize": {
         "calendar": "Calendrier",
         "calendarShows": "Le calendrier affiche"
@@ -4308,16 +4308,6 @@
         "energy": "Énergie",
         "pulse": "Pouls",
         "duration": "Durée"
-      },
-      "load": {
-        "title": "Charge d'entraînement",
-        "fitness": "Condition",
-        "fatigue": "Fatigue",
-        "form": "Fraîcheur",
-        "explainer": "La condition est votre impulsion d'entraînement par fréquence cardiaque moyennée sur environ six semaines, la fatigue sur environ une semaine, et la fraîcheur est la différence. Les chiffres se comparent à votre propre passé, pas à d'autres personnes ni à d'autres apps.",
-        "warmingUp": "Sur {days, plural, one {# jour} other {# jours}} pour l'instant : tant que six semaines ne sont pas couvertes, la condition paraît plus basse qu'elle ne l'est.",
-        "coverage": "{rated} {days, plural, =1 {du dernier jour} other {des # derniers jours}} ont pu être évalués. Un jour sans données d'activité, ou avec un entraînement qui n'a pas pu être évalué, est écarté au lieu de compter comme repos.",
-        "asOf": "Au {date}, le dernier jour qui a pu être évalué."
       }
     },
     "bloodGlucose": {
@@ -5555,85 +5545,17 @@
       "back": "Retour",
       "skip": "Ignorer",
       "next": "Continuer",
-      "stepOf": "Étape {current} sur {total}",
-      "stepsLabel": "Étapes de la configuration"
+      "stepOf": "Étape {current} sur {total}"
     },
     "baseline": {
-      "title": "Quelques informations",
-      "body": "Quatre champs facultatifs affinent vos seuils cibles, l'IMC et les rappels. Tout reste modifiable plus tard dans les paramètres.",
       "displayNameLabel": "Nom d'affichage",
       "displayNamePlaceholder": "Comment HealthLog doit-il vous appeler ?",
-      "displayNameHint": "Apparaît dans le message d'accueil du tableau de bord et dans les rapports.",
-      "heightLabel": "Taille (cm)",
-      "heightLabelFtIn": "Taille (ft, in)",
-      "genderLabel": "Genre",
-      "genderNone": "Préfère ne pas le préciser",
-      "genderMale": "Homme",
-      "genderFemale": "Femme",
-      "genderOther": "Autre",
-      "dateOfBirthLabel": "Date de naissance",
-      "dateOfBirthHint": "Utilisée uniquement pour les analyses qui tiennent compte de l'âge."
-    },
-    "done": {
-      "title": "Tout est prêt",
-      "body": "Bienvenue à bord. Votre tableau de bord vous attend.",
-      "returnCta": "Ouvrir le tableau de bord",
-      "learning": "Certaines analyses (glycémie, rythme de sommeil, tendances de tension, cycle) s'affinent au cours de la première semaine ou deux à mesure que vos données s'accumulent. Des tuiles vides signifient simplement que nous apprenons encore votre référence.",
-      "connectCta": "Connecter un appareil",
-      "logCta": "Enregistrez votre première mesure",
-      "importCta": "Importer un historique existant",
-      "modulesCta": "Choisir vos modules",
-      "aiOptional": "L'IA est facultative. Tout fonctionne aussi sans elle.",
-      "aiSetupCta": "Configurer l'IA",
-      "relayOptional": "L’app iPhone peut recevoir les notifications de ce serveur via le relais push HealthLog, facultatif et désactivé tant que vous ne l’activez pas.",
-      "relaySetupCta": "Réglages du relais push",
-      "serverSetup": "La configuration de ce serveur reste ouverte : inscriptions, notifications, IA et confidentialité.",
-      "serverSetupCta": "Configurer le serveur"
-    },
-    "welcomeBack": {
-      "title": "Bon retour",
-      "cta": "Ouvrir le tableau de bord"
+      "displayNameHint": "Apparaît dans le message d'accueil du tableau de bord et dans les rapports."
     },
     "disclaimer": {
-      "acknowledge": "Je comprends : HealthLog est un outil de suivi privé, pas une évaluation clinique ni un diagnostic. En cas d'inquiétude, je consulte mon médecin, pas cette application.",
-      "learnMore": "En savoir plus"
-    },
-    "anamnesis": {
-      "title": "À propos de votre santé (facultatif)",
-      "subtitle": "Un peu de contexte pour que HealthLog interprète vos valeurs plus justement.",
-      "intro": "Partagez autant ou aussi peu que vous le souhaitez : chaque champ est facultatif et modifiable à tout moment dans les Réglages.",
-      "conditionsLabel": "Affections en cours",
-      "conditionsPlaceholder": "p. ex. hypertension, diabète de type 2",
-      "conditionsHint": "Aide HealthLog à replacer vos mesures dans leur contexte plutôt que de signaler l'attendu.",
-      "allergiesLabel": "Allergies ou intolérances",
-      "allergiesPlaceholder": "p. ex. pénicilline, lactose",
-      "privacyNote": "Stocké chiffré et utilisé uniquement pour un meilleur contexte. Nous ne demandons pas vos médicaments ici : ajoutez-les quand vous voulez depuis la page Médicaments."
-    },
-    "steps": {
-      "who": "À qui appartient ce dossier",
-      "areas": "Ce que vous voulez suivre",
-      "medication": "Médicaments",
-      "sources": "D'où viennent les mesures",
-      "visit": "Rendez-vous médical",
-      "units": "Région et unités",
-      "confirm": "Confirmer",
-      "first-result": "Premier résultat",
-      "done": "Terminé",
-      "reminders": "Rappels",
-      "ai": "Coach"
+      "acknowledge": "Je comprends : HealthLog est un outil de suivi privé, pas une évaluation clinique ni un diagnostic. En cas d'inquiétude, je consulte mon médecin, pas cette application."
     },
     "flow": {
-      "welcome": {
-        "title": "Bienvenue dans HealthLog",
-        "body": "Quelques questions rapides décident de ce que HealthLog vous montre en premier. Cela prend environ deux minutes.",
-        "changeLater": "Rien n'est définitif : chaque choix peut être modifié plus tard dans les réglages.",
-        "setUp": "Configurer",
-        "skip": "Passer pour l'instant",
-        "againBody": "Votre configuration est terminée. Répondez à nouveau aux questions pour changer ce que HealthLog montre en premier, ou allez au tableau de bord.",
-        "setUpAgain": "Reconfigurer",
-        "serverSetup": "Vous administrez ce serveur. Sa propre configuration est un court passage à part, avant ou après la vôtre.",
-        "serverSetupCta": "Configurer le serveur"
-      },
       "who": {
         "title": "À qui appartient ce dossier ?",
         "body": "Les réponses qui suivent s'appliquent à ce dossier.",
@@ -5649,7 +5571,6 @@
       },
       "areas": {
         "title": "Que voulez-vous suivre ?",
-        "body": "Choisissez autant d'options que vous voulez. Elles décident des modules activés et de ce que le tableau de bord montre en premier.",
         "options": {
           "blood-pressure": "Tension artérielle",
           "weight-body": "Poids et corps",
@@ -5662,18 +5583,7 @@
           "illness": "Maladies et symptômes"
         }
       },
-      "medication": {
-        "title": "Prenez-vous des médicaments selon un horaire fixe ?",
-        "body": "Un horaire active le module médicaments. Les rappels se configurent quand vous ajoutez votre premier médicament.",
-        "options": {
-          "yes": "Oui",
-          "no": "Non",
-          "sometimes": "Parfois"
-        }
-      },
       "sources": {
-        "title": "D'où viennent vos mesures aujourd'hui ?",
-        "body": "Choisissez autant d'options que vous voulez. Une connexion est proposée à la fin ; aucune n'est obligatoire.",
         "options": {
           "manual": "Je les saisis moi-même",
           "apple-health": "Apple Santé sur mon iPhone",
@@ -5686,152 +5596,21 @@
           "strava": "Strava",
           "nightscout": "Nightscout",
           "file": "Un fichier que j'ai déjà"
-        },
-        "hints": {
-          "apple-health": "Synchronisé par l'app iOS, ou importé depuis un export.",
-          "file": "À importer dans les réglages une fois cette étape terminée.",
-          "fitbit": "Se connecte désormais via Google Health."
-        }
-      },
-      "visit": {
-        "title": "Un rendez-vous médical est-il prévu ?",
-        "body": "Un rendez-vous active le rapport médical et ajoute sa préparation à votre liste de départ.",
-        "options": {
-          "within-a-month": "Oui, d'ici un mois",
-          "later": "Plus tard",
-          "no": "Non"
         }
       },
       "units": {
-        "title": "Votre région et vos unités",
-        "body": "Votre journée et l'heure de vos rappels suivent le fuseau horaire. Les mesures sont enregistrées une fois et affichées dans l'unité de votre choix. Vous pourrez tout modifier plus tard dans les réglages.",
         "glucoseLegend": "Glycémie",
         "weightLegend": "Poids et taille",
         "options": {
           "metric": "kg et cm",
           "imperial": "lb et ft/in"
-        },
-        "timezoneHint": "Repris de ce compte. Votre journée, vos graphiques et vos rappels le suivent.",
-        "registryLegend": "Registre des médicaments pour les notices"
-      },
-      "confirm": {
-        "title": "Voici ce que vos réponses activent",
-        "body": "Un coup d'œil, et HealthLog est configuré. Rien ici n'est définitif.",
-        "modulesTitle": "Modules",
-        "switchedOn": "Activés : {modules}.",
-        "nothingExtra": "Vos réponses n'activent aucun module supplémentaire ; les mesures de base sont toujours là.",
-        "alwaysOn": "Toujours actifs : {modules}, et les mesures de base (poids, tension, pouls).",
-        "everythingElse": "Tout le reste reste à un clic dans",
-        "modulesLink": "Réglages, Modules",
-        "switchesOff": "Hors de la navigation : {modules}. Vous pouvez les réactiver à tout moment dans Réglages, Modules.",
-        "glucoseUnit": "Glycémie",
-        "unitPreference": "Unités",
-        "language": "Langue",
-        "timezone": "Fuseau horaire",
-        "changeInSettings": "À modifier dans Réglages, Compte",
-        "cta": "Confirmer et continuer",
-        "managedTitle": "La personne dont vous vous occupez",
-        "managedBody": "Son dossier n'a pas d'identifiant propre ; vous le gérez depuis votre compte. Un second facteur ou une clé d'accès sur votre compte est nécessaire pour le créer.",
-        "managedCreate": "Créer le profil et terminer",
-        "managedLater": "Vous pouvez aussi le créer plus tard dans Réglages, Accès partagé.",
-        "finishWithoutProfile": "Terminer sans le profil"
-      },
-      "first-result": {
-        "connect-source": {
-          "title": "Connecter {target}",
-          "body": "Une seule connexion, choisie d'après vos réponses. Les mesures arrivent ensuite d'elles-mêmes.",
-          "howTo": "La connexion à {target} se fait sur la page des intégrations. Revenez ici ensuite ; cet écran détecte quand elle est établie.",
-          "cta": "Connecter {target}",
-          "checking": "Vérification de la connexion.",
-          "waiting": "Pas encore connecté.",
-          "openSettings": "Ouvrir Paramètres > Intégrations",
-          "noDate": "inconnue",
-          "throughGoogleHealth": "Les données {source} passent désormais par {target} : l'ancienne connexion {source} a été arrêtée. Connectez {target} avec le compte Google auquel votre {source} est associé, et vos mesures arriveront par là.",
-          "needsCredentials": {
-            "title": "Cette instance n’a pas encore d’application {target} enregistrée.",
-            "detail": "Saisissez vos propres identifiants dans Paramètres > Intégrations, la connexion pourra alors démarrer."
-          },
-          "state": {
-            "pending_first_sync": {
-              "title": "{target} est connecté.",
-              "detail": "La première synchronisation est en cours. Les valeurs apparaîtront sur le tableau de bord dès leur arrivée."
-            },
-            "fresh": {
-              "title": "{target} est déjà connecté.",
-              "detail": "Dernière valeur {when}. Il n’y a plus rien à faire ici."
-            },
-            "stale": {
-              "title": "{target} est connecté, mais rien n’arrive en ce moment.",
-              "detail": "Dernière valeur {when}. La connexion elle-même est en ordre."
-            },
-            "stalled": {
-              "title": "{target} est connecté, mais la synchronisation ne tourne plus.",
-              "detail": "Dernière tentative {when}. Vérifiez la connexion dans Paramètres > Intégrations."
-            },
-            "failing": {
-              "title": "{target} est connecté, mais la synchronisation échoue.",
-              "detail": "Plus rien n’est arrivé depuis {when}. Vérifiez la connexion dans Paramètres > Intégrations."
-            },
-            "reauth_required": {
-              "title": "La connexion à {target} doit être renouvelée.",
-              "detail": "Reconnectez-vous une fois et les valeurs reprendront."
-            },
-            "parked": {
-              "title": "La connexion à {target} est en pause.",
-              "detail": "Vérifiez la connexion dans Paramètres > Intégrations."
-            }
-          }
-        },
-        "add-medication": {
-          "title": "Ajoutez votre premier médicament",
-          "body": "Nom, dose et horaire ; le rappel suit l'horaire que vous définissez.",
-          "howTo": "Le médicament s'ajoute en quelques étapes courtes. Vous pourrez en ajouter d'autres plus tard sur la page des médicaments.",
-          "cta": "Ajouter un médicament",
-          "done": "{name} est ajouté.",
-          "doneUnnamed": "Votre premier médicament est ajouté.",
-          "nextDose": "Prochaine prise : {when}.",
-          "reminders": "Les rappels suivent l'horaire que vous avez défini.",
-          "recordOnly": "Conservé pour mémoire : pas de rappel, rien n’est dû.",
-          "asNeeded": "Au besoin : pas de rappel, notez une prise quand vous la prenez."
-        },
-        "log-reading": {
-          "title": "Saisir une mesure : {target}",
-          "body": "Une mesure place la première valeur sur votre tableau de bord. La tendance se dessine d'elle-même à partir de la cinquième.",
-          "done": "Votre première mesure est sur sa tuile.",
-          "doneElsewhere": "Votre première entrée pour {target} est enregistrée.",
-          "elsewhere": "{target} a sa propre page. Ouvrez-la, faites la première entrée, puis revenez ici la marquer comme faite.",
-          "open": "Ouvrir {target}",
-          "markDone": "J'ai fait l'entrée"
         }
       },
-      "done": {
-        "tourCta": "Faire une courte visite guidée",
-        "openRecord": "Ouvrir le dossier de {name}",
-        "createProfile": "Créer le profil de la personne dont vous vous occupez"
-      },
       "reminders": {
-        "title": "Où voulez-vous recevoir vos rappels ?",
-        "body": "Voici les moyens dont ce serveur dispose pour vous joindre. Configurez-en un, plusieurs ou aucun pour l'instant.",
-        "app": "Vous utilisez l'app iPhone ? Elle a ses propres rappels, vous pouvez donc passer cette étape."
+        "title": "Où voulez-vous recevoir vos rappels ?"
       },
       "ai": {
-        "title": "Utiliser le Coach ?",
-        "body": "Le Coach répond à vos questions sur vos mesures à l'aide d'un modèle d'IA.",
-        "whereServer": "Quand vous lui posez une question, celle-ci et les mesures nécessaires partent vers {providers} via le compte de ce serveur.",
-        "whereOwn": "Quand vous lui posez une question, celle-ci et les mesures nécessaires partent vers le service d'IA que vous avez configuré avec votre propre clé.",
-        "whereLocal": "Quand vous lui posez une question, celle-ci et les mesures nécessaires partent vers le modèle que vous faites tourner vous-même.",
-        "whereNone": "Aucun service d'IA n'est encore configuré pour vous, le Coach ne peut donc pas encore répondre.",
-        "setUp": "Configurer l'IA",
-        "nothingUntilAsked": "Rien n'est envoyé avant que vous posiez une question.",
-        "options": {
-          "yes": "Oui, utiliser le Coach",
-          "no": "Non, le désactiver"
-        },
-        "hints": {
-          "yes": "Vous pouvez l'interroger sur vos mesures quand vous voulez.",
-          "no": "Le Coach disparaît. Tout le reste fonctionne comme avant."
-        },
-        "later": "Vous pouvez changer cela à tout moment dans les réglages, rubrique IA."
+        "title": "Utiliser le Coach ?"
       }
     }
   },
@@ -6077,9 +5856,7 @@
       },
       "integrations": {
         "title": "Intégrations",
-        "connectionsHeading": "Connexions",
-        "channelsHeading": "Canaux de diffusion",
-        "matrixLink": "Notifications par canal"
+        "channelsHeading": "Canaux de diffusion"
       },
       "notifications": {
         "title": "Notifications",
@@ -7584,9 +7361,7 @@
       "description": "Configuré sur ce compte sans carte de réglages dédiée."
     },
     "healthConnectFolder": {
-      "name": "Health Connect depuis un dossier",
-      "description": "Récupéré dans votre dossier WebDAV ou Nextcloud toutes les six heures. Se configure et se modifie dans Import.",
-      "manage": "Ouvrir les réglages du dossier"
+      "name": "Health Connect depuis un dossier"
     },
     "healthConnectApp": {
       "connect": "Connecter un appareil Android",
@@ -7596,39 +7371,25 @@
       "qrAlt": "Code QR pour HealthLog Sync",
       "preview": "HealthLog Sync pour Android, aperçu",
       "disconnectTitle": "Déconnecter {device} ?",
-      "disconnectBody": "Le téléphone cesse de se synchroniser jusqu’à ce que vous l’associiez à nouveau."
+      "disconnectBody": "Le téléphone cesse de se synchroniser jusqu’à ce que vous l’associiez à nouveau.",
+      "name": "HealthLog Sync"
     },
     "withingsViewData": "Voir vos mesures",
     "whoopViewData": "Voir votre récupération",
     "googleHealthViewData": "Voir vos pas",
-    "apiTokens": "Jetons API",
     "measurementsToken": {
-      "title": "Jetons de mesures",
-      "description": "Créez un jeton pour qu'une balance, une montre, une appli de suivi alimentaire ou votre domotique ajoutent des mesures, des valeurs à vos mesures personnalisées et des totaux quotidiens de nutriments.",
-      "scopeNote": "Il peut uniquement ajouter des mesures à votre propre dossier, des valeurs aux mesures personnalisées que vous avez déjà créées et des totaux quotidiens de nutriments tant que le module nutriments est activé ; il ne peut rien lire, modifier ni supprimer. Les mesures et les totaux de nutriments sont signalés comme externes. L'identifiant d'une mesure personnalisée est la partie qui suit /custom-metrics/ dans l'adresse de sa page.",
-      "nutrientsLink": "Voir les apports en nutriments",
-      "createFailed": "Le jeton n'a pas pu être créé. Veuillez réessayer.",
       "namePlaceholder": "Nom, p. ex. Home Assistant",
       "appleHealth": {
         "label": "Écrire les mesures dans Apple Health",
         "createHint": "L'app HealthLog de votre iPhone ajoutera alors les mesures de ce jeton à Apple Health.",
-        "toggleAria": "Écrire les mesures de {name} dans Apple Health",
         "updateFailed": "Le réglage Apple Health n'a pas pu être modifié. Veuillez réessayer.",
         "unattributed": "Les mesures envoyées avant l'existence de ce réglage ne peuvent être rattachées à aucun jeton : elles restent donc hors d'Apple Health."
       }
     },
     "workoutsToken": {
-      "title": "Jetons d'entraînements",
-      "description": "Créez un jeton pour qu'une passerelle de montre ou un script de synchronisation ajoutent vos entraînements.",
-      "scopeNote": "Il peut uniquement ajouter de nouveaux entraînements à votre propre dossier. Il ne peut pas lire vos données, ni modifier ou supprimer quoi que ce soit, ni créer un autre jeton. Les entraînements qu'il ajoute sont signalés comme provenant d'un appareil externe, et si votre téléphone a enregistré la même séance, c'est la copie du téléphone que vous voyez.",
-      "createFailed": "Le jeton n'a pas pu être créé. Veuillez réessayer.",
       "namePlaceholder": "Nom, p. ex. Garmin"
     },
     "documentsToken": {
-      "title": "Jetons de documents",
-      "description": "Créez un jeton pour que Paperless-ngx, Papra ou le script d'import ajoutent des documents à votre coffre.",
-      "scopeNote": "Il peut uniquement ajouter de nouveaux documents à votre propre coffre. Il ne peut rien lister, ouvrir, télécharger, modifier ou supprimer, ni créer un autre jeton. Il apprend seulement si un fichier a été enregistré, pas comment vous l'avez classé.",
-      "createFailed": "Le jeton n'a pas pu être créé. Veuillez réessayer.",
       "namePlaceholder": "Nom, p. ex. Paperless-ngx"
     },
     "tokenCreated": "Jeton créé, copiez-le maintenant ! Il ne sera plus affiché.",
@@ -7646,17 +7407,11 @@
     "revokedTokensTitle": "Jetons révoqués ({count})",
     "tokenTableName": "Nom",
     "tokenTablePermissions": "Autorisations",
-    "tokenTableStatus": "Statut",
     "tokenTableCreated": "Créé",
     "tokenTableLastUsed": "Dernière utilisation",
     "tokenTableActions": "Actions",
     "noActiveTokens": "Aucun jeton actif disponible.",
     "tokenNeverUsed": "Jamais",
-    "apiEndpointsTitle": "Points de terminaison API",
-    "apiEndpointMethod": "Méthode",
-    "apiEndpointPath": "Chemin",
-    "apiEndpointAuth": "Authentification",
-    "apiEndpointExample": "Exemple de corps",
     "dangerZone": "Supprimer toutes les données",
     "dangerZoneDescription": "Efface l’intégralité de votre dossier de santé et toutes les connexions d’intégration.",
     "dangerZoneConfirm": "Supprimer toutes les données ?",
@@ -8481,7 +8236,115 @@
     },
     "passkeyRenameFailed": "Impossible de renommer la clé d’accès.",
     "passkeyRemoveFailed": "Impossible de supprimer la clé d’accès.",
-    "apiEndpointsShow": "Afficher les endpoints"
+    "integrationList": {
+      "channels": "Canaux de diffusion",
+      "sources": "Sources de données",
+      "addTitle": "Ajouter",
+      "allAdded": "Tout ce que propose ce serveur est configuré.",
+      "noSources": "Aucune source de données pour l’instant",
+      "noChannels": "Aucun canal de diffusion pour l’instant",
+      "ownCredentials": "Nécessite vos propres identifiants d’application",
+      "syncNow": "Synchroniser maintenant",
+      "lastAt": "Dernière fois : {when}",
+      "never": "Pas encore",
+      "apns": "App iPhone",
+      "facts": {
+        "status": "Statut",
+        "reason": "Raison",
+        "lastSync": "Dernière synchronisation",
+        "lastDelivery": "Dernière diffusion",
+        "brings": "Apporte",
+        "delivers": "Diffuse vers",
+        "lastFailure": "Dernier échec",
+        "lastFailureWith": "{when}, {reason}",
+        "setup": "Configuration"
+      },
+      "reason": {
+        "dataArriving": "Les données arrivent",
+        "firstSyncPending": "Première synchronisation en attente",
+        "planLimited": "L’abonnement ne fournit pas tout",
+        "permissionLimited": "Certaines autorisations manquent",
+        "providerErrors": "Le fournisseur répond mal",
+        "syncStalled": "La synchronisation est bloquée",
+        "noNewData": "Pas de nouvelles données",
+        "unexpectedSilence": "Aucune donnée depuis un moment",
+        "reauthRequired": "Connexion expirée",
+        "pausedAfterErrors": "En pause après des erreurs",
+        "notConnected": "Non connecté",
+        "paused": "En pause",
+        "switchedOff": "Désactivé",
+        "autoDisabled": "Désactivé après un refus",
+        "sendingPaused": "Envoi en pause",
+        "deliveryFailing": "Dernière diffusion échouée"
+      },
+      "brings": {
+        "appleHealth": "Tout depuis Santé, via l’app iPhone",
+        "withings": "Poids, tension artérielle, sommeil",
+        "whoop": "Récupération, sommeil, effort",
+        "googleHealth": "Fitbit et Pixel Watch",
+        "garmin": "Sommeil, VFC, stress, activité",
+        "oura": "Disponibilité, sommeil, VFC",
+        "polar": "Récupération, sommeil, entraînement",
+        "strava": "Activités en tant qu’entraînements",
+        "nightscout": "Glucose en continu",
+        "dawarich": "Lieux et trajets pour le contexte",
+        "healthConnectFolder": "Export Health Connect depuis WebDAV ou Nextcloud",
+        "documentSources": "Documents depuis Paperless-ngx ou Papra",
+        "telegram": "Un chat Telegram via votre bot",
+        "ntfy": "Un sujet ntfy",
+        "webPush": "Ce navigateur",
+        "webhook": "JSON vers une adresse à vous",
+        "email": "Rappels par e-mail",
+        "apns": "Notifications sur l’iPhone",
+        "healthConnectApp": "Health Connect, via l’app Android"
+      }
+    },
+    "tokenList": {
+      "title": "Jetons",
+      "newToken": "Nouveau jeton",
+      "empty": "Aucun jeton pour l’instant",
+      "caption": "Vos jetons",
+      "scopeColumn": "Accès",
+      "more": "Plus",
+      "scopeMoreLabel": "Ce que permet cet accès",
+      "mirrorMoreLabel": "Ce que signifie l’écriture dans Apple Santé",
+      "revoked": "Révoqué",
+      "hideRevoked": "Masquer les révoqués",
+      "menuLabel": "Actions pour {name}",
+      "copied": "Copié",
+      "scope": {
+        "all": "Accès complet",
+        "measurements": "Mesures",
+        "workouts": "Entraînements",
+        "documents": "Documents",
+        "medication": "Médicament",
+        "mcpRead": "MCP, lecture",
+        "mcpWrite": "MCP, écriture",
+        "fhir": "FHIR",
+        "profile": "Profil"
+      },
+      "scopeInfo": {
+        "measurements": "Ajoute des mesures, des valeurs de métriques personnalisées et les totaux quotidiens de nutriments à votre dossier. Il ne peut rien lire, modifier ni supprimer.",
+        "workouts": "Ajoute de nouveaux entraînements à votre dossier. Il ne peut rien lire, modifier ni supprimer.",
+        "documents": "Ajoute de nouveaux documents à votre coffre. Il ne peut rien lister, ouvrir, modifier ni supprimer."
+      },
+      "create": {
+        "failed": "Le jeton n’a pas pu être créé. Veuillez réessayer.",
+        "createdTitle": "Jeton créé",
+        "done": "Terminé",
+        "shownOnce": "Le jeton n’est affiché que maintenant.",
+        "expiry": "Valable",
+        "expiryYear": "1 an",
+        "expiryDays": "{days, plural, one {# jour} other {# jours}}"
+      },
+      "api": {
+        "title": "API",
+        "address": "Adresse",
+        "copyAddress": "Copier l’adresse de l’API",
+        "endpoints": "Points de terminaison",
+        "openReference": "Ouvrir la référence"
+      }
+    }
   },
   "admin": {
     "title": "Administration",
@@ -9681,8 +9544,6 @@
       },
       "question": {
         "title": "Utiliser le relais push HealthLog ?",
-        "askTitle": "Notifications par relais push ?",
-        "askBody": "Le contenu reste chiffré.",
         "body": "Des notifications pour l'app de l'App Store, chiffrées de bout en bout : le relais voit seulement quand l'une d'elles est envoyée.",
         "yes": "Oui",
         "no": "Non",
@@ -9763,71 +9624,11 @@
       "deliverySummary": "Détails de distribution"
     },
     "serverSetup": {
-      "stepsLabel": "Étapes de configuration du serveur",
-      "finish": "Terminer",
-      "steps": {
-        "accounts": "Comptes",
-        "notifications": "Notifications",
-        "ai": "IA",
-        "privacy": "Confidentialité",
-        "health": "Vérification"
-      },
       "notice": {
         "title": "Configurer ce serveur",
         "body": "Cinq étapes courtes sur les inscriptions, les notifications, l'IA et la confidentialité ; chacune peut être ignorée ou modifiée plus tard.",
-        "bodyShort": "Cinq étapes courtes sur les inscriptions, les notifications, l'IA et la confidentialité.",
         "open": "Commencer la configuration",
         "dismiss": "Pas maintenant"
-      },
-      "accounts": {
-        "title": "Qui peut utiliser ce serveur",
-        "body": "Choisissez si les gens peuvent s'inscrire eux-mêmes et si chaque compte doit avoir un second facteur.",
-        "invites": "Inscriptions fermées, les gens peuvent toujours rejoindre le serveur avec un lien d'invitation.",
-        "invitesLink": "Créer une invitation"
-      },
-      "notifications": {
-        "title": "Comment les notifications quittent le serveur",
-        "body": "Choisissez les canaux autorisés ; le relais push HealthLog reste désactivé tant que vous ne l'activez pas."
-      },
-      "ai": {
-        "title": "Ce que l'IA peut faire",
-        "body": "L'IA est facultative. HealthLog fonctionne entièrement sans elle.",
-        "off": "Désactivée : rien ne part vers un service d'IA.",
-        "ownKey": "Clés personnelles : les questions d'une personne et les mesures nécessaires partent vers le fournisseur que cette personne a configuré.",
-        "serverKey": "Clé de ce serveur : les questions et les mesures partent vers le fournisseur que vous indiquez ici, et chaque personne donne d'abord son consentement.",
-        "local": "Modèle local : tout reste auprès du modèle indiqué par la personne, sur votre propre réseau.",
-        "docs": "Fonctionnement des fournisseurs d'IA"
-      },
-      "privacy": {
-        "title": "Ce qui quitte encore le serveur",
-        "body": "En plus des notifications et de l'IA, trois éléments peuvent envoyer des données ailleurs. Chacun relève de votre choix.",
-        "geoTitle": "Lieux de connexion",
-        "geoDescription": "Comment le lieu d'une connexion est déterminé à partir de son adresse IP.",
-        "geoBody": "Avec les bases GeoLite2 montées, la recherche se fait sur ce serveur. Sans elles, chaque adresse de connexion est envoyée à un service en ligne. IP_GEO_LOOKUP_DISABLED=1 désactive la recherche.",
-        "geoDocs": "Installer les bases locales",
-        "geoLoadError": "Le réglage de la recherche n'a pas pu être lu.",
-        "docs": "Ce que HealthLog envoie et où"
-      },
-      "health": {
-        "title": "Vérifier la configuration",
-        "body": "Une vue en lecture seule de la configuration de ce serveur. Elle reste dans la console d'administration, sous État du système.",
-        "keys": "Vos clés de chiffrement sont le seul moyen de lire vos données dans une sauvegarde. Gardez-en une copie ailleurs que sur ce serveur."
-      },
-      "facts": {
-        "title": "Depuis l'environnement du serveur",
-        "description": "Défini dans l'environnement, pas ici. Modifiez-le là-bas puis redémarrez.",
-        "oidc": "Authentification unique (OIDC)",
-        "oidcOn": "Configurée, en plus des mots de passe et des clés d'accès",
-        "oidcOnly": "Configurée, seul moyen de se connecter",
-        "oidcOff": "Non configurée",
-        "oidcDocs": "Configurer l'authentification unique",
-        "smtp": "E-mail (SMTP)",
-        "smtpOn": "Configuré",
-        "smtpMissing": "Non configuré, il manque : {names}",
-        "telegram": "Réponses dans Telegram",
-        "telegramOn": "Secret du webhook défini",
-        "telegramOff": "Pas de secret de webhook, les boutons des messages Telegram ne répondent donc pas",
-        "channelsDocs": "Fonctionnement des canaux"
       }
     },
     "setupHealth": {
@@ -13767,7 +13568,6 @@
       },
       "syncIssue": {
         "title": "La synchronisation demande votre attention",
-        "askTitle": "Synchro interrompue",
         "body": "{integration} ne se synchronise pas. Reconnectez-le pour garder vos données à jour."
       },
       "sourceQuiet": {
@@ -13821,10 +13621,9 @@
       "logDose": "Prendre",
       "later": "Plus tard",
       "answer": "Répondre",
-      "learnMore": "Plus",
       "open": "Ouvrir",
       "setUp": "Configurer",
-      "reconnectShort": "Reconnecter",
+      "reconnectShort": "Connecter",
       "reconnect": "Reconnecter",
       "viewCheckups": "Voir les examens",
       "checkinKeep": "Garder",
@@ -13835,6 +13634,23 @@
       "viewEcg": "Voir l’enregistrement",
       "viewSteps": "Voir les pas",
       "openSource": "Ouvrir"
+    },
+    "ask": {
+      "medication": "Médicament",
+      "overdue": "En retard {time}",
+      "overdueNow": "En retard",
+      "due": "Prévu {time}",
+      "dueNow": "À prendre",
+      "checkupDue": "Examen à faire",
+      "visitToday": "Aujourd’hui",
+      "visitTomorrow": "Demain",
+      "signedOut": "Déconnecté",
+      "planFallback": "Votre plan",
+      "planReview": "Point à faire",
+      "setupTitle": "Ce serveur",
+      "setupMeta": "Pas configuré",
+      "relayTitle": "Relais push ?",
+      "relayMeta": "Chiffré"
     },
     "today": {
       "deltaShort": "{delta} vs référence",
@@ -16492,6 +16308,216 @@
       "needAfter": "Il manque encore des valeurs depuis le début pour comparer.",
       "needStart": "Ajoutez une date de début pour comparer avant et après.",
       "needData": "Il manque encore des valeurs pour comparer."
+    }
+  },
+  "setup": {
+    "finishLater": "Terminer plus tard",
+    "backToSetup": "Retour à la configuration",
+    "notNow": "Pas maintenant",
+    "later": "Plus tard",
+    "done": "Terminé",
+    "yes": "Oui",
+    "no": "Non",
+    "person": {
+      "segments": {
+        "you": "Vous",
+        "profile": "Profil",
+        "sources": "Sources",
+        "reminders": "Rappels",
+        "ai": "IA"
+      },
+      "areas": {
+        "body": "Choisissez-en autant que vous voulez ; ils décident quels modules sont activés."
+      },
+      "units": {
+        "title": "Région et unités",
+        "body": "Les jours, les heures et les unités de toute l'app suivent ces réglages.",
+        "name": "Nom affiché",
+        "timezoneHint": "Repris de ce navigateur."
+      },
+      "profile": {
+        "title": "Créer le profil de l'autre personne",
+        "body": "Un dossier à part, que vous gérez depuis votre compte.",
+        "create": "Créer le profil"
+      },
+      "sources": {
+        "title": "Connectez la provenance de vos mesures",
+        "body": "Chaque connexion se met ensuite à jour toute seule.",
+        "connect": "Connecter",
+        "connected": "Connecté",
+        "chooseFile": "Choisir un fichier",
+        "showCode": "Afficher le code",
+        "hideCode": "Masquer le code",
+        "scan": "Scannez avec l'appareil photo de l'iPhone pour obtenir l'app",
+        "signInWith": "Connectez-vous ensuite à {address} dans l'app.",
+        "qrAlt": "QR code de l'app HealthLog dans l'App Store",
+        "adminMore": "Ajouter Withings, Oura et d'autres services",
+        "names": {
+          "withings": "Withings",
+          "oura": "Oura",
+          "whoop": "WHOOP",
+          "polar": "Polar",
+          "google-health": "Google Health",
+          "strava": "Strava"
+        },
+        "hints": {
+          "apple-health": "Via l'app iPhone",
+          "withings": "Balance et tensiomètre",
+          "oura": "Bague",
+          "whoop": "Bracelet",
+          "polar": "Montre et ceinture cardio",
+          "google-health": "Fitbit et Pixel Watch",
+          "strava": "Entraînements",
+          "file": "CSV ou un export Apple Health"
+        }
+      },
+      "reminders": {
+        "body": "Choisissez un moyen maintenant ; vous pourrez en ajouter d'autres plus tard.",
+        "app": "L'app iPhone",
+        "appRelay": "Via le relais push HealthLog",
+        "appLocal": "L'app vous rappelle directement sur l'iPhone",
+        "browser": "Ce navigateur",
+        "browserHint": "Demande l'autorisation quand vous continuez",
+        "tokens": "Telegram et ntfy ont besoin d'un jeton, ils attendent donc sur votre liste de configuration."
+      },
+      "ai": {
+        "whereServer": "Vos mesures passent alors par le compte de ce serveur vers {providers}, pour les analyses et pour vos questions.",
+        "whereOwn": "Vos mesures vont alors au service d'IA que vous avez configuré avec votre propre clé, pour les analyses et pour vos questions.",
+        "whereLocal": "Vos mesures vont alors au modèle que vous faites tourner vous-même, pour les analyses et pour vos questions."
+      }
+    },
+    "server": {
+      "segments": {
+        "account": "Compte",
+        "signups": "Inscriptions",
+        "relay": "Notifications",
+        "ai": "IA",
+        "recovery": "Kit de récupération"
+      },
+      "claim": {
+        "body": "Le serveur écrit le code de configuration dans son journal à chaque démarrage, ou c'est le SETUP_TOKEN défini dans son environnement.",
+        "accepted": "Code de configuration accepté. Vous créez maintenant le compte administrateur.",
+        "sso": "Continuer avec l'authentification unique"
+      },
+      "account": {
+        "body": "Ce compte gère le serveur et tient son propre dossier.",
+        "create": "Créer le compte"
+      },
+      "factor": {
+        "title": "Ajouter un second facteur",
+        "due": "Les comptes administrateur en ont besoin d'ici le {date}.",
+        "body": "Il protège le compte même si quelqu'un apprend le mot de passe.",
+        "passkey": "Passkey",
+        "passkeyHint": "Face ID, Touch ID, Windows Hello ou une clé de sécurité",
+        "totp": "Application d'authentification",
+        "totpHint": "Un code à six chiffres depuis une app sur votre téléphone",
+        "password": "Votre mot de passe, pour confirmer",
+        "addPasskey": "Ajouter une passkey",
+        "addTotp": "Configurer l'app",
+        "scan": "Scannez le code avec l'application d'authentification, ou saisissez la clé ci-dessous.",
+        "code": "Code de l'app",
+        "confirm": "Confirmer"
+      },
+      "signups": {
+        "title": "Qui peut créer un compte ?",
+        "body": "Tant que vous ne le changez pas, seules les personnes que vous invitez.",
+        "invited": "Personnes invitées uniquement",
+        "invitedHint": "Vous envoyez un lien à chaque personne",
+        "anyone": "Toute personne qui peut joindre ce serveur"
+      },
+      "relay": {
+        "yesHint": "Rappels, activités en direct et cartes Wallet sur l'iPhone",
+        "noHint": "Les rappels restent sur l'iPhone lui-même",
+        "unavailable": "Ce serveur envoie ses notifications push sans le relais, il n'y a donc rien à décider ici.",
+        "decidedOn": "Ce serveur utilise le relais. Vous pouvez le modifier sous Administration, Push et canaux.",
+        "decidedOff": "Ce serveur n'utilise pas le relais. Vous pouvez le modifier sous Administration, Push et canaux.",
+        "body": "Des notifications pour l'app de l'App Store.",
+        "more": "Plus",
+        "detail": "Chiffrées de bout en bout : le relais voit seulement quand une notification est envoyée."
+      },
+      "ai": {
+        "title": "Ce serveur doit-il proposer l'IA ?",
+        "body": "Chaque personne peut toujours refuser pour elle-même.",
+        "off": "Désactivée",
+        "own": "Chaque personne utilise sa propre clé",
+        "ownHint": "Ajoutée dans Réglages, IA",
+        "server": "Une clé pour tout le monde",
+        "serverHint": "Facturée au compte de ce serveur",
+        "provider": "Fournisseur",
+        "key": "Clé API",
+        "test": "Tester",
+        "testOk": "La clé fonctionne",
+        "testFailed": "Le fournisseur n'a pas répondu."
+      },
+      "recovery": {
+        "title": "Sauvegardez le kit de récupération",
+        "body": "Sans ces clés, un serveur réinstallé ne peut pas ouvrir ses données.",
+        "guide": "Comment conserver les clés",
+        "kept": "Je garde une copie de chaque clé ailleurs que sur ce serveur."
+      }
+    },
+    "card": {
+      "title": "Terminer la configuration",
+      "progress": "{done} sur {total} terminés",
+      "showDone": "{count, plural, one {Afficher # élément terminé} other {Afficher les # éléments terminés}}",
+      "hideDone": "Masquer les éléments terminés",
+      "hide": "Masquer cette carte"
+    },
+    "admin": {
+      "title": "Configuration du serveur",
+      "cardTitle": "Premier démarrage",
+      "progress": "{done} sur {total} décidés.",
+      "resume": "Poursuivre la configuration du serveur",
+      "loadError": "Impossible de charger la configuration.",
+      "link": "Configuration du serveur"
+    },
+    "tasks": {
+      "requiredHere": "Obligatoire sur ce serveur",
+      "person": {
+        "resume": "Poursuivre la configuration",
+        "medication": "Ajouter votre premier médicament",
+        "second-factor": "Ajouter un second facteur",
+        "about-you": "Antécédents médicaux",
+        "about-youSub": "Taille, date de naissance, sexe",
+        "reading": "Enregistrer votre première mesure",
+        "source": "Connecter une source de données",
+        "second-channel": "Un second moyen pour les rappels",
+        "second-channelSub": "Telegram ou ntfy",
+        "coach": "Coach",
+        "managed-profile": "Créer le profil que vous gérez"
+      },
+      "instance": {
+        "second-factor": "Second facteur",
+        "signups": "Inscriptions",
+        "relay": "Relais push",
+        "ai": "IA",
+        "recovery": "Kit de récupération",
+        "recoveryKeyAdded": "Une clé a été ajoutée depuis la sauvegarde",
+        "email": "E-mail",
+        "sso": "Authentification unique",
+        "services": "Withings, Oura et autres services",
+        "backups": "Sauvegardes externes",
+        "error-reporting": "Rapports d'erreurs"
+      }
+    },
+    "values": {
+      "on": "Activé",
+      "off": "Désactivé",
+      "passkey": "Passkey",
+      "authenticator": "Application d'authentification",
+      "invited": "Sur invitation",
+      "anyone": "Tout le monde",
+      "own-keys": "Clés personnelles",
+      "server-key": "Une clé pour tout le monde",
+      "central-account": "Compte central",
+      "saved": "Sauvegardé",
+      "key-added": "En attente",
+      "add-key": "Ajouter votre clé",
+      "done": "Terminé",
+      "notSetUp": "Non configuré",
+      "continue": "Continuer",
+      "count": "{done} sur {total}",
+      "until": "D'ici le {date}"
     }
   },
   "pageCustomize": {

@@ -84,7 +84,7 @@ export function EmailCard({ isAuthenticated }: { isAuthenticated: boolean }) {
   });
 
   const statusTone = useChannelStatusTone(
-    null,
+    "email",
     isAuthenticated,
     Boolean(settings && settings.enabled && Boolean(settings.recipient)),
   );

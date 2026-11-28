@@ -132,6 +132,11 @@ export const ROUTE_PATTERNS: Record<string, RouteEntry> = {
     pattern: "C",
     textBudget: TEXT_NOT_MEASURED,
   },
+  "/admin/setup": {
+    pattern: "C",
+    textBudget: TEXT_NOT_MEASURED,
+    heightBudget: HEIGHT_NOT_MEASURED,
+  },
   "/admin/system-status": {
     pattern: "C",
     textBudget: TEXT_NOT_MEASURED,

@@ -3,84 +3,135 @@
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { useTranslations } from "@/lib/i18n/context";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 /**
- * The action row every setup screen ends on: back on the left, skip and the
- * primary on the right. One shape, so the buttons sit in the same place on
- * every screen and a keyboard user's tab order never changes between them.
+ * The action row every setup screen ends on (1.50): at most two buttons, of
+ * equal width, the primary on the right. Back and "Finish later" live in the
+ * frame's top row, so this row is only ever the step's own pair: "Skip" or
+ * "Not now" beside "Continue", "No" beside "Yes", "Later" beside "Add a
+ * passkey".
  *
- * Back is a link (a plain navigation to a screen that already has its
- * answer), skip and next are buttons (they persist something first). Each
- * one is optional: the welcome screen has no back, the confirm screen has no
- * skip, the done screen has only the primary.
+ * On a phone the row holds the bottom edge, split into two halves (one
+ * button takes the whole width); from `md` it sits right under the content,
+ * right-aligned, both buttons as wide as the longer label.
+ *
+ * A consent with two answers ("No" / "Yes") is the pair itself.
  */
-export function StepActions({
-  backHref,
-  onSkip,
-  onNext,
-  nextLabel,
-  nextDisabled = false,
-  pending = false,
-}: {
-  backHref?: string;
-  onSkip?: () => void;
-  onNext?: () => void;
-  nextLabel?: string;
-  nextDisabled?: boolean;
-  pending?: boolean;
-}) {
-  const { t } = useTranslations();
+export interface StepAction {
+  label: string;
+  onClick?: () => void;
+  href?: string;
+  disabled?: boolean;
+  /** Submit the form the row sits in, instead of `onClick`. */
+  submit?: boolean;
+  /** `data-slot` for tests; defaults per position. */
+  slot?: string;
+}
 
+export function StepActions({
+  secondary,
+  primary,
+  pending = false,
+  describedBy,
+}: {
+  secondary?: StepAction;
+  primary?: StepAction;
+  /** A write is in flight: both buttons wait, the primary spins. */
+  pending?: boolean;
+  /** Id of a line that says why the primary is disabled. */
+  describedBy?: string;
+}) {
+  const actions = [secondary, primary].filter(
+    (action): action is StepAction => action !== undefined,
+  );
+  if (actions.length === 0) return null;
   return (
     <div
-      // `flex-wrap` on both rows: a locale whose labels run 30% longer must
-      // drop the action group to its own line at 390 px, not push it past
-      // the viewport (the string-headroom sweep measures exactly this).
-      className="flex flex-wrap items-center justify-between gap-2 pt-2"
       data-slot="onboarding-step-actions"
-    >
-      {backHref ? (
-        <Button asChild variant="ghost" className="min-h-11 min-w-11">
-          <Link href={backHref} data-slot="onboarding-back">
-            {t("onboarding.shell.back")}
-          </Link>
-        </Button>
-      ) : (
-        <span aria-hidden="true" />
+      className={cn(
+        // Phone: held at the bottom edge, above the home indicator.
+        "bg-background sticky bottom-0 z-10 -mx-4 mt-auto px-4 pt-3 pb-[max(var(--safe-area-bottom),1rem)]",
+        // Wide: right under the content.
+        "md:static md:mx-0 md:mt-8 md:bg-transparent md:p-0",
       )}
-      <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-        {onSkip ? (
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={onSkip}
-            disabled={pending}
-            className="min-h-11 min-w-11"
-            data-slot="onboarding-skip"
-          >
-            {t("onboarding.shell.skip")}
-          </Button>
+    >
+      <div
+        className={cn(
+          "grid gap-2",
+          actions.length === 2 ? "grid-cols-2" : "grid-cols-1",
+          "md:ml-auto md:w-fit",
+        )}
+      >
+        {secondary ? (
+          <ActionButton
+            action={secondary}
+            variant="outline"
+            slot={secondary.slot ?? "onboarding-skip"}
+            pending={pending}
+          />
         ) : null}
-        {onNext ? (
-          <Button
-            type="button"
-            onClick={onNext}
-            disabled={pending || nextDisabled}
-            className="min-h-11 min-w-11"
-            data-slot="onboarding-next"
-          >
-            {pending ? (
-              <Loader2
-                aria-hidden="true"
-                className="size-4 animate-spin motion-reduce:animate-none"
-              />
-            ) : null}
-            {nextLabel ?? t("onboarding.shell.next")}
-          </Button>
+        {primary ? (
+          <ActionButton
+            action={primary}
+            variant="default"
+            slot={primary.slot ?? "onboarding-next"}
+            pending={pending}
+            spinner
+            describedBy={describedBy}
+          />
         ) : null}
       </div>
     </div>
+  );
+}
+
+function ActionButton({
+  action,
+  variant,
+  slot,
+  pending,
+  spinner = false,
+  describedBy,
+}: {
+  action: StepAction;
+  variant: "default" | "outline";
+  slot: string;
+  pending: boolean;
+  spinner?: boolean;
+  describedBy?: string;
+}) {
+  const className = "min-h-11 w-full md:min-w-32 md:px-6";
+  if (action.href) {
+    return (
+      <Link
+        href={action.href}
+        data-slot={slot}
+        className={cn(buttonVariants({ variant }), className)}
+      >
+        {action.label}
+      </Link>
+    );
+  }
+  return (
+    <Button
+      type={action.submit ? "submit" : "button"}
+      variant={variant}
+      onClick={action.onClick}
+      disabled={pending || action.disabled}
+      aria-busy={(pending && spinner) || undefined}
+      aria-describedby={describedBy}
+      data-slot={slot}
+      className={className}
+    >
+      {pending && spinner ? (
+        <Loader2
+          aria-hidden="true"
+          className="size-4 animate-spin motion-reduce:animate-none"
+        />
+      ) : null}
+      {action.label}
+    </Button>
   );
 }

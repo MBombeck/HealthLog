@@ -34,8 +34,6 @@ const ALLOWED: Record<string, string> = {
     "a share link's lifecycle and protection, not a connection",
   "components/settings/mcp-section.tsx":
     "token expiry in the connector token table (the table moves in 1.51)",
-  "components/settings/api-section.tsx":
-    "token expiry in the API token table (the table moves in 1.51)",
 };
 
 /**

@@ -64,7 +64,6 @@ const BASE = {
 function render(
   status: Partial<AdminPushRelayStatus>,
   locale: "en" | "de" = "en",
-  besideQuestion = false,
 ) {
   relay.status = { ...BASE, ...status };
   return renderToStaticMarkup(
@@ -72,7 +71,7 @@ function render(
       initialLocale={locale}
       initialMessages={locale === "de" ? deMessages : undefined}
     >
-      <PushRelaySection besideQuestion={besideQuestion} />
+      <PushRelaySection />
     </I18nProvider>,
   );
 }
@@ -124,12 +123,5 @@ describe("<PushRelaySection> with the server's own APNs key", () => {
     expect(html).not.toContain('data-slot="push-relay-own-apns"');
     expect(html).toContain('role="switch"');
     expect(html).toMatch(/data-slot="push-relay-status"[^>]*data-state="off"/);
-  });
-
-  it("stays away beside the open relay question, and returns once answered", () => {
-    expect(render({}, "en", true)).toBe("");
-    expect(render({ operatorDecision: "off" }, "en", true)).toContain(
-      'role="switch"',
-    );
   });
 });

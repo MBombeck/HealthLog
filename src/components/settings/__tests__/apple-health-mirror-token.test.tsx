@@ -1,10 +1,9 @@
 /**
  * The Apple Health write-back controls on the API settings (#1272).
  *
- * SSR-only, as the rest of this directory: the render pins which token rows
- * carry the switch and in which state, when the notice about readings that
- * belong to no token shows, and the write the switch sends is pinned against
- * a stubbed `fetch`.
+ * SSR-only, as the rest of this directory: which tokens carry the setting,
+ * when the notice about readings that belong to no token shows, and the write
+ * the row menu sends, pinned against a stubbed `fetch`.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -18,9 +17,8 @@ vi.mock("@/hooks/use-auth", () => ({
 }));
 
 import {
-  AppleHealthMirrorOptIn,
-  AppleHealthMirrorSwitch,
   UnattributedReadingsNotice,
+  isMeasurementTokenInfo,
   patchTokenMirror,
 } from "../apple-health-mirror-token";
 
@@ -32,45 +30,17 @@ function render(node: React.ReactNode, client = new QueryClient()) {
   );
 }
 
-const token = (permissions: string[], mirrorToAppleHealth = false) => ({
-  id: "tok-1",
-  name: "Scale",
-  permissions,
-  mirrorToAppleHealth,
-});
-
-describe("the switch on a token row", () => {
-  it("appears on a measurement token only", () => {
-    expect(
-      render(<AppleHealthMirrorSwitch token={token(["measurements:write"])} />),
-    ).toContain('data-slot="apple-health-mirror-switch"');
-    for (const permissions of [["*"], ["health:read"], ["workouts:write"]]) {
-      expect(
-        render(<AppleHealthMirrorSwitch token={token(permissions)} />),
-      ).toBe("");
+describe("which tokens carry the setting", () => {
+  it("is a measurement token, and nothing else", () => {
+    expect(isMeasurementTokenInfo(["measurements:write"])).toBe(true);
+    for (const permissions of [
+      ["*"],
+      ["health:read"],
+      ["workouts:write"],
+      ["measurements:write", "health:read"],
+    ]) {
+      expect(isMeasurementTokenInfo(permissions)).toBe(false);
     }
-  });
-
-  it("shows the stored setting and names the token", () => {
-    const on = render(
-      <AppleHealthMirrorSwitch token={token(["measurements:write"], true)} />,
-    );
-    expect(on).toContain('aria-checked="true"');
-    expect(on).toContain("Write readings from Scale to Apple Health");
-    const off = render(
-      <AppleHealthMirrorSwitch token={token(["measurements:write"])} />,
-    );
-    expect(off).toContain('aria-checked="false"');
-  });
-});
-
-describe("the opt-in on the mint form", () => {
-  it("reads as the setting with its explanation", () => {
-    const html = render(
-      <AppleHealthMirrorOptIn checked={false} onCheckedChange={() => {}} />,
-    );
-    expect(html).toContain("Write readings to Apple Health");
-    expect(html).toContain("adds this token&#x27;s readings to Apple Health");
   });
 });
 

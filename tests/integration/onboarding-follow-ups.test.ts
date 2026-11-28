@@ -331,8 +331,11 @@ describe("a ledger written by 1.48", () => {
 
     const { default: OnboardingRootPage } =
       await import("@/app/onboarding/page");
-    // `redirect()` throws; a page that renders returns its tree.
-    await expect(OnboardingRootPage()).resolves.toBeTruthy();
+    // 1.50: the front door holds no screen; a settled flow goes to the
+    // dashboard, never into a step.
+    await expect(OnboardingRootPage()).rejects.toMatchObject({
+      digest: expect.stringContaining(";/;"),
+    });
   });
 
   it("an account that skipped the setup on 1.48 is not sent into it either", async () => {

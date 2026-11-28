@@ -9,23 +9,19 @@
 import { expect, type Page } from "@playwright/test";
 
 export type SetupScreen =
-  | "welcome"
+  // The person flow (1.50).
   | "who"
   | "areas"
-  | "medication"
-  | "sources"
-  | "visit"
   | "units"
-  | "confirm"
+  | "profile"
+  | "sources"
   | "reminders"
   | "ai"
-  | "first-result"
-  | "done"
-  // The server setup (1.49), in the same frame.
-  | "accounts"
-  | "notifications"
-  | "privacy"
-  | "health";
+  // The server setup, in the same frame.
+  | "account-mfa"
+  | "signups"
+  | "relay"
+  | "recovery";
 
 export const SHELL = '[data-slot="onboarding-shell"]';
 
@@ -58,39 +54,15 @@ export async function skip(page: Page): Promise<void> {
   await page.locator('[data-slot="onboarding-skip"]').click();
 }
 
-/**
- * 1.49 — pass the follow-ups the flow shows after confirm, in order, by
- * skipping each: `reminders` for a medication schedule or a mood or cycle
- * area, `ai` while the server offers the Coach (it does on the e2e server,
- * which has AI switched on and no provider, so a person could set one up).
- * The caller names the ones it expects, so a follow-up that appears or
- * vanishes unexpectedly fails here rather than being stepped over.
- */
-export async function skipFollowUps(
-  page: Page,
-  expected: ReadonlyArray<"reminders" | "ai">,
-): Promise<void> {
-  for (const screen of expected) {
-    await expectScreen(page, screen);
-    await skip(page);
-  }
-}
-
-/** The follow-up answers through the API, for specs that jump ahead. */
-export async function passFollowUps(page: Page): Promise<void> {
-  await answer(page, { step: "reminders", status: "skipped" });
-  await answer(page, { step: "ai", status: "skipped" });
-}
-
-/** The welcome screen's acknowledgment plus "Set up". */
-export async function acceptAndSetUp(page: Page): Promise<void> {
-  await expectScreen(page, "welcome");
-  const box = page.locator('[data-slot="onboarding-disclaimer"]');
+/** The first screen: tick the disclaimer when it is still open. */
+export async function acknowledge(page: Page): Promise<void> {
+  await expectScreen(page, "who");
+  const box = page.locator(
+    '[data-slot="onboarding-disclaimer"] button[role="checkbox"]',
+  );
   if ((await box.getAttribute("data-state")) !== "checked") {
     await box.click();
   }
-  await page.locator('[data-slot="onboarding-set-up"]').click();
-  await expectScreen(page, "who");
 }
 
 /**
@@ -150,20 +122,39 @@ export interface MePayload {
   };
 }
 
-/** The dashboard layout's tile ids, in order. */
-export async function readTileOrder(page: Page): Promise<string[]> {
-  const res = await sessionCall(page, "GET", "/api/dashboard/widgets");
-  expect(res.status, "reading the dashboard layout").toBe(200);
-  const { data } = res.json as {
-    data: { widgets: Array<{ id: string; order: number }> };
-  };
-  return [...data.widgets].sort((a, b) => a.order - b.order).map((w) => w.id);
-}
-
 /** One answer through the answers route, on the browser's own session. */
 export async function answer(page: Page, body: unknown): Promise<void> {
   const res = await sessionCall(page, "PATCH", "/api/onboarding/answers", body);
   expect(res.status, `answering ${JSON.stringify(body)}`).toBe(200);
+}
+
+/** `GET /api/setup` on the browser's own session. */
+export async function readSetup(page: Page): Promise<SetupPayload> {
+  const res = await sessionCall(page, "GET", "/api/setup");
+  expect(res.status, "reading the setup state").toBe(200);
+  return (res.json as { data: SetupPayload }).data;
+}
+
+export interface SetupPayload {
+  person: {
+    status: "pending" | "done";
+    currentStep: string | null;
+    segments: Array<{ id: string; screens: Array<{ id: string }> }>;
+    planned: boolean;
+    cardShown: boolean;
+    cardDismissed: boolean;
+    tasks: Array<{
+      id: string;
+      status: string;
+      value: string | null;
+      deadline: string | null;
+    }>;
+  };
+  instance: {
+    status: string;
+    steps: Array<{ id: string; status: string }>;
+    tasks: Array<{ id: string; status: string; value: string | null }>;
+  } | null;
 }
 
 export async function complete(page: Page): Promise<void> {
@@ -172,14 +163,17 @@ export async function complete(page: Page): Promise<void> {
 }
 
 /**
- * Answer every question through the API so a later screen can be visited
- * directly. The answers name a glucose area (so Q6 applies) and a wearable
- * (so the first-result task is a connection the screen can wait for).
+ * Walk "You" through the API so a later screen can be visited directly: who,
+ * the areas and the basics, on the browser's own session.
  */
-export async function answerEverything(page: Page): Promise<void> {
-  await answer(page, { step: "who", recordTarget: "me" });
+export async function answerYou(
+  page: Page,
+  recordTarget: "me" | "someone-else" | "both" = "me",
+): Promise<void> {
+  await answer(page, { step: "who", recordTarget });
   await answer(page, { step: "areas", areas: ["glucose", "weight-body"] });
-  await answer(page, { step: "medication", medication: "yes" });
-  await answer(page, { step: "sources", sources: ["oura"] });
-  await answer(page, { step: "visit", visit: "within-a-month" });
+  await answer(page, {
+    step: "units",
+    units: { unitPreference: "metric", glucoseUnit: "mg/dL" },
+  });
 }

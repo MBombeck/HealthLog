@@ -75,9 +75,9 @@ describe.each<[string, string, string?]>([
   ["components/settings/export-section.tsx", "/api/export/encrypted"],
   ["components/settings/share-link-create-form.tsx", "/api/share-links"],
   ["components/settings/mcp-section.tsx", "/api/mcp/tokens"],
-  ["components/settings/api-section.tsx", "/api/tokens/measurements"],
-  ["components/settings/api-section.tsx", "/api/tokens/documents"],
-  ["components/settings/api-section.tsx", "/api/tokens/workouts"],
+  ["components/settings/api-new-token-sheet.tsx", "/api/tokens/measurements"],
+  ["components/settings/api-new-token-sheet.tsx", "/api/tokens/documents"],
+  ["components/settings/api-new-token-sheet.tsx", "/api/tokens/workouts"],
   [
     "components/admin/backups-section.tsx",
     "/download",
