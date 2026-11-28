@@ -50,6 +50,7 @@ export async function revokeDeviceCascade(
       apnsToken: true,
       relayState: true,
       relayConsentAt: true,
+      apiTokenId: true,
     },
   });
 
@@ -85,6 +86,18 @@ export async function revokeDeviceCascade(
     writes.push(
       prisma.apiToken.updateMany({
         where: { tokenHash: { in: accessHashes }, revoked: false },
+        data: { revoked: true },
+      }),
+    );
+  }
+  // An Android device paired for the Health Connect sync holds one token of
+  // its own (`Device.apiTokenId`); it goes with the device. The batch route
+  // refuses a token whose device is gone as well, so a delete elsewhere that
+  // skips this still locks the phone out.
+  if (device.apiTokenId) {
+    writes.push(
+      prisma.apiToken.updateMany({
+        where: { id: device.apiTokenId, revoked: false },
         data: { revoked: true },
       }),
     );

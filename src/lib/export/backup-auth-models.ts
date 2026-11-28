@@ -15,6 +15,7 @@ export const AUTH_MODELS_OUT_OF_SCOPE: readonly string[] = [
   "AuthChallenge",
   "TrustedDevice",
   "OidcNativeHandoff",
+  "HealthConnectPairing",
   "InviteRedemption",
 ];
 
