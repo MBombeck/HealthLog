@@ -556,7 +556,7 @@
           "name": "Напомнить позже"
         },
         "zh-CN": {
-          "name": "稍后提醒我（{minutes} 分钟）"
+          "name": "稍后提醒我（{minutes}分钟）"
         }
       },
       "anchors": [
