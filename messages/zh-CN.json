@@ -11050,9 +11050,9 @@
       "turnOffBody": "链接将失效。日历服务商已持有的副本会保留，直到你在那里删除该日历。",
       "help": {
         "title": "添加到你的日历",
-        "google": "Google 日历：其他日历 → 通过网址添加，然后粘贴链接。Google 大约每 12 到 24 小时刷新一次。",
-        "apple": "Apple 日历：在 Mac 上，文件 → 新建日历订阅；在 iPhone 上，设置 → 日历 → 账户 → 添加账户 → 其他 → 添加已订阅的日历。",
-        "outlook": "Outlook：添加日历 → 从 Web 订阅，然后粘贴链接。Outlook 每几小时刷新一次。"
+        "google": "Google 日历：其他日历 > 通过网址添加，然后粘贴链接。Google 大约每 12 到 24 小时刷新一次。",
+        "apple": "在 Mac 上：文件 > 新建日历订阅；在 iPhone 上：设置 > 日历 > 账户 > 添加账户 > 其他 > 添加已订阅的日历。",
+        "outlook": "Outlook：添加日历 > 从 Web 订阅，然后粘贴链接。Outlook 每几小时刷新一次。"
       },
       "ics": {
         "calendarName": "周期（HealthLog）",
@@ -15010,7 +15010,7 @@
       "gap": "{days, plural, other {# 天}}没有读数"
     },
     "previousDayShortcut": "前一天（Alt + ←）",
-    "nextDayShortcut": "后一天（Alt + →）",
+    "nextDayShortcut": "后一天（Alt + 右方向键）",
     "captureShort": "记录",
     "inTimelineShort": "时间线",
     "askCoachPrompt": "{date} 发生了什么？",
