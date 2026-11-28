@@ -152,6 +152,7 @@ const GATED_ROUTES: Record<string, string> = {
   "POST /api/managed-profiles/[id]/handover": "web",
   "POST /api/mcp/oauth/authorize":
     "the consent form's own submission, refused into the same /confirm-access page as the GET",
+  "POST /api/health-connect/pairing": "web",
   "POST /api/mcp/tokens": "web",
   "POST /api/share-links": "web",
   "POST /api/tokens/documents": "web",

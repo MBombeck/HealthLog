@@ -7,11 +7,9 @@ import { HeartPulse, Loader2, QrCode } from "lucide-react";
 import { TileHeader } from "@/components/insights/tile-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmButton } from "@/components/ui/confirm-button";
-import { FieldGroup } from "@/components/ui/field-group";
-import { Label } from "@/components/ui/label";
-import { NativeSelect } from "@/components/ui/native-select";
+import { InfoPopover } from "@/components/ui/info-popover";
+import { ActionPair } from "@/components/ui/action-pair";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
@@ -33,6 +31,7 @@ import { formatRelativeTime } from "@/lib/i18n/relative-time";
 import { queryKeys } from "@/lib/query-keys";
 
 import { AppleWalletCard } from "./apple-wallet-card";
+import { CardFieldRows, type ExpiryChoice } from "./card-field-rows";
 import { EmergencyCardSheet } from "./emergency-card-sheet";
 
 /**
@@ -48,8 +47,6 @@ import { EmergencyCardSheet } from "./emergency-card-sheet";
  */
 
 const LINK_PATH = "/api/emergency-card/link";
-const EXPIRY_CHOICES = ["none", "30", "365", "730"] as const;
-type ExpiryChoice = (typeof EXPIRY_CHOICES)[number];
 
 interface Minted {
   url: string;
@@ -133,6 +130,12 @@ export function EmergencyCardPage() {
             <TileHeader
               icon={HeartPulse}
               title={t("emergencyCard.page.preview")}
+              right={
+                <InfoPopover
+                  content={t("emergencyCard.page.offlineHint")}
+                  triggerDataSlot="emergency-card-offline-info"
+                />
+              }
             />
           </CardHeader>
           <CardContent className="space-y-4">
@@ -154,15 +157,12 @@ export function EmergencyCardPage() {
                 locale={locale}
               />
             )}
-            <p className="text-muted-foreground text-sm">
-              {t("emergencyCard.page.offlineHint")}
-            </p>
             {downloadError ? (
               <p className="text-destructive text-sm" role="alert">
                 {t("emergencyCard.page.downloadError")}
               </p>
             ) : null}
-            <SettingsCardActions>
+            <ActionPair>
               <Button
                 variant="outline"
                 size="sm"
@@ -186,7 +186,7 @@ export function EmergencyCardPage() {
                   ? t("emergencyCard.page.walletWithQr")
                   : t("emergencyCard.page.wallet")}
               </Button>
-            </SettingsCardActions>
+            </ActionPair>
           </CardContent>
         </Card>
 
@@ -259,7 +259,13 @@ function LinkCard({
   return (
     <Card data-slot="emergency-card-link-card">
       <CardHeader>
-        <TileHeader icon={QrCode} title={t("emergencyCard.link.title")} />
+        <TileHeader
+          icon={QrCode}
+          title={t("emergencyCard.link.title")}
+          right={
+            <InfoPopover content={t("emergencyCard.link.disclosureMore")} />
+          }
+        />
       </CardHeader>
       <CardContent className="space-y-4">
         {status.isError ? (
@@ -321,48 +327,15 @@ function LinkForm({
   return (
     <>
       <p className="text-sm">{t("emergencyCard.link.disclosure")}</p>
-      <fieldset className="space-y-2">
-        <legend className="text-sm font-medium">
-          {t("emergencyCard.link.fieldsLabel")}
-        </legend>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {EMERGENCY_CARD_FIELDS.map((f) => (
-            <div key={f} className="flex min-h-11 items-center gap-2">
-              <Checkbox
-                id={`card-field-${f}`}
-                checked={fields.has(f)}
-                onCheckedChange={(on) =>
-                  setFields((prev) => {
-                    const next = new Set(prev);
-                    if (on === true) next.add(f);
-                    else next.delete(f);
-                    return next;
-                  })
-                }
-              />
-              <Label htmlFor={`card-field-${f}`} className="text-sm">
-                {t(`emergencyCard.fields.${f}`)}
-              </Label>
-            </div>
-          ))}
-        </div>
-      </fieldset>
-      <FieldGroup
-        htmlFor="card-link-expiry"
-        label={t("emergencyCard.link.expiryLabel")}
-      >
-        <NativeSelect
-          id="card-link-expiry"
-          value={expiry}
-          onChange={(e) => setExpiry(e.target.value as ExpiryChoice)}
-        >
-          {EXPIRY_CHOICES.map((c) => (
-            <option key={c} value={c}>
-              {t(`emergencyCard.link.expiry.${c}`)}
-            </option>
-          ))}
-        </NativeSelect>
-      </FieldGroup>
+      <CardFieldRows
+        idPrefix="card"
+        fieldsLabel={t("emergencyCard.link.fieldsLabel")}
+        expiryLabel={t("emergencyCard.link.expiryLabel")}
+        fields={fields}
+        onFieldsChange={setFields}
+        expiry={expiry}
+        onExpiryChange={setExpiry}
+      />
       {error}
       <SettingsCardActions>
         <Button

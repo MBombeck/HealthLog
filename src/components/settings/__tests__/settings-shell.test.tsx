@@ -59,6 +59,7 @@ import {
   SETTINGS_SECTIONS,
   SettingsShell,
   isSettingsSectionSlug,
+  settingsNavGroups,
 } from "../settings-shell";
 import { primeLocales } from "@/__tests__/helpers/prime-locales";
 
@@ -508,7 +509,9 @@ describe("<SettingsShell>", () => {
     expect(html).toContain("API &amp; tokens");
     // v1.18.0 — the health record is its own top-level entry.
     expect(html).toContain('href="/settings/health-record"');
-    expect(html).toContain("Doctor report and export");
+    // The entry is the doctor report alone: the exports live on Export &
+    // import, so the rail names nothing twice.
+    expect(html).toContain(">Doctor report<");
     // v1.4.16: the consolidated Export section is a top-level
     // entry in the sidebar; the link must be present in both locales.
     expect(html).toContain('href="/settings/export"');
@@ -574,5 +577,50 @@ describe("<SettingsShell>", () => {
     expect(nav![0].match(/>Security</g)).toHaveLength(1);
     expect(nav![0]).not.toContain("overflow-x-auto");
     expect(nav![0]).not.toContain('href="/settings/');
+  });
+});
+
+describe("settingsNavGroups — no heading over nothing", () => {
+  it("leaves out a group none of whose entries is visible", () => {
+    const visible = SETTINGS_SECTIONS.filter((s) => s.group !== "system");
+    const groups = settingsNavGroups(visible);
+    expect(groups.map((g) => g.group)).not.toContain("system");
+    for (const g of groups) expect(g.sections.length).toBeGreaterThan(0);
+  });
+
+  it("keeps the list order and gathers a group under one heading", () => {
+    const groups = settingsNavGroups([
+      { slug: "a", group: "data" as const },
+      { slug: "b", group: "system" as const },
+      { slug: "c", group: "data" as const },
+    ]);
+    expect(groups).toEqual([
+      {
+        group: "data",
+        sections: [
+          { slug: "a", group: "data" },
+          { slug: "c", group: "data" },
+        ],
+      },
+      { group: "system", sections: [{ slug: "b", group: "system" }] },
+    ]);
+    expect(settingsNavGroups([])).toEqual([]);
+  });
+
+  it("renders every group heading in the rail with an entry under it", () => {
+    const html = renderToStaticMarkup(
+      <I18nProvider initialLocale="en">
+        <SettingsShell active="export">
+          <div />
+        </SettingsShell>
+      </I18nProvider>,
+    );
+    const rail = html.slice(html.indexOf("<aside"), html.indexOf("</aside>"));
+    // A heading <li> is always followed by an entry <li> holding a link.
+    const items = rail.match(/<li[^>]*>[\s\S]*?<\/li>/g) ?? [];
+    items.forEach((item, i) => {
+      if (!item.includes("<a ")) expect(items[i + 1] ?? "").toContain("<a ");
+    });
+    expect(items.some((item) => !item.includes("<a "))).toBe(true);
   });
 });

@@ -1,12 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Loader2, Upload } from "lucide-react";
+import { AlertCircle, Upload } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { SettingsCardActions } from "@/components/settings/_card-actions";
-import { Progress } from "@/components/ui/progress";
 import {
   cycleDependentKeys,
   invalidateKeys,
@@ -16,18 +13,22 @@ import {
   refetchInactiveDailyReads,
   workoutDependentKeys,
 } from "@/lib/query-keys";
+import { WrittenOutcomeLine } from "@/components/outcome/written-outcome-line";
+import { classifyWrittenOutcome } from "@/lib/outcome/written-outcome";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
-import { cn } from "@/lib/utils";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
 import {
   AppleHealthAuxiliaryLines,
   type AppleHealthEcgCounts,
   type AppleHealthLabCounts,
 } from "./apple-health-auxiliary-lines";
-import { ImportCardShell, ImportStatusRegion } from "./import-card-shell";
-import { WrittenOutcomeLine } from "@/components/outcome/written-outcome-line";
-import { classifyWrittenOutcome } from "@/lib/outcome/written-outcome";
-import { FileInput } from "@/components/ui/file-picker";
+import { ListGroup } from "@/components/ui/list-row";
+import {
+  ImportDetails,
+  ImportPickerRow,
+  ImportSource,
+  useFinishedJobMeta,
+} from "./import-card-shell";
 
 /** Terminal states the status poll stops on. */
 const TERMINAL_STATES: readonly string[] = ["done", "failed"];
@@ -67,6 +68,7 @@ interface JobStatus {
     labs?: AppleHealthLabCounts;
   } | null;
   failureReason: string | null;
+  completedAt?: string | null;
 }
 
 /** One skip line for the result breakdown. */
@@ -268,7 +270,7 @@ export function AppleHealthOwnRecordsNote({ count }: { count: number }) {
   return (
     <p
       data-testid="import-apple-health-own-skipped"
-      className="text-muted-foreground text-sm"
+      className="text-muted-foreground text-xs"
     >
       {tCount(
         "settings.sections.export.import.appleHealth.writtenByHealthLog",
@@ -348,15 +350,15 @@ function useRefreshReadsAfterImport(finishedJobId: string | null): void {
   }, [finishedJobId, queryClient]);
 }
 
-export function AppleHealthImportCard() {
+export function AppleHealthImportSource() {
   const { t } = useTranslations();
+  const finishedMeta = useFinishedJobMeta();
+  const [open, setOpen] = useState(false);
   const fmt = useFormatters();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [jobId, setJobId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [dragActive, setDragActive] = useState(false);
-  const dropDescId = useId();
 
   const statusQuery = useQuery({
     queryKey: queryKeys.importJobStatus(jobId ?? "none"),
@@ -427,20 +429,6 @@ export function AppleHealthImportCard() {
     [t],
   );
 
-  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) void upload(file);
-    // Reset so picking the same file twice re-fires the change event.
-    e.target.value = "";
-  }
-
-  function onDrop(e: React.DragEvent<HTMLDivElement>) {
-    e.preventDefault();
-    setDragActive(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) void upload(file);
-  }
-
   const status = statusQuery.data ?? null;
   const isRunning = status !== null && !TERMINAL_STATES.includes(status.status);
   const isDone = status?.status === "done";
@@ -480,159 +468,145 @@ export function AppleHealthImportCard() {
   const clinicalSkipped = status?.result?.clinical?.skipped ?? 0;
   const cycleStats = status?.result?.cycle;
 
+  const pickerMeta: React.ReactNode =
+    uploadError || isFailed ? (
+      <span
+        data-testid="import-apple-health-error"
+        role="alert"
+        className="text-destructive"
+      >
+        {uploadError ??
+          failureText ??
+          t("settings.sections.export.import.appleHealth.failed")}
+      </span>
+    ) : uploading ? (
+      t("settings.sections.export.import.appleHealth.uploading")
+    ) : isRunning ? (
+      <span data-testid="import-apple-health-progress" className="tabular-nums">
+        {typeof status?.progress?.rowsUpserted === "number"
+          ? t("settings.sections.export.import.appleHealth.rowsImported", {
+              count: fmt.integer(status.progress.rowsUpserted),
+            })
+          : t(
+              `settings.sections.export.import.appleHealth.phase.${status?.status ?? "queued"}`,
+            )}
+        {typeof percent === "number" && ` (${fmt.integer(percent)} %)`}
+      </span>
+    ) : isDone ? (
+      <WrittenOutcomeLine
+        outcome={classifyWrittenOutcome({
+          written: rowsWritten + auxWritten,
+          // Deliberate exclusions (clinical records, unsupported or deferred
+          // types, a disabled cycle module) are information and must not
+          // tip the archive into a warning. Genuine refusals, samples that
+          // should have landed plus failed cycle days, do.
+          skipped:
+            skips.refused + (cycleStats?.daysFailed ?? 0) + (labs?.failed ?? 0),
+        })}
+        message={appleHealthDoneMessage(
+          { rowsWritten, auxWritten, recordsRead, clinicalSkipped },
+          t,
+          fmt,
+        )}
+        testId="import-apple-health-result"
+      />
+    ) : (
+      t("settings.sections.export.import.appleHealth.fileHint")
+    );
+  const estimateDays = status?.result?.cumulativeEstimates?.days ?? 0;
+
+  const rowMeta = uploading
+    ? t("settings.sections.export.import.appleHealth.uploading")
+    : isRunning
+      ? t(
+          `settings.sections.export.import.appleHealth.phase.${status?.status ?? "queued"}`,
+        )
+      : (finishedMeta(
+          status ? { ...status, written: rowsWritten + auxWritten } : null,
+        ) ?? t("settings.sections.export.import.appleHealth.fileHint"));
+
   return (
-    <ImportCardShell
+    <ImportSource
       testId="import-card-apple-health"
       anchor="import-apple-health"
       icon={Upload}
       title={t("settings.sections.export.import.appleHealth.title")}
-      description={t("settings.sections.export.import.appleHealth.description")}
-    >
-      {/* Keyboard-operable drop area. The hidden file input does the
-          actual file selection; the div forwards Enter/Space to it. */}
-      <div
-        role="button"
-        tabIndex={0}
-        aria-describedby={dropDescId}
-        aria-disabled={busy}
-        onClick={() => !busy && fileInputRef.current?.click()}
-        onKeyDown={(e) => {
-          if ((e.key === "Enter" || e.key === " ") && !busy) {
-            e.preventDefault();
-            fileInputRef.current?.click();
-          }
-        }}
-        onDragOver={(e) => {
-          e.preventDefault();
-          if (!busy) setDragActive(true);
-        }}
-        onDragLeave={() => setDragActive(false)}
-        onDrop={(e) => !busy && onDrop(e)}
-        className={cn(
-          "border-border bg-muted/20 hover:bg-muted/40 focus-visible:ring-ring/50 flex min-h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed p-4 text-center transition-colors focus-visible:ring-2 focus-visible:outline-none",
-          dragActive && "border-primary bg-primary/5",
-          busy && "pointer-events-none opacity-60",
-        )}
-      >
-        <Upload className="text-muted-foreground h-5 w-5" aria-hidden="true" />
-        <span className="text-foreground text-sm font-medium">
-          {t("settings.sections.export.import.appleHealth.dropLabel")}
-        </span>
-        <span id={dropDescId} className="text-muted-foreground text-xs">
-          {t("settings.sections.export.import.appleHealth.dropHint")}
-        </span>
-      </div>
-      <FileInput
-        ref={fileInputRef}
-        accept=".zip,application/zip"
-        className="sr-only"
-        aria-label={t(
+      info={[
+        t("settings.sections.export.import.appleHealth.description"),
+        t("settings.sections.export.import.appleHealth.idempotencyNote"),
+      ]}
+      meta={rowMeta}
+      status={busy ? "running" : uploadError || isFailed ? "failed" : null}
+      open={open}
+      onOpenChange={setOpen}
+      query={statusQuery}
+      chooseTestId="import-choose-apple-health"
+      fileInputRef={fileInputRef}
+      file={{
+        accept: ".zip,application/zip",
+        inputLabel: t(
           "settings.sections.export.import.appleHealth.fileInputLabel",
-        )}
-        onChange={onFileChange}
-      />
+        ),
+        onFiles: ([file]) => void upload(file!),
+      }}
+    >
+      <ListGroup aria-live="polite">
+        <ImportPickerRow
+          busy={busy}
+          inputRef={fileInputRef}
+          meta={pickerMeta}
+          actionTestId="import-action-apple-health"
+          onFiles={([file]) => void upload(file!)}
+        />
+      </ListGroup>
+      {isDone && (
+        <AppleHealthDetails
+          skips={skips}
+          cycle={cycleStats}
+          ecg={ecg}
+          labs={labs}
+          ownRecordsSkipped={ownRecordsSkipped}
+          estimateDays={estimateDays}
+        />
+      )}
+    </ImportSource>
+  );
+}
 
-      <p className="text-muted-foreground text-xs">
-        {t("settings.sections.export.import.appleHealth.idempotencyNote")}
-      </p>
-
-      {/* Live progress / outcome — announced to assistive tech. */}
-      <ImportStatusRegion query={statusQuery}>
-        {uploading && (
-          <p className="text-muted-foreground flex items-center gap-2 text-xs">
-            <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-            {t("settings.sections.export.import.appleHealth.uploading")}
-          </p>
-        )}
-        {isRunning && (
-          <div
-            data-testid="import-apple-health-progress"
-            className="space-y-1.5"
-          >
-            <p className="text-muted-foreground flex items-center gap-2 text-xs">
-              <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-              {t(
-                `settings.sections.export.import.appleHealth.phase.${status?.status ?? "queued"}`,
-              )}
-            </p>
-            {typeof percent === "number" && <Progress value={percent} />}
-            {typeof status?.progress?.rowsUpserted === "number" && (
-              <p className="text-muted-foreground text-xs">
-                {t("settings.sections.export.import.appleHealth.rowsImported", {
-                  count: fmt.integer(status.progress.rowsUpserted),
-                })}
-              </p>
-            )}
-          </div>
-        )}
-        {isDone && (
-          <WrittenOutcomeLine
-            outcome={classifyWrittenOutcome({
-              written: rowsWritten + auxWritten,
-              // Deliberate exclusions (clinical records, unsupported /
-              // deferred types, a disabled cycle module) are information
-              // and must not tip the archive into a warning. Genuine
-              // refusals — samples that SHOULD have landed (unparseable,
-              // out of range, upsert failure) plus failed cycle days — do.
-              skipped:
-                skips.refused +
-                (cycleStats?.daysFailed ?? 0) +
-                (labs?.failed ?? 0),
-            })}
-            message={appleHealthDoneMessage(
-              { rowsWritten, auxWritten, recordsRead, clinicalSkipped },
-              t,
-              fmt,
-            )}
-            testId="import-apple-health-result"
-          />
-        )}
-        {isDone && <AppleHealthSkipLines skips={skips} cycle={cycleStats} />}
-        {isDone && <AppleHealthAuxiliaryLines ecg={ecg} labs={labs} />}
-        {isDone && ownRecordsSkipped > 0 && (
-          <AppleHealthOwnRecordsNote count={ownRecordsSkipped} />
-        )}
-        {isDone && (status?.result?.cumulativeEstimates?.days ?? 0) > 0 && (
-          <AppleHealthEstimateWarning
-            days={status?.result?.cumulativeEstimates?.days ?? 0}
-          />
-        )}
-        {(isFailed || uploadError) && (
-          <p
-            data-testid="import-apple-health-error"
-            role="alert"
-            className="text-destructive flex items-start gap-2 text-sm"
-          >
-            <AlertCircle
-              className="mt-0.5 h-3.5 w-3.5 shrink-0"
-              aria-hidden="true"
-            />
-            <span>
-              {uploadError ??
-                failureText ??
-                t("settings.sections.export.import.appleHealth.failed")}
-            </span>
-          </p>
-        )}
-      </ImportStatusRegion>
-
-      <SettingsCardActions className="mt-auto">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={busy}
-          onClick={() => fileInputRef.current?.click()}
-          data-testid="import-action-apple-health"
-        >
-          {busy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <Upload className="h-3.5 w-3.5" />
-          )}
-          {t("settings.sections.export.import.appleHealth.choose")}
-        </Button>
-      </SettingsCardActions>
-    </ImportCardShell>
+/** What a finished import adds under the picker row, at the meta size. */
+function AppleHealthDetails({
+  skips,
+  cycle,
+  ecg,
+  labs,
+  ownRecordsSkipped,
+  estimateDays,
+}: {
+  skips: AppleHealthSkipSummary;
+  cycle: NonNullable<JobStatus["result"]>["cycle"] | undefined;
+  ecg: AppleHealthEcgCounts | undefined;
+  labs: AppleHealthLabCounts | undefined;
+  ownRecordsSkipped: number;
+  estimateDays: number;
+}) {
+  const hasSkips =
+    skips.unsupported > 0 ||
+    skips.refused > 0 ||
+    skips.breakdown.length > 0 ||
+    (cycle?.daysUpserted ?? 0) > 0 ||
+    (cycle?.samplesSkippedModuleDisabled ?? 0) > 0 ||
+    (cycle?.daysFailed ?? 0) > 0;
+  const hasAux = (ecg?.discovered ?? 0) > 0 || (labs?.discovered ?? 0) > 0;
+  if (!hasSkips && !hasAux && ownRecordsSkipped === 0 && estimateDays === 0)
+    return null;
+  return (
+    <ImportDetails>
+      <AppleHealthSkipLines skips={skips} cycle={cycle} />
+      <AppleHealthAuxiliaryLines ecg={ecg} labs={labs} />
+      {ownRecordsSkipped > 0 && (
+        <AppleHealthOwnRecordsNote count={ownRecordsSkipped} />
+      )}
+      {estimateDays > 0 && <AppleHealthEstimateWarning days={estimateDays} />}
+    </ImportDetails>
   );
 }

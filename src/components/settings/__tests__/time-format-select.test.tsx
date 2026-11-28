@@ -54,6 +54,8 @@ function buildUser(timeFormat: TimeFormatPreference): AuthUser {
     insurerName: null,
     insurerIkNumber: null,
     insuranceNumber: null,
+    insuranceNumberCountry: null,
+    insuranceGroupNumber: null,
     lastReportPracticeName: null,
     reportSelection: null,
     cycleTrackingEnabled: false,

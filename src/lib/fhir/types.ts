@@ -43,7 +43,12 @@ export interface FhirReference {
  * type-checking.
  */
 export interface FhirIdentifier {
-  system: string;
+  /**
+   * The namespace. Absent only on an insurance member id from a country
+   * without a verified national system, which carries `type` instead.
+   */
+  system?: string;
+  type?: FhirCodeableConcept;
   value: string;
 }
 
@@ -241,8 +246,10 @@ export interface FhirCoverage {
   contained?: FhirOrganization[];
   /** The covered party — Reference(Patient). */
   beneficiary: FhirReference;
-  /** German KVNR (the subscriber's member id), when present. */
+  /** The subscriber's member id (the insurance number), when present. */
   subscriberId?: string;
+  /** The plan's group (a US group number), when present. */
+  class?: { type: FhirCodeableConcept; value: string }[];
   /**
    * Insurer(s) — Reference to the contained Organization. R4 marks this `1..*`;
    * required here so a payor-less Coverage cannot be constructed. A record that

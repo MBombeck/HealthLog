@@ -31,6 +31,7 @@ import {
   ensureVaultFixture,
   ensureVaultAiFixture,
   CONTENT_DOC_ID,
+  openDocumentMenu,
 } from "./setup/vault-fixture";
 
 /** Fulfil the envelope shape the client unwraps (`(await res.json()).data`). */
@@ -116,9 +117,10 @@ test.describe("document vault — chat about a document", () => {
     const sheet = page.locator('[data-slot="responsive-sheet-content"]');
     await expect(sheet).toBeVisible();
 
-    // The neutral Coach affordance lives in the detail-sheet AI area; tapping it
-    // closes the sheet and opens the REAL coach drawer scoped to this document.
-    const open = sheet.locator('[data-slot="document-chat-open"]');
+    // The Coach entry lives in the detail sheet's menu; tapping it closes the
+    // sheet and opens the REAL coach drawer scoped to this document.
+    const menu = await openDocumentMenu(page, sheet);
+    const open = menu.locator('[data-slot="document-chat-open"]');
     await expect(open).toBeVisible();
     await open.click();
 
@@ -150,7 +152,8 @@ test.describe("document vault — chat about a document", () => {
     await expect(
       sheet.getByRole("link", { name: "Open AI settings" }),
     ).toBeVisible();
-    await expect(sheet.locator('[data-slot="document-chat-open"]')).toHaveCount(
+    const menu = await openDocumentMenu(page, sheet);
+    await expect(menu.locator('[data-slot="document-chat-open"]')).toHaveCount(
       0,
     );
   });

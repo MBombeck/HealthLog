@@ -53,6 +53,8 @@ export function authUser(overrides: Partial<AuthUser> = {}): AuthUser {
     insurerName: null,
     insurerIkNumber: null,
     insuranceNumber: null,
+    insuranceNumberCountry: null,
+    insuranceGroupNumber: null,
     lastReportPracticeName: null,
     reportSelection: null,
     cycleTrackingEnabled: false,

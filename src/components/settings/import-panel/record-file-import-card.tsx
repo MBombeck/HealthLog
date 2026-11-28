@@ -3,28 +3,31 @@
 /**
  * Settings → Export & Import → Gadgetbridge database, FHIR Bundle.
  *
- * One card per kind, built like the FIT card: upload the file, follow the
- * background job through its status route, show what was imported per kind
- * of row and what the file held that was not, by table or resource type and
- * a closed reason. Nothing from inside the file is ever shown.
+ * One source row and sheet per kind, built like the FIT source: upload the
+ * file, follow the background job through its status route, show what was
+ * imported per kind of row and what the file held that was not, by table or
+ * resource type and a closed reason. Nothing from inside the file is ever shown.
  */
 import { useCallback, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, FileHeart, Loader2, Upload, Watch } from "lucide-react";
+import { FileHeart, Watch } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { SettingsCardActions } from "@/components/settings/_card-actions";
-import { WrittenOutcomeLine } from "@/components/outcome/written-outcome-line";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
+import { WrittenOutcomeLine } from "@/components/outcome/written-outcome-line";
+import { classifyWrittenOutcome } from "@/lib/outcome/written-outcome";
 import { useTranslations } from "@/lib/i18n/context";
 import {
   recordFileImportFailureCode,
   type RecordFileImportResult,
 } from "@/lib/import/file-import/kinds";
-import { classifyWrittenOutcome } from "@/lib/outcome/written-outcome";
 import { queryKeys } from "@/lib/query-keys";
-import { ImportCardShell, ImportStatusRegion } from "./import-card-shell";
-import { FileInput } from "@/components/ui/file-picker";
+import { ListGroup, ListItem } from "@/components/ui/list-row";
+import {
+  ImportDetails,
+  ImportPickerRow,
+  ImportSource,
+  useFinishedJobMeta,
+} from "./import-card-shell";
 
 const TERMINAL_STATES: readonly string[] = ["done", "failed"];
 
@@ -40,6 +43,7 @@ export interface RecordFileImportJob {
   status: string;
   result: RecordFileImportResult | null;
   failureReason: string | null;
+  completedAt?: string | null;
 }
 
 /**
@@ -64,6 +68,7 @@ function useCopy(kind: CardKind) {
             t(`${k}.gadgetbridge.steps.export`),
             t(`${k}.gadgetbridge.steps.upload`),
           ],
+          fileHint: t(`${k}.gadgetbridge.fileHint`),
           accept: "application/octet-stream,application/x-sqlite3,.db,.sqlite",
         }
       : {
@@ -73,6 +78,7 @@ function useCopy(kind: CardKind) {
             t(`${k}.fhirBundle.steps.export`),
             t(`${k}.fhirBundle.steps.upload`),
           ],
+          fileHint: t(`${k}.fhirBundle.fileHint`),
           accept: "application/json,application/fhir+json,.json",
         };
   const failures: Record<string, string> = {
@@ -87,7 +93,6 @@ function useCopy(kind: CardKind) {
   return {
     ...perKind,
     failures,
-    choose: t(`${k}.choose`),
     uploading: t(`${k}.uploading`),
     running: t(`${k}.running`),
     doneSummary: t(`${k}.doneSummary`),
@@ -104,8 +109,10 @@ function useCopy(kind: CardKind) {
   };
 }
 
-export function RecordFileImportCard({ kind }: { kind: CardKind }) {
+export function RecordFileImportSource({ kind }: { kind: CardKind }) {
   const copy = useCopy(kind);
+  const finishedMeta = useFinishedJobMeta();
+  const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -163,89 +170,20 @@ export function RecordFileImportCard({ kind }: { kind: CardKind }) {
       : null;
   const testId = `import-card-${kind.replace("_", "-")}`;
 
-  return (
-    <ImportCardShell
-      testId={testId}
-      anchor={RECORD_FILE_IMPORT_ANCHORS[kind].anchor}
-      icon={kind === "gadgetbridge" ? Watch : FileHeart}
-      title={copy.title}
-      description={copy.description}
-    >
-      <ol className="text-foreground list-decimal space-y-1 pl-4 text-xs">
-        {copy.steps.map((step) => (
-          <li key={step}>{step}</li>
-        ))}
-      </ol>
-
-      <ImportStatusRegion query={statusQuery}>
-        {(uploading || running) && (
-          <p className="text-muted-foreground flex items-center gap-2 text-xs">
-            <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" />
-            {uploading ? copy.uploading : copy.running}
-          </p>
-        )}
-        {result && !running && (
-          <ResultView result={result} copy={copy} testId={testId} />
-        )}
-        {(failure || uploadError) && (
-          <p
-            role="alert"
-            data-testid={`${testId}-error`}
-            className="text-destructive flex items-start gap-2 text-sm"
-          >
-            <AlertCircle
-              className="mt-0.5 size-3.5 shrink-0"
-              aria-hidden="true"
-            />
-            <span>{uploadError ?? failure}</span>
-          </p>
-        )}
-      </ImportStatusRegion>
-
-      <SettingsCardActions className="mt-auto">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={busy}
-          onClick={() => inputRef.current?.click()}
-          data-testid={`${testId}-choose`}
-        >
-          {busy ? (
-            <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <Upload className="size-3.5" />
-          )}
-          {copy.choose}
-        </Button>
-      </SettingsCardActions>
-      <FileInput
-        ref={inputRef}
-        accept={copy.accept}
-        className="sr-only"
-        aria-label={copy.fileInputLabel}
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) void upload(file);
-          e.target.value = "";
-        }}
-      />
-    </ImportCardShell>
-  );
-}
-
-function ResultView({
-  result,
-  copy,
-  testId,
-}: {
-  result: RecordFileImportResult;
-  copy: ReturnType<typeof useCopy>;
-  testId: string;
-}) {
-  const lines = result.lines.filter((l) => l.imported + l.duplicates > 0);
-  return (
-    <div className="space-y-2">
+  const pickerMeta: React.ReactNode =
+    failure || uploadError ? (
+      <span
+        role="alert"
+        data-testid={`${testId}-error`}
+        className="text-destructive"
+      >
+        {uploadError ?? failure}
+      </span>
+    ) : uploading ? (
+      copy.uploading
+    ) : running ? (
+      copy.running
+    ) : result ? (
       <WrittenOutcomeLine
         outcome={classifyWrittenOutcome({
           written: result.imported,
@@ -254,39 +192,69 @@ function ResultView({
         message={result.imported > 0 ? copy.doneSummary : copy.doneNothing}
         testId={`${testId}-result`}
       />
-      {lines.length > 0 && (
-        <ul className="text-muted-foreground space-y-0.5 text-xs">
-          {lines.map((line) => (
-            <li key={line.key} className="flex justify-between gap-2">
-              <span className="text-foreground">{line.key}</span>
-              <span className="tabular-nums">
-                {copy.lineCounts(line.imported, line.duplicates)}
-              </span>
-            </li>
+    ) : (
+      copy.fileHint
+    );
+  const lines =
+    result && !running
+      ? result.lines.filter((l) => l.imported + l.duplicates > 0)
+      : [];
+  const skips = result && !running ? result.skips : [];
+
+  const rowMeta = uploading
+    ? copy.uploading
+    : running
+      ? copy.running
+      : (finishedMeta(
+          job ? { ...job, written: result?.imported ?? 0 } : null,
+        ) ?? copy.fileHint);
+
+  return (
+    <ImportSource
+      testId={testId}
+      anchor={RECORD_FILE_IMPORT_ANCHORS[kind].anchor}
+      icon={kind === "gadgetbridge" ? Watch : FileHeart}
+      title={copy.title}
+      info={[copy.description, ...copy.steps]}
+      meta={rowMeta}
+      status={busy ? "running" : failure || uploadError ? "failed" : null}
+      open={open}
+      onOpenChange={setOpen}
+      query={statusQuery}
+      chooseTestId={`${testId}-open`}
+      fileInputRef={inputRef}
+      file={{
+        accept: copy.accept,
+        inputLabel: copy.fileInputLabel,
+        onFiles: ([file]) => void upload(file!),
+      }}
+    >
+      <ListGroup aria-live="polite">
+        <ImportPickerRow
+          busy={busy}
+          inputRef={inputRef}
+          meta={pickerMeta}
+          actionTestId={`${testId}-choose`}
+          onFiles={([file]) => void upload(file!)}
+        />
+        {lines.map((line) => (
+          <ListItem
+            key={line.key}
+            title={line.key}
+            meta={copy.lineCounts(line.imported, line.duplicates)}
+          />
+        ))}
+      </ListGroup>
+      {skips.length > 0 && (
+        <ImportDetails>
+          <p>{copy.skippedHeading}</p>
+          {skips.map((skip) => (
+            <p key={`${skip.key}-${skip.reason}`} className="break-all">
+              {skip.key} ({skip.reason}): {skip.count}
+            </p>
           ))}
-        </ul>
+        </ImportDetails>
       )}
-      {result.skips.length > 0 && (
-        <details className="text-xs">
-          <summary className="text-foreground cursor-pointer">
-            {copy.skippedHeading}
-          </summary>
-          <ul className="text-muted-foreground mt-1 space-y-0.5">
-            {result.skips.map((skip) => (
-              <li
-                key={`${skip.key}-${skip.reason}`}
-                className="flex justify-between gap-2"
-              >
-                <span className="text-foreground break-all">
-                  {skip.key}{" "}
-                  <span className="text-muted-foreground">({skip.reason})</span>
-                </span>
-                <span className="tabular-nums">{skip.count}</span>
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
-    </div>
+    </ImportSource>
   );
 }

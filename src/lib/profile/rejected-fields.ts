@@ -46,6 +46,8 @@ export const PROFILE_FIELD_LABEL_KEYS: Record<string, string> = {
   fullName: "settings.identity.fullName",
   insurerName: "settings.identity.insurer",
   insuranceNumber: "settings.identity.insuranceNumber",
+  insuranceNumberCountry: "settings.identity.insuranceCountry",
+  insuranceGroupNumber: "settings.identity.insuranceGroupNumber",
 };
 
 /**
@@ -86,6 +88,14 @@ const REJECTION_REASON_KEYS: Record<string, string> = {
   reproof_required: "settings.profileRejection.reproofRequired",
   reproof_failed: "settings.profileRejection.reproofFailed",
   second_factor_required: "settings.profileRejection.secondFactorRequired",
+  // Not Zod codes: the insurance number failed the rule of its country
+  // (`src/lib/validations/insurance-number.ts`), one sentence per rule.
+  invalid_kvnr: "settings.profileRejection.invalidKvnr",
+  invalid_svnr: "settings.profileRejection.invalidSvnr",
+  invalid_ahv: "settings.profileRejection.invalidAhv",
+  invalid_bsn: "settings.profileRejection.invalidBsn",
+  invalid_nir: "settings.profileRejection.invalidNir",
+  invalid_member_id: "settings.profileRejection.invalidMemberId",
   too_big: "settings.profileRejection.tooBig",
   too_small: "settings.profileRejection.tooSmall",
   invalid_value: "settings.profileRejection.invalidValue",

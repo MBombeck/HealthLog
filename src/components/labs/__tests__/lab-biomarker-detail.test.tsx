@@ -157,21 +157,22 @@ describe("<LabBiomarkerDetail>", () => {
     expect(html).toContain('data-testid="insight-status-card-loading"');
   });
 
-  it("renders the rich catalog description for a catalogued marker", () => {
-    // "LDL Cholesterol" resolves to the `ldl` catalog slug (case-insensitive),
-    // so the page shows the per-biomarker explainer, not the generic fallback.
-    // The explainer is the (i) beside the title; its body opens on tap.
+  it("keeps the catalog description one tap away beside the title", () => {
+    // "LDL Cholesterol" resolves to the `ldl` catalog slug (case-insensitive);
+    // its explainer sits in the (i) beside the title, not as a subtitle.
     expect(html).toContain('data-hint="page-header-info"');
     expect(html).not.toContain(
       "A lab biomarker you track. Add readings to follow",
     );
   });
 
-  it("offers Edit, with Delete behind the overflow menu rather than beside it", () => {
-    expect(html).toContain('title="Edit"');
+  it("keeps Edit and Delete in one overflow menu beside the page's button", () => {
     expect(html).toContain('data-slot="biomarker-more-actions"');
-    // No delete icon of the same size next to Edit.
+    // No icon buttons of their own beside it.
+    expect(html).not.toContain('title="Edit"');
     expect(html).not.toContain('title="Delete"');
+    // "All values" is the latest-values card's link, not a header icon.
+    expect(html).not.toContain('data-slot="lab-show-all-values"');
   });
 
   it("lists the latest readings under the chart with a link to all of them", () => {

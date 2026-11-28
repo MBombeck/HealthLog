@@ -9,13 +9,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import {
-  ArrowRight,
-  FlaskConical,
-  FolderOpen,
-  ListOrdered,
-  Plus,
-} from "lucide-react";
+import { ArrowRight, FlaskConical, FolderOpen, Plus } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -325,7 +319,21 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
     <div className="space-y-6">
       <PageHeader
         title={marker?.name ?? <Skeleton className="h-7 w-32" />}
-        info={description}
+        // What the marker is, and its unit and panel, one tap away: a title
+        // and one line on the page (ui-standards §17).
+        info={
+          marker ? (
+            <>
+              <span className="block">{description}</span>
+              {marker.unit ? (
+                <span className="text-muted-foreground mt-1 block">
+                  {labUnitLabel(marker.unit, t)}
+                  {marker.panel ? `, ${marker.panel}` : ""}
+                </span>
+              ) : null}
+            </>
+          ) : undefined
+        }
         actions={
           <>
             {/* Edit, then Delete inside the overflow menu, away from the
@@ -337,27 +345,6 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
                 onEdit={() => setEditOpen(true)}
               />
             )}
-            {/* "Show all readings" mirrors the metric sub-pages' `<SubPageShell>`
-              control. The full reading feed lives on
-              `/labs/[biomarkerId]/values`; the detail page keeps the
-              numbers-first spine. */}
-            {readings.length > 0 ? (
-              <Button
-                asChild
-                variant="ghost"
-                size="icon"
-                data-slot="lab-show-all-values"
-                className="min-h-11 min-w-11 sm:min-h-9 sm:min-w-9"
-              >
-                <Link
-                  href={`/labs/${biomarkerId}/values`}
-                  aria-label={t("insights.subPage.showAllValues")}
-                  title={t("insights.subPage.showAllValues")}
-                >
-                  <ListOrdered className="h-4 w-4" aria-hidden="true" />
-                </Link>
-              </Button>
-            ) : null}
             {/* v1.36.x — entering a result is an admitted delegated write;
               renaming or removing the marker is not. */}
             {canAddLab && (
@@ -377,16 +364,6 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
           </>
         }
       />
-
-      {/* Unit + panel are meta about the marker, not its explainer, so they
-          read below the header block rather than competing with it for the
-          one description line every page header carries. */}
-      {marker?.unit ? (
-        <p className="text-muted-foreground text-sm">
-          {labUnitLabel(marker.unit, t)}
-          {marker.panel ? `, ${marker.panel}` : ""}
-        </p>
-      ) : null}
 
       {/* v1.43 — the other spellings this marker answers to. Editing them
           lives in the edit sheet; a reader who may not edit sees them here. */}
@@ -449,24 +426,30 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
         </>
       ) : (
         <>
-          {/* Numbers-first stat strip — Min / Max / Median / Mean over the
-              numeric readings, mirroring the metric sub-pages. */}
-          <MetricStatStrip
-            summary={summary}
-            unit={labUnitText(marker?.unit ?? latest?.unit)}
-            seriesLabel={marker?.name}
-            icon={FlaskConical}
-          />
-          <Card>
-            <CardContent>
-              <LabBiomarkerChart
-                readings={readings}
+          {/* Numbers-first stat strip and the chart, from the second
+              reading on: over one reading the strip said the same value
+              four times and the chart drew one dot in 340 px. The single
+              value stands in the latest-values card below. */}
+          {numericReadings.length > 1 ? (
+            <>
+              <MetricStatStrip
+                summary={summary}
                 unit={labUnitText(marker?.unit ?? latest?.unit)}
-                lowerBound={marker?.lowerBound ?? null}
-                upperBound={marker?.upperBound ?? null}
+                seriesLabel={marker?.name}
+                icon={FlaskConical}
               />
-            </CardContent>
-          </Card>
+              <Card>
+                <CardContent>
+                  <LabBiomarkerChart
+                    readings={readings}
+                    unit={labUnitText(marker?.unit ?? latest?.unit)}
+                    lowerBound={marker?.lowerBound ?? null}
+                    upperBound={marker?.upperBound ?? null}
+                  />
+                </CardContent>
+              </Card>
+            </>
+          ) : null}
           <LabLatestValues readings={readings} biomarkerId={biomarkerId} />
           <LabTrendCard
             trend={marker?.trend}

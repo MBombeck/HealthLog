@@ -1,32 +1,21 @@
 "use client";
 
 /**
- * v1.4.16 — Settings → Export.
+ * Settings → Export & Import.
  *
- * Single surface that consolidates every "give me my data out" path in
- * HealthLog. Replaces the old `<ExportCard>` inside `<AdvancedSection>`
- * (CSV/JSON/Doctor-report buttons crammed onto one row) with one card
- * per export type, each with its own filter inputs and a clear
- * "Download" / "Generate" button.
- *
- *   1. Measurements CSV           — optional `since`/`until`
- *   2. Medications CSV            — optional intake-history toggle
- *   3. Mood CSV                   — optional `since`/`until`
- *   4. Full JSON Backup           — single-file user-scoped dump
- *
- * v1.18.0 — the full health-record export (PDF + FHIR R4 + zip
- * package) moved out to its own top-level "Gesundheitsakte" section. This
- * page now keeps only the generic data export/import paths.
- *
- * Mobile-first: cards stack on `<md`, two-column grid on `>=md`.
+ * One readable column of two lists. "Import" holds a row per source (see
+ * `import-panel/`); "Export" holds a row per way out: the full backup, the
+ * measurement, medication and mood CSVs, and the doctor's report, which has a
+ * page of its own. A row opens a sheet with that export's options and one
+ * Download. UI standards §20: a list is one card per group, a row per item,
+ * and a sheet has at most two buttons.
  */
 
 import { useState } from "react";
 import {
-  Download,
-  FileJson,
-  FileSpreadsheet,
-  FileText,
+  Activity,
+  Archive,
+  FileHeart,
   Loader2,
   Pill,
   Waves,
@@ -34,17 +23,18 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { SettingsCardActions } from "@/components/settings/_card-actions";
-import { SectionHeading } from "@/components/ui/section-heading";
 import { DateField } from "@/components/ui/date-field";
-import { Label } from "@/components/ui/label";
-import { PasswordInput } from "@/components/ui/password-input";
 import { Disclosure } from "@/components/ui/disclosure";
+import { Label } from "@/components/ui/label";
+import { ListGroup, ListItem } from "@/components/ui/list-row";
+import { PasswordInput } from "@/components/ui/password-input";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { SwitchRow } from "@/components/ui/switch-row";
-import { SettingsCard } from "@/components/settings/settings-card";
-import { SettingsCardHeader } from "@/components/settings/_card-header";
-import { cn } from "@/lib/utils";
-import { ImportPanel } from "@/components/settings/import-panel";
+import { ImportSources } from "@/components/settings/import-panel";
+import {
+  SourceIcon,
+  useOpenOnAnchor,
+} from "@/components/settings/import-panel/import-card-shell";
 import { useTranslations } from "@/lib/i18n/context";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
 import {
@@ -53,17 +43,11 @@ import {
   useRecentProof,
 } from "@/components/settings/security-section/use-recent-proof";
 
-type ExportFormat = "CSV" | "JSON" | "FHIR";
+/** Where the doctor's report is made. */
+const DOCTOR_REPORT_HREF = "/settings/health-record";
 
-/**
- * Trigger a browser download for a given URL by spinning up an anchor
- * element. Used by every CSV/JSON card so the implementation stays in
- * one place.
- */
-async function downloadFromUrl(url: string, filename: string): Promise<void> {
-  const res = await throwIfReproofRequired(
-    await apiFetchRaw(url, { credentials: "include" }),
-  );
+/** Save a response body as a file the browser downloads. */
+async function saveResponse(res: Response, filename: string): Promise<void> {
   if (!res.ok) {
     throw new Error(`Download failed (${res.status})`);
   }
@@ -78,96 +62,166 @@ async function downloadFromUrl(url: string, filename: string): Promise<void> {
   URL.revokeObjectURL(objectUrl);
 }
 
+async function downloadFromUrl(url: string, filename: string): Promise<void> {
+  await saveResponse(
+    await throwIfReproofRequired(
+      await apiFetchRaw(url, { credentials: "include" }),
+    ),
+    filename,
+  );
+}
+
+/** Today as a file name stamp. */
+function fileStamp(): string {
+  // eslint-disable-next-line healthlog/no-utc-day-key -- UTC by design: file name stamp, not a day shown or compared
+  return new Date().toISOString().slice(0, 10);
+}
+
 export function ExportSection() {
   const { t } = useTranslations();
-  // v1.18.6 — the visible page heading + subtitle now come from the
-  // shared `<SettingsSectionFrame>` in the route; the inner `<h2>` keeps its
-  // own "other options" subsection label.
   return (
-    <div className="space-y-6">
-      {/* v1.18.0 — the full health-record export moved to its own
-          top-level "Gesundheitsakte" section. This page keeps the generic
-          CSV/JSON data-out paths and the import surface. */}
+    <div className="max-w-180 space-y-8">
       <section
-        aria-labelledby="settings-section-export-other-title"
-        className="space-y-4"
+        aria-labelledby="settings-section-import-title"
+        className="space-y-3"
       >
-        <SectionHeading
-          icon={Download}
-          id="settings-section-export-other-title"
-          title={t("settings.sections.export.otherOptionsHeading")}
-        />
-        <div className="grid gap-4 md:grid-cols-2">
-          <MeasurementsCsvCard />
-          <MedicationsCsvCard />
-          <MoodCsvCard />
-          <FullBackupCard />
+        <div className="space-y-1">
+          <h2
+            id="settings-section-import-title"
+            className="text-base font-semibold"
+          >
+            {t("settings.sections.export.import.heading")}
+          </h2>
+          <p className="text-muted-foreground text-sm">
+            {t("settings.sections.export.import.description")}
+          </p>
         </div>
+        <ListGroup data-testid="import-sources">
+          <ImportSources />
+        </ListGroup>
       </section>
 
-      {/* issue #281 — the import surface for the Apple Health
-          `export.zip` and the generic JSON paths. The export routes had
-          backends with no UI until now. */}
-      <ImportPanel />
+      <section
+        aria-labelledby="settings-section-export-title"
+        className="space-y-3"
+      >
+        <h2
+          id="settings-section-export-title"
+          className="text-base font-semibold"
+        >
+          {t("settings.sections.export.exportHeading")}
+        </h2>
+        <ListGroup data-testid="export-rows">
+          <FullBackupExport />
+          <CsvExport
+            kind="measurements"
+            anchor="measurements-csv"
+            icon={Activity}
+            endpoint="/api/export/measurements"
+            filenamePrefix="healthlog-measurements"
+          />
+          <MedicationsCsvExport />
+          <CsvExport
+            kind="mood"
+            anchor="mood-csv"
+            icon={Waves}
+            endpoint="/api/export/mood"
+            filenamePrefix="healthlog-mood"
+          />
+          <ListItem
+            data-testid="export-card-doctor-report"
+            icon={<SourceIcon icon={FileHeart} />}
+            title={t("settings.sections.export.cards.doctorReport.title")}
+            meta={t("settings.sections.export.cards.doctorReport.description")}
+            href={DOCTOR_REPORT_HREF}
+          />
+        </ListGroup>
+      </section>
     </div>
   );
 }
 
-// ─────────────────────────── Card primitives ───────────────────────────
+// ─────────────────────────── Row + sheet ───────────────────────────
 
-interface ExportCardShellProps {
+/**
+ * One export: the row on the page (icon, name, one meta line, chevron) and
+ * the sheet with its options. The footer is Close and Download.
+ */
+function ExportRow({
+  testId,
+  anchor,
+  icon,
+  title,
+  meta,
+  actionTestId,
+  busy,
+  disabled,
+  onDownload,
+  onOpenChange,
+  open,
+  children,
+}: {
   testId: string;
-  /** Deep-link anchor for the card (`/settings/export#<anchor>`). */
+  /** Deep-link anchor of the row (`/settings/export#<anchor>`). */
   anchor: string;
   icon: LucideIcon;
   title: string;
-  format: ExportFormat;
-  children?: React.ReactNode;
-  /** The card's action row — the "Download" button, and nothing after it. */
-  footer: React.ReactNode;
-  /** Extra grid-position classes applied to the outer card div. */
-  outerClassName?: string;
-}
-
-function ExportCardShell({
-  testId,
-  anchor,
-  icon: Icon,
-  title,
-  format,
-  children,
-  footer,
-  outerClassName,
-}: ExportCardShellProps) {
+  meta: string;
+  actionTestId: string;
+  busy: boolean;
+  disabled?: boolean;
+  onDownload: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: React.ReactNode;
+}) {
+  const { t } = useTranslations();
+  useOpenOnAnchor(anchor, () => onOpenChange(true));
   return (
-    <SettingsCard
-      data-testid={testId}
-      className={cn("flex h-full flex-col", outerClassName)}
-    >
-      <SettingsCardHeader
-        anchor={anchor}
-        icon={Icon}
+    <>
+      <ListItem
+        id={anchor}
+        className="scroll-mt-28"
+        data-testid={testId}
+        icon={<SourceIcon icon={icon} />}
         title={title}
-        status={
-          <span className="border-border text-muted-foreground rounded-full border px-2 py-0.5 text-xs font-medium">
-            {format}
-          </span>
-        }
+        meta={meta}
+        onSelect={() => onOpenChange(true)}
       />
-      {children && <div className="space-y-3">{children}</div>}
-      <SettingsCardActions>{footer}</SettingsCardActions>
-    </SettingsCard>
+      <ResponsiveSheet
+        open={open}
+        onOpenChange={onOpenChange}
+        contentWidth="lg"
+        title={title}
+        footer={
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              {t("common.close")}
+            </Button>
+            <Button
+              type="button"
+              data-testid={actionTestId}
+              onClick={onDownload}
+              disabled={busy || disabled}
+            >
+              {busy ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+              ) : null}
+              {t("settings.sections.export.actions.download")}
+            </Button>
+          </>
+        }
+      >
+        <div data-testid={`${testId}-sheet`} className="space-y-4">
+          {children}
+        </div>
+      </ResponsiveSheet>
+    </>
   );
-}
-
-// ─────────────────────────── CSV cards ───────────────────────────
-
-interface DateRangeFieldsProps {
-  since: string;
-  until: string;
-  setSince: (v: string) => void;
-  setUntil: (v: string) => void;
-  idPrefix: string;
 }
 
 function DateRangeFields({
@@ -176,12 +230,18 @@ function DateRangeFields({
   setSince,
   setUntil,
   idPrefix,
-}: DateRangeFieldsProps) {
+}: {
+  since: string;
+  until: string;
+  setSince: (v: string) => void;
+  setUntil: (v: string) => void;
+  idPrefix: string;
+}) {
   const { t } = useTranslations();
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <div className="grid grid-cols-2 gap-3">
       <div className="space-y-1.5">
-        <Label htmlFor={`${idPrefix}-since`} className="text-xs">
+        <Label htmlFor={`${idPrefix}-since`}>
           {t("settings.sections.export.filters.since")}
         </Label>
         <DateField
@@ -192,7 +252,7 @@ function DateRangeFields({
         />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor={`${idPrefix}-until`} className="text-xs">
+        <Label htmlFor={`${idPrefix}-until`}>
           {t("settings.sections.export.filters.until")}
         </Label>
         <DateField
@@ -215,158 +275,135 @@ function buildQueryString(base: Record<string, string | undefined>): string {
   return q ? `?${q}` : "";
 }
 
-interface CsvCardProps {
-  testId: string;
-  anchor: string;
-  actionTestId: string;
-  icon: LucideIcon;
-  titleKey: string;
-  endpoint: string;
-  filenamePrefix: string;
+function ErrorLine({ error }: { error: string | null }) {
+  if (!error) return null;
+  return (
+    <p role="alert" className="text-destructive text-sm">
+      {error}
+    </p>
+  );
 }
 
-function CsvCard({
-  testId,
-  anchor,
-  actionTestId,
-  icon,
-  titleKey,
-  endpoint,
-  filenamePrefix,
-}: CsvCardProps) {
+/** One download at a time, with the shared failure sentence. */
+function useDownload() {
   const { t } = useTranslations();
-  const [since, setSince] = useState("");
-  const [until, setUntil] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  async function handleDownload() {
+  async function run(task: () => Promise<void>) {
     setBusy(true);
     setError(null);
     try {
-      const query = buildQueryString({
-        since: since || undefined,
-        until: until || undefined,
-      });
-      // eslint-disable-next-line healthlog/no-utc-day-key -- UTC by design: file name stamp, not a day shown or compared
-      const stamp = new Date().toISOString().slice(0, 10);
-      const filename = `${filenamePrefix}-${stamp}.csv`;
-      await downloadFromUrl(`${endpoint}${query}`, filename);
-    } catch {
-      setError(t("settings.sections.export.downloadFailed"));
+      await task();
+    } catch (err) {
+      setError(
+        recentProofErrorMessage(
+          err,
+          t("settings.sections.export.downloadFailed"),
+        ),
+      );
     } finally {
       setBusy(false);
     }
   }
+  return { busy, error, setError, run };
+}
 
+// ─────────────────────────── CSV exports ───────────────────────────
+
+function CsvExport({
+  kind,
+  anchor,
+  icon,
+  endpoint,
+  filenamePrefix,
+}: {
+  kind: "measurements" | "mood";
+  /** Written out at the call site so the search palette's check finds it. */
+  anchor: string;
+  icon: LucideIcon;
+  endpoint: string;
+  filenamePrefix: string;
+}) {
+  const { t } = useTranslations();
+  const [open, setOpen] = useState(false);
+  const [since, setSince] = useState("");
+  const [until, setUntil] = useState("");
+  const download = useDownload();
+  // Literal keys, so the i18n call-site guard sees each one.
+  const copy =
+    kind === "measurements"
+      ? {
+          title: t("settings.sections.export.cards.measurementsCsv.title"),
+          meta: t("settings.sections.export.cards.measurementsCsv.description"),
+        }
+      : {
+          title: t("settings.sections.export.cards.moodCsv.title"),
+          meta: t("settings.sections.export.cards.moodCsv.description"),
+        };
   return (
-    <ExportCardShell
-      testId={testId}
+    <ExportRow
+      testId={`export-card-${kind}-csv`}
       anchor={anchor}
       icon={icon}
-      title={t(titleKey)}
-      format="CSV"
-      footer={
-        <Button
-          data-testid={actionTestId}
-          size="sm"
-          className="min-h-11 sm:min-h-9"
-          onClick={handleDownload}
-          disabled={busy}
-        >
-          {busy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <Download className="h-3.5 w-3.5" />
-          )}
-          {t("settings.sections.export.actions.download")}
-        </Button>
+      title={copy.title}
+      meta={copy.meta}
+      actionTestId={`export-action-${kind}-csv`}
+      busy={download.busy}
+      open={open}
+      onOpenChange={setOpen}
+      onDownload={() =>
+        void download.run(() =>
+          downloadFromUrl(
+            `${endpoint}${buildQueryString({
+              since: since || undefined,
+              until: until || undefined,
+            })}`,
+            `${filenamePrefix}-${fileStamp()}.csv`,
+          ),
+        )
       }
     >
       <DateRangeFields
-        idPrefix={testId}
+        idPrefix={`export-${kind}-csv`}
         since={since}
         until={until}
         setSince={setSince}
         setUntil={setUntil}
       />
-      {error && (
-        <p role="alert" className="text-destructive text-sm">
-          {error}
-        </p>
-      )}
-    </ExportCardShell>
+      <ErrorLine error={download.error} />
+    </ExportRow>
   );
 }
 
-function MeasurementsCsvCard() {
-  return (
-    <CsvCard
-      testId="export-card-measurements-csv"
-      anchor="measurements-csv"
-      actionTestId="export-action-measurements-csv"
-      icon={FileSpreadsheet}
-      titleKey="settings.sections.export.cards.measurementsCsv.title"
-      endpoint="/api/export/measurements"
-      filenamePrefix="healthlog-measurements"
-    />
-  );
-}
-
-function MedicationsCsvCard() {
-  // The intake-history toggle is local state on this card — we read it
-  // when the user clicks Download and append `&intake=true` to the URL.
+function MedicationsCsvExport() {
   const { t } = useTranslations();
+  const [open, setOpen] = useState(false);
   const [since, setSince] = useState("");
   const [until, setUntil] = useState("");
   const [includeIntake, setIncludeIntake] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleDownload() {
-    setBusy(true);
-    setError(null);
-    try {
-      const query = buildQueryString({
-        since: since || undefined,
-        until: until || undefined,
-        intake: includeIntake ? "true" : "false",
-      });
-      // eslint-disable-next-line healthlog/no-utc-day-key -- UTC by design: file name stamp, not a day shown or compared
-      const stamp = new Date().toISOString().slice(0, 10);
-      await downloadFromUrl(
-        `/api/export/medications${query}`,
-        `healthlog-medications-${stamp}.csv`,
-      );
-    } catch {
-      setError(t("settings.sections.export.downloadFailed"));
-    } finally {
-      setBusy(false);
-    }
-  }
-
+  const download = useDownload();
   return (
-    <ExportCardShell
+    <ExportRow
       testId="export-card-medications-csv"
       anchor="medications-csv"
       icon={Pill}
       title={t("settings.sections.export.cards.medicationsCsv.title")}
-      format="CSV"
-      footer={
-        <Button
-          data-testid="export-action-medications-csv"
-          size="sm"
-          className="min-h-11 sm:min-h-9"
-          onClick={handleDownload}
-          disabled={busy}
-        >
-          {busy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <Download className="h-3.5 w-3.5" />
-          )}
-          {t("settings.sections.export.actions.download")}
-        </Button>
+      meta={t("settings.sections.export.cards.medicationsCsv.description")}
+      actionTestId="export-action-medications-csv"
+      busy={download.busy}
+      open={open}
+      onOpenChange={setOpen}
+      onDownload={() =>
+        void download.run(() =>
+          downloadFromUrl(
+            `/api/export/medications${buildQueryString({
+              since: since || undefined,
+              until: until || undefined,
+              intake: includeIntake ? "true" : "false",
+            })}`,
+            `healthlog-medications-${fileStamp()}.csv`,
+          ),
+        )
       }
     >
       <DateRangeFields
@@ -384,88 +421,44 @@ function MedicationsCsvCard() {
         checked={includeIntake}
         onCheckedChange={setIncludeIntake}
       />
-      {error && (
-        <p role="alert" className="text-destructive text-sm">
-          {error}
-        </p>
-      )}
-    </ExportCardShell>
+      <ErrorLine error={download.error} />
+    </ExportRow>
   );
 }
 
-function MoodCsvCard() {
-  return (
-    <CsvCard
-      testId="export-card-mood-csv"
-      anchor="mood-csv"
-      actionTestId="export-action-mood-csv"
-      icon={Waves}
-      titleKey="settings.sections.export.cards.moodCsv.title"
-      endpoint="/api/export/mood"
-      filenamePrefix="healthlog-mood"
-    />
-  );
-}
+// ─────────────────────────── Full backup ───────────────────────────
 
 const MIN_EXPORT_PASSPHRASE_LENGTH = 12;
 
-function FullBackupCard() {
+function FullBackupExport() {
   const { t } = useTranslations();
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  // v1.23 — opt-in passphrase encryption. When on, the download POSTs to
-  // /api/export/encrypted with the passphrase and saves an opaque `.hlx`
-  // archive instead of plaintext JSON.
+  const [open, setOpen] = useState(false);
+  const download = useDownload();
+  // Opt-in passphrase encryption: the download POSTs to
+  // /api/export/encrypted and saves an opaque `.hlx` archive instead of
+  // plaintext JSON.
   const [encrypt, setEncrypt] = useState(false);
   const [passphrase, setPassphrase] = useState("");
-
   const passphraseTooShort =
     encrypt && passphrase.length < MIN_EXPORT_PASSPHRASE_LENGTH;
   // The whole record leaves the server here, so it asks for a fresh proof
   // unless the session signed in or re-proved within five minutes.
   const recentProof = useRecentProof();
 
-  async function handleDownload() {
-    setBusy(true);
-    setError(null);
-    try {
-      await recentProof.run(downloadOnce);
-    } catch (err) {
-      setError(
-        recentProofErrorMessage(
-          err,
-          t("settings.sections.export.downloadFailed"),
-        ),
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function downloadOnce() {
-    // eslint-disable-next-line healthlog/no-utc-day-key -- UTC by design: file name stamp, not a day shown or compared
-    const stamp = new Date().toISOString().slice(0, 10);
+    const stamp = fileStamp();
     if (encrypt) {
-      const res = await throwIfReproofRequired(
-        await apiFetchRaw("/api/export/encrypted", {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ passphrase }),
-        }),
+      await saveResponse(
+        await throwIfReproofRequired(
+          await apiFetchRaw("/api/export/encrypted", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ passphrase }),
+          }),
+        ),
+        `healthlog-backup-${stamp}.hlx`,
       );
-      if (!res.ok) {
-        throw new Error(`Download failed (${res.status})`);
-      }
-      const blob = await res.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = objectUrl;
-      a.download = `healthlog-backup-${stamp}.hlx`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(objectUrl);
     } else {
       await downloadFromUrl(
         "/api/export/full-backup",
@@ -475,32 +468,22 @@ function FullBackupCard() {
   }
 
   return (
-    <ExportCardShell
+    <ExportRow
       testId="export-card-full-backup"
       anchor="full-backup"
-      icon={FileJson}
+      icon={Archive}
       title={t("settings.sections.export.cards.fullBackup.title")}
-      format="JSON"
-      footer={
-        <Button
-          data-testid="export-action-full-backup"
-          size="sm"
-          className="min-h-11 sm:min-h-9"
-          onClick={handleDownload}
-          disabled={busy || passphraseTooShort}
-        >
-          {busy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <FileText className="h-3.5 w-3.5" />
-          )}
-          {t("settings.sections.export.actions.download")}
-        </Button>
-      }
+      meta={t("settings.sections.export.cards.fullBackup.description")}
+      actionTestId="export-action-full-backup"
+      busy={download.busy}
+      disabled={passphraseTooShort}
+      open={open}
+      onOpenChange={setOpen}
+      onDownload={() => void download.run(() => recentProof.run(downloadOnce))}
     >
       {/* What the file holds and what it leaves out (document binaries,
-          workout GPS and sample series), folded under "Learn more" so the
-          card reads as title, one line and the action. */}
+          workout GPS and sample series) and how the passphrase seals it,
+          folded under "Learn more"; the sheet itself says the one warning. */}
       <Disclosure data-fold summary={t("common.learnMore")}>
         <p className="text-sm">
           {t("settings.sections.export.cards.fullBackup.detail")}
@@ -511,6 +494,9 @@ function FullBackupCard() {
         >
           {t("settings.sections.export.cards.fullBackup.scopeNote")}
         </p>
+        <p className="text-muted-foreground text-xs">
+          {t("settings.sections.export.cards.fullBackup.passphraseHelp")}
+        </p>
       </Disclosure>
       <SwitchRow
         className="min-h-11"
@@ -520,7 +506,7 @@ function FullBackupCard() {
         checked={encrypt}
         onCheckedChange={(v) => {
           setEncrypt(v);
-          setError(null);
+          download.setError(null);
           if (!v) setPassphrase("");
         }}
       />
@@ -539,22 +525,13 @@ function FullBackupCard() {
             data-bwignore="true"
             className="h-9"
           />
-          <p className="text-muted-foreground text-xs">
-            {t("settings.sections.export.cards.fullBackup.passphraseHelp")}
-          </p>
           <p className="text-warning text-xs">
             {t("settings.sections.export.cards.fullBackup.noRecoveryWarning")}
           </p>
         </div>
       )}
-      {error && (
-        <p role="alert" className="text-destructive text-sm">
-          {error}
-        </p>
-      )}
+      <ErrorLine error={download.error} />
       {recentProof.dialog}
-    </ExportCardShell>
+    </ExportRow>
   );
 }
-
-// ─────────────────────────── Cycle export (gated) ───────────────────────────

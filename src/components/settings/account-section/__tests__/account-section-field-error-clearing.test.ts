@@ -14,13 +14,21 @@
  * nothing calls is exactly the shape this guard exists to catch.
  */
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { readSource } from "@/__tests__/helpers/source-files";
 
 import { PROFILE_FIELD_LABEL_KEYS } from "@/lib/profile/rejected-fields";
 import { clearRejectedField } from "../account-section-utils";
 
-const SOURCE = readFileSync(resolve(__dirname, "../index.tsx"), "utf8");
+// The insurance row paints and clears its own slots in its own file.
+const SOURCE = [
+  readSource("src/components/settings/account-section/index.tsx", [
+    "clearFieldError(",
+  ]),
+  readSource(
+    "src/components/settings/account-section/insurance-number-fields.tsx",
+    ["clearFieldError("],
+  ),
+].join("\n");
 
 /** The slots the form renders a refusal sentence into. */
 function renderedSlots(): string[] {

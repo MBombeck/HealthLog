@@ -1,11 +1,11 @@
 /**
  * The `Patient` resource: display name, administrative gender, birth date and
- * the KVNR identifier. Every absent field collapses its slot.
+ * the insurance-number identifier. Every absent field collapses its slot.
  */
 import type { DoctorReportData } from "@/lib/doctor-report-data";
 import type { FhirPatient } from "@/lib/fhir/types";
 import {
-  KVNR_SYSTEM,
+  insuranceIdentifier,
   PATIENT_RESOURCE_ID,
   type FhirPatientIdentity,
 } from "@/lib/fhir/resources/common";
@@ -56,10 +56,7 @@ export function patientResource(
   if (data.patient.dateOfBirth) {
     patient.birthDate = data.patient.dateOfBirth.slice(0, 10);
   }
-  if (identity.insuranceNumber) {
-    patient.identifier = [
-      { system: KVNR_SYSTEM, value: identity.insuranceNumber },
-    ];
-  }
+  const insurance = insuranceIdentifier(identity);
+  if (insurance) patient.identifier = [insurance];
   return patient;
 }

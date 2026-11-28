@@ -24,11 +24,34 @@ export async function deleteAppleHealthWorkouts(
   userId: string,
   externalIds: readonly string[],
 ): Promise<{ deleted: number; personalRecordsRemoved: number }> {
-  if (externalIds.length === 0)
-    return { deleted: 0, personalRecordsRemoved: 0 };
+  const { deleted, personalRecordsRemoved } = await deleteSourceWorkouts(
+    userId,
+    externalIds,
+    APP_MINTED_SOURCE,
+  );
+  return { deleted, personalRecordsRemoved };
+}
 
-  const { deleted, personalRecordsRemoved } = await prisma.$transaction(
-    async (tx) => {
+/**
+ * The same delete for the workouts one app-minted source wrote: Apple Health
+ * above, and the Android sync's Health Connect sessions
+ * (`POST /api/health-connect/batch` `deletes`). Answers the externalIds it
+ * removed.
+ */
+export async function deleteSourceWorkouts(
+  userId: string,
+  externalIds: readonly string[],
+  source: typeof APP_MINTED_SOURCE | "HEALTH_CONNECT",
+): Promise<{
+  deleted: number;
+  personalRecordsRemoved: number;
+  deletedExternalIds: string[];
+}> {
+  if (externalIds.length === 0)
+    return { deleted: 0, personalRecordsRemoved: 0, deletedExternalIds: [] };
+
+  const { deleted, personalRecordsRemoved, deletedExternalIds } =
+    await prisma.$transaction(async (tx) => {
       // The detector reads the best workout and writes its record under this
       // same lock, so it either wrote before this delete (and the record goes
       // below) or reads after it (and never sees the workout).
@@ -36,16 +59,22 @@ export async function deleteAppleHealthWorkouts(
       const rows = await tx.workout.findMany({
         where: {
           userId,
-          source: APP_MINTED_SOURCE,
+          source,
           externalId: { in: [...externalIds] },
         },
         select: { id: true, externalId: true },
       });
-      if (rows.length === 0) return { deleted: 0, personalRecordsRemoved: 0 };
+      if (rows.length === 0) {
+        return {
+          deleted: 0,
+          personalRecordsRemoved: 0,
+          deletedExternalIds: [] as string[],
+        };
+      }
       const records = await tx.personalRecord.deleteMany({
         where: {
           userId,
-          source: APP_MINTED_SOURCE,
+          source,
           metricSlot: { not: null },
           externalId: { in: rows.map((r) => r.externalId as string) },
         },
@@ -53,9 +82,12 @@ export async function deleteAppleHealthWorkouts(
       const removed = await tx.workout.deleteMany({
         where: { userId, id: { in: rows.map((r) => r.id) } },
       });
-      return { deleted: removed.count, personalRecordsRemoved: records.count };
-    },
-  );
+      return {
+        deleted: removed.count,
+        personalRecordsRemoved: records.count,
+        deletedExternalIds: rows.map((r) => r.externalId as string),
+      };
+    });
 
   if (deleted > 0) invalidateUserMeasurements(userId, { evict: true });
   if (personalRecordsRemoved > 0) {
@@ -68,5 +100,5 @@ export async function deleteAppleHealthWorkouts(
       });
     }
   }
-  return { deleted, personalRecordsRemoved };
+  return { deleted, personalRecordsRemoved, deletedExternalIds };
 }

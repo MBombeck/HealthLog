@@ -284,6 +284,25 @@ function headingText(
   return { title: t(section.titleKey) };
 }
 
+/**
+ * The rail's groups in order, each with the entries it shows. A group whose
+ * entries are all hidden (module-gated, or not offered inside a shared
+ * record) is left out, so no heading ever stands over nothing. Entries of
+ * one group that are not adjacent in the list still render under one
+ * heading, in their list order.
+ */
+export function settingsNavGroups<T extends { group: SettingsSectionGroup }>(
+  sections: readonly T[],
+): Array<{ group: SettingsSectionGroup; sections: T[] }> {
+  const groups: Array<{ group: SettingsSectionGroup; sections: T[] }> = [];
+  for (const section of sections) {
+    const existing = groups.find((g) => g.group === section.group);
+    if (existing) existing.sections.push(section);
+    else groups.push({ group: section.group, sections: [section] });
+  }
+  return groups.filter((g) => g.sections.length > 0);
+}
+
 export interface SettingsShellProps {
   /**
    * Optional override for the active section. When omitted the shell reads
@@ -527,52 +546,49 @@ export function SettingsShell({
             offset `top-6` to clear the scroll viewport's padding — keeps the
             nav fixed while only the content column scrolls. `max-h` +
             `overflow-y-auto` let a long section list scroll within the
-            pinned panel on short viewports. */}
+            pinned panel on short viewports; the scrollbar stays visible
+            (thin), because with it hidden a list cut at the panel's edge
+            read as a group heading with nothing under it. */}
         <aside
           aria-label={t("settings.shell.sectionsNav")}
-          className="no-scrollbar hidden max-h-[calc(100dvh-5.5rem-var(--floating-action-clearance))] overflow-y-auto md:sticky md:top-6 md:col-start-1 md:row-span-2 md:row-start-1 md:block md:self-start"
+          className="hidden max-h-[calc(100dvh-5.5rem-var(--floating-action-clearance))] [scrollbar-width:thin] overflow-y-auto md:sticky md:top-6 md:col-start-1 md:row-span-2 md:row-start-1 md:block md:self-start"
         >
           <ul className="space-y-1">
-            {visibleSections.map((section, index) => {
-              const isActive = section.slug === activeSlug;
-              const Icon = section.icon;
-              // A non-interactive header
-              // precedes the first VISIBLE entry of each group so a
-              // module-gated entry never leaves an orphan header above an
-              // empty cluster.
-              const startsNewGroup =
-                index === 0 ||
-                visibleSections[index - 1].group !== section.group;
-              return (
-                <React.Fragment key={section.slug}>
-                  {startsNewGroup ? (
-                    <li
-                      className={cn(
-                        "text-muted-foreground px-3 pb-1 text-xs font-medium tracking-wide uppercase",
-                        index === 0 ? "" : "pt-4",
-                      )}
-                    >
-                      {t(SETTINGS_SECTION_GROUP_LABEL_KEYS[section.group])}
-                    </li>
-                  ) : null}
-                  <li>
-                    <Link
-                      href={`/settings/${section.slug}`}
-                      aria-current={isActive ? "page" : undefined}
-                      className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                        isActive
-                          ? "bg-primary/10 text-primary"
-                          : "text-foreground hover:bg-accent",
-                      )}
-                    >
-                      <Icon className="h-4 w-4" aria-hidden="true" />
-                      {t(section.titleKey)}
-                    </Link>
+            {settingsNavGroups(visibleSections).map(
+              ({ group, sections }, groupIndex) => (
+                <React.Fragment key={group}>
+                  <li
+                    className={cn(
+                      "text-muted-foreground px-3 pb-1 text-xs font-medium tracking-wide uppercase",
+                      groupIndex === 0 ? "" : "pt-4",
+                    )}
+                  >
+                    {t(SETTINGS_SECTION_GROUP_LABEL_KEYS[group])}
                   </li>
+                  {sections.map((section) => {
+                    const isActive = section.slug === activeSlug;
+                    const Icon = section.icon;
+                    return (
+                      <li key={section.slug}>
+                        <Link
+                          href={`/settings/${section.slug}`}
+                          aria-current={isActive ? "page" : undefined}
+                          className={cn(
+                            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                            isActive
+                              ? "bg-primary/10 text-primary"
+                              : "text-foreground hover:bg-accent",
+                          )}
+                        >
+                          <Icon className="h-4 w-4" aria-hidden="true" />
+                          {t(section.titleKey)}
+                        </Link>
+                      </li>
+                    );
+                  })}
                 </React.Fragment>
-              );
-            })}
+              ),
+            )}
           </ul>
         </aside>
 
