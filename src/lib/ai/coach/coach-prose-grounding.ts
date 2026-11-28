@@ -639,6 +639,14 @@ const MONTHS = [
   "января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря",
 ].join("|");
 
+/**
+ * Languages whose replies write "." as the decimal point and "," between
+ * thousands. Every other language but ru writes them the other way round.
+ */
+function writesDecimalPoint(locale: Locale): boolean {
+  return locale === "en" || locale === "zh-CN";
+}
+
 /** Parse a raw number token honouring the reply language's separators. */
 function parseLocaleNumber(raw: string, locale: Locale): number | null {
   let normalised: string;
@@ -646,8 +654,8 @@ function parseLocaleNumber(raw: string, locale: Locale): number | null {
     // RU: a space (usually a no-break one) groups thousands, "," is the
     // decimal point.
     normalised = raw.replace(/[\s\u00A0]/g, "").replace(/,/g, ".");
-  } else if (locale === "en") {
-    // EN: "," groups thousands, "." is the decimal point.
+  } else if (writesDecimalPoint(locale)) {
+    // EN and zh-CN: "," groups thousands, "." is the decimal point.
     normalised = raw.replace(/,/g, "");
   } else {
     // DE / fr / es / it / pl / nl / pt-BR: "." groups thousands, "," is the decimal
@@ -676,14 +684,13 @@ function tokenizeMagnitudes(prose: string, locale: Locale): ProseMagnitude[] {
     return true;
   };
 
-  const numFrag =
-    locale === "en"
-      ? String.raw`[+-]?\d{1,3}(?:,\d{3})+(?:\.\d+)?|[+-]?\d+(?:\.\d+)?`
-      : locale === "ru"
-        ? // ru groups thousands with a space (usually a no-break one) and
-          // writes the decimal point as a comma: "1 200,5".
-          String.raw`[+-]?\d{1,3}(?:[\s\u00A0]\d{3})+(?:,\d+)?|[+-]?\d+(?:,\d+)?`
-        : String.raw`[+-]?\d{1,3}(?:\.\d{3})+(?:,\d+)?|[+-]?\d+(?:,\d+)?`;
+  const numFrag = writesDecimalPoint(locale)
+    ? String.raw`[+-]?\d{1,3}(?:,\d{3})+(?:\.\d+)?|[+-]?\d+(?:\.\d+)?`
+    : locale === "ru"
+      ? // ru groups thousands with a space (usually a no-break one) and
+        // writes the decimal point as a comma: "1 200,5".
+        String.raw`[+-]?\d{1,3}(?:[\s\u00A0]\d{3})+(?:,\d+)?|[+-]?\d+(?:,\d+)?`
+      : String.raw`[+-]?\d{1,3}(?:\.\d{3})+(?:,\d+)?|[+-]?\d+(?:,\d+)?`;
 
   const runPass = (re: RegExp, handle: (m: RegExpExecArray) => void): void => {
     re.lastIndex = 0;
