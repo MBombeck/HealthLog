@@ -34,6 +34,7 @@ import {
   getDisplayTransform,
   type UnitPreference,
 } from "@/lib/measurements/display-transform";
+import { withUnit } from "@/lib/format/unit-join";
 
 /** Where a weight sits against the person's own target band. */
 export type WeightTargetPosition = "below" | "inside" | "above";
@@ -142,7 +143,7 @@ export function buildWeightTargetFeature(
   const transform = getDisplayTransform("WEIGHT", system);
   const min = applyDisplayTransform(target.min, transform);
   const max = applyDisplayTransform(target.max, transform);
-  const band = `${min}–${max} ${transform.displayUnit}`;
+  const band = withUnit(`${min}–${max}`, transform.displayUnit);
   const reading =
     position === "below"
       ? `The person set their own weight target at ${band} and is currently below it, so gaining weight is progress and losing weight moves away from the goal. Judge weight changes against this target; never describe a gain as a setback or a regression.`

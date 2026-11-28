@@ -766,7 +766,7 @@ describe("handleReminderCheck configured wall-clock phase bounds", () => {
 
     expect(dispatchNotification).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: expect.stringContaining("45 min"),
+        message: expect.stringContaining("45\u00a0min"),
       }),
     );
   });

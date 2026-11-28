@@ -11,6 +11,7 @@ import {
   GLUCOSE_HYPO_FLOOR,
   GLUCOSE_HYPO_SEVERE_FLOOR,
 } from "@/lib/clinical-floors";
+import { withUnit } from "@/lib/format/unit-join";
 
 /** A confirmed safety-floor breach from the last 24 hours. */
 export interface MorningFloor {
@@ -67,7 +68,10 @@ export function floorFromReadings(
       if (worst) {
         return {
           reason: r,
-          valueLabel: `${Math.round(worst.sys)}/${Math.round(worst.dia)} mmHg`,
+          valueLabel: withUnit(
+            `${Math.round(worst.sys)}/${Math.round(worst.dia)}`,
+            "mmHg",
+          ),
         };
       }
       continue;

@@ -411,7 +411,7 @@ describe("Telegram webhook — callback dispatch", () => {
     expect(ackText).toMatch(/Ramipril/);
     // The answer names the minutes the button carried (an older 1 h button
     // keeps working), in the same "N min" form the new button uses.
-    expect(ackText).toMatch(/60 min/);
+    expect(ackText).toMatch(/60\u00a0min/);
   });
 
   it("'snooze:<medId>:<minutes>' holds the minutes to the setting's range", async () => {
@@ -929,7 +929,7 @@ describe("Telegram webhook — slot convergence (v1.16.9)", () => {
     // the next morning. The dose belongs to a day the course covered.
     wireMedicationFindFirst([scheduleRow], [], {
       ...MEDICATION,
-      dose: "5 mg",
+      dose: "5\u00a0mg",
       startsOn: null,
       endsOn: new Date("2026-06-09T00:00:00.000Z"),
       endedAt: null,
@@ -1338,7 +1338,7 @@ describe("POST /api/telegram/webhook on an ended course", () => {
   const DAY_MS = 24 * 60 * 60 * 1000;
   const ENDED = {
     ...MEDICATION,
-    dose: "5 mg",
+    dose: "5\u00a0mg",
     startsOn: new Date(Date.now() - 20 * DAY_MS),
     endsOn: new Date(Date.now() - 3 * DAY_MS),
     endedAt: null,

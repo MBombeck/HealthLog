@@ -14,6 +14,7 @@ import {
   withinWindow,
 } from "./shared";
 import { median } from "@/lib/stats/central";
+import { NBSP } from "@/lib/format/unit-join";
 
 export const HBA1C_WINDOW_DAYS = 180;
 export const FASTING_GLUCOSE_WINDOW_DAYS = 90;
@@ -161,7 +162,7 @@ export function computeGlycaemiaPillar(
       observed: {
         value: observed,
         unit: "mg/dL",
-        label: `Fasting median ${convertGlucose(observed, input.glucoseUnit)} ${input.glucoseUnit}`,
+        label: `Fasting median ${convertGlucose(observed, input.glucoseUnit)}${NBSP}${input.glucoseUnit}`,
         asOf: fasting.at(-1)!.at.toISOString(),
         sources: uniqueSources(fasting.map((row) => row.source)),
       },
@@ -169,7 +170,7 @@ export function computeGlycaemiaPillar(
         kind: "clinical-threshold",
         low: FASTING_GLUCOSE_REFERENCE.low,
         high: FASTING_GLUCOSE_REFERENCE.high,
-        label: `${convertGlucose(FASTING_GLUCOSE_REFERENCE.low, input.glucoseUnit)}–${convertGlucose(FASTING_GLUCOSE_REFERENCE.high, input.glucoseUnit)} ${input.glucoseUnit} fasting`,
+        label: `${convertGlucose(FASTING_GLUCOSE_REFERENCE.low, input.glucoseUnit)}–${convertGlucose(FASTING_GLUCOSE_REFERENCE.high, input.glucoseUnit)}${NBSP}${input.glucoseUnit} fasting`,
         source: "ADA 2025; Selvin 2010",
       },
       noiseFloor: Math.max(1, Math.abs(ceilingScore - floorScore)),

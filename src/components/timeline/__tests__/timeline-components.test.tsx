@@ -461,7 +461,9 @@ describe("selection bar head and hint", () => {
       ],
     };
     const html = text(bar("2026-01-03", timeline));
-    expect(html).toContain("9 Std. 16 Min., Schnitt aus 31 Messungen");
+    expect(html).toContain(
+      "9\u00a0Std. 16\u00a0Min., Schnitt aus 31 Messungen",
+    );
     expect(html).not.toContain("556");
   });
 });
@@ -537,8 +539,8 @@ describe("value line colours", () => {
     const html = render(
       <MeanPartsLine
         parts={[
-          { key: "BLOOD_PRESSURE_SYS", text: "129/82 mmHg" },
-          { key: "WEIGHT", text: "82,6 kg" },
+          { key: "BLOOD_PRESSURE_SYS", text: "129/82\u00a0mmHg" },
+          { key: "WEIGHT", text: "82,6\u00a0kg" },
         ]}
         seriesColor={seriesColor}
       />,
@@ -551,7 +553,7 @@ describe("value line colours", () => {
       );
     }
     // Apart by space on screen, a comma for a screen reader; never a dot.
-    expect(text(html)).toBe("129/82 mmHg, 82,6 kg");
+    expect(text(html)).toBe("129/82\u00a0mmHg, 82,6\u00a0kg");
     expect(html).toContain('class="sr-only">, </span>');
   });
 
@@ -560,8 +562,8 @@ describe("value line colours", () => {
       <MeanPartsLine
         lead="Ø"
         parts={[
-          { key: "BLOOD_PRESSURE_SYS", text: "129/82 mmHg" },
-          { key: "WEIGHT", text: "82,6 kg" },
+          { key: "BLOOD_PRESSURE_SYS", text: "129/82\u00a0mmHg" },
+          { key: "WEIGHT", text: "82,6\u00a0kg" },
           { key: "STRAIN", text: "Daily strain with a very long name 12" },
         ]}
         seriesColor={seriesColor}

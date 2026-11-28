@@ -50,10 +50,10 @@ function figures(html: string): Array<[string, string]> {
 describe("<PushRelayHandoff>", () => {
   it("shows the median, the 95th percentile, the pushes and the retries", () => {
     const html = render(MEASURED);
-    expect(html).toContain("Hand-off time, last 24 h");
+    expect(html).toContain("Hand-off time, last 24\u00a0h");
     expect(figures(html)).toEqual([
-      ["Median", "180 ms"],
-      ["95th percentile", "1.2 s"],
+      ["Median", "180\u00a0ms"],
+      ["95th percentile", "1.2\u00a0s"],
       ["Pushes", "1,234"],
       ["Needed a retry", "3"],
     ]);
@@ -76,14 +76,14 @@ describe("<PushRelayHandoff>", () => {
       figures(render({ ...MEASURED, p50Ms, p95Ms }))
         .slice(0, 2)
         .map(([, value]) => value);
-    expect(at(0, 999)).toEqual(["0 ms", "999 ms"]);
-    expect(at(1000, 1049)).toEqual(["1.0 s", "1.0 s"]);
-    expect(at(1050, 480_080)).toEqual(["1.1 s", "480.1 s"]);
+    expect(at(0, 999)).toEqual(["0\u00a0ms", "999\u00a0ms"]);
+    expect(at(1000, 1049)).toEqual(["1.0\u00a0s", "1.0\u00a0s"]);
+    expect(at(1050, 480_080)).toEqual(["1.1\u00a0s", "480.1\u00a0s"]);
   });
 
   it("says that the window holds no push instead of showing figures", () => {
     const html = render(NOTHING);
-    expect(html).toContain("Hand-off time, last 24 h");
+    expect(html).toContain("Hand-off time, last 24\u00a0h");
     expect(html).toContain("<p>No pushes in the last 24 hours</p>");
     expect(figures(html)).toEqual([]);
     expect(html).not.toContain("<dl");
@@ -93,16 +93,16 @@ describe("<PushRelayHandoff>", () => {
 
   it("follows the window the server reports", () => {
     const html = render({ ...NOTHING, windowHours: 1 });
-    expect(html).toContain("Hand-off time, last 1 h");
+    expect(html).toContain("Hand-off time, last 1\u00a0h");
     expect(html).toContain("<p>No pushes in the last 1 hour</p>");
   });
 
   it("prints the figures in the reader's notation", () => {
     const html = render(MEASURED, "de");
-    expect(html).toContain("Übergabezeit, letzte 24 h");
+    expect(html).toContain("Übergabezeit, letzte 24\u00a0h");
     expect(figures(html)).toEqual([
-      ["Median", "180 ms"],
-      ["95. Perzentil", "1,2 s"],
+      ["Median", "180\u00a0ms"],
+      ["95. Perzentil", "1,2\u00a0s"],
       ["Pushes", "1.234"],
       ["Erneut versucht", "3"],
     ]);

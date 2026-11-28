@@ -456,7 +456,7 @@ describe("<AppleHealthCard> — per-type arrivals (#1173)", () => {
       lastNewSampleAt: hoursAgo(2),
     });
     expect(out).toContain('data-trigger="manual"');
-    expect(out).toContain("Last received 2 h ago");
+    expect(out).toContain("Last received 2\u00a0h ago");
     expect(out).toContain("from Sync all");
     // The last arrival brought something new, so no second date is needed.
     expect(out).not.toContain("Last new value");
@@ -470,7 +470,7 @@ describe("<AppleHealthCard> — per-type arrivals (#1173)", () => {
       lastNewSampleAt: hoursAgo(72),
     });
     expect(out).toContain("in the background");
-    expect(out).toContain("Last new value 3 d ago");
+    expect(out).toContain("Last new value 3\u00a0d ago");
   });
 
   // #1259 — a duplicates-only batch no longer moves the arrival; the card
@@ -484,8 +484,8 @@ describe("<AppleHealthCard> — per-type arrivals (#1173)", () => {
       lastNewSampleAt: hoursAgo(20),
       lastSeenDuplicateAt: hoursAgo(1),
     });
-    expect(out).toContain("Last received 20 h ago");
-    expect(out).toContain("Last re-sent with nothing new 1 h ago");
+    expect(out).toContain("Last received 20\u00a0h ago");
+    expect(out).toContain("Last re-sent with nothing new 1\u00a0h ago");
   });
 
   it("does not name a re-send older than the last arrival", () => {
@@ -510,7 +510,7 @@ describe("<AppleHealthCard> — per-type arrivals (#1173)", () => {
       lastBackgroundAt: hoursAgo(5),
     });
     expect(out).toContain('data-trigger="foreground"');
-    expect(out).toContain("Last in background 5 h ago");
+    expect(out).toContain("Last in background 5\u00a0h ago");
   });
 
   it("does not repeat the background date when the last arrival was it", () => {
@@ -535,7 +535,7 @@ describe("<AppleHealthCard> — per-type arrivals (#1173)", () => {
       lastBackfillAt: hoursAgo(3),
     });
     expect(live).toContain('data-state="received"');
-    expect(live).toContain("History caught up 3 h ago");
+    expect(live).toContain("History caught up 3\u00a0h ago");
     const backfillOnly = html({
       ...base,
       lastReceivedAt: null,
@@ -545,7 +545,7 @@ describe("<AppleHealthCard> — per-type arrivals (#1173)", () => {
     });
     expect(backfillOnly).toContain('data-state="never"');
     expect(backfillOnly).toContain(
-      "Not received yet, History caught up 2 h ago",
+      "Not received yet, History caught up 2\u00a0h ago",
     );
   });
 
@@ -591,7 +591,7 @@ describe("<AppleHealthCard> — per-type arrivals (#1173)", () => {
       lastNewSampleAt: hoursAgo(400),
       lastEnteredHereAt: hoursAgo(48),
     });
-    expect(received).toContain("Last entered here 2 d ago");
+    expect(received).toContain("Last entered here 2\u00a0d ago");
     const never = html({
       ...base,
       type: "WEIGHT",
@@ -599,7 +599,7 @@ describe("<AppleHealthCard> — per-type arrivals (#1173)", () => {
       lastEnteredHereAt: hoursAgo(48),
     });
     expect(never).toContain("Not received yet");
-    expect(never).toContain("Last entered here 2 d ago");
+    expect(never).toContain("Last entered here 2\u00a0d ago");
     const noLedger = html({
       ...base,
       type: "WEIGHT",

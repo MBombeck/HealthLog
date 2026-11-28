@@ -45,7 +45,7 @@ describe("<TrendCard staleDays>", () => {
   it("renders day-bucket copy when staleDays is in (7, 30]", () => {
     const html = render(<TrendCard {...baseProps} staleDays={12} />, "en");
     expect(html).toContain('data-slot="tile-stale-hint"');
-    expect(html).toContain("Last reading 12 d ago");
+    expect(html).toContain("Last reading 12\u00a0d ago");
   });
 
   it("collapses 31-60 days into a weekly singular form", () => {

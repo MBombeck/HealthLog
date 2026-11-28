@@ -18,6 +18,7 @@
  * measurement type degrades gracefully instead of leaking an enum constant.
  */
 import type { PeriodNarrativeContext, MetricDelta } from "./period-narrative";
+import { NBSP } from "@/lib/format/unit-join";
 
 /** Marker stored in `InsightNarrative.providerType` for a fallback row. */
 export const DETERMINISTIC_PROVIDER_TYPE = "deterministic" as const;
@@ -116,7 +117,7 @@ const STEP_WORD: Record<Locale, string> = { de: "Schritte", en: "steps" };
 /** A percent sign the way the language sets it: "8,2 %" and "8.2%". */
 function fmtPercent(n: number, locale: Locale): string {
   const figure = fmtSigned(n, locale, 1);
-  return locale === "de" ? `${figure} %` : `${figure}%`;
+  return locale === "de" ? `${figure}${NBSP}%` : `${figure}%`;
 }
 
 /**
@@ -148,7 +149,7 @@ function deltaPhrase(d: MetricDelta, locale: Locale): string {
   const label = labelFor(d.type, locale);
   const unitWord =
     d.unit === "" && d.type === "ACTIVITY_STEPS" ? STEP_WORD[locale] : d.unit;
-  const unit = unitWord ? ` ${unitWord}` : "";
+  const unit = unitWord ? `${NBSP}${unitWord}` : "";
   const amount = `${fmtSigned(d.delta as number, locale, fractionDigitsFor(d.type))}${unit}`;
   // One bracket: the change and its percent side by side, not nested.
   const pct =

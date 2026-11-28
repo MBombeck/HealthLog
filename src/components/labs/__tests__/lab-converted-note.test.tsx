@@ -27,19 +27,19 @@ describe("<LabConvertedNote>", () => {
       sourceUnit: "mmol/L",
     });
     expect(html).toContain('data-slot="lab-converted-note"');
-    expect(html).toContain("converted from 5.6 mmol/L");
+    expect(html).toContain("converted from 5.6\u00a0mmol/L");
   });
 
   it("formats the number for the reader's language", () => {
     expect(
       render({ converted: true, sourceValue: 5.6, sourceUnit: "mmol/L" }, "de"),
-    ).toContain("umgerechnet aus 5,6 mmol/L");
+    ).toContain("umgerechnet aus 5,6\u00a0mmol/L");
   });
 
   it("prints the figure the report printed, with every digit", () => {
     expect(
       render({ converted: true, sourceValue: 5.6123456, sourceUnit: "mmol/L" }),
-    ).toContain("converted from 5.6123456 mmol/L");
+    ).toContain("converted from 5.6123456\u00a0mmol/L");
   });
 
   it.each([

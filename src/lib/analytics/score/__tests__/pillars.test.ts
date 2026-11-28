@@ -103,8 +103,10 @@ describe("reference-score pillars", () => {
     expect(result.status).toBe("ok");
     if (result.status === "ok") {
       expect(result.value.score).toBe(85);
-      expect(result.value.reference.label).toBe("120–129/70–79 mmHg");
-      expect(result.value.personalReference?.label).toBe("115–125/65–75 mmHg");
+      expect(result.value.reference.label).toBe("120–129/70–79\u00a0mmHg");
+      expect(result.value.personalReference?.label).toBe(
+        "115–125/65–75\u00a0mmHg",
+      );
     }
   });
 
@@ -184,10 +186,10 @@ describe("reference-score pillars", () => {
     expect(mgdl.status).toBe("ok");
     if (mmol.status !== "ok" || mgdl.status !== "ok") return;
     // These labels reach the app as finished text.
-    expect(mmol.value.observed.label).toBe("Fasting median 5.5 mmol/L");
-    expect(mmol.value.reference.label).toBe("3.9–5.5 mmol/L fasting");
-    expect(mgdl.value.observed.label).toBe("Fasting median 99 mg/dL");
-    expect(mgdl.value.reference.label).toBe("70–99 mg/dL fasting");
+    expect(mmol.value.observed.label).toBe("Fasting median 5.5\u00a0mmol/L");
+    expect(mmol.value.reference.label).toBe("3.9–5.5\u00a0mmol/L fasting");
+    expect(mgdl.value.observed.label).toBe("Fasting median 99\u00a0mg/dL");
+    expect(mgdl.value.reference.label).toBe("70–99\u00a0mg/dL fasting");
     // The score and the numbers the web converts from do not move.
     expect(mmol.value.observed.value).toBe(99);
     expect(mmol.value.observed.unit).toBe("mg/dL");
@@ -555,7 +557,7 @@ describe("reference-score pillars", () => {
     expect(result.status).toBe("ok");
     if (result.status === "ok") {
       expect(result.value.score).toBe(100);
-      expect(result.value.observed.label).toContain("LDL 120 mg/dL");
+      expect(result.value.observed.label).toContain("LDL 120\u00a0mg/dL");
     }
   });
 

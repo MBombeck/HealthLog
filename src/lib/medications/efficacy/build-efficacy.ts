@@ -58,6 +58,7 @@ import {
   type EfficacyAccount,
   type EfficacyDisplay,
 } from "@/lib/medications/efficacy/account-units";
+import { withUnit } from "@/lib/format/unit-join";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -747,7 +748,7 @@ export async function buildMedicationEfficacy(
     .filter((dc) => dc.effectiveFrom.getTime() >= windowFloorMs)
     .map((dc) => ({
       at: dc.effectiveFrom.toISOString(),
-      label: `${dc.doseValue} ${dc.doseUnit}`.trim(),
+      label: withUnit(dc.doseValue, dc.doseUnit),
     }));
   const pauses = med.pauseEras
     .filter((p) => (p.resumedAt?.getTime() ?? now.getTime()) >= windowFloorMs)

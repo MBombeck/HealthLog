@@ -145,7 +145,7 @@ describe("<DoseStrengthCurve>", () => {
     const html = render(<DoseStrengthCurve medicationId="med-1" asOf={ASOF} />);
 
     expect(html).toContain('data-slot="dose-strength-curve-empty"');
-    expect(html).toContain("Current dose: 5 mg");
+    expect(html).toContain("Current dose: 5\u00a0mg");
     expect(html).not.toContain('data-slot="dose-strength-curve-area"');
   });
 

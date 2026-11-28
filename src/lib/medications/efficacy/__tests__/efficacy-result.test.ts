@@ -44,7 +44,7 @@ describe("efficacy result", () => {
     );
     expect(result).toEqual({
       direction: "lower",
-      text: "Seit dem Start liegt der Mittelwert 9 mmHg niedriger.",
+      text: "Seit dem Start liegt der Mittelwert 9\u00a0mmHg niedriger.",
     });
     const en = efficacyResultOf(
       { beforeAfter: present(1.5, 2.5), unit: "kg" },
@@ -52,7 +52,7 @@ describe("efficacy result", () => {
       getServerTranslator("en").t,
       "en",
     );
-    expect(en.text).toBe("Since the start, the average is 1.5 kg higher.");
+    expect(en.text).toBe("Since the start, the average is 1.5\u00a0kg higher.");
   });
 
   it("says which side is short when there is no comparison", () => {
@@ -90,7 +90,7 @@ describe("efficacy result", () => {
         "needData",
       ]) {
         const text = t(`serverText.efficacyResult.${key}`, {
-          amount: "9 mmHg",
+          amount: "9\u00a0mmHg",
           weeks: 4,
         });
         expect(text, `${locale} ${key}`).not.toContain("serverText.");

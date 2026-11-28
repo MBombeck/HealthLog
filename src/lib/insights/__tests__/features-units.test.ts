@@ -31,7 +31,7 @@ const FEATURES = {
       unit: "kg",
       position: "above",
       progress: "losing",
-      reading: "The person set their own weight target at 65–70 kg …",
+      reading: "The person set their own weight target at 65–70\u00a0kg …",
     },
   },
   glucose: {
@@ -127,7 +127,7 @@ describe("featuresInReaderUnits", () => {
       unit: "lb",
       position: "above",
     });
-    expect(out.weight?.target?.reading).toContain("143.3–154.3 lb");
+    expect(out.weight?.target?.reading).toContain("143.3–154.3\u00a0lb");
     expect(out.historicalComparison?.weight).toMatchObject({
       current7dAvg: 176.4,
       change: -4.4,

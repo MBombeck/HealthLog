@@ -603,7 +603,7 @@ describe("GET /api/analytics — blood-pressure score basis on the wire", () => 
     const pillar = await readBloodPressurePillar();
 
     expect(pillar.result.status).toBe("ok");
-    expect(pillar.result.value?.observed.label).toBe("137/91 mmHg");
+    expect(pillar.result.value?.observed.label).toBe("137/91\u00a0mmHg");
     expect(pillar.result.value?.score).toBe(50);
     expect(pillar.result.value?.scoreBasis).toEqual({
       axis: "diastolic",
@@ -621,7 +621,7 @@ describe("GET /api/analytics — blood-pressure score basis on the wire", () => 
     seedBpSeries({ sys: 126, dia: 68, pairs: 14 });
     const pillar = await readBloodPressurePillar();
 
-    expect(pillar.result.value?.observed.label).toBe("126/68 mmHg");
+    expect(pillar.result.value?.observed.label).toBe("126/68\u00a0mmHg");
     expect(pillar.result.value?.scoreBasis).toEqual({
       axis: "systolic",
       relation: "in_band",
@@ -669,7 +669,7 @@ describe("GET /api/analytics — blood-pressure score basis on the wire", () => 
     // the route's second-run branch, so the assertions below are about the
     // coupling and not about a user who has no personal target at all.
     expect(pillar.result.value?.personalReference?.label).toBe(
-      "110–135/65–95 mmHg",
+      "110–135/65–95\u00a0mmHg",
     );
 
     expect(pillar.result.value?.score).toBe(50);

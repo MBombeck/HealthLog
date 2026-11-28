@@ -194,7 +194,7 @@ describe("rule alerts are worded in every language", () => {
     expect(bp.title).toBe("Blutdruck deutlich erhöht");
     expect(bp.message).toContain("165,4/101");
     expect(bp.message).toContain("„Hypertonie Grad 2“");
-    expect(weight.message).toContain("0,7 kg");
+    expect(weight.message).toContain("0,7\u00a0kg");
 
     const [bpEn] = localiseAlerts(specs, "en");
     expect(bpEn.message).toBe(

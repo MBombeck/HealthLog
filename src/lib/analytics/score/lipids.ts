@@ -11,6 +11,7 @@ import {
   withinWindow,
 } from "./shared";
 import { mean } from "@/lib/stats/central";
+import { NBSP } from "@/lib/format/unit-join";
 
 export const LIPIDS_WINDOW_DAYS = 365;
 export const LIPIDS_MIN_PANELS = 1;
@@ -66,7 +67,7 @@ export function computeLipidsPillar(
     panel[0].at,
   );
   const observedLabel = panel
-    .map((row) => `${row.marker} ${row.value} ${row.unit}`)
+    .map((row) => `${row.marker} ${row.value}${NBSP}${row.unit}`)
     .join("; ");
   const referenceLabel = panel
     .map((row) => {
@@ -76,7 +77,7 @@ export function computeLipidsPillar(
           : row.referenceHigh != null
             ? `≤ ${row.referenceHigh}`
             : `≥ ${row.referenceLow}`;
-      return `${row.marker} ${bounds} ${row.unit}`;
+      return `${row.marker} ${bounds}${NBSP}${row.unit}`;
     })
     .join("; ");
 

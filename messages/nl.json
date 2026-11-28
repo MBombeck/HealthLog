@@ -53,10 +53,10 @@
     "learnMore": "Meer informatie",
     "dismiss": "Sluiten",
     "moreInfo": "Meer informatie",
-    "durationHoursMinutes": "{hours} u {minutes} min",
-    "durationMinutes": "{minutes} min",
-    "durationClockMinutes": "{time} min",
-    "durationClockHours": "{time} u",
+    "durationHoursMinutes": "{hours} u {minutes} min",
+    "durationMinutes": "{minutes} min",
+    "durationClockMinutes": "{time} min",
+    "durationClockHours": "{time} u",
     "errorIdLabel": "Fout-ID",
     "errorIdCopy": "Fout-ID kopiëren",
     "errorIdCopied": "Fout-ID gekopieerd",
@@ -207,7 +207,7 @@
         "unitMismatch": "Deze eenheid is niet beschikbaar voor deze voedingsstof.",
         "extract": {
           "fileType": "Upload een JPEG, PNG, WebP of PDF.",
-          "fileTooLarge": "Het bestand is groter dan 10 MB.",
+          "fileTooLarge": "Het bestand is groter dan 10 MB.",
           "rateLimited": "Te veel etiketten gelezen. Probeer het over een uur opnieuw.",
           "budgetExceeded": "Je AI-gebruiksbudget voor vandaag is bereikt.",
           "failed": "Het etiket kon niet worden gelezen. Probeer een scherpere foto."
@@ -377,11 +377,11 @@
     "avgBp": "Gemiddelde bloeddruk",
     "classification": "Classificatie",
     "bmiTitle": "Body-mass-index (BMI)",
-    "bmiRow": "BMI: {bmi} kg/m², classificatie: {class} (WHO)",
+    "bmiRow": "BMI: {bmi} kg/m², classificatie: {class} (WHO)",
     "complianceTitle": "Therapietrouw medicatie",
     "glp1Title": "GLP-1-therapie",
-    "glp1WeightSummary": "Gewicht in de rapportageperiode: van {start} kg naar {end} kg ({delta} kg)",
-    "glp1CurrentDose": "Huidige dosis: {value} {unit} (sinds {since})",
+    "glp1WeightSummary": "Gewicht in de rapportageperiode: van {start} kg naar {end} kg ({delta} kg)",
+    "glp1CurrentDose": "Huidige dosis: {value} {unit} (sinds {since})",
     "glp1Compliance": "Therapietrouw: {taken} / {total} ({rate}%)",
     "glp1SideEffectsTitle": "Vastgelegde bijwerkingen",
     "colGlp1Date": "Datum",
@@ -426,7 +426,7 @@
     "typeGlucoseBedtime": "Glucose (voor het slapengaan)",
     "typeGlucoseUnspecified": "Glucose (zonder context)",
     "glucoseClassificationTitle": "Bloedglucose: referentiebereiken (ADA 2024 / DDG)",
-    "glucoseRow": "{label}: gem. {avg} {unit} (doel {rangeMin}–{rangeMax}), {class}",
+    "glucoseRow": "{label}: gem. {avg} {unit} (doel {rangeMin}–{rangeMax}), {class}",
     "glucoseInTarget": "binnen doel",
     "glucoseBelowTarget": "onder doel",
     "glucoseAboveTarget": "boven doel",
@@ -470,11 +470,11 @@
       "title": "Glucoseoverzicht (klinisch)",
       "colMetric": "Maat",
       "colValue": "Waarde",
-      "tirInRange": "Tijd binnen bereik ({low}–{high} {unit})",
-      "tirLow": "Laag (< {low} {unit})",
-      "tirVeryLow": "Zeer laag (< {veryLow} {unit})",
-      "tirHigh": "Hoog (> {high} {unit})",
-      "tirVeryHigh": "Zeer hoog (> {veryHigh} {unit})",
+      "tirInRange": "Tijd binnen bereik ({low}–{high} {unit})",
+      "tirLow": "Laag (< {low} {unit})",
+      "tirVeryLow": "Zeer laag (< {veryLow} {unit})",
+      "tirHigh": "Hoog (> {high} {unit})",
+      "tirVeryHigh": "Zeer hoog (> {veryHigh} {unit})",
       "mean": "Gemiddelde glucose",
       "gmi": "Glucose Management Indicator (GMI)",
       "eA1c": "Geschatte HbA1c",
@@ -537,7 +537,7 @@
     "lifeExposures": "blootstellingen: {list}",
     "workouts": {
       "title": "Trainingen",
-      "summary": "{sessions, plural, one {# training} other {# trainingen}}, {hours} u in totaal; gemiddeld {perWeek, plural, one {# training} other {# trainingen}} en {minutesPerWeek, plural, one {# minuut} other {# minuten}} per week.",
+      "summary": "{sessions, plural, one {# training} other {# trainingen}}, {hours} u in totaal; gemiddeld {perWeek, plural, one {# training} other {# trainingen}} en {minutesPerWeek, plural, one {# minuut} other {# minuten}} per week.",
       "colSport": "Sport",
       "colSessions": "Trainingen",
       "colTime": "Duur",
@@ -830,8 +830,8 @@
     "sleepShort": "Slaap",
     "stepsShort": "Stappen",
     "vo2MaxShort": "VO₂max",
-    "bpInTargetWindow90": "Bloeddruk binnen doel (90 d)",
-    "bpInTargetWindowDynamic": "Bloeddruk binnen doel ({days} d)",
+    "bpInTargetWindow90": "Bloeddruk binnen doel (90 d)",
+    "bpInTargetWindowDynamic": "Bloeddruk binnen doel ({days} d)",
     "bpInTargetCollecting": "gegevens verzamelen",
     "medications": "Medicatie",
     "quickAddMeasurement": "Meting vastleggen",
@@ -895,7 +895,7 @@
     "emptyTitle": "Je dashboard is leeg",
     "emptyDescription": "Leg je eerste meting of stemming vast. Tegels en grafieken verschijnen automatisch zodra er gegevens binnenkomen.",
     "emptyAddMeasurement": "Je eerste meting toevoegen",
-    "staleHint": "Laatste meting {count} d geleden",
+    "staleHint": "Laatste meting {count} d geleden",
     "staleHintWeeksOne": "Laatste meting 1 week geleden",
     "staleHintWeeksOther": "Laatste meting {count} weken geleden",
     "staleHintWeeksFew": "Laatste meting {count} weken geleden",
@@ -1026,8 +1026,8 @@
     "typeWalkingStepLength": "Staplengte",
     "typeWalkingSpeed": "Loopsnelheid",
     "glucoseContext": "Context",
-    "glucoseContextFasting": "Nuchter (≥8 u zonder eten)",
-    "glucoseContextPostprandial": "Na de maaltijd (2 u na het eten)",
+    "glucoseContextFasting": "Nuchter (≥8 u zonder eten)",
+    "glucoseContextPostprandial": "Na de maaltijd (2 u na het eten)",
     "glucoseContextRandom": "Willekeurig / tussendoor",
     "glucoseContextBedtime": "Voor het slapengaan",
     "glucoseContextNone": "Niet opgegeven",
@@ -1156,9 +1156,9 @@
     "typeIndoorTemperature": "Binnentemperatuur",
     "typeIndoorHumidity": "Luchtvochtigheid binnen",
     "durationReadAs": "Gelezen als {duration}",
-    "durationHoursMinutes": "{hours} u {minutes} min",
-    "durationHoursOnly": "{hours} u",
-    "durationMinutesOnly": "{minutes} min",
+    "durationHoursMinutes": "{hours} u {minutes} min",
+    "durationHoursOnly": "{hours} u",
+    "durationMinutesOnly": "{minutes} min",
     "durationInvalid": "Voer een duur in, bijvoorbeeld 7,5, 7:30 of 7h 30m.",
     "durationTooLong": "Eén registratie kan niet langer zijn dan 24 uur.",
     "sourceHealthConnect": "Health Connect",
@@ -1167,7 +1167,7 @@
     "typeTrainingReadiness": "Trainingsgereedheid",
     "typeAcuteTrainingLoad": "Acute trainingsbelasting",
     "sourceGarmin": "Garmin",
-    "valueOutOfRange": "Vul een waarde in tussen {min} en {max} {unit}.",
+    "valueOutOfRange": "Vul een waarde in tussen {min} en {max} {unit}.",
     "valueOutOfRangeNoUnit": "Vul een waarde in tussen {min} en {max}.",
     "lastValueDeviates": "Flink anders dan je vorige meting. Klopt dat?",
     "saveAndNext": "Volgende waarde",
@@ -1201,7 +1201,7 @@
     "shortTypeWalkingSpeed": "Loopsnelheid",
     "shortTypeCardioRecovery": "Hartslagherstel",
     "shortTypeWristTemperature": "Polstemperatuur",
-    "shortTypeSixMinuteWalkDistance": "Afstand 6 min wandelen",
+    "shortTypeSixMinuteWalkDistance": "Afstand 6 min wandelen",
     "shortTypeStairAscentSpeed": "Snelheid trap op",
     "shortTypeIrregularRhythmNotification": "Ritmemelding",
     "shortTypeHighHeartRateEvent": "Melding hoge hartslag",
@@ -1775,15 +1775,15 @@
       "naturalLanguage": {
         "title": "Beschrijf je medicijn",
         "description": "Beschrijf het medicijn in je eigen woorden, dan vullen wij het formulier alvast voor je in.",
-        "placeholder": "bijv. Mounjaro 5 mg wekelijks op woensdagochtend vanaf volgende maandag",
+        "placeholder": "bijv. Mounjaro 5 mg wekelijks op woensdagochtend vanaf volgende maandag",
         "submit": "Uitlezen",
         "submitBusy": "Uitlezen…",
         "cancel": "Annuleren",
         "examples": {
           "label": "Probeer een van deze voorbeelden",
-          "weekly": "Mounjaro 5 mg wekelijks op woensdagochtend",
-          "daily": "Ibuprofen 200 mg elke dag, 3 keer per dag",
-          "rolling": "Methotrexaat 7,5 mg elke 7 dagen na de laatste injectie"
+          "weekly": "Mounjaro 5 mg wekelijks op woensdagochtend",
+          "daily": "Ibuprofen 200 mg elke dag, 3 keer per dag",
+          "rolling": "Methotrexaat 7,5 mg elke 7 dagen na de laatste injectie"
         },
         "error": {
           "empty": "Typ eerst een beschrijving.",
@@ -1943,7 +1943,7 @@
           "dosesPerUnitPlaceholder": "bijv. 4",
           "dosesPerUnitHint": "Wat een nieuwe verpakking bevat, bijv. 28 tabletten.",
           "unitsPerDoseLabel": "Tabletten of eenheden per dosis",
-          "unitsPerDoseHint": "Bijv. 2 tabletten van 2 mg voor 4 mg.",
+          "unitsPerDoseHint": "Bijv. 2 tabletten van 2 mg voor 4 mg.",
           "packSizeToggle": "Verpakkingsgrootte (optioneel)"
         },
         "step4": {
@@ -2095,7 +2095,7 @@
       "title": "Dosissterkte in de loop van de tijd",
       "axisLabel": "Geregistreerde dosis ({unit})",
       "tooltipLabel": "Dosis",
-      "currentDose": "Huidige dosis: {dose} {unit}",
+      "currentDose": "Huidige dosis: {dose} {unit}",
       "noCurrentDose": "Nog geen dosis geregistreerd.",
       "empty": "Nog geen titratiegeschiedenis. Leg een dosiswijziging vast om de sterktecurve te zien."
     },
@@ -2103,7 +2103,7 @@
       "title": "Titratieschema",
       "empty": "Nog geen stappen voor dosisverhoging vastgelegd. Voeg gedateerde dosiswijzigingen toe om het schema weer te geven.",
       "youAreHere": "Je bent hier",
-      "doseStep": "{dose} {unit}",
+      "doseStep": "{dose} {unit}",
       "plannedFor": "Gepland voor {date}"
     },
     "injectionSiteBodyOutlineAriaLabel": "Lichaamsomtrek",
@@ -2445,14 +2445,14 @@
         "packagingEdit": "Bewerken",
         "packagingDescription": "Stel in hoeveel eenheden één dosis verbruikt en hoe groot een nieuwe verpakking meestal is, bijv. na een wissel van fabrikant met een andere stripgrootte.",
         "packagingUnitsPerDoseLabel": "Tabletten of eenheden per dosis",
-        "packagingUnitsPerDoseHelper": "Bijv. twee tabletten van 2 mg voor een dosis van 4 mg, of 1,5 voor anderhalve (meer dan 0, tot 100). Al geregistreerde doses blijven ongewijzigd.",
+        "packagingUnitsPerDoseHelper": "Bijv. twee tabletten van 2 mg voor een dosis van 4 mg, of 1,5 voor anderhalve (meer dan 0, tot 100). Al geregistreerde doses blijven ongewijzigd.",
         "packagingDefaultPackLabel": "Standaard verpakkingsgrootte (eenheden)",
         "packagingDefaultPackHelper": "Vult de hoeveelheid vooraf in bij het registreren van nieuwe verpakkingen (1–1000). Laat leeg als dit niet van toepassing is.",
         "packagingSuccess": "Verpakkingsgegevens opgeslagen",
         "packagingFailed": "Opslaan mislukt",
         "addManufacturerLabel": "Fabrikant",
         "addDoseStrengthLabel": "Sterkte",
-        "addDoseStrengthHint": "Zoals op de houder staat, bijv. 5 mg/0,5 ml.",
+        "addDoseStrengthHint": "Zoals op de houder staat, bijv. 5 mg/0,5 ml.",
         "openedOn": "Geopend op {date}",
         "expiresOn": "Verloopt op {date}",
         "summaryAllExpired": "Geen bruikbare voorraad: {units, plural, one {# eenheid} other {# eenheden}} gemarkeerd als verlopen",
@@ -2514,7 +2514,7 @@
         "saved": "Schema opgeslagen",
         "failed": "Het schema kan niet worden opgeslagen",
         "window": {
-          "intro": "Op tijd betekent ±1 u, of een eigen tijdvenster.",
+          "intro": "Op tijd betekent ±1 u, of een eigen tijdvenster.",
           "explicitToggle": "Eigen tijdvenster",
           "startLabel": "Begin van tijdvenster",
           "endLabel": "Einde van tijdvenster",
@@ -2602,7 +2602,7 @@
     "tableColStock": "Voorraad",
     "tableColActions": "Acties",
     "tableSortBy": "Sorteren op {column}",
-    "tableComplianceDays": "{days} d",
+    "tableComplianceDays": "{days} d",
     "tableStockDoseOne": "1 dosis",
     "tableStockDoses": "{count, plural, one {# dosis} other {# doses}}",
     "tableStockRunway": "≈ {days, plural, one {# dag} other {# dagen}} over",
@@ -2624,7 +2624,7 @@
       "levelShift": "Rond {date} is een verschuiving in het niveau gedetecteerd.",
       "plateau": {
         "title": "Gewichtsplateau bij de huidige dosis",
-        "evidence": "Je gewicht is in de afgelopen {window, plural, one {# dag} other {# dagen}} met {delta} {unit} veranderd ({readings, plural, one {# meting} other {# metingen}}), na {days, plural, one {# dag} other {# dagen}} op {dose}."
+        "evidence": "Je gewicht is in de afgelopen {window, plural, one {# dag} other {# dagen}} met {delta} {unit} veranderd ({readings, plural, one {# meting} other {# metingen}}), na {days, plural, one {# dag} other {# dagen}} op {dose}."
       },
       "retarget": {
         "label": "Niet de juiste meting?",
@@ -2647,9 +2647,9 @@
       "scaleToggleLabel": "Schaal van grafiek",
       "segmented": {
         "title": "Verandering bij de start",
-        "level": "Direct bij de start verschoof het niveau met {value} {unit} (95%-bereik {low} tot {high}).",
-        "slope": "Na de start veranderde de weektrend met {value} {unit} per week (95%-bereik {low} tot {high}).",
-        "preSlope": "Voor de start was de trend {value} {unit} per week.",
+        "level": "Direct bij de start verschoof het niveau met {value} {unit} (95%-bereik {low} tot {high}).",
+        "slope": "Na de start veranderde de weektrend met {value} {unit} per week (95%-bereik {low} tot {high}).",
+        "preSlope": "Voor de start was de trend {value} {unit} per week.",
         "includesZero": "Waar een bereik nul omvat, passen deze waarden ook bij geen verandering.",
         "basis": "Gebaseerd op {before, plural, one {# dag} other {# dagen}} voor en {after, plural, one {# dag} other {# dagen}} na de start ({from} tot {to}).",
         "excludedAdherence": "{count, plural, one {# dag na de start is weggelaten} other {# dagen na de start zijn weggelaten}}, omdat in de {lookback, plural, one {# dag} other {# dagen}} ervoor minder dan {floor}% van de doses is ingenomen.",
@@ -2809,7 +2809,7 @@
       "action": {
         "take": "Innemen",
         "skip": "Overslaan",
-        "snooze": "Later herinneren ({minutes} min)",
+        "snooze": "Later herinneren ({minutes} min)",
         "undo": "Ongedaan maken",
         "takeFor": "{name} innemen",
         "skipFor": "{name} overslaan",
@@ -2928,13 +2928,13 @@
     "bucketPeriod": "{start}–{end}",
     "bucketReadings": "Metingen: {count}",
     "bucketEntries": "Registraties: {count}",
-    "days7Label": "7 d",
+    "days7Label": "7 d",
     "days7Title": "Afgelopen 7 dagen",
-    "days30Label": "30 d",
-    "daysNLabel": "{days} d",
+    "days30Label": "30 d",
+    "daysNLabel": "{days} d",
     "daysNAria": "Laatste {days, plural, one {# dag} other {# dagen}}",
     "days30Title": "Afgelopen 30 dagen",
-    "days90Label": "90 d",
+    "days90Label": "90 d",
     "days90Title": "Afgelopen 90 dagen",
     "daysAllLabel": "Alles",
     "daysAllTitle": "Alle tijd",
@@ -2944,8 +2944,8 @@
     "boneMass": "Botmassa",
     "spo2": "SpO₂",
     "movingAverage7d": "Trend over 7 dagen",
-    "avg7dShort": "7 d",
-    "avg30dShort": "30 d",
+    "avg7dShort": "7 d",
+    "avg30dShort": "30 d",
     "trend7dShort": "Trend over 7 dagen",
     "trend": "Trend",
     "perWeek": "/week",
@@ -3149,7 +3149,7 @@
           "surprising": "Dagen met een betere stemming vallen in je gegevens samen met een hogere hartslag in rust, wat verrassend is.",
           "none": "Stemming en hartslag in rust bewegen in deze periode niet sterk samen."
         },
-        "weightWeekday": "{weekday}: je gewicht ligt {delta} kg {direction} je gemiddelde op andere dagen, een patroon om in de gaten te houden."
+        "weightWeekday": "{weekday}: je gewicht ligt {delta} kg {direction} je gemiddelde op andere dagen, een patroon om in de gaten te houden."
       },
       "dailySameDay": {
         "high": "Bij hogere waarden voor {behaviour} op dezelfde dag en de dag ervoor ligt {outcome} in je gegevens vaak {direction}. Het is een patroon om in de gaten te houden, geen oorzaak.",
@@ -3250,13 +3250,13 @@
       },
       "observed": "Gemeten: {value}",
       "reference": "Referentie: {value}",
-      "fastingObserved": "Nuchtere glucose: {value} {unit}",
-      "fastingReference": "{low} tot {high} {unit} nuchter",
+      "fastingObserved": "Nuchtere glucose: {value} {unit}",
+      "fastingReference": "{low} tot {high} {unit} nuchter",
       "personalReference": "Jouw streefwaarde: {value}",
-      "bpBasisAbove": "{axis} bepaalt deze score: ongeveer {offset} mmHg boven de bovengrens van {boundary} mmHg.",
-      "bpBasisBelowFloor": "{axis} bepaalt deze score: ongeveer {offset} mmHg onder de ondergrens voor lage bloeddruk van {boundary} mmHg.",
+      "bpBasisAbove": "{axis} bepaalt deze score: ongeveer {offset} mmHg boven de bovengrens van {boundary} mmHg.",
+      "bpBasisBelowFloor": "{axis} bepaalt deze score: ongeveer {offset} mmHg onder de ondergrens voor lage bloeddruk van {boundary} mmHg.",
       "bpBasisInBand": "Beide waarden liggen op of onder hun referentiebovengrens.",
-      "bpScale": "Op de bovengrens is de score 85; 100 betekent ongeveer 12 mmHg daaronder.",
+      "bpScale": "Op de bovengrens is de score 85; 100 betekent ongeveer 12 mmHg daaronder.",
       "bpRepresentative": "Gebaseerd op een gemiddelde van de afgelopen {days, plural, one {# dag} other {# dagen}} waarin recente metingen zwaarder wegen, dus het komt mogelijk met geen enkele afzonderlijke meting overeen.",
       "source": "Bron: {source}, per {date}",
       "observedActivity": "{value, plural, one {# stap} other {# stappen}} per dag",
@@ -3291,8 +3291,8 @@
       "returnToBand": "{metric} ligt al {days, plural, one {# dag} other {# dagen}} weer binnen je gebruikelijke bereik.",
       "weightGoal": {
         "title": "Persoonlijk gewichtsdoel",
-        "value": "Nu {current} {unit}. Doel {min} tot {max} {unit}. Afstand tot doel: {distance} {unit}.",
-        "delta": "De afstand tot je doel is sinds de vorige meting met {delta} {unit} veranderd.",
+        "value": "Nu {current} {unit}. Doel {min} tot {max} {unit}. Afstand tot doel: {distance} {unit}.",
+        "delta": "De afstand tot je doel is sinds de vorige meting met {delta} {unit} veranderd.",
         "noDelta": "Er is geen eerdere gewichtsmeting beschikbaar om mee te vergelijken.",
         "no_personal_goal": "Stel een persoonlijk gewichtsdoel in om hier je voortgang te zien.",
         "weight_not_tracked": "Leg een gewichtsmeting vast om je voortgang richting je doel te zien.",
@@ -3537,7 +3537,7 @@
       "dailyLimitTitle": "Daglimiet bereikt",
       "dailyLimitBody": "Daglimiet bereikt. Het budget wordt om middernacht in jouw tijdzone vernieuwd.",
       "providerRateLimitTitle": "Provider tijdelijk begrensd",
-      "providerRateLimitBody": "De provider begrenst tijdelijk het aantal verzoeken; probeer het over ~5 min opnieuw.",
+      "providerRateLimitBody": "De provider begrenst tijdelijk het aantal verzoeken; probeer het over ~5 min opnieuw.",
       "cluster": {
         "cardio": {
           "label": "Hart en bloedvaten",
@@ -3604,28 +3604,28 @@
       "hideConversations": "Gesprekken verbergen",
       "heroGreeting": "Vraag me alles over je gegevens",
       "heroSubline": "Stel een vraag over je trends, medicatie of metingen.",
-      "thinkingDuration": "{seconds} s nagedacht",
+      "thinkingDuration": "{seconds} s nagedacht",
       "thinkingExpandAria": "Tonen wat de Coach heeft overwogen",
       "thinkingDetail": "Beantwoord op basis van je gezondheidsoverzicht.",
       "tokensUsed": "{count, plural, one {# token} other {# tokens}}",
       "askAboutThis": "Vraag de Coach hiernaar",
       "readStrip": {
         "label": "Gebruikelijk bereik",
-        "baselineWithin": "Je gebruikelijke bereik is {low}–{high} {unit}; vandaag ligt {value} daarbinnen.",
-        "baselineAbove": "Je gebruikelijke bereik is {low}–{high} {unit}; vandaag ligt {value} daarboven.",
-        "baselineBelow": "Je gebruikelijke bereik is {low}–{high} {unit}; vandaag ligt {value} daaronder.",
-        "sameHoursWithin": "Rond dit tijdstip zit je meestal op {low}–{high} {unit}; vandaag ligt {value} tot nu toe daarbinnen.",
-        "sameHoursAbove": "Rond dit tijdstip zit je meestal op {low}–{high} {unit}; vandaag ligt {value} tot nu toe daarboven.",
-        "sameHoursBelow": "Rond dit tijdstip zit je meestal op {low}–{high} {unit}; vandaag ligt {value} tot nu toe daaronder.",
-        "steadyWithin": "Je metingen liggen meestal rond {low} {unit}; vandaag komt {value} daarmee overeen.",
-        "steadyAbove": "Je metingen liggen meestal rond {low} {unit}; vandaag ligt {value} daarboven.",
-        "steadyBelow": "Je metingen liggen meestal rond {low} {unit}; vandaag ligt {value} daaronder.",
-        "latestWithin": "Je gebruikelijke bereik is {low}–{high} {unit}; je laatste meting ({date}) was {value}, binnen dat bereik.",
-        "latestAbove": "Je gebruikelijke bereik is {low}–{high} {unit}; je laatste meting ({date}) was {value}, boven dat bereik.",
-        "latestBelow": "Je gebruikelijke bereik is {low}–{high} {unit}; je laatste meting ({date}) was {value}, onder dat bereik.",
-        "steadyLatestWithin": "Je metingen liggen meestal rond {low} {unit}; je laatste meting ({date}) was {value} en komt daarmee overeen.",
-        "steadyLatestAbove": "Je metingen liggen meestal rond {low} {unit}; je laatste meting ({date}) was {value}, hoger dan dat.",
-        "steadyLatestBelow": "Je metingen liggen meestal rond {low} {unit}; je laatste meting ({date}) was {value}, lager dan dat.",
+        "baselineWithin": "Je gebruikelijke bereik is {low}–{high} {unit}; vandaag ligt {value} daarbinnen.",
+        "baselineAbove": "Je gebruikelijke bereik is {low}–{high} {unit}; vandaag ligt {value} daarboven.",
+        "baselineBelow": "Je gebruikelijke bereik is {low}–{high} {unit}; vandaag ligt {value} daaronder.",
+        "sameHoursWithin": "Rond dit tijdstip zit je meestal op {low}–{high} {unit}; vandaag ligt {value} tot nu toe daarbinnen.",
+        "sameHoursAbove": "Rond dit tijdstip zit je meestal op {low}–{high} {unit}; vandaag ligt {value} tot nu toe daarboven.",
+        "sameHoursBelow": "Rond dit tijdstip zit je meestal op {low}–{high} {unit}; vandaag ligt {value} tot nu toe daaronder.",
+        "steadyWithin": "Je metingen liggen meestal rond {low} {unit}; vandaag komt {value} daarmee overeen.",
+        "steadyAbove": "Je metingen liggen meestal rond {low} {unit}; vandaag ligt {value} daarboven.",
+        "steadyBelow": "Je metingen liggen meestal rond {low} {unit}; vandaag ligt {value} daaronder.",
+        "latestWithin": "Je gebruikelijke bereik is {low}–{high} {unit}; je laatste meting ({date}) was {value}, binnen dat bereik.",
+        "latestAbove": "Je gebruikelijke bereik is {low}–{high} {unit}; je laatste meting ({date}) was {value}, boven dat bereik.",
+        "latestBelow": "Je gebruikelijke bereik is {low}–{high} {unit}; je laatste meting ({date}) was {value}, onder dat bereik.",
+        "steadyLatestWithin": "Je metingen liggen meestal rond {low} {unit}; je laatste meting ({date}) was {value} en komt daarmee overeen.",
+        "steadyLatestAbove": "Je metingen liggen meestal rond {low} {unit}; je laatste meting ({date}) was {value}, hoger dan dat.",
+        "steadyLatestBelow": "Je metingen liggen meestal rond {low} {unit}; je laatste meting ({date}) was {value}, lager dan dat.",
         "componentLine": "{component}: {line}",
         "insufficient": "Je gebruikelijke bereik wordt nog bepaald. Blijf nog een paar dagen metingen vastleggen.",
         "loadError": "Je gebruikelijke bereik kon niet worden geladen.",
@@ -3883,7 +3883,7 @@
     },
     "oxygenSaturation": {
       "title": "Zuurstofsaturatie",
-      "description": "Zuurstofsaturatie (SpO₂): klinisch normaal is 95–100 %, met de streefzones gearceerd in de grafiek.",
+      "description": "Zuurstofsaturatie (SpO₂): klinisch normaal is 95–100 %, met de streefzones gearceerd in de grafiek.",
       "chartTitle": "Zuurstofsaturatie",
       "emptyState": {
         "title": "Nog geen SpO₂-metingen",
@@ -3944,7 +3944,7 @@
         "restingHrBody": "Rusthartslag is je hartslag wanneer je volledig in rust bent, meestal 's nachts gemeten, en verschilt van je hartslag tijdens activiteit. Een lagere rusthartslag wijst over het algemeen op een betere cardiovasculaire conditie, en een stijgende trend kan een vroeg teken zijn van stress of ziekte. Als algemene richtlijn ligt een normale rusthartslag bij volwassenen tussen 60–100 slagen per minuut (AHA 2024); een getraind hart kan zonder problemen op 40–60 liggen.",
         "hrvBody": "HRV is de kleine variatie in tijd tussen opeenvolgende hartslagen. Een hogere variabiliteit weerspiegelt meestal een goed hersteld, flexibel zenuwstelsel, terwijl een aanhoudende daling kan wijzen op vermoeidheid, stress of onvoldoende herstel.",
         "oxygenSaturationBody": "SpO₂ is het percentage van je rode bloedcellen dat zuurstof vervoert. Waarden van 95–100% zijn normaal in rust; waarden die onder 90% blijven, verdienen aandacht, al zijn korte dipjes 's nachts gebruikelijk.",
-        "bodyTemperatureBody": "Lichaamstemperatuur weerspiegelt de temperatuur van je lichaamskern. Als algemene richtlijn ligt het bevolkingsgemiddelde rond 36,6 °C (niet 37,0 °C), met een normaal orale bereik van ongeveer 35,7–37,4 °C en koorts vanaf 38,0 °C (J Gen Intern Med 2019). De temperatuur schommelt gedurende de dag met ongeveer 0,5 °C en verschilt per meetplek tot ~1 °C, dus geef aan waar je hebt gemeten. Nachtelijke metingen aan de pols volgen relatieve veranderingen, geen klinische koortswaarde.",
+        "bodyTemperatureBody": "Lichaamstemperatuur weerspiegelt de temperatuur van je lichaamskern. Als algemene richtlijn ligt het bevolkingsgemiddelde rond 36,6 °C (niet 37,0 °C), met een normaal orale bereik van ongeveer 35,7–37,4 °C en koorts vanaf 38,0 °C (J Gen Intern Med 2019). De temperatuur schommelt gedurende de dag met ongeveer 0,5 °C en verschilt per meetplek tot ~1 °C, dus geef aan waar je hebt gemeten. Nachtelijke metingen aan de pols volgen relatieve veranderingen, geen klinische koortswaarde.",
         "activeEnergyBody": "Actieve energie zijn de calorieën die je verbrandt door te bewegen, bovenop wat je lichaam in rust verbruikt. Het is een directe maat voor hoe lichamelijk actief je dag was.",
         "workoutsBody": "Trainingen zijn de gestructureerde sportsessies die je apparaten vastleggen, met soort, duur en energie. Door ze bij te houden zie je hoe regelmatig trainen zich over weken opbouwt en hoe het samenhangt met je andere gezondheidssignalen.",
         "respiratoryRateBody": "Ademhalingsfrequentie is het aantal ademhalingen per minuut. Als algemene richtlijn ademen de meeste volwassenen in rust 12–20 keer per minuut (American Lung Association); de waarde is alleen zinvol in echte rust of tijdens de slaap. Een aanhoudende stijging van ongeveer +3 boven je eigen nachtelijke basiswaarde kan een vroeg signaal van ziekte zijn; klinische escalatiegrenzen zijn hulpmiddelen voor ziekenhuizen, geen alarmen voor jezelf.",
@@ -3964,13 +3964,13 @@
         "doubleSupportTimeBody": "Dubbele steuntijd is het deel van elke loopcyclus waarin beide voeten tegelijk de grond raken. Een hoger percentage betekent meestal een voorzichtiger, minder stabiel looppatroon.",
         "stepLengthBody": "Staplengte is de gemiddelde afstand van de ene voetstap naar de volgende. Een kortere stap door de tijd kan wijzen op vermoeidheid, voorzichtigheid of een verandering in mobiliteit.",
         "walkingSpeedBody": "Loopsnelheid is hoe snel je je verplaatst tijdens een wandeling op vlak terrein. Het is een goed onderzochte maat voor je algehele gezondheid en mobiliteit, en een stabiel of stijgend tempo is een goed teken.",
-        "pulseWaveVelocityBody": "Polsgolfsnelheid meet hoe snel de drukgolf van elke hartslag zich door je slagaders verplaatst. Een snellere golf wijst op stijvere slagaders, wat samenhangt met een hoger cardiovasculair risico. Als algemene richtlijn markeert de Europese klinische referentie een carotis-femorale snelheid boven 10 m/s (ESC/ESH 2018), maar een schatting van een consumentenapparaat is een benadering en niet uitwisselbaar met die klinische meting.",
+        "pulseWaveVelocityBody": "Polsgolfsnelheid meet hoe snel de drukgolf van elke hartslag zich door je slagaders verplaatst. Een snellere golf wijst op stijvere slagaders, wat samenhangt met een hoger cardiovasculair risico. Als algemene richtlijn markeert de Europese klinische referentie een carotis-femorale snelheid boven 10 m/s (ESC/ESH 2018), maar een schatting van een consumentenapparaat is een benadering en niet uitwisselbaar met die klinische meting.",
         "vascularAgeBody": "Vaatleeftijd schat hoe oud je slagaders zich gedragen vergeleken met je werkelijke leeftijd, op basis van de stijfheid van de slagaders. Een vaatleeftijd onder je werkelijke leeftijd wijst op gezondere bloedvaten.",
-        "environmentalAudioBody": "Omgevingsgeluidsniveaus geven in decibel aan hoe luid je omgeving is. Langdurige blootstelling boven ongeveer 70 dB kan op den duur je gehoor beschadigen, dus lagere daggemiddelden zijn veiliger.",
+        "environmentalAudioBody": "Omgevingsgeluidsniveaus geven in decibel aan hoe luid je omgeving is. Langdurige blootstelling boven ongeveer 70 dB kan op den duur je gehoor beschadigen, dus lagere daggemiddelden zijn veiliger.",
         "headphoneAudioBody": "Geluidsniveaus van je koptelefoon geven in decibel aan hoe hard je luistert via oordopjes of een koptelefoon. Het volume laag houden en pauzes nemen beschermt je gehoor op lange termijn.",
         "audioEventsBody": "Momenten met hard geluid markeren wanneer het geluid om je heen een niveau bereikte dat bij voldoende blootstelling je gehoor kan beschadigen. Komen ze vaak voor, zoek dan een rustigere omgeving op of gebruik gehoorbescherming.",
         "daylightBody": "Tijd in daglicht is hoe lang je per dag in het licht buiten doorbrengt. Regelmatig daglicht ondersteunt een gezond slaap-waakritme en je stemming (CDC 2024), en tijd buiten wordt in verband gebracht met gezonde ogen.",
-        "bloodGlucoseBody": "Bloedglucose is de hoeveelheid suiker in je bloed, de belangrijkste energiebron van het lichaam. Het stijgt na het eten en daalt weer tussen de maaltijden. Als algemene richtlijn voor volwassenen zonder diabetes is een nuchtere waarde onder {prediabetesFrom} {unit} normaal, {prediabetesFrom}–{prediabetesTo} is prediabetes, en {diabetesFrom} of hoger valt in het diabetesbereik (ADA 2024). Eén hoge meting is geen diagnose; een zorgverlener bevestigt dit met een herhaalde test, en mensen die diabetes behandelen, gebruiken andere streefwaarden die een zorgverlener vaststelt.",
+        "bloodGlucoseBody": "Bloedglucose is de hoeveelheid suiker in je bloed, de belangrijkste energiebron van het lichaam. Het stijgt na het eten en daalt weer tussen de maaltijden. Als algemene richtlijn voor volwassenen zonder diabetes is een nuchtere waarde onder {prediabetesFrom} {unit} normaal, {prediabetesFrom}–{prediabetesTo} is prediabetes, en {diabetesFrom} of hoger valt in het diabetesbereik (ADA 2024). Eén hoge meting is geen diagnose; een zorgverlener bevestigt dit met een herhaalde test, en mensen die diabetes behandelen, gebruiken andere streefwaarden die een zorgverlener vaststelt.",
         "skinTemperatureBody": "Huidtemperatuur is hier de kleine nachtelijke afwijking van je polstemperatuur ten opzichte van je eigen basiswaarde, geen absolute koortsmeting. Verschuivingen kunnen samenhangen met slaap, omgeving, ziekte of de fase van je menstruatiecyclus.",
         "cardioFitnessBody": "VO₂ max is hoeveel zuurstof je lichaam bij maximale inspanning kan gebruiken, de beste laboratoriummaat voor aerobe conditie, die wearables indirect schatten. Een hogere of stijgende trend is een sterk teken van cardiovasculaire gezondheid.",
         "cardioRecoveryBody": "Cardioherstel is met hoeveel slagen per minuut je hartslag daalt in de eerste minuut nadat je stopt met zware inspanning. Een grotere daling betekent dat je hart sneller tot rust komt, wat een teken is van een goede conditie.",
@@ -3987,14 +3987,14 @@
         "strainBody": "Belasting geeft aan hoeveel cardiovasculaire en lichamelijke belasting je je lichaam hebt opgelegd, van trainingen tot een actieve dag op de been. Het is een door een apparaat afgeleide index, beoordeeld ten opzichte van je eigen gebruikelijke inspanning, geen klinische maat, en het hoofdgetal is niet vergelijkbaar tussen apparaten.",
         "stressBody": "Stress is hier een heuristiek van je apparaat, afgeleid van patronen in de hartslagvariabiliteit. Het is geen cortisolmeting, geen weergave van hoe je je bewust voelt en geen klinische stressscore. Vergelijk het met je eigen basislijn; het is niet vergelijkbaar tussen apparaten. Een lagere score wijst op een kalme, goed gereguleerde toestand; een hogere is een uitnodiging om herstel in te bouwen.",
         "recoveryPageBody": "Wat je wearable meldt, onder zijn eigen namen.",
-        "pulsePressureBody": "De polsdruk is het verschil tussen je systolische en diastolische meting (systolisch min diastolisch). Als algemene richtlijn is ongeveer 40 mmHg gebruikelijk in rust; een groot verschil van meer dan ongeveer 60 mmHg op middelbare leeftijd kan wijzen op stijver wordende slagaders, terwijl een klein verschil van minder dan ongeveer 25 mmHg kan samengaan met een laag slagvolume (StatPearls/NIH 2023).",
-        "meanArterialPressureBody": "De gemiddelde arteriële druk is de gemiddelde druk die je organen tijdens een hartslag ervaren, ongeveer de diastolische druk plus een derde van het verschil met de systolische. Als algemene richtlijn ligt een waarde in rust rond 70–100 mmHg (StatPearls/NIH 2023). De vaak genoemde ondergrens van ~60 mmHg is een begrip uit de acute zorg, geen alarmgrens voor zelfmeting.",
+        "pulsePressureBody": "De polsdruk is het verschil tussen je systolische en diastolische meting (systolisch min diastolisch). Als algemene richtlijn is ongeveer 40 mmHg gebruikelijk in rust; een groot verschil van meer dan ongeveer 60 mmHg op middelbare leeftijd kan wijzen op stijver wordende slagaders, terwijl een klein verschil van minder dan ongeveer 25 mmHg kan samengaan met een laag slagvolume (StatPearls/NIH 2023).",
+        "meanArterialPressureBody": "De gemiddelde arteriële druk is de gemiddelde druk die je organen tijdens een hartslag ervaren, ongeveer de diastolische druk plus een derde van het verschil met de systolische. Als algemene richtlijn ligt een waarde in rust rond 70–100 mmHg (StatPearls/NIH 2023). De vaak genoemde ondergrens van ~60 mmHg is een begrip uit de acute zorg, geen alarmgrens voor zelfmeting.",
         "cycleEducationBody": "Je cyclus doorloopt vier fasen die worden aangestuurd door wisselende hormonen, en de lengte en regelmaat ervan geven een toegankelijk beeld van je algehele gezondheid. Als algemene richtlijn duurt een cyclus bij volwassenen doorgaans 21–35 dagen (klinische bronnen noemen 24–38), met ongeveer vijf dagen bloedverlies (ACOG 2015). De luteale fase is het stabiele ankerpunt, dus de ovulatie schat je het best door terug te tellen vanaf je volgende verwachte menstruatie, nooit als een vaste 'dag 14'. Een voorspelde vruchtbare periode is een schatting die meerdere geregistreerde cycli nodig heeft en altijd bij benadering blijft, en de basale lichaamstemperatuur bevestigt de ovulatie achteraf in plaats van die te voorspellen. Dit is geen anticonceptiemethode.",
         "sleepHygieneBody": "Een paar wetenschappelijk onderbouwde gewoonten ondersteunen je slaap: ga op vaste tijden naar bed en sta op vaste tijden op, ook in het weekend, zorg 's ochtends voor fel daglicht en dim 's avonds het licht, houd de slaapkamer koel, donker en stil, en vermijd cafeïne in de middag, alcohol laat op de avond en grote late maaltijden (CDC 2024). Regelmaat voorspelt je gezondheid minstens zo sterk als slaapduur, en de totale slaaptijd van een wearable is veel betrouwbaarder dan de verdeling in diepe, lichte en REM-slaap."
       },
       "bpDerived": {
-        "pulsePressure": "De polsdruk (het verschil tussen je meetwaarden) is ongeveer {value} mmHg; in rust is ongeveer 40 gebruikelijk.",
-        "meanArterialPressure": "De gemiddelde arteriële druk (het gemiddelde dat je organen ervaren) is ongeveer {value} mmHg, normaal rond 70–100.",
+        "pulsePressure": "De polsdruk (het verschil tussen je meetwaarden) is ongeveer {value} mmHg; in rust is ongeveer 40 gebruikelijk.",
+        "meanArterialPressure": "De gemiddelde arteriële druk (het gemiddelde dat je organen ervaren) is ongeveer {value} mmHg, normaal rond 70–100.",
         "pulsePressureLabel": "Polsdruk",
         "meanArterialPressureLabel": "Gemiddelde druk"
       },
@@ -4087,7 +4087,7 @@
       },
       "debt": {
         "title": "Slaaptekort",
-        "value": "{hours} u {minutes} min tekort",
+        "value": "{hours} u {minutes} min tekort",
         "caption": "Openstaand saldo over de afgelopen {nights, plural, one {# nacht} other {# nachten}}",
         "clearValue": "Helemaal ingehaald",
         "clearCaption": "Niets openstaand over de afgelopen {nights, plural, one {# nacht} other {# nachten}}",
@@ -4096,7 +4096,7 @@
       },
       "average": {
         "title": "Gemiddeld per nacht",
-        "value": "{hours} u {minutes} min",
+        "value": "{hours} u {minutes} min",
         "caption": "Gemiddelde slaap over de afgelopen {nights, plural, one {# nacht} other {# nachten}}",
         "learning": "Je slaap wordt nog in kaart gebracht: tot nu toe {counted, plural, one {# nacht} other {# nachten}}, nog {remaining} nodig voor een betrouwbaar gemiddelde."
       },
@@ -4104,7 +4104,7 @@
         "title": "Chronotype",
         "learning": "Je ritme wordt nog in kaart gebracht: {counted} van {total} vrije nachten. Een chronotype heeft een paar ochtenden zonder wekker nodig voordat het iets zegt.",
         "advancedToggle": "Geavanceerd",
-        "socialJetlagValue": "{hours} u {minutes} min sociale jetlag",
+        "socialJetlagValue": "{hours} u {minutes} min sociale jetlag",
         "socialJetlagCaption": "Het verschil tussen je slaaptijden op werkdagen en vrije dagen, als een kleine wekelijkse verschuiving van tijdzone.",
         "msfScValue": "Gecorrigeerd slaapmidden {clock}",
         "msfScCaption": "Gecorrigeerd voor de slaap die je in het weekend inhaalt (MSFsc).",
@@ -4217,7 +4217,7 @@
         "statsVerticalOscillation": "Verticale oscillatie",
         "statsGroundContactTime": "Grondcontacttijd",
         "statsGroundContactBalance": "Grondcontactbalans",
-        "statsGroundContactBalanceValue": "{left} % L, {right} % R",
+        "statsGroundContactBalanceValue": "{left} % L, {right} % R",
         "routeTitle": "Route",
         "hrChartTitle": "Hartslag",
         "notFound": "Training niet gevonden.",
@@ -4225,7 +4225,7 @@
         "hrAxisMinutes": "min",
         "hrAvgMarker": "Gem. {bpm}",
         "hrMaxMarker": "Piek {bpm}",
-        "hrRangeValue": "{low} tot {high} bpm",
+        "hrRangeValue": "{low} tot {high} bpm",
         "hrRangeLabel": "Bereik",
         "hrNoProfile": "Er zijn geen gedetailleerde hartslagmetingen voor deze sessie.",
         "sportAverageLabel": "Je recente gemiddelde:",
@@ -4311,7 +4311,7 @@
           "durationTooLong": "Een training kan maximaal 24 uur duren.",
           "endInFuture": "Dan zou de training in de toekomst eindigen. Stel het begin in op het moment dat de training begon.",
           "distanceInvalid": "Voer de afstand in als getal binnen een realistisch bereik.",
-          "energyInvalid": "Voer de actieve energie in als getal van maximaal 20.000 kcal."
+          "energyInvalid": "Voer de actieve energie in als getal van maximaal 20.000 kcal."
         },
         "editTitle": "Training bewerken",
         "editAction": "Bewerken",
@@ -4351,7 +4351,7 @@
         "daysCountOne": "1 dag",
         "tir": {
           "title": "Tijd binnen bereik",
-          "caption": "Aandeel metingen per zone ({low}–{high} {unit} is het doel).",
+          "caption": "Aandeel metingen per zone ({low}–{high} {unit} is het doel).",
           "veryLow": "Zeer laag",
           "low": "Laag",
           "inRange": "Binnen bereik",
@@ -4420,7 +4420,7 @@
         "description": "Glucose gedeeld door ketonen, voor elke ketonmeting met een glucosemeting binnen 15 minuten.",
         "emptyTitle": "Nog geen index",
         "emptyDescription": "Hij verschijnt zodra een ketonmeting boven nul een glucosemeting op hetzelfde moment of binnen 15 minuten heeft.",
-        "latest": "Laatst {value}: glucose {glucose} {unit} gedeeld door ketonen {ketones} {unit}, {date}."
+        "latest": "Laatst {value}: glucose {glucose} {unit} gedeeld door ketonen {ketones} {unit}, {date}."
       }
     },
     "totalBodyWater": {
@@ -5026,7 +5026,7 @@
       "trajectory": {
         "cardTitle": "Projectie op korte termijn",
         "headline": "Als dit patroon aanhoudt: de komende {days, plural, one {# dag} other {# dagen}}",
-        "range": "Verwacht rond {low}–{high} {unit} over {days, plural, one {# dag} other {# dagen}}.",
+        "range": "Verwacht rond {low}–{high} {unit} over {days, plural, one {# dag} other {# dagen}}.",
         "insufficient": "Nog geen duidelijke trend om door te trekken. Blijf bijhouden, dan verschijnt er een projectie zodra het recente patroon sterk genoeg is.",
         "daysNeeded": "Nog ongeveer {count, plural, one {# dag} other {# dagen}} bijhouden voordat er een projectie kan verschijnen."
       },
@@ -5034,11 +5034,11 @@
         "sectionTitle": "Vandaag tot nu toe",
         "sectionSubtitle": "Je lopende totalen vergeleken met wat op dit uur gebruikelijk is voor jou",
         "learning": "Je gebruikelijke dag leren kennen: {count} van {target, plural, one {# dag} other {# dagen}}",
-        "framing": "Gebruikelijk tot {time}: {typical} {unit}",
+        "framing": "Gebruikelijk tot {time}: {typical} {unit}",
         "comparisonLabel": "Je gebruikelijke dag",
         "sectionSubtitleDailyTotal": "Je lopende totalen vergeleken met je gebruikelijke volle dag",
         "sectionSubtitleMixed": "Je lopende totalen vergeleken met wat gebruikelijk is voor jou",
-        "dailyFraming": "Gebruikelijke volle dag: {low}–{high} {unit}",
+        "dailyFraming": "Gebruikelijke volle dag: {low}–{high} {unit}",
         "dailyStamp": "{updated} ({source})"
       }
     },
@@ -5092,7 +5092,7 @@
         "description": "Schattingen van zes minuten wandelen verschijnen hier zodra Apple Health synchroniseert."
       }
     },
-    "navSixMinuteWalk": "6 min wandelen",
+    "navSixMinuteWalk": "6 min wandelen",
     "stairAscentSpeed": {
       "title": "Snelheid trap op",
       "description": "Hoe snel je trappen oploopt, gemeten door je iPhone of Watch.",
@@ -5283,7 +5283,7 @@
     "navWaistToHeight": "Taille-lengte",
     "gripStrength": {
       "title": "Knijpkracht",
-      "description": "Maximale knijpkracht van de hand, een betrouwbare indicator voor de kracht van je hele lichaam. Een waarde onder de geslachtsspecifieke grenswaarde (mannen 27 kg, vrouwen 16 kg) wijst op waarschijnlijke sarcopenie; je eigen trend is leidend.",
+      "description": "Maximale knijpkracht van de hand, een betrouwbare indicator voor de kracht van je hele lichaam. Een waarde onder de geslachtsspecifieke grenswaarde (mannen 27 kg, vrouwen 16 kg) wijst op waarschijnlijke sarcopenie; je eigen trend is leidend.",
       "chartTitle": "Knijpkracht",
       "emptyState": {
         "title": "Nog geen knijpkracht",
@@ -5305,7 +5305,7 @@
     },
     "waist": {
       "title": "Tailleomtrek",
-      "description": "Tailleomtrek in centimeters, een indicator voor buikvet. De WHO-drempelwaarde voor een verhoogd risico is geslachtsspecifiek (mannen 94 cm, vrouwen 80 cm); je eigen trend is leidend.",
+      "description": "Tailleomtrek in centimeters, een indicator voor buikvet. De WHO-drempelwaarde voor een verhoogd risico is geslachtsspecifiek (mannen 94 cm, vrouwen 80 cm); je eigen trend is leidend.",
       "chartTitle": "Tailleomtrek",
       "emptyState": {
         "title": "Nog geen taillemetingen",
@@ -5344,9 +5344,9 @@
         "averageHeartRate": "Gemiddelde hartslag",
         "samplingRate": "Bemonsteringsfrequentie",
         "leadSingle": "Eén afleiding (afleiding I)",
-        "durationValue": "{seconds} s",
-        "bpmValue": "{bpm} bpm",
-        "hzValue": "{hz} Hz",
+        "durationValue": "{seconds} s",
+        "bpmValue": "{bpm} bpm",
+        "hzValue": "{hz} Hz",
         "unknown": "—"
       },
       "waveform": {
@@ -5368,8 +5368,8 @@
       "caption": "Gemiddeld in stappen van 10 minuten.",
       "hourlyNote": "Je ziet het uurgemiddelde van deze dag; recente dagen tonen het volledige detail per 10 minuten.",
       "empty": "Nog niet genoeg hartslagmetingen voor deze dag om het verloop te tonen.",
-      "coverageOne": "Gebaseerd op 1 meting over {hours} u.",
-      "coverageMany": "Gebaseerd op {count, plural, one {# meting} other {# metingen}} over {hours} u.",
+      "coverageOne": "Gebaseerd op 1 meting over {hours} u.",
+      "coverageMany": "Gebaseerd op {count, plural, one {# meting} other {# metingen}} over {hours} u.",
       "baseline": "Rust",
       "today": "Vandaag",
       "previousDay": "Vorige dag",
@@ -5468,7 +5468,7 @@
     "minLabel": "Min",
     "maxLabel": "Max",
     "unitSuffix": "({unit})",
-    "outOfBoundsHint": "Toegestaan bereik: {min}–{max} {unit}",
+    "outOfBoundsHint": "Toegestaan bereik: {min}–{max} {unit}",
     "overrideWarning": "Waarden buiten de bereiken uit de richtlijnen kunnen tot ongezonde streefwaarden leiden. Doe dit alleen op advies van je arts.",
     "saveSuccess": "Drempelwaarden bijgewerkt",
     "saveError": "Drempelwaarden konden niet worden opgeslagen",
@@ -6113,7 +6113,7 @@
           "title": "Later herinneren",
           "description": "Hoe lang een dosisherinnering wordt uitgesteld.",
           "label": "Uitstellen met",
-          "option": "{minutes} min",
+          "option": "{minutes} min",
           "saveError": "Opslaan mislukt. Probeer het opnieuw"
         },
         "alerts": {
@@ -6239,7 +6239,7 @@
           "title": "Gesynchroniseerde inname van voedingsstoffen",
           "description": "Dagtotalen over de afgelopen {days, plural, one {# dag} other {# dagen}}: wat Apple Health of een voedingsapp heeft gesynchroniseerd plus de supplementen die je hebt ingenomen.",
           "empty": "Er zijn nog geen gegevens over voedingsstoffen gesynchroniseerd.",
-          "latest": "{amount} {unit} op {date}",
+          "latest": "{amount} {unit} op {date}",
           "daysWithData": "{count} van {days, plural, one {# dag} other {# dagen}}",
           "moduleHint": "Synchronisatie wordt geregeld door de module Inname van voedingsstoffen.",
           "moduleHintLink": "Modules beheren",
@@ -6308,7 +6308,7 @@
             "uploading": "Uploaden…",
             "uploadFailed": "Uploaden mislukt. Probeer het opnieuw.",
             "rateLimited": "Te veel uploads. Wacht even en probeer het opnieuw.",
-            "tooLarge": "Dat bestand is te groot (limiet 1,5 GB).",
+            "tooLarge": "Dat bestand is te groot (limiet 1,5 GB).",
             "failed": "De import is mislukt.",
             "failureInterrupted": "De import werd onderbroken voordat hij klaar was, meestal door een herstart van de server of een stop wegens geheugentekort. Je gegevens zijn veilig; upload de export opnieuw om het nog eens te proberen.",
             "failureInsufficientMemory": "De geheugenlimiet van de server is te laag voor een archief van deze grootte. Vraag de beheerder van de server om de heap-limiet van Node.js te verhogen (NODE_OPTIONS=--max-old-space-size) en upload de export daarna opnieuw.",
@@ -6367,7 +6367,7 @@
             "cycleSummary": "{samples, plural, one {# cyclussample} other {# cyclussamples}} samengevoegd in {days, plural, one {# dagregistratie} other {# dagregistraties}}.",
             "cycleModuleOff": "{count, plural, one {# cyclussample overgeslagen} other {# cyclussamples overgeslagen}} omdat cyclusregistratie voor dit account uitstaat.",
             "cycleDaysFailed": "{count, plural, one {# cyclusdag kon niet worden opgeslagen} other {# cyclusdagen konden niet worden opgeslagen}}: {reason}",
-            "fileHint": "export.zip, tot 1,5 GB"
+            "fileHint": "export.zip, tot 1,5 GB"
           },
           "json": {
             "title": "JSON-bestand",
@@ -6388,9 +6388,9 @@
             "keptLabels": "Dit account heeft al tags of groepen met deze sleutels onder een eigen naam, die zijn behouden: {keys}",
             "resultNothing": "Er is niets geïmporteerd. {skipped, plural, one {De # registratie is overgeslagen} other {Alle # registraties zijn overgeslagen}}.",
             "resultEmpty": "Dat bestand bevatte geen metingen en geen stemmingsregistraties.",
-            "limitsHint": "Tot {mb} MB en tot {rows, plural, one {# item} other {# items}} per lijst.",
+            "limitsHint": "Tot {mb} MB en tot {rows, plural, one {# item} other {# items}} per lijst.",
             "rowMeta": "Metingen en stemming",
-            "fileMeta": ".json, tot {mb} MB",
+            "fileMeta": ".json, tot {mb} MB",
             "partial": "De import stopte halverwege. Opnieuw importeren is veilig, er komt niets dubbel bij.",
             "partialCounts": "Al opgeslagen: {measurements, plural, one {# meting} other {# metingen}} en {moods, plural, one {# stemmingsitem} other {# stemmingsitems}}."
           },
@@ -6405,7 +6405,7 @@
             "import": "Importeren",
             "empty": "Voeg minstens één CSV-rij toe voordat je importeert.",
             "rateLimited": "Te veel imports dit uur (limiet 5). Probeer het later opnieuw.",
-            "tooLarge": "Dat bestand is te groot (limiet 16 MB).",
+            "tooLarge": "Dat bestand is te groot (limiet 16 MB).",
             "invalidPayload": "De CSV kon niet worden verwerkt. Controleer de kopregel en probeer het opnieuw.",
             "failed": "De import is mislukt. Probeer het opnieuw.",
             "readFailed": "Dat bestand kon niet worden gelezen.",
@@ -6437,7 +6437,7 @@
             "reasonUnknown": "overgeslagen",
             "detail": "Eén rij per meting.",
             "rowMeta": "Metingen uit een spreadsheet",
-            "fileMeta": ".csv, tot 16 MB",
+            "fileMeta": ".csv, tot 16 MB",
             "guideMeta": "type, value, unit, measuredAt met offset"
           },
           "doseHistory": {
@@ -6449,7 +6449,7 @@
             "empty": "Plak eerst de export of kies een bestand.",
             "readFailed": "Dat bestand kon niet worden gelezen.",
             "rateLimited": "De limiet voor imports per uur is bereikt. Probeer het later opnieuw.",
-            "tooLarge": "Dat bestand is groter dan de limiet van 16 MB.",
+            "tooLarge": "Dat bestand is groter dan de limiet van 16 MB.",
             "inProgress": "Er loopt al een import van doseringsgeschiedenis. Wacht tot die klaar is.",
             "workerUnavailable": "De achtergrondverwerking is niet beschikbaar, dus er is niets geïmporteerd.",
             "failed": "De import is mislukt. Er is niets opgeslagen.",
@@ -6494,7 +6494,7 @@
             },
             "detail": "Eén bestand omvat alle medicatie die erin staat.",
             "rowMeta": "Uit een andere app",
-            "fileMeta": ".csv of .json, tot 16 MB"
+            "fileMeta": ".csv of .json, tot 16 MB"
           },
           "healthConnect": {
             "title": "Health Connect",
@@ -6537,7 +6537,7 @@
             },
             "folderRow": "Automatisch uit een map",
             "folderMeta": "WebDAV of Nextcloud, onder Integraties",
-            "fileHint": "ZIP, tot 1 GB"
+            "fileHint": "ZIP, tot 1 GB"
           },
           "fit": {
             "title": "Activiteitsbestand (FIT)",
@@ -6586,7 +6586,7 @@
               "progress": "{done} van {total}",
               "capped": "Alleen de eerste 100 bestanden worden geïmporteerd.",
               "reason": {
-                "tooLarge": "Groter dan 10 MB",
+                "tooLarge": "Groter dan 10 MB",
                 "unsupported": "Geen FIT-bestand",
                 "damaged": "Bestand beschadigd",
                 "notActivity": "Geen activiteit",
@@ -6595,7 +6595,7 @@
                 "retry": "Mislukt, probeer opnieuw"
               }
             },
-            "fileHint": ".fit, .fit.gz of .zip, elk tot 10 MB"
+            "fileHint": ".fit, .fit.gz of .zip, elk tot 10 MB"
           },
           "recordFile": {
             "gadgetbridge": {
@@ -6603,18 +6603,18 @@
               "description": "De database die Gadgetbridge op Android exporteert.",
               "steps": {
                 "export": "Open in Gadgetbridge Instellingen, dan Gegevensbeheer, dan Database exporteren.",
-                "upload": "Upload hier het bestand met de naam Gadgetbridge. Tot 512 MB."
+                "upload": "Upload hier het bestand met de naam Gadgetbridge. Tot 512 MB."
               },
-              "fileHint": "Database, tot 512 MB"
+              "fileHint": "Database, tot 512 MB"
             },
             "fhirBundle": {
               "title": "Patiëntendossier (FHIR)",
               "description": "Een FHIR R4-dossier uit een patiëntenportaal.",
               "steps": {
                 "export": "Exporteer in je patiëntenportaal je dossier als FHIR R4 (JSON).",
-                "upload": "Upload hier het .json-bestand. Tot 32 MB."
+                "upload": "Upload hier het .json-bestand. Tot 32 MB."
               },
-              "fileHint": ".json, tot 32 MB"
+              "fileHint": ".json, tot 32 MB"
             },
             "uploading": "Uploaden…",
             "running": "Importeren op de achtergrond…",
@@ -6647,7 +6647,7 @@
               "unauthorized": "de map weigerde de gebruikersnaam of het wachtwoord",
               "redirected": "de server wilde doorverwijzen, dat volgt HealthLog niet",
               "upstreamError": "de server antwoordde met een fout",
-              "tooLarge": "het bestand is groter dan 1 GB",
+              "tooLarge": "het bestand is groter dan 1 GB",
               "timeout": "de server deed er te lang over",
               "network": "de server was niet bereikbaar",
               "privateOrigin": "dit adres ligt in een privénetwerk dat de server niet toestaat",
@@ -6935,11 +6935,11 @@
       "removeTitle": "Profielfoto verwijderen?",
       "removeBody": "De afbeelding wordt van je server verwijderd en je initialen nemen haar plaats in. Om haar opnieuw te uploaden heb je het originele bestand nodig.",
       "removeConfirm": "Foto verwijderen",
-      "hint": "JPEG, PNG of WebP, maximaal 2 MB en 2048×2048 pixels.",
+      "hint": "JPEG, PNG of WebP, maximaal 2 MB en 2048×2048 pixels.",
       "uploaded": "Profielfoto bijgewerkt",
       "removed": "Profielfoto verwijderd",
       "invalidType": "Niet-ondersteund afbeeldingstype. Gebruik JPEG, PNG of WebP.",
-      "tooLarge": "De afbeelding is groter dan de limiet van 2 MB.",
+      "tooLarge": "De afbeelding is groter dan de limiet van 2 MB.",
       "error": "De profielfoto kon niet worden bijgewerkt. Probeer het opnieuw."
     },
     "changePassword": "Wachtwoord wijzigen",
@@ -7259,9 +7259,9 @@
         "questionsOpenCoach": "Beantwoord ze in de Coach"
       },
       "responseTimeoutHeading": "Time-out voor antwoord",
-      "responseTimeoutBody": "Hoe lang er op een antwoord van de AI wordt gewacht voordat het wordt opgegeven. Verhoog dit voor een lokaal of zelf gehost model dat bij het eerste verzoek tijd nodig heeft om te laden. Als je het leeg laat, mag een antwoord {seconds} s duren; de dagelijkse briefing mag tot {briefingSeconds} s duren.",
+      "responseTimeoutBody": "Hoe lang er op een antwoord van de AI wordt gewacht voordat het wordt opgegeven. Verhoog dit voor een lokaal of zelf gehost model dat bij het eerste verzoek tijd nodig heeft om te laden. Als je het leeg laat, mag een antwoord {seconds} s duren; de dagelijkse briefing mag tot {briefingSeconds} s duren.",
       "responseTimeoutLabel": "Time-out voor antwoord (seconden)",
-      "responseTimeoutPlaceholder": "Standaard ({seconds} s)",
+      "responseTimeoutPlaceholder": "Standaard ({seconds} s)",
       "responseTimeoutInvalid": "Voer een getal tussen 10 en 600 seconden in.",
       "autoRead": {
         "title": "Documenten automatisch laten lezen door AI",
@@ -7576,9 +7576,9 @@
     },
     "integrationPill": {
       "justNow": "zojuist",
-      "minutesAgo": "{count} min geleden",
-      "hoursAgo": "{count} u geleden",
-      "daysAgo": "{count} d geleden",
+      "minutesAgo": "{count} min geleden",
+      "hoursAgo": "{count} u geleden",
+      "daysAgo": "{count} d geleden",
       "resumeSuccess": "Koppeling hervat",
       "resumeError": "Opnieuw koppelen mislukt"
     },
@@ -7710,7 +7710,7 @@
       "test": "Verbinding testen",
       "saveFirst": "Sla eerst je wijzigingen op. De test gebruikt de opgeslagen instellingen.",
       "testing": "Testen…",
-      "ok": "Verbonden (latentie {latency} ms)",
+      "ok": "Verbonden (latentie {latency} ms)",
       "errors": {
         "credentials_rejected": "Inloggegevens geweigerd. Controleer je token",
         "rate_limited": "Snelheidslimiet van de externe dienst bereikt",
@@ -8292,7 +8292,7 @@
       "saving": "Testen…",
       "saved": "Gekoppeld. Het archief reageerde.",
       "test": "Testen",
-      "testOk": "Het archief reageerde in {latency} ms.",
+      "testOk": "Het archief reageerde in {latency} ms.",
       "disconnect": "Ontkoppelen",
       "disconnectTitle": "{name} ontkoppelen?",
       "disconnectDescription": "HealthLog vergeet het adres en het token. Documenten die je al hebt geïmporteerd, blijven in HealthLog.",
@@ -8514,7 +8514,7 @@
     "adminSettingsLoadError": "Beheerinstellingen laden mislukt. De schakelaars hieronder geven mogelijk niet de actuele status weer. Vernieuw de pagina.",
     "hostMetrics": {
       "title": "Hostbelasting",
-      "load1": "Belasting (1 min)",
+      "load1": "Belasting (1 min)",
       "memUsedPercent": "Geheugen",
       "diskBusyPercent": "Schijf-I/O",
       "last2hours": "Afgelopen 2 uur",
@@ -8625,9 +8625,9 @@
     "offlineGeoEnabled": "Offline (GeoLite2)",
     "offlineGeoFallback": "Online ({host}). Koppel GeoLite2-databases en stel GEOLITE2_DIR in",
     "heapLimitLabel": "Heaplimiet",
-    "heapLimitValue": "{mb} MB",
-    "heapLimitLow": "{mb} MB, laag. Stel APP_MEMORY_LIMIT=1536m in via .env",
-    "memoryBelowFloor": "Container {mb} MB, onder het ondersteunde minimum van {floor} MB. Stel APP_MEMORY_LIMIT={floor}m in via .env",
+    "heapLimitValue": "{mb} MB",
+    "heapLimitLow": "{mb} MB, laag. Stel APP_MEMORY_LIMIT=1536m in via .env",
+    "memoryBelowFloor": "Container {mb} MB, onder het ondersteunde minimum van {floor} MB. Stel APP_MEMORY_LIMIT={floor}m in via .env",
     "offlineGeoOff": "Uit",
     "offlineGeoChosen": "Online ({host})",
     "apiGlobal": "API-endpoints en API-tokens toestaan.",
@@ -8651,7 +8651,7 @@
     "glitchtipTargetNoTarget": "Foutregistratie staat aan, maar er is geen doel ingesteld, dus er wordt niets verzonden.",
     "glitchtipUnproven": "Onbevestigd",
     "glitchtipDeliveryUnproven": "Er is een doel ingesteld, maar er heeft nog geen melding deze host verlaten. Druk op Testen om na te gaan of het doel een melding accepteert.",
-    "glitchtipDeliveryStale": "In de afgelopen {hours} u heeft geen melding deze host verlaten. Druk op Testen om te controleren of het doel nog meldingen accepteert.",
+    "glitchtipDeliveryStale": "In de afgelopen {hours} u heeft geen melding deze host verlaten. Druk op Testen om te controleren of het doel nog meldingen accepteert.",
     "glitchtipDeliveryFailed": "De laatste melding is niet aangekomen ({reason}).",
     "webPushVapidDescription": "Stel hier de VAPID-sleutels en het subject in, zodat browserpush werkt zonder omgevingsvariabelen.",
     "webPushVapidPublicKey": "Openbare VAPID-sleutel",
@@ -9055,7 +9055,7 @@
         "uploadTitle": "Back-up uploaden",
         "uploadDescription": "Controleert een accountkopie en bewaart die naast de kopieën van deze server.",
         "uploadButton": "Bestand uploaden",
-        "uploadHelp": "Een HealthLog-back-up als .json of .json.gz. Het bestand wordt vóór het uploaden gecomprimeerd; gecomprimeerd mag het maximaal 512 MB zijn.",
+        "uploadHelp": "Een HealthLog-back-up als .json of .json.gz. Het bestand wordt vóór het uploaden gecomprimeerd; gecomprimeerd mag het maximaal 512 MB zijn.",
         "uploadSuccess": "Back-up geüpload ({count, plural, one {# record} other {# records}})",
         "uploadFailed": "Uploaden mislukt",
         "restore": "Terugzetten",
@@ -9131,8 +9131,8 @@
           "stateUnknown": "Nog geen registratie",
           "neverDetail": "Er is voor dit account nog niets aangekomen. Laatst gecontroleerd {when}.",
           "unknownDetail": "Nog geen nachtelijke run heeft dit account vastgelegd.",
-          "age": "{hours} u geleden",
-          "scheduleNote": "De upload draait elke {hours} u. Actueel betekent binnen één run, achter betekent dat één run niets heeft opgeleverd, verouderd betekent dat twee runs niets hebben opgeleverd.",
+          "age": "{hours} u geleden",
+          "scheduleNote": "De upload draait elke {hours} u. Actueel betekent binnen één run, achter betekent dat één run niets heeft opgeleverd, verouderd betekent dat twee runs niets hebben opgeleverd.",
           "lifecycleConfigured": "De bucket verwijdert kopieën na {days, plural, one {# dag} other {# dagen}} via een eigen lifecycleregel.",
           "lifecycleMissing": "De bucket heeft geen lifecycleregel, dus elke nachtelijke kopie blijft voor altijd bewaard. Voeg een regel toe die objecten laat verlopen na BACKUP_RETENTION_DAYS.",
           "lifecycleUnknown": "Kon niet worden gelezen of de bucket oude kopieën verwijdert: mogelijk mogen de toegangsgegevens de lifecycleregel niet lezen. Controleer of een regel objecten laat verlopen na BACKUP_RETENTION_DAYS.",
@@ -9361,10 +9361,10 @@
         },
         "result": {
           "days": "Vergeleken dagen",
-          "changed": "Dagen die meer dan 1 bpm verschuiven",
+          "changed": "Dagen die meer dan 1 bpm verschuiven",
           "max": "Grootste verandering",
-          "maxValue": "{value} bpm",
-          "bucket": "{range} bpm",
+          "maxValue": "{value} bpm",
+          "bucket": "{range} bpm",
           "account": "Account {account}",
           "accountDays": "{changed} van {days, plural, one {# dag} other {# dagen}} verschuiven"
         },
@@ -9404,9 +9404,9 @@
     "ipCopied": "IP-adres gekopieerd",
     "copyFailed": "Kopiëren mislukt.",
     "documentMaxFile": "Uploadlimiet voor documenten",
-    "documentMaxFileDescription": "Maximale bestandsgrootte per bestand voor de documentenkluis (1–100 MB).",
+    "documentMaxFileDescription": "Maximale bestandsgrootte per bestand voor de documentenkluis (1–100 MB).",
     "documentQuota": "Opslagquotum voor documenten",
-    "documentQuotaDescription": "Standaard documentopslag per account (0,1–1024 GB).",
+    "documentQuotaDescription": "Standaard documentopslag per account (0,1–1024 GB).",
     "userDocumentQuota": "Afwijkend documentquotum",
     "userDocumentQuotaDefault": "Standaard",
     "userDocumentQuotaHint": "Laat leeg om de standaardwaarde van de instantie te gebruiken.",
@@ -9471,7 +9471,7 @@
       "defaultLabel": "Standaardniveau",
       "defaultAboveCeiling": "Het standaardniveau kan niet hoger zijn dan het hoogste niveau.",
       "gapLabel": "Uren tussen het vernieuwen van kaarten na een synchronisatie (Standaard)",
-      "gapHint": "Hele uren van 1 tot 48. Laat leeg om AI_SYNC_REGEN_GAP_HOURS te gebruiken, anders 6. Nu van kracht: {hours} u."
+      "gapHint": "Hele uren van 1 tot 48. Laat leeg om AI_SYNC_REGEN_GAP_HOURS te gebruiken, anders 6. Nu van kracht: {hours} u."
     },
     "recoveryKit": {
       "title": "Herstelkit",
@@ -9782,13 +9782,13 @@
         }
       },
       "handoff": {
-        "title": "Overdrachtstijd, afgelopen {hours} u",
+        "title": "Overdrachtstijd, afgelopen {hours} u",
         "median": "Mediaan",
         "p95": "95e percentiel",
         "pushes": "Pushberichten",
         "retried": "Opnieuw geprobeerd",
-        "milliseconds": "{value} ms",
-        "seconds": "{value} s",
+        "milliseconds": "{value} ms",
+        "seconds": "{value} s",
         "empty": "Geen pushberichten in de afgelopen {hours, plural, one {# uur} other {# uur}}",
         "helper": "Van het in de wachtrij zetten op deze server tot het antwoord van de relay. De relay antwoordt zodra Apple het pushbericht heeft aangenomen."
       },
@@ -10431,7 +10431,7 @@
     "eventSeizureClusterDesc": "Als een aanval die iemand anders vastlegt volgens de regel in het dagboek een cluster vormt. Eén keer per cluster.",
     "seizureCluster": {
       "title": "Clusteraanvallen",
-      "body": "{count, plural, one {# aanval} other {# aanvallen}} binnen {hours} u, vastgelegd door {name}. Het noodplan staat in het aanvalsdagboek."
+      "body": "{count, plural, one {# aanval} other {# aanvallen}} binnen {hours} u, vastgelegd door {name}. Het noodplan staat in het aanvalsdagboek."
     },
     "eventMeasurementAnomaly": "Blijvende verandering in een vitale waarde",
     "eventMeasurementAnomalyDesc": "Een vitale waarde die al tien dagen op een nieuw niveau ligt.",
@@ -10494,7 +10494,7 @@
       "systolicMax": "Systolisch max.",
       "diastolicMin": "Diastolisch min.",
       "diastolicMax": "Diastolisch max.",
-      "boundsHint": "Toegestaan bereik: {min}–{max} {unit}",
+      "boundsHint": "Toegestaan bereik: {min}–{max} {unit}",
       "resetToDefault": "Standaard herstellen",
       "resetTitle": "Dit doel herstellen?",
       "resetBody": "Het bereik gaat terug naar de standaardwaarde. De waarden die je hebt ingesteld, worden nergens anders bewaard en kunnen niet worden teruggehaald.",
@@ -10506,16 +10506,16 @@
       "validationOrder": "Het minimum moet lager zijn dan het maximum.",
       "validationBounds": "Voer waarden in binnen het toegestane bereik dat hieronder staat."
     },
-    "currentValue": "Huidig: {value} {unit}",
-    "targetRangeValue": "Doel: {min}–{max} {unit}",
+    "currentValue": "Huidig: {value} {unit}",
+    "targetRangeValue": "Doel: {min}–{max} {unit}",
     "sourceLabel": "Bron: {source}",
     "sourceNames": {
       "moodEntries": "Stemmingsregistraties",
       "sevenDays": "7 dagen"
     },
     "inTarget": "Binnen het streefbereik",
-    "aboveTarget": "{delta} {unit} boven het doel",
-    "belowTarget": "{delta} {unit} onder het doel",
+    "aboveTarget": "{delta} {unit} boven het doel",
+    "belowTarget": "{delta} {unit} onder het doel",
     "systolic": "Systolisch",
     "diastolic": "Diastolisch",
     "glucoseFasting": "Glucose (nuchter)",
@@ -10615,22 +10615,22 @@
     "measureValueInvalid": "Antwoord met een getal om een meting vast te leggen.",
     "measureValueOutOfRange": "Die waarde ligt buiten het aannemelijke bereik.",
     "measureValueExpired": "Dit verzoek is verlopen.",
-    "snoozeMinutes": "{minutes} min"
+    "snoozeMinutes": "{minutes} min"
   },
   "medicationReminders": {
     "phaseGreenTitle": "🟢 Aan de beurt: {medName}",
-    "phaseGreenMessage": "🟢 Aan de beurt:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nHet tijdvenster sluit over {minutes} min.",
+    "phaseGreenMessage": "🟢 Aan de beurt:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nHet tijdvenster sluit over {minutes} min.",
     "phaseYellowTitle": "🟡 Nog aan de beurt: {medName}",
-    "phaseYellowMessage": "🟡 Nog aan de beurt:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nNog {minutes} min in het tijdvenster.",
+    "phaseYellowMessage": "🟡 Nog aan de beurt:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nNog {minutes} min in het tijdvenster.",
     "phaseOrangeTitle": "🟠 Te laat: {medName}",
-    "phaseOrangeMessage": "🟠 Te laat:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n{minutes} min te laat.",
+    "phaseOrangeMessage": "🟠 Te laat:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n{minutes} min te laat.",
     "phaseRedTitle": "🔴 Gemist: {medName}",
     "phaseRedMessage": "🔴 Gemist:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nNeem je hem nu, dan telt hij nog, als te laat.",
     "buttonTaken": "✅ Innemen",
     "buttonConfirm": "Als gemist laten",
     "buttonTakenLate": "✅ Innemen (telt als te laat)",
     "buttonSkip": "⏭ Overslaan",
-    "buttonSnooze": "🕐 Later herinneren ({minutes} min)"
+    "buttonSnooze": "🕐 Later herinneren ({minutes} min)"
   },
   "lowStockReminders": {
     "title": "Lage voorraad: {medName}",
@@ -10674,7 +10674,7 @@
     "medications": "Medicatie en therapietrouw",
     "bmi": "Body-mass-index (BMI)",
     "statSummary": "laatste {latest} (gem. {avg}, bereik {min}–{max})",
-    "statSummaryWithUnit": "laatste {latest} {unit} (gem. {avg} {unit}, bereik {min}–{max} {unit})",
+    "statSummaryWithUnit": "laatste {latest} {unit} (gem. {avg} {unit}, bereik {min}–{max} {unit})",
     "adherence": "{rate} therapietrouw",
     "noAdherence": "—",
     "glucose": {
@@ -10951,7 +10951,7 @@
       "none": "Nog geen cycli geregistreerd.",
       "recentCycles": "Recente cycli",
       "ongoing": "lopend",
-      "periodDays": "menstruatie {count} d",
+      "periodDays": "menstruatie {count} d",
       "ovulationChip": "Ovulatie",
       "chartTitle": "Cycluslengte door de tijd",
       "chartCaption": "Elke balk is één cyclus: het roze onderste deel is je menstruatie, de rest is de cycluslengte.",
@@ -11052,15 +11052,15 @@
     "deleteError": "De registratie kon niet worden verwijderd.",
     "bbt": {
       "title": "Basale lichaamstemperatuur",
-      "caption": "Je ochtendtemperatuur gedurende deze cyclus. Na de ovulatie volgt een aanhoudende stijging van ongeveer 0,2 °C.",
+      "caption": "Je ochtendtemperatuur gedurende deze cyclus. Na de ovulatie volgt een aanhoudende stijging van ongeveer 0,2 °C.",
       "empty": "Nog geen temperatuurmetingen",
       "emptyHint": "Registreer elke ochtend je basale lichaamstemperatuur om de temperatuursprong in je cyclus te zien.",
       "ovulationEstimate": "Geschatte ovulatie",
-      "tooltipTemp": "{temp} {unit}",
+      "tooltipTemp": "{temp} {unit}",
       "ovulationConfirmed": "Bevestigde ovulatie"
     },
     "fieldInfo": {
-      "bbt": "Je rusttemperatuur, gemeten direct na het wakker worden, voordat je opstaat. Na de ovulatie stijgt deze licht (ongeveer 0,2–0,3 °C).",
+      "bbt": "Je rusttemperatuur, gemeten direct na het wakker worden, voordat je opstaat. Na de ovulatie stijgt deze licht (ongeveer 0,2–0,3 °C).",
       "bbtLabel": "Wat is de basale lichaamstemperatuur?",
       "mucus": "Vaginale afscheiding verandert gedurende de cyclus, van droog of kleverig naar romig, en daarna waterig en eiwitachtig rond de meest vruchtbare dagen.",
       "mucusLabel": "Wat is baarmoederhalsslijm?",
@@ -11457,8 +11457,8 @@
       "empty": "Geen metingen in deze periode.",
       "valueLabel": "Waarde",
       "range": {
-        "30": "30 d",
-        "90": "90 d",
+        "30": "30 d",
+        "90": "90 d",
         "365": "1 j",
         "all": "Alles"
       },
@@ -11600,7 +11600,7 @@
     },
     "noteLoadFailed": "De notitie kon niet worden geladen; bij het opslaan blijft ze ongewijzigd.",
     "showingLatestOf": "De laatste {shown} van {total, plural, one {# meting} other {# metingen}} worden getoond",
-    "convertedFrom": "omgerekend van {value} {unit}",
+    "convertedFrom": "omgerekend van {value} {unit}",
     "ocr": {
       "scanButton": "Rapport scannen",
       "addScan": "Document scannen",
@@ -11658,7 +11658,7 @@
       "errorUnit": "Voeg een eenheid toe.",
       "errorUnitMismatch": "Deze marker wordt bijgehouden in {markerUnit}. Wijzig de eenheid als het rapport verkeerd is gelezen, of deselecteer deze meting.",
       "unitDiffersBadge": "Bijgehouden in {markerUnit}; dit rapport vermeldt {unit}",
-      "unitConvertedBadge": "Opgeslagen als {value} {markerUnit}, omgerekend van {statedValue} {unit}",
+      "unitConvertedBadge": "Opgeslagen als {value} {markerUnit}, omgerekend van {statedValue} {unit}",
       "savedPartialUnitToast": "{count, plural, one {# labuitslag opgeslagen.} other {# labuitslagen opgeslagen.}} Niet opgeslagen omdat de eenheid afwijkt van die van de marker: {analytes}",
       "savedNothingUnitToast": "Niets opgeslagen: de eenheid wijkt af van die van de marker voor {analytes}",
       "saveFailed": "De metingen konden niet worden opgeslagen. Probeer het opnieuw.",
@@ -11666,7 +11666,7 @@
       "consentRequired": "Om een rapport te scannen is toestemming voor AI-verwerking nodig.",
       "rateLimited": "Te veel scans. Probeer het later opnieuw.",
       "budgetExceeded": "Je AI-gebruiksbudget voor vandaag is bereikt.",
-      "fileTooLarge": "Het bestand is te groot (max. 12 MB).",
+      "fileTooLarge": "Het bestand is te groot (max. 12 MB).",
       "fileType": "Upload een JPEG, PNG, WebP of PDF.",
       "extractFailed": "Het rapport kon niet worden gelezen. Probeer een scherpere foto.",
       "pdfRendererUnavailable": "De processor van deze server kan geen PDF-pagina's weergeven, dus een gescand rapport kan hier alleen worden gelezen door een AI-provider die PDF-bestanden rechtstreeks aanneemt. Upload in plaats daarvan een foto.",
@@ -11755,8 +11755,8 @@
     "trend": {
       "title": "Verloop",
       "slope": {
-        "rising": "Stijgt met ongeveer {amount} {unit} per jaar over {n, plural, one {# waarde} other {# waarden}} sinds {since}.",
-        "falling": "Daalt met ongeveer {amount} {unit} per jaar over {n, plural, one {# waarde} other {# waarden}} sinds {since}.",
+        "rising": "Stijgt met ongeveer {amount} {unit} per jaar over {n, plural, one {# waarde} other {# waarden}} sinds {since}.",
+        "falling": "Daalt met ongeveer {amount} {unit} per jaar over {n, plural, one {# waarde} other {# waarden}} sinds {since}.",
         "flat": "Geen verandering over {n, plural, one {# waarde} other {# waarden}} sinds {since}."
       },
       "projection": {
@@ -11771,7 +11771,7 @@
         "no_clear_trend": "Over deze waarden is de verandering niet duidelijk te onderscheiden van geen verandering, dus er wordt niets doorgetrokken.",
         "stale": "De nieuwste waarde is van {date}, meer dan een jaar geleden. De lijn staat op die datum, zonder projectie."
       },
-      "interval": "95%-interval van de jaarlijkse verandering: {lo} tot {hi} {unit}."
+      "interval": "95%-interval van de jaarlijkse verandering: {lo} tot {hi} {unit}."
     },
     "unit": {
       "none": "Geen eenheid",
@@ -12159,8 +12159,8 @@
       "recoveryGapLagSymptom": "Je voelde je {days, plural, one {# dag} other {# dagen}} beter voordat je vastgelegde symptomen afnamen.",
       "recoveryGapLeadSymptom": "Je vastgelegde symptomen namen {days, plural, one {# dag} other {# dagen}} af voordat je je als hersteld markeerde.",
       "recoveryGapSame": "Je waarden stabiliseerden op dezelfde dag dat je je beter voelde.",
-      "sleepContextMore": "Tijdens deze episode sliep je merkbaar meer dan normaal (ongeveer {hours} u per nacht).",
-      "sleepContextLess": "Tijdens deze episode sliep je merkbaar minder dan normaal (ongeveer {hours} u per nacht).",
+      "sleepContextMore": "Tijdens deze episode sliep je merkbaar meer dan normaal (ongeveer {hours} u per nacht).",
+      "sleepContextLess": "Tijdens deze episode sliep je merkbaar minder dan normaal (ongeveer {hours} u per nacht).",
       "redFlagTitle": "Verdient nadere aandacht",
       "redFlagSpo2": "Je zuurstofsaturatie bleef meerdere dagen laag. Zoek medische hulp als dit opnieuw gebeurt.",
       "redFlagFever": "Je had aanhoudende koorts. Zoek medische hulp als dit opnieuw gebeurt.",
@@ -12194,7 +12194,7 @@
       "severity": "Ernst {severity}",
       "noSymptoms": "Geen symptomen vastgelegd.",
       "impact": "Hoe je functioneerde: {impact}",
-      "fever": "Temperatuur: {value} {unit}",
+      "fever": "Temperatuur: {value} {unit}",
       "empty": "Nog geen dagen vastgelegd."
     },
     "loadError": "Deze episode kon niet worden geladen.",
@@ -12419,7 +12419,7 @@
       "loadFailed": "De tabellen konden niet worden geladen.",
       "reusedFrom": "Uit een eerder antwoord ({date})",
       "reusedFromUndated": "Uit een eerder antwoord",
-      "histogramBin": "{from}–{to} {unit}"
+      "histogramBin": "{from}–{to} {unit}"
     },
     "method": {
       "label": "Hoe dit is berekend",
@@ -12491,20 +12491,20 @@
   "safety": {
     "floor": {
       "bpHighTitle": "Zeer hoge bloeddruk",
-      "bpHighDoctor": "Twee recente metingen waren {systolic}/{diastolic} mmHg of hoger. Rust uit, meet over een paar minuten opnieuw en neem zo snel mogelijk contact op met je arts als de bloeddruk zo hoog blijft.",
-      "bpHighEmergency": "Twee recente metingen waren {systolic}/{diastolic} mmHg of hoger en je hebt klachten genoteerd. Als je pijn op de borst, kortademigheid, zwakte of veranderingen in zien of spreken hebt, bel dan nu het alarmnummer.",
+      "bpHighDoctor": "Twee recente metingen waren {systolic}/{diastolic} mmHg of hoger. Rust uit, meet over een paar minuten opnieuw en neem zo snel mogelijk contact op met je arts als de bloeddruk zo hoog blijft.",
+      "bpHighEmergency": "Twee recente metingen waren {systolic}/{diastolic} mmHg of hoger en je hebt klachten genoteerd. Als je pijn op de borst, kortademigheid, zwakte of veranderingen in zien of spreken hebt, bel dan nu het alarmnummer.",
       "bpLowTitle": "Lage bloeddruk",
-      "bpLowDoctor": "Twee recente metingen hadden een systolische waarde onder {systolic} mmHg. Als je duizelig bent of je flauw voelt, ga dan zitten of liggen, en neem contact op met je arts als het aanhoudt.",
-      "bpLowEmergency": "Twee recente metingen hadden een systolische waarde onder {systolic} mmHg en je hebt klachten genoteerd. Als je je flauw voelt, verward bent of een koude, klamme huid hebt, bel dan nu het alarmnummer.",
+      "bpLowDoctor": "Twee recente metingen hadden een systolische waarde onder {systolic} mmHg. Als je duizelig bent of je flauw voelt, ga dan zitten of liggen, en neem contact op met je arts als het aanhoudt.",
+      "bpLowEmergency": "Twee recente metingen hadden een systolische waarde onder {systolic} mmHg en je hebt klachten genoteerd. Als je je flauw voelt, verward bent of een koude, klamme huid hebt, bel dan nu het alarmnummer.",
       "glucoseLowTitle": "Lage bloedglucose",
-      "glucoseLowDoctor": "Twee recente metingen waren lager dan {threshold} {unit} ({value} {unit}). Neem snelwerkende koolhydraten, meet na 15 minuten opnieuw en neem contact op met je arts als lage waarden aanhouden.",
-      "glucoseLowEmergency": "Twee recente metingen waren lager dan {threshold} {unit} ({value} {unit}) en je hebt klachten genoteerd. Behandel nu met snelwerkende suiker; als dat niet lukt of als je je erg onwel voelt, bel dan het alarmnummer.",
+      "glucoseLowDoctor": "Twee recente metingen waren lager dan {threshold} {unit} ({value} {unit}). Neem snelwerkende koolhydraten, meet na 15 minuten opnieuw en neem contact op met je arts als lage waarden aanhouden.",
+      "glucoseLowEmergency": "Twee recente metingen waren lager dan {threshold} {unit} ({value} {unit}) en je hebt klachten genoteerd. Behandel nu met snelwerkende suiker; als dat niet lukt of als je je erg onwel voelt, bel dan het alarmnummer.",
       "glucoseLowSevereTitle": "Zeer lage bloedglucose",
-      "glucoseLowSevereDoctor": "Twee recente metingen waren lager dan {threshold} {unit} ({value} {unit}). Behandel direct met snelwerkende koolhydraten, meet na 15 minuten opnieuw en neem contact op met je arts.",
-      "glucoseLowSevereEmergency": "Twee recente metingen waren lager dan {threshold} {unit} ({value} {unit}) en je hebt klachten genoteerd. Behandel nu; als je geen eten binnen kunt houden of je erg onwel voelt, bel dan het alarmnummer.",
+      "glucoseLowSevereDoctor": "Twee recente metingen waren lager dan {threshold} {unit} ({value} {unit}). Behandel direct met snelwerkende koolhydraten, meet na 15 minuten opnieuw en neem contact op met je arts.",
+      "glucoseLowSevereEmergency": "Twee recente metingen waren lager dan {threshold} {unit} ({value} {unit}) en je hebt klachten genoteerd. Behandel nu; als je geen eten binnen kunt houden of je erg onwel voelt, bel dan het alarmnummer.",
       "glucoseHighTitle": "Zeer hoge bloedglucose",
-      "glucoseHighDoctor": "Twee recente metingen waren {value} {unit} of hoger. Meet opnieuw, drink voldoende en neem zo snel mogelijk contact op met je arts als de waarde zo hoog blijft.",
-      "glucoseHighEmergency": "Twee recente metingen waren {value} {unit} of hoger en je hebt klachten genoteerd. Als je moet overgeven, snel ademt of verward bent, bel dan nu het alarmnummer."
+      "glucoseHighDoctor": "Twee recente metingen waren {value} {unit} of hoger. Meet opnieuw, drink voldoende en neem zo snel mogelijk contact op met je arts als de waarde zo hoog blijft.",
+      "glucoseHighEmergency": "Twee recente metingen waren {value} {unit} of hoger en je hebt klachten genoteerd. Als je moet overgeven, snel ademt of verward bent, bel dan nu het alarmnummer."
     }
   },
   "version": {
@@ -13637,8 +13637,8 @@
       "empty": "Geen waarden in deze periode",
       "valueLabel": "Waarde",
       "range": {
-        "30": "30 d",
-        "90": "90 d",
+        "30": "30 d",
+        "90": "90 d",
         "365": "1 j",
         "all": "Alles"
       }
@@ -13717,11 +13717,11 @@
       }
     },
     "hydration": {
-      "referenceMeta": "Referentie-inname {value} {unit}/dag ({authority})",
+      "referenceMeta": "Referentie-inname {value} {unit}/dag ({authority})",
       "loadError": "Water kon niet worden geladen."
     },
     "caffeine": {
-      "ceilingMeta": "Veilige bovengrens {value} {unit}/dag ({authority})",
+      "ceilingMeta": "Veilige bovengrens {value} {unit}/dag ({authority})",
       "loadError": "Cafeïne kon niet worden geladen."
     },
     "micronutrients": {
@@ -13731,14 +13731,14 @@
         "mineral": "Mineralen",
         "omega3": "Omega-3-vetzuren"
       },
-      "rowMeta": "{days} van {window, plural, one {# dag} other {# dagen}}, ref. {value} {unit} ({authority})",
+      "rowMeta": "{days} van {window, plural, one {# dag} other {# dagen}}, ref. {value} {unit} ({authority})",
       "rowMetaNoRef": "{days} van {window, plural, one {# dag} other {# dagen}}",
       "footer": "{tracked} van {total} gevolgde micronutriënten hebben gegevens in deze periode.",
       "emptyTitle": "Nog geen gegevens over micronutriënten gesynchroniseerd",
       "loadError": "Je gegevens over voedingsstoffen konden niet worden geladen",
-      "sourcePart": "{source} {value} {unit}",
-      "aboveUpperLimit": "Boven de aanvaardbare bovengrens van inname voor volwassenen van {value} {unit} per dag ({source}).",
-      "aboveUpperLimitSupplemental": "Het aandeel uit supplementen ligt boven de aanvaardbare bovengrens van inname voor volwassenen van {value} {unit} per dag voor supplementen ({source}).",
+      "sourcePart": "{source} {value} {unit}",
+      "aboveUpperLimit": "Boven de aanvaardbare bovengrens van inname voor volwassenen van {value} {unit} per dag ({source}).",
+      "aboveUpperLimitSupplemental": "Het aandeel uit supplementen ligt boven de aanvaardbare bovengrens van inname voor volwassenen van {value} {unit} per dag voor supplementen ({source}).",
       "upperLimitForm": {
         "retinol": "De grens geldt alleen voor voorgevormd vitamine A (retinol): als de hoeveelheid uit bètacaroteen komt, is hij niet van toepassing.",
         "folic_acid": "De grens geldt voor foliumzuur uit supplementen en verrijkte voedingsmiddelen, niet voor het folaat in gewone voeding.",
@@ -13756,16 +13756,16 @@
     "macros": {
       "title": "Energie en macronutriënten",
       "pickLabel": "Voedingsstof",
-      "referenceMeta": "Referentie {value} {unit}/dag ({authority})",
-      "targetMeta": "Jouw doel {value} {unit}/dag",
-      "limitMeta": "Jouw grens {value} {unit}/dag",
+      "referenceMeta": "Referentie {value} {unit}/dag ({authority})",
+      "targetMeta": "Jouw doel {value} {unit}/dag",
+      "limitMeta": "Jouw grens {value} {unit}/dag",
       "sheetTitle": "Dagdoel: {name}",
       "sheetDescription": "Een hoeveelheid per dag om te halen of onder te blijven, als stippellijn in de grafiek.",
       "clearTarget": "Doel verwijderen",
       "removeTitle": "Dit doel verwijderen?",
       "removeBody": "De grafiek toont dan weer de referentiewaarde, als die er is. De hoeveelheid die je instelde wordt nergens anders bewaard.",
       "targetLabel": "{name} per dag in {unit}",
-      "boundsHint": "Boven 0, hoogstens {max} {unit} per dag.",
+      "boundsHint": "Boven 0, hoogstens {max} {unit} per dag.",
       "directionLabel": "Soort doel",
       "directionTarget": "Minstens halen",
       "directionLimit": "Eronder blijven",
@@ -13782,8 +13782,8 @@
       "perDay": "{value} per dag",
       "trendMeta": "Gemiddelde van de laatste zeven dagen: wat je at min rust- en actieve energie.",
       "meanMeta": "Gemiddelde over {days, plural, one {# dag} other {# dagen}}: wat je at min rust- en actieve energie.",
-      "means": "Over {days, plural, one {# dag} other {# dagen}} gemiddeld {intake} kcal gegeten en {used} kcal verbruikt.",
-      "dayLine": "{intake} kcal gegeten, {used} kcal verbruikt",
+      "means": "Over {days, plural, one {# dag} other {# dagen}} gemiddeld {intake} kcal gegeten en {used} kcal verbruikt.",
+      "dayLine": "{intake} kcal gegeten, {used} kcal verbruikt",
       "estimated": "Op {days} van deze dagen is de rustenergie een schatting uit gewicht, lengte, leeftijd en geslacht (Mifflin-St Jeor), omdat er geen meting binnenkwam.",
       "needsProfile": "Je inname is er, maar er kwam geen rustenergie binnen. Vul lengte, geboortedatum en geslacht in je profiel in, met een gewichtsmeting, en de balans wordt geschat.",
       "needsExpenditure": "Je inname is er, maar op dezelfde dagen kwam geen actieve energie binnen, dus er is nog geen balans."
@@ -13894,8 +13894,8 @@
       "steadyWeeksOne": "Al {count} week stabiel",
       "steadyWeeksFew": "Al {count} weken stabiel",
       "steadyWeeksOther": "Al {count} weken stabiel",
-      "valueWithUnit": "{value} {unit}",
-      "rangeWithUnit": "{low} tot {high} {unit}",
+      "valueWithUnit": "{value} {unit}",
+      "rangeWithUnit": "{low} tot {high} {unit}",
       "rangeAtThisTime": "{range} voor dit tijdstip",
       "vital": {
         "RESTING_HEART_RATE": "Rusthartslag",
@@ -15098,8 +15098,8 @@
     "valuesAllFew": "Alle {count} waarden",
     "valuesAllOther": "Alle {count} waarden",
     "valuesFewer": "Minder waarden",
-    "gkiPair": "Glucose {glucose} {unit} / ketonen {ketones} {unit}",
-    "gkiPairShort": "{glucose} / {ketones} {unit}",
+    "gkiPair": "Glucose {glucose} {unit} / ketonen {ketones} {unit}",
+    "gkiPairShort": "{glucose} / {ketones} {unit}",
     "gkiCountOne": "Laatste van {count}",
     "gkiCountFew": "Laatste van {count}",
     "gkiCountOther": "Laatste van {count}",
@@ -15144,8 +15144,8 @@
       "away": "Van huis",
       "travel": "Reisdag",
       "travelYes": "Ja",
-      "kilometres": "{value} km",
-      "miles": "{value} mi"
+      "kilometres": "{value} km",
+      "miles": "{value} mi"
     },
     "nutrients": {
       "micronutrientsOne": "{count} micronutriënt vastgelegd",
@@ -15721,7 +15721,7 @@
     "line": "Regel {line}",
     "errorsTruncated": "Alleen de eerste 500 problemen worden getoond.",
     "error": {
-      "tooLarge": "Het bestand is groter dan 16 MB.",
+      "tooLarge": "Het bestand is groter dan 16 MB.",
       "rateLimited": "Te veel imports in het afgelopen uur. Probeer het later opnieuw.",
       "invalid": "Het bestand of de kolomkeuze kon niet worden gelezen.",
       "failed": "Het importeren is niet gelukt. Probeer het opnieuw."
@@ -15908,7 +15908,7 @@
     "report": {
       "title": "Aanvalsdagboek",
       "untyped": "Geen type vastgelegd",
-      "ruleText": "{count} of meer in {hours} u",
+      "ruleText": "{count} of meer in {hours} u",
       "recorded": "Vastgelegde aanvallen",
       "diarySince": "Dagboek bijgehouden sinds",
       "seizureDays": "Dagen met een aanval",
@@ -15920,7 +15920,7 @@
       "convulsive": "Bilateraal tonisch-klonische aanvallen",
       "fromSleep": "Aanvallen vanuit de slaap",
       "clusters": "Clusters (regel: {rule})",
-      "niceClusters": "volgens NICE: 3 in 24 u",
+      "niceClusters": "volgens NICE: 3 in 24 u",
       "rescueDoses": "Gegeven nooddoses",
       "emergencies": "Ambulance, spoedeisende hulp, opnames",
       "emergencyValue": "{ems} / {ed} / {admitted}",
@@ -15942,8 +15942,8 @@
       "median": "Mediaan",
       "max": "Langste",
       "overT1": "t1 bereikt of overschreden",
-      "prolonged": "2 min langer dan gewoonlijk",
-      "durationNote": "Duur als min:s. t1 is de tijd waarna spoedbehandeling nodig is (ILAE, Trinka 2015: tonisch-klonisch 5 min, focaal met verminderd bewustzijn en absence 10 min). “2 min langer dan gewoonlijk” telt aanvallen die minstens 2 minuten langer duurden dan de gebruikelijke duur bij deze persoon (NICE NG217).",
+      "prolonged": "2 min langer dan gewoonlijk",
+      "durationNote": "Duur als min:s. t1 is de tijd waarna spoedbehandeling nodig is (ILAE, Trinka 2015: tonisch-klonisch 5 min, focaal met verminderd bewustzijn en absence 10 min). “2 min langer dan gewoonlijk” telt aanvallen die minstens 2 minuten langer duurden dan de gebruikelijke duur bij deze persoon (NICE NG217).",
       "rescueTitle": "Noodmedicatie",
       "date": "Datum",
       "drug": "Medicijn",
@@ -15956,7 +15956,7 @@
       "overlaysTitle": "Tegelijk vastgelegd",
       "overlayMissedDose": "{followed} van {of, plural, one {# aanval} other {# aanvallen}} volgden binnen de voorafgaande 48 uur op een vergeten of overgeslagen geplande dosis.",
       "overlayIllness": "{during, plural, one {# aanval vond} other {# aanvallen vonden}} plaats tijdens een van {episodes} vastgelegde ziekte-episodes.",
-      "overlaySleep": "Vastgelegde slaap in de nacht voor een aanvalsdag: gemiddeld {before} u ({nightsBefore, plural, one {# nacht} other {# nachten}}); andere nachten: {other} u ({nightsOther, plural, one {# nacht} other {# nachten}}).",
+      "overlaySleep": "Vastgelegde slaap in de nacht voor een aanvalsdag: gemiddeld {before} u ({nightsBefore, plural, one {# nacht} other {# nachten}}); andere nachten: {other} u ({nightsOther, plural, one {# nacht} other {# nachten}}).",
       "overlayCycleDays": "Aanvallen per cyclusdag (dag: aantal): {list}.",
       "overlayCycleRatio": "Over {cycles} volledig bijgehouden cycli was het aantal aanvallen per dag rond de menstruatie (dag −3 tot +3) {c1, plural, one {# keer} other {# keer}} zo hoog als op de andere dagen, en {c2, plural, one {# keer} other {# keer}} rond de ovulatie (dag 10 tot −13). Het catameniale criterium van Herzog is een verdubbeling of meer; dit is een referentie, geen bevinding.",
       "overlayCycleTooFew": "Aantallen per cyclusfase worden getoond vanaf drie volledig bijgehouden cycli (tot nu toe {cycles}).",
@@ -16016,7 +16016,7 @@
       "sinceLast": "Dagen sinds de laatste vastgelegde aanval",
       "longestFree": "Langste periode zonder aanval, dagen",
       "clusters": "Clusters ({rule})",
-      "niceClusters": "Clusters volgens NICE (3 in 24 u)",
+      "niceClusters": "Clusters volgens NICE (3 in 24 u)",
       "suspected": "{count, plural, one {# vermoedelijke aanval staat in de lijst maar wordt niet meegeteld.} other {# vermoedelijke aanvallen staan in de lijst maar worden niet meegeteld.}}",
       "clusterLine": "Vanaf {start}: {count, plural, one {# aanval} other {# aanvallen}}",
       "monthlyCaption": "Aanvallen per type en maand",
@@ -16293,10 +16293,10 @@
       "fieldsLabel": "Wat de link toont",
       "expiryLabel": "Link verloopt",
       "expiry": {
-        "none": "Nooit, tot intrekking",
         "30": "Over 30 dagen",
         "365": "Over een jaar",
-        "730": "Over twee jaar"
+        "730": "Over twee jaar",
+        "none": "Nooit, tot intrekking"
       },
       "create": "Link maken",
       "qrAlt": "QR-code voor de link naar de noodkaart",
@@ -16535,11 +16535,11 @@
       },
       "weightIncreasing": {
         "title": "Gewicht stijgt",
-        "message": "Je gewicht stijgt de afgelopen 30 dagen met ongeveer {kg} kg per week."
+        "message": "Je gewicht stijgt de afgelopen 30 dagen met ongeveer {kg} kg per week."
       },
       "weightDecreasing": {
         "title": "Gewicht daalt",
-        "message": "Je gewicht daalt de afgelopen 30 dagen met ongeveer {kg} kg per week."
+        "message": "Je gewicht daalt de afgelopen 30 dagen met ongeveer {kg} kg per week."
       },
       "pulseOutliers": {
         "title": "Afwijkende polswaarden",

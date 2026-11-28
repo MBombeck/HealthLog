@@ -59,12 +59,12 @@ describe("<IllnessDayTimeline> fever unit", () => {
     account.user = { unitPreference: "imperial", glucoseUnit: null };
     const html = render();
     // 38.5 °C = 101.3 °F.
-    expect(html).toContain("Temperature: 101.3 °F");
+    expect(html).toContain("Temperature: 101.3\u00a0°F");
     expect(html).not.toContain("°C");
   });
 
   it("keeps °C for a metric reader", () => {
     account.user = { unitPreference: "metric", glucoseUnit: null };
-    expect(render()).toContain("Temperature: 38.5 °C");
+    expect(render()).toContain("Temperature: 38.5\u00a0°C");
   });
 });

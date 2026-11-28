@@ -163,7 +163,7 @@ describe("<GlucoseClinicalPanel> asserted state", () => {
       data: { glucoseClinical: assertedClinical(), glucoseByContext: {} },
     });
     const de = render(<GlucoseClinicalPanel />, "de");
-    expect(de).toContain("(3,9–10,0 mmol/L ist das Ziel)");
+    expect(de).toContain("(3,9–10,0\u00a0mmol/L ist das Ziel)");
     expect(de).not.toMatch(/mg\/dl/i);
     // Mean, GMI and eA1C read with the German decimal comma.
     expect(de).not.toMatch(/>\d+\.\d+</);
@@ -176,7 +176,7 @@ describe("<GlucoseClinicalPanel> asserted state", () => {
       isAuthenticated: true,
     });
     expect(render(<GlucoseClinicalPanel />)).toContain(
-      "(70–180 mg/dL is the target)",
+      "(70–180\u00a0mg/dL is the target)",
     );
   });
 

@@ -271,12 +271,12 @@ describe("get_metric_table", () => {
     });
     expect(
       findUnverifiedCoachNumbers(
-        "Your systolic is up 4 mmHg on the week before, about 3.1%.",
+        "Your systolic is up 4\u00a0mmHg on the week before, about 3.1%.",
         [data],
       ),
     ).toEqual([]);
     const wrong = findUnverifiedCoachNumbers(
-      "Your systolic is up 9 mmHg on the week before.",
+      "Your systolic is up 9\u00a0mmHg on the week before.",
       [data],
     );
     expect(wrong.map((f) => f.value)).toContain(9);
@@ -424,7 +424,7 @@ describe("show_result", () => {
       chart: { kind: "histogram", column: "value", unit: "bpm" },
       reusedFrom: { messageId: "m-a2", ref: "r1" },
     });
-    expect(result.table?.rows[0]).toEqual(["55–60 bpm", 1]);
+    expect(result.table?.rows[0]).toEqual(["55–60\u00a0bpm", 1]);
     // The model reads the counts it can talk about, not the days.
     expect(result.data).toMatchObject({
       shape: "distribution",

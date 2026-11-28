@@ -218,7 +218,7 @@ describe("<LabList> columns", () => {
       reading({ id: "d", biomarkerId: "b2", analyte: "Ferritin" }),
     ]);
     expect(count(html, 'data-slot="lab-converted-note"')).toBe(1);
-    expect(html).toContain("converted from 5.6 mmol/L");
+    expect(html).toContain("converted from 5.6\u00a0mmol/L");
   });
 });
 

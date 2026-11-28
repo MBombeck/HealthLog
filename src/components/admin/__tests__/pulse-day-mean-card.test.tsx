@@ -109,8 +109,8 @@ describe("PulseDayMeanCard", () => {
     const html = render(status(done("2026-10-15T12:00:00.000Z")));
     expect(html).toContain("412");
     expect(html).toContain("37");
-    expect(html).toContain("6.4 bpm");
-    expect(html).toContain("5+ bpm");
+    expect(html).toContain("6.4\u00a0bpm");
+    expect(html).toContain("5+\u00a0bpm");
     expect(html).toContain("Account #2");
     expect(html).toContain("36 of 400 days move");
   });

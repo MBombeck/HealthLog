@@ -32,7 +32,7 @@ describe("DayMovementSection", () => {
   it("shows each value the day has", () => {
     const html = render(base);
     expect(html).toContain('data-movement="total"');
-    expect(html).toContain("48.3 km");
+    expect(html).toContain("48.3\u00a0km");
     expect(html).toContain('data-movement="driving"');
     expect(html).toContain('data-movement="away"');
     expect(html).toContain("Spain");

@@ -217,7 +217,9 @@ describe("<OcrRowEditor> unit differs but converts", () => {
     const html = render(undefined, "en", converts);
     expect(html).toContain('data-slot="ocr-row-converted-badge"');
     // The converted value keeps the precision of the printed 5.6.
-    expect(html).toContain("Saved as 101 mg/dL, converted from 5.6 mmol/L");
+    expect(html).toContain(
+      "Saved as 101\u00a0mg/dL, converted from 5.6\u00a0mmol/L",
+    );
     expect(html).not.toContain("Tracked in");
     expect(html).not.toContain('aria-invalid="true"');
   });
@@ -236,7 +238,7 @@ describe("<OcrRowEditor> unit differs but converts", () => {
 
   it("speaks German too", () => {
     const html = render(undefined, "de", converts);
-    expect(html).toContain("umgerechnet aus 5,6 mmol/L");
+    expect(html).toContain("umgerechnet aus 5,6\u00a0mmol/L");
   });
 
   it("shows nothing when the units agree", () => {
