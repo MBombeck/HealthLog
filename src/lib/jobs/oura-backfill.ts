@@ -40,6 +40,7 @@ import {
 import { LANE_YIELD_DELAY_SECONDS, laneWanted } from "@/lib/jobs/heavy-lane";
 import { reportJobProgress } from "@/lib/jobs/job-observer";
 import { isReauthRequired } from "@/lib/integrations/status";
+import { backfillIncomplete } from "@/lib/integrations/page-walk";
 import { shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { startOfLocalDayKey } from "@/lib/tz/local-day";
@@ -437,9 +438,9 @@ export async function runOuraBackfillForUser(
 
   // Nothing moved, or no next slice was sent: the drain retries an outage (the
   // cause), the rest goes to pg-boss and discovery, from the progress note.
-  throw new Error(
+  throw backfillIncomplete(
     `oura backfill incomplete for user ${userId} (slice ${slice}${stopReason ? `, stopped on ${stopReason}` : ""}${failure ? `: ${failure instanceof Error ? failure.message : String(failure)}` : ""})`,
-    failure === undefined ? undefined : { cause: failure },
+    failure,
   );
 }
 

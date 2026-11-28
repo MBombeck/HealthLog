@@ -14,7 +14,7 @@
  * {@link relayRefusal} says whether the relay may be used for a purpose now
  * (a push, a Wallet signature or update push, the upkeep calls), and
  * {@link relayRoutes} whether a push takes the relay's route at all.
- * `relay-usable-guard.test.ts` keeps every other reading out.
+ * `one-home-guard.test.ts` keeps every other reading out.
  */
 
 import { isCircuitOpen } from "@/lib/push-relay/circuit";
