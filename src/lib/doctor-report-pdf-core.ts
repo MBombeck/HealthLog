@@ -50,10 +50,7 @@ import {
   pdfCursorState,
   type DoctorReportPdfRenderContext,
 } from "./doctor-report-pdf/render-context";
-import {
-  registerReportFonts,
-  reportNeedsHangul,
-} from "./doctor-report-pdf/fonts";
+import { registerReportFonts, reportScript } from "./doctor-report-pdf/fonts";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
 type T = (key: string, params?: Record<string, string | number>) => string;
@@ -174,7 +171,7 @@ export function buildDoctorReportPdfDocument(
     format: "a4",
     compress: true,
   });
-  registerReportFonts(doc, reportNeedsHangul(locale, data));
+  registerReportFonts(doc, reportScript(locale, data));
   doc.setProperties({
     title: t("doctorReport.title"),
     subject: t("doctorReport.subtitle"),

@@ -19,6 +19,11 @@ const LOADERS: Record<Locale, () => Promise<{ default: LocaleWording }>> = {
   nl: () => import("./locales/nl"),
   "pt-BR": () => import("./locales/pt-br"),
   ru: () => import("./locales/ru"),
+  // Questionnaire item wording stays English until a native speaker has
+  // reviewed it clinically; the in-app `mentalHealth.wording.*` strings tell
+  // the reader that the translation is not yet validated. Pointing this at
+  // `en` is what makes that disclosure true rather than a claim.
+  "zh-CN": () => import("./locales/en"),
 };
 
 export async function loadLocaleWording(

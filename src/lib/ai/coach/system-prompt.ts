@@ -1291,6 +1291,8 @@ const LOCALE_REPLY_FOOTER_FALLBACK: Record<
   ru: '\n\nREPLY LANGUAGE — THIS OVERRIDES THE LANGUAGE RULE ABOVE. Any "Respond in English" instruction earlier in this prompt does NOT apply: respond in Russian (русский язык), address the user with «вы», use natural Russian health vocabulary and the standard Russian lab terminology. Never answer in English.',
   "pt-BR":
     "\n\nREPLY LANGUAGE: respond in Brazilian Portuguese (pt-BR, never European Portuguese). Address the user as você throughout; use natural Brazilian health vocabulary.",
+  "zh-CN":
+    "\n\nREPLY LANGUAGE: respond in Simplified Chinese (zh-CN). Address the user as 你 throughout; use natural mainland Chinese health vocabulary, never Traditional Chinese or English.",
 };
 
 /**
@@ -1332,10 +1334,11 @@ export function getCoachSystemPrompt(
     locale === "ko" ||
     locale === "nl" ||
     locale === "pt-BR" ||
-    locale === "ru"
+    locale === "ru" ||
+    locale === "zh-CN"
   ) {
-    // ko, nl, pt-BR and ru ship no safety-contract matrix, so they are not a
-    // NativeCoachLocale.
+    // ko, nl, pt-BR, ru and zh-CN ship no safety-contract matrix, so they are
+    // not a NativeCoachLocale.
     base = COACH_PROMPT_EN + LOCALE_REPLY_FOOTER_FALLBACK[locale];
   } else {
     try {

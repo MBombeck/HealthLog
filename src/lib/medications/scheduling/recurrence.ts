@@ -61,7 +61,7 @@ import { wallClockInTz } from "@/lib/tz/wall-clock";
 import { startOfLocalDayInTz } from "@/lib/tz/local-day";
 import { tzOffsetMinutes } from "@/lib/tz/format";
 import { startOfUtcDay } from "@/lib/tz/start-of-utc-day";
-import { hhmmToMinutesOrNull } from "@/lib/medications/scheduling/hhmm";
+import { effectiveGraceMinutes } from "@/lib/medications/scheduling/grace";
 
 /**
  * Where a recurrence rule that does not parse is reported.
@@ -207,7 +207,6 @@ export interface Occurrence {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const WEEK_MS = 7 * DAY_MS;
-const DEFAULT_GRACE_MINUTES = 60;
 const ONE_MINUTE_MS = 60_000;
 
 // ────────────────────────────────────────────────────────────────────
@@ -1046,30 +1045,9 @@ function buildOccurrence(
   };
 }
 
-/**
- * Resolve the grace window for an occurrence:
- *
- *   - `reminderGraceMinutes` when set on the schedule
- *   - else `windowEnd - windowStart` span (in minutes)
- *   - else `DEFAULT_GRACE_MINUTES` (60) when the legacy fields agree
- *     (single-time window like "08:00..08:00")
- *
- * Handles overnight legacy windows (`windowEnd < windowStart`) by
- * pushing windowEnd to the next day.
- */
+/** The occurrence's grace window: the one rule in `grace.ts`. */
 function graceWindowMs(schedule: CanonicalSchedule): number {
-  if (schedule.reminderGraceMinutes !== null) {
-    return schedule.reminderGraceMinutes * ONE_MINUTE_MS;
-  }
-  const startMin = hhmmToMinutesOrNull(schedule.windowStart);
-  const endMin = hhmmToMinutesOrNull(schedule.windowEnd);
-  if (startMin === null || endMin === null) {
-    return DEFAULT_GRACE_MINUTES * ONE_MINUTE_MS;
-  }
-  let span = endMin - startMin;
-  if (span < 0) span += 24 * 60; // overnight window
-  if (span === 0) span = DEFAULT_GRACE_MINUTES;
-  return span * ONE_MINUTE_MS;
+  return effectiveGraceMinutes(schedule) * ONE_MINUTE_MS;
 }
 
 // ────────────────────────────────────────────────────────────────────
