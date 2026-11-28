@@ -1,5 +1,5 @@
 /**
- * Deterministic APNs mock for the test suite (v1.4.23 Wave 3 / F4).
+ * Deterministic APNs mock for the test suite (v1.4.23).
  *
  * Test files swap the real `@/lib/notifications/senders/apns` module for
  * this one via `vi.mock()`, then drive behaviour through three exported

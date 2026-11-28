@@ -1,11 +1,9 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { Loader2, MoreHorizontal, Trash2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 
-import { FieldError } from "@/components/forms/field-error";
 import { SeededFormDiscardDialog } from "@/components/forms/use-seeded-form-dismissal";
-import { FieldGroup } from "@/components/ui/field-group";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,23 +14,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { ActionMenu } from "@/components/ui/action-menu";
+import { ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
-import { DateTimeField } from "@/components/ui/date-time-field";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { useTranslations } from "@/lib/i18n/context";
 
-import { GlucoseContextSelect } from "../glucose-context-select";
 import { MEASUREMENT_TYPE_LABEL_KEYS as TYPE_LABEL_KEYS } from "../measurement-list-meta";
 
-import { MAX_COMMENT_LENGTH, toDateTimeLocalValue } from "./list-model";
+import { toDateTimeLocalValue } from "./list-model";
+import { MeasurementEntryFields } from "../entry/measurement-entry-fields";
 import { deleteConfirmDescription } from "./row-actions";
 import type { MeasurementEdit } from "./use-measurement-edit";
 import type { MeasurementRowDisplay } from "./use-measurement-row-display";
@@ -62,7 +54,6 @@ export function MeasurementEditSheet({
     editError,
     editErrorDescriptor,
     editValueError,
-    editValueErrorId,
     editMeasuredAt,
     setEditMeasuredAt,
     editNotes,
@@ -83,93 +74,43 @@ export function MeasurementEditSheet({
         open={!!editing}
         onOpenChange={(open) => !open && closeEdit()}
         title={t("measurements.editMeasurement")}
+        // The type cannot change here; it names what is being edited.
+        description={
+          editing
+            ? TYPE_LABEL_KEYS[editing.type]
+              ? t(TYPE_LABEL_KEYS[editing.type])
+              : editing.type
+            : undefined
+        }
         footer={<div ref={setEditFooterEl} className="flex w-full" />}
       >
         {editing && (
           <form id={editFormId} onSubmit={submitEdit} className="space-y-4">
-            <div className="flex items-center gap-1.5">
-              <Label className="shrink-0">{t("measurements.type")}</Label>
-              <span className="text-sm leading-none font-medium">
-                {TYPE_LABEL_KEYS[editing.type]
-                  ? t(TYPE_LABEL_KEYS[editing.type])
-                  : editing.type}
-              </span>
-            </div>
-
-            <FieldGroup
-              htmlFor="edit-value"
-              label={t("measurements.valueWithUnit", {
-                unit: rowDisplay(editing).unit,
-              })}
-            >
-              <Input
-                id="edit-value"
-                type="number"
-                enterKeyHint="next"
-                step="any"
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                required
-                aria-required="true"
-                aria-invalid={!!(editValueError || editError) || undefined}
-                aria-describedby={
-                  editValueError ? editValueErrorId : editErrorDescriptor
-                }
-              />
-              <FieldError id={editValueErrorId} message={editValueError} />
-            </FieldGroup>
-
-            {editing.type === "BLOOD_GLUCOSE" && (
-              <FieldGroup
-                htmlFor="edit-glucose-context"
-                label={t("measurements.glucoseContext")}
-              >
-                <GlucoseContextSelect
-                  id="edit-glucose-context"
-                  value={editGlucoseContext}
-                  onValueChange={setEditGlucoseContext}
-                  // A sensor or MCP reading arrives without a context, and
-                  // saving its note must not force one onto it.
-                  allowNone
-                />
-              </FieldGroup>
-            )}
-
-            <FieldGroup
-              htmlFor="edit-measuredAt"
-              label={t("measurements.timestamp")}
-            >
-              <DateTimeField
-                id="edit-measuredAt"
-                value={editMeasuredAt}
-                onChange={setEditMeasuredAt}
-                // Match the server bound: no future instant.
-                max={toDateTimeLocalValue(new Date().toISOString())}
-                required
-                aria-required="true"
-                aria-invalid={!!editError || undefined}
-                aria-describedby={editErrorDescriptor}
-              />
-            </FieldGroup>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-3">
-                <Label htmlFor="edit-notes">
-                  {t("common.note")} ({t("common.optional")})
-                </Label>
-                <span className="text-muted-foreground text-xs">
-                  {editNotes.length}/{MAX_COMMENT_LENGTH}
-                </span>
-              </div>
-              <Input
-                id="edit-notes"
-                value={editNotes}
-                onChange={(e) => setEditNotes(e.target.value)}
-                maxLength={MAX_COMMENT_LENGTH}
-                enterKeyHint="done"
-                autoCapitalize="sentences"
-              />
-            </div>
+            <MeasurementEntryFields
+              idPrefix="edit-"
+              unit={rowDisplay(editing).unit}
+              value={editValue}
+              onValueChange={setEditValue}
+              valueError={editValueError}
+              glucoseContext={
+                editing.type === "BLOOD_GLUCOSE"
+                  ? {
+                      value: editGlucoseContext,
+                      onChange: setEditGlucoseContext,
+                      // A sensor or MCP reading arrives without a context,
+                      // and saving its note must not force one onto it.
+                      allowNone: true,
+                    }
+                  : null
+              }
+              measuredAt={editMeasuredAt}
+              onMeasuredAtChange={setEditMeasuredAt}
+              maxMeasuredAt={toDateTimeLocalValue(new Date().toISOString())}
+              notes={editNotes}
+              onNotesChange={setEditNotes}
+              invalid={!!editError}
+              describedBy={editErrorDescriptor}
+            />
 
             {editError && (
               <div
@@ -241,52 +182,32 @@ function EditSheetFooter({ edit }: { edit: MeasurementEdit }) {
     closeEdit,
     editFormId,
   } = edit;
+  const busy = updateMutation.isPending || deleteMutation.isPending;
   return (
-    <div className="flex w-full items-center justify-between gap-2">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon-lg"
-            disabled={updateMutation.isPending || deleteMutation.isPending}
-            aria-label={t("common.moreOptions")}
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          <DropdownMenuItem onClick={() => setEditDeleteDialogOpen(true)}>
-            <Trash2 className="mr-2 h-4 w-4" />
-            {t("common.delete")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
+    <ActionPair>
+      <ActionMenu disabled={busy}>
+        <DropdownMenuItem onClick={() => setEditDeleteDialogOpen(true)}>
+          <Trash2 className="mr-2 h-4 w-4" />
+          {t("common.delete")}
+        </DropdownMenuItem>
+      </ActionMenu>
       {/* `[Cancel] [Save]`, primary rightmost, per Apple's HIG: iOS is the
           load-bearing phone target and the web shell renders desktop and the
-          iOS PWA from one component. Do not flip it for "Android parity";
-          fork a platform shell if Android becomes a real audience. */}
-      <div className="flex items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={closeEdit}
-          disabled={updateMutation.isPending || deleteMutation.isPending}
-        >
-          {t("common.cancel")}
-        </Button>
-        <Button
-          type="submit"
-          form={editFormId}
-          disabled={updateMutation.isPending || deleteMutation.isPending}
-        >
-          {updateMutation.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-          ) : null}
-          {t("common.save")}
-        </Button>
-      </div>
-    </div>
+          iOS PWA from one component. */}
+      <Button
+        type="button"
+        variant="outline"
+        onClick={closeEdit}
+        disabled={busy}
+      >
+        {t("common.cancel")}
+      </Button>
+      <Button type="submit" form={editFormId} disabled={busy}>
+        {updateMutation.isPending ? (
+          <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+        ) : null}
+        {t("common.save")}
+      </Button>
+    </ActionPair>
   );
 }

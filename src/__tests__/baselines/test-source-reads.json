@@ -1,7 +1,7 @@
 {
   "$comment": "tests that read a source file by path, per test file under src/. Maintained by src/__tests__/test-realism-ratchet.test.ts.",
-  "count": 328,
-  "total": 328,
+  "count": 325,
+  "total": 325,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 1,
     "__tests__/admin-data-wipe-completeness.test.ts": 1,
@@ -140,7 +140,6 @@
     "__tests__/unit-preference-display-guard.test.ts": 1,
     "__tests__/unit-suite-browser-install-guard.test.ts": 1,
     "__tests__/utc-day-key-allowlist-guard.test.ts": 1,
-    "__tests__/visit-link-guard.test.ts": 1,
     "__tests__/workout-canonical-identity-guard.test.ts": 1,
     "__tests__/write-rate-limit-guard.test.ts": 1,
     "__tests__/written-outcome-response-consumer-guard.test.ts": 1,
@@ -239,7 +238,6 @@
     "components/settings/access/__tests__/grant-invite-expiry.test.tsx": 1,
     "components/settings/access/__tests__/grant-invite-scope.test.tsx": 1,
     "components/settings/access/__tests__/managed-profile-affordances.test.tsx": 1,
-    "components/settings/account-section/__tests__/account-section-field-error-clearing.test.ts": 1,
     "components/settings/account-section/__tests__/display-name-field.test.tsx": 1,
     "components/settings/account-section/__tests__/display-preferences-card.test.tsx": 1,
     "components/settings/import-panel/__tests__/import-docs-link.test.ts": 1,

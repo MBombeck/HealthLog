@@ -73,6 +73,8 @@ export type EmergencyCardRow = {
   label: string;
   lines: string[];
   emphasise: boolean;
+  /** Nothing recorded: `lines` holds the one "Not recorded". */
+  empty: boolean;
   /**
    * The owner's view only: where each line is edited, one per line, null
    * where the owning surface is off. Absent on every other rendering.
@@ -126,6 +128,7 @@ export function emergencyCardRows(
       label,
       lines: shown,
       emphasise: emphasise && filled,
+      empty: !filled,
       ...(targets
         ? {
             hrefs: shown.map((_, i) =>

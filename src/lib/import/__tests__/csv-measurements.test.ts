@@ -103,7 +103,9 @@ describe("parseCsvMeasurements — unit conversion", () => {
     // literal that used to sit here was 18.016 while every display path
     // divided by 18.0182, so a reading imported in mmol/L did not read back
     // as the number it went in as.
-    expect(out.rows[0].row?.value).toBeCloseTo(5.3 * MGDL_PER_MMOL, 3);
+    expect(out.rows[0].row?.value).toBe(
+      Math.round(5.3 * MGDL_PER_MMOL * 10) / 10,
+    );
     expect(mgdlToMmol(out.rows[0].row?.value ?? 0)).toBe(5.3);
   });
 
@@ -141,6 +143,39 @@ describe("parseCsvMeasurements — timezone + entry-instant bound", () => {
       "WEIGHT,81,kg,2026-05-01T08:00:00+02:00,,,",
     ]);
     expect(out.rows.map((r) => r.status)).toEqual(["ok", "ok"]);
+  });
+
+  it("reads an offset with or without a colon, and a space before the time", () => {
+    const out = parse([
+      "WEIGHT,80,kg,2026-05-01T08:00:00+0200,,,",
+      "WEIGHT,81,kg,2026-05-01 08:00+02:00,,,",
+      "WEIGHT,82,kg,2026-05-01T08:00:00.250-03:30,,,",
+    ]);
+    expect(out.rows.map((r) => r.row?.measuredAt.toISOString())).toEqual([
+      "2026-05-01T06:00:00.000Z",
+      "2026-05-01T06:00:00.000Z",
+      "2026-05-01T11:30:00.250Z",
+    ]);
+  });
+
+  it("does not take the year of a day-first date for an offset", () => {
+    // `-2026` looked like an offset, and the date was then read month-first
+    // in the server's zone: 5 November instead of 11 May.
+    const out = parse([
+      "WEIGHT,80,kg,11-05-2026,,,",
+      "WEIGHT,80,kg,11.05.2026 08:00+02:00,,,",
+      "WEIGHT,80,kg,05/11/2026 08:00Z,,,",
+    ]);
+    expect(out.rows.map((r) => r.reason)).toEqual([
+      "invalid_timestamp",
+      "invalid_timestamp",
+      "invalid_timestamp",
+    ]);
+  });
+
+  it("refuses a day that does not exist", () => {
+    const out = parse(["WEIGHT,80,kg,2026-02-30T08:00:00Z,,,"]);
+    expect(out.rows[0].reason).toBe("invalid_timestamp");
   });
 
   it("rejects a future-dated row via the entry-instant bound", () => {
@@ -182,7 +217,7 @@ describe("parseCsvMeasurements — glucose context", () => {
     for (const result of out.rows) {
       expect(result.row).not.toHaveProperty("glucoseContext");
       expect(result.row?.unit).toBe("mg/dL");
-      expect(result.row?.value).toBeCloseTo(5.3 * MGDL_PER_MMOL, 3);
+      expect(result.row?.value).toBe(Math.round(5.3 * MGDL_PER_MMOL * 10) / 10);
     }
     expect(out.rows[0].row?.measuredAt.toISOString()).toBe(
       "2024-04-03T02:15:00.000Z",

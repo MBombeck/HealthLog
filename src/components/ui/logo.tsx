@@ -5,6 +5,11 @@ interface LogoProps {
   size?: number;
 }
 
+/**
+ * The brand mark. It draws in `--brand` (the purple the accent had before
+ * 1.50) in place of `currentColor`, whatever text colour the caller sets:
+ * the accent is ink now, and the mark is a brand question, not a UI accent.
+ */
 export function Logo({ className, size = 24 }: LogoProps) {
   return (
     <svg
@@ -25,16 +30,16 @@ export function Logo({ className, size = 24 }: LogoProps) {
       {/* Heart shape */}
       <path
         d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-        fill="currentColor"
+        fill="var(--brand)"
         fillOpacity="0.15"
-        stroke="currentColor"
+        stroke="var(--brand)"
         strokeWidth={1.2}
       />
       {/* EKG heartbeat line — clipped to heart shape */}
       <polyline
         points="3,12.5 8,12.5 9.5,9 11,16 12.5,7 14,12.5 15.5,12.5 21,12.5"
         fill="none"
-        stroke="currentColor"
+        stroke="var(--brand)"
         strokeWidth={1.5}
         clipPath="url(#heart-clip)"
       />

@@ -216,12 +216,9 @@ describe("<MedicationIntakeQuickAdd> — SSR contract", () => {
     // 44 px touch floor (WCAG 2.5.5). The form controls inherit it from
     // the Input / SelectTrigger primitives' `h-11 sm:h-10` base — no
     // per-call-site `min-h-11` override (which would force 44 px on
-    // desktop too). The footer buttons keep the explicit
-    // `min-h-11 sm:min-h-9` floor.
+    // desktop too). The footer buttons take theirs from the action pair.
     expect(html.match(/h-11/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
-    expect(
-      html.match(/min-h-11 sm:min-h-9/g)?.length ?? 0,
-    ).toBeGreaterThanOrEqual(1);
+    expect(html).toContain('data-slot="action-pair"');
   });
 
   it("renders the medication due today as selected ahead of array order", () => {

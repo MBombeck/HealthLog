@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-is-mobile";
+import { ActionMenuSlot } from "@/components/ui/action-pair";
 import { SeededFormDiscardDialog } from "@/components/forms/use-seeded-form-dismissal";
 import {
   Dialog,
@@ -61,15 +62,11 @@ export interface ResponsiveSheetProps {
   subheader?: React.ReactNode;
   /**
    * Footer slot. Pass the action `<Button>`s directly (a fragment is
-   * fine) — never a wrapper `<div className="flex …">`. The two
-   * branches deliberately stack differently and both rely on owning
-   * the flex context: the Sheet branch pins a `flex-row justify-end`
-   * bar so Cancel/Save sit side by side above the keyboard, while the
-   * Dialog branch defers to `DialogFooter`'s `flex-col-reverse
-   * sm:flex-row` so narrow dialogs stack the primary action on top.
-   * A consumer-supplied wrapper div collapses both into a single flex
-   * child and breaks that responsive stacking. This split is a
-   * decision, not drift — don't unify the two branches.
+   * fine): at most two, the primary last, and an `ActionMenu` ("⋯") for
+   * anything else. Both branches lay them out through `ActionPair` (equal
+   * width, at the right edge, stacked only when they do not fit). A form
+   * that portals its own actions in passes a lone host `<div>` here and
+   * renders an `ActionPair` into it.
    *
    * Both branches keep the footer reachable once the body scrolls:
    * the Sheet branch sticky-pins it to the bottom of the bottom-sheet,
@@ -271,6 +268,8 @@ export function ResponsiveSheet({
   children,
 }: ResponsiveSheetProps) {
   const isMobile = useIsMobile();
+  // The header element a footer's "⋯" renders into (`ActionMenuSlot`).
+  const [menuSlot, setMenuSlot] = React.useState<HTMLDivElement | null>(null);
   const { bodyRef, handleOpenChange, discard } = useSheetDismissal({
     open,
     onOpenChange,
@@ -279,7 +278,7 @@ export function ResponsiveSheet({
 
   if (isMobile) {
     return (
-      <>
+      <ActionMenuSlot slot={menuSlot}>
         <Sheet open={open} onOpenChange={handleOpenChange}>
           <SheetContent
             onCloseAutoFocus={onCloseAutoFocus}
@@ -326,40 +325,21 @@ export function ResponsiveSheet({
                   // the title starts at 16px — visibly not flush. Trim the right
                   // padding by that inset so the glyph aligns with the title's
                   // edge; the tap target still reaches the frame.
-                  headerAction &&
-                    !showCloseButton &&
-                    "flex-row items-start justify-between gap-3 pr-1 sm:pr-2",
-                  headerAction &&
-                    showCloseButton &&
-                    "flex-row items-start justify-between gap-3",
+                  headerAction && !showCloseButton && "pr-1 sm:pr-2",
+                  "flex-row items-start justify-between gap-3",
                 )}
               >
-                {headerAction ? (
-                  <>
-                    <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                      <SheetTitle className="text-base font-semibold">
-                        {title}
-                      </SheetTitle>
-                      {description ? (
-                        <SheetDescription className="text-muted-foreground text-xs">
-                          {description}
-                        </SheetDescription>
-                      ) : null}
-                    </div>
-                    <div className="shrink-0">{headerAction}</div>
-                  </>
-                ) : (
-                  <>
-                    <SheetTitle className="text-base font-semibold">
-                      {title}
-                    </SheetTitle>
-                    {description ? (
-                      <SheetDescription className="text-muted-foreground text-xs">
-                        {description}
-                      </SheetDescription>
-                    ) : null}
-                  </>
-                )}
+                <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                  <SheetTitle className="text-base font-semibold">
+                    {title}
+                  </SheetTitle>
+                  {description ? (
+                    <SheetDescription className="text-muted-foreground text-xs">
+                      {description}
+                    </SheetDescription>
+                  ) : null}
+                </div>
+                <HeaderTrail action={headerAction} slotRef={setMenuSlot} />
               </SheetHeader>
             )}
             <div
@@ -387,7 +367,7 @@ export function ResponsiveSheet({
             {footer ? (
               <SheetFooter
                 data-slot="responsive-sheet-footer"
-                className="border-border/70 bg-background/95 supports-[backdrop-filter]:bg-background/80 keyboard-open:pb-4 sticky bottom-0 mt-0 flex-row justify-end gap-2 border-t p-4 pb-[calc(var(--safe-area-bottom)+1rem)] backdrop-blur"
+                className="border-border/70 bg-background/95 supports-[backdrop-filter]:bg-background/80 keyboard-open:pb-4 sticky bottom-0 mt-0 border-t p-4 pb-[calc(var(--safe-area-bottom)+1rem)] backdrop-blur"
               >
                 {footer}
               </SheetFooter>
@@ -395,12 +375,12 @@ export function ResponsiveSheet({
           </SheetContent>
         </Sheet>
         {discard}
-      </>
+      </ActionMenuSlot>
     );
   }
 
   return (
-    <>
+    <ActionMenuSlot slot={menuSlot}>
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent
           onCloseAutoFocus={onCloseAutoFocus}
@@ -436,33 +416,21 @@ export function ResponsiveSheet({
             <DialogHeader
               data-slot="responsive-sheet-header"
               className={cn(
-                "shrink-0",
-                headerAction && "flex-row items-start justify-between gap-3",
+                "shrink-0 flex-row items-start justify-between gap-3",
                 // Reserve the trailing gutter for the primitive's absolute close
                 // button ONLY when it is actually painted. With
-                // `showCloseButton={false}` the headerAction sits flush to the
-                // header's right edge instead of being pushed in.
-                headerAction && showCloseButton && "pr-9",
+                // `showCloseButton={false}` the trailing controls sit flush to
+                // the header's right edge instead of being pushed in.
+                showCloseButton ? "pr-9" : "pr-0",
               )}
             >
-              {headerAction ? (
-                <>
-                  <div className="flex min-w-0 flex-1 flex-col gap-2">
-                    <DialogTitle>{title}</DialogTitle>
-                    {description ? (
-                      <DialogDescription>{description}</DialogDescription>
-                    ) : null}
-                  </div>
-                  <div className="shrink-0">{headerAction}</div>
-                </>
-              ) : (
-                <>
-                  <DialogTitle>{title}</DialogTitle>
-                  {description ? (
-                    <DialogDescription>{description}</DialogDescription>
-                  ) : null}
-                </>
-              )}
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
+                <DialogTitle>{title}</DialogTitle>
+                {description ? (
+                  <DialogDescription>{description}</DialogDescription>
+                ) : null}
+              </div>
+              <HeaderTrail action={headerAction} slotRef={setMenuSlot} />
             </DialogHeader>
           )}
           <div
@@ -508,7 +476,7 @@ export function ResponsiveSheet({
         </DialogContent>
       </Dialog>
       {discard}
-    </>
+    </ActionMenuSlot>
   );
 }
 
@@ -596,5 +564,29 @@ function BandHeader({
       ) : null}
       <div className="border-border/70 -mx-6 border-b px-6 pb-4">{band}</div>
     </DialogHeader>
+  );
+}
+
+/**
+ * The header's trailing controls, left of the close button: the consumer's
+ * `headerAction`, then the slot a footer's "⋯" (`ActionMenu`) renders into,
+ * so a sheet's footer holds exactly its two buttons.
+ */
+function HeaderTrail({
+  action,
+  slotRef,
+}: {
+  action: React.ReactNode;
+  slotRef: (node: HTMLDivElement | null) => void;
+}) {
+  return (
+    <div className="-my-1.5 flex shrink-0 items-center gap-1 empty:hidden">
+      {action}
+      <div
+        ref={slotRef}
+        data-slot="responsive-sheet-menu"
+        className="contents"
+      />
+    </div>
   );
 }

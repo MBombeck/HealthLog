@@ -2486,7 +2486,8 @@
           "active": true,
           "since": "anchor-3d+12:00:00",
           "episodeCount": 1
-        }
+        },
+        "shortLabel": "Health"
       },
       "sleepStages": {
         "windowDays": 30,

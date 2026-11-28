@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useMemo, useState } from "react";
-import { Download, FileSpreadsheet, FlaskConical, Pill } from "lucide-react";
+import { Download, FlaskConical, Pill } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { FilePicker } from "@/components/ui/file-picker";
@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { SwitchRow } from "@/components/ui/switch-row";
-import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { apiFetch, ApiError } from "@/lib/api/api-fetch";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import {
@@ -24,7 +23,9 @@ import {
 } from "@/lib/import/csv-mapping";
 import type { RecordImportResult } from "@/lib/validations/record-import";
 
-import { ImportCardShell } from "./import-card-shell";
+import { ListItem } from "@/components/ui/list-row";
+
+import { SourceIcon, useOpenOnAnchor } from "./import-card-shell";
 
 /** The head of the file the mapping screen reads: enough for six rows. */
 const HEAD_BYTES = 64 * 1024;
@@ -50,45 +51,23 @@ function downloadTemplate(kind: RecordImportKind) {
 
 /**
  * Settings > Export & Import: lab results and medications from a spreadsheet
- * (#1215). The card opens a sheet that reads the head of the file, suggests
- * the column for each field, lets the person correct every choice, checks
- * the whole file on the server (nothing written) and then imports it.
+ * (#1215), one source row each. A row opens the sheet that reads the head of
+ * the file, suggests the column for each field, lets the person correct every
+ * choice, checks the whole file on the server (nothing written) and then
+ * imports it.
  */
-export function RecordCsvImportCard() {
-  const { t } = useTranslations();
+export function RecordCsvImportSources() {
   const [open, setOpen] = useState<RecordImportKind | null>(null);
   const [session, setSession] = useState(0);
+  const start = (kind: RecordImportKind) => {
+    setSession((n) => n + 1);
+    setOpen(kind);
+  };
   return (
-    <ImportCardShell
-      testId="import-card-records-csv"
-      anchor="import-records-csv"
-      icon={FileSpreadsheet}
-      title={t("recordImport.title")}
-      description={t("recordImport.description")}
-    >
-      <p className="text-sm">{t("recordImport.detail")}</p>
-      <SettingsCardActions>
-        {(["labs", "medications"] as const).map((kind) => (
-          <Button
-            key={kind}
-            type="button"
-            variant="outline"
-            size="sm"
-            data-slot={`record-import-open-${kind}`}
-            onClick={() => {
-              setSession((n) => n + 1);
-              setOpen(kind);
-            }}
-          >
-            {kind === "labs" ? (
-              <FlaskConical className="size-4" aria-hidden="true" />
-            ) : (
-              <Pill className="size-4" aria-hidden="true" />
-            )}
-            {t(`recordImport.kind.${kind}`)}
-          </Button>
-        ))}
-      </SettingsCardActions>
+    <>
+      {(["labs", "medications"] as const).map((kind) => (
+        <RecordCsvRow key={kind} kind={kind} onOpen={() => start(kind)} />
+      ))}
       {open ? (
         <RecordCsvImportSheet
           key={session}
@@ -96,7 +75,51 @@ export function RecordCsvImportCard() {
           onOpenChange={(next) => !next && setOpen(null)}
         />
       ) : null}
-    </ImportCardShell>
+    </>
+  );
+}
+
+/**
+ * Each row's anchor, written out so the search palette's anchor check
+ * (`settings-cards.test.ts`) can find it.
+ */
+const RECORD_CSV_ANCHORS: Record<RecordImportKind, { anchor: string }> = {
+  labs: { anchor: "import-labs-csv" },
+  medications: { anchor: "import-medications-csv" },
+};
+
+function RecordCsvRow({
+  kind,
+  onOpen,
+}: {
+  kind: RecordImportKind;
+  onOpen: () => void;
+}) {
+  const { t } = useTranslations();
+  const anchor = RECORD_CSV_ANCHORS[kind].anchor;
+  useOpenOnAnchor(anchor, onOpen);
+  return (
+    <ListItem
+      id={anchor}
+      className="scroll-mt-28"
+      data-testid={`import-card-${kind}-csv`}
+      icon={<SourceIcon icon={kind === "labs" ? FlaskConical : Pill} />}
+      title={t(`recordImport.row.${kind}`)}
+      meta={t("recordImport.rowMeta")}
+      onSelect={onOpen}
+      trailing={
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="relative z-10"
+          data-slot={`record-import-open-${kind}`}
+          onClick={onOpen}
+        >
+          {t("settings.sections.export.import.pickerChoose")}
+        </Button>
+      }
+    />
   );
 }
 
@@ -238,21 +261,14 @@ function RecordCsvImportSheet({
       description={t(`recordImport.sheetDescription.${kind}`)}
       footer={
         done ? (
-          <Button
-            type="button"
-            size="sm"
-            className="min-h-11"
-            onClick={() => onOpenChange(false)}
-          >
+          <Button type="button" onClick={() => onOpenChange(false)}>
             {t("recordImport.close")}
           </Button>
         ) : (
-          <div className="flex flex-wrap justify-end gap-2">
+          <>
             <Button
               type="button"
               variant="outline"
-              size="sm"
-              className="min-h-11"
               disabled={!file || busy || missing.length > 0}
               data-slot="record-import-check"
               onClick={() => send(true)}
@@ -261,8 +277,6 @@ function RecordCsvImportSheet({
             </Button>
             <Button
               type="button"
-              size="sm"
-              className="min-h-11"
               disabled={!check || busy || check.inserted === 0}
               data-slot="record-import-run"
               onClick={() => send(false)}
@@ -271,7 +285,7 @@ function RecordCsvImportSheet({
                 ? t("recordImport.run", { count: fmt.integer(check.inserted) })
                 : t("recordImport.runIdle")}
             </Button>
-          </div>
+          </>
         )
       }
     >

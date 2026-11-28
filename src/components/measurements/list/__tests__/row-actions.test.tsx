@@ -96,16 +96,27 @@ describe("the row checkbox", () => {
   const checkboxes = (html: string) =>
     html.split('aria-label="Select row"').length - 1;
 
-  it("is offered for a reading and not for a computed score, on both layouts", () => {
+  it("is offered for a reading and not for a computed score, on both layouts (the phone in its selection mode)", () => {
     const measurements = [reading("m1", "MANUAL"), reading("m2", "COMPUTED")];
     const wrap = (node: React.ReactNode) =>
       renderToStaticMarkup(
         <I18nProvider initialLocale="en">{node}</I18nProvider>,
       );
+    // The phone list shows its boxes only in its selection mode.
     expect(
       checkboxes(
         wrap(
           <MeasurementCardList measurements={measurements} rows={listRows} />,
+        ),
+      ),
+    ).toBe(0);
+    expect(
+      checkboxes(
+        wrap(
+          <MeasurementCardList
+            measurements={measurements}
+            rows={{ ...listRows, selecting: true }}
+          />,
         ),
       ),
     ).toBe(1);

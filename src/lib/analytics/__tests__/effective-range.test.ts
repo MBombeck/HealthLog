@@ -172,7 +172,7 @@ describe("resolveEffectiveBpTargets", () => {
   });
 });
 
-// Audit-2026-05-07 / phase P0 / closes audit C-15: TOTAL_BODY_WATER and
+// Audit 2026-05-07, finding C-15: TOTAL_BODY_WATER and
 // BONE_MASS lacked threshold definitions. Severity logic returned `nominal`
 // for any value, so users would see "all healthy" regardless of input.
 describe("body composition thresholds", () => {

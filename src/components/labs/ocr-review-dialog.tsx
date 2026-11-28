@@ -358,26 +358,21 @@ export function OcrReviewDialog({
       }
       footer={
         stage === "review" ? (
-          <div className="flex w-full justify-between gap-2">
+          <>
             <Button
-              variant="ghost"
+              variant="outline"
               onClick={() => handleClose(false)}
               disabled={busy}
-              className="min-h-11 sm:min-h-9"
             >
               {t("labs.ocr.discardAll")}
             </Button>
-            <Button
-              onClick={onSave}
-              disabled={busy || confirmedCount === 0}
-              className="min-h-11 sm:min-h-9"
-            >
+            <Button onClick={onSave} disabled={busy || confirmedCount === 0}>
               {commit.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
               ) : null}
               {t("labs.ocr.saveSelected", { count: confirmedCount })}
             </Button>
-          </div>
+          </>
         ) : undefined
       }
     >

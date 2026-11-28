@@ -117,8 +117,7 @@ export interface InsightAdvisorPayload {
  * `AbortController` so a cache-miss path (server still warming out of
  * band) does not pin the mother-page main thread. The strip stays
  * interactive in the DOM; dropping the worst case from 30 s to 8 s
- * eliminates the mobile-tap-block window per
- * `.planning/research/v15-insights-blocking-bug.md` fix 1.
+ * eliminates the mobile-tap-block window.
  */
 const ADVISOR_TIMEOUT_MS = 8_000;
 

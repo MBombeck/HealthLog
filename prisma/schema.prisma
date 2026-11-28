@@ -1,5 +1,5 @@
 // v1.4.34 web-freeze. Schema is locked additive-only until iOS launch
-// + v1.5.0 marker. See .planning/v15-strategic-plan.md §2.
+// + v1.5.0 marker.
 //
 // ─── Timezone storage convention (UTC-only invariant) ───────────────
 //
@@ -547,7 +547,7 @@ model User {
   aiCompatKeyEncrypted String? @map("ai_compat_key_encrypted")
   aiCompatModel        String? @map("ai_compat_model")
 
-  // v1.4.16 phase B5b — ordered fallback chain for multi-provider AI
+  // v1.4.16: ordered fallback chain for multi-provider AI
   // redundancy. Each entry is `{ providerType, priority, enabled }`,
   // sorted by ascending priority at runtime. Credentials live in the
   // dedicated encrypted columns (codex* / aiAnthropicKeyEncrypted /
@@ -610,7 +610,7 @@ model User {
   // Onboarding. The first-run redirect's gate; the needs-based setup flow
   // (`OnboardingRecord`) keeps its own ledger and stamps this on confirm.
   onboardingCompletedAt   DateTime? @map("onboarding_completed_at")
-  // v1.4.15 Phase B5: tracks whether the user has finished (or
+  // v1.4.15: tracks whether the user has finished (or
   // explicitly dismissed) the spotlight tour that overlays the
   // dashboard on first arrival. Distinct from the wizard at
   // `/onboarding` (which is gated by `onboardingCompletedAt`); the
@@ -667,7 +667,7 @@ model User {
   // Display name (optional override of username for greetings).
   displayName String? @map("display_name")
 
-  // Doctor-report personalization (v1.4.15 phase B6).
+  // Doctor-report personalization (v1.4.15).
   // Persisted between report exports so the dialog can pre-fill the last-used
   // practice / clinic name. Free-text, hard-capped to 120 chars upstream by
   // `sanitisePracticeName()`. Null = user has never set one.
@@ -916,7 +916,7 @@ model User {
   // secret rides the same AES-256-GCM at-rest envelope as every other
   // credential (registered in ENCRYPTED_COLUMNS + the rotation script);
   // `totpConfirmedAt` marks the pending→active promotion. `mfaEnforced` and
-  // `passkeyUpgradeNudgeDismissed` are per-account flags later waves read.
+  // `passkeyUpgradeNudgeDismissed` are per-account flags.
   totpSecretEncrypted          String?   @map("totp_secret_encrypted")
   totpConfirmedAt              DateTime? @map("totp_confirmed_at")
   // v1.23 — TOTP replay guard. The last accepted time-step counter
@@ -1024,6 +1024,7 @@ model User {
   recommendationFeedback                    RecommendationFeedback[]
   idempotencyKeys                           IdempotencyKey[]
   devices                                   Device[]
+  healthConnectPairings                     HealthConnectPairing[]
   integrationStatuses                       IntegrationStatus[]
   integrationWatches                        IntegrationWatch[]
   coachConversations                        CoachConversation[]
@@ -1276,6 +1277,13 @@ model User {
   fullName                 String? @map("full_name")
   insurerName              String? @map("insurer_name")
   insuranceNumberEncrypted String? @map("insurance_number_encrypted")
+  /// ISO 3166-1 alpha-2 country whose rule the insurance number
+  /// follows (`src/lib/validations/insurance-number.ts`). NULL reads as DE:
+  /// every number stored before the column existed is a KVNR.
+  insuranceNumberCountry   String? @map("insurance_number_country")
+  /// The plan's group number beside a US member ID. Plaintext like
+  /// `insurerIkNumber`; read only while the country is US.
+  insuranceGroupNumber     String? @map("insurance_group_number")
 
   // v1.8.6 profile — optional German insurer institution number (IKNR,
   // 9 digits). Surfaced on the FHIR `Coverage` resource's contained
@@ -1539,7 +1547,7 @@ model Session {
   ipAddress          String?   @map("ip_address")
   userAgent          String?   @map("user_agent")
   // v1.23 — step-up freshness stamp. Set when the session completes a second
-  // factor (or re-confirms it); `requireFreshMfa` (a later wave) reads it.
+  // factor (or re-confirms it); `requireFreshMfa` reads it.
   mfaVerifiedAt      DateTime? @map("mfa_verified_at")
   /// When this session last re-proved a credential through `POST
   /// /api/auth/reproof` (any method). Read by `requireRecentProof`, which on an
@@ -1607,8 +1615,7 @@ model Session {
 }
 
 // ─── v1.23 second-factor (MFA) substrate ───────────────────
-// These tables back the TOTP / WebAuthn-second-factor / recovery-code flows
-// that later waves build on. Phase F lands the empty stores only.
+// These tables back the TOTP / WebAuthn-second-factor / recovery-code flows.
 
 // Single-use step-up ticket minted after a valid password when the account
 // has a second factor enabled. The partial "password OK, awaiting factor 2"
@@ -1856,8 +1863,7 @@ enum MeasurementType {
   // the WHOOP row reuses that type and is distinguished by source; where it
   // would collide with a HealthLog engine (STRAIN_SCORE) or a different
   // physiological measure (SDNN HEART_RATE_VARIABILITY) it gets a NEW type so
-  // the native value and the derived proxy never share a bucket. See
-  // `.planning/v1.11-build/epic-A-whoop-buildspec.md` §3.2 / §5.
+  // the native value and the derived proxy never share a bucket.
   HRV_RMSSD // ms — WHOOP `recovery.score.hrv_rmssd_milli`. The RMSSD HRV metric WHOOP reports; kept structurally distinct from the SDNN HEART_RATE_VARIABILITY (different estimator, not interchangeable).
   DAY_STRAIN // score (0–21) — WHOOP `cycle.score.strain`. The day's cardiovascular load on WHOOP's 0–21 scale. Distinct from the COMPUTED STRAIN_SCORE (0–100 TRIMP proxy) so the two never share a bucket.
   WORKOUT_STRAIN // score (0–21) — WHOOP `workout.score.strain`. Per-workout strain; preferentially stored in `Workout.metadata` (tied to the workout row) rather than as a free-floating Measurement, but the type exists for the rare detached case.
@@ -4358,6 +4364,8 @@ model ApiToken {
   ingestedMeasurements Measurement[]
   // v1.30.34 — step-up elevations bound to this token. Cascade-deleted with it.
   stepUpElevations     StepUpElevation[]
+  /// The Android device this token was paired for (`Device.apiTokenId`).
+  pairedDevice         Device?
 
   @@index([userId])
   @@index([mcpConnectionId])
@@ -5719,7 +5727,7 @@ model AppSettings {
   adminCodexConnectedAt           DateTime? @map("admin_codex_connected_at")
   adminCodexConnectionStatus      String    @default("disconnected") @map("admin_codex_connection_status")
 
-  // v1.4.16 phase B5e — daily-aggregated rec-feedback summary written
+  // v1.4.16: daily-aggregated rec-feedback summary written
   // by `feedback-aggregator.ts`. Shape:
   //   {
   //     "generatedAt": "2026-05-09T04:00:00.000Z",
@@ -5957,7 +5965,7 @@ model NotificationChannel {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  // ── v1.4.15 Phase B3: reliability fields ─────────────────────
+  // ── v1.4.15: reliability fields ─────────────────────
   // Reason the channel was auto-disabled (e.g. "hard_reject_410",
   // "telegram_blocked_by_user", "telegram_chat_not_found",
   // "give_up_after_5_failures"). NULL when the channel is healthy
@@ -6784,6 +6792,12 @@ model Device {
   healthQuietNotifiedAt      DateTime?                @map("health_quiet_notified_at")
   /// The hours this device delivered in, the stall detector's history.
   healthIngestHours          DeviceHealthIngestHour[]
+  /// The `health-connect:write` token an Android device was paired with
+  /// (`POST /api/health-connect/pair`). Readers: the batch route, which
+  /// resolves the device from the token, and the device delete, which
+  /// revokes the token with the device. Null for every iOS device.
+  apiTokenId                 String?                  @unique @map("api_token_id")
+  apiToken                   ApiToken?                @relation(fields: [apiTokenId], references: [id], onDelete: SetNull)
   lastSeen                   DateTime                 @default(now()) @map("last_seen")
   createdAt                  DateTime                 @default(now()) @map("created_at")
   updatedAt                  DateTime                 @updatedAt @map("updated_at")
@@ -6797,6 +6811,26 @@ model Device {
   // SQL and intentionally omitted here. Do not re-add `@@index([apnsToken])`
   // (the non-unique sibling) — the partial unique index supersedes it.
   @@map("devices")
+}
+
+/// A one-time code that pairs an Android device running HealthLog Sync
+/// (`POST /api/health-connect/pairing` mints, `POST /api/health-connect/pair`
+/// consumes). Only the code's hash is stored; a code lives ten minutes and
+/// pairs once. Operational, not backed up.
+model HealthConnectPairing {
+  id         String    @id @default(cuid())
+  userId     String    @map("user_id")
+  /// HMAC-SHA256 (`hashToken`) of the raw `hcp_` code.
+  codeHash   String    @unique @map("code_hash")
+  expiresAt  DateTime  @map("expires_at")
+  /// Set by the exchange that used the code; a set row pairs nothing.
+  consumedAt DateTime? @map("consumed_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("health_connect_pairings")
 }
 
 /// One hour in which a device delivered Apple Health data of a background
@@ -7458,7 +7492,7 @@ model HostMetric {
   @@map("host_metrics")
 }
 
-// ─── Recommendation Feedback (v1.4.16 phase B5e) ───────────────
+// ─── Recommendation Feedback (v1.4.16) ───────────────
 //
 // Per-recommendation thumbs-up / thumbs-down rating. Captured client-
 // side under each rec card; persisted with provider attribution

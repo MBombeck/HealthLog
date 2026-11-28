@@ -134,7 +134,6 @@ describe("the two homes of the field", () => {
 
   it("stacks as wide as the quick settings sheet", () => {
     const html = render(OPEN);
-    expect(html).toContain('data-no-colon="true"');
     expect(selectClass(html)).toMatch(/\bw-full\b/);
     expect(selectClass(html)).toMatch(/\bmt-1\b/);
   });
@@ -155,7 +154,6 @@ describe("the two homes of the field", () => {
     expect(html).toMatch(
       /class="flex min-h-11 items-center justify-between gap-4"><label/,
     );
-    expect(html).toContain('data-no-colon="true"');
     expect(selectClass(html)).toMatch(/\bw-44\b/);
     expect(selectClass(html)).not.toMatch(/\bmt-1\b/);
   });

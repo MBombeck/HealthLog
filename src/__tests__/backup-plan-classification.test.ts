@@ -6,10 +6,10 @@ import { describe, expect, it } from "vitest";
 import {
   AUTH_MODELS_OUT_OF_SCOPE,
   BACKED_UP_MODELS,
-  DERIVED_MODELS,
   NOT_IN_BACKUP_MODELS,
   RAW_SQL_TABLES,
 } from "@/lib/export/backup-plan";
+import { DERIVED_MODELS } from "@/lib/export/backup-derived-models";
 
 type BackupVerdict = "BACKED_UP" | "DERIVED" | "NOT_IN_BACKUP" | "AUTH";
 

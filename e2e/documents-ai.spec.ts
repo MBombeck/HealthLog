@@ -27,6 +27,7 @@ import {
   AI_PROBE_DOC_ID,
   CONTENT_DOC_ID,
   CONTENT_BODY_WORD,
+  openDocumentMenu,
 } from "./setup/vault-fixture";
 
 /** The vault usage DTO the UI reads before offering upload + AI affordances. */
@@ -182,7 +183,8 @@ test.describe("document vault — AI assist + content search", () => {
     const sheet = page.getByRole("dialog");
     await expect(sheet).toBeVisible();
 
-    const suggest = sheet.locator('[data-slot="assist-suggest"]');
+    const menu = await openDocumentMenu(page, sheet);
+    const suggest = menu.locator('[data-slot="assist-suggest"]');
     await expect(suggest).toBeEnabled();
     await suggest.click();
 
@@ -235,9 +237,13 @@ test.describe("document vault — AI assist + content search", () => {
     const sheet = page.getByRole("dialog");
     await expect(sheet).toBeVisible();
 
-    // The action row's summary is the document's own: it asks to store it,
-    // and no session-only copy opens beside it.
-    await sheet.getByRole("button", { name: "Summarize" }).click();
+    // The menu's summary is the document's own: it asks to store it, and no
+    // session-only copy opens beside it.
+    await (
+      await openDocumentMenu(page, sheet)
+    )
+      .getByRole("menuitem", { name: "Summarize" })
+      .click();
     await expect.poll(() => asked.length).toBe(1);
     expect(asked[0].searchParams.get("mode")).toBe("summary");
     expect(asked[0].searchParams.get("persist")).toBe("true");
@@ -245,7 +251,11 @@ test.describe("document vault — AI assist + content search", () => {
     await expect(panel).not.toBeVisible();
 
     // The extracted text is shown here only, and closing discards it.
-    await sheet.getByRole("button", { name: "Show extracted text" }).click();
+    await (
+      await openDocumentMenu(page, sheet)
+    )
+      .getByRole("menuitem", { name: "Show extracted text" })
+      .click();
     await expect(panel).toBeVisible();
     await expect(panel.getByText(transcript)).toBeVisible();
     expect(asked[1].searchParams.get("persist")).toBeNull();
@@ -337,12 +347,14 @@ test.describe("document vault — AI assist + content search", () => {
     await expect(
       sheet.getByRole("link", { name: "Open AI settings" }),
     ).toBeVisible();
-    // The action button is absent — the endpoint would 422, so the UI never
-    // offers it.
-    await expect(sheet.locator('[data-slot="assist-suggest"]')).toHaveCount(0);
+    // The menu offers no AI read: the endpoint would 422, so the UI never
+    // offers one.
+    const menu = await openDocumentMenu(page, sheet);
+    await expect(menu.locator('[data-slot="assist-suggest"]')).toHaveCount(0);
+    await expect(menu.locator('[data-slot="document-read-ai"]')).toHaveCount(0);
   });
 
-  // ── (g) "Read with AI": the prominent action maps to the index endpoint ──
+  // ── (g) "Read with AI": the menu entry maps to the index endpoint ──
 
   test('the "Read with AI" action reads a document and confirms', async ({
     page,
@@ -370,8 +382,9 @@ test.describe("document vault — AI assist + content search", () => {
     const sheet = page.getByRole("dialog");
     await expect(sheet).toBeVisible();
 
-    // The prominent action is present and labelled for a first read.
-    const read = sheet.locator('[data-slot="document-read-ai"]');
+    // The entry is present and labelled for a first read.
+    const menu = await openDocumentMenu(page, sheet);
+    const read = menu.locator('[data-slot="document-read-ai"]');
     await expect(read).toBeVisible();
     await expect(read).toHaveText(/Read with AI/);
 
@@ -434,7 +447,8 @@ test.describe("document vault — AI assist + content search", () => {
     const sheet = page.getByRole("dialog");
     await expect(sheet).toBeVisible();
 
-    const suggest = sheet.locator('[data-slot="assist-suggest"]');
+    const menu = await openDocumentMenu(page, sheet);
+    const suggest = menu.locator('[data-slot="assist-suggest"]');
     await expect(suggest).toBeEnabled();
     await suggest.click();
 

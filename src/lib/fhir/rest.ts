@@ -14,7 +14,10 @@
  */
 import { NextResponse } from "next/server";
 
-import { decrypt } from "@/lib/crypto";
+import {
+  INSURANCE_IDENTITY_SELECT,
+  readInsuranceIdentity,
+} from "@/lib/profile/insurance-identity";
 import { resolveSavedSelection } from "@/lib/report-selection/saved-profile";
 import { prisma } from "@/lib/db";
 import {
@@ -23,6 +26,7 @@ import {
   type DoctorReportData,
 } from "@/lib/doctor-report-data";
 import type { FhirRecordInputs } from "@/lib/fhir/build-bundle";
+import type { FhirPatientIdentity } from "@/lib/fhir/resources/common";
 import { GERMAN_ATC_DEFAULT_LOCALES } from "@/lib/fhir/resources";
 import { isModuleEnabled, resolveModuleMap } from "@/lib/modules/gate";
 import { resolveReportGate } from "@/lib/doctor-report/selection-gate";
@@ -275,7 +279,7 @@ export function operationOutcome(
  */
 export async function loadFhirContext(userId: string): Promise<{
   data: DoctorReportData;
-  identity: { insuranceNumber: string | null };
+  identity: FhirPatientIdentity;
   germanAtc: boolean;
   records: FhirRecordInputs;
 }> {
@@ -298,7 +302,7 @@ export async function loadFhirContext(userId: string): Promise<{
     collectDoctorReportData(userId, range, selection),
     prisma.user.findUnique({
       where: { id: userId },
-      select: { insuranceNumberEncrypted: true, locale: true },
+      select: { ...INSURANCE_IDENTITY_SELECT, locale: true },
     }),
     // The structured records are always-available reference data (not
     // time-windowed), so they ride alongside the report rather than through
@@ -318,14 +322,10 @@ export async function loadFhirContext(userId: string): Promise<{
       : Promise.resolve([]),
   ]);
 
-  let insuranceNumber: string | null = null;
-  if (selection.has("INSURANCE") && userRow?.insuranceNumberEncrypted) {
-    try {
-      insuranceNumber = decrypt(userRow.insuranceNumberEncrypted);
-    } catch {
-      insuranceNumber = null;
-    }
-  }
+  // Neither read out nor decrypted unless the insurance leaf was chosen.
+  const insurance = readInsuranceIdentity(
+    selection.has("INSURANCE") ? userRow : null,
+  );
 
   const germanAtc = (GERMAN_ATC_DEFAULT_LOCALES as readonly string[]).includes(
     userRow?.locale ?? "",
@@ -333,7 +333,7 @@ export async function loadFhirContext(userId: string): Promise<{
 
   return {
     data,
-    identity: { insuranceNumber },
+    identity: insurance,
     germanAtc,
     records: {
       allergies: allergyRows.map(toAllergyDTO),

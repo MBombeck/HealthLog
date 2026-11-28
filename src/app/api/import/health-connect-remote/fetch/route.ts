@@ -14,6 +14,7 @@ import { prisma } from "@/lib/db";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { HEALTH_CONNECT_REMOTE_FETCH_QUEUE } from "@/lib/jobs/health-connect-remote-queue";
 import { annotate } from "@/lib/logging/context";
+import { markReconnected } from "@/lib/integrations/status";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +29,22 @@ export const POST = apiHandler(async (request: NextRequest) => {
   );
   if (!rl.allowed) return apiError("Too many fetches, try again later", 429);
 
+  const source = await prisma.healthConnectRemoteSource.findUnique({
+    where: { userId: user.id },
+    select: { enabled: true },
+  });
+  if (!source) {
+    return apiError("No folder is set up", 404, {
+      errorCode: "import.health_connect.remote.not_configured",
+    });
+  }
+  // Checked before anything is written: a refusal leaves a paused folder
+  // paused.
+  const boss = getGlobalBoss();
+  if (!boss) throw new HttpError(503, "Background worker is not running");
+  // Reading a paused folder now resumes it, on the source and on the shared
+  // ledger alike, the way switching it back on does. Only the source used to
+  // change, so the connection read "disconnected" while it fetched again.
   const { count } = await prisma.healthConnectRemoteSource.updateMany({
     where: { userId: user.id },
     data: { nextAttemptAt: new Date(), enabled: true },
@@ -37,8 +54,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
       errorCode: "import.health_connect.remote.not_configured",
     });
   }
-  const boss = getGlobalBoss();
-  if (!boss) throw new HttpError(503, "Background worker is not running");
+  if (!source.enabled) {
+    await markReconnected(user.id, "health-connect-remote");
+  }
   await boss.send(HEALTH_CONNECT_REMOTE_FETCH_QUEUE, {});
   await auditLog("import.health-connect.remote.fetch", {
     userId: user.id,

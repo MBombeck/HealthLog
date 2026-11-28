@@ -509,6 +509,14 @@ function medicationManageVerb(
       return t("recordSharing.activityVerb.medicationCategoryCreate", {
         name,
       });
+    case "medication.category.custom.update":
+      return t("recordSharing.activityVerb.medicationCategoryUpdate", {
+        name,
+      });
+    case "medication.category.custom.delete":
+      return t("recordSharing.activityVerb.medicationCategoryDelete", {
+        name,
+      });
     case "medication.delete":
       return t("recordSharing.activityVerb.medicationDelete", { name });
     case "medication.ingredients.update":
@@ -589,6 +597,10 @@ function cycleManageVerb(
       return t("recordSharing.activityVerb.cyclePeriodBoundary", { name });
     case "cycle.symptom.custom.create":
       return t("recordSharing.activityVerb.cycleSymptomCreate", { name });
+    case "cycle.symptom.custom.update":
+      return t("recordSharing.activityVerb.cycleSymptomUpdate", { name });
+    case "cycle.symptom.custom.delete":
+      return t("recordSharing.activityVerb.cycleSymptomDelete", { name });
     case "cycle.feed.create":
       return t("recordSharing.activityVerb.cycleFeedCreate", { name });
     case "cycle.feed.update":

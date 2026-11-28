@@ -800,8 +800,8 @@ export interface CoachProvenance {
    * Metric topics referenced. Stable contract keys — translated by the
    * UI, never by the server.
    *
-   * v1.4.23 — extended with the seven Apple Health categories landed in
-   * Wave 2 (HRV, sleep, resting HR, steps, active energy, flights,
+   * v1.4.23 — extended with the seven Apple Health categories that
+   * landed then (HRV, sleep, resting HR, steps, active energy, flights,
    * distance, VO2 max, body temp). Web-only accounts never see those
    * values; the prompt's GROUND RULE 12 tells the model to treat the
    * tokens as additive rather than required.

@@ -24,8 +24,8 @@
  * whether the build runs from the repo root or a tooling subdir.
  *
  * The `@source not` directives below are resolved relative to this
- * stylesheet, so they point at `<repo-root>/.planning` and
- * `<repo-root>/docs`.
+ * stylesheet, so they point at the gitignored local notes directory at
+ * the repo root and at `<repo-root>/docs`.
  */
 @source not "../../.planning";
 @source not "../../docs";
@@ -243,15 +243,24 @@ body,
 
   /*
    * Dose-accent token. The medication cards stamp the upcoming schedule
-   * dose in purple. They previously hard-coded Tailwind stock
-   * `text-purple-400` (`oklch(0.714 0.203 305.504)`), which reads ~3.1:1 on
-   * the white Alucard card and fails WCAG AA (4.5:1) for body text. This
-   * theme-aware token keeps the exact dark-mode purple and swaps to a darker
-   * AA-safe purple on the light card — mirroring how the semantic feedback
-   * tokens (`--success` / `--warning` / `--info`) land each tone above AA in
-   * both themes.
+   * dose with it. Since the accent became ink (1.50) it is the accent ink
+   * of each theme, kept as its own name so the call sites need no change.
    */
   --color-dose-accent: var(--dose-accent);
+
+  /*
+   * The quiet primary of a compact pair (the asks): ink over the card, at
+   * the share the iOS client uses. One token, so a change of the tint on
+   * either client is one line here.
+   */
+  --color-primary-tonal: var(--primary-tonal);
+
+  /*
+   * The brand mark (the heart in the header and on the sign-in card). A
+   * brand question, not a UI accent: it keeps the purple the accent had
+   * before 1.50. Nothing else may read it.
+   */
+  --color-brand: var(--brand);
 }
 
 /*
@@ -305,6 +314,12 @@ body,
   --brand-pink: var(--dracula-pink);
 
   /*
+   * The quiet primary (see the @theme re-export): the accent ink at 22 %
+   * over the card, as the iOS client draws its ask primary.
+   */
+  --primary-tonal: color-mix(in srgb, var(--primary) 22%, var(--card));
+
+  /*
    * Foreground for glyphs/labels painted on a solid `bg-success` fill. The
    * raw Dracula green (`#50fa7b`) is a bright tone, so white-on-green reads
    * ~1.37:1 in dark mode — well under AA. The dark theme below pairs it with
@@ -319,39 +334,47 @@ body,
 }
 
 /* ── Dark mode (default) ─────────────────────────── */
+/*
+ * 1.50: monochrome ink, the iOS client's palette (design contract §3.1).
+ * Colour is left to meaning: the score bands, the status colours, the chart
+ * series and the destructive red. The accent is the ink itself.
+ */
 :root.dark {
-  --background: #282a36;
+  --background: #101113;
   --foreground: #f8f8f2;
-  --card: #1e1f29;
+  --card: #1a1b1f;
   --card-foreground: #f8f8f2;
-  --popover: #1e1f29;
+  /* The app's elevated surface (#383B4C) carries the red and the meta ink
+   * below AA (3.5:1, 4.9:1), so popovers and menus sit on the raised fill. */
+  --popover: #25262b;
   --popover-foreground: #f8f8f2;
-  --primary: #bd93f9;
-  --primary-foreground: #282a36;
-  --secondary: #44475a;
+  --primary: #ebebf5;
+  --primary-foreground: #101113;
+  --secondary: #25262b;
   --secondary-foreground: #f8f8f2;
-  --muted: #44475a;
-  --muted-foreground: #9aa3b3;
-  /* Inactive tab-trigger text. `--muted-foreground` (#9aa3b3) on the
-   * muted (#44475a) tab-strip reads 3.6:1 — below WCAG AA. This brighter
-   * tone clears 4.5:1 on the muted strip while staying within the Dracula
-   * palette; the active trigger keeps `--foreground`. */
-  --tab-inactive: #b3bccd;
+  --muted: #25262b;
+  /* #EBEBF5 at 70 % over the card: 7.5:1 on the card, 6.7:1 on muted. */
+  --muted-foreground: #acadb5;
+  /* Inactive tab-trigger text on the muted strip; the meta ink clears AA
+   * there (6.7:1), so the token mirrors it. */
+  --tab-inactive: #acadb5;
   /* NativeSelect chevron — a data-URI background-image cannot resolve
    * `currentColor` (it falls back to black per the SVG spec), so the
    * muted-foreground value is baked into the stroke per theme. Keep in
    * sync with `--muted-foreground` above. */
-  --native-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239aa3b3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  --accent: #44475a;
+  --native-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23acadb5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  /* Hover and selection fill: one step above the raised fill, so it shows
+   * on a card and inside a menu alike. */
+  --accent: #383b4c;
   --accent-foreground: #f8f8f2;
   --destructive: #ff5555;
-  --border: #44475a;
-  --input: #44475a;
-  /* An off switch's track, and a disabled primary button. Dark keeps the
-   * look these had (input at 80 %, primary at half strength). */
-  --switch-off: color-mix(in oklab, var(--input) 80%, transparent);
+  --border: rgb(120 120 128 / 0.32);
+  --input: rgb(120 120 128 / 0.4);
+  /* An off switch's track: 3.3:1 on the card, the 3:1 floor for a control
+   * boundary. */
+  --switch-off: #6e6f76;
   /* The unfilled part of a progress band (`ui/stepper.tsx`). */
-  --progress-track: #44475a;
+  --progress-track: #3a3b41;
   --primary-disabled: color-mix(
     in oklab,
     var(--primary) 50%,
@@ -365,20 +388,29 @@ body,
   /* Text-field focus border: a neutral, foreground-based tone, no colour
    * ring. ~5.2:1 on --background, ~6:1 on --card. */
   --input-focus: #9a9b9d;
-  --ring: #c4c9d4; /* neutral: no purple focus frames anywhere */
-  --chart-1: #bd93f9;
+  /* Focus is ink. At the half strength the rings draw (`ring-ring/50`) it
+   * still reads 4.4:1 on the card. */
+  --ring: #ebebf5;
+  /* Series: the first is the graphite ink (the app's single series ink);
+   * the others keep their hues, so two series stay apart without purple. */
+  --chart-1: #ebebf5;
   --chart-2: #50fa7b;
   --chart-3: #ff79c6;
   --chart-4: #8be9fd;
   --chart-5: #ffb86c;
-  --sidebar: #1e1f29;
+  /* The purple primitives charts still read become the series ink and its
+   * 70 % step. */
+  --dracula-purple: #ebebf5;
+  --dracula-lavender: #acadb5;
+  --sidebar: #1a1b1f;
   --sidebar-foreground: #f8f8f2;
-  --sidebar-primary: #bd93f9;
-  --sidebar-primary-foreground: #f8f8f2;
-  --sidebar-accent: #44475a;
+  --sidebar-primary: #ebebf5;
+  --sidebar-primary-foreground: #101113;
+  --sidebar-accent: #383b4c;
   --sidebar-accent-foreground: #f8f8f2;
-  --sidebar-border: #44475a;
-  --sidebar-ring: #bd93f9;
+  --sidebar-border: rgb(120 120 128 / 0.32);
+  --sidebar-ring: #ebebf5;
+  --brand: #bd93f9;
 
   /*
    * Status-pill text in dark mode. "in" / "near" keep the Dracula
@@ -393,12 +425,8 @@ body,
   /* Dark glyph on the bright Dracula-green fill — ~10.4:1 on `#50fa7b`. */
   --success-foreground: #282a36;
 
-  /*
-   * Dose accent in dark mode — the exact Tailwind `text-purple-400`
-   * (`oklch(0.714 0.203 305.504)`) the cards used before, so the dark card
-   * stays pixel-identical. AA on the dark card at ~6.8:1.
-   */
-  --dose-accent: oklch(0.714 0.203 305.504);
+  /* Dose accent: the accent ink. */
+  --dose-accent: #ebebf5;
 
   /*
    * v1.18.7 — wellness-ring per-metric arc colours (Dracula dark), CALM pass.
@@ -417,9 +445,9 @@ body,
   --ring-recovery-from: #4fb6cc;
   --ring-recovery-to: #58c0d6;
   --tile-recovery: #8be9fd;
-  --ring-sleep-from: #9a73da;
-  --ring-sleep-to: #a37fe0;
-  --tile-sleep: #bd93f9;
+  --ring-sleep-from: #e3e3ed;
+  --ring-sleep-to: #ebebf5;
+  --tile-sleep: #ebebf5;
   --ring-stress-from: #e09a52;
   --ring-stress-to: #e8a55e;
   --tile-stress: #ffb86c;
@@ -448,7 +476,7 @@ body,
   --cycle-phase-menstrual: #ff6e9c;
   --cycle-phase-follicular: #5cf08f;
   --cycle-phase-ovulatory: #ffce6b;
-  --cycle-phase-luteal: #bd93f9;
+  --cycle-phase-luteal: #ebebf5;
 
   color-scheme: dark;
 }
@@ -456,63 +484,68 @@ body,
 /* ── Light mode (Alucard — official Dracula light) ── */
 :root.light {
   /*
-   * Neutral spine (retuned v1.26.0). Softened off the pure-white / pure-black
-   * high-contrast set — a faint mauve tint (hue ~295–300) runs through every
-   * neutral so the light theme reads gentle rather than harsh. Foreground is a
-   * tinted near-black (not #000), dropping fg-on-card from ~16.5:1 to a
-   * comfortable ~13:1. Accent + semantic tokens below stay as the Alucard
-   * AA-tuned set. oklch throughout so lightness steps are perceptually even.
+   * 1.50: monochrome ink on warm neutral surfaces, the iOS client's palette
+   * (design contract §3.1). Graphite ink for content and the accent, warm
+   * page, card and fill; colour only where it means something.
    */
-  --background: oklch(0.964 0.004 300);
-  --foreground: oklch(0.3 0.012 295);
-  --card: oklch(0.988 0.003 300);
-  --card-foreground: oklch(0.3 0.012 295);
-  --popover: oklch(0.992 0.002 300);
-  --popover-foreground: oklch(0.3 0.012 295);
-  --primary: #644ac9;
-  --primary-foreground: oklch(0.99 0.002 300);
-  --secondary: oklch(0.95 0.008 300);
-  --secondary-foreground: oklch(0.3 0.012 295);
-  --muted: oklch(0.955 0.006 300);
-  --muted-foreground: oklch(0.515 0.02 295);
+  --background: #f2f0eb;
+  --foreground: #42403c;
+  --card: #faf8f5;
+  --card-foreground: #42403c;
+  --popover: #ffffff;
+  --popover-foreground: #42403c;
+  --primary: #42403c;
+  --primary-foreground: #faf8f5;
+  --secondary: #e9e6e0;
+  --secondary-foreground: #42403c;
+  --muted: #e9e6e0;
+  /* #2E2B27 at 72 % over the card. The app's 65 % reads 3.8:1 on the muted
+   * fill and 4.5:1 on the card, under AA; 72 % clears 4.7:1 on muted,
+   * 5.2:1 on the page and 5.5:1 on the card. */
+  --muted-foreground: #67645f;
   /* Inactive tab-trigger text — the light muted-foreground clears AA on the
    * light muted strip, so the token mirrors it. */
-  --tab-inactive: oklch(0.515 0.02 295);
+  --tab-inactive: #67645f;
   /* Light-theme counterpart of the NativeSelect chevron (see dark block).
-   * Stroke tracks the muted-foreground hex (#686572). */
-  --native-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23686572' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  --accent: oklch(0.95 0.008 300);
-  --accent-foreground: oklch(0.3 0.012 295);
-  --destructive: #cb3a2a;
+   * Stroke tracks the muted-foreground hex (#67645f). */
+  --native-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2367645f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --accent: #e9e6e0;
+  --accent-foreground: #42403c;
+  /* The app's error red: the earlier #cb3a2a fell to 4.4:1 on the warm page
+   * and 4.0:1 on the fill; #b23e3b reads 5.1:1 and 4.6:1 (contract D3). */
+  --destructive: #b23e3b;
   /*
    * Alucard light-mode overrides for the semantic tokens — straight Dracula
    * green/orange/cyan would fail AA contrast on a white card. These match the
    * darker palette already used for `--destructive`/`--chart-*` in light mode.
    */
   --success: #14720a;
-  --warning: #a34d14;
+  /* One step darker than the pre-1.50 #a34d14: on its own 15 % wash over
+   * the warm card that read 4.4:1; #96460f reads 5.0:1 (4.7:1 on the page). */
+  --warning: #96460f;
   --info: #036a96;
   /* White glyph on the darker light-mode green — ~6.1:1 on `#14720a`. */
   --success-foreground: #ffffff;
-  --border: oklch(0.885 0.008 300);
-  --input: oklch(0.87 0.009 300);
-  /* An off switch's track: the input grey sat at ~1.4:1 on the card, so an
-   * off switch all but vanished. ~3.5:1 on --card clears the 3:1 floor for
-   * a control boundary. */
-  --switch-off: oklch(0.62 0.012 295);
-  /* The unfilled part of a progress band: `--muted` sat at 0.955 on a
-   * 0.964 background and vanished, so the band looked as if it ended at the
-   * current step. */
-  --progress-track: oklch(0.84 0.012 295);
-  /* A disabled primary button: opacity-50 left white text on a washed
-   * violet at ~2:1. A pale violet fill with a dark violet label (~5.5:1)
-   * still reads as the primary action, and as unavailable. */
-  --primary-disabled: oklch(0.88 0.035 290);
-  --primary-disabled-foreground: oklch(0.44 0.06 290);
-  /* Text-field focus border, neutral: ~4.2:1 on --background. */
-  --input-focus: oklch(0.56 0.012 295);
-  --ring: oklch(0.48 0.012 290); /* neutral: no purple focus frames anywhere */
-  --chart-1: #644ac9;
+  --border: rgb(120 120 128 / 0.24);
+  --input: rgb(120 120 128 / 0.32);
+  /* An off switch's track: ~3.4:1 on --card clears the 3:1 floor for a
+   * control boundary. */
+  --switch-off: #8a8884;
+  /* The unfilled part of a progress band, visible on the page and card. */
+  --progress-track: #d3d0c9;
+  /* A disabled primary button: a pale ink fill with a darker ink label
+   * (~4.8:1) still reads as the primary action, and as unavailable. */
+  --primary-disabled: #d9d6d0;
+  --primary-disabled-foreground: #55524d;
+  /* Text-field focus border, neutral: ~5:1 on --background. */
+  --input-focus: #67645f;
+  /* Focus is ink, one step deeper than the accent so the half-strength
+   * rings (`ring-ring/50`) still read 3.1:1 on the page and 3.2:1 on the
+   * card. */
+  --ring: #1f1d1a;
+  /* Series: the first is the graphite ink (the app's single series ink);
+   * the others keep their hues. */
+  --chart-1: #454138;
   --chart-2: #14720a;
   --chart-3: #a3134d;
   --chart-4: #036a96;
@@ -531,25 +564,25 @@ body,
    */
   --dracula-cyan: #036a96; /* shadows --info            — 5.78:1 card / 5.39:1 bg */
   --dracula-green: #14720a; /* shadows --success         — 5.89:1 card / 5.49:1 bg */
-  --dracula-orange: #a34d14; /* shadows --warning         — 5.59:1 card / 5.21:1 bg */
+  --dracula-orange: #96460f; /* shadows --warning         — 6.2:1 card / 5.8:1 bg */
   --dracula-pink: #a3134d; /* shadows --chart-3         — 7.35:1 card / 6.85:1 bg */
-  --dracula-purple: #644ac9; /* shadows --primary/chart-1 — 6.03:1 card / 5.62:1 bg */
-  --dracula-red: #cb3a2a; /* shadows --destructive     — 4.85:1 card / 4.52:1 bg */
+  --dracula-purple: #454138; /* the series ink (chart-1)  — 10:1 card / 9:1 bg */
+  --dracula-red: #b23e3b; /* shadows --destructive     — 5.5:1 card / 5.1:1 bg */
   --dracula-yellow: #846e15;
-  /* Lavender has no semantic twin; a violet one step lighter than purple,
-   * AA-tuned — 4.97:1 card / 4.63:1 bg. */
-  --dracula-lavender: #7c50e0;
+  /* Lavender: the series ink's 70 % step — 4.3:1 card, a graphic tone. */
+  --dracula-lavender: #7b7871;
   /* IN_BED sleep-stage fill (see the `:root` default above) — same
    * blue-grey hue family, darkened for AA — 6.66:1 card / 6.03:1 bg. */
   --chart-inbed: #4a5b8a;
-  --sidebar: oklch(0.988 0.003 300);
-  --sidebar-foreground: oklch(0.3 0.012 295);
-  --sidebar-primary: #644ac9;
-  --sidebar-primary-foreground: oklch(0.99 0.002 300);
-  --sidebar-accent: oklch(0.95 0.008 300);
-  --sidebar-accent-foreground: oklch(0.3 0.012 295);
-  --sidebar-border: oklch(0.885 0.008 300);
-  --sidebar-ring: oklch(0.6 0.13 292);
+  --sidebar: #faf8f5;
+  --sidebar-foreground: #42403c;
+  --sidebar-primary: #42403c;
+  --sidebar-primary-foreground: #faf8f5;
+  --sidebar-accent: #e9e6e0;
+  --sidebar-accent-foreground: #42403c;
+  --sidebar-border: rgb(120 120 128 / 0.24);
+  --sidebar-ring: #1f1d1a;
+  --brand: #644ac9;
 
   /*
    * v1.18.7 — wellness-ring per-metric arc colours (Alucard light), CALM pass.
@@ -566,9 +599,9 @@ body,
   --ring-recovery-from: #07849c;
   --ring-recovery-to: #098ba3;
   --tile-recovery: #08869e;
-  --ring-sleep-from: #6638c2;
-  --ring-sleep-to: #6c3fc8;
-  --tile-sleep: #6233c0;
+  --ring-sleep-from: #454138;
+  --ring-sleep-to: #4c483f;
+  --tile-sleep: #454138;
   --ring-stress-from: #b27018;
   --ring-stress-to: #b8771c;
   --tile-stress: #a34d14;
@@ -593,7 +626,7 @@ body,
   --cycle-phase-menstrual: #c8295e;
   --cycle-phase-follicular: #0f7a3a;
   --cycle-phase-ovulatory: #a34d14;
-  --cycle-phase-luteal: #644ac9;
+  --cycle-phase-luteal: #454138;
 
   /*
    * Status-pill text in light mode (Alucard). The bright Dracula
@@ -603,16 +636,11 @@ body,
    * and the muted reference panel.
    */
   --status-pill-in: #14720a;
-  --status-pill-near: #a34d14;
+  --status-pill-near: #96460f;
   --status-pill-out: #b32d1e;
 
-  /*
-   * Dose accent in light mode (Alucard). The bright `text-purple-400` reads
-   * ~3.1:1 on the white card and fails AA; this darker purple — the same
-   * family as the light-mode `--primary` (#644ac9) — clears 4.5:1 on both
-   * the white card and the muted panel while keeping the purple identity.
-   */
-  --dose-accent: #6f42c1;
+  /* Dose accent: the accent ink. */
+  --dose-accent: #42403c;
 
   color-scheme: light;
 }
@@ -755,6 +783,14 @@ body,
   }
   body {
     @apply bg-background text-foreground;
+  }
+  /*
+   * The accent and the text are one ink since 1.50, so a link cannot be
+   * told apart by colour (WCAG 1.4.1). A link-styled button carries its
+   * underline at rest, not only on hover.
+   */
+  [data-slot="button"][data-variant="link"] {
+    text-decoration-line: underline;
   }
   p {
     color: var(--foreground);
@@ -976,7 +1012,7 @@ html [data-sonner-toaster][data-y-position="bottom"] {
   }
 }
 
-/* ── v1.4.20 phase B1 — Insights redesign hero strip ─────────────── */
+/* ── v1.4.20: Insights redesign hero strip ─────────────── */
 
 /*
  * `.hero-gradient` — purple → pink linear gradient at low opacity, for

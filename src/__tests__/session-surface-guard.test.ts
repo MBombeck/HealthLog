@@ -572,3 +572,22 @@ describe("S3 — the two families stay distinct", () => {
     expect(both).toEqual([]);
   });
 });
+
+describe("S6 — the Android pairing code rides the body, never the URL", () => {
+  // `POST /api/health-connect/pair` is authenticated by a one-time code and
+  // nothing else. A code in the query string or a path segment would land in
+  // access logs and the proxy's request line, which is why the URL-credential
+  // family above does not list it: it must never join that family.
+  const PAIR = "app/api/health-connect/pair/route.ts";
+
+  it("reads the code from the parsed body", () => {
+    const src = read(PAIR);
+    expect(src).toMatch(/parseJsonBody\(request,\s*hcPairRequestSchema/);
+    expect(src).toMatch(/const \{ code, installId[^}]*\} = parsed\.data/);
+  });
+
+  it("never touches the URL", () => {
+    const src = read(PAIR);
+    expect(src).not.toMatch(/searchParams|nextUrl|request\.url|params\s*:/);
+  });
+});

@@ -30,6 +30,7 @@ import {
 import { LANE_YIELD_DELAY_SECONDS, laneWanted } from "@/lib/jobs/heavy-lane";
 import { reportJobProgress } from "@/lib/jobs/job-observer";
 import { isReauthRequired } from "@/lib/integrations/status";
+import { backfillIncomplete } from "@/lib/integrations/page-walk";
 import { isCycleAvailableForUser } from "@/lib/cycle/gate";
 import { shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
@@ -501,9 +502,9 @@ export async function runGarminBackfillForUser(
 
   // The provider's error rides as the cause: the drain reads it to send a
   // slice that met an outage again later (`integration-backfill-retry.ts`).
-  throw new Error(
+  throw backfillIncomplete(
     `garmin backfill incomplete for user ${userId} (slice ${slice}${stopReason ? `, stopped on ${stopReason}` : ""}${failure instanceof Error ? `: ${failure.message}` : ""})`,
-    failure === undefined ? undefined : { cause: failure },
+    failure,
   );
 }
 

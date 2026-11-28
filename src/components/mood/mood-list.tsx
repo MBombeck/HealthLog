@@ -3,6 +3,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import { ActionMenu } from "@/components/ui/action-menu";
+import { ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
@@ -27,12 +29,7 @@ import {
   SeededFormDiscardDialog,
   useSeededFormDismissal,
 } from "@/components/forms/use-seeded-form-dismissal";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DateTimeField } from "@/components/ui/date-time-field";
@@ -51,7 +48,6 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
-  MoreHorizontal,
 } from "lucide-react";
 import { useCallback, useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
@@ -1029,57 +1025,42 @@ export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
 
             {editFooterEl
               ? createPortal(
-                  <div className="flex w-full items-center justify-between gap-2">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          className="h-11 w-11"
-                          disabled={
-                            updateMutation.isPending || deleteMutation.isPending
-                          }
-                          aria-label={t("common.moreOptions")}
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start">
-                        <DropdownMenuItem
-                          onClick={() => setEditDeleteDialogOpen(true)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          {t("common.delete")}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={closeEdit}
-                        disabled={
-                          updateMutation.isPending || deleteMutation.isPending
-                        }
+                  <ActionPair>
+                    <ActionMenu
+                      disabled={
+                        updateMutation.isPending || deleteMutation.isPending
+                      }
+                    >
+                      <DropdownMenuItem
+                        onClick={() => setEditDeleteDialogOpen(true)}
                       >
-                        {t("common.cancel")}
-                      </Button>
-                      <Button
-                        type="submit"
-                        form={editFormId}
-                        disabled={
-                          updateMutation.isPending || deleteMutation.isPending
-                        }
-                      >
-                        {updateMutation.isPending ? (
-                          <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-                        ) : null}
-                        {t("common.save")}
-                      </Button>
-                    </div>
-                  </div>,
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        {t("common.delete")}
+                      </DropdownMenuItem>
+                    </ActionMenu>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={closeEdit}
+                      disabled={
+                        updateMutation.isPending || deleteMutation.isPending
+                      }
+                    >
+                      {t("common.cancel")}
+                    </Button>
+                    <Button
+                      type="submit"
+                      form={editFormId}
+                      disabled={
+                        updateMutation.isPending || deleteMutation.isPending
+                      }
+                    >
+                      {updateMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+                      ) : null}
+                      {t("common.save")}
+                    </Button>
+                  </ActionPair>,
                   editFooterEl,
                 )
               : null}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -9,8 +10,8 @@ import { Loader2 } from "lucide-react";
 
 import { MeasurementForm } from "@/components/measurements/measurement-form";
 import { MEASUREMENT_TYPE_LABEL_KEYS } from "@/components/measurements/measurement-list-meta";
-import { MedicationWizardDialog } from "@/components/medications/wizard/medication-wizard-dialog";
 import { WrittenOutcomeLine } from "@/components/outcome/written-outcome-line";
+import { importWithRetry } from "@/lib/retry-import";
 import { StepActions } from "@/components/onboarding/step-actions";
 import { StepHeading } from "@/components/onboarding/step-heading";
 import {
@@ -48,6 +49,17 @@ import {
   type BrowserConnectableSource,
 } from "@/lib/onboarding/wizard-steps";
 import { queryKeys } from "@/lib/query-keys";
+
+// The medication wizard (its dose steps, schedule parser and payload schema)
+// loads after the page paints, not with it: most people on this step log a
+// reading and never open it.
+const MedicationWizardDialog = dynamic(
+  () =>
+    importWithRetry(
+      () => import("@/components/medications/wizard/medication-wizard-dialog"),
+    ).then((mod) => ({ default: mod.MedicationWizardDialog })),
+  { ssr: false },
+);
 
 /**
  * v1.39 — the one task the flow ends on.

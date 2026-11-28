@@ -7,6 +7,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
 import { Segmented } from "@/components/ui/segmented";
 import { DateTimeField } from "@/components/ui/date-time-field";
@@ -350,18 +351,10 @@ export function LabForm({
         )} ${labUnitText(selected?.unit)}`.trim()
     : "";
 
+  // Two buttons at most (`ActionPair`): with "Save and add another" on offer,
+  // Cancel gives way to it; the sheet's close button and a swipe still cancel.
   const footerNode = (
-    <>
-      {onCancel ? (
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          disabled={submitting}
-        >
-          {t("common.cancel")}
-        </Button>
-      ) : null}
+    <ActionPair>
       {/* v1.30.1 — additive: only renders when the caller wires up
           `onSavedKeepOpen`. `data-action` is how `handleSubmit` tells this
           button apart from the plain Save below via `event.submitter`. */}
@@ -372,15 +365,20 @@ export function LabForm({
           variant="outline"
           data-action="save-and-add-another"
           disabled={submitting}
-          // Three buttons do not fit one phone-width row: the secondary save
-          // takes a row of its own above Cancel + Save instead of pushing
-          // Cancel off the left edge of the sheet.
-          className="max-md:order-first max-md:w-full"
         >
           {pendingAction === "saveAndAddAnother" ? (
             <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
           ) : null}
           {t("labs.form.saveAndAddAnother")}
+        </Button>
+      ) : onCancel ? (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={submitting}
+        >
+          {t("common.cancel")}
         </Button>
       ) : null}
       <Button type="submit" form={formId} disabled={submitting}>
@@ -389,7 +387,7 @@ export function LabForm({
         ) : null}
         {t("labs.form.save")}
       </Button>
-    </>
+    </ActionPair>
   );
 
   return (

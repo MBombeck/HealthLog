@@ -32,7 +32,7 @@ import { withUserRowLock } from "@/lib/user-row-lock";
  *     or not: an entry without a key, address or sign-in is listed but
  *     cannot answer, so a picker must not offer it.
  *
- * v1.4.16 phase B2 added the matching `PUT` for the new dropdown-driven
+ * v1.4.16 added the matching `PUT` for the new dropdown-driven
  * settings UX — the user reorders/toggles entries in the section and
  * the section persists the chain through this endpoint. The persisted
  * shape lives on `User.aiProviderChain` (Json); a malformed payload

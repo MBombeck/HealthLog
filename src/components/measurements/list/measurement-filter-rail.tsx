@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import {
   FilterBar,
   FilterBarDateRange,
@@ -24,9 +26,12 @@ import type { MeasurementListFilters } from "./use-measurement-list-filters";
 export function MeasurementFilterRail({
   filters,
   total,
+  action,
 }: {
   filters: MeasurementListFilters;
   total: number | undefined;
+  /** The list's "⋯", beside the count. */
+  action?: ReactNode;
 }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
@@ -56,6 +61,7 @@ export function MeasurementFilterRail({
         (!isDayGroupedFilter && (valueMinInput !== "" || valueMaxInput !== ""))
       }
       onReset={resetFilters}
+      action={action}
       count={
         total !== undefined
           ? t("measurements.measurementCount", {

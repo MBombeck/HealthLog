@@ -4,10 +4,12 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Download, ExternalLink } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { ListGroup, ListItem } from "@/components/ui/list-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { createFencedBlobLoader } from "@/hooks/use-fenced-object-url";
 import { formatBytes } from "@/lib/format/bytes";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
 /**
@@ -91,11 +93,9 @@ export function DocumentDownloadButton({
       onClick={() => void onClick()}
     >
       <Download className="size-4" aria-hidden />
-      <span className="hidden sm:inline">
-        {blocked
-          ? t("documents.detail.loadError")
-          : t("documents.detail.download")}
-      </span>
+      {blocked
+        ? t("documents.detail.loadError")
+        : t("documents.detail.download")}
     </Button>
   );
 }
@@ -103,15 +103,16 @@ export function DocumentDownloadButton({
 /**
  * Open the stored original in a new browser tab, for the types the browser
  * renders itself (the inline serving class: PDF, JPEG, PNG, WebP, GIF), so a
- * long report gets the browser's own zoom and search.
+ * long report gets the browser's own zoom and search. An entry of the sheet's
+ * "⋯".
  *
  * It opens the object URL the sheet already holds rather than the route: a
  * plain navigation carries no record-session assertion, so the fence would
  * refuse it once the session has been inside a shared record. The bytes are
  * already in hand, so the tab opens inside the click and no popup blocker
- * steps in. A type outside the inline class never gets the control.
+ * steps in. A type outside the inline class never gets the entry.
  */
-export function DocumentOpenInTabButton({
+export function DocumentOpenInTabItem({
   readyUrl,
   unavailable,
 }: {
@@ -120,20 +121,16 @@ export function DocumentOpenInTabButton({
 }) {
   const { t } = useTranslations();
   return (
-    <Button
-      variant="outline"
+    <DropdownMenuItem
       data-slot="document-open-in-tab"
       disabled={readyUrl === null || unavailable}
-      aria-label={t("documents.detail.openInNewTab")}
-      onClick={() => {
+      onSelect={() => {
         if (readyUrl) window.open(readyUrl, "_blank", "noopener");
       }}
     >
-      <ExternalLink className="size-4" aria-hidden />
-      <span className="hidden sm:inline">
-        {t("documents.detail.openInNewTab")}
-      </span>
-    </Button>
+      <ExternalLink aria-hidden />
+      {t("documents.detail.openInNewTab")}
+    </DropdownMenuItem>
   );
 }
 
@@ -300,22 +297,18 @@ export function InlinePreview({
 }
 
 /**
- * What the sheet shows where it draws no preview: the type glyph, the file
- * name, why there is no preview (a download-only type, or a PDF on a browser
- * with no in-page viewer) and the size, then a Download that fetches at
- * click.
+ * The stored file as one row: its type glyph, its name, and when it came in
+ * with its size. Under a preview it names the file; where the sheet draws no
+ * preview (a download-only type, or a PDF on a browser with no in-page
+ * viewer) it is all the sheet shows of it, and the footer's Download fetches
+ * the bytes at click.
  */
-export function DocumentPreviewFallback({
+export function DocumentFileRow({
   doc,
   title,
   Icon,
 }: {
-  doc: {
-    id: string;
-    filename: string | null;
-    servingClass: string;
-    byteSize: number;
-  };
+  doc: { filename: string | null; byteSize: number; createdAt: string };
   title: string;
   Icon: React.ComponentType<{
     className?: string;
@@ -323,33 +316,25 @@ export function DocumentPreviewFallback({
   }> | null;
 }) {
   const { t, locale } = useTranslations();
-  const notOnDevice = doc.servingClass === "inline";
+  const format = useFormatters();
   return (
-    <div className="border-border flex flex-col items-center gap-2 rounded-lg border px-4 py-8 text-center">
-      {Icon ? (
-        <Icon className="text-muted-foreground size-8" aria-hidden />
-      ) : null}
-      <p className="max-w-full truncate text-sm font-medium">
-        {doc.filename ?? title}
-      </p>
-      <p
-        className="text-muted-foreground text-xs"
-        data-slot={notOnDevice ? "document-preview-not-on-device" : undefined}
-      >
-        {notOnDevice
-          ? t("documents.detail.previewNotOnDevice")
-          : t("documents.detail.previewUnavailable")}
-        , {formatBytes(doc.byteSize, locale)}
-      </p>
-      <DocumentDownloadButton
-        documentId={doc.id}
-        filename={doc.filename}
-        readyUrl={null}
-        unavailable={false}
-        size="sm"
-        className="mt-1"
-        slot="document-download-inline"
+    <ListGroup data-slot="document-file-row">
+      <ListItem
+        icon={
+          Icon ? (
+            <span className="bg-muted text-muted-foreground flex size-8 items-center justify-center rounded-lg">
+              <Icon className="size-4" aria-hidden />
+            </span>
+          ) : undefined
+        }
+        title={
+          <span title={doc.filename ?? title}>{doc.filename ?? title}</span>
+        }
+        meta={t("documents.detail.uploadedMeta", {
+          date: format.date(doc.createdAt),
+          size: formatBytes(doc.byteSize, locale),
+        })}
       />
-    </div>
+    </ListGroup>
   );
 }

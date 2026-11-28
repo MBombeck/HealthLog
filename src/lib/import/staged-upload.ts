@@ -40,7 +40,7 @@ import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { annotate } from "@/lib/logging/context";
-import { emitSignal } from "@/lib/logging/signal";
+import { emitSignal, logCaught } from "@/lib/logging/signal";
 import {
   MULTIPART_ENVELOPE_RESERVE_BYTES,
   MultipartMalformedError,
@@ -50,10 +50,12 @@ import {
 } from "@/lib/multipart/stream-to-disk";
 import { checkRateLimit } from "@/lib/rate-limit";
 import {
+  ACTIVE_IMPORT_STATUSES,
   createImportJobUnlessBusy,
   discardStagedUpload,
   IMPORT_BUSY_CODE,
   IMPORT_BUSY_MESSAGE,
+  STAGING_MAX_AGE_MS,
 } from "@/lib/import/apple-health-staging";
 
 /** Five uploads a minute per acting account and kind. */
@@ -112,6 +114,19 @@ export async function queueStagedImport(
       uploadSha256: input.sha256,
       parserRevision: spec.parserRevision,
       status: { not: "failed" },
+      // A finished import, or one still within the queue's own expiry
+      // (`STAGING_MAX_AGE_MS` is that bound: the active-import age). An
+      // active row older than that holds nothing any more (the busy check
+      // ignores it too); counting it here answered "already uploaded" for
+      // that file forever, with no import running.
+      OR: [
+        { status: { notIn: [...ACTIVE_IMPORT_STATUSES] } },
+        {
+          startedAt: {
+            gte: new Date(Date.now() - STAGING_MAX_AGE_MS),
+          },
+        },
+      ],
     },
     orderBy: { startedAt: "desc" },
   });
@@ -148,19 +163,27 @@ export async function queueStagedImport(
   }
   const importJob = staged.created;
 
-  const bossJobId = await boss.send(
-    spec.queue,
-    spec.payload({
-      userId: input.userId,
-      importJobId: importJob.id,
-      uploadPath: input.filePath,
-      uploadBytes: input.bytes,
-      ...(input.triggeredByAdminId
-        ? { triggeredByAdminId: input.triggeredByAdminId }
-        : {}),
-    }),
-    spec.sendOptions,
-  );
+  // A send that throws (the database connection dropped mid-call) is the
+  // same as one that returns no id: nothing will consume the row. Left
+  // `queued`, it blocked the same file from being uploaded again.
+  const bossJobId = await boss
+    .send(
+      spec.queue,
+      spec.payload({
+        userId: input.userId,
+        importJobId: importJob.id,
+        uploadPath: input.filePath,
+        uploadBytes: input.bytes,
+        ...(input.triggeredByAdminId
+          ? { triggeredByAdminId: input.triggeredByAdminId }
+          : {}),
+      }),
+      spec.sendOptions,
+    )
+    .catch((err: unknown) => {
+      logCaught("import.staged.queue_send_failed", err);
+      return null;
+    });
   if (!bossJobId) {
     // No worker will consume the file or move the row on.
     await prisma.importJob.update({
