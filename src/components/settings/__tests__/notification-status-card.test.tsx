@@ -1,5 +1,5 @@
 /**
- * <NotificationStatusCard /> SSR smoke (v1.4.15 Phase B3).
+ * <NotificationStatusCard /> SSR smoke (v1.4.15).
  *
  * The card is wrapped in TanStack Query, but each test below mocks
  * `useQuery` to return a specific channel-state shape so the static

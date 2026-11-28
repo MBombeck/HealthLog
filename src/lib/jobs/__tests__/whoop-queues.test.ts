@@ -10,7 +10,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { INTEGRATION_BACKFILL_ADMISSION_QUEUE } from "@/lib/jobs/integration-backfill-admission";
 import {
@@ -40,6 +40,11 @@ import {
   recordingBoss,
 } from "@/lib/jobs/registry/__tests__/registry-helpers";
 import { WHOOP_BACKFILL_QUEUE } from "@/lib/jobs/whoop-backfill-queue";
+
+vi.mock(
+  "@/lib/jobs/integration-backfill-claim",
+  () => import("@/__tests__/helpers/backfill-claim-passthrough"),
+);
 
 const handlerSource = readFileSync(
   join(__dirname, "..", "reminder", "whoop-sync.ts"),

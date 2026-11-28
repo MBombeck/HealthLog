@@ -1,7 +1,7 @@
 /**
  * v1.39 — the needs-based onboarding's server state, as data.
  *
- * The design spec (`.planning/2026-09-09-onboarding-design-spec.md`) asks five
+ * The onboarding asks five
  * questions, saves each answer as it is given, and derives the record's module
  * map from the set of answers once. This file is the vocabulary and the
  * fail-soft readers for the three JSON columns behind that: the answers, the

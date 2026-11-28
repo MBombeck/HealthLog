@@ -1,10 +1,10 @@
 /**
  * GET /api/export/measurements
  *
- * v1.4.16 phase B7. Per-type CSV download for the consolidated
- * `/settings/export` UI. Filterable by `since` / `until` (inclusive
- * date strings parsed via the standard Date constructor — invalid
- * values are silently dropped from the where-clause).
+ * v1.4.16. Per-type CSV download for the consolidated
+ * `/settings/export` UI. Filterable by `since` / `until`: calendar days,
+ * both inclusive, in the account's time zone (`parseExportRange`); values
+ * that are not a day or an instant are dropped from the where-clause.
  *
  * Response is `text/csv` with an attachment filename ending in `.csv`,
  * so the browser writes a `.csv` file even though the route segment
@@ -28,6 +28,7 @@ import {
   iterateMeasurementPages,
 } from "@/lib/export/paged-measurements";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
+import { parseExportRange, type ExportRange } from "@/lib/export/export-range";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { resolveGlucoseUnit } from "@/lib/glucose";
 import { NextRequest, NextResponse } from "next/server";
@@ -41,8 +42,11 @@ export const GET = apiHandler(async (request: NextRequest) => {
     return apiError("Maximum 10 exports per hour", 429);
   }
 
-  const { since, until } = parseRange(request.url);
-  const where = buildWhere(user.id, { since, until });
+  const userTz = await resolveUserTimezone(user.id);
+  const range = parseExportRange(new URL(request.url).searchParams, userTz);
+  const since = range?.gte;
+  const until = range?.lt ?? range?.lte;
+  const where = buildWhere(user.id, range);
   const granularity =
     new URL(request.url).searchParams.get("granularity") === "raw"
       ? "raw"
@@ -80,9 +84,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
   // Prime one bounded page before sending headers. Authentication, metadata,
   // and first-query failures therefore keep the historical API error
   // behaviour; later pages are pulled only as the client consumes the body.
-  const [firstPage, userTz, sourcePriorityJson, profile] = await Promise.all([
+  const [firstPage, sourcePriorityJson, profile] = await Promise.all([
     pageIterator.next(),
-    resolveUserTimezone(user.id),
     loadUserSourcePriority(user.id),
     prisma.user.findUnique({
       where: { id: user.id },
@@ -160,48 +163,20 @@ function streamText(chunks: AsyncIterable<string>): ReadableStream<Uint8Array> {
   });
 }
 
-function parseRange(url: string): {
-  since: Date | undefined;
-  until: Date | undefined;
-} {
-  const params = new URL(url).searchParams;
-  const sinceRaw = params.get("since");
-  const untilRaw = params.get("until");
-  const since = sinceRaw ? safeDate(sinceRaw) : undefined;
-  const until = untilRaw ? safeDate(untilRaw) : undefined;
-  return { since, until };
-}
-
-function safeDate(value: string): Date | undefined {
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? undefined : d;
-}
-
 function buildWhere(
   userId: string,
-  range: { since?: Date; until?: Date },
+  range: ExportRange | undefined,
 ): {
   userId: string;
   deletedAt: null;
-  measuredAt?: { gte?: Date; lte?: Date };
+  measuredAt?: ExportRange;
 } {
   // v1.4.41 — soft-deleted measurements stay out of every
   // per-type CSV download so an undo or pending-sync row never reaches
   // the user's local file.
-  const where: {
-    userId: string;
-    deletedAt: null;
-    measuredAt?: { gte?: Date; lte?: Date };
-  } = {
-    userId,
-    deletedAt: null,
-  };
-  if (range.since || range.until) {
-    where.measuredAt = {};
-    if (range.since) where.measuredAt.gte = range.since;
-    if (range.until) where.measuredAt.lte = range.until;
-  }
-  return where;
+  return range
+    ? { userId, deletedAt: null, measuredAt: range }
+    : { userId, deletedAt: null };
 }
 
 function csvResponse(

@@ -58,7 +58,7 @@ import { useAuth } from "@/hooks/use-auth";
  * v1.4.20 — TanStack Query + SSE client for the AI Coach
  * drawer.
  *
- * The shape mirrors the backend wire format from `phase-B2a-report.md`:
+ * The shape mirrors the backend wire format:
  * `GET /api/insights/chat`, `GET /api/insights/chat/[id]`,
  * `DELETE /api/insights/chat/[id]`, and the SSE-streaming
  * `POST /api/insights/chat`.

@@ -21,8 +21,6 @@
  * concurrent second import would race the first for RSS; the
  * pg-boss `boss.work` registration in `reminder-worker.ts` caps
  * `localConcurrency: 1`.
- *
- * Locks per `.planning/research/v1434-r-1-xml-import.md` §5.1.
  */
 import { unlinkSync } from "node:fs";
 import { getHeapStatistics } from "node:v8";

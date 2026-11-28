@@ -37,7 +37,7 @@ describe("push relay transport guard", () => {
     const deletions: string[] = [];
     for (const [rel, code] of production()) {
       for (const m of code.matchAll(
-        /\b(?:device\s*\.\s*delete(?:Many)?|deleteDeviceRows)\s*\(/g,
+        /\b(?:device\s*\.\s*delete(?:Many)?|deleteDeviceRows)\s*\(|\bforgetGoneRegistrations\s*\(\s*"device"/g,
       )) {
         const before = code.slice(0, m.index);
         const fn = [
@@ -56,7 +56,7 @@ describe("push relay transport guard", () => {
       "sendSealed",
     );
     expect(direct).toMatch(
-      /direct\.reason\s*===\s*"Unregistered"\)\s*\{\s*await\s+deleteDeviceRows\(/,
+      /direct\.reason\s*===\s*"Unregistered"\)\s*\{\s*await\s+forgetGoneRegistrations\(\s*"device"/,
     );
     const relay = readSource(
       "src/lib/push-relay/relay-send.ts",

@@ -9,7 +9,7 @@
  * today, and only over this server's own APNs key. There is no path that
  * sends plaintext to a device with a push key.
  */
-import { deleteDeviceRows } from "@/lib/devices/delete-devices";
+import { forgetGoneRegistrations } from "@/lib/notifications/gone-registrations";
 import { getEvent } from "@/lib/logging/context";
 import {
   loadApnsConfig,
@@ -273,7 +273,7 @@ export async function sendSealed(
       result.directFailures += 1;
       // Only Apple's `Unregistered` is final for a sealed push.
       if (direct.reason === "Unregistered") {
-        await deleteDeviceRows({ id: target.device.id });
+        await forgetGoneRegistrations("device", [target.device.id]);
       }
     }
   }

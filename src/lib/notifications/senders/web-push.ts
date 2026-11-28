@@ -5,6 +5,7 @@ import type { SendOutcome } from "@/lib/notifications/retry-policy";
 import { classifyHttpStatus } from "@/lib/notifications/retry-policy";
 import { getVapidConfig } from "@/lib/notifications/vapid-config";
 import { getEvent } from "@/lib/logging/context";
+import { forgetGoneRegistrations } from "@/lib/notifications/gone-registrations";
 import { recordPushAttemptForPayload } from "@/lib/notifications/senders/push-attempt-record";
 import { isPublicUrl } from "@/lib/validations/notifications";
 import { safeFetch } from "@/lib/safe-fetch";
@@ -17,7 +18,7 @@ import { isSafeAppPath } from "@/lib/notifications/tap-target";
  * Send Web Push notification to all subscribed devices of a user.
  * VAPID config is loaded from app settings first, then env as fallback.
  *
- * Returns a structured `SendOutcome` (v1.4.15 Phase B3) so the dispatcher
+ * Returns a structured `SendOutcome` (v1.4.15) so the dispatcher
  * can classify the channel state:
  *  - `ok: true`  if at least one device received the push.
  *  - `hardReject: true` only when ALL surviving subscriptions returned a
@@ -213,12 +214,8 @@ export async function sendViaWebPush(
       error: anySuccess ? undefined : "all_failed",
     });
 
-    // Clean up expired subscriptions
-    if (expiredIds.length > 0) {
-      await prisma.pushSubscription.deleteMany({
-        where: { id: { in: expiredIds } },
-      });
-    }
+    // Clean up expired subscriptions; a held breaker keeps the channel on.
+    allPermanentReject &&= await forgetGoneRegistrations("webPush", expiredIds);
 
     if (anySuccess) {
       recordPushAttemptForPayload(payload, userId, {

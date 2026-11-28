@@ -1,7 +1,7 @@
 /**
  * GET /api/export/full-backup
  *
- * v1.4.16 phase B7. Single-file user-scoped JSON dump that matches the
+ * v1.4.16. Single-file user-scoped JSON dump that matches the
  * canonical `backupPayloadSchema` (see `src/lib/validations/backup.ts`)
  * — same shape the pg-boss `data-backup` worker writes weekly, so a
  * user can hand this file to an admin and `POST /api/admin/backups/upload`

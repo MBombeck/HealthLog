@@ -6,11 +6,11 @@
  * is accepted by the route automatically; an unknown id 422s against the
  * closed enum (the v1.8.7.1 `metric-status` pattern).
  *
- * Wave 1 implements ONE metric end-to-end as the reference: the personal
+ * ONE metric is implemented end-to-end as the reference: the personal
  * typical-range vitals baseline (`VITALS_BASELINE`). The other catalogue
  * metrics are registered here as metadata STUBS — their `archetype`
- * documents the shape later waves plug in, but their compute functions
- * land in W2/W3 (`fitness-age.ts`, `vascular-age.ts`, `sleep-score.ts`,
+ * documents the shape a compute plugs into, but their compute functions
+ * are still to come (`fitness-age.ts`, `vascular-age.ts`, `sleep-score.ts`,
  * `readiness.ts`, the coincident-deviation flag). A stubbed metric routed
  * before its compute lands returns `insufficient` via the dispatcher's
  * `not-implemented` guard, never a fabricated value.

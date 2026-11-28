@@ -1,3 +1,4 @@
+import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { decrypt } from "@/lib/crypto";
@@ -5,13 +6,13 @@ import { sendTelegramMessage } from "@/lib/telegram";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import { defaultLocale, isLocale, type Locale } from "@/lib/i18n/config";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 
 /**
  * Send a test Telegram message to verify the bot token and chat ID.
  */
-export const POST = apiHandler(async () => {
+export const POST = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
 
   const rl = await checkRateLimit(`telegram-test:${user.id}`, 5, 5 * 60 * 1000);
@@ -28,15 +29,12 @@ export const POST = apiHandler(async () => {
     return apiError("Bot token and chat ID must be saved first", 422);
   }
 
-  // v1.4.27 — the test body now reads from the user's persisted
-  // locale rather than the hardcoded English string. The route talks
-  // to `sendTelegramMessage` directly (it needs the boolean send
-  // result for the UI) so we compose the body via the server
-  // translator rather than going through the dispatcher.
-  const userLocale: Locale = isLocale(dbUser.locale)
-    ? dbUser.locale
-    : defaultLocale;
-  const t = getServerTranslator(userLocale).t;
+  // The route talks to `sendTelegramMessage` directly (it needs the
+  // boolean send result for the UI), so the body is composed here in the
+  // request's language rather than through the dispatcher.
+  const t = getServerTranslator(
+    await resolveServerLocale({ request, userLocale: dbUser.locale }),
+  ).t;
   const botToken = decrypt(dbUser.telegramBotToken);
   const result = await sendTelegramMessage(
     botToken,

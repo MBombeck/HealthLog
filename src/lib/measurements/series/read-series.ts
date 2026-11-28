@@ -21,7 +21,7 @@ import {
 } from "@/lib/measurements/series-change";
 import { resolveSeriesReferenceLines } from "@/lib/measurements/series-reference-lines";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
-import { resolveJobLocale } from "@/lib/i18n/job-locale";
+import type { Locale } from "@/lib/i18n/config";
 
 import { countLiveReadingsPerType } from "@/lib/measurements/newest-per-type";
 
@@ -79,12 +79,15 @@ export type SeriesAnswer = Awaited<ReturnType<typeof readSeriesBatch>>[number];
 export async function readSeriesBatch(args: {
   /** The record read (the owner under a delegation). */
   userId: string;
-  /** Who is reading: the labels are in their language. */
-  actorId: string;
+  /**
+   * The reader's language, resolved from the request by the route
+   * (`resolveServerLocale`): the labels are in it.
+   */
+  locale: Locale;
   kinds: readonly SeriesKind[];
   days: number;
 }) {
-  const { userId, actorId, kinds, days } = args;
+  const { userId, locale, kinds, days } = args;
   const since = new Date(Date.now() - days * 86_400_000);
 
   // Inside the raw window a dense kind is bucketed only past the row cap;
@@ -97,8 +100,8 @@ export async function readSeriesBatch(args: {
           .map((k) => KIND_TO_TYPE[k]);
 
   // The profile and targets are the RECORD's (the chart is theirs); the
-  // labels are in the language of the account reading it.
-  const [record, reader, seriesTz, counted] = await Promise.all([
+  // labels are in the language of the request reading it.
+  const [record, seriesTz, counted] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -108,16 +111,9 @@ export async function readSeriesBatch(args: {
         thresholdsJson: true,
         timezone: true,
         glucoseUnit: true,
-        locale: true,
         sourcePriorityJson: true,
       },
     }),
-    actorId === userId
-      ? null
-      : prisma.user.findUnique({
-          where: { id: actorId },
-          select: { locale: true },
-        }),
     resolveUserTimezone(userId),
     probeTypes.length > 0
       ? countLiveReadingsPerType(
@@ -136,7 +132,7 @@ export async function readSeriesBatch(args: {
     glucoseUnit: record?.glucoseUnit ?? null,
   };
 
-  const [reads, pregnancy, locale] = await Promise.all([
+  const [reads, pregnancy] = await Promise.all([
     Promise.all(
       kinds.map((kind) =>
         readPoints(userId, kind, days, since, shared, counted),
@@ -146,7 +142,6 @@ export async function readSeriesBatch(args: {
     kinds.some((kind) => verdictReadsPregnancy(KIND_TO_TYPE[kind]))
       ? pregnancyContextActive(prisma, userId, seriesTz)
       : false,
-    resolveJobLocale((reader ?? record)?.locale ?? null),
   ]);
   const translator = getServerTranslator(locale);
   const rangeProfile = {
@@ -216,7 +211,7 @@ export async function readSeriesBatch(args: {
 /** One series: the batch of one, annotated as the single read always was. */
 export async function readSeries(args: {
   userId: string;
-  actorId: string;
+  locale: Locale;
   kind: SeriesKind;
   days: number;
 }): Promise<SeriesAnswer> {

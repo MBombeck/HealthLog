@@ -1,7 +1,7 @@
 /**
  * GET /api/export/medications
  *
- * v1.4.16 phase B7. Per-type CSV download for the consolidated
+ * v1.4.16. Per-type CSV download for the consolidated
  * `/settings/export` UI. Always includes the medication list; appends
  * a `# Intake history` block when `?intake=true` (the default — the
  * UI toggle is checked by default so a stripped-down export is opt-in).
@@ -32,6 +32,7 @@ import {
   formatIntakeEventsForExport,
 } from "@/lib/export";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
+import { parseExportRange, type ExportRange } from "@/lib/export/export-range";
 import { withMedicationNote } from "@/lib/medications/medication-note";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -45,12 +46,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
   }
 
   const params = new URL(request.url).searchParams;
+  const range = parseExportRange(params, await resolveUserTimezone(user.id));
   const includeIntake = params.get("intake") !== "false";
   const medicationId = params.get("medicationId") || undefined;
-  const sinceRaw = params.get("since");
-  const untilRaw = params.get("until");
-  const since = sinceRaw ? safeDate(sinceRaw) : undefined;
-  const until = untilRaw ? safeDate(untilRaw) : undefined;
 
   // Explicit `select` on the schedule columns we actually format. The
   // integration testbed has an unmigrated `medication_schedules.days_of_week`
@@ -103,18 +101,14 @@ export const GET = apiHandler(async (request: NextRequest) => {
       userId: string;
       deletedAt: null;
       medicationId?: string;
-      scheduledFor?: { gte?: Date; lte?: Date };
+      scheduledFor?: ExportRange;
     } = {
       userId: user.id,
       // v1.7.0 sync — exclude tombstoned rows from the export.
       deletedAt: null,
     };
     if (medicationId) where.medicationId = medicationId;
-    if (since || until) {
-      where.scheduledFor = {};
-      if (since) where.scheduledFor.gte = since;
-      if (until) where.scheduledFor.lte = until;
-    }
+    if (range) where.scheduledFor = range;
     const events = await prisma.medicationIntakeEvent.findMany({
       where,
       include: { medication: { select: { name: true } } },
@@ -135,8 +129,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
       intakeCount,
       includeIntake,
       medicationId: medicationId ?? null,
-      since: since?.toISOString() ?? null,
-      until: until?.toISOString() ?? null,
+      since: range?.gte?.toISOString() ?? null,
+      until: (range?.lt ?? range?.lte)?.toISOString() ?? null,
     },
   });
 
@@ -160,8 +154,3 @@ export const GET = apiHandler(async (request: NextRequest) => {
     },
   });
 });
-
-function safeDate(value: string): Date | undefined {
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? undefined : d;
-}

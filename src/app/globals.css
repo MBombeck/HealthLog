@@ -24,8 +24,8 @@
  * whether the build runs from the repo root or a tooling subdir.
  *
  * The `@source not` directives below are resolved relative to this
- * stylesheet, so they point at `<repo-root>/.planning` and
- * `<repo-root>/docs`.
+ * stylesheet, so they point at the gitignored local notes directory at
+ * the repo root and at `<repo-root>/docs`.
  */
 @source not "../../.planning";
 @source not "../../docs";
@@ -976,7 +976,7 @@ html [data-sonner-toaster][data-y-position="bottom"] {
   }
 }
 
-/* ── v1.4.20 phase B1 — Insights redesign hero strip ─────────────── */
+/* ── v1.4.20: Insights redesign hero strip ─────────────── */
 
 /*
  * `.hero-gradient` — purple → pink linear gradient at low opacity, for

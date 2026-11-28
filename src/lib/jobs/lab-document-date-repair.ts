@@ -70,8 +70,7 @@ interface CandidateRow {
 
 /**
  * The SQL half of the rule. `limit` turns it into the boot's existence
- * check. `.planning/v1.46.2-fragments/lab-repair-count.sql` is the same
- * predicate as a read-only count.
+ * check.
  */
 function candidateQuery(limit: number | null): Prisma.Sql {
   // The day comparison runs here as well as in the repair, so a value that
