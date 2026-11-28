@@ -108,6 +108,51 @@ describe("<TodayScores>", () => {
     // Each wide tile spans two of the strip's six columns.
     expect(html.match(/col-span-2/g)).toHaveLength(3);
   });
+
+  it("paints only the number and the name on either face: no line, no band word", () => {
+    const html = renderToStaticMarkup(
+      <I18nProvider initialLocale="en">
+        <TodayScores
+          digest={
+            {
+              score: { ...DIGEST.score, bandSetterLine: "Blood pressure red" },
+            } as unknown as DailyDigest
+          }
+          morning={MORNING}
+        />
+      </I18nProvider>,
+    );
+    const tiles = scoreTiles(DIGEST, MORNING, t, "en");
+    // One chunk per tile, wide and narrow face alike.
+    const chunks = html
+      .split(/(?=data-slot="today-score-(?:tile|compact)")/)
+      .slice(1);
+    expect(chunks).toHaveLength(tiles.length * 2);
+    chunks.forEach((chunk, i) => {
+      const tile = tiles[i % tiles.length];
+      // The text a sighted reader sees; the ring's accessible name (an
+      // attribute) still carries the band and the line.
+      const words = chunk
+        .replace(/^[^>]*>/, "")
+        .replace(/<[^>]*$/, "")
+        .replace(/<[^>]*>/g, " ")
+        .trim()
+        .split(/\s+/)
+        .join(" ");
+      const number = tile.score === null ? "\u2014" : String(tile.score);
+      // The name renders in its short form; the wide face also keeps the
+      // full one for wide columns (one of the two is hidden).
+      expect([
+        `${number} ${tile.shortLabel}`,
+        `${number} ${tile.label} ${tile.shortLabel}`,
+        `${number} ${tile.shortLabel} ${tile.label}`,
+      ]).toContain(words);
+    });
+    const visible = html.replace(/<[^>]*>/g, " ");
+    expect(visible).not.toMatch(/7h 20m|Last 81|Blood pressure|not from today/);
+    expect(visible).not.toMatch(/\b(good|fair|low|moderate|high)\b/i);
+    expect(html).not.toContain('data-slot="score-ring-tile-line"');
+  });
 });
 
 describe("todaySlot", () => {

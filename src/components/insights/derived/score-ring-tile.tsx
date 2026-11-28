@@ -1,12 +1,15 @@
 "use client";
 
 /**
- * One score as a tile: the ring, the score's short name and one meta line,
- * all one link to the score's page.
+ * One score as a tile: the ring, the score's short name and, on Insights,
+ * one meta line, all one link to the score's page.
  *
  * Two sizes on one anatomy:
- *  - `wide` (the start page's score row): the ring beside a `TileHeader` and
- *    the line, the metric tile's frame and inset;
+ *  - `wide` (the start page's score row): the ring beside a `TileHeader`,
+ *    the metric tile's frame and inset, and nothing else. No meta line: the
+ *    start page shows the ring, the number and the short name; the duration,
+ *    the setter and the source belong on the score's page. `line` still
+ *    feeds the ring's accessible name;
  *  - `compact` (a row of five or six on Insights): the ring on top, about
  *    80 px, then the name, then the line, each on one line at a fixed
  *    height, so the tiles of a row line up.
@@ -48,8 +51,9 @@ export interface ScoreRingTileProps {
   /** Not about today: the solid track, a centred "—", no number. */
   stale: boolean;
   /**
-   * One line, truncated: the move, the duration, a device's reading. On a
-   * stale tile the line reads "not from today" and this text (when the last
+   * One line, truncated: the move, the duration, a device's reading. Shown
+   * on the compact tile only; the wide tile keeps it in the ring's
+   * accessible name. On a stale tile the line reads "not from today" and this text (when the last
    * value was) moves into the ring's accessible name.
    */
   line: string | null;
@@ -123,14 +127,13 @@ export function ScoreRingTile({
       {size === "wide" ? (
         <TrendTile className="flex-row items-center gap-4 md:py-4">
           {dial}
-          <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <div className="min-w-0 flex-1">
             <TileHeader
               icon={icon}
               title={{ full: label, short: shortLabel }}
               titleAs={titleAs}
               reserveLines={1}
             />
-            {lineRow}
           </div>
         </TrendTile>
       ) : (
