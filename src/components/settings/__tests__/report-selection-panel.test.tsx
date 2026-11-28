@@ -76,6 +76,8 @@ function buildUser(lastReportPracticeName: string | null): AuthUser {
     insurerName: null,
     insurerIkNumber: null,
     insuranceNumber: null,
+    insuranceNumberCountry: null,
+    insuranceGroupNumber: null,
     lastReportPracticeName,
     reportSelection: null,
     cycleTrackingEnabled: false,

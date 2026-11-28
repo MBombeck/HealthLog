@@ -42,6 +42,10 @@ import {
   syncUserSleep as syncWithingsSleep,
 } from "@/lib/withings/sync-sleep";
 import { recomputeUserRollups } from "@/lib/rollups/measurement-rollups";
+import {
+  backfillIncomplete,
+  withPageWalkLedger,
+} from "@/lib/integrations/page-walk";
 import { SLEEP_TIMELINE_BACKFILL_QUEUE } from "./sleep-timeline-backfill-queue";
 
 export type SleepTimelineProvider = "WHOOP" | "WITHINGS";
@@ -72,15 +76,19 @@ export async function runSleepTimelineBackfillForUser(
     ({ count: deleted } = await prisma.measurement.deleteMany({
       where: { userId, type: "SLEEP_DURATION", source: provider },
     }));
-    // `syncUserWhoop` now returns a verdict; gate the completion marker on a
-    // clean run so a partial re-sync (dead token, write failure) throws for a
-    // pg-boss retry instead of freezing the timeline gap under a stamped
-    // marker — the same discipline the WHOOP/Fitbit backfills use.
-    const result = await syncUserWhoop(userId, { fullSync: true });
+    // `syncUserWhoop` returns a verdict; gate the completion marker on a
+    // clean run so a partial re-sync (dead token, write failure) throws, with
+    // the collection's error as the cause for the drain's outage backoff
+    // (`integration-backfill-retry.ts`), instead of freezing the timeline gap
+    // under a stamped marker — the same discipline the WHOOP backfill uses.
+    const { result, failure } = await withPageWalkLedger(() =>
+      syncUserWhoop(userId, { fullSync: true }),
+    );
     imported = result.imported;
     if (result.failed) {
-      throw new Error(
+      throw backfillIncomplete(
         `sleep-timeline backfill incomplete for user ${userId} (whoop) — marker not stamped`,
+        failure,
       );
     }
     await prisma.whoopConnection.update({

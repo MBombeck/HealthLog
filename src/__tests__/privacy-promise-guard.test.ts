@@ -21,7 +21,9 @@ import { describe, expect, it } from "vitest";
 import en from "../../messages/en.json";
 import {
   isModelVisibleMeasurementType,
+  MODEL_EXCLUDED_MEASUREMENT_TYPES,
   MODEL_EXCLUDED_SCORE_PILLARS,
+  MODEL_EXCLUDED_SECTIONS,
 } from "@/lib/ai/model-bound-data";
 import { reachFloor } from "@/lib/ai/coach/history-reach";
 import {
@@ -31,7 +33,11 @@ import {
 import { SCORE_PILLAR_IDS } from "@/lib/analytics/score/types";
 import { isModelVisibleSection } from "@/lib/day/model-projection";
 import { buildEvidence } from "@/lib/jobs/reaction-line-evidence";
-import { INSTRUMENT_MEASUREMENT_TYPE } from "@/lib/mental-health/instruments";
+import {
+  INSTRUMENT_MEASUREMENT_TYPE,
+  INSTRUMENT_ORDER,
+} from "@/lib/mental-health/instruments";
+import { getSignal } from "@/lib/signals/registry";
 
 import { readSource, readSourceFolder } from "./helpers/source-files";
 
@@ -75,11 +81,32 @@ function provenBy(file: string, title: string): void {
 const PROMISES: Record<string, () => void> = {
   // Answers, totals, and the health score's wellbeing pillar, which is the
   // questionnaires under another name.
+  // The end-to-end proof against a real record, every MCP read and every
+  // Coach read included, is
+  // `tests/integration/questionnaires-stay-out-of-models.test.ts`.
   "mentalHealth.privacyNote": () => {
+    // Changing the sentence means re-reading what it promises against the
+    // classification below.
+    expect(en.mentalHealth.privacyNote).toMatch(
+      /Answers and scores never reach the AI Coach, any other AI feature or an AI assistant you connected\./,
+    );
     expect(isModelVisibleSection("assessments")).toBe(false);
+    expect(MODEL_EXCLUDED_SECTIONS.has("assessments")).toBe(true);
     for (const type of Object.values(INSTRUMENT_MEASUREMENT_TYPE)) {
       expect(isModelVisibleMeasurementType(type), type).toBe(false);
     }
+    // Every instrument on the page, and the signal registry says the same
+    // for every surface it governs.
+    for (const instrument of INSTRUMENT_ORDER) {
+      const type = INSTRUMENT_MEASUREMENT_TYPE[instrument];
+      expect(isModelVisibleMeasurementType(type), type).toBe(false);
+      const signal = getSignal(type);
+      expect(signal, type).toBeDefined();
+      expect(signal!.surfaces.coachSnapshot, type).toBe(false);
+      expect(signal!.surfaces.mcp, type).toBe(false);
+      expect(signal!.surfaces.correlationEligible, type).toBe(false);
+    }
+    expect(MODEL_EXCLUDED_MEASUREMENT_TYPES.size).toBe(INSTRUMENT_ORDER.length);
     expect(MODEL_EXCLUDED_SCORE_PILLARS.has("WELLBEING")).toBe(true);
     expect(
       modelBoundComposite({

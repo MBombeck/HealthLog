@@ -93,12 +93,9 @@ describe("<AppleWalletCard>", () => {
     const html = render(BASE);
     expect(html).toContain('id="wallet"');
     expect(html).toContain('data-slot="wallet-create"');
-    const box = (field: string, checked: boolean) =>
-      new RegExp(
-        `<button(?=[^>]*id="wallet-field-${field}")(?=[^>]*aria-checked="${checked}")[^>]*>`,
-      );
-    expect(html).toMatch(box("NAME", true));
-    expect(html).toMatch(box("NOTE", false));
+    // What the pass shows is one row with a count; the list opens in a sheet.
+    expect(html).toContain('data-slot="wallet-fields-row"');
+    expect(html).toContain("8 of 12");
     expect(html).toContain("Learn more");
   });
 

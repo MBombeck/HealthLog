@@ -170,17 +170,24 @@ test.describe("emergency card in Apple Wallet", () => {
     const card = page.locator('[data-slot="emergency-card-wallet-card"]');
     await expect(card).toBeVisible();
 
-    // The form, with the name ticked by default and the note not.
+    // The form, with the name ticked by default and the note not. What the
+    // pass shows is one row; its list opens in a sheet.
     const create = card.locator('[data-slot="wallet-create"]');
     await expect(create).toBeEnabled();
-    await expect(card.locator("#wallet-field-NAME")).toHaveAttribute(
+    await card
+      .locator('[data-slot="wallet-fields-row"] [data-slot="list-item-action"]')
+      .click();
+    const picker = page.getByRole("dialog");
+    await expect(picker.locator("#wallet-field-NAME")).toHaveAttribute(
       "aria-checked",
       "true",
     );
-    const note = card.locator("#wallet-field-NOTE");
+    const note = picker.locator("#wallet-field-NOTE");
     await expect(note).toHaveAttribute("aria-checked", "false");
     await note.click();
     await expect(note).toHaveAttribute("aria-checked", "true");
+    await picker.getByRole("button", { name: "Done" }).click();
+    await expect(picker).toBeHidden();
 
     // The server signs itself, so no signing notice; the re-proof opens, and
     // once it is answered the page makes the pass and starts the download.

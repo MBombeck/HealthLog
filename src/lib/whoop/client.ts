@@ -9,6 +9,7 @@
  * the record → measurement mapping is `./map.ts`, the OAuth handshake is
  * `./oauth.ts`.
  */
+import { retryAfterMsOf } from "@/lib/integrations/oauth-kit/retry-after";
 import { getEvent } from "@/lib/logging/context";
 import { safeFetch } from "@/lib/safe-fetch";
 
@@ -79,6 +80,7 @@ async function fetchCollection<T>(
           classification: verdict.classification,
           httpStatus: verdict.httpStatus,
           reason: verdict.reason,
+          retryAfterMs: retryAfterMsOf(res),
         });
       }
       return { items: json?.records ?? [], next: json?.next_token ?? null };
@@ -112,6 +114,7 @@ async function fetchSingle<T>(
       classification: verdict.classification,
       httpStatus: verdict.httpStatus,
       reason: verdict.reason,
+      retryAfterMs: retryAfterMsOf(res),
     });
   }
   return json as T;

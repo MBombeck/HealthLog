@@ -19,7 +19,11 @@ import { annotate } from "@/lib/logging/context";
 import { applyProfileUpdate } from "@/lib/auth/profile-update";
 import { authorizeSensitiveChange } from "@/lib/auth/existing-factor-proof";
 import { prisma } from "@/lib/db";
-import { decrypt } from "@/lib/crypto";
+import {
+  INSURANCE_IDENTITY_SELECT,
+  readInsuranceIdentity,
+} from "@/lib/profile/insurance-identity";
+import { displayInsuranceNumber } from "@/lib/validations/insurance-number";
 import { resolveModuleMap } from "@/lib/modules/gate";
 import { resolveStoredTimezone } from "@/lib/tz/resolver";
 import { enqueueWalletRefresh } from "@/lib/emergency-card/wallet-pass/queues";
@@ -51,7 +55,7 @@ export const GET = apiHandler(async () => {
         fullName: true,
         insurerName: true,
         insurerIkNumber: true,
-        insuranceNumberEncrypted: true,
+        ...INSURANCE_IDENTITY_SELECT,
       },
     }),
     // v1.18.0 — resolved module enable/disable map, identical to the
@@ -61,16 +65,8 @@ export const GET = apiHandler(async () => {
     resolveModuleMap(user.id),
   ]);
 
-  // v1.7.0 — decrypt the KVNR fail-soft so a key-rotation gap never 500s
-  // the profile fetch.
-  let insuranceNumber: string | null = null;
-  if (dbUser?.insuranceNumberEncrypted) {
-    try {
-      insuranceNumber = decrypt(dbUser.insuranceNumberEncrypted);
-    } catch {
-      insuranceNumber = null;
-    }
-  }
+  // Decrypted fail-soft so a key-rotation gap never 500s the profile fetch.
+  const insurance = readInsuranceIdentity(dbUser);
 
   return apiSuccess({
     username: dbUser?.username ?? user.username,
@@ -90,7 +86,10 @@ export const GET = apiHandler(async () => {
     fullName: dbUser?.fullName ?? null,
     insurerName: dbUser?.insurerName ?? null,
     insurerIkNumber: dbUser?.insurerIkNumber ?? null,
-    insuranceNumber,
+    insuranceNumber: insurance.insuranceNumber,
+    insuranceNumberCountry: insurance.insuranceNumberCountry,
+    insuranceNumberDisplay: displayInsuranceNumber(insurance),
+    insuranceGroupNumber: insurance.insuranceGroupNumber,
     // v1.18.0 — module enable/disable map, matching the /api/auth/me
     // projection exactly so the native client gets module flags from the
     // endpoint it actually reads.
@@ -146,6 +145,8 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     insurerName: result.user.insurerName,
     insurerIkNumber: result.user.insurerIkNumber,
     hasInsuranceNumber: result.user.hasInsuranceNumber,
+    insuranceNumberCountry: result.user.insuranceNumberCountry,
+    insuranceGroupNumber: result.user.insuranceGroupNumber,
     ...(result.rejectedFields ? { rejectedFields: result.rejectedFields } : {}),
   });
 });

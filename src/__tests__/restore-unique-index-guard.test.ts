@@ -44,6 +44,8 @@ const DECISIONS: Record<string, Decision> = {
     merge: { provenBy: "dose-slot-merge" },
   },
   live_activity_tokens_device_id_push_token_key: { reason: NOT_IN_BACKUP },
+  health_connect_pairings_code_hash_key: { reason: NOT_IN_BACKUP },
+  devices_api_token_id_key: { reason: NOT_IN_BACKUP },
   users_email_lower_key: {
     reason:
       "A restore writes into an existing account and never creates a user from the file; the upload route that creates one checks the name through the identity lookup.",

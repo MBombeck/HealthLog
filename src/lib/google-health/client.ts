@@ -370,7 +370,7 @@ export async function fetchDailyRollUp(
           const body = buildDailyRollUpBody(chunk, pageToken);
 
           requestCount += 1;
-          const { json, verdict, apiErrorDetail } =
+          const { json, verdict, apiErrorDetail, retryAfterMs } =
             await googleHealthDataRequest<GoogleHealthRollupPage>(
               accessToken,
               `${verb}(chunk=${index},page=${pageCount})`,
@@ -394,6 +394,7 @@ export async function fetchDailyRollUp(
               httpStatus: verdict.httpStatus,
               reason: verdict.reason,
               upstreamError: apiErrorDetail,
+              retryAfterMs,
             });
           }
 

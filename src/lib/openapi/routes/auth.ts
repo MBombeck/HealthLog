@@ -754,6 +754,18 @@ const authProfileUpdateResponse = z
       .describe(
         "Whether an insurance number is stored. The number itself is encrypted at rest and is never returned — only its presence.",
       ),
+    insuranceNumberCountry: z
+      .string()
+      .nullable()
+      .describe(
+        "ISO 3166-1 alpha-2 country whose rule the insurance number follows: DE (KVNR), AT (SVNR), CH (AHV number), NL (BSN) and FR (NIR) are checked against their check digit; every other country takes 3 to 30 letters, digits, spaces, hyphens or dots, as entered. A number stored without a country follows DE. Null when no number and no country is stored.",
+      ),
+    insuranceGroupNumber: z
+      .string()
+      .nullable()
+      .describe(
+        "The plan's group number beside a US member ID: 3 to 30 letters, digits, spaces, hyphens or dots. Kept only while the country is US; any other country clears it.",
+      ),
     rejectedFields: z
       .array(validationIssue)
       .optional()
@@ -2505,7 +2517,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       description:
         "Partial and field-by-field: only the keys present in the body are considered, and a key that fails validation is SKIPPED rather than failing its siblings. The response still carries 200 and lists what was dropped in `rejectedFields` — so a client that treats any 200 as a clean save will silently discard the user's correction. Read the key.\n\n" +
         "Two cases do fail the whole request: a body that is not an object at all, and a body in which every supplied field was rejected (`meta.errorCode` = `profile.update.nothingSaved`) — because reporting a partial success that saved nothing would be a lie.\n\n" +
-        'The insurance number is validated with its check digit, normalised, and stored encrypted; it is never returned. `hasInsuranceNumber` reports presence only. A null or empty string clears a nullable field rather than being refused, so a form that renders “no answer” as `""` does not 422 the whole patch.',
+        'The insurance number is validated under the rule of its country (`insuranceNumberCountry`, sent or stored, DE when neither), normalised, and stored encrypted; it is never returned. A number that fails the rule, or a country change the stored number would fail, comes back in `rejectedFields` with code `invalid_kvnr`, `invalid_svnr`, `invalid_ahv`, `invalid_bsn`, `invalid_nir` or `invalid_member_id`. `hasInsuranceNumber` reports presence only. A null or empty string clears a nullable field rather than being refused, so a form that renders “no answer” as `""` does not 422 the whole patch.',
       requestBody: {
         required: true,
         content: { "application/json": { schema: profileUpdateRequest } },

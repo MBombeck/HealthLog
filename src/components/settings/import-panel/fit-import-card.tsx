@@ -3,27 +3,43 @@
 /**
  * Settings → Export & Import → Activity file (FIT).
  *
- * Uploads one activity file (`.fit`, `.fit.gz`, or the ZIP Garmin Connect's
- * "Export original" writes) and follows the background import through
- * `GET /api/import/fit/status`, which answers the account's latest job, so
- * the outcome is still there after a reload. Built like the Health Connect
- * card: the same shell, drop zone, phase line and result list.
+ * Uploads activity files (`.fit`, `.fit.gz`, or the ZIP Garmin Connect's
+ * "Export original" writes), up to 100 in one selection, one after the
+ * other through the same route and job as a single file (`fit-batch.ts`).
+ * While a selection runs, the sheet lists one row per file with its state.
+ * Without one, it shows the account's latest job from
+ * `GET /api/import/fit/status`, so the outcome is still there after a reload,
+ * and the page row says the day and the count. Where the files come from and
+ * what happens to a GPS track sit behind the (i).
  */
-import { useCallback, useId, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Activity, AlertCircle, Loader2, Upload } from "lucide-react";
+import { Activity, AlertCircle, Check, Loader2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { SettingsCardActions } from "@/components/settings/_card-actions";
-import { WrittenOutcomeLine } from "@/components/outcome/written-outcome-line";
+import { ListGroup, ListItem } from "@/components/ui/list-row";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
 import { fitFailureCodeOf, type FitFailureCode } from "@/lib/fit/errors";
-import { useTranslations } from "@/lib/i18n/context";
+import { WrittenOutcomeLine } from "@/components/outcome/written-outcome-line";
 import { classifyWrittenOutcome } from "@/lib/outcome/written-outcome";
+import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
-import { cn } from "@/lib/utils";
-import { ImportCardShell, ImportStatusRegion } from "./import-card-shell";
-import { FileInput } from "@/components/ui/file-picker";
+import {
+  ImportPickerRow,
+  ImportSource,
+  useFinishedJobMeta,
+} from "./import-card-shell";
+import {
+  FIT_BATCH_MAX_FILES,
+  runFitBatch,
+  type FitFileFailure,
+  type FitFileState,
+} from "./fit-batch";
+
+interface FitBatchRow {
+  key: string;
+  name: string;
+  state: FitFileState;
+}
 
 const TERMINAL_STATES: readonly string[] = ["done", "failed"];
 
@@ -41,6 +57,7 @@ export interface FitImportJob {
     withRoute?: number;
   } | null;
   failureReason: string | null;
+  completedAt?: string | null;
 }
 
 /** The result rows the card lists, in order, without the zero ones. */
@@ -119,16 +136,48 @@ function useFitLabels() {
     parsing: t("settings.sections.export.import.fit.phase.parsing"),
     upserting: t("settings.sections.export.import.fit.phase.upserting"),
   };
-  return { rows, failures, phases };
+  const fileStatus: Record<
+    Exclude<FitFileState["status"], "failed">,
+    string
+  > = {
+    waiting: t("settings.sections.export.import.fit.batch.waiting"),
+    uploading: t("settings.sections.export.import.fit.uploading"),
+    imported: t("settings.sections.export.import.fit.batch.imported"),
+    duplicate: t("settings.sections.export.import.fit.batch.duplicate"),
+  };
+  const fileFailures: Record<FitFileFailure, string> = {
+    tooLarge: t("settings.sections.export.import.fit.batch.reason.tooLarge"),
+    unsupported: t(
+      "settings.sections.export.import.fit.batch.reason.unsupported",
+    ),
+    damaged: t("settings.sections.export.import.fit.batch.reason.damaged"),
+    notActivity: t(
+      "settings.sections.export.import.fit.batch.reason.notActivity",
+    ),
+    noWorkout: t("settings.sections.export.import.fit.batch.reason.noWorkout"),
+    busy: t("settings.sections.export.import.fit.batch.reason.busy"),
+    retry: t("settings.sections.export.import.fit.batch.reason.retry"),
+  };
+  return { rows, failures, phases, fileStatus, fileFailures };
 }
 
-export function FitImportCard() {
+export function FitImportSource() {
   const { t } = useTranslations();
   const labels = useFitLabels();
+  const finishedMeta = useFinishedJobMeta();
+  const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [batch, setBatch] = useState<FitBatchRow[]>([]);
+  const [capped, setCapped] = useState(false);
+  const [batchRunning, setBatchRunning] = useState(false);
+  const unmounted = useRef(false);
+  useEffect(() => {
+    unmounted.current = false;
+    return () => {
+      unmounted.current = true;
+    };
+  }, []);
 
   const statusQuery = useQuery({
     queryKey: queryKeys.fitImportStatus(),
@@ -143,49 +192,61 @@ export function FitImportCard() {
       }),
   });
 
-  const upload = useCallback(
-    async (file: File) => {
-      setUploadError(null);
-      setUploading(true);
+  const start = useCallback(
+    async (picked: readonly File[]) => {
+      if (picked.length === 0) return;
+      const files = picked.slice(0, FIT_BATCH_MAX_FILES);
+      const stamp = Date.now();
+      setCapped(picked.length > files.length);
+      setBatch(
+        files.map((file, i) => ({
+          key: `${stamp}-${i}`,
+          name: file.name,
+          state: { status: "waiting" },
+        })),
+      );
+      setBatchRunning(true);
       try {
-        const form = new FormData();
-        form.append("file", file);
-        const res = await apiFetchRaw("/api/import/fit", {
-          method: "POST",
-          credentials: "include",
-          body: form,
-        });
-        if (res.status === 429)
-          return setUploadError(
-            t("settings.sections.export.import.fit.rateLimited"),
-          );
-        if (res.status === 413)
-          return setUploadError(
-            t("settings.sections.export.import.fit.tooLarge"),
-          );
-        if (res.status === 409)
-          return setUploadError(t("settings.sections.export.import.fit.busy"));
-        if (!res.ok)
-          return setUploadError(
-            t("settings.sections.export.import.fit.uploadFailed"),
-          );
-        await queryClient.invalidateQueries({
+        await runFitBatch(
+          files,
+          {
+            upload: (file) => {
+              const form = new FormData();
+              form.append("file", file);
+              return apiFetchRaw("/api/import/fit", {
+                method: "POST",
+                credentials: "include",
+                body: form,
+              });
+            },
+            status: () =>
+              apiGet<{ job: FitImportJob | null }>("/api/import/fit/status", {
+                credentials: "include",
+              }),
+            sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+            cancelled: () => unmounted.current,
+          },
+          (index, state) =>
+            setBatch((rows) =>
+              rows.map((row, i) => (i === index ? { ...row, state } : row)),
+            ),
+        );
+      } finally {
+        if (!unmounted.current) setBatchRunning(false);
+        void queryClient.invalidateQueries({
           queryKey: queryKeys.fitImportStatus(),
         });
-      } catch {
-        setUploadError(t("settings.sections.export.import.fit.uploadFailed"));
-      } finally {
-        setUploading(false);
       }
     },
-    [t, queryClient],
+    [queryClient],
   );
 
   const job = statusQuery.data?.job ?? null;
   const isRunning = job !== null && !TERMINAL_STATES.includes(job.status);
   const isDone = job?.status === "done";
   const isFailed = job?.status === "failed";
-  const busy = uploading || isRunning;
+  const busy = batchRunning || isRunning;
+  const showJob = batch.length === 0;
   const summary = summarizeFitResult(job?.result ?? null);
 
   const failureText = (() => {
@@ -198,175 +259,170 @@ export function FitImportCard() {
       : t("settings.sections.export.import.fit.failed");
   })();
 
+  // The picker row's meta says where things stand: what it takes when idle,
+  // "4 of 6" while a selection runs, the last job's phase or outcome without
+  // one. Two text sizes in the body, the row's and the meta's.
+  const finished = batch.filter(
+    (row) => row.state.status !== "waiting" && row.state.status !== "uploading",
+  ).length;
+  const pickerMeta: React.ReactNode = !showJob ? (
+    <span data-testid="import-fit-batch-progress" className="tabular-nums">
+      {t("settings.sections.export.import.fit.batch.progress", {
+        done: finished,
+        total: batch.length,
+      })}
+      {capped && ` ${t("settings.sections.export.import.fit.batch.capped")}`}
+    </span>
+  ) : isRunning ? (
+    <span data-testid="import-fit-progress">
+      {labels.phases[job?.status ?? "queued"] ?? labels.phases.queued}
+    </span>
+  ) : isDone ? (
+    <WrittenOutcomeLine
+      outcome={classifyWrittenOutcome({
+        written: summary.written,
+        skipped: job?.result?.sessionsSkipped ?? 0,
+      })}
+      message={
+        summary.written > 0
+          ? t("settings.sections.export.import.fit.doneSummary")
+          : t("settings.sections.export.import.fit.doneNothing")
+      }
+      testId="import-fit-result"
+    />
+  ) : isFailed ? (
+    <span
+      data-testid="import-fit-error"
+      role="alert"
+      className="text-destructive"
+    >
+      {failureText ?? t("settings.sections.export.import.fit.uploadFailed")}
+    </span>
+  ) : null;
+
+  // The page row: progress while a selection or a job runs, the last
+  // finished job with its day, or what the source takes.
+  const rowMeta =
+    !showJob && batchRunning
+      ? t("settings.sections.export.import.fit.batch.progress", {
+          done: finished,
+          total: batch.length,
+        })
+      : isRunning
+        ? (labels.phases[job?.status ?? "queued"] ?? labels.phases.queued)
+        : (finishedMeta(job ? { ...job, written: summary.written } : null) ??
+          t("settings.sections.export.import.fit.fileHint"));
+
   return (
-    <ImportCardShell
+    <ImportSource
       testId="import-card-fit"
       anchor="import-fit"
       icon={Activity}
       title={t("settings.sections.export.import.fit.title")}
-      description={t("settings.sections.export.import.fit.description")}
+      info={[
+        t("settings.sections.export.import.fit.description"),
+        t("settings.sections.export.import.fit.steps.garmin"),
+        t("settings.sections.export.import.fit.steps.other"),
+        t("settings.sections.export.import.fit.privacyNote"),
+      ]}
+      meta={rowMeta}
+      status={
+        busy
+          ? "running"
+          : (
+                showJob
+                  ? isFailed
+                  : batch.some((row) => row.state.status === "failed")
+              )
+            ? "failed"
+            : null
+      }
+      open={open}
+      onOpenChange={setOpen}
+      query={statusQuery}
+      chooseTestId="import-choose-fit"
+      fileInputRef={fileInputRef}
+      file={{
+        multiple: true,
+        accept:
+          ".fit,.gz,.zip,application/zip,application/gzip,application/octet-stream",
+        inputLabel: t("settings.sections.export.import.fit.fileInputLabel"),
+        onFiles: (files) => void start(files),
+      }}
     >
-      <ol className="text-foreground list-decimal space-y-1 pl-4 text-xs">
-        <li>{t("settings.sections.export.import.fit.steps.garmin")}</li>
-        <li>{t("settings.sections.export.import.fit.steps.other")}</li>
-      </ol>
-
-      <FitDropZone
-        busy={busy}
-        inputRef={fileInputRef}
-        onFile={(file) => void upload(file)}
-      />
-
-      <p className="text-muted-foreground text-xs">
-        {t("settings.sections.export.import.fit.privacyNote")}
-      </p>
-
-      <ImportStatusRegion query={statusQuery}>
-        {uploading && (
-          <p className="text-muted-foreground flex items-center gap-2 text-xs">
-            <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-            {t("settings.sections.export.import.fit.uploading")}
-          </p>
-        )}
-        {isRunning && (
-          <p
-            data-testid="import-fit-progress"
-            className="text-muted-foreground flex items-center gap-2 text-xs"
-          >
-            <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-            {labels.phases[job?.status ?? "queued"] ?? labels.phases.queued}
-          </p>
-        )}
-        {isDone && (
-          <WrittenOutcomeLine
-            outcome={classifyWrittenOutcome({
-              written: summary.written,
-              skipped: job?.result?.sessionsSkipped ?? 0,
-            })}
-            message={
-              summary.written > 0
-                ? t("settings.sections.export.import.fit.doneSummary")
-                : t("settings.sections.export.import.fit.doneNothing")
-            }
-            testId="import-fit-result"
-          />
-        )}
-        {isDone && summary.rows.length > 0 && (
-          <ul
-            data-testid="import-fit-rows"
-            className="text-muted-foreground space-y-0.5 text-xs"
-          >
-            {summary.rows.map(({ key, count }) => (
-              <li key={key} className="flex justify-between gap-2">
-                <span className="text-foreground">{labels.rows[key]}</span>
-                <span className="tabular-nums">{count}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-        {(isFailed || uploadError) && (
-          <p
-            data-testid="import-fit-error"
-            role="alert"
-            className="text-destructive flex items-start gap-2 text-sm"
-          >
-            <AlertCircle
-              className="mt-0.5 h-3.5 w-3.5 shrink-0"
-              aria-hidden="true"
+      <ListGroup aria-live="polite" data-testid="import-fit-rows">
+        <ImportPickerRow
+          multiple
+          busy={busy}
+          inputRef={fileInputRef}
+          meta={pickerMeta ?? t("settings.sections.export.import.fit.fileHint")}
+          actionTestId="import-action-fit"
+          onFiles={(files) => void start(files)}
+        />
+        {!showJob &&
+          batch.map((row) => (
+            <ListItem
+              key={row.key}
+              data-testid="import-fit-file"
+              data-status={row.state.status}
+              title={<span title={row.name}>{row.name}</span>}
+              trailing={<FitFileStatus state={row.state} labels={labels} />}
             />
-            <span>
-              {uploadError ??
-                failureText ??
-                t("settings.sections.export.import.fit.uploadFailed")}
-            </span>
-          </p>
-        )}
-      </ImportStatusRegion>
-
-      <SettingsCardActions className="mt-auto">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={busy}
-          onClick={() => fileInputRef.current?.click()}
-          data-testid="import-action-fit"
-        >
-          {busy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <Upload className="h-3.5 w-3.5" />
-          )}
-          {t("settings.sections.export.import.fit.choose")}
-        </Button>
-      </SettingsCardActions>
-    </ImportCardShell>
+          ))}
+        {showJob &&
+          isDone &&
+          summary.rows.map(({ key, count }) => (
+            <ListItem
+              key={key}
+              data-testid="import-fit-count"
+              title={labels.rows[key]}
+              trailing={count}
+            />
+          ))}
+      </ListGroup>
+    </ImportSource>
   );
 }
 
-/** The drop target and the hidden file input, as on the other import cards. */
-function FitDropZone({
-  busy,
-  inputRef,
-  onFile,
+/** The trailing value: a mark for imported and failed, words otherwise. */
+function FitFileStatus({
+  state,
+  labels,
 }: {
-  busy: boolean;
-  inputRef: RefObject<HTMLInputElement | null>;
-  onFile: (file: File) => void;
+  state: FitFileState;
+  labels: ReturnType<typeof useFitLabels>;
 }) {
-  const { t } = useTranslations();
-  const [dragActive, setDragActive] = useState(false);
-  const dropDescId = useId();
+  if (state.status === "imported") {
+    const label = labels.fileStatus.imported;
+    return (
+      <span className="text-foreground" title={label}>
+        <Check className="h-4 w-4" aria-hidden="true" />
+        <span className="sr-only">{label}</span>
+      </span>
+    );
+  }
+  if (state.status === "failed")
+    return (
+      <span className="text-destructive flex items-center gap-1 text-xs font-normal">
+        <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
+        {labels.fileFailures[state.reason]}
+      </span>
+    );
+  if (state.status === "uploading") {
+    const label = labels.fileStatus.uploading;
+    return (
+      <span className="text-muted-foreground" title={label}>
+        <Loader2
+          className="h-4 w-4 animate-spin motion-reduce:animate-none"
+          aria-hidden="true"
+        />
+        <span className="sr-only">{label}</span>
+      </span>
+    );
+  }
   return (
-    <>
-      <div
-        role="button"
-        tabIndex={0}
-        aria-describedby={dropDescId}
-        aria-disabled={busy}
-        onClick={() => !busy && inputRef.current?.click()}
-        onKeyDown={(e) => {
-          if ((e.key === "Enter" || e.key === " ") && !busy) {
-            e.preventDefault();
-            inputRef.current?.click();
-          }
-        }}
-        onDragOver={(e) => {
-          e.preventDefault();
-          if (!busy) setDragActive(true);
-        }}
-        onDragLeave={() => setDragActive(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragActive(false);
-          const file = e.dataTransfer.files?.[0];
-          if (file && !busy) onFile(file);
-        }}
-        className={cn(
-          "border-border bg-muted/20 hover:bg-muted/40 focus-visible:ring-ring/50 flex min-h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed p-4 text-center transition-colors focus-visible:ring-2 focus-visible:outline-none",
-          dragActive && "border-primary bg-primary/5",
-          busy && "pointer-events-none opacity-60",
-        )}
-      >
-        <Upload className="text-muted-foreground h-5 w-5" aria-hidden="true" />
-        <span className="text-foreground text-sm font-medium">
-          {t("settings.sections.export.import.fit.dropLabel")}
-        </span>
-        <span id={dropDescId} className="text-muted-foreground text-xs">
-          {t("settings.sections.export.import.fit.dropHint")}
-        </span>
-      </div>
-      <FileInput
-        ref={inputRef}
-        accept=".fit,.gz,.zip,application/zip,application/gzip,application/octet-stream"
-        className="sr-only"
-        aria-label={t("settings.sections.export.import.fit.fileInputLabel")}
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) onFile(file);
-          e.target.value = "";
-        }}
-      />
-    </>
+    <span className="text-muted-foreground text-xs font-normal">
+      {labels.fileStatus[state.status]}
+    </span>
   );
 }

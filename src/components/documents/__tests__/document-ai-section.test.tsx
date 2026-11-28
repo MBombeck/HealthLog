@@ -8,14 +8,17 @@ vi.mock("@/hooks/use-record-capabilities", () => ({
   useRecordCapabilities: () => ({ inSharedRecord: record.inSharedRecord }),
 }));
 import type { DocumentSuggestionDto } from "@/lib/validations/inbound-documents";
-import { DocumentAiSection } from "../document-ai-section";
+import {
+  DocumentAiSection,
+  useDocumentAiMenuItems,
+} from "../document-ai-section";
 
 /**
- * The detail sheet's "Read with AI" block is availability-gated: with a provider
- * it offers the prominent "Read with AI" action alongside suggest / summary;
- * without one the actions collapse to the calm settings pointer (never an action
- * the endpoint would 422). The searchable status pill reflects the auto-index in
- * both states. The summary panel, when open, keeps the session-only note visible.
+ * The detail sheet's AI reads are entries of its "⋯", availability-gated: with
+ * a provider the menu offers read, summarise, suggest and show-text; without
+ * one there is no entry (never an action the endpoint would 422) and the block
+ * is the calm settings pointer. The block itself shows only what a read left:
+ * where it stands, why it found nothing, a suggestion, the shown text.
  */
 
 function render(node: React.ReactNode) {
@@ -39,11 +42,7 @@ function base(
     aiEnabled: true,
     indexEnabled: true,
     unavailableReason: null,
-    actionsDisabled: false,
-    onSuggest: noop,
-    suggestPending: false,
     suggestErrorKey: null,
-    onSummarise: noop,
     summaryPending: false,
     suggestion: null,
     suggestionKindLabel: null,
@@ -58,39 +57,115 @@ function base(
     summaryErrorKey: null,
     onCloseSummary: noop,
     hasContentIndex: false,
-    contentIndexSource: null,
-    indexPending: false,
-    onIndex: noop,
     ...overrides,
   };
   return <DocumentAiSection {...props} />;
 }
 
-describe("<DocumentAiSection>", () => {
-  it("leads with the prominent Read-with-AI action when a provider is available", () => {
-    const html = render(base({ aiEnabled: true }));
-    expect(html).toContain('data-slot="document-read-ai"');
-    expect(html).toContain("Read with AI");
-    expect(html).toContain('data-slot="assist-suggest"');
-    expect(html).toContain("Suggest details");
-    expect(html).toContain("Summarize");
-    expect(html).toContain("Show extracted text");
-    // No unavailable pointer when the actions are offered.
-    expect(html).not.toContain('data-slot="assist-unavailable"');
+type MenuArgs = Parameters<typeof useDocumentAiMenuItems>[0];
+
+/** The menu's entries as `[data-slot, label]` pairs. */
+function menu(overrides: Partial<MenuArgs> = {}): [string, string][] {
+  const args: MenuArgs = {
+    aiEnabled: true,
+    autoReadEnabled: false,
+    indexEnabled: true,
+    hasContentIndex: false,
+    contentIndexSource: null,
+    canSummarise: true,
+    actionsDisabled: false,
+    indexPending: false,
+    suggestPending: false,
+    summaryPending: false,
+    onIndex: noop,
+    onSuggest: noop,
+    onShowText: noop,
+    onSummarise: noop,
+    ...overrides,
+  };
+  let items: React.ReactNode[] = [];
+  function Probe() {
+    items = useDocumentAiMenuItems(args);
+    return null;
+  }
+  render(<Probe />);
+  return items.map((item) => {
+    const props = (
+      item as React.ReactElement<{
+        "data-slot": string;
+        children: React.ReactNode[];
+      }>
+    ).props;
+    return [props["data-slot"], String(props.children[1])];
+  });
+}
+const slots = (entries: [string, string][]) => entries.map(([slot]) => slot);
+
+describe("the AI entries of the sheet's menu", () => {
+  it("offers read, summarise, suggest and show-text with a provider", () => {
+    const entries = menu();
+    expect(slots(entries)).toEqual([
+      "document-read-ai",
+      "document-detail-summary-generate",
+      "assist-suggest",
+      "document-show-text",
+    ]);
+    expect(entries[0][1]).toBe("Read with AI");
   });
 
-  it("labels the action as a re-read once a provider has already read it", () => {
-    const html = render(
-      base({ hasContentIndex: true, contentIndexSource: "vision" }),
+  it("labels the read as a re-read once a provider has read it", () => {
+    const entries = menu({
+      hasContentIndex: true,
+      contentIndexSource: "vision",
+    });
+    expect(entries[0]).toEqual(["document-read-ai", "Read again"]);
+  });
+
+  it("offers nothing without a provider", () => {
+    expect(menu({ aiEnabled: false, indexEnabled: false })).toEqual([]);
+  });
+
+  it("drops the read when indexing is unavailable but keeps suggest", () => {
+    const s = slots(menu({ indexEnabled: false }));
+    expect(s).toContain("assist-suggest");
+    expect(s).not.toContain("document-read-ai");
+  });
+
+  it("with auto-read on and the document read, only summarise is left", () => {
+    expect(
+      slots(
+        menu({
+          autoReadEnabled: true,
+          hasContentIndex: true,
+          contentIndexSource: "vision",
+        }),
+      ),
+    ).toEqual(["document-detail-summary-generate"]);
+  });
+
+  it("keeps the read for an unread document even with auto-read on", () => {
+    // Auto-read promises reading on upload, but a document with no content
+    // index never got that read; without the entry it would have no path to
+    // one at all. The promise still covers the extras.
+    expect(slots(menu({ autoReadEnabled: true }))).toEqual([
+      "document-read-ai",
+      "document-detail-summary-generate",
+    ]);
+  });
+
+  it("offers no second summarise while a stored one is being written", () => {
+    expect(slots(menu({ canSummarise: false }))).not.toContain(
+      "document-detail-summary-generate",
     );
-    expect(html).toContain('data-slot="document-read-ai"');
-    expect(html).toContain("Read again");
-    // v1.28.22 — no status pill any more; the re-read label alone carries the
-    // provenance in this block (the marker lives on the vault card).
-    expect(html).not.toContain('data-state="ai-read"');
+  });
+});
+
+describe("<DocumentAiSection>", () => {
+  it("renders nothing when no read has left anything to show", () => {
+    expect(render(base())).toBe("");
   });
 
-  it("shows the calm settings pointer (no 422 actions) when no provider is available", () => {
+  it("shows the calm settings pointer when no provider is available", () => {
     const html = render(
       base({
         aiEnabled: false,
@@ -100,29 +175,6 @@ describe("<DocumentAiSection>", () => {
     );
     expect(html).toContain('data-slot="assist-unavailable"');
     expect(html).toContain('href="/settings/ai"');
-    // Every AI action must be absent — never a 422-guaranteed tap.
-    expect(html).not.toContain('data-slot="assist-suggest"');
-    expect(html).not.toContain('data-slot="document-read-ai"');
-    // v1.28.22 — the status pill is gone entirely (provenance lives on the
-    // vault card's meta row); only the calm hint renders here.
-    expect(html).not.toContain('data-slot="content-search-status"');
-  });
-
-  it("keeps a locally-indexed document honestly searchable without a provider", () => {
-    const html = render(
-      base({
-        aiEnabled: false,
-        indexEnabled: false,
-        unavailableReason: "no-provider",
-        hasContentIndex: true,
-        contentIndexSource: "local-pdf",
-      }),
-    );
-    // v1.28.22 — the searchable pill is gone; only the calm provider hint
-    // renders for a locally-indexed document without a provider.
-    expect(html).not.toContain('data-state="searchable"');
-    expect(html).toContain('data-slot="assist-unavailable"');
-    expect(html).not.toContain("Read by AI");
   });
 
   it("renders the reviewed suggestion drafts when present", () => {
@@ -137,7 +189,7 @@ describe("<DocumentAiSection>", () => {
     expect(html).toContain("MRI knee report");
   });
 
-  it("renders the transient summary panel", () => {
+  it("renders the shown text panel", () => {
     const html = render(
       base({
         summaryOutput: "summary",
@@ -148,74 +200,28 @@ describe("<DocumentAiSection>", () => {
     expect(html).toContain("An MRI report of the left knee.");
   });
 
-  it("renders no per-document egress notice — the settings confirm covers it", () => {
-    // The per-document egress notice was retired; the settings-toggle honesty
-    // confirm is now the single place the egress trade is stated.
-    const html = render(base({ aiEnabled: true }));
+  it("renders no per-document egress notice; the settings confirm covers it", () => {
+    const html = render(base({ suggestion }));
     expect(html).not.toContain('data-slot="document-ai-egress-notice"');
-    // The actions are still offered.
-    expect(html).toContain('data-slot="assist-suggest"');
-    expect(html).toContain('data-slot="document-read-ai"');
   });
 
-  it("hides the Read-with-AI action when indexing is unavailable but keeps suggest", () => {
-    const html = render(base({ aiEnabled: true, indexEnabled: false }));
-    expect(html).toContain('data-slot="assist-suggest"');
-    expect(html).not.toContain('data-slot="document-read-ai"');
-  });
-
-  it("collapses entirely when auto-read is on and the document is read", () => {
+  it("says an unread document has not been read when auto-read is on", () => {
     const html = render(
-      base({
-        aiEnabled: true,
-        autoReadEnabled: true,
-        hasContentIndex: true,
-        contentIndexSource: "vision",
-      }),
+      base({ autoReadEnabled: true, hasContentIndex: false }),
     );
-    // v1.28.22 — with auto-read ON, the document read, and nothing pending
-    // the WHOLE block collapses: no chrome, no status pill; the sheet content
-    // starts straight with the document fields under the preview.
-    expect(html).toBe("");
-  });
-
-  it("keeps the read action for an unread document even with auto-read on", () => {
-    // Auto-read promises reading on upload — but a document with no content
-    // index never got that read (it may predate the preference, or the pass
-    // did not complete). Collapsing here would leave the document with no
-    // path to a read at all; the recovery action must stay visible.
-    const html = render(
-      base({ aiEnabled: true, autoReadEnabled: true, hasContentIndex: false }),
-    );
-    expect(html).toContain('data-slot="document-read-ai"');
-    expect(html).toContain("Read with AI");
     expect(html).toContain('data-slot="document-unread-note"');
     expect(html).toContain("This document has not been read yet.");
-    // The auto-read promise still covers the extras: no suggest / summarise.
-    expect(html).not.toContain('data-slot="assist-suggest"');
-    expect(html).not.toContain("Summarize");
-    expect(html).not.toContain("Show extracted text");
   });
 
-  it("still collapses an unread document when indexing is unavailable", () => {
-    // No transport can index here, so there is no action to recover with —
-    // an empty chrome box would be the only thing left to render.
+  it("stays empty for an unread document when indexing is unavailable", () => {
     const html = render(
       base({
-        aiEnabled: true,
         autoReadEnabled: true,
         hasContentIndex: false,
         indexEnabled: false,
       }),
     );
     expect(html).toBe("");
-  });
-
-  it("shows the manual AI action row when auto-read is off", () => {
-    const html = render(base({ aiEnabled: true, autoReadEnabled: false }));
-    expect(html).toContain('data-slot="document-read-ai"');
-    expect(html).toContain('data-slot="assist-suggest"');
-    expect(html).toContain("Summarize");
   });
 });
 
@@ -245,7 +251,6 @@ describe("<DocumentAiSection> index outcome (#776)", () => {
     const html = render(
       base({
         hasContentIndex: true,
-        contentIndexSource: "vision",
         lastIndexOutcome: "provider-error",
       }),
     );

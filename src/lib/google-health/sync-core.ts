@@ -39,6 +39,7 @@ import { dropImplausibleMeasurements } from "@/lib/measurements/plausibility-gat
 import { withoutFoldedSamples } from "@/lib/measurements/folded-window";
 import { emitInsertedMeasurementArrivals } from "@/lib/arrivals/measurement-emit";
 import { recordSyncFailure, type FailureKind } from "@/lib/integrations/status";
+import { noteBackfillFailure } from "@/lib/integrations/page-walk";
 import { collapseToTypeDayKeys } from "@/lib/rollups/measurement-rollups";
 import { afterProviderWrite } from "@/lib/integrations/sync-kit/after-write";
 import { type GoogleHealthResumePoint } from "./data-points";
@@ -862,15 +863,13 @@ export async function runGoogleHealthCollection(
 
 /**
  * Single-source the per-resource collection-fetch error handling. A 403 on one
- * data class soft-skips it (warn + return 0) so sibling resources still sync; a
- * soft-skip increments the ambient tracker so `syncUserGoogleHealth` can refuse
- * to stamp success on an all-403 grant-revoke cycle that imported nothing.
+ * data class soft-skips it (warn + return 0) so sibling resources still sync,
+ * counted so `syncUserGoogleHealth` refuses to stamp an all-403 cycle.
  *
- * Anything else records a classified sync failure, warns with the per-type
- * detail, notes the collection on the ambient hard-fail ledger, and RETURNS —
- * it does not rethrow. Every call site sits in a per-collection catch, so
- * returning lets the sibling collections in the same resource keep fetching
- * (one 400 on steps must not kill distance / floors / active-energy), while
+ * Anything else records a classified sync failure, warns, notes the error for
+ * a backfill's retry rule and the collection on the hard-fail ledger, and
+ * RETURNS: every call site sits in a per-collection catch, so the sibling
+ * collections keep fetching (one 400 on steps must not kill distance), while
  * the ledger still fails the cycle so the watermark is not stamped past the
  * broken collection.
  */
@@ -896,6 +895,7 @@ export async function handleCollectionFetchError(
     return 0;
   }
   noteGoogleHealthOutcomeFailure("collection_failed");
+  noteBackfillFailure(err);
   await recordGoogleHealthSyncFailure(userId, err);
   getEvent()?.addWarning(
     `google-health ${resource} failed for ${userId}: ${err}`,

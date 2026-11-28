@@ -20,6 +20,12 @@
  *   (`github.event.*` text fields, `github.head_ref`) directly. Those go
  *   through `env:` and are read as shell variables, so a branch name or a
  *   PR title cannot become shell code.
+ * - A step that pipes into `tee` runs with pipefail. A `run:` script runs as
+ *   `bash -e {0}` unless the step names a shell, and without pipefail a
+ *   pipeline's status is its last command's: `node scripts/mutation-floors.mjs
+ *   | tee -a "$GITHUB_STEP_SUMMARY"` passed whatever the floors said. The
+ *   step names `shell: bash` (which adds `-o pipefail`) and says
+ *   `set -o pipefail` in the script, so the intent is visible at the pipe.
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -41,13 +47,17 @@ interface Step {
   name?: string;
   uses?: string;
   run?: string;
+  shell?: string;
   with?: Record<string, unknown>;
 }
-interface Job {
+interface RunDefaults {
+  defaults?: { run?: { shell?: string } };
+}
+interface Job extends RunDefaults {
   uses?: string;
   steps?: Step[];
 }
-interface Workflow {
+interface Workflow extends RunDefaults {
   on?: unknown;
   true?: unknown;
   permissions?: unknown;
@@ -130,6 +140,28 @@ function injectableRunSteps(doc: Workflow): string[] {
   return out;
 }
 
+/** Whether a script pipes something into `tee` on a line that is not a comment. */
+function pipesIntoTee(script: string): boolean {
+  return script
+    .split("\n")
+    .some((line) => !/^\s*#/.test(line) && /[^|]\|\s*tee\b/.test(line));
+}
+
+/** The steps of a workflow that pipe into `tee` without pipefail. */
+function teeWithoutPipefail(doc: Workflow): string[] {
+  const out: string[] = [];
+  for (const [jobName, job] of Object.entries(doc.jobs ?? {})) {
+    (job.steps ?? []).forEach((step, index) => {
+      if (!step.run || !pipesIntoTee(step.run)) return;
+      const shell =
+        step.shell ?? job.defaults?.run?.shell ?? doc.defaults?.run?.shell;
+      const ok = shell === "bash" && /\bset -o pipefail\b/.test(step.run);
+      if (!ok) out.push(`${jobName} #${index} ${step.name ?? ""}`.trim());
+    });
+  }
+  return out;
+}
+
 describe("workflow hardening", () => {
   it("reads the workflows it claims to check", () => {
     const files = workflowFiles();
@@ -146,6 +178,18 @@ describe("workflow hardening", () => {
       ),
     );
     expect(refs.length).toBeGreaterThan(50);
+    expect(
+      files.filter((f) =>
+        pipesIntoTee(readFileSync(join(WORKFLOWS, f), "utf8")),
+      ).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("runs every step that pipes into tee with pipefail", () => {
+    const found = workflowFiles().flatMap((f) =>
+      teeWithoutPipefail(load(f)).map((s) => `${f}: ${s}`),
+    );
+    expect(found).toEqual([]);
   });
 
   it("pins every external action by commit SHA", () => {
@@ -200,6 +244,8 @@ describe("workflow hardening", () => {
         "      - name: greet",
         '        run: echo "${{ github.event.pull_request.title }}"',
         "      - run: echo ${{ github.head_ref }}",
+        "      - name: floors",
+        '        run: node scripts/mutation-floors.mjs | tee -a "$GITHUB_STEP_SUMMARY"',
       ].join("\n"),
     ) as Workflow;
     expect(unpinnedRefs(bad)).toEqual(["actions/checkout@v7"]);
@@ -207,6 +253,7 @@ describe("workflow hardening", () => {
     expect(topLevelWrite(bad)).toBe("top-level write: contents");
     expect(triggers(bad)).toEqual(["pull_request_target"]);
     expect(injectableRunSteps(bad)).toEqual(["build #2 greet", "build #3"]);
+    expect(teeWithoutPipefail(bad)).toEqual(["build #4 floors"]);
 
     const good = YAML.parse(
       [
@@ -222,11 +269,17 @@ describe("workflow hardening", () => {
         "      - env:",
         "          TITLE: ${{ github.event.pull_request.title }}",
         '        run: echo "$TITLE"',
+        "      - name: floors",
+        "        shell: bash",
+        "        run: |",
+        "          set -o pipefail",
+        '          node scripts/mutation-floors.mjs | tee -a "$GITHUB_STEP_SUMMARY"',
       ].join("\n"),
     ) as Workflow;
     expect(unpinnedRefs(good)).toEqual([]);
     expect(checkoutsKeepingCredentials(good)).toEqual([]);
     expect(topLevelWrite(good)).toBeNull();
     expect(injectableRunSteps(good)).toEqual([]);
+    expect(teeWithoutPipefail(good)).toEqual([]);
   });
 });

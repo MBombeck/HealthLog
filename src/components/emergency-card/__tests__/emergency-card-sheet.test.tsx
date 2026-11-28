@@ -46,9 +46,20 @@ describe("EmergencyCardSheet", () => {
     expect(html).toContain('href="/settings/anamnesis#allergies"');
     expect(html).toContain('href="/illness/ep1"');
     expect(html).toContain('href="/medications/med1"');
-    // An empty item opens the place to fill it in.
+    // An empty item opens the place to fill it in, from the one row the
+    // empty items share.
     expect(html).toContain('href="/settings/anamnesis#emergency"');
-    expect(html.match(/data-slot="emergency-card-line-link"/g)).toHaveLength(4);
+    expect(html.match(/data-slot="emergency-card-line-link"/g)).toHaveLength(3);
+    expect(html.match(/data-field="MISSING"/g)).toHaveLength(1);
+    expect(html).toMatch(/data-slot="emergency-card-missing-link"/);
+  });
+
+  it("keeps a row per empty item on the public view", () => {
+    const html = renderToStaticMarkup(
+      <EmergencyCardSheet view={view} t={t} locale="en" />,
+    );
+    expect(html).not.toContain('data-field="MISSING"');
+    expect(html).toContain("records.emergency.notRecorded");
   });
 
   it("draws no link without targets", () => {

@@ -4,7 +4,7 @@ import { useId, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { RotateCcw } from "lucide-react";
 
-import { ActionMenu } from "@/components/ui/action-pair";
+import { ActionMenu } from "@/components/ui/action-menu";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-button";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";

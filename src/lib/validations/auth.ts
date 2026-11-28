@@ -1,5 +1,5 @@
 import { z } from "zod/v4";
-import { isValidKvnr, normaliseKvnr } from "@/lib/validations/kvnr";
+import { isIsoCountryCode } from "@/lib/validations/insurance-number";
 import { webauthnKeyNameSchema } from "@/lib/validations/mfa";
 import { clientTransportSchema } from "@/lib/validations/client-transport";
 import { PASSWORD_STRENGTH_MAX_LENGTH } from "@/lib/zxcvbn-i18n";
@@ -133,20 +133,46 @@ export const profileSchema = z.object({
   // export cover + FHIR Patient resource. All optional, never required.
   fullName: z.string().trim().max(120).nullable().optional(),
   insurerName: z.string().trim().max(120).nullable().optional(),
-  // German KVNR. Empty string / null clears it; a non-empty value must
-  // pass the mod-10 check-digit validation. Normalised (whitespace
-  // stripped + uppercased) before the refine runs.
+  // The insurance number, trimmed; empty string / null clears it. Whether it
+  // is valid depends on the country it follows, which may arrive in the same
+  // request or be the stored one, so the country rule
+  // (`src/lib/validations/insurance-number.ts`) runs in `applyProfileUpdate`
+  // once both are known.
   insuranceNumber: z
+    .string()
+    .max(64)
+    .nullable()
+    .optional()
+    .transform((v) => {
+      if (v === null || v === undefined) return v;
+      const trimmed = v.trim();
+      return trimmed.length === 0 ? null : trimmed;
+    }),
+  // ISO 3166-1 alpha-2, uppercased; null clears it (a number without a
+  // country reads as German).
+  insuranceNumberCountry: z
     .string()
     .nullable()
     .optional()
     .transform((v) => {
       if (v === null || v === undefined) return v;
-      const cleaned = normaliseKvnr(v);
-      return cleaned.length === 0 ? null : cleaned;
+      const code = v.trim().toUpperCase();
+      return code.length === 0 ? null : code;
     })
-    .refine((v) => v === null || v === undefined || isValidKvnr(v), {
-      message: "Invalid insurance number (KVNR)",
+    .refine((v) => v === null || v === undefined || isIsoCountryCode(v), {
+      message: "Country must be an ISO 3166-1 alpha-2 code.",
+    }),
+  // The group number beside a US member ID, trimmed; empty string / null
+  // clears it. The generic rule and the US-only rule run with the number's.
+  insuranceGroupNumber: z
+    .string()
+    .max(64)
+    .nullable()
+    .optional()
+    .transform((v) => {
+      if (v === null || v === undefined) return v;
+      const trimmed = v.trim();
+      return trimmed.length === 0 ? null : trimmed;
     }),
   // v1.8.6 — German insurer institution number (IKNR). Optional;
   // empty string / null clears it. A non-empty value is trimmed and

@@ -42,7 +42,6 @@ const STANDALONE: Record<string, string> = {
   "settings.integrationPill.daysAgo": "abbreviated unit (d)",
   "cycle.history.periodDays": "abbreviated unit (d)",
   "settings.integrationFreshness.quiet": "the count stands with an adjective",
-  "achievements.remainingUnlocks": "the count stands with an adjective",
   "admin.versionMigrations.pending":
     "the count stands with an adjective before a list",
   "dataList.selected": "the count stands with a participle",

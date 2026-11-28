@@ -18,7 +18,7 @@
  *     (`iphoneDelivers`): another phone that still uploads means the data is
  *     arriving.
  *
- * `src/__tests__/source-silence-one-rule-guard.test.ts` holds every surface
+ * `src/__tests__/one-home-guard.test.ts` holds every surface
  * that shows a quiet source to this module, and every reader of the stamps
  * to a list.
  *
@@ -136,6 +136,8 @@ function iphonesQuietSince(
 export function resolveQuietSources(input: {
   connections: readonly QuietConnectionFacts[];
   iphones: readonly QuietIphoneFacts[];
+  /** The Android devices running HealthLog Sync, the same rule as iPhones. */
+  androids?: readonly QuietIphoneFacts[];
   now: Date;
 }): QuietSource[] {
   const since = new Map<ConnectionKey, Date>();
@@ -148,6 +150,8 @@ export function resolveQuietSources(input: {
   }
   const iphones = iphonesQuietSince(input.iphones, input.now);
   if (iphones) mark("apple-health", iphones);
+  const androids = iphonesQuietSince(input.androids ?? [], input.now);
+  if (androids) mark("health-connect-app", androids);
   return STALL_SOURCES.filter((key) => since.has(key)).map((source) => ({
     source,
     since: since.get(source)!,
