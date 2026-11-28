@@ -47,7 +47,7 @@ import {
 } from "./doctor-report-pdf/render-context";
 import {
   registerReportFonts,
-  reportNeedsHangul,
+  reportFontScript,
 } from "./doctor-report-pdf/fonts";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
@@ -163,7 +163,7 @@ export function buildDoctorReportPdfDocument(
     format: "a4",
     compress: true,
   });
-  registerReportFonts(doc, reportNeedsHangul(locale, data));
+  registerReportFonts(doc, reportFontScript(locale, data));
   doc.setProperties({
     title: t("doctorReport.title"),
     subject: t("doctorReport.subtitle"),

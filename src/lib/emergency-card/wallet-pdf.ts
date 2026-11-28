@@ -21,6 +21,7 @@ import QRCode from "qrcode";
 import {
   PDF_FONT_FAMILY,
   registerReportFonts,
+  reportFontScript,
 } from "@/lib/doctor-report-pdf/fonts";
 import type { Locale } from "@/lib/i18n/config";
 
@@ -99,10 +100,9 @@ export async function buildWalletCardPdf(args: {
 }): Promise<Uint8Array> {
   const { view, t, locale, linkUrl } = args;
   const doc = new jsPDF({ unit: "mm", format: "a4" });
-  registerReportFonts(
-    doc,
-    locale === "ko" || /[ᄀ-ᇿ㄰-㆏ꥠ-꥿가-퟿]/.test(JSON.stringify(view)),
-  );
+  // The predicate lives in `fonts.ts` so the report and the card cannot
+  // disagree about what counts as Hangul, or about Han.
+  registerReportFonts(doc, reportFontScript(locale, view));
   doc.setFont(PDF_FONT_FAMILY, "normal");
 
   const left = 20;
