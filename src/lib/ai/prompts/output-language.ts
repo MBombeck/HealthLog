@@ -62,6 +62,8 @@ export function targetLanguageName(locale: Locale): string {
       return "Brazilian Portuguese";
     case "ru":
       return "Russian";
+    case "zh-CN":
+      return "Simplified Chinese";
     default:
       return "English";
   }

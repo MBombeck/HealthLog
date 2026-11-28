@@ -24,9 +24,8 @@ import {
 
 import { TrendCard } from "@/components/charts/trend-card";
 import {
-  getRangeColorClass,
+  comparisonToneClass,
   getRangeHint,
-  getRangeTone,
   toHoursSummary,
 } from "@/components/dashboard/range-display";
 import { SleepSourceDiscrepancyMarker } from "@/components/insights/sleep-source-discrepancy-marker";
@@ -90,15 +89,16 @@ function pulseSource(ctx: DashboardTileContext) {
 }
 
 type Summary = NonNullable<DashboardTileContext["summaries"]>[string];
-type TrafficRange = Parameters<typeof getRangeColorClass>[1]["range"];
+type TrafficRange = Parameters<typeof getRangeHint>[1]["range"];
 
 /**
  * One metric tile: the headline, its 7- and 30-day means, the trend and the
  * comparison delta. `type` names the series (direction and freshness follow
  * it unless overridden); `summary` replaces the summary read off `type`.
- * With `display` the values go through the metric / imperial transform, and
- * with `range` the means are coloured against it (on the canonical values)
- * and carry its hint (in `hintRange`, the display unit, when given).
+ * With `display` the values go through the metric / imperial transform. With
+ * `range` the means carry its hint (in `hintRange`, the display unit, when
+ * given) and take the colour the server placed them in
+ * (`tiles.comparison[id]`).
  */
 function metricCard(
   ctx: DashboardTileContext,
@@ -155,12 +155,12 @@ function metricCard(
       avg7ColorClass={
         props.range === undefined
           ? undefined
-          : getRangeColorClass(s?.avg7, { range: props.range })
+          : comparisonToneClass(ctx.tileComparison?.[id]?.avg7)
       }
       avg30ColorClass={
         props.range === undefined
           ? undefined
-          : getRangeColorClass(s?.avg30, { range: props.range })
+          : comparisonToneClass(ctx.tileComparison?.[id]?.avg30)
       }
       avg7Hint={hint}
       avg30Hint={hint}
@@ -176,6 +176,9 @@ function metricCard(
         props.staleType === undefined ? props.type : props.staleType,
       )}
       valueAdornment={props.valueAdornment}
+      deviationLine={
+        props.range === undefined ? null : ctx.tileComparison?.[id]?.line
+      }
     />
   );
 }
@@ -230,7 +233,7 @@ export const STRIP_TILES: readonly StripTile[] = [
   {
     // One signal, one tile: systolic over diastolic ("126/83 mmHg"), both
     // means and both trends side by side. The means take the colour of the
-    // side that sits further from its band.
+    // side that sits further from its band, chosen on the server.
     widget: "bp",
     visible: (ctx) =>
       countOf(ctx.summaries?.BLOOD_PRESSURE_SYS) > 0 ||
@@ -238,12 +241,7 @@ export const STRIP_TILES: readonly StripTile[] = [
     cards: (ctx) => {
       const sys = ctx.summaries?.BLOOD_PRESSURE_SYS;
       const dia = ctx.summaries?.BLOOD_PRESSURE_DIA;
-      // The side further from its band colours the pair's means.
-      const worse = (key: "avg7" | "avg30") =>
-        getRangeTone(sys?.[key], { range: ctx.bpSysRange }) >=
-        getRangeTone(dia?.[key], { range: ctx.bpDiaRange })
-          ? getRangeColorClass(sys?.[key], { range: ctx.bpSysRange })
-          : getRangeColorClass(dia?.[key], { range: ctx.bpDiaRange });
+      const tone = ctx.tileComparison?.bp;
       const sideHint = (key: string, range: TrafficRange) => {
         const hint = getRangeHint("mmHg", { range }, ctx.t, ctx.fmt.number);
         return hint ? (
@@ -280,8 +278,8 @@ export const STRIP_TILES: readonly StripTile[] = [
               fractionDigits={0}
               avg7={sys?.avg7 ?? null}
               avg30={sys?.avg30 ?? null}
-              avg7ColorClass={worse("avg7")}
-              avg30ColorClass={worse("avg30")}
+              avg7ColorClass={comparisonToneClass(tone?.avg7)}
+              avg30ColorClass={comparisonToneClass(tone?.avg30)}
               avg7Hint={hint}
               avg30Hint={hint}
               slope30={sys?.slope30 ?? null}
@@ -291,6 +289,7 @@ export const STRIP_TILES: readonly StripTile[] = [
               compareBaseline={ctx.compareBaseline}
               compareDelta={ctx.tileCompareDelta(sys)}
               staleDays={ctx.tileStaleDays("BLOOD_PRESSURE_SYS")}
+              deviationLine={tone?.line}
             />
           ),
         },

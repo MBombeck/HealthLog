@@ -24,6 +24,7 @@ body:
         - Dutch (nl)
         - Brazilian Portuguese (pt-BR)
         - Russian (ru)
+        - Simplified Chinese (zh-CN)
         - Other (specify under "Surface")
     validations:
       required: true

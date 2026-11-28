@@ -133,7 +133,7 @@ import {
   buildNutrientTileBlocks,
   foldNutrientTiles,
 } from "@/lib/dashboard/nutrient-tiles";
-import { withTileOrder } from "@/lib/dashboard/tile-attention";
+import { type TileComparisonMap, withTileOrder } from "./tile-attention";
 import type { TileAttentionMap } from "@/lib/dashboard/tile-priority";
 
 /** Briefing freshness window — mirrors the 24 h TTL on the advisor cache. */
@@ -479,16 +479,16 @@ export interface DashboardSnapshot {
     weightTrend?: WeightTrendJudgement;
     /**
      * v1.43 (ios #116 item 3) — per measurement type (and `MOOD`,
-     * `BLOOD_PRESSURE_IN_TARGET`), which way a change counts for this
-     * person, against their own target or a profile default where one
-     * applies (`src/lib/targets/trend-verdict.ts`). Every tile colours its
-     * arrow and deltas from this; `weightTrend` stays for older clients.
-     * Optional on the type so older cached snapshots stay valid.
+     * `BLOOD_PRESSURE_IN_TARGET`), which way a change counts for this person,
+     * against their own target or a profile default where one applies
+     * (`src/lib/targets/trend-verdict.ts`). Every tile colours its arrow and
+     * deltas from this; `weightTrend` stays for older clients (optional).
      */
     directions?: Record<string, TrendVerdict>;
-    /** Why a tile speaks today, and the one-row order (`withTileOrder`). */
+    /** Why a tile speaks, its order, its means' band tones (`withTileOrder`). */
     attention?: TileAttentionMap;
     order?: string[];
+    comparison?: TileComparisonMap;
   };
   /** Thick phase — null on a rollup-coverage miss. */
   extras: DashboardSnapshotExtras | null;
@@ -1340,7 +1340,7 @@ export async function buildDashboardSnapshot(
 
   const framing = await weightTargetFor(prisma, user.id, user, now);
 
-  return withTileOrder({
+  return withTileOrder(getServerTranslator(locale).t, {
     user: {
       username: user.displayName?.trim() || user.username,
       timezone: userTz,

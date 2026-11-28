@@ -11,7 +11,7 @@ import type { Locale } from "@/lib/i18n/config";
  * jsPDF's built-in Helvetica is WinAnsi-encoded, so anything outside Latin-1
  * (Polish, Cyrillic, Greek, Hangul, arrows) drew as a `.notdef` box. The
  * report embeds Unicode TrueType fonts instead, built from Noto Sans, Noto
- * Sans Math and Noto Sans KR by `scripts/build-pdf-fonts.py` (SIL Open Font
+ * Sans Math, Noto Sans KR and Noto Sans SC by `scripts/build-pdf-fonts.py` (SIL Open Font
  * License 1.1, `fonts/OFL.txt`). jsPDF has no per-glyph fallback, so each
  * file carries every script it is meant for:
  *
@@ -21,6 +21,13 @@ import type { Locale } from "@/lib/i18n/config";
  * - `ReportSansKR-*` (about 2.7 MB each): the same plus Hangul. Read only
  *   for a report that contains Hangul, so the other locales never load it.
  *   Hangul has no italic; the italic style maps to the upright regular.
+ * - `ReportSansSC-*` (about 2.4 MB each): the same plus the Han characters of
+ *   GB2312, CJK punctuation and the fullwidth forms. Read only for a report
+ *   in Simplified Chinese or one whose data carries Han text. No italic
+ *   either.
+ *
+ * A report takes one of the three: jsPDF has no fallback between fonts, so a
+ * Korean report with a Han medication name still draws that name in boxes.
  *
  * jsPDF subsets each font to the glyphs a document uses, so the size of the
  * produced PDF does not follow the size of these files.
@@ -47,8 +54,26 @@ const HANGUL_FILES: Record<FontStyle, string> = {
   italic: "ReportSansKR-Regular.ttf",
 };
 
+const HAN_FILES: Record<FontStyle, string> = {
+  normal: "ReportSansSC-Regular.ttf",
+  bold: "ReportSansSC-Bold.ttf",
+  italic: "ReportSansSC-Regular.ttf",
+};
+
 /** Jamo, compatibility jamo, jamo extended-A/B and the syllable block. */
 const HANGUL_RE = /[\u1100-\u11FF\u3130-\u318F\uA960-\uA97F\uAC00-\uD7FF]/;
+
+/** CJK unified ideographs, extension A and the compatibility block. */
+const HAN_RE = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/;
+
+/** Which of the report fonts a document is drawn in. */
+export type ReportScript = "latin" | "hangul" | "han";
+
+const FILES: Record<ReportScript, Record<FontStyle, string>> = {
+  latin: LATIN_FILES,
+  hangul: HANGUL_FILES,
+  han: HAN_FILES,
+};
 
 // The plugin form of jspdf-autotable is the one that can set per-document
 // defaults, so every table in the report inherits the font without each call
@@ -72,11 +97,18 @@ function fontBase64(file: string): string {
 }
 
 /**
- * Whether the report needs the Hangul font: a Korean report, or any other
- * whose data carries Hangul (a medication name, a note, a lab name).
+ * The font a report needs: Hangul for a Korean report or Hangul in the data
+ * (a medication name, a note, a lab name), Han for a Chinese report or Han in
+ * the data, otherwise the Latin one. The reader's language decides first, so
+ * a Korean report keeps Hangul when a Han name appears in it.
  */
-export function reportNeedsHangul(locale: Locale, data: unknown): boolean {
-  return locale === "ko" || HANGUL_RE.test(JSON.stringify(data) ?? "");
+export function reportScript(locale: Locale, data: unknown): ReportScript {
+  if (locale === "ko") return "hangul";
+  if (locale === "zh-CN") return "han";
+  const text = JSON.stringify(data) ?? "";
+  if (HANGUL_RE.test(text)) return "hangul";
+  if (HAN_RE.test(text)) return "han";
+  return "latin";
 }
 
 /**
@@ -84,8 +116,8 @@ export function reportNeedsHangul(locale: Locale, data: unknown): boolean {
  * make them the default of every autoTable drawn on it. Callers name
  * `PDF_FONT_FAMILY` in every `setFont`.
  */
-export function registerReportFonts(doc: jsPDF, withHangul: boolean): void {
-  const files = withHangul ? HANGUL_FILES : LATIN_FILES;
+export function registerReportFonts(doc: jsPDF, script: ReportScript): void {
+  const files = FILES[script];
   for (const style of Object.keys(files) as FontStyle[]) {
     const file = files[style];
     doc.addFileToVFS(file, fontBase64(file));

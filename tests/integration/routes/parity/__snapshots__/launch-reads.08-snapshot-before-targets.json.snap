@@ -3281,7 +3281,42 @@
           "medications",
           "vo2Max",
           "recentWorkouts"
-        ]
+        ],
+        "comparison": {
+          "weight": {
+            "avg7": {
+              "band": "fair",
+              "side": "above"
+            },
+            "avg30": {
+              "band": "fair",
+              "side": "above"
+            },
+            "line": "Above target range"
+          },
+          "bp": {
+            "avg7": {
+              "band": "fair",
+              "side": "above"
+            },
+            "avg30": {
+              "band": "low",
+              "side": "above"
+            },
+            "line": null
+          },
+          "pulse": {
+            "avg7": {
+              "band": "fair",
+              "side": "below"
+            },
+            "avg30": {
+              "band": "fair",
+              "side": "below"
+            },
+            "line": "Below target range"
+          }
+        }
       },
       "extras": {
         "bpInTargetPct": 11,

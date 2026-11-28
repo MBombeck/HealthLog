@@ -13,14 +13,27 @@ import { createHash, randomBytes } from "node:crypto";
 
 import { zipSync, type Zippable } from "fflate";
 
-import { locales } from "@/lib/i18n/config";
+import { locales, type Locale } from "@/lib/i18n/config";
 
 import { loadWalletAssets, WALLET_ASSET_SIZES } from "./assets";
 import type { WalletPassContent } from "./content";
+import { WALLET_MANIFEST_RULES } from "./manifest-rules";
 import { serialisePassStrings, withoutNonce } from "./strings";
 
 /** Path to bytes; the files the manifest covers. */
 export type PassFiles = Map<string, Uint8Array>;
+
+/**
+ * The languages a pass carries a `pass.strings` table for: the app's, less
+ * any the signing service does not accept yet. The service refuses a manifest
+ * with an unknown `.lproj` for every account, so a language added to the app
+ * before the service lists it must not reach the pass. Wallet then shows such
+ * a reader the pass's English. Once the service and `manifest-rules.ts` list
+ * the language, it joins here without a change to this file.
+ */
+export const WALLET_PASS_LOCALES: readonly string[] = locales.filter((l) =>
+  (WALLET_MANIFEST_RULES.localizedLocales as readonly string[]).includes(l),
+);
 
 /**
  * Every path a pass may hold besides the manifest and the signature: the
@@ -31,7 +44,7 @@ export type PassFiles = Map<string, Uint8Array>;
 export const WALLET_PASS_PATHS: ReadonlySet<string> = new Set([
   "pass.json",
   ...Object.keys(WALLET_ASSET_SIZES),
-  ...locales.map((l) => `${l}.lproj/pass.strings`),
+  ...WALLET_PASS_LOCALES.map((l) => `${l}.lproj/pass.strings`),
 ]);
 
 /** The `.lproj` folder of each language. */
@@ -56,10 +69,12 @@ export function buildPassFiles(
   const encoder = new TextEncoder();
   const files: PassFiles = new Map();
   files.set("pass.json", encoder.encode(JSON.stringify(content.passJson)));
-  for (const locale of locales) {
+  for (const locale of WALLET_PASS_LOCALES) {
     files.set(
       `${lprojOf(locale)}/pass.strings`,
-      encoder.encode(serialisePassStrings(nonce, content.strings[locale])),
+      encoder.encode(
+        serialisePassStrings(nonce, content.strings[locale as Locale]),
+      ),
     );
   }
   for (const [path, bytes] of assets) files.set(path, bytes);
