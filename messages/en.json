@@ -9857,7 +9857,6 @@
   },
   "achievements": {
     "title": "Achievements",
-    "subtitle": "Earn achievements by tracking your health and taking your medications on time.",
     "loginRequired": "Please sign in to view achievements.",
     "points": "Points",
     "unlocked": "Unlocked",
@@ -9865,7 +9864,6 @@
     "allCompleted": "All achievements unlocked!",
     "completed": "Completed",
     "goalReached": "Goal reached",
-    "remainingUnlocks": "{count} still unlockable",
     "noneUnlockedYet": "No achievements unlocked yet.",
     "pointsValue": "{points, plural, one {# point} other {# points}}",
     "metricCount": "{count}",
@@ -10119,9 +10117,7 @@
         "description": "Sleep data recorded on 7 consecutive days."
       }
     },
-    "nextProgressLabel": "Progress to unlock",
     "completedOn": "Completed on {date}",
-    "locked": "Locked",
     "criterionHint": "{current} / {target}",
     "progressPercent": "{percent}%",
     "categories": {
@@ -10149,7 +10145,6 @@
   "notifications": {
     "title": "Notifications per channel",
     "eventColumn": "Event",
-    "subtitle": "Choose which notifications you want to receive through which channel.",
     "loadError": "Notification preferences could not be loaded.",
     "noChannels": "Configure a notification channel in Settings > Integrations first.",
     "goToSettings": "Go to channel settings",
@@ -10747,7 +10742,6 @@
     },
     "disclaimer": "These predictions are descriptive estimates from your logged data, not a contraceptive method and not medical advice. They never indicate that it is safe to have unprotected sex. For contraception or any medical decision, consult a healthcare professional.",
     "title": "Cycle",
-    "subtitle": "Log your period and symptoms, see what comes next.",
     "tabs": {
       "calendar": "Calendar",
       "predictions": "Predictions",
@@ -11981,7 +11975,6 @@
   },
   "illness": {
     "title": "Illness",
-    "subtitle": "A retrospective log of your illness and condition episodes.",
     "settings": {
       "viewDescription": "Choose whether episodes show as cards or as a compact list.",
       "orderDescription": "Drag your episodes into the order you want to see them in."
@@ -12435,9 +12428,7 @@
   },
   "mentalHealth": {
     "pageTitle": "Mental wellbeing",
-    "pageDescription": "Four validated, voluntary self-checks. The trend over time says more than any single score.",
     "attributionLabel": "Attribution",
-    "attributionShow": "Source and license for {instrument}",
     "choosePrompt": "Choose a check-in",
     "start": "Start",
     "back": "Back",
@@ -12450,12 +12441,6 @@
       "gad7": "GAD-7 (worry)",
       "who5": "WHO-5 (well-being)",
       "sci": "SCI (sleep)"
-    },
-    "instrumentSub": {
-      "phq9": "Depression screen, 9 questions",
-      "gad7": "Anxiety screen, 7 questions",
-      "who5": "Well-being check, 5 questions",
-      "sci": "Sleep check, 8 questions"
     },
     "functionalOptionalHint": "Optional: you can submit without answering this question.",
     "result": {
@@ -12494,7 +12479,6 @@
       "title": "Your history",
       "empty": "No check-ins yet. Your trend will appear here once you complete one.",
       "flaggedBadge": "Support shown",
-      "chartTitle": "Score trend",
       "totalLabel": "Score",
       "bandLabel": "Category",
       "answersToggle": "Answers",
@@ -13189,15 +13173,11 @@
       "titleRecord": "{name}'s document vault is empty"
     },
     "detail": {
-      "title": "Document details",
       "summary": {
         "title": "Summary",
         "pending": "The summary is being prepared.",
-        "none": "No summary has been generated for this document yet.",
         "withheld": "A summary was generated but did not pass the safety check, so it is not shown. You can try again, or read the document itself.",
-        "unavailable": "No summary could be generated for this document.",
-        "generate": "Generate summary",
-        "generating": "Generating…"
+        "unavailable": "No summary could be generated for this document."
       },
       "index": {
         "outcome": {
@@ -13222,7 +13202,6 @@
       "titlePlaceholder": "Add a title",
       "kindLabel": "Type",
       "dateLabel": "Document date",
-      "previewUnavailable": "No inline preview for this file type",
       "uploadedMeta": "Added {date}, {size}",
       "importedFrom": "Imported from {system}",
       "importedFromWithId": "Imported from {system}, ID {id}",
@@ -13232,8 +13211,7 @@
       "share": "Share",
       "labValuesLink": "View {count, plural, one {# lab result} other {# lab results}}",
       "saved": "Changes saved",
-      "saving": "Saving…",
-      "previewNotOnDevice": "This browser cannot show PDFs inside the page"
+      "saving": "Saving…"
     },
     "dropOverlay": {
       "title": "Drop files to upload",
@@ -16225,7 +16203,7 @@
       "missBody": "The link may have been revoked or may have ended. The person whose card it is can make a new one.",
       "title": "QR link",
       "loadError": "The link status could not be loaded.",
-      "disclosure": "Anyone who scans the code sees the items you tick, without signing in. You can give the link an end and revoke it at any time; every opening is recorded for you.",
+      "disclosure": "Anyone who scans the code sees the items you tick, without signing in.",
       "fieldsLabel": "What the link shows",
       "expiryLabel": "Link ends",
       "expiry": {
@@ -16247,17 +16225,17 @@
       "revoke": "Revoke link",
       "revokeTitle": "Revoke the emergency card link?",
       "revokeBody": "Printed cards with this code stop working. You can make a new link and print the card again.",
-      "error": "The link could not be changed. Try again."
+      "error": "The link could not be changed. Try again.",
+      "disclosureMore": "You can give the link an end and revoke it at any time; every opening is recorded for you."
     },
     "page": {
       "title": "Emergency card",
-      "description": "Your emergency information for when you are away from home.",
       "loadError": "The emergency card could not be loaded.",
       "offlineHint": "The app does not work offline on purpose. Save a copy to your phone to carry the card without a connection; it shows what it held on the day you saved it.",
       "downloadError": "The download did not work. Try again.",
-      "saveOffline": "Save offline copy",
-      "wallet": "Wallet card (PDF)",
-      "walletWithQr": "Wallet card with QR code (PDF)",
+      "saveOffline": "Offline copy",
+      "wallet": "Card as PDF",
+      "walletWithQr": "PDF with QR code",
       "preview": "Your card"
     },
     "name": "Name",
@@ -16359,7 +16337,8 @@
         "title": "Your emergency card is ready",
         "body": "Add it to Apple Wallet on this iPhone."
       }
-    }
+    },
+    "fieldsCount": "{count} of {total}"
   },
   "treatmentSeries": {
     "heading": "Treatment series",

@@ -35,10 +35,10 @@ describe("document detail sheet — Ask the Coach opens the drawer", () => {
   });
 
   it("closes the detail sheet when handing off to the drawer", () => {
-    // The Ask-the-Coach onClick closes the sheet before opening the drawer so
+    // The Ask-the-Coach entry closes the sheet before opening the drawer so
     // the drawer owns the surface (no stacked dialogs).
     expect(src).toMatch(
-      /onClick=\{\(\)\s*=>\s*\{[\s\S]*?onOpenChange\(false\);[\s\S]*?askCoach\(null,\s*undefined,\s*false,\s*doc\.id\)/,
+      /onSelect=\{\(\)\s*=>\s*\{[\s\S]*?onOpenChange\(false\);[\s\S]*?askCoach\(null,\s*undefined,\s*false,\s*doc\.id\)/,
     );
   });
 

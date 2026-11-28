@@ -5,6 +5,7 @@ import { BookOpen } from "lucide-react";
 
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
+import { Disclosure } from "@/components/ui/disclosure";
 import {
   PHASE_WHATS_HAPPENING_KEY,
   PHASE_CONTEXT_KEY,
@@ -130,7 +131,7 @@ export function PhaseEducationCard({
             className="text-foreground h-4 w-4 shrink-0"
             aria-hidden="true"
           />
-          <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+          <span className="text-muted-foreground text-xs font-medium">
             {t("cycle.phaseEducation.title")}
           </span>
         </div>
@@ -153,16 +154,22 @@ export function PhaseEducationCard({
               {phaseName}
             </h3>
 
-            {/* Zone 2 — the curated, descriptive-only "what's happening" line,
-              followed by a deeper "context" line (what someone might notice +
-              gentle framing of normal variation). Both stay descriptive, never
-              clinical advice / a medical claim. */}
-            <p className="text-muted-foreground mt-1.5 text-sm leading-relaxed">
-              {t(PHASE_WHATS_HAPPENING_KEY[phase as CyclePhase])}
-            </p>
-            <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-              {t(PHASE_CONTEXT_KEY[phase as CyclePhase])}
-            </p>
+            {/* Zone 2 — the curated, descriptive-only "what's happening" line
+              and the deeper context, both behind "Learn more": the card is
+              the phase's name until someone asks (ui-standards §17). Both
+              stay descriptive, never clinical advice or a medical claim. */}
+            <Disclosure
+              summary={t("common.learnMore")}
+              className="text-muted-foreground mt-1 text-sm leading-relaxed"
+              data-slot="cycle-phase-education-more"
+            >
+              <p className="pb-2">
+                {t(PHASE_WHATS_HAPPENING_KEY[phase as CyclePhase])}
+              </p>
+              <p className="pb-1">
+                {t(PHASE_CONTEXT_KEY[phase as CyclePhase])}
+              </p>
+            </Disclosure>
 
             {/* Zone 3 — the user's OWN clustered symptoms for this phase
               ("you often notice this here"). */}

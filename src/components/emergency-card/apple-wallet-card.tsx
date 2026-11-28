@@ -20,12 +20,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmButton, ConfirmDialog } from "@/components/ui/confirm-button";
 import { Disclosure } from "@/components/ui/disclosure";
-import { FieldGroup } from "@/components/ui/field-group";
-import { Label } from "@/components/ui/label";
-import { NativeSelect } from "@/components/ui/native-select";
 import { useAuth } from "@/hooks/use-auth";
 import { apiDelete, apiPost } from "@/lib/api/api-fetch";
 import {
@@ -37,6 +33,8 @@ import type { EmergencyWalletApple } from "@/lib/emergency-card/wallet-pass/avai
 import { useTranslations } from "@/lib/i18n/context";
 import { formatRelativeTime } from "@/lib/i18n/relative-time";
 import { queryKeys } from "@/lib/query-keys";
+
+import { CardFieldRows, type ExpiryChoice } from "./card-field-rows";
 
 /**
  * The emergency card in Apple Wallet (v1.50): add it, see whether it is
@@ -68,8 +66,6 @@ const WalletRelayGate = lazy(() =>
 const RELAY_WAIT_MS = 3 * 60_000;
 const RELAY_POLL_MS = 5_000;
 
-const EXPIRY_CHOICES = ["none", "30", "365", "730"] as const;
-type ExpiryChoice = (typeof EXPIRY_CHOICES)[number];
 type Pass = NonNullable<EmergencyWalletApple["pass"]>;
 
 const noSubscription = () => () => {};
@@ -418,48 +414,15 @@ function PassForm({
   }
   return (
     <>
-      <fieldset className="space-y-2">
-        <legend className="text-sm font-medium">
-          {t("emergencyCard.appleWallet.fieldsLabel")}
-        </legend>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {EMERGENCY_CARD_FIELDS.map((f) => (
-            <div key={f} className="flex min-h-11 items-center gap-2">
-              <Checkbox
-                id={`wallet-field-${f}`}
-                checked={fields.has(f)}
-                onCheckedChange={(on) =>
-                  setFields((prev) => {
-                    const next = new Set(prev);
-                    if (on === true) next.add(f);
-                    else next.delete(f);
-                    return next;
-                  })
-                }
-              />
-              <Label htmlFor={`wallet-field-${f}`} className="text-sm">
-                {t(`emergencyCard.fields.${f}`)}
-              </Label>
-            </div>
-          ))}
-        </div>
-      </fieldset>
-      <FieldGroup
-        htmlFor="wallet-expiry"
-        label={t("emergencyCard.appleWallet.expiryLabel")}
-      >
-        <NativeSelect
-          id="wallet-expiry"
-          value={expiry}
-          onChange={(e) => setExpiry(e.target.value as ExpiryChoice)}
-        >
-          {EXPIRY_CHOICES.map((c) => (
-            <option key={c} value={c}>
-              {t(`emergencyCard.link.expiry.${c}`)}
-            </option>
-          ))}
-        </NativeSelect>
-      </FieldGroup>
+      <CardFieldRows
+        idPrefix="wallet"
+        fieldsLabel={t("emergencyCard.appleWallet.fieldsLabel")}
+        expiryLabel={t("emergencyCard.appleWallet.expiryLabel")}
+        fields={fields}
+        onFieldsChange={setFields}
+        expiry={expiry}
+        onExpiryChange={setExpiry}
+      />
       {note}
       {error}
       <ConfirmDialog
