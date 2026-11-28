@@ -26,7 +26,7 @@ The binding reference for building or touching any surface of the web app. The r
 | Settings card                      | `SettingsCard` + `SettingsCardHeader` (`settings/_card-header.tsx`) | icon `text-muted-foreground h-5 w-5`, title `h2 text-lg font-semibold`, status slot top-right, description muted below                                          |
 | Insights / dashboard / module tile | `Card` + `TileHeader` (`insights/tile-header.tsx`)                  | icon **`text-foreground` `h-5 w-5 shrink-0`**, title `CardTitle text-base`, `flex items-center gap-2`, optional `right` slot                                    |
 
-**Icon colour rule (both header contracts):** header icons are `text-foreground` (tiles) or `text-muted-foreground` (settings). Never `text-primary`, `text-info`, or any accent; primary/purple stays reserved for actions and highlight states. Pass the Lucide component (`icon={Target}`), never a pre-sized node; the primitive owns size and colour.
+**Icon colour rule (both header contracts):** header icons are `text-foreground` (tiles) or `text-muted-foreground` (settings). Never `text-primary`, `text-info`, or any accent; the accent stays reserved for actions and highlight states. Pass the Lucide component (`icon={Target}`), never a pre-sized node; the primitive owns size and colour.
 
 The gaps this section used to list are closed: `TileHeader` carries a `size="sm"` variant for compact tiles and an optional `icon` for icon-less headers, and `InsightSectionCard` is the overview container mirroring `SettingsCard`. Use them; do not invent a fourth header language.
 
@@ -43,7 +43,7 @@ The gaps this section used to list are closed: `TileHeader` carries a `size="sm"
 
 ## 3. Text colour rules
 
-The base tokens are AA-tuned in both themes (`--muted-foreground`: 5.0–6.4:1, documented in `globals.css`). The system is two tiers:
+The base tokens are AA-tuned in both themes (`--muted-foreground`: 4.7–7.5:1 on page, card and fill, documented in `globals.css`). The system is two tiers:
 
 - **`text-foreground` = content.** Everything the user came to read: values, chart labels the reading depends on, AI narrative bodies, consent/safety copy, and **all user-entered data** (notes, journal text, free-text fields). User data is never muted.
 - **`text-muted-foreground` = meta.** Timestamps, units, provenance, counts, placeholders, one-sentence descriptions under a heading. Heading-in-foreground + short-description-in-muted is the app-wide convention (CardDescription, PageHeader, SettingsCardHeader); keep it; do not "fix" it to foreground.
@@ -57,6 +57,7 @@ The base tokens are AA-tuned in both themes (`--muted-foreground`: 5.0–6.4:1, 
 
 ## 4. Colour token rules
 
+- **The accent is ink (1.50).** `--primary` is the content ink (#42403C light, #EBEBF5 dark), the same as the iOS client; the surfaces are its warm neutrals (page #F2F0EB / #101113, card #FAF8F5 / #1A1B1F, fill #E9E6E0 / #25262B). Colour carries meaning only: the score bands, the status colours, the chart series beyond the first (`--chart-1` is the series ink) and the destructive red. A filled primary is ink with a card-coloured label; the quiet primary of a compact pair is `bg-primary-tonal` (ink at 22 % over the card, one token) with a foreground label. Because the accent and the text are one ink, a link is never told apart by colour: it carries an underline (`Button variant="link"` draws one). The brand mark (`Logo`) keeps its own `--brand` colour and is the only reader of it. The value table, both clients side by side, is the design contract's §3.1.
 - **Semantic tokens only** in components: `--foreground/--muted-foreground/--primary/--success/--warning/--info/--destructive/--chart-1..5/--border/--card`. The light theme remaps them wholesale; anything outside the token layer is invisible to a retune.
 - **No raw `dracula-*` utilities in new code.** Only `--dracula-yellow` has a light override; `text-dracula-green` on a light card is 1.4:1. Status meaning > semantic token; brand identity (Coach gradient) > a named `--brand-*` token with per-theme values.
 - **No hex in JS props.** Chart colours are passed as `var(--token)` strings, never `color="#22c55e"`. Data series use the `--chart-1..5` tokens (`color="var(--chart-2)"`); status tokens (`--success`, `--warning`, `--destructive`, `--info`) only where the colour carries meaning, such as a target band, time in range or a mood scale (v1.42). Recharts `stroke`/`fill` likewise. This is the known lint blind spot; review for it explicitly until the rule covers it.
