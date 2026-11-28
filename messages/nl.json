@@ -10234,10 +10234,10 @@
     "eventMedicationIntakeRecordedDesc": "Een rustige melding op je iPhone als een dosis elders wordt vastgelegd (web, Telegram, een gekoppeld apparaat), zodat een getoonde herinnering verdwijnt. Standaard aan als je telefoon eigen herinneringen bijhoudt.",
     "intakeRecorded": {
       "title": "Dosis vastgelegd",
-      "bodyTaken": "Een dosis is op een ander apparaat als ingenomen vastgelegd.",
-      "bodySkipped": "Een dosis is op een ander apparaat als overgeslagen vastgelegd.",
+      "bodyTaken": "Een dosis is als ingenomen vastgelegd.",
+      "bodySkipped": "Een dosis is als overgeslagen vastgelegd.",
       "titleReopened": "Dosis gewijzigd",
-      "bodyReopened": "Een vastgelegde dosis is op een ander apparaat ongedaan gemaakt."
+      "bodyReopened": "Een vastgelegde dosis is ongedaan gemaakt."
     },
     "security": {
       "newDeviceTitle": "Nieuwe inlog op je account",

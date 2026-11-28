@@ -5,6 +5,7 @@
 ### Fixed
 
 - The licence list shipped in the image now covers every package the image contains. The list was built from the production dependencies alone, but the server build can copy in a package that only a development tool asks for; the 1.49.1 image carried one ISC-licensed package the list missed. Every package the build copies into the image is now listed with its licence and held to the same licence policy.
+- The notice that confirms a recorded dose no longer says it came from another device. A dose can be recorded by an access token, a pill box or a script as well as by a device, so the notice now only says that a dose was recorded as taken or skipped, or that a recorded dose was taken back.
 
 ## [1.49.1] — 2026-11-28
 

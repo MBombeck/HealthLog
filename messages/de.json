@@ -10234,10 +10234,10 @@
     "eventMedicationIntakeRecordedDesc": "Ein leiser Hinweis auf dem iPhone, wenn eine Dosis anderswo erfasst wird (Web, Telegram, ein verbundenes Gerät), damit eine schon angezeigte Erinnerung verschwindet. Standardmäßig an, wenn dein iPhone eigene Erinnerungen hält.",
     "intakeRecorded": {
       "title": "Dosis erfasst",
-      "bodyTaken": "Eine Dosis wurde auf einem anderen Gerät als genommen erfasst.",
-      "bodySkipped": "Eine Dosis wurde auf einem anderen Gerät als übersprungen erfasst.",
+      "bodyTaken": "Eine Dosis wurde als genommen erfasst.",
+      "bodySkipped": "Eine Dosis wurde als übersprungen erfasst.",
       "titleReopened": "Dosis geändert",
-      "bodyReopened": "Eine erfasste Dosis wurde auf einem anderen Gerät zurückgenommen."
+      "bodyReopened": "Eine erfasste Dosis wurde zurückgenommen."
     },
     "security": {
       "newDeviceTitle": "Neue Anmeldung bei deinem Konto",

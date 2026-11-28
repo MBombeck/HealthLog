@@ -10234,10 +10234,10 @@
     "eventMedicationIntakeRecordedDesc": "Um aviso discreto no iPhone quando uma dose é registrada em outro lugar (web, Telegram, um dispositivo conectado), para retirar um lembrete já exibido. Ativado por padrão se o celular gerencia os próprios lembretes.",
     "intakeRecorded": {
       "title": "Dose registrada",
-      "bodyTaken": "Uma dose foi registrada como tomada em outro dispositivo.",
-      "bodySkipped": "Uma dose foi registrada como pulada em outro dispositivo.",
+      "bodyTaken": "Uma dose foi registrada como tomada.",
+      "bodySkipped": "Uma dose foi registrada como pulada.",
       "titleReopened": "Dose atualizada",
-      "bodyReopened": "Uma dose registrada foi desfeita em outro dispositivo."
+      "bodyReopened": "Uma dose registrada foi desfeita."
     },
     "security": {
       "newDeviceTitle": "Novo login na sua conta",
