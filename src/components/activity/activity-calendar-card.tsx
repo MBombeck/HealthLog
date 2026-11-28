@@ -17,7 +17,7 @@ import type { ActivityCalendarResponse } from "@/lib/validations/activity-calend
 
 type CalendarDay = ActivityCalendarResponse["days"][number];
 type DayLevel = CalendarDay["level"]["steps"];
-type Figure = "steps" | "activeMinutes" | "workouts" | "load";
+type Figure = "steps" | "activeMinutes" | "workouts";
 
 /**
  * The series ink, rising intensity: the calendar shows more and less than
@@ -44,13 +44,11 @@ export const CALENDAR_MEASURES: readonly ModuleSummaryMeasure[] = [
   "load",
 ];
 
-/** The figures of the period; the load only beside the calendar on a wide screen. */
-const FIGURES: readonly Figure[] = [
-  "steps",
-  "activeMinutes",
-  "workouts",
-  "load",
-];
+/**
+ * The figures of the period. The training load has none: the training-load
+ * card below the calendar shows it in full.
+ */
+const FIGURES: readonly Figure[] = ["steps", "activeMinutes", "workouts"];
 
 /** 2024-01-01 is a Monday: seven UTC days from it name the week's columns. */
 function weekdayLabels(locale: string): string[] {
@@ -124,9 +122,6 @@ export function ActivityCalendarCard({
         timeZone: "UTC",
       }).format(dateOfKey(data.start))
     : "";
-
-  const formatValue = (m: Figure, value: number) =>
-    m === "load" ? fmt.number(value, 1) : fmt.integer(Math.round(value));
 
   const sportLabel = (sport: string) =>
     translateOrNull(t, `insights.workouts.sport.${sport}`) ?? sport;
@@ -349,14 +344,15 @@ export function ActivityCalendarCard({
                     className={cn(
                       "grid min-w-0 content-start gap-0.5",
                       "md:flex-1 md:grid-cols-[minmax(0,1fr)_auto_3.5rem] md:content-center md:items-baseline md:gap-4 md:py-3",
-                      m === "load" && "hidden md:grid",
                     )}
                   >
                     <dt className="text-muted-foreground truncate text-xs md:text-sm">
                       {t(`activityCalendar.metric.${m}`)}
                     </dt>
                     <dd className="text-lg font-semibold tabular-nums md:text-right md:text-2xl">
-                      {s.value === null ? "–" : formatValue(m, s.value)}
+                      {s.value === null
+                        ? "–"
+                        : fmt.integer(Math.round(s.value))}
                     </dd>
                     <dd
                       data-slot="activity-calendar-change"

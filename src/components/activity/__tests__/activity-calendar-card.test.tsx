@@ -143,6 +143,18 @@ describe("ActivityCalendarCard", () => {
     expect(html).not.toContain("activity-calendar-period");
   });
 
+  it("leaves the training load to the card below it", () => {
+    const data = calendar();
+    state.data = {
+      ...data,
+      available: { ...data.available, load: true },
+      summary: { ...data.summary, load: { value: 42, change: 0.1 } },
+    };
+    const html = render();
+    expect(html).toContain('data-metric="steps"');
+    expect(html).not.toContain('data-metric="load"');
+  });
+
   it("marks today as in progress rather than rating it", () => {
     state.data = calendar();
     const html = render();
