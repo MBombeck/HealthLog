@@ -15,13 +15,9 @@
  * or more than one child. They are a minority and read differently in a
  * sweep.
  *
- * The other half of the colon rule: a label that follows its own checkbox,
- * switch or radio names a choice, not a field, so it says `noColon`. A label
- * written after the control picks up the default colon otherwise; that is
- * how "Blood type:" ended up beside the emergency card's checkboxes. The
- * control's opening tag is read brace-aware (attribute values hold arrow
- * functions, whose `>` a plain regex would stop at) and the `<Label>` that
- * directly follows it is checked.
+ * The other half of the colon rule, that a `Label` never renders a colon of
+ * its own (no `::after`, no `noColon` switch), is held by
+ * `label-colon-guard.test.tsx`.
  */
 import { join } from "node:path";
 
@@ -84,37 +80,6 @@ function fieldLabelKeys(source: string): string[] {
   return keys;
 }
 
-/** Index just past a self-closing tag that starts at `start`, or -1. */
-function selfClosingEnd(source: string, start: number): number {
-  let depth = 0;
-  for (let i = start; i < source.length; i++) {
-    const c = source[i];
-    if (c === "{") depth++;
-    else if (c === "}") depth--;
-    else if (depth === 0 && c === "/" && source[i + 1] === ">") return i + 2;
-    else if (depth === 0 && c === ">") return -1;
-  }
-  return -1;
-}
-
-/** Lines of a control directly followed by a `<Label>` without `noColon`. */
-function controlLabelsWithColon(source: string): number[] {
-  const lines: number[] = [];
-  const control = /<(Checkbox|Switch|RadioGroupItem)\b/g;
-  let match: RegExpExecArray | null;
-  while ((match = control.exec(source))) {
-    const end = selfClosingEnd(source, match.index + 1);
-    if (end < 0) continue;
-    const rest = source.slice(end).trimStart();
-    if (!rest.startsWith("<Label")) continue;
-    const openTag = rest.slice(0, rest.indexOf(">") + 1);
-    if (!/\bnoColon\b/.test(openTag)) {
-      lines.push(source.slice(0, match.index).split("\n").length);
-    }
-  }
-  return lines;
-}
-
 /** Every component and page, with its source. */
 const VIEWS = walkSourceFiles(SRC, { floor: 1200, extensions: [".tsx"] })
   .filter(
@@ -158,22 +123,5 @@ describe("form label wording", () => {
       offenders,
       "Name the field with a noun, the way the other fields in the form read, with no colon.",
     ).toEqual([]);
-  });
-});
-
-describe("labels after their own control carry no colon", () => {
-  it("catches the shape it guards against (the scanner is not blind)", () => {
-    const bad = `<Checkbox id="a" onCheckedChange={(on) => set(on)} />
-      <Label htmlFor="a">Blood type</Label>`;
-    expect(controlLabelsWithColon(bad)).toEqual([1]);
-    const good = bad.replace("<Label ", "<Label noColon ");
-    expect(controlLabelsWithColon(good)).toEqual([]);
-  });
-
-  it("holds across every component and page", () => {
-    const offenders = VIEWS.flatMap(({ path, source }) =>
-      controlLabelsWithColon(source).map((line) => `src/${path}:${line}`),
-    );
-    expect(offenders).toEqual([]);
   });
 });
