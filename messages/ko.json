@@ -2220,7 +2220,6 @@
         "loadError": "기록을 불러오지 못했어요.",
         "empty": "이 기간에는 복용 기록이 아직 없어요.",
         "summaryEmpty": "아직 계산할 복용이 없어요.",
-        "adherenceBarLabel": "정시 {onTime}, 늦음 {late}, 놓침 {missed}",
         "add": "복용 기록",
         "rowActionsLabel": "{time} 작업",
         "markAsTaken": "복용함으로 표시",
@@ -2238,10 +2237,7 @@
           "confirmAction": "배정"
         },
         "backfill": "나중에 기록",
-        "dayColumn": "날짜",
-        "takenColumn": "복용",
         "extraColumn": "추가",
-        "actionsColumn": "작업",
         "takenAt": "{time}에 복용",
         "weekOf": "{date}부터 한 주",
         "thisWeek": "이번 주",
@@ -2548,10 +2544,6 @@
         "daysChip": "{days, plural, other {#일}}",
         "today": {
           "progress": "{total}회 중 {taken}회",
-          "dueAt": "{time} 용량을 지금 복용할 때예요.",
-          "overdueAt": "{time} 용량이 늦었어요.",
-          "nextAt": "다음 용량은 {time}이에요.",
-          "nothingOpen": "오늘 남은 용량이 없어요.",
           "noneToday": "오늘 예정된 용량이 없어요.",
           "asNeededTaken": "오늘 {count, plural, other {#회}} 복용했어요."
         },

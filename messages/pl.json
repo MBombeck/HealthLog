@@ -2220,7 +2220,6 @@
         "loadError": "Nie udało się wczytać historii.",
         "empty": "Brak przyjęć w tym okresie.",
         "summaryEmpty": "Brak dawek do oceny.",
-        "adherenceBarLabel": "{onTime} na czas, {late} z opóźnieniem, {missed} nieprzyjęte",
         "add": "Zarejestruj przyjęcie",
         "rowActionsLabel": "Akcje dla {time}",
         "markAsTaken": "Oznacz jako przyjętą",
@@ -2238,10 +2237,7 @@
           "confirmAction": "Przypisz"
         },
         "backfill": "Uzupełnij",
-        "dayColumn": "Dzień",
-        "takenColumn": "Przyjęte",
         "extraColumn": "Dodatkowo",
-        "actionsColumn": "Działania",
         "takenAt": "Przyjęto {time}",
         "weekOf": "Tydzień od {date}",
         "thisWeek": "Ten tydzień",
@@ -2548,10 +2544,6 @@
         "daysChip": "{days, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}}",
         "today": {
           "progress": "{taken} z {total}",
-          "dueAt": "Dawka z {time} jest teraz do przyjęcia.",
-          "overdueAt": "Dawka z {time} jest spóźniona.",
-          "nextAt": "Następna dawka o {time}.",
-          "nothingOpen": "Na dziś nie została żadna dawka.",
           "noneToday": "Na dziś nie zaplanowano dawki.",
           "asNeededTaken": "Przyjęte dziś {count, plural, one {raz} few {# razy} many {# razy} other {# razy}}."
         },

@@ -2220,7 +2220,6 @@
         "loadError": "Could not load the history.",
         "empty": "No intakes in this period yet.",
         "summaryEmpty": "No doses to score yet.",
-        "adherenceBarLabel": "{onTime} on time, {late} late, {missed} missed",
         "add": "Log intake",
         "rowActionsLabel": "Actions for {time}",
         "markAsTaken": "Mark as taken",
@@ -2238,10 +2237,7 @@
           "confirmAction": "Attribute"
         },
         "backfill": "Log past dose",
-        "dayColumn": "Day",
-        "takenColumn": "Taken",
         "extraColumn": "Extra",
-        "actionsColumn": "Actions",
         "takenAt": "Taken {time}",
         "weekOf": "Week of {date}",
         "thisWeek": "This week",
@@ -2548,10 +2544,6 @@
         "daysChip": "{days, plural, one {# day} other {# days}}",
         "today": {
           "progress": "{taken} of {total}",
-          "dueAt": "The {time} dose is due now.",
-          "overdueAt": "The {time} dose is overdue.",
-          "nextAt": "The next dose is due at {time}.",
-          "nothingOpen": "No dose is left open today.",
           "noneToday": "No dose is planned today.",
           "asNeededTaken": "Taken {count, plural, one {once} other {# times}} today."
         },

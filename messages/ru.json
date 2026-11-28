@@ -2220,7 +2220,6 @@
         "loadError": "Не удалось загрузить историю.",
         "empty": "В этом периоде приёмов пока нет.",
         "summaryEmpty": "Пока нет доз для оценки.",
-        "adherenceBarLabel": "{onTime} вовремя, {late} с опозданием, {missed} не принято",
         "add": "Записать приём",
         "rowActionsLabel": "Действия для {time}",
         "markAsTaken": "Отметить как принято",
@@ -2238,10 +2237,7 @@
           "confirmAction": "Отнести"
         },
         "backfill": "Добавить задним числом",
-        "dayColumn": "День",
-        "takenColumn": "Принято",
         "extraColumn": "Дополнительно",
-        "actionsColumn": "Действия",
         "takenAt": "Принято в {time}",
         "weekOf": "Неделя с {date}",
         "thisWeek": "Эта неделя",
@@ -2548,10 +2544,6 @@
         "daysChip": "{days, plural, one {# день} few {# дня} many {# дней} other {# дня}}",
         "today": {
           "progress": "{taken} из {total}",
-          "dueAt": "Доза на {time} — сейчас.",
-          "overdueAt": "Доза на {time} просрочена.",
-          "nextAt": "Следующая доза в {time}.",
-          "nothingOpen": "На сегодня доз больше нет.",
           "noneToday": "На сегодня доз не запланировано.",
           "asNeededTaken": "Сегодня принято {count, plural, one {# раз} few {# раза} many {# раз} other {# раза}}."
         },

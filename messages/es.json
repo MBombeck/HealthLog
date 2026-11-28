@@ -2220,7 +2220,6 @@
         "loadError": "No se pudo cargar el historial.",
         "empty": "Aún no hay tomas en este periodo.",
         "summaryEmpty": "Aún no hay dosis que evaluar.",
-        "adherenceBarLabel": "{onTime} a tiempo, {late} con retraso, {missed} omitidas",
         "add": "Registrar toma",
         "rowActionsLabel": "Acciones para {time}",
         "markAsTaken": "Marcar como tomada",
@@ -2238,10 +2237,7 @@
           "confirmAction": "Asignar"
         },
         "backfill": "Registrar a posteriori",
-        "dayColumn": "Día",
-        "takenColumn": "Tomadas",
         "extraColumn": "Adicional",
-        "actionsColumn": "Acciones",
         "takenAt": "Tomada {time}",
         "weekOf": "Semana del {date}",
         "thisWeek": "Esta semana",
@@ -2548,10 +2544,6 @@
         "daysChip": "{days, plural, one {# día} other {# días}}",
         "today": {
           "progress": "{taken} de {total}",
-          "dueAt": "La dosis de las {time} toca ahora.",
-          "overdueAt": "La dosis de las {time} está atrasada.",
-          "nextAt": "La próxima dosis toca a las {time}.",
-          "nothingOpen": "Hoy no queda ninguna dosis pendiente.",
           "noneToday": "Hoy no hay ninguna dosis prevista.",
           "asNeededTaken": "Tomada {count, plural, one {una vez} other {# veces}} hoy."
         },

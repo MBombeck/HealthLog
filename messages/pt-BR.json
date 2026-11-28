@@ -2220,7 +2220,6 @@
         "loadError": "Não foi possível carregar o histórico.",
         "empty": "Nenhuma tomada neste período ainda.",
         "summaryEmpty": "Nenhuma dose para pontuar ainda.",
-        "adherenceBarLabel": "{onTime} no horário, {late} atrasadas, {missed} perdidas",
         "add": "Registrar tomada",
         "rowActionsLabel": "Ações para {time}",
         "markAsTaken": "Marcar como tomada",
@@ -2238,10 +2237,7 @@
           "confirmAction": "Atribuir"
         },
         "backfill": "Registrar depois",
-        "dayColumn": "Dia",
-        "takenColumn": "Tomadas",
         "extraColumn": "Adicional",
-        "actionsColumn": "Ações",
         "takenAt": "Tomada às {time}",
         "weekOf": "Semana de {date}",
         "thisWeek": "Esta semana",
@@ -2548,10 +2544,6 @@
         "daysChip": "{days, plural, one {# dia} other {# dias}}",
         "today": {
           "progress": "{taken} de {total}",
-          "dueAt": "A dose das {time} é agora.",
-          "overdueAt": "A dose das {time} está atrasada.",
-          "nextAt": "A próxima dose é às {time}.",
-          "nothingOpen": "Hoje não resta nenhuma dose pendente.",
           "noneToday": "Nenhuma dose prevista para hoje.",
           "asNeededTaken": "{count, plural, =0 {Não tomada hoje.} one {Tomada uma vez hoje.} other {Tomada # vezes hoje.}}"
         },

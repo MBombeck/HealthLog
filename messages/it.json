@@ -2220,7 +2220,6 @@
         "loadError": "Impossibile caricare la cronologia.",
         "empty": "Ancora nessuna assunzione in questo periodo.",
         "summaryEmpty": "Ancora nessuna dose da valutare.",
-        "adherenceBarLabel": "{onTime} puntuali, {late} in ritardo, {missed} mancate",
         "add": "Registra assunzione",
         "rowActionsLabel": "Azioni per {time}",
         "markAsTaken": "Segna come assunta",
@@ -2238,10 +2237,7 @@
           "confirmAction": "Attribuisci"
         },
         "backfill": "Registra dopo",
-        "dayColumn": "Giorno",
-        "takenColumn": "Assunte",
         "extraColumn": "In più",
-        "actionsColumn": "Azioni",
         "takenAt": "Presa alle {time}",
         "weekOf": "Settimana dal {date}",
         "thisWeek": "Questa settimana",
@@ -2548,10 +2544,6 @@
         "daysChip": "{days, plural, one {# giorno} other {# giorni}}",
         "today": {
           "progress": "{taken} di {total}",
-          "dueAt": "La dose delle {time} è da prendere ora.",
-          "overdueAt": "La dose delle {time} è in ritardo.",
-          "nextAt": "La prossima dose è alle {time}.",
-          "nothingOpen": "Oggi non resta nessuna dose da prendere.",
           "noneToday": "Oggi non è prevista nessuna dose.",
           "asNeededTaken": "Assunta {count, plural, one {una volta} other {# volte}} oggi."
         },

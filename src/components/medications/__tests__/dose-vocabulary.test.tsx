@@ -105,7 +105,9 @@ describe("dose vocabulary", () => {
     );
     // Taken at the planned time: a check, no second line, no state word.
     expect(onTime).not.toContain('data-slot="list-item-meta"');
-    expect(onTime).not.toContain(">Taken<");
+    // The word is for a screen reader only.
+    expect(onTime).toContain('class="sr-only">Taken<');
+    expect(onTime).not.toContain('data-state="taken"');
     const late = renderRow(
       slotRow({
         status: "taken_late",

@@ -2220,7 +2220,6 @@
         "loadError": "Impossible de charger l'historique.",
         "empty": "Aucune prise sur cette période pour l'instant.",
         "summaryEmpty": "Aucune dose à évaluer pour l'instant.",
-        "adherenceBarLabel": "{onTime} à l'heure, {late} en retard, {missed} manquées",
         "add": "Saisir une prise",
         "rowActionsLabel": "Actions pour {time}",
         "markAsTaken": "Marquer comme prise",
@@ -2238,10 +2237,7 @@
           "confirmAction": "Rattacher"
         },
         "backfill": "Rattraper",
-        "dayColumn": "Jour",
-        "takenColumn": "Prises",
         "extraColumn": "En plus",
-        "actionsColumn": "Actions",
         "takenAt": "Prise à {time}",
         "weekOf": "Semaine du {date}",
         "thisWeek": "Cette semaine",
@@ -2548,10 +2544,6 @@
         "daysChip": "{days, plural, one {# jour} other {# jours}}",
         "today": {
           "progress": "{taken} sur {total}",
-          "dueAt": "La dose de {time} est à prendre maintenant.",
-          "overdueAt": "La dose de {time} est en retard.",
-          "nextAt": "La prochaine dose est à {time}.",
-          "nothingOpen": "Aucune dose n'est plus en attente aujourd'hui.",
           "noneToday": "Aucune dose n'est prévue aujourd'hui.",
           "asNeededTaken": "{count, plural, =0 {Pas prise aujourd'hui.} one {Prise une fois aujourd'hui.} other {Prise # fois aujourd'hui.}}"
         },

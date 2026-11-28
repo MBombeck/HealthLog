@@ -109,7 +109,7 @@ describe("missed is not skipped", () => {
   it("finds the dose sentences that name a missed dose", () => {
     expect(missedKeys).toContain("medications.dose.state.missed");
     expect(missedKeys).toContain(
-      "medications.detail.verlauf.adherenceBarLabel",
+      "medications.detail.overview.legend.missed",
     );
     expect(missedKeys.length).toBeGreaterThanOrEqual(10);
   });

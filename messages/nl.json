@@ -2220,7 +2220,6 @@
         "loadError": "De geschiedenis kon niet worden geladen.",
         "empty": "Nog geen innames in deze periode.",
         "summaryEmpty": "Nog geen doses om te beoordelen.",
-        "adherenceBarLabel": "{onTime} op tijd, {late} te laat, {missed} gemist",
         "add": "Inname vastleggen",
         "rowActionsLabel": "Acties voor {time}",
         "markAsTaken": "Markeren als ingenomen",
@@ -2238,10 +2237,7 @@
           "confirmAction": "Toewijzen"
         },
         "backfill": "Achteraf invoeren",
-        "dayColumn": "Dag",
-        "takenColumn": "Ingenomen",
         "extraColumn": "Extra",
-        "actionsColumn": "Acties",
         "takenAt": "Ingenomen {time}",
         "weekOf": "Week van {date}",
         "thisWeek": "Deze week",
@@ -2548,10 +2544,6 @@
         "daysChip": "{days, plural, one {# dag} other {# dagen}}",
         "today": {
           "progress": "{taken} van {total}",
-          "dueAt": "De dosis van {time} is nu aan de beurt.",
-          "overdueAt": "De dosis van {time} is te laat.",
-          "nextAt": "De volgende dosis is om {time}.",
-          "nothingOpen": "Vandaag staat er geen dosis meer open.",
           "noneToday": "Vandaag is er geen dosis gepland.",
           "asNeededTaken": "Vandaag {count, plural, one {één keer} other {# keer}} ingenomen."
         },
