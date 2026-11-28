@@ -11,7 +11,7 @@
     "components/insights/health-score-card.tsx": 912,
     "components/insights/insights-tab-strip.tsx": 1070,
     "components/medications/wizard/wizard-payload.ts": 1347,
-    "components/mood/mood-list.tsx": 1105,
+    "components/mood/mood-list.tsx": 1106,
     "components/records/life-circumstances-manager.tsx": 821,
     "components/timeline/timeline-chart.tsx": 1095,
     "components/timeline/timeline-geometry.ts": 1291,
