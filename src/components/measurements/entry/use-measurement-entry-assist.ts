@@ -103,5 +103,5 @@ export function useMeasurementEntryAssist({
       );
   }
 
-  return { recent, last, lastDia, history, deviates };
+  return { recent, history, deviates };
 }

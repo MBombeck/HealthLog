@@ -4,9 +4,10 @@ import { localDateTimeValue } from "@/components/day/prefill";
 import { useEffect, useId, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
-import { Check, Loader2, Plus } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { FieldGroup } from "@/components/ui/field-group";
+import { ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { DateTimeField } from "@/components/ui/date-time-field";
@@ -247,14 +248,13 @@ export function ManualWorkoutForm({
     errors[field] ? id : undefined;
 
   const footerNode = (
-    <div className="flex w-full items-center justify-end gap-2">
+    <ActionPair>
       {onCancel && (
         <Button
           type="button"
           variant="outline"
           onClick={onCancel}
           disabled={saving}
-          className="min-h-11 sm:min-h-9"
         >
           {t("common.cancel")}
         </Button>
@@ -263,19 +263,14 @@ export function ManualWorkoutForm({
         type="submit"
         form={formId}
         disabled={saving}
-        className="min-h-11 sm:min-h-9"
         data-testid="manual-workout-save"
       >
         {saving ? (
           <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
-        ) : edit ? (
-          <Check className="size-4" />
-        ) : (
-          <Plus className="size-4" />
-        )}
+        ) : null}
         {t("common.save")}
       </Button>
-    </div>
+    </ActionPair>
   );
 
   return (
