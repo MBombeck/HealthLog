@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [1.49.1] — 2026-11-28
+
 ### Fixed
 
 - Importing an account's own JSON export or full backup back into the same account no longer doubles its readings. Readings without a source id were written again beside the originals, as a second copy of every manual and synced value; a reading the account already holds with the same type, time, value and sleep stage is now skipped and counted as skipped.
