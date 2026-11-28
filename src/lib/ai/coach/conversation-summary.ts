@@ -22,6 +22,7 @@
  * Fail-closed crypto: an undecryptable prior summary is treated as absent
  * (regenerate from scratch) and never allowed to throw into the caller.
  */
+import { proseFromModelReply } from "@/lib/ai/prose-reply";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma as defaultPrisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
@@ -204,7 +205,8 @@ export async function refreshConversationSummary(
     return { status: "skipped" };
   }
 
-  const trimmed = completion.content.trim();
+  // Asked for prose; a wrapper (`{"summary": "…"}`, a fence) is not memory.
+  const trimmed = proseFromModelReply(completion.content, "summary");
   if (trimmed.length === 0) {
     return { status: "skipped" };
   }

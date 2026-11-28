@@ -15,9 +15,9 @@
  * rollup tier (Tier-1, no narrative) — no provider call, no cache table;
  * since v1.42 the in-process derived cache, as the batch route uses.
  *
- * Wave 1 implements `VITALS_BASELINE` end-to-end; other registered ids
- * return a `not_implemented` insufficient until their compute lands in a
- * later wave (never a 500, never a fabricated value).
+ * `VITALS_BASELINE` is implemented end-to-end; other registered ids
+ * return a `not_implemented` insufficient until their compute lands
+ * (never a 500, never a fabricated value).
  */
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";

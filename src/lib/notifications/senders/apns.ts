@@ -1,6 +1,6 @@
 /**
  * APNs sender — joins the dispatcher cascade alongside Telegram, ntfy,
- * and Web Push (v1.4.23 Wave 3 / F4).
+ * and Web Push (v1.4.23).
  *
  * Mirrors the `web-push.ts` shape so the dispatcher can call it through
  * the same `SendOutcome`-returning contract:
@@ -27,7 +27,7 @@ import { readFileSync } from "node:fs";
 import apn from "@parse/node-apn";
 
 import { prisma } from "@/lib/db";
-import { deleteDeviceRows } from "@/lib/devices/delete-devices";
+import { forgetGoneRegistrations } from "@/lib/notifications/gone-registrations";
 import { getEvent } from "@/lib/logging/context";
 import { apnsTokenGone } from "@/lib/notifications/senders/apns-token-gone";
 import type { SendOutcome } from "@/lib/notifications/retry-policy";
@@ -812,9 +812,7 @@ export async function sendViaApns(
     lastFailureStatus = result?.status;
   }
 
-  if (deadDeviceIds.length > 0) {
-    await deleteDeviceRows({ id: { in: deadDeviceIds } });
-  }
+  const forgotten = await forgetGoneRegistrations("device", deadDeviceIds);
 
   if (anySuccess) {
     recordPushAttemptForPayload(payload, userId, {
@@ -828,7 +826,7 @@ export async function sendViaApns(
 
   // Every surviving device returned a permanent reason → channel is dead
   // until the user re-registers from a fresh iOS install.
-  if (deadDeviceIds.length === devices.length) {
+  if (forgotten && deadDeviceIds.length === devices.length) {
     const reason = lastFailureReason ?? "apns_all_devices_unregistered";
     recordPushAttemptForPayload(payload, userId, {
       userId,

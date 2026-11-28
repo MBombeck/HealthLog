@@ -134,6 +134,13 @@ const PINS: ReadonlyArray<{
     covered:
       "Two new occasions for the Live Activity end, and no new kind, class or lifetime: withdrawing the Live Activity or the relay consent ends the Activities the relay started on that device, and the pass ends them once the operator's switch is off (`live-activity-relay-end.ts`). Before, they stayed on the lock screen. It is the end the texts already name (`seesWhen`, the end of a Live Activity), sent with the statement the device signed when the Activity started, to the person's own device at the moment the consent or the switch changed. The docs list both occasions.",
   },
+  {
+    version: "2026-11-22",
+    fingerprint:
+      "bcc2ab7fb1642ee6aa3b5059e2f5201515c691ba5df9d7ab02fa7137f9718cbf",
+    covered:
+      "The device registration reaches the same end through `endRelayStartedActivitiesBeforeWithdrawal` in `live-activity-registration.ts`, which runs it best effort so the withdrawal is stored even when the end fails. Same occasion, same Live Activity end, nothing new on the wire.",
+  },
 ];
 
 /**

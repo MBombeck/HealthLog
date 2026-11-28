@@ -8,7 +8,7 @@
  * live in `docs/api/cycle-healthkit-mapping.md` so a self-hoster reading
  * the importer and a developer reading the docs see one mapping.
  *
- * Routing rules (per `.planning/v1.15-cycle/ios-contract.md` §5):
+ * Routing rules (shared contract with the iOS client):
  *   - MenstrualFlow / IntermenstrualBleeding / CervicalMucusQuality /
  *     OvulationTestResult / SexualActivity / Pregnancy/Progesterone test
  *     results → fields on a `CycleDayLog` (the day-log write helper), NOT

@@ -30,6 +30,7 @@ import {
 import { parseJsonBody } from "@/lib/api/body";
 import { markNotReplayable, withIdempotency } from "@/lib/idempotency";
 import { withIngestAdmission } from "@/lib/ingest/admission";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { requireIllnessEnabled } from "@/lib/illness/gate";
 import { annotate } from "@/lib/logging/context";
 import { ingestSymptomBatch } from "@/lib/symptoms/apple-health-ingest";
@@ -84,7 +85,10 @@ async function postBatch(request: NextRequest): Promise<Response> {
 
   const result = await ingestSymptomBatch({
     userId: user.id,
-    locale: user.locale,
+    locale: await resolveServerLocale({
+      request,
+      userLocale: user.locale ?? null,
+    }),
     entries: parsed.data.entries,
     ipAddress: getClientIp(request),
   });

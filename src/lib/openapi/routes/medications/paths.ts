@@ -1280,6 +1280,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
       },
       responses: {
+        ...recordRefusal(),
         "200": {
           description: "The updated category.",
           content: {
@@ -1305,6 +1306,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         "v1.40 (#1041) — deletes the category and, in the same transaction, moves every medication filed under it to OTHER; `movedCount` says how many moved. No medication is left pointing at a key that no longer exists. Another account's key, or a built-in value, is 404. Owner-only: not delegable, refused under a record switch.",
       requestParams: { path: categoryKeyPath },
       responses: {
+        ...recordRefusal(),
         "200": {
           description: "Deleted.",
           content: {
@@ -1653,11 +1655,12 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Medications"],
       summary: "Delete a medication",
       description:
-        "Cascades to the medication's schedules, intake events, dose changes, inventory rows, and side-effect logs. Revokes every API token scoped to `medication:<id>:ingest`. Audits as `medication.delete`.",
+        "Cascades to the medication's schedules, intake events, dose changes, inventory rows, and side-effect logs. Revokes every API token scoped to `medication:<id>:ingest`. Audits as `medication.delete`. The owner, or the guardian of a managed profile acting inside it; an adult's delegate is refused at every level.",
       requestParams: {
         path: z.object({ id: z.string() }),
       },
       responses: {
+        ...recordRefusal(),
         "200": {
           description: "Deletion succeeded.",
           content: {

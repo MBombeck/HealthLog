@@ -13,8 +13,7 @@ import { useTranslations } from "@/lib/i18n/context";
  * dashboard compliance card header and the per-medication bars
  * (`medication-compliance-bars.tsx`).
  *
- * Thin wrapper over `InfoPopover` (L1, `.planning/audits/2026-07-18-qa-ui.md`)
- * — this used to be a verbatim structural copy of the primitive; it now
+ * Thin wrapper over `InfoPopover`. This used to be a verbatim structural copy of the primitive; it now
  * only supplies the `HelpCircle` glyph, `align="start"`, and the
  * `compliance-info-*` data-slots the two call sites already key off of.
  */

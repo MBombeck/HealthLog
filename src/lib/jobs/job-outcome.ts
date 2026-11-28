@@ -63,6 +63,9 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   // An admission delivery that found its import still running from an
   // earlier delivery of the same job and did nothing.
   "already_running",
+  // A fresh offer of a full-history import that found another job of the
+  // import waiting and sent nothing (`integration-backfill-claim.ts`).
+  "already_waiting",
   "appointment_addresses_cleared",
   "assessments_warmed",
   "auto_resolved",
