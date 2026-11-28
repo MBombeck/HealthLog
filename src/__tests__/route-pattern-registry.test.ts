@@ -63,11 +63,17 @@ const HEIGHT = heightBudgets.pages as Record<string, { budget: number }>;
 
 /** `/settings/layout/dashboard` is an instance of `/settings/layout/[module]`. */
 function instanceOf(route: string, dynamicRoutes: string[]): boolean {
-  return dynamicRoutes.some((d) =>
-    new RegExp(
-      `^${d.replace(/\[[^\]]+\]/g, "[^/]+").replace(/[.]/g, "\\.")}$`,
-    ).test(route),
-  );
+  const parts = route.split("/");
+  return dynamicRoutes.some((d) => {
+    const pattern = d.split("/");
+    return (
+      pattern.length === parts.length &&
+      pattern.every(
+        (seg, i) =>
+          (seg.startsWith("[") && seg.endsWith("]")) || seg === parts[i],
+      )
+    );
+  });
 }
 
 describe("route pattern registry", () => {
