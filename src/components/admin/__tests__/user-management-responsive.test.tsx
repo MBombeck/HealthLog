@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 /**
- * Phase A5 / B-mobile CRITICAL #2 — `/admin/users` mobile layout.
+ * `/admin/users` mobile layout.
  *
  * The audit at 393 CSS px showed the desktop table (6 cols × N rows)
  * truncating the role badge ("ADMI", "USE") and pushing the action

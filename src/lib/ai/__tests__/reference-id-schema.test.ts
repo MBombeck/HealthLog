@@ -14,7 +14,7 @@ import { MEDICAL_REFERENCES } from "../medical-references";
  * fabricated id ("invented-guideline") MUST fail parse so the model
  * cannot synthesise a citation for a non-existent guideline.
  *
- * Optional-when-absent (the v1.4.16 baseline). Phase B5c will flip
+ * Optional-when-absent (the v1.4.16 baseline). A follow-up was to flip
  * the requirement to mandatory for severity >= "important".
  */
 

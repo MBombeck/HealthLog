@@ -15,7 +15,6 @@ import { annotate } from "@/lib/logging/context";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { type Locale } from "@/lib/i18n/config";
-import { resolveJobLocale } from "@/lib/i18n/job-locale";
 import { userDayKey } from "@/lib/tz/resolver";
 import { startOfLocalDayKey } from "@/lib/tz/local-day";
 import { buildMedsTodayBlock } from "@/lib/dashboard/meds-today";
@@ -57,19 +56,16 @@ export interface SummaryBuilderContext {
   locale: Locale;
 }
 
-export async function buildSummaryContext(user: {
-  displayName: string | null;
-  username: string;
-  locale: string | null;
-}): Promise<SummaryBuilderContext> {
-  const greetingName = user.displayName ?? user.username;
+export function buildSummaryContext(
+  user: { displayName: string | null; username: string },
+  locale: Locale,
+): SummaryBuilderContext {
   // The greeting salutation and the streak label are the two strings this
-  // route still translates server-side, and the native client is its only
-  // caller: a Bearer request carries no locale cookie and no meaningful
-  // Accept-Language, so the stored column is the only per-user signal. That
-  // is exactly the shape `resolveJobLocale` exists for: stored user locale,
-  // then the operator's configured default, then English.
-  const locale: Locale = await resolveJobLocale(user.locale);
+  // route still translates server-side. `locale` is the request's, resolved
+  // by the route through `resolveServerLocale`, which hears Accept-Language.
+  // The stored column alone answered English for an account that never
+  // picked a language, whatever language the phone ran in.
+  const greetingName = user.displayName ?? user.username;
   return { greetingName, locale };
 }
 

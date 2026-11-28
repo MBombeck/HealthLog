@@ -1,5 +1,5 @@
 /**
- * Channel state mutations for the notification dispatcher (v1.4.15 Phase B3).
+ * Channel state mutations for the notification dispatcher (v1.4.15).
  *
  * Centralised so the dispatcher can call ONE function per outcome —
  * making the "auto-disable on hard reject" + "exponential backoff on

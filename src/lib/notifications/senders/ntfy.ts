@@ -25,7 +25,7 @@ import {
  * Send notification via ntfy (simple HTTP POST).
  * See https://docs.ntfy.sh/publish/
  *
- * Returns a structured `SendOutcome` so the dispatcher (v1.4.15 Phase B3)
+ * Returns a structured `SendOutcome` so the dispatcher (v1.4.15)
  * can distinguish hard rejects (HTTP 410, topic deleted) from soft errors
  * (5xx, 429, network timeout) and apply the right retry / auto-disable
  * policy.

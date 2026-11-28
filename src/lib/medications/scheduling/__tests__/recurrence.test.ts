@@ -1,8 +1,7 @@
 /**
  * v1.5.0 — canonical recurrence engine tests.
  *
- * Covers every cell of the edge-case matrix in
- * `.planning/medication-scheduling-2026-05-28/B-design-synthesis.md`:
+ * Covers every cell of the scheduling edge-case matrix:
  *   - DAILY / weekday-subset / multi-week / monthly / quarterly /
  *     yearly RRULE expansion
  *   - rolling cadence (`rollingIntervalDays`)

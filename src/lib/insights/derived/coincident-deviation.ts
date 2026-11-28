@@ -407,9 +407,11 @@ export async function computeCoincidentDeviation(
   // registry's order, so the output does not depend on which finished first.
   const perType = await Promise.all(
     VITALS_BASELINE_TYPES.map(async (type) => {
+      // The band keeps the engine's default window (unset), so a vital
+      // logged on a few days a month is banded like on its metric page.
       const baseline = await computeVitalsBaseline(userId, profile, {
         type,
-        windowDays,
+        windowDays: opts.windowDays,
         now,
         coverage,
       });

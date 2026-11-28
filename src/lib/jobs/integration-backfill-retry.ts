@@ -13,7 +13,9 @@
  *   - transient (a 5xx, a 429, a timeout, a dropped connection): the slice is
  *     sent again as the next slice of the same chain, after a backoff that
  *     doubles from five minutes up to six hours, with jitter, and never
- *     sooner than the provider's `Retry-After`. The progress note the runner
+ *     sooner than the provider's `Retry-After`. When another job of the
+ *     import already waits, that one carries it on and nothing is sent
+ *     (`integration-backfill-claim.ts`). The progress note the runner
  *     keeps is untouched, so the retry starts where the failed slice stopped.
  *     After `INTEGRATION_BACKFILL_TRANSIENT_ATTEMPTS` failed runs in a row the
  *     chain gives up, as a terminal state rather than a throw: the failure
@@ -40,11 +42,11 @@ import {
   type IntegrationKey,
 } from "@/lib/integrations/status";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
-import {
-  enqueueIntegrationBackfillAdmission,
-  type IntegrationBackfillAdmissionPayload,
-  type IntegrationBackfillKind,
+import type {
+  IntegrationBackfillAdmissionPayload,
+  IntegrationBackfillKind,
 } from "@/lib/jobs/integration-backfill-admission";
+import { sendBackfillUnlessWaiting } from "@/lib/jobs/integration-backfill-claim";
 import { annotate } from "@/lib/logging/context";
 
 /** Failed runs in a row a slice gets before the chain gives up. */
@@ -234,7 +236,7 @@ export async function handleBackfillFailure(
     );
     const boss = getGlobalBoss();
     const sent = boss
-      ? await enqueueIntegrationBackfillAdmission(
+      ? await sendBackfillUnlessWaiting(
           boss,
           {
             kind: payload.kind,
@@ -248,7 +250,19 @@ export async function handleBackfillFailure(
           delaySeconds,
         )
       : null;
-    if (sent) {
+    if (sent?.kind === "waiting") {
+      // Another job of the import waits already (a fresh offer from boot
+      // discovery) and picks up from the progress note: a retry beside it
+      // would be a second chain.
+      annotate({
+        action: {
+          name: "integration_backfill.retry_covered",
+          details: { kind: payload.kind, slice, attempt: failures },
+        },
+      });
+      return { handled: true };
+    }
+    if (sent?.kind === "sent") {
       annotate({
         action: {
           name: "integration_backfill.retry_scheduled",

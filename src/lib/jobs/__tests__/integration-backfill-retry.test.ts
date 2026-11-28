@@ -32,6 +32,10 @@ vi.mock("@/lib/jobs/boss-instance", () => ({
     },
   }),
 }));
+vi.mock(
+  "@/lib/jobs/integration-backfill-claim",
+  () => import("@/__tests__/helpers/backfill-claim-passthrough"),
+);
 vi.mock("@/lib/integrations/status", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/integrations/status")>()),
   recordSyncFailure: recordSyncFailureMock,

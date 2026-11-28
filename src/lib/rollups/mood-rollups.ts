@@ -7,7 +7,7 @@
  * carrying `count` / `mean` / `min_score` / `max_score` / `sd`
  * (population) folded via Postgres `AVG` / `MIN` / `MAX` / `STDDEV_POP`.
  *
- * The audit at `.planning/round-v1438-perf-analysis.md` §2.3 traced
+ * A v1.4.38 perf audit traced
  * the 12.7 s cold mount on `/api/mood/analytics` to the unbounded
  * `prisma.moodEntry.findMany({ where: { userId } })` that walked
  * every mood row the user has ever written into Node only to

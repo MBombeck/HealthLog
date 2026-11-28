@@ -1,6 +1,6 @@
 /**
- * Integration suite for the v1.15.0 cycle import-promotion (wave 4) and the
- * cycle export inclusion (wave 9) against a real Postgres testcontainer.
+ * Integration suite for the v1.15.0 cycle import-promotion and the
+ * cycle export inclusion against a real Postgres testcontainer.
  *
  *   - the Apple Health `export.xml` importer routes reproductive HK samples
  *     into CYCLE day-logs (NOT Measurement), gated on cycle-tracking enabled,

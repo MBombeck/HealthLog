@@ -7,7 +7,7 @@
  * cross-validated against the journal-of-record population PK paper
  * for tirzepatide (Schneck & Urva 2024, DOI 10.1002/psp4.13099).
  *
- * Posture (per `.planning/research/glp1-feature-inspiration.md` §11):
+ * Posture:
  *   - Display only. No autonomous dose escalation, no individual
  *     weight-loss projection, no drug-drug interaction checking,
  *     no mixing/reconstitution math.
