@@ -10,6 +10,7 @@ import {
 } from "@/lib/api-response";
 import { CHANNEL_TYPE_LABELS, EVENT_TYPES } from "@/lib/notifications/types";
 import type { ChannelType, EventType } from "@/lib/notifications/types";
+import { resolveChannelState } from "@/lib/integrations/overview";
 import { reEnableChannel } from "@/lib/notifications/channel-state";
 import { reEnableChannelSchema } from "@/lib/validations/notifications";
 
@@ -36,18 +37,26 @@ interface ChannelStatus {
   nextRetryAt: string | null;
 }
 
-function deriveState(channel: {
-  enabled: boolean;
-  disabledReason: string | null;
-  nextRetryAt: Date | null;
-}): ChannelStatus["state"] {
-  if (!channel.enabled) {
-    return channel.disabledReason ? "auto_disabled" : "manually_disabled";
+/**
+ * The wire's state word, read off the one channel rule
+ * (`resolveChannelState`) so this route and the integrations overview never
+ * disagree. A failing but enabled channel stays "active" here, as it always
+ * has; the overview says `delivery_failing`.
+ */
+function deriveState(
+  channel: Parameters<typeof resolveChannelState>[0],
+  now: Date,
+): ChannelStatus["state"] {
+  switch (resolveChannelState(channel, now).reason) {
+    case "auto_disabled":
+      return "auto_disabled";
+    case "switched_off":
+      return "manually_disabled";
+    case "sending_paused":
+      return "sending_paused";
+    default:
+      return "active";
   }
-  if (channel.nextRetryAt && channel.nextRetryAt > new Date()) {
-    return "sending_paused";
-  }
-  return "active";
 }
 
 /**
@@ -119,12 +128,13 @@ export const GET = apiHandler(async () => {
     loadEventStatuses(user.id),
   ]);
 
+  const now = new Date();
   const data: ChannelStatus[] = channels.map((ch) => ({
     id: ch.id,
     type: ch.type as ChannelType,
     label: CHANNEL_TYPE_LABELS[ch.type as ChannelType] ?? ch.type,
     enabled: ch.enabled,
-    state: deriveState(ch),
+    state: deriveState(ch, now),
     disabledReason: ch.disabledReason,
     consecutiveFailures: ch.consecutiveFailures,
     lastSuccessAt: ch.lastSuccessAt?.toISOString() ?? null,

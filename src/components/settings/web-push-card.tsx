@@ -55,7 +55,7 @@ export function needsHomeScreen(): boolean {
 type Unsupported = "browser" | "install" | null;
 
 /** What one press of "Enable push" ended in. */
-type SubscribeOutcome =
+export type SubscribeOutcome =
   "subscribed" | "not-configured" | "save-failed" | WebPushSubscribeFailure;
 
 /**
@@ -65,7 +65,7 @@ type SubscribeOutcome =
  * is switched on in its privacy settings, and "Activation failed" told nobody
  * that.
  */
-async function subscribeThisBrowser(): Promise<SubscribeOutcome> {
+export async function subscribeThisBrowser(): Promise<SubscribeOutcome> {
   const vapidRes = await apiFetchRaw("/api/notifications/vapid");
   if (!vapidRes.ok) return "not-configured";
   const vapidData = await vapidRes.json();
@@ -94,7 +94,7 @@ async function subscribeThisBrowser(): Promise<SubscribeOutcome> {
   return res.ok ? "subscribed" : "save-failed";
 }
 
-function subscribeOutcomeMessage(
+export function subscribeOutcomeMessage(
   outcome: SubscribeOutcome,
   t: ReturnType<typeof useTranslations>["t"],
 ): string {

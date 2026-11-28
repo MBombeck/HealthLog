@@ -46,7 +46,9 @@ export async function resetSetupFlow(username: string): Promise<void> {
              dashboard_widgets_json = NULL,
              glucose_unit = NULL,
              unit_preference = NULL,
-             disable_coach = false
+             disable_coach = false,
+             disclaimer_acknowledged_at = NULL,
+             disclaimer_acknowledged_version = NULL
        WHERE id = $1`,
       [id],
     );

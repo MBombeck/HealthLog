@@ -149,8 +149,8 @@ export function tourReferrerKey(userId: string): string {
  * for `inputsReady` first).
  */
 /**
- * v1.18.6 — write the wizard-return marker. Called from the wizard's
- * `DoneScreen` on mount so the launcher knows the user JUST finished
+ * v1.18.6 — write the wizard-return marker. Called when the person
+ * flow finishes so the launcher knows the user JUST finished
  * anamnesis and should get the module tour immediately (sequenced after
  * the post-wizard grace) rather than after the 24 h fallback delay.
  * Per-user keyed so a shared browser keeps each identity's state apart.

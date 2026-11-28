@@ -224,6 +224,19 @@ export const POST = apiHandler(async (request: NextRequest) => {
       const priorUsers = await tx.user.count();
       firstAccount.claimIfFirst(priorUsers, setupProven);
       const role = priorUsers === 0 ? "ADMIN" : "USER";
+      // 1.50 — the owner's own account closes open sign-up in the same
+      // transaction: until the setup's sign-up step (or Admin › General)
+      // opens it, only invited people can register, so nobody slips in
+      // between the claim and that question. A server claimed through single
+      // sign-on keeps its setting; there the identity provider decides who
+      // may sign in.
+      if (role === "ADMIN") {
+        await tx.appSettings.upsert({
+          where: { id: "singleton" },
+          create: { id: "singleton", registrationEnabled: false },
+          update: { registrationEnabled: false },
+        });
+      }
       return tx.user.create({
         data: {
           email,

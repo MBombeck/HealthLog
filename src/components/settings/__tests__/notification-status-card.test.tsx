@@ -43,6 +43,14 @@ vi.mock("@/hooks/use-mounted", () => ({
   useMounted: () => true,
 }));
 
+// The chip reads the integrations overview, the one channel rule.
+const overview: {
+  data: { items: { key: string; status: string | null }[] } | undefined;
+} = { data: undefined };
+vi.mock("@/lib/queries/use-integration-overview", () => ({
+  useIntegrationOverview: () => overview,
+}));
+
 import { I18nProvider } from "@/lib/i18n/context";
 import { NotificationStatusCard } from "../notification-status-card";
 import { primeLocales } from "@/__tests__/helpers/prime-locales";
@@ -69,8 +77,29 @@ interface MockChannel {
   nextRetryAt: string | null;
 }
 
-function setChannels(channels: MockChannel[]) {
+const OVERVIEW_KEY = {
+  TELEGRAM: "telegram",
+  NTFY: "ntfy",
+  WEB_PUSH: "web-push",
+} as const;
+const OVERVIEW_STATUS = {
+  active: "active",
+  auto_disabled: "error",
+  sending_paused: "error",
+  manually_disabled: "off",
+} as const;
+
+function setChannels(
+  channels: MockChannel[],
+  status?: "active" | "error" | "off",
+) {
   useQueryMock.mockReturnValue({ data: channels, isLoading: false });
+  overview.data = {
+    items: channels.map((ch) => ({
+      key: OVERVIEW_KEY[ch.type],
+      status: status ?? OVERVIEW_STATUS[ch.state],
+    })),
+  };
 }
 
 describe("<NotificationStatusCard />", () => {
@@ -117,6 +146,32 @@ describe("<NotificationStatusCard />", () => {
     expect(html).toContain(">Active</span>");
     // No "Re-enable" button when the channel is healthy.
     expect(html).not.toContain('data-testid="re-enable-WEB_PUSH"');
+  });
+
+  it("paints the Error chip for a channel whose last send failed", () => {
+    // The wire keeps such a channel "active"; the overview says error, and
+    // the chip follows the overview, as the channel card below it does.
+    setChannels(
+      [
+        {
+          id: "ch-5",
+          type: "TELEGRAM",
+          label: "Telegram",
+          enabled: true,
+          state: "active",
+          disabledReason: null,
+          consecutiveFailures: 2,
+          lastSuccessAt: "2026-05-09T10:00:00.000Z",
+          lastFailureAt: "2026-05-09T11:00:00.000Z",
+          lastFailureReason: "telegram_500",
+          nextRetryAt: null,
+        },
+      ],
+      "error",
+    );
+    const html = render(<NotificationStatusCard />);
+    expect(html).toContain(">Error</span>");
+    expect(html).not.toContain(">Active</span>");
   });
 
   it("paints the Error chip + Re-enable button + reason for an auto-disabled channel", () => {

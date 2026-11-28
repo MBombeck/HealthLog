@@ -64,10 +64,6 @@ const TARGET_SURFACES = [
  * splitting a form does not read as an un-wire.
  */
 const HEIGHT_SURFACES = [
-  [
-    join(SRC, "components", "onboarding", "baseline-form.tsx"),
-    join(SRC, "components", "onboarding", "baseline-fields.tsx"),
-  ],
   [join(SRC, "components", "settings", "account-section", "index.tsx")],
 ];
 
@@ -290,7 +286,7 @@ const UNIT_LITERAL_ALLOWLIST: Record<
     reason: "the glucose unit picker: its options are the two units",
   },
   "components/onboarding/units-screen.tsx": {
-    lines: 3,
+    lines: 4,
     reason: "the onboarding unit picker: its options are the two units",
   },
   "components/measurements/measurement-form-types.ts": {
@@ -310,10 +306,6 @@ const UNIT_LITERAL_ALLOWLIST: Record<
   "components/settings/import-panel/import-examples.ts": {
     lines: 3,
     reason: "input parsing: CSV examples showing the units an import accepts",
-  },
-  "components/onboarding/first-result-screen.tsx": {
-    lines: 1,
-    reason: "decimals chosen by the resolved glucose unit, not a label",
   },
   "app/insights/blood-glucose/page.tsx": {
     lines: 1,

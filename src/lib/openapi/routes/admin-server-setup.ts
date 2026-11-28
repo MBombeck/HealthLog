@@ -36,9 +36,20 @@ const serverSetupState = z
         z.object({
           id: z.enum(SERVER_SETUP_STEP_IDS),
           status: z.enum(SERVER_SETUP_STEP_STATUSES),
+          at: isoDateTime()
+            .optional()
+            .describe(
+              "1.50 — when an admin passed the step with Later or Not now; absent on a pass the setup inferred.",
+            ),
+          by: z
+            .string()
+            .optional()
+            .describe("1.50 — the admin who passed the step."),
         }),
       )
-      .describe("Every step, in order. A missing stored step reads pending."),
+      .describe(
+        "Every step, in order (1.50: account-mfa, signups, relay, ai, recovery; a 1.49 setup reads through its old ids). A missing stored step reads pending.",
+      ),
     noticePending: z
       .boolean()
       .describe(
@@ -94,7 +105,7 @@ export const adminServerSetupPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Admin"],
       summary: "The first-admin server setup's state",
       description:
-        "The steps (accounts, notifications, ai, privacy, health), the finish stamp, whether the start-page notice shows for this admin, and the environment facts the steps show. Admin-only, cookie-only.",
+        "The steps (account-mfa, signups, relay, ai, recovery), the finish stamp, whether the start-page notice shows for this admin, and the environment facts the steps show. Admin-only, cookie-only.",
       responses: {
         "200": {
           description: "The setup state.",

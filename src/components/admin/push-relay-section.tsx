@@ -127,16 +127,7 @@ function PushRelayLoadError({
  * stays in view is what the admin has to act on: a refusal, a reason the
  * relay gives, changed terms, a registration left behind.
  */
-export function PushRelaySection({
-  besideQuestion = false,
-}: {
-  /**
-   * Rendered beside the relay question (the server setup's notifications
-   * step): while the question is open the card stays away, so the step asks
-   * once instead of showing the question and the switch for the same thing.
-   */
-  besideQuestion?: boolean;
-} = {}) {
+export function PushRelaySection() {
   const { t } = useTranslations();
   const fmt = useFormatters();
   const statusQuery = usePushRelayStatus();
@@ -165,7 +156,6 @@ export function PushRelaySection({
   // Switched off by the operator, but still registered somewhere, or owing
   // the relay unbinds: say so rather than hide it.
   if (!status.allowed) return <PushRelayOffCard status={status} />;
-  if (besideQuestion && status.operatorDecision === "undecided") return null;
 
   const reasonKey = relayRefusalLabel(status);
 

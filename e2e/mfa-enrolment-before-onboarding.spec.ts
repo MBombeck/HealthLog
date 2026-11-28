@@ -137,7 +137,7 @@ test.describe("second factor before onboarding", () => {
 
     await test.step("onboarding opens once the factor exists", async () => {
       await page.goto("/");
-      await expect(page).toHaveURL(/\/onboarding$/);
+      await expect(page).toHaveURL(/\/onboarding(\/[a-z/-]+)?$/);
       await expect(page.locator('[data-slot="onboarding-shell"]')).toBeVisible({
         timeout: 15_000,
       });
