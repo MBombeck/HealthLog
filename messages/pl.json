@@ -397,6 +397,7 @@
     "practiceLabel": "Gabinet",
     "insurer": "Ubezpieczyciel zdrowotny",
     "insuranceNumber": "Nr ubezpieczonego",
+    "insuranceGroupNumber": "Nr grupy",
     "summaryTitle": "Podsumowanie kliniczne",
     "summaryReadings": "Zarejestrowano w ciągu {days, plural, one {# dnia} few {# dni} many {# dni} other {# dnia}}: {count, plural, one {# pomiar} few {# pomiary} many {# pomiarów} other {# pomiaru}} dla {params, plural, one {# parametru} few {# parametrów} many {# parametrów} other {# parametru}}.",
     "summaryTrend": "{label}: ostatnio {latest} {arrow}",
@@ -6887,7 +6888,13 @@
       "other": "Ta wartość nie została przyjęta. Sprawdź ją i spróbuj ponownie.",
       "reproofRequired": "Wpisz obecne hasło, aby zmienić adres e-mail.",
       "reproofFailed": "Hasło jest nieprawidłowe, więc adres e-mail nie został zmieniony.",
-      "secondFactorRequired": "Potwierdź drugim składnikiem lub kluczem dostępu, aby zmienić adres e-mail."
+      "secondFactorRequired": "Potwierdź drugim składnikiem lub kluczem dostępu, aby zmienić adres e-mail.",
+      "invalidKvnr": "To nie jest prawidłowy KVNR. Sprawdź literę i dziewięć cyfr.",
+      "invalidSvnr": "To nie jest prawidłowy SVNR. Sprawdź dziesięć cyfr.",
+      "invalidAhv": "To nie jest prawidłowy numer AHV. Ma 13 cyfr i zaczyna się od 756.",
+      "invalidBsn": "To nie jest prawidłowy BSN. Sprawdź dziewięć cyfr.",
+      "invalidNir": "To nie jest prawidłowy NIR. Sprawdź 13 znaków i dwucyfrowy klucz.",
+      "invalidMemberId": "Użyj od 3 do 30 liter, cyfr, spacji, łączników lub kropek."
     },
     "avatar": {
       "title": "Zdjęcie profilowe",
@@ -7708,8 +7715,17 @@
       "fullNamePlaceholder": "np. Anna Kowalska",
       "insurer": "Ubezpieczyciel zdrowotny",
       "insurerPlaceholder": "np. AOK Bayern",
-      "insuranceNumber": "Numer ubezpieczonego (KVNR)",
-      "insuranceNumberHint": "10 znaków: jedna litera + dziewięć cyfr (np. A123456780)."
+      "insuranceNumber": "Numer ubezpieczonego",
+      "insuranceCountry": "Kraj",
+      "numberLabel": {
+        "DE": "Numer ubezpieczonego (KVNR)",
+        "AT": "Numer ubezpieczenia społecznego (SVNR)",
+        "CH": "Numer AHV",
+        "NL": "Numer usług obywatelskich (BSN)",
+        "FR": "Numer zabezpieczenia społecznego (NIR)",
+        "US": "Identyfikator członka"
+      },
+      "insuranceGroupNumber": "Numer grupy"
     },
     "healthRecord": {
       "title": "Eksportuj dokumentację zdrowotną",

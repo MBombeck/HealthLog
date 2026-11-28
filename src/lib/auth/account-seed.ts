@@ -74,6 +74,8 @@ export const ACCOUNT_SEED_WITHHELD = [
   "insurerName",
   "insurerIkNumber",
   "insuranceNumber",
+  "insuranceNumberCountry",
+  "insuranceGroupNumber",
   "lastReportPracticeName",
   "reportSelection",
   // Resolved against the origin a request reached, which the first paint

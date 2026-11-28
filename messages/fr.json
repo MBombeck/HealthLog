@@ -397,6 +397,7 @@
     "practiceLabel": "Cabinet",
     "insurer": "Assurance maladie",
     "insuranceNumber": "N° d’assuré",
+    "insuranceGroupNumber": "N° de groupe",
     "summaryTitle": "Résumé clinique",
     "summaryReadings": "Enregistré sur {days, plural, one {# jour} other {# jours}} : {count, plural, one {# mesure} other {# mesures}} sur {params, plural, one {# paramètre} other {# paramètres}}.",
     "summaryTrend": "{label} : dernier {latest} {arrow}",
@@ -6887,7 +6888,13 @@
       "other": "Cette valeur n'a pas été acceptée. Vérifiez-la et réessayez.",
       "reproofRequired": "Saisissez votre mot de passe actuel pour changer l'adresse e-mail.",
       "reproofFailed": "Ce mot de passe est incorrect, l'adresse e-mail n'a donc pas été modifiée.",
-      "secondFactorRequired": "Confirmez avec votre second facteur ou une clé d'accès pour changer l'adresse e-mail."
+      "secondFactorRequired": "Confirmez avec votre second facteur ou une clé d'accès pour changer l'adresse e-mail.",
+      "invalidKvnr": "Ce n’est pas un KVNR valide. Vérifiez la lettre et les neuf chiffres.",
+      "invalidSvnr": "Ce n’est pas un SVNR valide. Vérifiez les dix chiffres.",
+      "invalidAhv": "Ce n’est pas un numéro AVS valide. Il compte 13 chiffres et commence par 756.",
+      "invalidBsn": "Ce n’est pas un BSN valide. Vérifiez les neuf chiffres.",
+      "invalidNir": "Ce n’est pas un NIR valide. Vérifiez les 13 caractères et la clé à deux chiffres.",
+      "invalidMemberId": "Utilisez de 3 à 30 lettres, chiffres, espaces, tirets ou points."
     },
     "avatar": {
       "title": "Photo de profil",
@@ -7708,8 +7715,17 @@
       "fullNamePlaceholder": "p. ex. Jeanne Dupont",
       "insurer": "Assurance maladie",
       "insurerPlaceholder": "p. ex. AOK Bayern",
-      "insuranceNumber": "Numéro d’assuré (KVNR)",
-      "insuranceNumberHint": "10 caractères : une lettre + neuf chiffres (p. ex. A123456780)."
+      "insuranceNumber": "Numéro d’assuré",
+      "insuranceCountry": "Pays",
+      "numberLabel": {
+        "DE": "Numéro d’assuré (KVNR)",
+        "AT": "Numéro de sécurité sociale (SVNR)",
+        "CH": "Numéro AVS",
+        "NL": "Numéro de service citoyen (BSN)",
+        "FR": "Numéro de sécurité sociale (NIR)",
+        "US": "Identifiant de membre"
+      },
+      "insuranceGroupNumber": "Numéro de groupe"
     },
     "healthRecord": {
       "title": "Exporter le dossier de santé",

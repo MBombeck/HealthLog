@@ -57,6 +57,8 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     insurerName: result.user.insurerName,
     insurerIkNumber: result.user.insurerIkNumber,
     hasInsuranceNumber: result.user.hasInsuranceNumber,
+    insuranceNumberCountry: result.user.insuranceNumberCountry,
+    insuranceGroupNumber: result.user.insuranceGroupNumber,
     ...(result.rejectedFields ? { rejectedFields: result.rejectedFields } : {}),
   });
 });

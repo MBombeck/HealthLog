@@ -198,16 +198,16 @@ export interface AuthUser {
   /**
    * v1.7.0 — optional patient-identity fields used by the health-record
    * export (PDF cover + FHIR Patient). All optional; `insuranceNumber`
-   * is the German KVNR, decrypted server-side for the form prefill.
+   * is decrypted server-side for the form prefill.
    */
   fullName: string | null;
   insurerName: string | null;
-  /**
-   * v1.8.6 — optional German insurer institution number (IKNR, 9 digits).
-   * Surfaced on the FHIR `Coverage` resource's payor Organization.
-   */
+  /** German insurer institution number (IKNR) for the FHIR Coverage payor. */
   insurerIkNumber: string | null;
   insuranceNumber: string | null;
+  /** ISO 3166-1 alpha-2; DE for a number stored without one. */
+  insuranceNumberCountry: string | null;
+  insuranceGroupNumber: string | null;
   /**
    * Practice / clinic name from the last health-record export, so the export
    * panel opens pre-filled instead of asking for it again every month. The

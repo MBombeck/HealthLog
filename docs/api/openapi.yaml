@@ -5034,9 +5034,12 @@ paths:
         saved nothing would be a lie.
 
 
-        The insurance number is validated with its check digit, normalised, and stored encrypted; it is never returned.
-        `hasInsuranceNumber` reports presence only. A null or empty string clears a nullable field rather than being
-        refused, so a form that renders “no answer” as `""` does not 422 the whole patch.
+        The insurance number is validated under the rule of its country (`insuranceNumberCountry`, sent or stored, DE
+        when neither), normalised, and stored encrypted; it is never returned. A number that fails the rule, or a
+        country change the stored number would fail, comes back in `rejectedFields` with code `invalid_kvnr`,
+        `invalid_svnr`, `invalid_ahv`, `invalid_bsn`, `invalid_nir` or `invalid_member_id`. `hasInsuranceNumber` reports
+        presence only. A null or empty string clears a nullable field rather than being refused, so a form that renders
+        “no answer” as `""` does not 422 the whole patch.
       requestBody:
         required: true
         content:
@@ -12047,8 +12050,8 @@ paths:
         - Auth
       summary: Update the calling user's profile
       description: Partial profile update — every field is optional. An explicit null (or empty string) clears a field. A
-        non-empty `insurerIkNumber` must be exactly 9 digits (422 otherwise); a non-empty `insuranceNumber` (KVNR) must
-        pass the mod-10 check. `userId` is never accepted from the body.
+        non-empty `insurerIkNumber` must be exactly 9 digits (422 otherwise); a non-empty `insuranceNumber` must pass
+        the rule of its country (`insuranceNumberCountry`). `userId` is never accepted from the body.
       requestBody:
         required: true
         content:
@@ -33873,7 +33876,25 @@ components:
               maxLength: 120
             - type: "null"
         insuranceNumber:
-          description: German KVNR. Empty/null clears it; mod-10 check enforced.
+          description: The insurance number, checked under the rule of `insuranceNumberCountry` (sent in the same request, else
+            stored, else DE) and stored normalised. Empty/null clears it. A value that fails the rule is not written and
+            comes back in `rejectedFields` with code `invalid_kvnr`, `invalid_svnr`, `invalid_ahv`, `invalid_bsn`,
+            `invalid_nir` or `invalid_member_id`.
+          type:
+            - string
+            - "null"
+        insuranceNumberCountry:
+          description: "ISO 3166-1 alpha-2 country whose rule the insurance number follows: DE (KVNR), AT (SVNR), CH (AHV number),
+            NL (BSN) and FR (NIR) are checked against their check digit; every other country takes 3 to 30 letters,
+            digits, spaces, hyphens or dots, as entered. A number stored without a country follows DE. Case-insensitive;
+            empty/null clears it. A change the stored number would fail, sent without a new number, is refused with the
+            stored number's rejection code."
+          type:
+            - string
+            - "null"
+        insuranceGroupNumber:
+          description: "The plan's group number beside a US member ID: 3 to 30 letters, digits, spaces, hyphens or dots. Kept only
+            while the country is US; any other country clears it. Empty/null clears it."
           type:
             - string
             - "null"
@@ -33899,9 +33920,10 @@ components:
           maxLength: 512
       description: Partial profile update. Every field is optional and an omitted field is left untouched. An explicit null
         clears any nullable field; an empty string also clears `displayName`, `dateOfBirth`, `gender`, `fullName`,
-        `insurerName`, `insuranceNumber` and `insurerIkNumber`. `email` is not among them — it is validated as an
-        address, so send null to clear it. `locale`, `timezone`, `timeFormat` and `dateFormat` are not clearable.
-        `userId` is never accepted — it is narrowed from the session/token.
+        `insurerName`, `insuranceNumber`, `insuranceNumberCountry`, `insuranceGroupNumber` and `insurerIkNumber`.
+        `email` is not among them — it is validated as an address, so send null to clear it. `locale`, `timezone`,
+        `timeFormat` and `dateFormat` are not clearable. `userId` is never accepted — it is narrowed from the
+        session/token.
     PasskeyReauthRequest:
       type: object
       properties:
@@ -50610,6 +50632,7 @@ components:
               - daily.asks
               - daily.scores-short-labels
               - insights.scores-short-labels
+              - profile.insurance-number-country
               - health-connect.sync
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
@@ -50767,11 +50790,21 @@ components:
             /api/insights/derived and each GET /api/insights/derived/batch entry (null for a metric that is no HealthLog
             score), GET /api/insights/score-history, healthScore on GET /api/analytics, and on GET
             /api/dashboard/snapshot healthScore and each scoreRings entry (null on MED_COMPLIANCE). Render it as given,
-            never a short name of the client's own. `health-connect.sync`: The Android Health Connect sync: POST
-            /api/health-connect/pairing mints a one-time code (QR healthlog-sync://pair?server=…&code=…), POST
-            /api/health-connect/pair exchanges it for a health-connect:write token bound to a Device, GET
-            /api/health-connect/state answers the wanted types and limits, and POST /api/health-connect/batch takes
-            records, aggregates and deletes with one result per item. Early preview."
+            never a short name of the client's own. `profile.insurance-number-country`: The profile (GET/PATCH
+            /api/user/profile, PUT /api/auth/profile, GET /api/auth/me) carries insuranceNumberCountry (ISO 3166-1
+            alpha-2; a number stored without one is DE) and insuranceGroupNumber (US only, else null); GET
+            /api/user/profile also carries insuranceNumberDisplay, the number in its country's form. insuranceNumber is
+            checked under its country: DE KVNR, AT SVNR, CH AHV number, NL BSN and FR NIR by check digit, every other
+            country 3 to 30 letters, digits, spaces, hyphens or dots as entered. A refused value comes back in
+            rejectedFields with code invalid_kvnr, invalid_svnr, invalid_ahv, invalid_bsn, invalid_nir or
+            invalid_member_id; a country change the stored number would fail is refused on insuranceNumberCountry. The
+            FHIR Patient identifier uses the country's national system where one is verified, else type MB with no
+            system, and a US group number rides Coverage.class (group). `health-connect.sync`: The Android Health
+            Connect sync: POST /api/health-connect/pairing mints a one-time code (QR
+            healthlog-sync://pair?server=…&code=…), POST /api/health-connect/pair exchanges it for a
+            health-connect:write token bound to a Device, GET /api/health-connect/state answers the wanted types and
+            limits, and POST /api/health-connect/batch takes records, aggregates and deletes with one result per item.
+            Early preview."
       required:
         - version
         - buildSha
@@ -51425,6 +51458,14 @@ components:
                     - string
                     - "null"
                 insuranceNumberEncrypted:
+                  type:
+                    - string
+                    - "null"
+                insuranceNumberCountry:
+                  type:
+                    - string
+                    - "null"
+                insuranceGroupNumber:
                   type:
                     - string
                     - "null"
@@ -59822,6 +59863,20 @@ components:
           type: boolean
           description: Whether an insurance number is stored. The number itself is encrypted at rest and is never returned — only
             its presence.
+        insuranceNumberCountry:
+          description: "ISO 3166-1 alpha-2 country whose rule the insurance number follows: DE (KVNR), AT (SVNR), CH (AHV number),
+            NL (BSN) and FR (NIR) are checked against their check digit; every other country takes 3 to 30 letters,
+            digits, spaces, hyphens or dots, as entered. A number stored without a country follows DE. Null when no
+            number and no country is stored."
+          type:
+            - string
+            - "null"
+        insuranceGroupNumber:
+          description: "The plan's group number beside a US member ID: 3 to 30 letters, digits, spaces, hyphens or dots. Kept only
+            while the country is US; any other country clears it."
+          type:
+            - string
+            - "null"
         rejectedFields:
           description: "Present only on a PARTIAL success: the fields that were skipped while the rest of the patch was written. A
             200 carrying this key means the save was incomplete — surface it, do not treat the response as a clean save.
@@ -59844,6 +59899,8 @@ components:
         - insurerName
         - insurerIkNumber
         - hasInsuranceNumber
+        - insuranceNumberCountry
+        - insuranceGroupNumber
       additionalProperties: false
       description: "The profile after the patch, as THIS path projects it. Deliberately named apart from
         `ProfileUpdateResponse`: PATCH /api/user/profile runs the same handler and answers a different field set — this
@@ -73850,7 +73907,27 @@ components:
             - string
             - "null"
         insuranceNumber:
-          description: German KVNR, decrypted for the form prefill.
+          description: The insurance number as stored (compact for a checked country), decrypted for the form prefill.
+          type:
+            - string
+            - "null"
+        insuranceNumberCountry:
+          description: "ISO 3166-1 alpha-2 country whose rule the insurance number follows: DE (KVNR), AT (SVNR), CH (AHV number),
+            NL (BSN) and FR (NIR) are checked against their check digit; every other country takes 3 to 30 letters,
+            digits, spaces, hyphens or dots, as entered. A number stored without a country follows DE. Null when no
+            number and no country is stored."
+          type:
+            - string
+            - "null"
+        insuranceNumberDisplay:
+          description: The number written the way its country writes it (AT `NNNN DDMMYY`, CH `756.XXXX.XXXX.XX`, FR `S AA MM DD
+            CCC OOO KK`, every other country as stored). Show this, never a format of the client's own.
+          type:
+            - string
+            - "null"
+        insuranceGroupNumber:
+          description: "The plan's group number beside a US member ID: 3 to 30 letters, digits, spaces, hyphens or dots. Kept only
+            while the country is US; any other country clears it. Null for every other country."
           type:
             - string
             - "null"
@@ -73871,6 +73948,9 @@ components:
         - insurerName
         - insurerIkNumber
         - insuranceNumber
+        - insuranceNumberCountry
+        - insuranceNumberDisplay
+        - insuranceGroupNumber
         - modules
       additionalProperties: false
       description: Flattened profile fields for the native client (GET). The KVNR is decrypted server-side; the IKNR (v1.8.6)
@@ -73966,7 +74046,18 @@ components:
             - "null"
         hasInsuranceNumber:
           type: boolean
-          description: Whether a KVNR is on file (the value itself is not echoed).
+          description: Whether an insurance number is on file (the value itself is not echoed).
+        insuranceNumberCountry:
+          description: "The country the stored number follows, as GET reports it: DE for a number stored without one, null when
+            there is neither."
+          type:
+            - string
+            - "null"
+        insuranceGroupNumber:
+          description: The US plan's group number; null for every other country.
+          type:
+            - string
+            - "null"
         rejectedFields:
           description: "Present only on a PARTIAL success: the fields that were skipped while the rest of the patch was written. A
             200 carrying this key means the save was incomplete — surface it, do not treat the response as a clean save.
@@ -73992,11 +74083,13 @@ components:
         - insurerName
         - insurerIkNumber
         - hasInsuranceNumber
+        - insuranceNumberCountry
+        - insuranceGroupNumber
       additionalProperties: false
-      description: Profile echo returned by PATCH /api/user/profile. Reports KVNR presence as a boolean rather than
-        re-emitting the decrypted value. NOT the shape `PUT /api/auth/profile` returns — the two share a handler but
-        project it differently (see `AuthProfileUpdateResponse`), which is why this is no longer described as covering
-        both.
+      description: Profile echo returned by PATCH /api/user/profile. Reports insurance-number presence as a boolean rather
+        than re-emitting the decrypted value. NOT the shape `PUT /api/auth/profile` returns — the two share a handler
+        but project it differently (see `AuthProfileUpdateResponse`), which is why this is no longer described as
+        covering both.
     GetNotificationPrefsResponse:
       type: object
       properties:

@@ -433,6 +433,7 @@
     "practiceLabel": "Practice",
     "insurer": "Health insurer",
     "insuranceNumber": "Insurance no.",
+    "insuranceGroupNumber": "Group no.",
     "summaryTitle": "Clinical summary",
     "summaryReadings": "Recorded over {days, plural, one {# day} other {# days}}: {count, plural, one {# measurement} other {# measurements}} across {params, plural, one {# parameter} other {# parameters}}.",
     "summaryTrend": "{label}: latest {latest} {arrow}",
@@ -6887,7 +6888,13 @@
       "other": "This value was not accepted. Check it and try again.",
       "reproofRequired": "Enter your current password to change the email address.",
       "reproofFailed": "That password is not correct, so the email address was not changed.",
-      "secondFactorRequired": "Confirm with your second factor or a passkey to change the email address."
+      "secondFactorRequired": "Confirm with your second factor or a passkey to change the email address.",
+      "invalidKvnr": "That is not a valid KVNR. Check the letter and the nine digits.",
+      "invalidSvnr": "That is not a valid SVNR. Check the ten digits.",
+      "invalidAhv": "That is not a valid AHV number. It has 13 digits and starts with 756.",
+      "invalidBsn": "That is not a valid BSN. Check the nine digits.",
+      "invalidNir": "That is not a valid NIR. Check the 13 characters and the two-digit key.",
+      "invalidMemberId": "Use 3 to 30 letters, digits, spaces, hyphens or dots."
     },
     "avatar": {
       "title": "Profile photo",
@@ -7708,8 +7715,17 @@
       "fullNamePlaceholder": "e.g. Jane Doe",
       "insurer": "Health insurer",
       "insurerPlaceholder": "e.g. AOK Bayern",
-      "insuranceNumber": "Insurance number (KVNR)",
-      "insuranceNumberHint": "10 characters: one letter + nine digits (e.g. A123456780)."
+      "insuranceNumber": "Insurance number",
+      "insuranceCountry": "Country",
+      "numberLabel": {
+        "DE": "Insurance number (KVNR)",
+        "AT": "Social insurance number (SVNR)",
+        "CH": "AHV number",
+        "NL": "Citizen service number (BSN)",
+        "FR": "Social security number (NIR)",
+        "US": "Member ID"
+      },
+      "insuranceGroupNumber": "Group number"
     },
     "healthRecord": {
       "title": "Export health record",
