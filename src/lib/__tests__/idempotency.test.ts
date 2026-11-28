@@ -405,7 +405,7 @@ describe("withIdempotency concurrency claim (A3)", () => {
   });
 });
 
-// Audit C-4 / phase P2: defaultUserIdResolver must support both cookie
+// Audit C-4: defaultUserIdResolver must support both cookie
 // sessions AND Bearer tokens. Without the Bearer fallback, idempotency
 // silently turned off for the iOS / external-ingest paths it was built for.
 describe("defaultUserIdResolver (audit C-4)", () => {

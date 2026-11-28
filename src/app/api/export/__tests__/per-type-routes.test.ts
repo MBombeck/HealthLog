@@ -304,10 +304,12 @@ describe("GET /api/export/measurements", () => {
     expect(prisma.measurement.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          measuredAt: expect.objectContaining({
-            gte: new Date("2026-04-01"),
-            lte: new Date("2026-05-01"),
-          }),
+          // Whole local days in the account zone (the Europe/Berlin
+          // fallback here): the until day runs to its end.
+          measuredAt: {
+            gte: new Date("2026-03-31T22:00:00.000Z"),
+            lt: new Date("2026-05-01T22:00:00.000Z"),
+          },
         }),
       }),
     );

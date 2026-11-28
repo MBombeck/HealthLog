@@ -1,5 +1,5 @@
 /**
- * Integration test for `GET /api/admin/host-metrics` (v1.4.16 phase B3).
+ * Integration test for `GET /api/admin/host-metrics` (v1.4.16).
  *
  * Asserts:
  *   - requireAdmin gating (403 for non-admin, 401 anonymous)

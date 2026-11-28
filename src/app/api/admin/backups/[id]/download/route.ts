@@ -8,8 +8,8 @@
  * of the `/api/admin/backups` family — `requireAdmin()` (cookie session
  * only; bearer tokens never elevate).
  *
- * Phase B1 / criterion 1 of the v1.4.15 backup-completeness work: today
- * admins can list backups and trigger a manual run, but never see the
+ * Part of the v1.4.15 backup-completeness work: before it, admins
+ * could list backups and trigger a manual run, but never see the
  * payload. This endpoint closes the loop without breaking the encryption-
  * at-rest contract: the ciphertext stays in the DB, the plaintext is only
  * materialised inside the request handler and streamed to the admin.

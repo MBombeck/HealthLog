@@ -1,5 +1,5 @@
 /**
- * Integration test for v1.4.16 phase B5b — multi-provider redundancy.
+ * Integration test for v1.4.16 — multi-provider redundancy.
  *
  * Scenario: a user has an OpenAI key configured AND the operator has
  * an admin-OpenAI key configured. The OpenAI primary is deliberately

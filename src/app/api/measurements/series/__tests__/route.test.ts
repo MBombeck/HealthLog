@@ -703,10 +703,13 @@ describe("GET /api/measurements/series — resolved judgements (v1.43, ios #116)
   });
 
   it("has no change under two days and the clinical glucose lines in mmol/L", async () => {
-    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    // The labels are in the reader's language: the session account's.
+    vi.mocked(getSession).mockResolvedValue({
+      ...SESSION_OK,
+      user: { ...SESSION_OK.user, locale: "de" },
+    } as never);
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       glucoseUnit: "mmol/L",
-      locale: "de",
       thresholdsJson: null,
     } as never);
     vi.mocked(prisma.measurement.findMany).mockResolvedValue([

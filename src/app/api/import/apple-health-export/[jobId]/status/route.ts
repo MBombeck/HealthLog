@@ -2,8 +2,7 @@
  * `GET /api/import/apple-health-export/[jobId]/status` — polling
  * endpoint for an in-flight Apple Health import.
  *
- * Returns the canonical `ImportJobStatusResponse` envelope (§8 of
- * `.planning/research/v1434-r-1-xml-import.md`). The polling cadence
+ * Returns the canonical `ImportJobStatusResponse` envelope. The polling cadence
  * the iOS client uses:
  *   - every 2 s while `queued | unpacking | parsing | upserting`
  *   - every 30 s once `done | failed` (last-known state is fine)

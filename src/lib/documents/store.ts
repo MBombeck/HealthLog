@@ -18,6 +18,7 @@ import type {
   InboundDocumentStatus,
 } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
+import { proseFromModelReply } from "@/lib/ai/prose-reply";
 import { servingClassFor } from "@/lib/documents/upload-policy";
 import {
   loadMarkerIndex,
@@ -156,6 +157,36 @@ export function encryptDocumentSummary(
 /** Decrypt a stored document summary's `Bytes` payload. Throws on a bad key. */
 export function decryptDocumentSummary(buf: Uint8Array): string {
   return decryptFromBytes(buf);
+}
+
+/**
+ * Rewrite a summary stored with the model's wrapper still around it
+ * (`{"summary": "…"}`, a fence) as the bare text it should have been. The
+ * summary run unwraps before it stores; this repairs what was stored before
+ * it did, the first time such a document is opened, and whatever a restore
+ * brings back. Idempotent: the write applies only while the row still holds
+ * the bytes that were read, and a clean summary is never rewritten.
+ * Best-effort: a failure leaves the row as it was, and the read shows the
+ * unwrapped text either way.
+ */
+export async function repairWrappedDocumentSummary(
+  doc: Pick<SerialisableDocument, "id" | "userId" | "summaryEncrypted">,
+  clean: string,
+): Promise<boolean> {
+  if (!doc.summaryEncrypted) return false;
+  try {
+    const written = await prisma.inboundDocument.updateMany({
+      where: {
+        id: doc.id,
+        userId: doc.userId,
+        summaryEncrypted: { equals: Buffer.from(doc.summaryEncrypted) },
+      },
+      data: { summaryEncrypted: encryptDocumentSummary(clean) },
+    });
+    return written.count > 0;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -344,7 +375,11 @@ export function serialiseDocumentDetail(
   let summaryState: DocumentSummaryStateValue = doc.summaryState;
   if (doc.summaryEncrypted && doc.summaryEncrypted.byteLength > 0) {
     try {
-      summary = decryptDocumentSummary(doc.summaryEncrypted);
+      const stored = decryptDocumentSummary(doc.summaryEncrypted);
+      summary = proseFromModelReply(stored, "summary");
+      if (summary !== stored.trim()) {
+        void repairWrappedDocumentSummary(doc, summary);
+      }
     } catch {
       summary = null;
       summaryState = "UNAVAILABLE";

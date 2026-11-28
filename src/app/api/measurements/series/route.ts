@@ -37,6 +37,7 @@ import {
   readSeriesBatch,
   SERIES_KINDS_MAX,
 } from "@/lib/measurements/series/read-series";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 
 /**
  * `kinds=a,b,c`: several series over one window in one request, in the
@@ -120,10 +121,14 @@ export const GET = apiHandler(async (request: NextRequest) => {
   }
 
   const { kind, kinds, days } = parsed.data;
+  const locale = await resolveServerLocale({
+    request,
+    userLocale: actor.locale ?? null,
+  });
   if (kinds !== undefined) {
     const series = await readSeriesBatch({
       userId: user.id,
-      actorId: actor.id,
+      locale,
       kinds,
       days,
     });
@@ -136,7 +141,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   return apiSuccess(
     await readSeries({
       userId: user.id,
-      actorId: actor.id,
+      locale,
       // The refinement admits exactly one of the two.
       kind: kind!,
       days,

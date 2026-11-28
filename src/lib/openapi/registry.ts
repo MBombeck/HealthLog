@@ -1,7 +1,7 @@
 /**
- * OpenAPI 3.1 base registry (v1.4.23 / Wave 4 F5a).
+ * OpenAPI 3.1 base registry (v1.4.23).
  *
- * Per the W1 stream-3 decision: `zod-openapi` (samchungy) reads Zod v4's
+ * `zod-openapi` (samchungy) reads Zod v4's
  * native `.meta()` metadata, so we annotate schemas in their original
  * validation files and register the route table here. The committed
  * spec at `docs/api/openapi.yaml` is regenerated via

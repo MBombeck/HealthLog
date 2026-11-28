@@ -94,6 +94,11 @@ import { SLEEP_TIMELINE_BACKFILL_QUEUE } from "../sleep-timeline-backfill-queue"
 import { STRAVA_BACKFILL_QUEUE } from "../strava-backfill-queue";
 import { WHOOP_BACKFILL_QUEUE } from "../whoop-backfill-queue";
 
+vi.mock(
+  "@/lib/jobs/integration-backfill-claim",
+  () => import("@/__tests__/helpers/backfill-claim-passthrough"),
+);
+
 const providerSources = [
   "whoop-backfill.ts",
   "google-health-backfill.ts",
