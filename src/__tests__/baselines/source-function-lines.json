@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 308,
-  "total": 95940,
+  "total": 95939,
   "entries": {
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
     "app/api/admin/notifications/reminder-check/route.ts :: apiHandler(arg)": 206,
@@ -109,7 +109,7 @@
     "components/insights/insights-edit-mode.tsx :: InsightsEditMode": 268,
     "components/insights/insights-tab-strip.tsx :: InsightsTabStripImpl": 392,
     "components/insights/intraday-pulse-chart.tsx :: IntradayPulseChart": 281,
-    "components/insights/layout-coach-fab.tsx :: LayoutCoachFab": 223,
+    "components/insights/layout-coach-fab.tsx :: LayoutCoachFab": 221,
     "components/insights/metric-target-summary.tsx :: TargetReferencePanel": 221,
     "components/insights/mood/mood-dimension-trends.tsx :: MoodDimensionTrends": 223,
     "components/insights/sleep-stage-stacked-bar.tsx :: SleepStageStackedBar": 354,
@@ -266,7 +266,7 @@
     "lib/jobs/coach-reminder-sweep.ts :: runCoachReminderSweep": 222,
     "lib/jobs/cycle-reminder.ts :: runCycleReminderTick": 243,
     "lib/jobs/document-summary.ts :: runDocumentSummaryJob": 238,
-    "lib/jobs/google-health-backfill.ts :: runGoogleHealthBackfillForUser": 276,
+    "lib/jobs/google-health-backfill.ts :: runGoogleHealthBackfillForUser": 275,
     "lib/jobs/insight-pregenerate.ts :: forceWarmUser": 282,
     "lib/jobs/insight-pregenerate.ts :: forceWarmUser > withFeatureCacheScope(arg)": 252,
     "lib/jobs/insight-pregenerate.ts :: runInsightPregenerate": 378,
