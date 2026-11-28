@@ -708,6 +708,7 @@ describe("buildDailyDigest — worth-a-look rail item builders", () => {
             provider: "Apple Health",
             sinceYesterday: true,
             date: "15 Jul",
+            days: 1,
             href: "/settings/integrations#apple-health",
           },
           {
@@ -715,6 +716,7 @@ describe("buildDailyDigest — worth-a-look rail item builders", () => {
             provider: "Oura",
             sinceYesterday: false,
             date: "12 Jul",
+            days: 4,
             href: "/settings/integrations#oura",
           },
         ],
@@ -748,6 +750,7 @@ describe("buildDailyDigest — worth-a-look rail item builders", () => {
             provider: "Oura",
             sinceYesterday: true,
             date: "15 Jul",
+            days: 1,
             href: "/settings/integrations#oura",
           },
         ],

@@ -19,7 +19,9 @@
  *         or the server setup for an admin, a coach check-in);
  *      3. due: a dose that can be taken now, check-ups due now, a visit
  *         today or tomorrow, a source whose sign-in expired or was refused
- *         and that has delivered nothing for a day.
+ *         and that has delivered nothing for a day, a source the stall rule
+ *         holds quiet (`source_stalled`, one per source, never beside a
+ *         sign-in ask for the same source).
  *    Inside a tier the digest's own order holds.
  *  - No cap and no fold: every row that passes these rules is asked, in
  *    that order. The rules are what keeps the card short; more than
@@ -50,6 +52,10 @@ import {
   type ConnectionKey,
 } from "@/lib/integrations/connection-health";
 import type { DailyDigestInput } from "@/lib/daily/digest";
+import type { DailyDigestQuietSource } from "@/lib/daily/quiet-source-items";
+import type { Locale } from "@/lib/i18n/config";
+import { pluralKey } from "@/lib/i18n/plural";
+import type { ModuleKey } from "@/lib/modules/registry";
 import {
   ASK_INTENT,
   askLaterKey,
@@ -118,7 +124,7 @@ export const CONSENT_ASK_KINDS: readonly DailyAskKind[] = ["push_relay"];
  * "adjust" link carries the plan as the question).
  */
 const PRIMARY_BY_KIND: Record<
-  AskingItemKind,
+  AskingItemKind | SourceAskKind,
   { intent: string; labelKey: string }
 > = {
   dose_window: { intent: "dose.log", labelKey: "daily.action.logDose" },
@@ -128,6 +134,10 @@ const PRIMARY_BY_KIND: Record<
     intent: "sync.reconnect",
     labelKey: "daily.action.reconnectShort",
   },
+  // `sync.reconnect` with the source's own card as `href`, as the rail's
+  // quiet line: every shipped iOS build routes it to the integrations
+  // screen, where a new token would be a dead button.
+  source_stalled: { intent: "sync.reconnect", labelKey: "daily.action.open" },
   coach_checkin: {
     intent: COACH_CHECKIN_ADJUST_INTENT,
     labelKey: "daily.action.answer",
@@ -152,8 +162,16 @@ export const ASKING_ITEM_KINDS = [
 ] as const satisfies readonly PriorityItemKind[];
 export type AskingItemKind = (typeof ASKING_ITEM_KINDS)[number];
 
+/**
+ * The kinds the asks word from the stall rule's answer (the digest's
+ * `quietSources`, `src/lib/sync-stall/quiet.ts`), not from a rail item.
+ */
+export const SOURCE_ASK_KINDS = ["source_stalled"] as const;
+export type SourceAskKind = (typeof SOURCE_ASK_KINDS)[number];
+
 export const DAILY_ASK_KINDS = [
   ...ASKING_ITEM_KINDS,
+  ...SOURCE_ASK_KINDS,
   ...ADMIN_ASK_KINDS,
 ] as const;
 export type DailyAskKind = (typeof DAILY_ASK_KINDS)[number];
@@ -172,6 +190,26 @@ export const SYNC_ASK_AFTER_MS = 24 * 60 * 60 * 1000;
 
 /** The integration states only the person can mend. */
 export const SYNC_ASK_STATES: readonly string[] = ["error_reauth"];
+
+/**
+ * The switch a source ask follows on Settings › Dashboard: the sync
+ * category, the same one a reconnect ask follows.
+ */
+export const SOURCE_ASK_CATEGORY = "sync_issue" as const;
+
+/**
+ * A source whose data reaches one module only. With that module off its data
+ * is not wanted, so its silence is not asked about; every other source feeds
+ * a core domain or several modules.
+ */
+const SOURCE_ONLY_MODULE: Readonly<Partial<Record<string, ModuleKey>>> = {
+  nightscout: "glucose",
+};
+
+/** `source_stalled:<source>`: one ask per source. */
+export function sourceStalledAskKey(source: string): string {
+  return `source_stalled:${source}`;
+}
 
 export interface DailyAsk {
   kind: DailyAskKind;
@@ -231,6 +269,12 @@ export interface ResolveDailyAsksInput {
   enabledKinds?: readonly string[];
   /** The admin question, already worded, when one is open for this admin. */
   adminAsk: DailyAsk | null;
+  /**
+   * The quiet-source asks, already worded and already narrowed to the
+   * eligible ones (`sourceStalledAsks`); the policy holds them to the
+   * snoozes and the sync switch like any other row.
+   */
+  sourceAsks?: readonly DailyAsk[];
   /** Item keys held back: a dose's running snooze, an ask set aside today. */
   snoozedItemKeys: ReadonlySet<string>;
   /** The reader's local day, `YYYY-MM-DD`, for the "later" key. */
@@ -373,6 +417,18 @@ export function resolveDailyAsks(input: ResolveDailyAsksInput): DailyAsk[] {
     }
     push(ask);
   }
+  // Behind the rail's own candidates: the reconnects of the due tier come
+  // first, then what only went quiet.
+  for (const ask of input.sourceAsks ?? []) {
+    if (input.snoozedItemKeys.has(ask.itemKey)) continue;
+    if (
+      input.enabledKinds &&
+      !input.enabledKinds.includes(SOURCE_ASK_CATEGORY)
+    ) {
+      continue;
+    }
+    push(ask);
+  }
 
   const asks = ranked
     .sort((a, b) => a.tier - b.tier || a.order - b.order)
@@ -435,6 +491,78 @@ export function buildAdminAsk(kind: AdminAskKind, t: Translate): DailyAsk {
     // anything is switched on.
     learnMore: null,
   };
+}
+
+/** The most days a quiet source's line counts; past it, the state alone. */
+const QUIET_COUNT_MAX = 99;
+
+/**
+ * A quiet source's state line: the local days since its last delivery
+ * ("3 days quiet"), or the state alone ("No data") past
+ * {@link QUIET_COUNT_MAX} or when the count would take the line past the
+ * budget.
+ */
+export function quietMeta(days: number, locale: Locale, t: Translate): string {
+  const count = Math.max(1, Math.floor(days));
+  if (count > QUIET_COUNT_MAX) return t("daily.ask.quiet");
+  const withCount = t(pluralKey("daily.ask.quietDays", count, locale), {
+    count,
+  });
+  return askTextLength(withCount) <= ASK_TEXT_BUDGET.metaChars
+    ? withCount
+    : t("daily.ask.quiet");
+}
+
+/**
+ * One ask per source the stall rule holds quiet now (`quietSources`, read by
+ * the digest through `loadQuietSources`; no second idea of "quiet" here).
+ * Not for a source whose sign-in needs renewing: the reconnect ask names it.
+ * Not for a source whose only module is off. Titled with the provider's
+ * name, its state the days it has been quiet; "Open" leads to the source's
+ * own card, "Later" sets it aside for the day.
+ */
+export function sourceStalledAsks(
+  input: {
+    quietSources?: readonly DailyDigestQuietSource[];
+    syncIssues: DailyDigestInput["syncIssues"];
+    modules: DailyDigestInput["modules"];
+    todayLocalDate: string;
+    locale?: Locale;
+  },
+  t: Translate,
+): DailyAsk[] {
+  const covered = new Set(
+    input.syncIssues
+      .filter((issue) => SYNC_ASK_STATES.includes(issue.state))
+      .map((issue) => issue.integration),
+  );
+  const seen = new Set<string>();
+  const asks: DailyAsk[] = [];
+  for (const quiet of input.quietSources ?? []) {
+    if (covered.has(quiet.source) || seen.has(quiet.source)) continue;
+    const onlyModule = SOURCE_ONLY_MODULE[quiet.source];
+    if (onlyModule && input.modules[onlyModule] === false) continue;
+    seen.add(quiet.source);
+    const itemKey = sourceStalledAskKey(quiet.source);
+    const spec = PRIMARY_BY_KIND.source_stalled;
+    asks.push({
+      kind: "source_stalled",
+      tier: "due",
+      itemKey,
+      title: quiet.provider,
+      body: quietMeta(quiet.days, input.locale ?? "en", t),
+      subject: null,
+      actions: [
+        { labelKey: spec.labelKey, intent: spec.intent, href: quiet.href },
+        {
+          labelKey: "daily.action.later",
+          intent: `${ASK_INTENT.later}:${askLaterKey(input.todayLocalDate, itemKey)}`,
+        },
+      ],
+      learnMore: null,
+    });
+  }
+  return asks;
 }
 
 /**
@@ -519,6 +647,7 @@ export function asksFromDigest(
       };
     }),
     adminAsk: input.adminAsk ? buildAdminAsk(input.adminAsk, t) : null,
+    sourceAsks: sourceStalledAsks(input, t),
     enabledKinds: input.enabledHeroItemKinds,
     snoozedItemKeys: input.snoozedDoseItemKeys ?? new Set(),
     today: input.todayLocalDate,
@@ -649,6 +778,7 @@ export function wordAsk(
         body: t("daily.ask.planReview"),
       };
     }
+    case "source_stalled":
     case "push_relay":
     case "server_setup":
       return { title: ask.title, body: ask.body };

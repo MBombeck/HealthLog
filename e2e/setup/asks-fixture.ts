@@ -10,7 +10,8 @@
  *
  * One card with every kind but the relay (an admin sees the setup or the
  * relay, never both): a dose past its time, the server setup, a coach
- * check-in, a check-up, a visit tomorrow and a broken source. That puts the
+ * check-in, a check-up, a visit tomorrow, a broken source and one that went
+ * quiet twelve days ago (two digits, the widest count a phone usually sees). That puts the
  * widest button labels of the language in one card, the narrowest text
  * column the card can have.
  */
@@ -85,6 +86,16 @@ export function asksFixtureInput(
         lastSuccessAt: new Date(NOW.getTime() - 2 * DAY).toISOString(),
       },
     ],
+    quietSources: [
+      {
+        source: "google-health",
+        provider: "Google Health",
+        sinceYesterday: false,
+        date: "15 Nov",
+        days: 12,
+        href: "/settings/integrations#google-health",
+      },
+    ],
     preventiveDue: [{ label: "Zahnvorsorge", longCycle: true }],
     upcomingVisits: [
       {
@@ -111,6 +122,7 @@ export function asksFixtureInput(
     dismissedItemKeys: new Set<string>(),
     adminAsk: "server_setup",
     localTime,
+    locale,
   };
   return input;
 }

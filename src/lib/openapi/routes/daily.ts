@@ -83,12 +83,12 @@ const dailyAskSchema = z
     kind: z
       .enum([...DAILY_ASK_KINDS])
       .describe(
-        "What is asked. `dose_window`, `coach_checkin`, `preventive_care`, `upcoming_visit` and `sync_issue` (a reconnect only, never a quiet source) are the rail's own kinds; `push_relay` and `server_setup` are the admin question the admin start page asks (only on a browser session on the admin's own record, never on a Bearer request).",
+        "What is asked. `dose_window`, `coach_checkin`, `preventive_care`, `upcoming_visit` and `sync_issue` (a reconnect only, never a quiet source) are the rail's own kinds; `source_stalled` is a source the SYNC_STALLED rule holds quiet now, one per source (`itemKey` `source_stalled:<source>`), never beside a reconnect ask for the same source (feature `daily.asks-source-stalled`); `push_relay` and `server_setup` are the admin question the admin start page asks (only on a browser session on the admin's own record, never on a Bearer request).",
       ),
     tier: z
       .enum([...DAILY_ASK_TIERS])
       .describe(
-        "Why it is asked, in the order asks are ranked: `safety` (a dose past its on-time window), `decision` (a question only the reader can answer: the admin question, a coach check-in), `due` (a dose takeable now, check-ups due now, a visit today or tomorrow, a source whose sign-in expired or was refused and that has delivered nothing for a day).",
+        "Why it is asked, in the order asks are ranked: `safety` (a dose past its on-time window), `decision` (a question only the reader can answer: the admin question, a coach check-in), `due` (a dose takeable now, check-ups due now, a visit today or tomorrow, a source whose sign-in expired or was refused and that has delivered nothing for a day, a source that went quiet).",
       ),
     itemKey: z
       .string()
@@ -104,7 +104,7 @@ const dailyAskSchema = z
       .string()
       .nullable()
       .describe(
-        "The title's state, one short line, never a sentence: `Overdue 8:00 AM` (a dose past its time, `tier: safety`), `Due 8:00 AM`, `Check-up due`, `Visit today` / `Visit tomorrow`, `Disconnected` (a sign-in to renew), `Check-in due`, `Not set up`, `Encrypted` (the relay question). Times are on the reader's own clock and hour cycle; a time that would break the budget is left out (`Overdue`). At most 16 characters in every language, so it fits one line beside the icon and the button pair on a 360 px phone; a client shows it on one line and never wraps or cuts it. Null only from an older server.",
+        "The title's state, one short line, never a sentence: `Overdue 8:00 AM` (a dose past its time, `tier: safety`), `Due 8:00 AM`, `Check-up due`, `Visit today` / `Visit tomorrow`, `Disconnected` (a sign-in to renew), `3 days quiet` (a quiet source, local days since its last delivery), `Check-in due`, `Not set up`, `Encrypted` (the relay question). Times are on the reader's own clock and hour cycle; a time that would break the budget is left out (`Overdue`). At most 16 characters in every language, so it fits one line beside the icon and the button pair on a 360 px phone; a client shows it on one line and never wraps or cuts it. Null only from an older server.",
       ),
     subject: z
       .string()

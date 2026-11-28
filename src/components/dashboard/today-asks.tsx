@@ -35,6 +35,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   CalendarCheck,
   CalendarClock,
+  CloudOff,
   Compass,
   MessageCircle,
   Pill,
@@ -66,6 +67,7 @@ const KIND_ICON: Record<DailyAskKind, LucideIcon> = {
   preventive_care: CalendarClock,
   upcoming_visit: CalendarCheck,
   sync_issue: RefreshCw,
+  source_stalled: CloudOff,
   push_relay: Send,
   server_setup: Compass,
 };

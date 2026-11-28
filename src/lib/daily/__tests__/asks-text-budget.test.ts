@@ -1,6 +1,6 @@
 /**
  * The asks card's one-line rule. Every title and meta line the server words
- * for an ask (`daily.ask.*`, `buildAdminAsk`, `doseMeta`) keeps the shared
+ * for an ask (`daily.ask.*`, `buildAdminAsk`, `doseMeta`, `quietMeta`) keeps the shared
  * budget (`ASK_TEXT_BUDGET`, also the iPhone app's: at most 14 characters
  * for a title, 16 for a meta, in every language) and fits one line of the
  * card on the narrowest supported phone (360 css px, with a 15 px scrollbar
@@ -30,7 +30,10 @@ import {
   askTextLength,
   buildAdminAsk,
   doseMeta,
+  quietMeta,
 } from "@/lib/daily/asks";
+import { CONNECTION_LABELS } from "@/lib/integrations/connection-health";
+import { STALL_SOURCES } from "@/lib/sync-stall/quiet";
 import { makeFormatters, type TimeFormatPreference } from "@/lib/format-locale";
 import { locales, type Locale } from "@/lib/i18n/config";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
@@ -61,6 +64,9 @@ const ASKS_SOURCE = readSource("src/lib/daily/asks.ts", [
   "PRIMARY_BY_KIND",
   "buildAdminAsk",
 ]);
+/** Quiet days a source's state line can count, small and large. */
+const QUIET_DAYS = [1, 2, 3, 4, 5, 7, 11, 12, 21, 22, 25, 99, 100, 365, 1000];
+
 const LABEL_KEYS = [
   ...new Set(
     [...ASKS_SOURCE.matchAll(/labelKey: "([^"]+)"/g)].map((m) => m[1]),
@@ -144,6 +150,17 @@ describe(`asks text budget at ${ASK_TEXT_BUDGET.phoneCssPx} px`, () => {
         metas[`overdue ${time}`] = doseMeta(true, time, t);
         metas[`due ${time}`] = doseMeta(false, time, t);
       }
+      // A quiet source's line, at every count a reader can see: with the
+      // count when it fits, else the state alone.
+      for (const days of QUIET_DAYS) {
+        metas[`quiet ${days}`] = quietMeta(days, locale, t);
+      }
+      // The usual counts keep their number.
+      for (const days of [1, 2, 5, 12, 22]) {
+        expect(quietMeta(days, locale, t), `${locale} ${days}`).toContain(
+          String(days),
+        );
+      }
       // The usual clock keeps its time: the fallback is for the rare reader
       // who forced the other hour cycle, not the language's own.
       const own = makeFormatters(locale, "UTC", "AUTO", "AUTO").time(
@@ -160,6 +177,10 @@ describe(`asks text budget at ${ASK_TEXT_BUDGET.phoneCssPx} px`, () => {
         setup: setup.title,
         relay: relay.title,
       };
+      // A quiet source is titled with the provider's name.
+      for (const source of STALL_SOURCES) {
+        titles[`source ${source}`] = CONNECTION_LABELS[source];
+      }
       const over: string[] = [];
       for (const [key, text] of Object.entries(metas)) {
         const w = width(text, 12, "500");

@@ -14,6 +14,7 @@ import {
   OPTIONAL_ASK_KINDS,
   DAILY_ASK_KINDS,
   resolveDailyAsks,
+  sourceStalledAsks,
   type AskCandidate,
   type DailyAsk,
 } from "@/lib/daily/asks";
@@ -29,6 +30,7 @@ import {
 import { doseWindowItemKey } from "@/lib/daily/priority-item-key";
 import type { MedsTodayBlock } from "@/lib/dashboard/meds-today";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
+import type { DailyDigestQuietSource } from "@/lib/daily/quiet-source-items";
 import {
   aiUnavailable,
   DIGEST_AI_AVAILABLE,
@@ -718,7 +720,165 @@ describe("the browser test's asks are the builder's", () => {
       const input = asksFixtureInput(locale);
       const built = buildDailyDigest(input, getServerTranslator(locale).t).asks;
       expect(pick(serverAsks(locale))).toEqual(pick(built));
-      expect(built).toHaveLength(6);
+      expect(built).toHaveLength(7);
     }
+  });
+});
+
+describe("a source that went quiet (source_stalled)", () => {
+  /** A source the stall rule holds quiet, as the digest loader words it. */
+  const quiet = (
+    source: string,
+    provider: string,
+    days = 3,
+  ): DailyDigestQuietSource => ({
+    source,
+    provider,
+    sinceYesterday: days <= 1,
+    date: "13 Jul",
+    days,
+    href: `/settings/integrations#${source}`,
+  });
+  const stalled = (over: Partial<DailyDigestInput> = {}) =>
+    buildDailyDigest(
+      input({ quietSources: [quiet("oura", "Oura")], ...over }),
+      t,
+    ).asks.filter((a) => a.kind === "source_stalled");
+
+  it("asks about a source the stall rule holds quiet", () => {
+    const [ask] = stalled();
+    expect(ask).toMatchObject({
+      kind: "source_stalled",
+      tier: "due",
+      itemKey: "source_stalled:oura",
+      title: "Oura",
+      body: "3 days quiet",
+      learnMore: null,
+    });
+    expect(ask.actions).toEqual([
+      {
+        labelKey: "daily.action.open",
+        intent: "sync.reconnect",
+        href: "/settings/integrations#oura",
+      },
+      {
+        labelKey: "daily.action.later",
+        intent: `${ASK_INTENT.later}:ask-later:2026-07-16:source_stalled:oura`,
+      },
+    ]);
+  });
+
+  it("asks nothing without a quiet source: the rule decides, not the ask", () => {
+    expect(stalled({ quietSources: [] })).toEqual([]);
+    expect(stalled({ quietSources: undefined })).toEqual([]);
+  });
+
+  it("not for a source whose sign-in is asked for already", () => {
+    const digest = buildDailyDigest(
+      input({
+        quietSources: [quiet("oura", "Oura")],
+        syncIssues: [
+          {
+            integration: "oura",
+            state: "error_reauth",
+            lastSuccessAt: new Date(NOW.getTime() - 3 * DAY).toISOString(),
+          },
+        ],
+      }),
+      t,
+    );
+    expect(digest.asks.map((a) => [a.kind, a.itemKey])).toEqual([
+      ["sync_issue", "sync_issue:oura"],
+    ]);
+  });
+
+  it("not while it is set aside for the day", () => {
+    expect(
+      stalled({
+        snoozedDoseItemKeys: new Set(["source_stalled:oura"]),
+      }),
+    ).toEqual([]);
+  });
+
+  it("not when the sync category is switched off", () => {
+    expect(
+      stalled({
+        enabledHeroItemKinds: PRIORITY_ITEM_KINDS.filter(
+          (k) => k !== "sync_issue",
+        ),
+      }),
+    ).toEqual([]);
+  });
+
+  it("not when the only module the source feeds is off", () => {
+    const glucoseOff = stalled({
+      quietSources: [quiet("nightscout", "Nightscout")],
+      modules: { glucose: false },
+    });
+    expect(glucoseOff).toEqual([]);
+    expect(
+      stalled({ quietSources: [quiet("nightscout", "Nightscout")] }),
+    ).toHaveLength(1);
+  });
+
+  it("asks once per source, each under its own key", () => {
+    const asks = sourceStalledAsks(
+      {
+        quietSources: [
+          quiet("oura", "Oura"),
+          quiet("oura", "Oura", 5),
+          quiet("whoop", "WHOOP"),
+        ],
+        syncIssues: [],
+        modules: {},
+        todayLocalDate: "2026-07-16",
+        locale: "en",
+      },
+      t,
+    );
+    expect(asks.map((a) => a.itemKey)).toEqual([
+      "source_stalled:oura",
+      "source_stalled:whoop",
+    ]);
+  });
+
+  it("comes after a reconnect of another source, in the due tier", () => {
+    const digest = buildDailyDigest(
+      input({
+        quietSources: [quiet("oura", "Oura")],
+        syncIssues: [
+          {
+            integration: "withings",
+            state: "error_reauth",
+            lastSuccessAt: new Date(NOW.getTime() - 3 * DAY).toISOString(),
+          },
+        ],
+      }),
+      t,
+    );
+    expect(digest.asks.map((a) => a.itemKey)).toEqual([
+      "sync_issue:withings",
+      "source_stalled:oura",
+    ]);
+  });
+
+  it("counts the days in the reader's language", () => {
+    const de = getServerTranslator("de").t;
+    const ru = getServerTranslator("ru").t;
+    const one = (locale: "de" | "ru" | "en", tr: typeof t, days: number) =>
+      sourceStalledAsks(
+        {
+          quietSources: [quiet("oura", "Oura", days)],
+          syncIssues: [],
+          modules: {},
+          todayLocalDate: "2026-07-16",
+          locale,
+        },
+        tr,
+      )[0].body;
+    expect(one("en", t, 1)).toBe("1 day quiet");
+    expect(one("de", de, 2)).toBe("Still seit 2 T.");
+    expect(one("ru", ru, 2)).toBe("Тихо 2 дня");
+    expect(one("ru", ru, 5)).toBe("Тихо 5 дней");
   });
 });

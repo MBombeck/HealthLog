@@ -14,6 +14,7 @@ import {
   type ConnectionKey,
 } from "@/lib/integrations/connection-health";
 import { loadConnectionFacts } from "@/lib/integrations/connection-health-load";
+import { daysBetweenDateKeys, userDayKey } from "@/lib/tz/format";
 
 import {
   STALL_SOURCES,
@@ -76,6 +77,10 @@ export function wordQuietSources(
     provider: CONNECTION_LABELS[q.source],
     sinceYesterday: quietSinceWording(q.since, now, tz) === "yesterday",
     date: quietSinceDate(q.since, tz, locale),
+    days: Math.max(
+      1,
+      daysBetweenDateKeys(userDayKey(q.since, tz), userDayKey(now, tz)) || 1,
+    ),
     href: stallTapUrl(q.source),
   }));
 }

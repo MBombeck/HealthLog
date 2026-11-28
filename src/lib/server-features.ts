@@ -57,6 +57,7 @@ export const SERVER_FEATURES = [
   "daily.asks",
   "daily.asks-compact",
   "daily.scores-short-labels",
+  "daily.asks-source-stalled",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -163,4 +164,6 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "DailyAsk.title is the thing asked about (a medication's name, a check-up, who a visit is with, a source, the plan) and DailyAsk.body its state in a few words (Overdue 8:00 AM; Visit tomorrow; Disconnected): a server-worded title at most 14 characters and a state at most 16 in every language, one line each beside the icon and the button pair on a 360 px phone; learnMore is always null. The web renders each ask as one list row: icon, title over the state line, Later and the primary at the row's end. A consent row (kind push_relay, CONSENT_ASK_KINDS) carries exactly No and Yes and is never set aside.",
   "daily.scores-short-labels":
     "Each start-page score carries shortLabel, its short name for a tile from the score registry, worded in the response language: GET /api/daily/morning scores.sleep and scores.readiness, and GET /api/daily/digest score (the Health score). Render it as is; the web shows the same words.",
+  "daily.asks-source-stalled":
+    "GET /api/daily/digest asks may carry kind source_stalled (tier due, itemKey source_stalled:<source>): one per source that the SYNC_STALLED rule holds quiet now, never for a source with an error_reauth ask, never when its only module is off, and only while the sync category (sync_issue) is on. title is the provider's name, body the local days since its last delivery (3 days quiet), actions Open (sync.reconnect with href /settings/integrations#<source>, the source's card) and Later (ask.later:<dismissKey>).",
 };
