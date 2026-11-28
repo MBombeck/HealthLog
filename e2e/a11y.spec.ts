@@ -1141,8 +1141,9 @@ test.describe("axe-core authenticated route and state matrix", () => {
         const sheet = page.locator('[data-slot="responsive-sheet-content"]');
         await expect(sheet).toBeVisible({ timeout: 15_000 });
         // The session-only panel; a summary is stored on the document.
-        await sheet
-          .getByRole("button", { name: "Show extracted text" })
+        await sheet.locator('[data-slot="document-detail-more"]').click();
+        await page
+          .getByRole("menuitem", { name: "Show extracted text" })
           .click();
         const summary = sheet.locator('[data-slot="document-summary-panel"]');
         await expect(summary).toContainText("deterministic transcription", {

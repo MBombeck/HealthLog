@@ -26,6 +26,7 @@ import {
   ensureVaultFixture,
   seedNamespaceDocs,
   vaultFixtureIds,
+  openDocumentMenu,
 } from "./setup/vault-fixture";
 
 // The vault on an account of its own (`E2E_VAULT`): its layout is account
@@ -297,9 +298,13 @@ test.describe("document vault", () => {
     await openButton(page, "MRT Knie").click();
     const sheet = page.getByRole("dialog", { name: "MRT Knie" });
     await expect(sheet.locator("iframe")).toBeVisible({ timeout: 5_000 });
-    const open = sheet.locator('[data-slot="document-open-in-tab"]');
     // Enabled once the preview's bytes are in hand.
-    await expect(open).toBeEnabled();
+    await expect(
+      sheet.locator('[data-slot="document-download"]'),
+    ).toBeEnabled();
+    const menu = await openDocumentMenu(page, sheet);
+    const open = menu.locator('[data-slot="document-open-in-tab"]');
+    await expect(open).not.toHaveAttribute("data-disabled");
     if (process.env.E2E_SHOT_DIR) {
       await page.screenshot({
         path: `${process.env.E2E_SHOT_DIR}/open-in-tab-${test.info().project.name}.png`,
@@ -318,7 +323,26 @@ test.describe("document vault", () => {
     await expect(sheet).toBeVisible();
   });
 
-  test("a browser without a PDF viewer gets the download block, not a frame", async ({
+  test("the sheet's row values end on one line at 390 px", async ({ page }) => {
+    // ui-standards §20: a text, a select and a date in one group end against
+    // the same glyph slot, so their right edges agree.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/documents?episode=${KNIE_EPISODE_ID}&view=compact&q=MRT`);
+    await openButton(page, "MRT Knie").click();
+    const group = page
+      .getByRole("dialog", { name: "MRT Knie" })
+      .locator('[data-slot="document-detail-fields"]');
+    const values = group.locator(
+      '[data-slot="row-value-text"], [data-slot="row-value"] input[type="text"]',
+    );
+    await expect(values).toHaveCount(3);
+    const edges = await values.evaluateAll((els) =>
+      els.map((el) => el.getBoundingClientRect().right),
+    );
+    expect(Math.max(...edges) - Math.min(...edges)).toBeLessThanOrEqual(1);
+  });
+
+  test("a browser without a PDF viewer gets the file row, not a frame", async ({
     page,
   }) => {
     // #1403 — Chrome on Android has no in-page PDF viewer; the framed PDF
@@ -334,15 +358,16 @@ test.describe("document vault", () => {
     await openButton(page, "MRT Knie").click();
     const sheet = page.getByRole("dialog", { name: "MRT Knie" });
     await expect(
-      sheet.locator('[data-slot="document-preview-not-on-device"]'),
+      sheet.locator('[data-slot="document-file-row"]'),
     ).toBeVisible();
     await expect(sheet.locator("iframe")).toHaveCount(0);
     await expect(
-      sheet.locator('[data-slot="document-open-in-tab"]'),
-    ).toHaveCount(0);
-    await expect(
-      sheet.locator('[data-slot="document-download-inline"]'),
+      sheet.locator('[data-slot="document-download"]'),
     ).toBeEnabled();
+    const menu = await openDocumentMenu(page, sheet);
+    await expect(
+      menu.locator('[data-slot="document-open-in-tab"]'),
+    ).toHaveCount(0);
   });
 
   test("doctor flow B: the condition filter reaches the MRT report", async ({
@@ -469,7 +494,11 @@ test.describe("document vault", () => {
       .toBe(MRT_DOC_ID);
 
     const detail = page.getByRole("dialog", { name: "MRT Knie" });
-    await detail.locator('[data-slot="document-chat-open"]').click();
+    await (
+      await openDocumentMenu(page, detail)
+    )
+      .locator('[data-slot="document-chat-open"]')
+      .click();
     const drawer = page.locator('[data-slot="coach-drawer"]');
     await expect(drawer).toBeVisible();
     await expect(detail).not.toBeVisible();
@@ -498,7 +527,11 @@ test.describe("document vault", () => {
 
     await openButton(page, "MRT Knie").click();
     await expect(detail).toBeVisible();
-    await detail.locator('[data-slot="document-chat-open"]').click();
+    await (
+      await openDocumentMenu(page, detail)
+    )
+      .locator('[data-slot="document-chat-open"]')
+      .click();
     await expect(drawer).toBeVisible();
     await page
       .locator('[data-slot="sheet-overlay"]')
@@ -523,7 +556,11 @@ test.describe("document vault", () => {
       .toBe(MRT_DOC_ID);
 
     const detail = page.getByRole("dialog", { name: "MRT Knie" });
-    await detail.locator('[data-slot="document-chat-open"]').click();
+    await (
+      await openDocumentMenu(page, detail)
+    )
+      .locator('[data-slot="document-chat-open"]')
+      .click();
     const drawer = page.locator('[data-slot="coach-drawer"]');
     await expect(drawer).toBeVisible();
     // The drawer being on screen is not the same event as the vault having
@@ -531,11 +568,9 @@ test.describe("document vault", () => {
     // the detail sheet is actually closed with the drawer owning the same
     // document; maximize before that and the close path takes the other branch
     // — `history.back()` — which races the push to `/coach` and lands back on
-    // `/documents` with nothing raised. The sheet's own close control leaves
-    // the tree with the sheet, so its absence is that hand-off, observed.
-    await expect(
-      page.locator('[data-slot="document-detail-close"]'),
-    ).toHaveCount(0);
+    // `/documents` with nothing raised. The sheet leaving the tree is that
+    // hand-off, observed.
+    await expect(detail).toHaveCount(0);
     await drawer.locator('[data-slot="coach-drawer-maximize"]').click();
     await expect.poll(() => new URL(page.url()).pathname).toBe("/coach");
     expect(new URL(page.url()).searchParams.get("doc")).toBe(MRT_DOC_ID);
@@ -580,7 +615,11 @@ test.describe("document vault", () => {
     await openButton(page, `${title}.pdf`).click();
     const sheet = page.getByRole("dialog", { name: `${title}.pdf` });
     await expect(sheet).toBeVisible();
-    await sheet.getByRole("button", { name: "Delete" }).click();
+    await (
+      await openDocumentMenu(page, sheet)
+    )
+      .getByRole("menuitem", { name: "Delete" })
+      .click();
     // v1.42 — the sheet's Delete asks first, like every vault delete.
     await page.locator('[data-slot="document-detail-delete-confirm"]').click();
 
@@ -618,7 +657,11 @@ test.describe("document vault", () => {
       sheet.locator('[data-slot="document-detail-saved"]'),
     ).toHaveCount(0);
 
-    await sheet.locator("#document-title-input").click();
+    await sheet
+      .locator(
+        '[data-slot="document-detail-title-row"] [data-slot="list-item-action"]',
+      )
+      .click();
     const input = page.locator("input#document-title-input");
     await input.fill(`${title} renamed`);
     await input.press("Enter");

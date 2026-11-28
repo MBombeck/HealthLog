@@ -28,7 +28,7 @@ import { MentalWellbeing } from "../mental-wellbeing";
 import { CheckInWizard } from "../check-in-wizard";
 import { AssessmentResult } from "../assessment-result";
 import { AssessmentHistory } from "../assessment-history";
-import { InstrumentCard } from "../instrument-card";
+import { InstrumentRow } from "../instrument-row";
 import { InstrumentDetail } from "../instrument-detail";
 import type { AssessmentRow, CreateResponse } from "../types";
 
@@ -70,8 +70,6 @@ describe("landing chrome (v1.25.5 — disclaimer + heading removed)", () => {
     // The title survives as an sr-only h1 for the document outline.
     expect(html).toContain(mh.pageTitle);
     expect(html).toContain("sr-only");
-    // …and the lead description still introduces the screeners.
-    expect(html).toContain(mh.pageDescription);
   });
 });
 
@@ -300,7 +298,7 @@ describe("WHO-5 / SCI on the same infrastructure (v1.27.9)", () => {
   });
 });
 
-describe("instrument card (med-/Vorsorge card anatomy + detail opener)", () => {
+describe("instrument row (one row per instrument, opens the detail)", () => {
   const lastRow: AssessmentRow = {
     id: "l1",
     instrument: "PHQ9",
@@ -313,67 +311,34 @@ describe("instrument card (med-/Vorsorge card anatomy + detail opener)", () => {
     takenAt: "2026-06-20T00:00:00.000Z",
   };
 
-  function card(
+  function row(
     instrument: AssessmentRow["instrument"],
     last?: AssessmentRow,
   ): string {
     return withProviders(
-      <InstrumentCard
-        instrument={instrument}
-        last={last}
-        onStart={() => {}}
-        onOpenDetail={() => {}}
-      />,
+      <ul>
+        <InstrumentRow
+          instrument={instrument}
+          last={last}
+          onOpenDetail={() => {}}
+        />
+      </ul>,
     );
   }
 
-  it("renders the shared med-card header and the clickable detail body", () => {
-    const html = card("PHQ9");
-    // The med-card header primitive paints the bold name + category badge.
+  it("names the instrument and says calmly that there is no check-in yet", () => {
+    const html = row("PHQ9");
     expect(html).toContain(mh.instrument.phq9);
-    expect(html).toContain(mh.instrumentSub.phq9);
-    // v1.27.9 — the card body opens the per-instrument detail…
-    expect(html).toContain('data-slot="instrument-card-open"');
-    expect(html).toContain(mh.openDetail);
-    // …and the Start action remains the single bottom-pinned action.
-    expect(html).toContain(mh.start);
-    // No history yet → the calm no-check-in line, no fabricated dashes.
+    expect(html).toContain('data-slot="instrument-row"');
     expect(html).toContain(mh.noResultYet);
-    // v1.27.24 — the attribution moved off the space under Start to a
-    // top-right info control on the header. The trigger renders; nothing
-    // sits under the Start button anymore.
-    expect(html).toContain('data-slot="instrument-card-attribution-trigger"');
-    // The citation now lives in the trigger's popover (portaled, opened on
-    // tap), never as a paragraph beneath the action.
-    const startIdx = html.indexOf(mh.start);
-    expect(startIdx).toBeGreaterThan(-1);
-    expect(html.slice(startIdx)).not.toContain(
-      'data-slot="instrument-card-attribution"',
-    );
+    // The whole row opens the detail; Start lives in its sheet.
+    expect(html).toContain('data-slot="list-item-action"');
+    expect(html).not.toContain(mh.start);
   });
 
-  it("the header info control is a sibling of the detail-open button, never nested", () => {
-    const html = card("WHO5");
-    // Both the info trigger and the detail-open button render, but neither is
-    // inside the other (nested interactive controls are invalid + would let a
-    // tap open both). A simple structural check: the trigger appears before
-    // the open button's closing markup boundary is irrelevant — assert both
-    // slots exist and the trigger carries its own accessible name.
-    expect(html).toContain('data-slot="instrument-card-attribution-trigger"');
-    expect(html).toContain('data-slot="instrument-card-open"');
-    const trigger = html.match(
-      /<button[^>]*data-slot="instrument-card-attribution-trigger"[^>]*>/,
-    );
-    expect(trigger).not.toBeNull();
-    expect(trigger![0]).toContain("aria-label=");
-  });
-
-  it("shows last test (relative) and last result (score + band word)", () => {
-    const html = card("PHQ9", lastRow);
-    expect(html).toContain(mh.lastResult);
-    expect(html).toContain(mh.lastScore);
-    // Score + band word ride one value slot ("8 · Mild").
-    expect(html).toContain('data-slot="instrument-card-last-score"');
+  it("shows the last result as one line: when, score, band word", () => {
+    const html = row("PHQ9", lastRow);
+    expect(html).toContain('data-slot="instrument-row-last"');
     expect(html).toContain(mh.band.PHQ9.mild);
     expect(html).not.toContain(mh.noResultYet);
   });
@@ -405,15 +370,13 @@ describe("instrument detail (v1.27.9 — opened from a card)", () => {
     },
   ];
 
-  it("shows last score + band, the Start action, the pinned history and the attribution", () => {
+  it("shows last score + band, the pinned history and the attribution", () => {
     const html = withProviders(
-      <InstrumentDetail instrument="SCI" rows={rows} onStart={() => {}} />,
+      <InstrumentDetail instrument="SCI" rows={rows} />,
     );
     expect(html).toContain('data-slot="instrument-detail"');
     expect(html).toContain('data-slot="instrument-detail-last-score"');
     expect(html).toContain(mh.band.SCI.aboveThreshold);
-    expect(html).toContain('data-slot="instrument-detail-start"');
-    expect(html).toContain(mh.start);
     // The pinned history (chart shell + dated list) rides inside the detail.
     expect(html).toContain('data-pinned="SCI"');
     expect(html).toContain('data-slot="history-list"');

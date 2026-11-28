@@ -9,8 +9,8 @@ import { DocumentSummaryBlock } from "../document-summary-block";
  * The detail view used to read a null summary as "being generated" and say so
  * forever — for a document nobody ever enqueued as readily as for one actually
  * in flight. These pin the states apart: only PENDING may claim generation is
- * running, a stored summary comes from storage, and every dead end offers a way
- * out.
+ * running, a stored summary comes from storage, a document with no summary
+ * says nothing, and a dead end says why. Writing one is the sheet's "⋯".
  */
 
 function render(node: React.ReactNode) {
@@ -19,8 +19,6 @@ function render(node: React.ReactNode) {
   );
 }
 
-const noop = () => {};
-
 function base(
   overrides: Partial<React.ComponentProps<typeof DocumentSummaryBlock>> = {},
 ) {
@@ -28,21 +26,13 @@ function base(
     summary: null,
     summaryState: "NONE",
     generatedAtLabel: null,
-    aiEnabled: true,
-    isGenerating: false,
-    actionsDisabled: false,
-    onGenerate: noop,
     ...overrides,
   };
   return render(<DocumentSummaryBlock {...props} />);
 }
 
-/** Every state that has no summary to show. */
-const ABSENT_STATES: DocumentSummaryStateValue[] = [
-  "NONE",
-  "WITHHELD",
-  "UNAVAILABLE",
-];
+/** Every state that says why there is no summary. */
+const ABSENT_STATES: DocumentSummaryStateValue[] = ["WITHHELD", "UNAVAILABLE"];
 
 describe("DocumentSummaryBlock — a stored summary", () => {
   it("renders the stored summary from storage, with its date", () => {
@@ -55,33 +45,8 @@ describe("DocumentSummaryBlock — a stored summary", () => {
     expect(html).toContain("A discharge letter from a city hospital.");
     expect(html).toContain("14 Feb 2026");
     expect(html).toContain('data-slot="document-detail-summary"');
-    // Opening a stored result is read-only: the detail surface no longer
-    // exposes the redundant regenerate action.
     expect(html).not.toContain("being prepared");
-    expect(html).not.toContain(
-      'data-slot="document-detail-summary-regenerate"',
-    );
-    expect(html).not.toContain("Generate again");
-    const header = html.match(
-      /<div[^>]*data-slot="document-detail-summary-header"[^>]*>/,
-    );
-    expect(header?.[0]).toMatch(/\bflex-col\b/);
-    expect(header?.[0]).toMatch(/\bsm:flex-row\b/);
     expect(html).not.toContain("document-detail-summary-generate");
-  });
-
-  it("keeps stored prose visible without surfacing replacement state", () => {
-    const html = base({
-      summary: "Stored prose.",
-      summaryState: "READY",
-      isGenerating: true,
-    });
-
-    expect(html).toContain("Stored prose.");
-    expect(html).not.toContain(
-      'data-slot="document-detail-summary-regenerate"',
-    );
-    expect(html).not.toContain("Generating");
   });
 
   it("shows a stored summary even if the state disagrees", () => {
@@ -99,8 +64,6 @@ describe("DocumentSummaryBlock — honest absent states", () => {
 
     expect(pending).toContain("being prepared");
     expect(pending).toContain('data-slot="document-detail-summary-pending"');
-    // A job is running; offering a second one would double-spend.
-    expect(pending).not.toContain("document-detail-summary-generate");
   });
 
   it.each(ABSENT_STATES)(
@@ -113,10 +76,8 @@ describe("DocumentSummaryBlock — honest absent states", () => {
     },
   );
 
-  it("says a summary was never generated for NONE", () => {
-    expect(base({ summaryState: "NONE" })).toContain(
-      "No summary has been generated for this document yet.",
-    );
+  it("says nothing for NONE: no summary needs no line", () => {
+    expect(base({ summaryState: "NONE" })).toBe("");
   });
 
   it("says the summary was withheld, and never shows blocked prose", () => {
@@ -133,40 +94,17 @@ describe("DocumentSummaryBlock — honest absent states", () => {
     );
   });
 
-  it.each(ABSENT_STATES)("offers a way out of %s", (summaryState) => {
-    const html = base({ summaryState });
-
-    expect(html).toContain('data-slot="document-detail-summary-generate"');
-    expect(html).toContain("Generate summary");
-  });
-});
-
-describe("DocumentSummaryBlock — the action", () => {
-  it("states the outcome but offers no action without a provider", () => {
-    const html = base({ summaryState: "UNAVAILABLE", aiEnabled: false });
-
-    // The state is still honest; only the button that would 422 is gone.
-    expect(html).toContain("No summary could be generated for this document.");
-    expect(html).not.toContain("document-detail-summary-generate");
-  });
-
-  it("disables the action while generating, and says so", () => {
-    const html = base({ summaryState: "NONE", isGenerating: true });
-
-    expect(html).toContain("disabled");
-    expect(html).toContain("Generating");
-  });
-
-  it("disables the action while the capability probe resolves", () => {
-    expect(base({ summaryState: "NONE", actionsDisabled: true })).toContain(
-      "disabled",
-    );
-  });
+  it.each(ABSENT_STATES)(
+    "offers no button of its own for %s",
+    (summaryState) => {
+      expect(base({ summaryState })).not.toContain("<button");
+    },
+  );
 });
 
 describe("DocumentSummaryBlock — a background read (v1.40)", () => {
   it("says the read runs in the background and is stored with the document", () => {
-    const html = base({ isGenerating: true, runPhase: "background" });
+    const html = base({ runPhase: "background" });
     expect(html).toContain('data-slot="document-detail-summary-run-phase"');
     expect(html).toContain("You can leave this page");
   });
@@ -187,12 +125,11 @@ describe("DocumentSummaryBlock — a recorded failure (#1404)", () => {
     lastFailedAt: "2026-11-21T08:00:00.000Z",
   };
 
-  it("says why the summary stopped and offers to try again", () => {
+  it("says why the summary stopped", () => {
     const html = base({ summaryState: "UNAVAILABLE", failures: [failure] });
     expect(html).toContain('data-slot="document-detail-summary-failure"');
     expect(html).toContain("The AI provider could not be reached.");
     expect(html).toContain("Failed 3 times in a row");
-    expect(html).toContain("Try again");
     expect(html).not.toContain("No summary could be generated");
   });
 
