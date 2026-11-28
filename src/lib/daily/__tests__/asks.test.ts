@@ -18,9 +18,11 @@ import {
 } from "@/lib/daily/asks";
 import { buildDailyDigest, type DailyDigestInput } from "@/lib/daily/digest";
 import {
+  isDismissibleItemKey,
   PRIORITY_ITEM_KINDS,
   type PriorityItem,
 } from "@/lib/daily/priority-item";
+import { askLaterKey } from "@/lib/daily/ask-intents";
 import { doseWindowItemKey } from "@/lib/daily/priority-item-key";
 import type { MedsTodayBlock } from "@/lib/dashboard/meds-today";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
@@ -136,13 +138,13 @@ describe("resolveDailyAsks", () => {
 
   it("asks every row that passes, without a cap or a fold", () => {
     const asks = resolve([checkups, checkin, dose(false), visitAt(HOUR)], {
-      adminAsk: buildAdminAsk("server_setup", t),
+      adminAsk: buildAdminAsk("server_setup", t, "2026-07-16"),
     });
     expect(asks).toHaveLength(5);
   });
 
   it("ranks safety, then decision, then due, whatever the digest order", () => {
-    const admin = buildAdminAsk("push_relay", t);
+    const admin = buildAdminAsk("push_relay", t, "2026-07-16");
     const asks = resolve([checkups, checkin, dose(true)], { adminAsk: admin });
     expect(asks.map((a) => [a.kind, a.tier])).toEqual([
       ["dose_window", "safety"],
@@ -222,16 +224,17 @@ describe("the person's switches", () => {
     expect(
       resolve([dose(true), dose(false, "b"), checkups], {
         ...off,
-        adminAsk: buildAdminAsk("push_relay", t),
+        adminAsk: buildAdminAsk("push_relay", t, "2026-07-16"),
       }).map((a) => [a.kind, a.tier]),
     ).toEqual([
       ["dose_window", "safety"],
       ["push_relay", "decision"],
     ]);
     expect(
-      resolve([], { ...off, adminAsk: buildAdminAsk("server_setup", t) }).map(
-        (a) => a.kind,
-      ),
+      resolve([], {
+        ...off,
+        adminAsk: buildAdminAsk("server_setup", t, "2026-07-16"),
+      }).map((a) => a.kind),
     ).toEqual(["server_setup"]);
   });
 
@@ -248,7 +251,7 @@ describe("the person's switches", () => {
 
 describe("buildAdminAsk", () => {
   it("asks the relay question with yes and no only, and learn more", () => {
-    const ask = buildAdminAsk("push_relay", t);
+    const ask = buildAdminAsk("push_relay", t, "2026-07-16");
     expect(ask.title).toBe("Notifications via push relay?");
     expect(ask.body).toBe("The content stays encrypted.");
     expect(ask.actions.map((a) => a.intent)).toEqual([
@@ -259,7 +262,7 @@ describe("buildAdminAsk", () => {
   });
 
   it("offers the unfinished setup with Set up and Later", () => {
-    const ask = buildAdminAsk("server_setup", t);
+    const ask = buildAdminAsk("server_setup", t, "2026-07-16");
     expect(ask.actions[0]).toMatchObject({
       labelKey: "daily.action.setUp",
       intent: ASK_INTENT.setupOpen,
@@ -267,8 +270,24 @@ describe("buildAdminAsk", () => {
     });
     expect(ask.actions[1]).toMatchObject({
       labelKey: "daily.action.later",
-      intent: ASK_INTENT.noticeLater,
+      intent: `${ASK_INTENT.later}:${askLaterKey("2026-07-16", "server_setup:notice")}`,
     });
+  });
+
+  it("Later on the setup holds it for the day, like every other ask", () => {
+    const ask = buildAdminAsk("server_setup", t, "2026-07-16");
+    const held = new Set([ask.itemKey]);
+    // Set aside today: not asked.
+    expect(resolve([], { adminAsk: ask, snoozedItemKeys: held })).toEqual([]);
+    // The next day's ledger key no longer matches: asked again.
+    expect(
+      resolve([], {
+        adminAsk: buildAdminAsk("server_setup", t, "2026-07-17"),
+      }).map((a) => a.kind),
+    ).toEqual(["server_setup"]);
+    // And it is a dismiss-ledger key the dismiss route accepts.
+    const key = ask.actions[1].intent.slice(ASK_INTENT.later.length + 1);
+    expect(isDismissibleItemKey(key)).toBe(true);
   });
 
   it("a consent ask always exposes an explicit no, and never a later", () => {
@@ -278,10 +297,10 @@ describe("buildAdminAsk", () => {
     );
     expect(consents.length).toBeGreaterThan(0);
     for (const kind of consents) {
-      const ask = buildAdminAsk(kind as "push_relay", t);
+      const ask = buildAdminAsk(kind as "push_relay", t, "2026-07-16");
       const intents = ask.actions.map((a) => a.intent);
       expect(intents).toContain(ASK_INTENT.relayNo);
-      expect(intents).not.toContain(ASK_INTENT.noticeLater);
+      expect(intents.some((i) => i.startsWith(ASK_INTENT.later))).toBe(false);
       expect(intents.some((i) => i.startsWith(ASK_INTENT.doseSnooze))).toBe(
         false,
       );
@@ -431,7 +450,7 @@ describe("every ask exposes exactly two actions", () => {
   it("for every kind, admin questions included", () => {
     const asks = resolve(
       [dose(true), dose(false, "b"), checkups, checkin, visitAt(HOUR), broken],
-      { adminAsk: buildAdminAsk("server_setup", t) },
+      { adminAsk: buildAdminAsk("server_setup", t, "2026-07-16") },
     );
     const kinds = new Set<string>(asks.map((a) => a.kind));
     // The fixture reaches every kind the digest can ask about.
@@ -445,7 +464,7 @@ describe("every ask exposes exactly two actions", () => {
     ]) {
       expect(kinds.has(kind), kind).toBe(true);
     }
-    for (const ask of [...asks, buildAdminAsk("push_relay", t)]) {
+    for (const ask of [...asks, buildAdminAsk("push_relay", t, "2026-07-16")]) {
       expect(ask.actions, ask.kind).toHaveLength(2);
     }
   });

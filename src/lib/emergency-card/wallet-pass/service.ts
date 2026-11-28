@@ -15,7 +15,8 @@
  * installed pass with one that says it no longer counts.
  */
 import { prisma } from "@/lib/db";
-import { coerceLocale, type Locale } from "@/lib/i18n/config";
+import type { Locale } from "@/lib/i18n/config";
+import { resolveJobLocale } from "@/lib/i18n/job-locale";
 import { moodDateKey } from "@/lib/mood/date-key";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
@@ -350,8 +351,9 @@ export async function syncWalletPassContent(
   const base: Omit<PassBuildInput, "contentChangedAt"> = {
     userId: row.userId,
     fields: row.link.fields,
-    // The language of the person who made the pass, on every rebuild.
-    locale: coerceLocale(creator?.locale),
+    // The language of the person who made the pass, on every rebuild, by the
+    // background rule: their stored choice, else the operator's default.
+    locale: await resolveJobLocale(creator?.locale),
     timezone: owner?.timezone || DEFAULT_TIMEZONE,
     signer: signerIdentityFor(row.signer, row.passTypeIdentifier),
     passTypeIdentifier: row.passTypeIdentifier,

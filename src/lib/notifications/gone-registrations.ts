@@ -30,15 +30,15 @@
  * a registration lost is a device that stays silent until the app reopens.
  *
  * `src/__tests__/push-registration-delete-guard.test.ts` holds every
- * verdict-driven deletion to this module. A new registration kind (the Wallet
- * pass tokens) is one more value of {@link GoneKind}.
+ * verdict-driven deletion to this module. The Wallet pass registrations are
+ * one more value of {@link GoneKind}; a new registration kind is another.
  */
 import { prisma } from "@/lib/db";
 import { deleteDeviceRows } from "@/lib/devices/delete-devices";
 import { getEvent } from "@/lib/logging/context";
 
 /** The breakers: one per push service whose configuration can be wrong. */
-export type GoneChannel = "apns" | "live-activity" | "web-push";
+export type GoneChannel = "apns" | "live-activity" | "web-push" | "wallet";
 
 /**
  * What holds a registration a push service reported gone: a device row (an
@@ -46,12 +46,17 @@ export type GoneChannel = "apns" | "live-activity" | "web-push";
  * token row (the relay reported it gone on an update), a Web Push
  * subscription (404 / 410).
  */
-export type GoneKind = "device" | "liveActivityToken" | "webPush";
+export type GoneKind =
+  "device" | "liveActivityToken" | "webPush" | "walletPass";
 
 const CHANNEL: Record<GoneKind, GoneChannel> = {
   device: "apns",
   liveActivityToken: "live-activity",
   webPush: "web-push",
+  // A Wallet pass registration: Apple called its push token dead
+  // (`apnsTokenGone` on the local sender, the relay's `unregistered`). A
+  // wrong Pass Type ID is the configuration error this breaker exists for.
+  walletPass: "wallet",
 };
 
 /** Registrations of one channel reported gone in a window before it holds. */
@@ -97,6 +102,10 @@ export async function forgetGoneRegistrations(
       await deleteDeviceRows({ id: { in: ids } });
     } else if (kind === "liveActivityToken") {
       await prisma.liveActivityToken.deleteMany({ where: { id: { in: ids } } });
+    } else if (kind === "walletPass") {
+      await prisma.walletPassRegistration.deleteMany({
+        where: { id: { in: ids } },
+      });
     } else {
       await prisma.pushSubscription.deleteMany({ where: { id: { in: ids } } });
     }
@@ -155,7 +164,7 @@ async function admitGone(channel: GoneChannel, n: number): Promise<boolean> {
     console.error(
       `[push] ${count} ${channel} registrations reported gone within ${GONE_WINDOW_MINUTES} minutes; ` +
         `deletions held for ${GONE_HOLD_HOURS} hours. Check the push configuration ` +
-        `(APNs topic and bundle id, key environment, VAPID keys).`,
+        `(APNs topic and bundle id, Wallet Pass Type ID, key environment, VAPID keys).`,
     );
     getEvent()?.addWarning(`push_gone_breaker_tripped: ${channel}`);
   }
