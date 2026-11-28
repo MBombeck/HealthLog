@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Activity, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 
 import { SelectionActionBar } from "@/components/data-list";
-import { ActionMenu } from "@/components/ui/action-pair";
+import { ActionMenu } from "@/components/ui/action-menu";
 import { Button } from "@/components/ui/button";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/ui/empty-state";

@@ -14,7 +14,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ActionMenu, ActionPair } from "@/components/ui/action-pair";
+import { ActionMenu } from "@/components/ui/action-menu";
+import { ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
