@@ -8,12 +8,14 @@ import { cn } from "@/lib/utils";
 
 /**
  * `<StatusChip>` — the one status display for an integration, a delivery
- * channel or a module: a dot and one of three words.
+ * channel, a module or an import: a dot and one of four words.
  *
  * - **Active**: set up, switched on, the last run went through.
  * - **Error**: set up, but nothing arrives or nothing goes out. The reason
  *   stands as a meta line beside the chip, never inside it.
  * - **Off**: not set up, paused, or switched off.
+ * - **Running**: something is under way right now (an import on
+ *   Settings › Export & Import), and the chip stands where its button was.
  *
  * Settings used to say this five ways ("Working", "On", "Active",
  * "Auto-disabled", a red sentence in place of a badge), and Telegram, ntfy,
@@ -25,12 +27,13 @@ import { cn } from "@/lib/utils";
  * signal: the word is the accessible name. "Error" is the solid destructive
  * badge, because red text on a red wash falls below AA in both themes.
  */
-export type StatusChipTone = "active" | "error" | "off";
+export type StatusChipTone = "active" | "error" | "off" | "running";
 
 const TONE: Record<StatusChipTone, string> = {
   active: "border-success/30 bg-success/15 text-success",
   error: "",
   off: "border-border text-muted-foreground",
+  running: "border-info/30 bg-info/15 text-info",
 };
 
 export function StatusChip({
@@ -55,7 +58,9 @@ export function StatusChip({
         ? t("common.status.active")
         : tone === "error"
           ? t("common.status.error")
-          : t("common.status.off")}
+          : tone === "running"
+            ? t("common.status.running")
+            : t("common.status.off")}
     </Badge>
   );
 }

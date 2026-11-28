@@ -72,7 +72,8 @@
     "status": {
       "active": "사용 중",
       "error": "오류",
-      "off": "꺼짐"
+      "off": "꺼짐",
+      "running": "진행 중"
     }
   },
   "apiErrors": {
@@ -6226,7 +6227,6 @@
       },
       "export": {
         "title": "내보내기와 불러오기",
-        "otherOptionsHeading": "다른 내보내기 옵션",
         "downloadFailed": "내보내기 파일을 내려받지 못했어요. 다시 시도해 주세요.",
         "actions": {
           "download": "내려받기"
@@ -6237,14 +6237,17 @@
         },
         "cards": {
           "measurementsCsv": {
-            "title": "측정"
+            "title": "측정(CSV)",
+            "description": "기간 선택 가능"
           },
           "medicationsCsv": {
-            "title": "복약",
-            "includeIntake": "복용 기록 포함"
+            "title": "복약(CSV)",
+            "includeIntake": "복용 기록 포함",
+            "description": "원하면 모든 복용 기록 포함"
           },
           "moodCsv": {
-            "title": "기분"
+            "title": "기분(CSV)",
+            "description": "기간 선택 가능"
           },
           "fullBackup": {
             "title": "전체 백업",
@@ -6253,20 +6256,22 @@
             "passphrasePlaceholder": "암호문구 (12자 이상)",
             "passphraseHelp": "Argon2id로 보관 파일 키를 만들고 AES-256-GCM으로 봉인해요. 파일은 .hlx 확장자로 저장해 주세요.",
             "noRecoveryWarning": "복구 수단이 없어요. 이 암호문구를 잃어버리면 보관 파일을 열 수 없어요. 안전한 곳에 보관해 주세요.",
-            "detail": "보관하고 읽기 위한 기록의 휴대용 사본으로, 값은 일반 JSON이고 문서는 메타데이터만 들어 있어요."
+            "detail": "보관하고 읽기 위한 기록의 휴대용 사본으로, 값은 일반 JSON이고 문서는 메타데이터만 들어 있어요.",
+            "description": "전체 데이터, 원하면 암호화"
+          },
+          "doctorReport": {
+            "title": "진료용 리포트",
+            "description": "PDF, FHIR 또는 ZIP"
           }
         },
         "import": {
           "heading": "불러오기",
-          "description": "올린 파일은 가져오기가 끝나면 서버에서 바로 삭제되고, 같은 파일을 다시 가져와도 중복으로 추가되지 않아요.",
+          "description": "서버는 가져오기 후 파일을 삭제하며, 같은 파일을 두 번 가져와도 중복되지 않습니다.",
           "charCount": "{used} / {max, plural, other {#자}}",
           "appleHealth": {
             "title": "Apple Health",
             "description": "iPhone 건강 앱의 export.zip.",
-            "dropLabel": "여기에 export.zip을 놓으세요",
-            "dropHint": "또는 눌러서 파일 선택",
             "fileInputLabel": "Apple Health export.zip 파일 선택",
-            "choose": "파일 선택",
             "idempotencyNote": "큰 파일은 백그라운드에서 처리해요.",
             "uploading": "올리는 중…",
             "uploadFailed": "올리지 못했어요. 다시 시도해 주세요.",
@@ -6329,16 +6334,15 @@
             "skipBreakdownMore": "+ {count, plural, other {#개}} 유형 더",
             "cycleSummary": "생리 주기 샘플 {samples, plural, other {#개를}} {days, plural, other {#일치}} 기록으로 합쳤어요.",
             "cycleModuleOff": "이 계정은 주기 기록이 꺼져 있어서 생리 주기 샘플 {count, plural, other {#개를}} 건너뛰었어요.",
-            "cycleDaysFailed": "생리 주기 {count, plural, other {#일치를}} 쓰지 못했어요: {reason}"
+            "cycleDaysFailed": "생리 주기 {count, plural, other {#일치를}} 쓰지 못했어요: {reason}",
+            "fileHint": "export.zip, 최대 1.5GB"
           },
           "json": {
-            "title": "측정값과 기분 (JSON)",
+            "title": "JSON 파일",
             "description": "측정값과 기분 기록을 JSON으로.",
-            "pasteLabel": "JSON 붙여 넣기",
             "fileInputLabel": "불러올 JSON 파일 선택",
             "schemaHint": "배열 두 개: measurements와 moodEntries.",
             "docsLink": "스키마와 예시 보기.",
-            "uploadFile": "파일 선택",
             "downloadExample": "예시 내려받기",
             "import": "불러오기",
             "invalidJson": "올바른 JSON이 아니에요. 문법을 확인하고 다시 시도해 주세요.",
@@ -6352,16 +6356,18 @@
             "keptLabels": "이 계정에는 이미 같은 키의 태그나 그룹이 자체 이름으로 있어서 그대로 유지했어요: {keys}",
             "resultNothing": "불러온 게 없어요. {skipped, plural, other {#개}} 기록을 모두 건너뛰었어요.",
             "resultEmpty": "그 파일에는 측정도 기분 기록도 없었어요.",
-            "limitsHint": "최대 {mb}MB, 목록마다 최대 {rows, plural, other {#개}} 항목까지 가능해요."
+            "limitsHint": "최대 {mb}MB, 목록마다 최대 {rows, plural, other {#개}} 항목까지 가능해요.",
+            "rowMeta": "측정값과 기분",
+            "fileMeta": ".json, 최대 {mb}MB",
+            "partial": "가져오기가 중간에 멈췄습니다. 다시 가져와도 안전하며 중복으로 추가되지 않습니다.",
+            "partialCounts": "이미 저장됨: 측정값 {measurements, plural, other {#개}}, 기분 기록 {moods, plural, other {#개}}."
           },
           "csv": {
             "title": "CSV 파일",
             "description": "스프레드시트나 측정기 내보내기의 측정값.",
-            "pasteLabel": "CSV 붙여 넣기",
             "fileInputLabel": "불러올 CSV 파일 선택",
             "schemaHint": "열: type, value, unit, measuredAt (시간대 오프셋 포함), 그리고 선택 항목인 glucoseContext, notes, externalId.",
             "docsLink": "열 스키마와 예시 보기.",
-            "uploadFile": "파일 선택",
             "downloadExample": "예시 내려받기",
             "preview": "미리 보기",
             "import": "불러오기",
@@ -6397,14 +6403,15 @@
             "reasonUnstableExternalId": "외부 ID가 내보내기마다 달라짐",
             "reasonDuplicate": "이미 불러온 항목",
             "reasonUnknown": "건너뜀",
-            "detail": "측정값 하나당 한 행."
+            "detail": "측정값 하나당 한 행.",
+            "rowMeta": "스프레드시트의 측정값",
+            "fileMeta": ".csv, 최대 16MB",
+            "guideMeta": "type, value, unit, 오프셋 포함 measuredAt"
           },
           "doseHistory": {
             "title": "약 복용 이력",
             "description": "다른 복약 앱의 복용 기록.",
-            "pasteLabel": "내보낸 내용 붙여 넣기",
             "fileInputLabel": "복용 이력 내보내기 파일 선택",
-            "uploadFile": "파일 선택",
             "preview": "미리 보기",
             "import": "불러오기",
             "empty": "먼저 내보낸 내용을 붙여 넣거나 파일을 선택해 주세요.",
@@ -6453,12 +6460,13 @@
               "jsonNoIntakeTime": "JSON 내보내기에는 복용 예정 시각만 있고 실제로 복용한 시각이 없어요. 예정 시각을 실제 복용처럼 저장하지는 않으니, 둘 다 담긴 CSV로 내보내 주세요.",
               "tooManyRows": "한 번에 불러올 수 있는 행 수를 넘었어요. 파일을 나눠서 불러와 주세요."
             },
-            "detail": "파일 하나에 담긴 모든 약을 함께 처리해요."
+            "detail": "파일 하나에 담긴 모든 약을 함께 처리해요.",
+            "rowMeta": "다른 앱에서",
+            "fileMeta": ".csv 또는 .json, 최대 16MB"
           },
           "healthConnect": {
-            "title": "Health Connect 내보내기",
+            "title": "Health Connect",
             "description": "Android의 Health Connect가 만든 ZIP.",
-            "choose": "파일 선택",
             "uploading": "업로드 중…",
             "uploadFailed": "업로드에 실패했습니다. 다시 시도해 주세요.",
             "tooLarge": "파일이 이 서버에서 허용하는 크기보다 큽니다.",
@@ -6477,8 +6485,6 @@
               "cloud": "Health Connect는 내보내기를 Google Drive, Dropbox, Nextcloud 같은 클라우드 저장소 앱에만 저장하고 휴대폰 자체에는 저장하지 않습니다.",
               "upload": "그 클라우드에서 ZIP 파일을 이 기기로 내려받아 여기에 업로드하세요."
             },
-            "dropLabel": "Health Connect ZIP 파일을 여기에 놓으세요",
-            "dropHint": "또는 클릭해서 선택하세요. 최대 1GB.",
             "fileInputLabel": "Health Connect 내보내기 ZIP 파일",
             "privacyNote": "Withings처럼 이미 직접 연결한 앱의 기록은 중복되지 않도록 제외됩니다.",
             "rateLimited": "짧은 시간에 업로드가 너무 많습니다. 1분 후 다시 시도하세요.",
@@ -6496,22 +6502,19 @@
               "tooLarge": "내보내기 파일이 이 서버가 받을 수 있는 크기보다 큽니다.",
               "stagingMissing": "업로드한 파일이 더 이상 서버에 없습니다. 다시 업로드하세요.",
               "interrupted": "서버 재시작으로 가져오기가 중단되었습니다. 파일을 다시 업로드하세요."
-            }
+            },
+            "folderRow": "폴더에서 자동으로",
+            "folderMeta": "WebDAV 또는 Nextcloud, 연동에서",
+            "fileHint": "ZIP, 최대 1GB"
           },
           "fit": {
             "title": "활동 파일(FIT)",
             "description": "시계나 자전거 컴퓨터의 운동 기록.",
-            "choose": "파일 선택",
             "uploading": "업로드 중…",
             "uploadFailed": "업로드에 실패했습니다. 다시 시도해 주세요.",
-            "tooLarge": "파일이 10MB보다 큽니다.",
-            "rateLimited": "짧은 시간에 업로드가 너무 많습니다. 1분 후에 다시 시도해 주세요.",
-            "busy": "계정에서 이미 가져오기가 진행 중입니다. 끝날 때까지 기다려 주세요.",
             "failed": "가져오기에 실패했습니다. 다시 시도해 주세요.",
             "doneSummary": "활동 파일을 가져왔습니다.",
             "doneNothing": "가져오기가 끝났지만 새로 추가할 항목이 없었습니다.",
-            "dropLabel": "활동 파일을 여기에 놓으세요",
-            "dropHint": "또는 클릭해서 선택하세요: 최대 10MB의 .fit, .fit.gz 또는 .zip 파일.",
             "fileInputLabel": "활동 파일",
             "privacyNote": "GPS 경로는 운동 경로가 켜져 있을 때만 저장됩니다.",
             "steps": {
@@ -6543,16 +6546,34 @@
               "noSession": "파일에 읽을 수 있는 운동이 없습니다.",
               "stagingMissing": "업로드한 파일이 서버에 더 이상 없습니다. 다시 업로드하세요.",
               "interrupted": "서버 재시작으로 가져오기가 중단되었습니다. 파일을 다시 업로드하세요."
-            }
+            },
+            "batch": {
+              "waiting": "대기 중",
+              "imported": "가져옴",
+              "duplicate": "이미 가져옴",
+              "progress": "{done}/{total}",
+              "capped": "처음 100개 파일만 가져옵니다.",
+              "reason": {
+                "tooLarge": "10MB 초과",
+                "unsupported": "FIT 파일이 아님",
+                "damaged": "손상된 파일",
+                "notActivity": "활동이 아님",
+                "noWorkout": "운동을 찾을 수 없음",
+                "busy": "다른 가져오기가 진행 중",
+                "retry": "실패, 다시 시도하세요"
+              }
+            },
+            "fileHint": ".fit, .fit.gz 또는 .zip, 파일당 최대 10MB"
           },
           "recordFile": {
             "gadgetbridge": {
-              "title": "Gadgetbridge 데이터베이스",
+              "title": "Gadgetbridge",
               "description": "Android의 Gadgetbridge가 내보낸 데이터베이스.",
               "steps": {
                 "export": "Gadgetbridge에서 설정, 데이터 관리, 데이터베이스 내보내기를 차례로 열어요.",
                 "upload": "Gadgetbridge라는 파일을 여기에 올려요. 최대 512MB."
-              }
+              },
+              "fileHint": "데이터베이스, 최대 512MB"
             },
             "fhirBundle": {
               "title": "진료 기록 (FHIR)",
@@ -6560,9 +6581,9 @@
               "steps": {
                 "export": "환자 포털에서 기록을 FHIR R4(JSON)로 내보내요.",
                 "upload": ".json 파일을 여기에 올려요. 최대 32MB."
-              }
+              },
+              "fileHint": ".json, 최대 32MB"
             },
-            "choose": "파일 선택",
             "uploading": "업로드 중…",
             "running": "백그라운드에서 가져오는 중…",
             "doneSummary": "파일을 가져왔어요.",
@@ -6627,8 +6648,18 @@
             "remove": "폴더 제거",
             "removeTitle": "이 폴더를 제거할까요?",
             "removeBody": "HealthLog가 더 이상 이 폴더에서 가져오지 않고 비밀번호를 잊어요. 이미 가져온 항목은 그대로 남아요."
-          }
-        }
+          },
+          "row": {
+            "done": "{date}, {count, plural, other {#개}} 항목",
+            "failed": "{date}, 가져오지 못함"
+          },
+          "pasteOr": "또는 붙여넣기",
+          "guideTitle": "예시와 열",
+          "pickerFile": "파일",
+          "pickerFiles": "파일",
+          "pickerChoose": "선택"
+        },
+        "exportHeading": "내보내기"
       },
       "about": {
         "title": "앱 정보"
@@ -6678,7 +6709,7 @@
         }
       },
       "health-record": {
-        "title": "진료용 리포트 및 내보내기"
+        "title": "진료용 리포트"
       },
       "coach": {
         "title": "코치"
@@ -15587,13 +15618,6 @@
     "metricLink": "이 값의 출처"
   },
   "recordImport": {
-    "title": "스프레드시트에서 검사 결과와 약 가져오기",
-    "description": "수년간의 검사 결과나 약 목록을 CSV 파일에서 가져옵니다.",
-    "detail": "어떤 열에 무엇이 있는지 직접 고르면, HealthLog가 모든 행을 먼저 확인하고 확인 전에는 아무것도 가져오지 않습니다.",
-    "kind": {
-      "labs": "검사 결과",
-      "medications": "복약"
-    },
     "sheetTitle": {
       "labs": "검사 결과 가져오기",
       "medications": "약 가져오기"
@@ -15685,7 +15709,12 @@
       "startsOn": "시작",
       "endsOn": "종료"
     },
-    "unitlessHint": "단위가 없는 비율이나 지수(INR, 콜레스테롤/HDL)는 단위 열에 1을 입력하세요. 단위 칸이 비어 있으면 여전히 오류예요."
+    "unitlessHint": "단위가 없는 비율이나 지수(INR, 콜레스테롤/HDL)는 단위 열에 1을 입력하세요. 단위 칸이 비어 있으면 여전히 오류예요.",
+    "row": {
+      "labs": "검사 결과(CSV)",
+      "medications": "약(CSV)"
+    },
+    "rowMeta": "열을 직접 지정"
   },
   "seizures": {
     "ilae": {

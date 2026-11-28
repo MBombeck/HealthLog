@@ -72,7 +72,8 @@
     "status": {
       "active": "Actif",
       "error": "Erreur",
-      "off": "Désactivé"
+      "off": "Désactivé",
+      "running": "En cours"
     }
   },
   "apiErrors": {
@@ -6226,7 +6227,6 @@
       },
       "export": {
         "title": "Export et import",
-        "otherOptionsHeading": "Autres options d'export",
         "downloadFailed": "Échec du téléchargement de l'export. Veuillez réessayer.",
         "actions": {
           "download": "Télécharger"
@@ -6237,14 +6237,17 @@
         },
         "cards": {
           "measurementsCsv": {
-            "title": "Mesures"
+            "title": "Mesures (CSV)",
+            "description": "Période au choix"
           },
           "medicationsCsv": {
-            "title": "Médicaments",
-            "includeIntake": "Inclure l’historique des prises"
+            "title": "Médicaments (CSV)",
+            "includeIntake": "Inclure l’historique des prises",
+            "description": "Au besoin avec chaque prise"
           },
           "moodCsv": {
-            "title": "Humeur"
+            "title": "Humeur (CSV)",
+            "description": "Période au choix"
           },
           "fullBackup": {
             "title": "Sauvegarde complète",
@@ -6253,20 +6256,22 @@
             "passphrasePlaceholder": "Phrase secrète (12 caractères min.)",
             "passphraseHelp": "Dérive la clé de l'archive avec Argon2id et la scelle avec AES-256-GCM. Enregistrez le fichier avec l'extension .hlx.",
             "noRecoveryWarning": "Aucune récupération possible : si vous perdez cette phrase secrète, l'archive ne pourra pas être ouverte. Conservez-la en lieu sûr.",
-            "detail": "Une copie portable de votre dossier, à conserver et à lire : valeurs en JSON simple, documents limités à leurs métadonnées."
+            "detail": "Une copie portable de votre dossier, à conserver et à lire : valeurs en JSON simple, documents limités à leurs métadonnées.",
+            "description": "Tout, chiffré si vous voulez"
+          },
+          "doctorReport": {
+            "title": "Rapport médical",
+            "description": "PDF, FHIR ou ZIP"
           }
         },
         "import": {
           "heading": "Import",
-          "description": "Les fichiers envoyés sont supprimés du serveur dès la fin de l’importation, et importer à nouveau le même fichier n’ajoute rien en double.",
+          "description": "Le serveur supprime chaque fichier après l’import, et le même fichier deux fois n’ajoute rien en double.",
           "charCount": "{used} / {max, plural, one {# caractère} other {# caractères}}",
           "appleHealth": {
             "title": "Apple Santé",
             "description": "Le fichier export.zip de l’app Santé de l’iPhone.",
-            "dropLabel": "Déposez export.zip ici",
-            "dropHint": "ou cliquez pour choisir un fichier",
             "fileInputLabel": "Choisir un fichier export.zip d'Apple Santé",
-            "choose": "Choisir un fichier",
             "idempotencyNote": "Les grandes archives sont traitées en arrière-plan.",
             "uploading": "Envoi…",
             "uploadFailed": "Échec de l'envoi. Veuillez réessayer.",
@@ -6329,16 +6334,15 @@
             "skipBreakdownMore": "+ {count, plural, one {# autre type} other {# autres types}}",
             "cycleSummary": "{samples, plural, one {# échantillon de cycle fusionné} other {# échantillons de cycle fusionnés}} en {days, plural, one {# journal quotidien} other {# journaux quotidiens}}.",
             "cycleModuleOff": "{count, plural, one {# échantillon de cycle ignoré} other {# échantillons de cycle ignorés}}, car le suivi du cycle est désactivé pour ce compte.",
-            "cycleDaysFailed": "{count, plural, one {# jour de cycle n'a pas pu être écrit} other {# jours de cycle n'ont pas pu être écrits}} : {reason}"
+            "cycleDaysFailed": "{count, plural, one {# jour de cycle n'a pas pu être écrit} other {# jours de cycle n'ont pas pu être écrits}} : {reason}",
+            "fileHint": "export.zip, jusqu’à 1,5 Go"
           },
           "json": {
-            "title": "Mesures et humeur (JSON)",
+            "title": "Fichier JSON",
             "description": "Mesures et entrées d’humeur en JSON.",
-            "pasteLabel": "Coller du JSON",
             "fileInputLabel": "Choisir un fichier JSON à importer",
             "schemaHint": "Deux tableaux : measurements et moodEntries.",
             "docsLink": "Voir le schéma et un exemple.",
-            "uploadFile": "Choisir un fichier",
             "downloadExample": "Télécharger l'exemple",
             "import": "Importer",
             "invalidJson": "Ce n'est pas du JSON valide. Vérifiez la syntaxe et réessayez.",
@@ -6352,16 +6356,18 @@
             "keptLabels": "Ce compte a déjà des étiquettes ou des groupes avec ces clés sous son propre nom, ils ont été conservés : {keys}",
             "resultNothing": "Rien n'a été importé. {skipped, plural, =1 {La seule entrée a été ignorée} other {Les # entrées ont toutes été ignorées}}.",
             "resultEmpty": "Ce fichier ne contenait ni mesures ni entrées d'humeur.",
-            "limitsHint": "Jusqu’à {mb} Mo et jusqu’à {rows, plural, one {# entrée} other {# entrées}} par liste."
+            "limitsHint": "Jusqu’à {mb} Mo et jusqu’à {rows, plural, one {# entrée} other {# entrées}} par liste.",
+            "rowMeta": "Mesures et humeur",
+            "fileMeta": ".json, jusqu’à {mb} Mo",
+            "partial": "L’importation s’est arrêtée en cours. Réimporter est sans risque, rien n’est ajouté en double.",
+            "partialCounts": "Déjà enregistré : {measurements, plural, one {# mesure} other {# mesures}} et {moods, plural, one {# entrée d’humeur} other {# entrées d’humeur}}."
           },
           "csv": {
             "title": "Fichier CSV",
             "description": "Mesures d’un tableur ou d’un export d’appareil.",
-            "pasteLabel": "Coller le CSV",
             "fileInputLabel": "Choisir un fichier CSV à importer",
             "schemaHint": "Colonnes : type, value, unit, measuredAt (avec décalage horaire) et, en option, glucoseContext, notes, externalId.",
             "docsLink": "Voir le schéma des colonnes et un exemple.",
-            "uploadFile": "Choisir un fichier",
             "downloadExample": "Télécharger un exemple",
             "preview": "Aperçu",
             "import": "Importer",
@@ -6397,14 +6403,15 @@
             "reasonUnstableExternalId": "l'identifiant externe n'est pas stable d'un export à l'autre",
             "reasonDuplicate": "déjà importée",
             "reasonUnknown": "ignorée",
-            "detail": "Une ligne par relevé."
+            "detail": "Une ligne par relevé.",
+            "rowMeta": "Mesures d’un tableur",
+            "fileMeta": ".csv, jusqu’à 16 Mo",
+            "guideMeta": "type, value, unit, measuredAt avec décalage"
           },
           "doseHistory": {
             "title": "Historique des prises",
             "description": "Un historique de prises d’une autre app de suivi.",
-            "pasteLabel": "Coller l'export",
             "fileInputLabel": "Choisir un fichier d'historique des prises",
-            "uploadFile": "Choisir un fichier",
             "preview": "Aperçu",
             "import": "Importer",
             "empty": "Collez d'abord l'export ou choisissez un fichier.",
@@ -6453,12 +6460,13 @@
               "jsonNoIntakeTime": "L'export JSON consigne le moment où une dose était due, pas celui où elle a été prise, et une heure prévue ne sera pas écrite comme si c'était la prise. Exportez le CSV, qui porte les deux.",
               "tooManyRows": "Ce fichier contient plus de lignes qu'un import peut en prendre. Découpez-le et importez les parties."
             },
-            "detail": "Un fichier couvre tous les médicaments qu'il contient."
+            "detail": "Un fichier couvre tous les médicaments qu'il contient.",
+            "rowMeta": "Depuis une autre appli",
+            "fileMeta": ".csv ou .json, jusqu’à 16 Mo"
           },
           "healthConnect": {
-            "title": "Export Health Connect",
+            "title": "Health Connect",
             "description": "Le ZIP que Health Connect écrit sur Android.",
-            "choose": "Choisir un fichier",
             "uploading": "Envoi en cours…",
             "uploadFailed": "L’envoi a échoué. Réessayez.",
             "tooLarge": "Le fichier dépasse la taille acceptée par ce serveur.",
@@ -6477,8 +6485,6 @@
               "cloud": "Health Connect enregistre l’exportation uniquement dans une app de stockage cloud comme Google Drive, Dropbox ou Nextcloud, jamais sur le téléphone lui-même.",
               "upload": "Téléchargez le fichier ZIP de ce cloud sur cet appareil et importez-le ici."
             },
-            "dropLabel": "Déposez ici le ZIP de Health Connect",
-            "dropHint": "ou cliquez pour le choisir. Jusqu’à 1 Go.",
             "fileInputLabel": "Fichier ZIP de l’exportation Health Connect",
             "privacyNote": "Les enregistrements des apps que vous connectez déjà directement, comme Withings, sont ignorés pour que rien n’arrive en double.",
             "rateLimited": "Trop d’envois en peu de temps. Attendez une minute et réessayez.",
@@ -6496,23 +6502,20 @@
               "tooLarge": "L’exportation est plus volumineuse que ce que ce serveur accepte.",
               "stagingMissing": "Le fichier envoyé n’était plus sur le serveur. Envoyez-le à nouveau.",
               "interrupted": "Un redémarrage du serveur a interrompu l’importation. Envoyez le fichier à nouveau."
-            }
+            },
+            "folderRow": "Automatiquement depuis un dossier",
+            "folderMeta": "WebDAV ou Nextcloud, dans Intégrations",
+            "fileHint": "ZIP, 1 Go maximum"
           },
           "fit": {
             "title": "Fichier d’activité (FIT)",
-            "description": "Un entraînement d’une montre ou d’un compteur vélo.",
-            "choose": "Choisir un fichier",
+            "description": "Des entraînements d’une montre ou d’un compteur vélo.",
             "uploading": "Envoi en cours…",
             "uploadFailed": "L’envoi a échoué. Veuillez réessayer.",
-            "tooLarge": "Le fichier dépasse 10 Mo.",
-            "rateLimited": "Trop d’envois en peu de temps. Attendez une minute et réessayez.",
-            "busy": "Une importation est déjà en cours pour votre compte. Attendez qu’elle soit terminée.",
             "failed": "L’importation a échoué. Veuillez réessayer.",
             "doneSummary": "Le fichier d’activité a été importé.",
             "doneNothing": "L’importation est terminée, mais il n’y avait rien de nouveau à ajouter.",
-            "dropLabel": "Déposez le fichier d’activité ici",
-            "dropHint": "ou cliquez pour le choisir : un fichier .fit, .fit.gz ou .zip jusqu’à 10 Mo.",
-            "fileInputLabel": "Fichier d’activité",
+            "fileInputLabel": "Fichiers d’activité",
             "privacyNote": "Le tracé GPS n’est conservé que si Parcours d’entraînement est activé.",
             "steps": {
               "garmin": "Garmin Connect : ouvrez l’activité sur le site, choisissez le menu en forme de roue dentée, puis Exporter l’original.",
@@ -6543,16 +6546,34 @@
               "noSession": "Le fichier ne contient aucun entraînement lisible.",
               "stagingMissing": "Le fichier envoyé n’était plus sur le serveur. Envoyez-le à nouveau.",
               "interrupted": "L’importation a été interrompue par un redémarrage du serveur. Envoyez le fichier à nouveau."
-            }
+            },
+            "batch": {
+              "waiting": "En attente",
+              "imported": "Importé",
+              "duplicate": "Déjà importé",
+              "progress": "{done} sur {total}",
+              "capped": "Seuls les 100 premiers fichiers sont importés.",
+              "reason": {
+                "tooLarge": "Plus de 10 Mo",
+                "unsupported": "Pas un fichier FIT",
+                "damaged": "Fichier endommagé",
+                "notActivity": "Pas une activité",
+                "noWorkout": "Aucun entraînement trouvé",
+                "busy": "Une autre importation est en cours",
+                "retry": "Échec, réessayez"
+              }
+            },
+            "fileHint": ".fit, .fit.gz ou .zip, 10 Mo maximum chacun"
           },
           "recordFile": {
             "gadgetbridge": {
-              "title": "Base de données Gadgetbridge",
+              "title": "Gadgetbridge",
               "description": "La base de données exportée par Gadgetbridge sur Android.",
               "steps": {
                 "export": "Dans Gadgetbridge, ouvrez Paramètres, puis Gestion des données, puis Exporter la base de données.",
                 "upload": "Téléversez ici le fichier nommé Gadgetbridge. Jusqu'à 512 Mo."
-              }
+              },
+              "fileHint": "Base de données, jusqu’à 512 Mo"
             },
             "fhirBundle": {
               "title": "Dossier patient (FHIR)",
@@ -6560,9 +6581,9 @@
               "steps": {
                 "export": "Dans votre portail patient, exportez votre dossier au format FHIR R4 (JSON).",
                 "upload": "Téléversez ici le fichier .json. Jusqu'à 32 Mo."
-              }
+              },
+              "fileHint": ".json, 32 Mo maximum"
             },
-            "choose": "Choisir un fichier",
             "uploading": "Téléversement…",
             "running": "Import en arrière-plan…",
             "doneSummary": "Le fichier a été importé.",
@@ -6627,8 +6648,18 @@
             "remove": "Retirer le dossier",
             "removeTitle": "Retirer ce dossier ?",
             "removeBody": "HealthLog cesse d'y récupérer quoi que ce soit et oublie le mot de passe. Ce qui a déjà été importé reste."
-          }
-        }
+          },
+          "row": {
+            "done": "{date}, {count, plural, one {# entrée} other {# entrées}}",
+            "failed": "{date}, non importé"
+          },
+          "pasteOr": "Ou coller",
+          "guideTitle": "Exemple et colonnes",
+          "pickerFile": "Fichier",
+          "pickerFiles": "Fichiers",
+          "pickerChoose": "Choisir"
+        },
+        "exportHeading": "Exporter"
       },
       "about": {
         "title": "À propos de cette app"
@@ -6678,7 +6709,7 @@
         }
       },
       "health-record": {
-        "title": "Rapport médical et export"
+        "title": "Rapport médical"
       },
       "coach": {
         "title": "Coach"
@@ -15587,13 +15618,6 @@
     "metricLink": "D'où viennent ces valeurs"
   },
   "recordImport": {
-    "title": "Résultats de laboratoire et médicaments depuis un tableur",
-    "description": "Importez des années de résultats ou une liste de médicaments depuis un fichier CSV.",
-    "detail": "Vous choisissez quelle colonne contient quoi ; HealthLog vérifie chaque ligne d'abord et n'importe rien avant votre confirmation.",
-    "kind": {
-      "labs": "Résultats de laboratoire",
-      "medications": "Médicaments"
-    },
     "sheetTitle": {
       "labs": "Importer des résultats",
       "medications": "Importer des médicaments"
@@ -15685,7 +15709,12 @@
       "startsOn": "Début",
       "endsOn": "Fin"
     },
-    "unitlessHint": "Un rapport ou un indice sans unité (INR, cholestérol/HDL) : inscrivez 1 dans la colonne de l'unité. Une unité vide reste une erreur."
+    "unitlessHint": "Un rapport ou un indice sans unité (INR, cholestérol/HDL) : inscrivez 1 dans la colonne de l'unité. Une unité vide reste une erreur.",
+    "row": {
+      "labs": "Résultats de laboratoire (CSV)",
+      "medications": "Médicaments (CSV)"
+    },
+    "rowMeta": "Vous associez les colonnes"
   },
   "seizures": {
     "ilae": {
