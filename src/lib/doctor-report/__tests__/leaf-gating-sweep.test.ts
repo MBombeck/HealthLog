@@ -259,6 +259,17 @@ function seed() {
       practitioner: { name: "Sample practice" },
     },
   ];
+  rows.imagingExam = [
+    {
+      performedAt: new Date("2024-05-14T00:00:00.000Z"),
+      modality: "MRI",
+      side: "LEFT",
+      bodyPartEncrypted: null,
+      facilityEncrypted: null,
+      requestingDoctorEncrypted: null,
+      conclusionEncrypted: null,
+    },
+  ];
   rows.seizureEvent = [
     {
       id: "seizure-1",
@@ -601,6 +612,7 @@ describe("zero read for unchosen leaves", () => {
     ["VISITS", "encounter"],
     ["SURGICAL_HISTORY", "encounter"],
     ["IMMUNIZATIONS", "vaccinationRecord"],
+    ["IMAGING_EXAMS", "imagingExam"],
     ["SEIZURES", "seizureEvent"],
     ["ANAMNESIS", "userHealthProfile"],
     ["EMERGENCY", "userHealthProfile"],

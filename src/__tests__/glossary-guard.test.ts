@@ -414,6 +414,10 @@ const PAGE_TITLES: Record<string, { file: string; key: string } | null> = {
     key: "measurementReminders.sectionTitle",
   },
   "/labs": { file: "src/app/labs/page.tsx", key: "labs.title" },
+  "/imaging": {
+    file: "src/components/imaging/imaging-view.tsx",
+    key: "imaging.title",
+  },
   "/profile": {
     file: "src/components/records/profile-summary.tsx",
     key: "settings.sections.anamnesis.title",

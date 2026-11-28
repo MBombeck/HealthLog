@@ -440,6 +440,23 @@ export interface DoctorReportData {
     }>;
   }> | null;
   /**
+   * The imaging exams (#1672). Reference data, not time-windowed, like the
+   * surgical history: an MRI from four years ago is still the one a doctor
+   * asks for. Populated when the `IMAGING_EXAMS` leaf is selected AND the
+   * `imaging` module is on AND at least one exam exists; null/absent
+   * otherwise. Oldest first. The text fields are the person's own words,
+   * decrypted; an unreadable one is null. The files are not part of it.
+   */
+  imagingExams?: Array<{
+    performedAt: string;
+    modality: string;
+    side: string | null;
+    bodyPart: string | null;
+    facility: string | null;
+    requestingDoctor: string | null;
+    conclusion: string | null;
+  }> | null;
+  /**
    * The seizure diary over the report window (#1368). Populated when the
    * `SEIZURES` leaf is selected AND the `seizures` module is on AND the window
    * holds at least one recorded seizure; null/absent otherwise, and the PDF

@@ -579,7 +579,12 @@
       "postpartumWeek": "리포트 날짜 기준 출산 후 {weeks}주",
       "deliveryDate": "출산일",
       "predictionsPaused": "본인 입력. 주기 예측이 일시 중지되었습니다."
-    }
+    },
+    "imagingTitle": "영상 검사",
+    "imagingColDate": "날짜",
+    "imagingColExam": "검사",
+    "imagingColFacility": "기관",
+    "imagingColConclusion": "결과"
   },
   "errorBoundary": {
     "title": "문제가 생겼어요",
@@ -664,7 +669,8 @@
       "record": "건강 기록",
       "analysis": "분석"
     },
-    "dueCount": "{label}, {count}개 예정"
+    "dueCount": "{label}, {count}개 예정",
+    "imaging": "영상 검사"
   },
   "auth": {
     "login": "로그인",
@@ -9218,7 +9224,8 @@
         },
         "restoreSkippedSeizureMedicationReference": "파일에 없는 약에 연결된 발작 응급 계획 또는 응급약 투여 (연결 없이 보존)",
         "restoreSkippedSeizureTypeReference": "파일에 없는 발작 유형에 연결된 발작 (유형 없이 보존)",
-        "restoreSkippedSeizureIntakeReference": "파일에 없는 복용 기록에 연결된 발작 응급약 투여 (연결 없이 보존)"
+        "restoreSkippedSeizureIntakeReference": "파일에 없는 복용 기록에 연결된 발작 응급약 투여 (연결 없이 보존)",
+        "restoreSkippedImagingCiphertext": "이 서버에 없는 키로 봉인된 영상 검사 텍스트 (텍스트 없이 검사 유지)"
       },
       "danger-zone": {
         "title": "위험 구역",
@@ -11882,6 +11889,10 @@
     "seizures": {
       "label": "발작 일지",
       "description": "발작을 유형, 지속 시간, 응급약과 함께 기록하고, 군집 발작과 발작 없는 날을 확인하고, 진료용 리포트에 발작 항목을 추가해요."
+    },
+    "imaging": {
+      "label": "영상 검사",
+      "description": "MRI, CT, 엑스레이, 초음파 검사와 판독지, 영상을 함께 보관해요."
     }
   },
   "moduleOff": {
@@ -14146,7 +14157,8 @@
     "leafEmergency": "응급 정보 (혈액형, 연락처, 사전지시)",
     "leafMedicationEffect": "각 약 시작 전후의 변화 (약 목록 필요)",
     "leafWorkouts": "운동(종목별 요약)",
-    "leafSeizures": "발작 일지"
+    "leafSeizures": "발작 일지",
+    "leafImagingExams": "영상 검사"
   },
   "recordSharing": {
     "banner": {
@@ -16579,6 +16591,49 @@
       "needAfter": "비교하려면 시작 후 값이 더 필요해요.",
       "needStart": "전후를 비교하려면 시작일을 입력하세요.",
       "needData": "비교하려면 값이 더 필요해요."
+    }
+  },
+  "imaging": {
+    "title": "영상 검사",
+    "examsHeading": "검사",
+    "addFirst": "첫 검사 추가",
+    "createTitle": "새 검사",
+    "editTitle": "검사 편집",
+    "created": "검사를 저장했어요",
+    "updated": "검사를 수정했어요",
+    "deleted": "검사를 삭제했어요",
+    "saveFailed": "검사를 저장하지 못했어요.",
+    "deleteFailed": "검사를 삭제하지 못했어요.",
+    "loadError": "영상 검사를 불러오지 못했어요.",
+    "uploadFailed": "파일을 올리지 못했어요.",
+    "deleteTitle": "이 검사를 삭제할까요?",
+    "deleteDescription": "판독지와 영상은 문서에 그대로 남아요.",
+    "fileCount": "{count, plural, other {파일 #개}}",
+    "form": {
+      "modality": "종류",
+      "date": "날짜",
+      "bodyPart": "부위",
+      "side": "방향",
+      "sideNone": "해당 없음",
+      "facility": "병원 또는 검사 기관",
+      "requestingDoctor": "의뢰 의사",
+      "conclusion": "결과",
+      "documents": "판독지와 영상",
+      "upload": "올리기",
+      "noDocuments": "아직 문서가 없어요"
+    },
+    "modality": {
+      "MRI": "MRI",
+      "CT": "CT",
+      "X_RAY": "엑스레이",
+      "ULTRASOUND": "초음파",
+      "MAMMOGRAPHY": "유방촬영술",
+      "OTHER": "기타 영상 검사"
+    },
+    "side": {
+      "LEFT": "왼쪽",
+      "RIGHT": "오른쪽",
+      "BOTH": "양쪽"
     }
   }
 }

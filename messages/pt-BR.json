@@ -579,7 +579,12 @@
       "postpartumWeek": "Após o parto, semana {weeks} na data do relatório",
       "deliveryDate": "Data do parto",
       "predictionsPaused": "Autodeclarado. As previsões do ciclo estão pausadas."
-    }
+    },
+    "imagingTitle": "Exames de imagem",
+    "imagingColDate": "Data",
+    "imagingColExam": "Exame",
+    "imagingColFacility": "Clínica",
+    "imagingColConclusion": "Conclusão"
   },
   "errorBoundary": {
     "title": "Algo deu errado",
@@ -664,7 +669,8 @@
       "record": "Registro de saúde",
       "analysis": "Análise"
     },
-    "dueCount": "{label}, {count} pendentes"
+    "dueCount": "{label}, {count} pendentes",
+    "imaging": "Exames de imagem"
   },
   "auth": {
     "login": "Entrar",
@@ -9243,7 +9249,8 @@
         },
         "restoreSkippedSeizureMedicationReference": "Plano de resgate ou dose de resgate de uma crise vinculados a um medicamento que não está no arquivo (mantidos sem o vínculo)",
         "restoreSkippedSeizureTypeReference": "Crise vinculada a um tipo de crise que não está no arquivo (mantida sem o tipo)",
-        "restoreSkippedSeizureIntakeReference": "Dose de resgate de uma crise vinculada a uma tomada que não está no arquivo (mantida sem o vínculo)"
+        "restoreSkippedSeizureIntakeReference": "Dose de resgate de uma crise vinculada a uma tomada que não está no arquivo (mantida sem o vínculo)",
+        "restoreSkippedImagingCiphertext": "Texto de exame de imagem selado com uma chave que este servidor não tem (exame mantido sem ele)"
       },
       "danger-zone": {
         "title": "Zona de perigo",
@@ -11882,6 +11889,10 @@
     "seizures": {
       "label": "Diário de crises",
       "description": "Registre crises com tipo, duração e medicação de resgate, veja as salvas e os dias sem crise e adicione uma seção de crises ao relatório médico."
+    },
+    "imaging": {
+      "label": "Exames de imagem",
+      "description": "Ressonância, tomografia, raio-X e ultrassom com laudo e imagens."
     }
   },
   "moduleOff": {
@@ -14146,7 +14157,8 @@
     "leafEmergency": "Informações de emergência (tipo sanguíneo, contatos, diretivas)",
     "leafMedicationEffect": "Mudança em torno do início de cada medicamento (requer a lista de medicamentos)",
     "leafWorkouts": "Treinos (resumo por esporte)",
-    "leafSeizures": "Diário de crises"
+    "leafSeizures": "Diário de crises",
+    "leafImagingExams": "Exames de imagem"
   },
   "recordSharing": {
     "banner": {
@@ -16579,6 +16591,49 @@
       "needAfter": "Ainda faltam valores desde o início para comparar.",
       "needStart": "Adicione uma data de início para comparar antes e depois.",
       "needData": "Ainda faltam valores para comparar."
+    }
+  },
+  "imaging": {
+    "title": "Exames de imagem",
+    "examsHeading": "Exames",
+    "addFirst": "Adicionar o primeiro exame",
+    "createTitle": "Novo exame",
+    "editTitle": "Editar exame",
+    "created": "Exame salvo",
+    "updated": "Exame atualizado",
+    "deleted": "Exame excluído",
+    "saveFailed": "Não foi possível salvar o exame.",
+    "deleteFailed": "Não foi possível excluir o exame.",
+    "loadError": "Não foi possível carregar os exames de imagem.",
+    "uploadFailed": "Não foi possível enviar o arquivo.",
+    "deleteTitle": "Excluir este exame?",
+    "deleteDescription": "O laudo e as imagens continuam nos seus documentos.",
+    "fileCount": "{count, plural, one {# arquivo} other {# arquivos}}",
+    "form": {
+      "modality": "Tipo",
+      "date": "Data",
+      "bodyPart": "Parte do corpo",
+      "side": "Lado",
+      "sideNone": "Não se aplica",
+      "facility": "Clínica ou laboratório",
+      "requestingDoctor": "Solicitado por",
+      "conclusion": "Conclusão",
+      "documents": "Laudo e imagens",
+      "upload": "Enviar",
+      "noDocuments": "Nenhum documento ainda"
+    },
+    "modality": {
+      "MRI": "Ressonância magnética",
+      "CT": "Tomografia",
+      "X_RAY": "Raio-X",
+      "ULTRASOUND": "Ultrassom",
+      "MAMMOGRAPHY": "Mamografia",
+      "OTHER": "Outro exame de imagem"
+    },
+    "side": {
+      "LEFT": "esquerdo",
+      "RIGHT": "direito",
+      "BOTH": "ambos os lados"
     }
   }
 }

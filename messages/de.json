@@ -579,7 +579,12 @@
       "postpartumWeek": "Nach der Geburt, Woche {weeks} am Berichtsdatum",
       "deliveryDate": "Geburtsdatum des Kindes",
       "predictionsPaused": "Selbst angegeben. Zyklusprognosen ruhen."
-    }
+    },
+    "imagingTitle": "Bildgebung",
+    "imagingColDate": "Datum",
+    "imagingColExam": "Untersuchung",
+    "imagingColFacility": "Praxis",
+    "imagingColConclusion": "Ergebnis"
   },
   "errorBoundary": {
     "title": "Da ist etwas schiefgelaufen",
@@ -664,7 +669,8 @@
       "record": "Gesundheitsakte",
       "analysis": "Auswertung"
     },
-    "dueCount": "{label}, {count} fällig"
+    "dueCount": "{label}, {count} fällig",
+    "imaging": "Bildgebung"
   },
   "auth": {
     "login": "Anmelden",
@@ -9243,7 +9249,8 @@
         },
         "restoreSkippedSeizureMedicationReference": "Notfallplan oder Notfalldosis eines Anfalls verweist auf ein Medikament, das nicht in der Datei enthalten ist (ohne Verknüpfung übernommen)",
         "restoreSkippedSeizureTypeReference": "Anfall verweist auf eine Anfallsart, die nicht in der Datei enthalten ist (ohne Anfallsart übernommen)",
-        "restoreSkippedSeizureIntakeReference": "Notfalldosis eines Anfalls verweist auf eine Einnahme, die nicht in der Datei enthalten ist (ohne Verknüpfung übernommen)"
+        "restoreSkippedSeizureIntakeReference": "Notfalldosis eines Anfalls verweist auf eine Einnahme, die nicht in der Datei enthalten ist (ohne Verknüpfung übernommen)",
+        "restoreSkippedImagingCiphertext": "Text einer Bildgebung, versiegelt mit einem Schlüssel, den dieser Server nicht hat (Untersuchung ohne ihn übernommen)"
       },
       "danger-zone": {
         "title": "Gefahrenzone",
@@ -11882,6 +11889,10 @@
     "seizures": {
       "label": "Anfallskalender",
       "description": "Anfälle mit Anfallsart, Dauer und Notfallmedikation festhalten, Anfallsserien sehen und in den Arztbericht übernehmen."
+    },
+    "imaging": {
+      "label": "Bildgebung",
+      "description": "MRT, CT, Röntgen und Ultraschall mit Befund und Bildern."
     }
   },
   "moduleOff": {
@@ -14146,7 +14157,8 @@
     "leafEmergency": "Notfalldaten (Blutgruppe, Kontakte, Verfügungen)",
     "leafMedicationEffect": "Veränderung rund um den Start jedes Medikaments (braucht die Medikamentenliste)",
     "leafWorkouts": "Trainings (Übersicht je Sportart)",
-    "leafSeizures": "Anfallskalender"
+    "leafSeizures": "Anfallskalender",
+    "leafImagingExams": "Bildgebung"
   },
   "recordSharing": {
     "banner": {
@@ -16579,6 +16591,49 @@
       "needAfter": "Für einen Vergleich fehlen noch Werte seit dem Start.",
       "needStart": "Hinterlege ein Startdatum, um vorher und nachher zu vergleichen.",
       "needData": "Für einen Vergleich fehlen noch Werte."
+    }
+  },
+  "imaging": {
+    "title": "Bildgebung",
+    "examsHeading": "Untersuchungen",
+    "addFirst": "Erste Untersuchung hinzufügen",
+    "createTitle": "Neue Untersuchung",
+    "editTitle": "Untersuchung bearbeiten",
+    "created": "Untersuchung gespeichert",
+    "updated": "Untersuchung aktualisiert",
+    "deleted": "Untersuchung gelöscht",
+    "saveFailed": "Die Untersuchung konnte nicht gespeichert werden.",
+    "deleteFailed": "Die Untersuchung konnte nicht gelöscht werden.",
+    "loadError": "Die Untersuchungen konnten nicht geladen werden.",
+    "uploadFailed": "Die Datei konnte nicht hochgeladen werden.",
+    "deleteTitle": "Untersuchung löschen?",
+    "deleteDescription": "Befund und Bilder bleiben in deinen Dokumenten.",
+    "fileCount": "{count, plural, one {# Datei} other {# Dateien}}",
+    "form": {
+      "modality": "Art",
+      "date": "Datum",
+      "bodyPart": "Körperregion",
+      "side": "Seite",
+      "sideNone": "Keine Angabe",
+      "facility": "Praxis oder Klinik",
+      "requestingDoctor": "Überwiesen von",
+      "conclusion": "Ergebnis",
+      "documents": "Befund und Bilder",
+      "upload": "Hochladen",
+      "noDocuments": "Noch keine Dokumente"
+    },
+    "modality": {
+      "MRI": "MRT",
+      "CT": "CT",
+      "X_RAY": "Röntgen",
+      "ULTRASOUND": "Ultraschall",
+      "MAMMOGRAPHY": "Mammografie",
+      "OTHER": "Sonstige Bildgebung"
+    },
+    "side": {
+      "LEFT": "links",
+      "RIGHT": "rechts",
+      "BOTH": "beidseits"
     }
   }
 }

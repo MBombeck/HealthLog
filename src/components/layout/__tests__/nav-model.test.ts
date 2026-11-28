@@ -74,6 +74,7 @@ describe("nav-model destination list", () => {
         [
           "/care",
           "/labs",
+          "/imaging",
           "/profile",
           "/illness",
           "/seizures",

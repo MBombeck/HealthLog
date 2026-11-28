@@ -579,7 +579,12 @@
       "postpartumWeek": "Dopo il parto, settimana {weeks} alla data del referto",
       "deliveryDate": "Data del parto",
       "predictionsPaused": "Dichiarato dalla persona. Le previsioni del ciclo sono in pausa."
-    }
+    },
+    "imagingTitle": "Diagnostica per immagini",
+    "imagingColDate": "Data",
+    "imagingColExam": "Esame",
+    "imagingColFacility": "Centro",
+    "imagingColConclusion": "Conclusione"
   },
   "errorBoundary": {
     "title": "Qualcosa è andato storto",
@@ -664,7 +669,8 @@
       "record": "Cartella sanitaria",
       "analysis": "Analisi"
     },
-    "dueCount": "{label}, {count} da fare"
+    "dueCount": "{label}, {count} da fare",
+    "imaging": "Diagnostica per immagini"
   },
   "auth": {
     "login": "Accedi",
@@ -9243,7 +9249,8 @@
         },
         "restoreSkippedSeizureMedicationReference": "Piano di soccorso o dose di soccorso di una crisi collegati a un farmaco non presente nel file (mantenuti senza il collegamento)",
         "restoreSkippedSeizureTypeReference": "Crisi collegata a un tipo di crisi non presente nel file (mantenuta senza il tipo)",
-        "restoreSkippedSeizureIntakeReference": "Dose di soccorso di una crisi collegata a un'assunzione non presente nel file (mantenuta senza il collegamento)"
+        "restoreSkippedSeizureIntakeReference": "Dose di soccorso di una crisi collegata a un'assunzione non presente nel file (mantenuta senza il collegamento)",
+        "restoreSkippedImagingCiphertext": "Testo di un esame sigillato con una chiave che questo server non ha (esame mantenuto senza)"
       },
       "danger-zone": {
         "title": "Zona pericolosa",
@@ -11882,6 +11889,10 @@
     "seizures": {
       "label": "Diario delle crisi",
       "description": "Registra le crisi con tipo, durata e farmaco di soccorso, visualizza i grappoli e i giorni liberi da crisi e aggiungi una sezione sulle crisi al referto medico."
+    },
+    "imaging": {
+      "label": "Diagnostica per immagini",
+      "description": "Risonanze, TAC, radiografie ed ecografie con referto e immagini."
     }
   },
   "moduleOff": {
@@ -14146,7 +14157,8 @@
     "leafEmergency": "Informazioni di emergenza (gruppo sanguigno, contatti, disposizioni)",
     "leafMedicationEffect": "Variazione intorno all'inizio di ogni farmaco (richiede l'elenco dei farmaci)",
     "leafWorkouts": "Allenamenti (riepilogo per sport)",
-    "leafSeizures": "Diario delle crisi"
+    "leafSeizures": "Diario delle crisi",
+    "leafImagingExams": "Esami di diagnostica per immagini"
   },
   "recordSharing": {
     "banner": {
@@ -16579,6 +16591,49 @@
       "needAfter": "Mancano ancora valori dall'inizio per un confronto.",
       "needStart": "Aggiungi una data di inizio per confrontare prima e dopo.",
       "needData": "Mancano ancora valori per un confronto."
+    }
+  },
+  "imaging": {
+    "title": "Diagnostica per immagini",
+    "examsHeading": "Esami",
+    "addFirst": "Aggiungi il primo esame",
+    "createTitle": "Nuovo esame",
+    "editTitle": "Modifica esame",
+    "created": "Esame salvato",
+    "updated": "Esame aggiornato",
+    "deleted": "Esame eliminato",
+    "saveFailed": "Impossibile salvare l'esame.",
+    "deleteFailed": "Impossibile eliminare l'esame.",
+    "loadError": "Impossibile caricare gli esami di diagnostica.",
+    "uploadFailed": "Impossibile caricare il file.",
+    "deleteTitle": "Eliminare questo esame?",
+    "deleteDescription": "Il referto e le immagini restano nei tuoi documenti.",
+    "fileCount": "{count, plural, one {# file} other {# file}}",
+    "form": {
+      "modality": "Tipo",
+      "date": "Data",
+      "bodyPart": "Parte del corpo",
+      "side": "Lato",
+      "sideNone": "Non applicabile",
+      "facility": "Studio o centro",
+      "requestingDoctor": "Richiesto da",
+      "conclusion": "Conclusione",
+      "documents": "Referto e immagini",
+      "upload": "Carica",
+      "noDocuments": "Ancora nessun documento"
+    },
+    "modality": {
+      "MRI": "Risonanza magnetica",
+      "CT": "TAC",
+      "X_RAY": "Radiografia",
+      "ULTRASOUND": "Ecografia",
+      "MAMMOGRAPHY": "Mammografia",
+      "OTHER": "Altra diagnostica"
+    },
+    "side": {
+      "LEFT": "sinistro",
+      "RIGHT": "destro",
+      "BOTH": "entrambi i lati"
     }
   }
 }

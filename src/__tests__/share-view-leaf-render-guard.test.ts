@@ -483,6 +483,23 @@ const DISPOSITIONS: Record<StructuredLeafId, Disposition> = {
     },
     marker: "Seasonal influenza",
   },
+  IMAGING_EXAMS: {
+    kind: "rendered",
+    data: {
+      imagingExams: [
+        {
+          performedAt: "2025-04-11T00:00:00.000Z",
+          modality: "MRI",
+          side: "LEFT",
+          bodyPart: "Knee",
+          facility: "Radiology on the hill",
+          requestingDoctor: null,
+          conclusion: "Small meniscus tear",
+        },
+      ],
+    },
+    marker: "Small meniscus tear",
+  },
   FAMILY_HISTORY: {
     kind: "rendered",
     data: {

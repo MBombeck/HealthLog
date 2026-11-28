@@ -53,6 +53,7 @@ export type StructuredLeafId =
   | "VISITS"
   | "SURGICAL_HISTORY"
   | "IMMUNIZATIONS"
+  | "IMAGING_EXAMS"
   | "FAMILY_HISTORY"
   | "MOOD"
   | "CYCLE"
@@ -252,6 +253,7 @@ export const STRUCTURED_LEAF_GROUP: Record<StructuredLeafId, ReportGroupId> = {
   VISITS: "history",
   SURGICAL_HISTORY: "history",
   IMMUNIZATIONS: "history",
+  IMAGING_EXAMS: "history",
   FAMILY_HISTORY: "sensitive",
   MOOD: "sensitive",
   CYCLE: "sensitive",
@@ -277,6 +279,7 @@ export const STRUCTURED_LEAF_LABEL_KEYS: Record<StructuredLeafId, string> = {
   VISITS: "reportSelection.leafVisits",
   SURGICAL_HISTORY: "reportSelection.leafSurgicalHistory",
   IMMUNIZATIONS: "reportSelection.leafImmunizations",
+  IMAGING_EXAMS: "reportSelection.leafImagingExams",
   FAMILY_HISTORY: "reportSelection.leafFamilyHistory",
   MOOD: "reportSelection.leafMood",
   CYCLE: "reportSelection.leafCycle",
@@ -404,6 +407,8 @@ export const LEAF_MODULE: Partial<Record<ReportLeafId, ModuleKey>> = {
   // `vaccinations` module is off, and the deselected leaf hides regardless of
   // the module — the two exclude independently, like `ILLNESS_EPISODES`.
   IMMUNIZATIONS: "vaccinations",
+  // Imaging exams ride their own default-on module, like the immunizations.
+  IMAGING_EXAMS: "imaging",
   // VISITS is deliberately absent, like ALLERGIES beside it. A visit carries
   // no module of its own — it is core, like the checkups page it lives on —
   // and the whole report is already gated by `doctorReport`. Reading the

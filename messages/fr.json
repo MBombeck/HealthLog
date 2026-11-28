@@ -579,7 +579,12 @@
       "postpartumWeek": "Après la naissance, semaine {weeks} à la date du rapport",
       "deliveryDate": "Date de la naissance",
       "predictionsPaused": "Déclaré par la personne. Les prévisions du cycle sont en pause."
-    }
+    },
+    "imagingTitle": "Imagerie",
+    "imagingColDate": "Date",
+    "imagingColExam": "Examen",
+    "imagingColFacility": "Centre",
+    "imagingColConclusion": "Conclusion"
   },
   "errorBoundary": {
     "title": "Une erreur est survenue",
@@ -664,7 +669,8 @@
       "record": "Dossier de santé",
       "analysis": "Analyse"
     },
-    "dueCount": "{label}, {count} à faire"
+    "dueCount": "{label}, {count} à faire",
+    "imaging": "Imagerie"
   },
   "auth": {
     "login": "Se connecter",
@@ -9243,7 +9249,8 @@
         },
         "restoreSkippedSeizureMedicationReference": "Plan de secours ou dose de secours d'une crise lié à un médicament absent du fichier (conservé sans le lien)",
         "restoreSkippedSeizureTypeReference": "Crise liée à un type de crise absent du fichier (conservée sans le type)",
-        "restoreSkippedSeizureIntakeReference": "Dose de secours d'une crise liée à une prise absente du fichier (conservée sans le lien)"
+        "restoreSkippedSeizureIntakeReference": "Dose de secours d'une crise liée à une prise absente du fichier (conservée sans le lien)",
+        "restoreSkippedImagingCiphertext": "Texte d'un examen d'imagerie scellé avec une clé absente de ce serveur (examen conservé sans lui)"
       },
       "danger-zone": {
         "title": "Zone de danger",
@@ -11882,6 +11889,10 @@
     "seizures": {
       "label": "Journal des crises",
       "description": "Enregistrez les crises avec leur type, leur durée et le traitement de secours, visualisez les salves et les jours sans crise, et ajoutez une section sur les crises au rapport médical."
+    },
+    "imaging": {
+      "label": "Imagerie",
+      "description": "IRM, scanner, radiographies et échographies, avec compte rendu et images."
     }
   },
   "moduleOff": {
@@ -14146,7 +14157,8 @@
     "leafEmergency": "Informations d'urgence (groupe sanguin, contacts, directives)",
     "leafMedicationEffect": "Changement autour du démarrage de chaque médicament (nécessite la liste des médicaments)",
     "leafWorkouts": "Entraînements (résumé par sport)",
-    "leafSeizures": "Journal des crises"
+    "leafSeizures": "Journal des crises",
+    "leafImagingExams": "Examens d'imagerie"
   },
   "recordSharing": {
     "banner": {
@@ -16579,6 +16591,49 @@
       "needAfter": "Il manque encore des valeurs depuis le début pour comparer.",
       "needStart": "Ajoutez une date de début pour comparer avant et après.",
       "needData": "Il manque encore des valeurs pour comparer."
+    }
+  },
+  "imaging": {
+    "title": "Imagerie",
+    "examsHeading": "Examens",
+    "addFirst": "Ajouter un premier examen",
+    "createTitle": "Nouvel examen",
+    "editTitle": "Modifier l'examen",
+    "created": "Examen enregistré",
+    "updated": "Examen mis à jour",
+    "deleted": "Examen supprimé",
+    "saveFailed": "L'examen n'a pas pu être enregistré.",
+    "deleteFailed": "L'examen n'a pas pu être supprimé.",
+    "loadError": "Les examens d'imagerie n'ont pas pu être chargés.",
+    "uploadFailed": "Le fichier n'a pas pu être envoyé.",
+    "deleteTitle": "Supprimer cet examen ?",
+    "deleteDescription": "Le compte rendu et les images restent dans vos documents.",
+    "fileCount": "{count, plural, one {# fichier} other {# fichiers}}",
+    "form": {
+      "modality": "Type",
+      "date": "Date",
+      "bodyPart": "Région du corps",
+      "side": "Côté",
+      "sideNone": "Non applicable",
+      "facility": "Cabinet ou centre",
+      "requestingDoctor": "Prescrit par",
+      "conclusion": "Conclusion",
+      "documents": "Compte rendu et images",
+      "upload": "Envoyer",
+      "noDocuments": "Aucun document pour l'instant"
+    },
+    "modality": {
+      "MRI": "IRM",
+      "CT": "Scanner",
+      "X_RAY": "Radiographie",
+      "ULTRASOUND": "Échographie",
+      "MAMMOGRAPHY": "Mammographie",
+      "OTHER": "Autre imagerie"
+    },
+    "side": {
+      "LEFT": "gauche",
+      "RIGHT": "droite",
+      "BOTH": "des deux côtés"
     }
   }
 }

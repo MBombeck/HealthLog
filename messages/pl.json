@@ -579,7 +579,12 @@
       "postpartumWeek": "Po porodzie, tydzień {weeks} w dniu raportu",
       "deliveryDate": "Data porodu",
       "predictionsPaused": "Podane samodzielnie. Prognozy cyklu są wstrzymane."
-    }
+    },
+    "imagingTitle": "Diagnostyka obrazowa",
+    "imagingColDate": "Data",
+    "imagingColExam": "Badanie",
+    "imagingColFacility": "Placówka",
+    "imagingColConclusion": "Wniosek"
   },
   "errorBoundary": {
     "title": "Coś poszło nie tak",
@@ -664,7 +669,8 @@
       "record": "Dokumentacja zdrowotna",
       "analysis": "Analiza"
     },
-    "dueCount": "{label}, do zrobienia: {count}"
+    "dueCount": "{label}, do zrobienia: {count}",
+    "imaging": "Diagnostyka obrazowa"
   },
   "auth": {
     "login": "Zaloguj się",
@@ -9243,7 +9249,8 @@
         },
         "restoreSkippedSeizureMedicationReference": "Plan ratunkowy lub dawka ratunkowa napadu powiązane z lekiem, którego nie ma w pliku (zachowane bez powiązania)",
         "restoreSkippedSeizureTypeReference": "Napad powiązany z rodzajem napadu, którego nie ma w pliku (zachowany bez rodzaju)",
-        "restoreSkippedSeizureIntakeReference": "Dawka ratunkowa napadu powiązana z przyjęciem leku, którego nie ma w pliku (zachowana bez powiązania)"
+        "restoreSkippedSeizureIntakeReference": "Dawka ratunkowa napadu powiązana z przyjęciem leku, którego nie ma w pliku (zachowana bez powiązania)",
+        "restoreSkippedImagingCiphertext": "Tekst badania obrazowego zaszyfrowany kluczem, którego ten serwer nie ma (badanie zachowane bez niego)"
       },
       "danger-zone": {
         "title": "Strefa zagrożenia",
@@ -11882,6 +11889,10 @@
     "seizures": {
       "label": "Dzienniczek napadów",
       "description": "Zapisuj napady z ich rodzajem, czasem trwania i lekiem ratunkowym, przeglądaj napady gromadne i dni bez napadów oraz dodaj sekcję o napadach do raportu dla lekarza."
+    },
+    "imaging": {
+      "label": "Diagnostyka obrazowa",
+      "description": "Rezonans, tomografia, RTG i USG z opisem i obrazami."
     }
   },
   "moduleOff": {
@@ -14146,7 +14157,8 @@
     "leafEmergency": "Informacje na wypadek nagły (grupa krwi, kontakty, oświadczenia)",
     "leafMedicationEffect": "Zmiana wokół rozpoczęcia każdego leku (wymaga listy leków)",
     "leafWorkouts": "Treningi (podsumowanie według dyscypliny)",
-    "leafSeizures": "Dzienniczek napadów"
+    "leafSeizures": "Dzienniczek napadów",
+    "leafImagingExams": "Badania obrazowe"
   },
   "recordSharing": {
     "banner": {
@@ -16579,6 +16591,49 @@
       "needAfter": "Brakuje jeszcze wartości od rozpoczęcia, by porównać.",
       "needStart": "Dodaj datę rozpoczęcia, aby porównać przed i po.",
       "needData": "Brakuje jeszcze wartości, by porównać."
+    }
+  },
+  "imaging": {
+    "title": "Diagnostyka obrazowa",
+    "examsHeading": "Badania",
+    "addFirst": "Dodaj pierwsze badanie",
+    "createTitle": "Nowe badanie",
+    "editTitle": "Edytuj badanie",
+    "created": "Badanie zapisane",
+    "updated": "Badanie zaktualizowane",
+    "deleted": "Badanie usunięte",
+    "saveFailed": "Nie udało się zapisać badania.",
+    "deleteFailed": "Nie udało się usunąć badania.",
+    "loadError": "Nie udało się wczytać badań obrazowych.",
+    "uploadFailed": "Nie udało się przesłać pliku.",
+    "deleteTitle": "Usunąć to badanie?",
+    "deleteDescription": "Opis i obrazy zostaną w Twoich dokumentach.",
+    "fileCount": "{count, plural, one {# plik} few {# pliki} many {# plików} other {# pliku}}",
+    "form": {
+      "modality": "Rodzaj",
+      "date": "Data",
+      "bodyPart": "Okolica ciała",
+      "side": "Strona",
+      "sideNone": "Nie dotyczy",
+      "facility": "Placówka",
+      "requestingDoctor": "Zlecone przez",
+      "conclusion": "Wniosek",
+      "documents": "Opis i obrazy",
+      "upload": "Prześlij",
+      "noDocuments": "Brak dokumentów"
+    },
+    "modality": {
+      "MRI": "Rezonans magnetyczny",
+      "CT": "Tomografia komputerowa",
+      "X_RAY": "RTG",
+      "ULTRASOUND": "USG",
+      "MAMMOGRAPHY": "Mammografia",
+      "OTHER": "Inne badanie obrazowe"
+    },
+    "side": {
+      "LEFT": "lewa",
+      "RIGHT": "prawa",
+      "BOTH": "obustronnie"
     }
   }
 }

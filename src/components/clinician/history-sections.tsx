@@ -1,7 +1,7 @@
 /**
  * The `labs` and `history` groups on the clinician view: lab results, illness
- * episodes, the seizure diary, visits, the surgical history and the
- * immunization record.
+ * episodes, the seizure diary, visits, the surgical history, the
+ * immunization record and the imaging exams.
  *
  * All four were selectable on a share link and none of them reached the page,
  * while the PDF download from the same link printed every one. What each
@@ -472,6 +472,51 @@ export function ImmunizationsSection({
             dose.lotNumber
               ? `${t("doctorReport.immunizationsColLot")} ${dose.lotNumber}`
               : null,
+          ])}
+        />
+      ))}
+    </LeafSection>
+  );
+}
+
+/**
+ * The imaging exams (#1672). Reference data, oldest first like the surgical
+ * history. The conclusion is the person's own words; the files are not on
+ * the page.
+ */
+export function ImagingSection({
+  t,
+  report,
+  scope,
+  fmtCalendarDate,
+}: {
+  t: Translate;
+  report: DoctorReportData;
+  scope: LeafScope;
+  /** An exam day is a calendar date at UTC midnight, never an instant. */
+  fmtCalendarDate: (iso: string) => string;
+}) {
+  const exams = report.imagingExams ?? [];
+  return (
+    <LeafSection
+      t={t}
+      scope={scope}
+      leaves={["IMAGING_EXAMS"]}
+      title={t("doctorReport.imagingTitle")}
+      empty={exams.length === 0}
+    >
+      {exams.map((exam, index) => (
+        <StatRow
+          key={`${exam.performedAt}-${index}`}
+          label={compose([
+            t(`imaging.modality.${exam.modality}`),
+            exam.bodyPart,
+            exam.side ? t(`imaging.side.${exam.side}`) : null,
+          ])}
+          value={compose([
+            fmtCalendarDate(exam.performedAt),
+            exam.facility,
+            exam.conclusion,
           ])}
         />
       ))}

@@ -579,7 +579,12 @@
       "postpartumWeek": "Después del parto, semana {weeks} en la fecha del informe",
       "deliveryDate": "Fecha del parto",
       "predictionsPaused": "Autodeclarado. Las previsiones del ciclo están en pausa."
-    }
+    },
+    "imagingTitle": "Imágenes",
+    "imagingColDate": "Fecha",
+    "imagingColExam": "Estudio",
+    "imagingColFacility": "Centro",
+    "imagingColConclusion": "Conclusión"
   },
   "errorBoundary": {
     "title": "Algo ha salido mal",
@@ -664,7 +669,8 @@
       "record": "Historial de salud",
       "analysis": "Análisis"
     },
-    "dueCount": "{label}, {count, plural, one {# pendiente} other {# pendientes}}"
+    "dueCount": "{label}, {count, plural, one {# pendiente} other {# pendientes}}",
+    "imaging": "Imágenes"
   },
   "auth": {
     "login": "Iniciar sesión",
@@ -9243,7 +9249,8 @@
         },
         "restoreSkippedSeizureMedicationReference": "Plan de rescate o dosis de rescate de una crisis vinculados a un medicamento que no está en el archivo (se conservan sin el vínculo)",
         "restoreSkippedSeizureTypeReference": "Crisis vinculada a un tipo de crisis que no está en el archivo (se conserva sin el tipo)",
-        "restoreSkippedSeizureIntakeReference": "Dosis de rescate de una crisis vinculada a una toma que no está en el archivo (se conserva sin el vínculo)"
+        "restoreSkippedSeizureIntakeReference": "Dosis de rescate de una crisis vinculada a una toma que no está en el archivo (se conserva sin el vínculo)",
+        "restoreSkippedImagingCiphertext": "Texto de un estudio de imagen sellado con una clave que este servidor no tiene (estudio conservado sin él)"
       },
       "danger-zone": {
         "title": "Zona de peligro",
@@ -11882,6 +11889,10 @@
     "seizures": {
       "label": "Diario de crisis",
       "description": "Registra las crisis con su tipo, duración y medicación de rescate, consulta los racimos y los días sin crisis, y añade una sección de crisis al informe médico."
+    },
+    "imaging": {
+      "label": "Imágenes",
+      "description": "Resonancias, TAC, radiografías y ecografías con su informe e imágenes."
     }
   },
   "moduleOff": {
@@ -14146,7 +14157,8 @@
     "leafEmergency": "Información de emergencia (grupo sanguíneo, contactos, voluntades)",
     "leafMedicationEffect": "Cambio en torno al inicio de cada medicamento (requiere la lista de medicamentos)",
     "leafWorkouts": "Entrenamientos (resumen por deporte)",
-    "leafSeizures": "Diario de crisis"
+    "leafSeizures": "Diario de crisis",
+    "leafImagingExams": "Estudios de imagen"
   },
   "recordSharing": {
     "banner": {
@@ -16579,6 +16591,49 @@
       "needAfter": "Aún faltan valores desde el inicio para comparar.",
       "needStart": "Añade una fecha de inicio para comparar antes y después.",
       "needData": "Aún faltan valores para comparar."
+    }
+  },
+  "imaging": {
+    "title": "Imágenes",
+    "examsHeading": "Estudios",
+    "addFirst": "Añadir el primer estudio",
+    "createTitle": "Nuevo estudio",
+    "editTitle": "Editar estudio",
+    "created": "Estudio guardado",
+    "updated": "Estudio actualizado",
+    "deleted": "Estudio eliminado",
+    "saveFailed": "No se pudo guardar el estudio.",
+    "deleteFailed": "No se pudo eliminar el estudio.",
+    "loadError": "No se pudieron cargar los estudios de imagen.",
+    "uploadFailed": "No se pudo subir el archivo.",
+    "deleteTitle": "¿Eliminar este estudio?",
+    "deleteDescription": "El informe y las imágenes se quedan en tus documentos.",
+    "fileCount": "{count, plural, one {# archivo} other {# archivos}}",
+    "form": {
+      "modality": "Tipo",
+      "date": "Fecha",
+      "bodyPart": "Zona del cuerpo",
+      "side": "Lado",
+      "sideNone": "No aplica",
+      "facility": "Clínica o centro",
+      "requestingDoctor": "Solicitado por",
+      "conclusion": "Conclusión",
+      "documents": "Informe e imágenes",
+      "upload": "Subir",
+      "noDocuments": "Aún no hay documentos"
+    },
+    "modality": {
+      "MRI": "Resonancia magnética",
+      "CT": "TAC",
+      "X_RAY": "Radiografía",
+      "ULTRASOUND": "Ecografía",
+      "MAMMOGRAPHY": "Mamografía",
+      "OTHER": "Otra prueba de imagen"
+    },
+    "side": {
+      "LEFT": "izquierdo",
+      "RIGHT": "derecho",
+      "BOTH": "ambos lados"
     }
   }
 }

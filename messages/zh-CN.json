@@ -579,7 +579,12 @@
       "postpartumWeek": "报告日处于产后第 {weeks} 周",
       "deliveryDate": "分娩日期",
       "predictionsPaused": "自我报告。周期预测已暂停。"
-    }
+    },
+    "imagingTitle": "影像检查",
+    "imagingColDate": "日期",
+    "imagingColExam": "检查",
+    "imagingColFacility": "机构",
+    "imagingColConclusion": "结论"
   },
   "errorBoundary": {
     "title": "出了问题",
@@ -664,7 +669,8 @@
       "record": "健康档案",
       "analysis": "分析"
     },
-    "dueCount": "{label}，{count} 项待办"
+    "dueCount": "{label}，{count} 项待办",
+    "imaging": "影像检查"
   },
   "auth": {
     "login": "登录",
@@ -9212,7 +9218,8 @@
         },
         "restoreSkippedSeizureMedicationReference": "癫痫应急方案或剂量关联到文件中不存在的药物（已保留，但去掉关联）",
         "restoreSkippedSeizureTypeReference": "癫痫发作关联到文件中不存在的发作类型（已保留，但去掉类型）",
-        "restoreSkippedSeizureIntakeReference": "癫痫应急剂量关联到文件中不存在的服药记录（已保留，但去掉关联）"
+        "restoreSkippedSeizureIntakeReference": "癫痫应急剂量关联到文件中不存在的服药记录（已保留，但去掉关联）",
+        "restoreSkippedImagingCiphertext": "影像检查文本使用本服务器没有的密钥加密（检查已保留，不含该文本）"
       },
       "danger-zone": {
         "title": "危险区",
@@ -11851,6 +11858,10 @@
     "seizures": {
       "label": "癫痫日记",
       "description": "记录发作的类型、时长与应急用药，查看丛集，并加入医生报告。"
+    },
+    "imaging": {
+      "label": "影像检查",
+      "description": "核磁共振、CT、X 光和超声检查，连同报告和影像。"
     }
   },
   "moduleOff": {
@@ -14115,7 +14126,8 @@
     "leafEmergency": "急救信息（血型、联系人、预立指示）",
     "leafMedicationEffect": "每次用药开始前后的变化（需要用药清单）",
     "leafWorkouts": "运动（按运动类型汇总）",
-    "leafSeizures": "癫痫日记"
+    "leafSeizures": "癫痫日记",
+    "leafImagingExams": "影像检查"
   },
   "recordSharing": {
     "banner": {
@@ -16539,6 +16551,49 @@
     "metricLabels": {
       "systolicBloodPressure": "收缩压",
       "diastolicBloodPressure": "舒张压"
+    }
+  },
+  "imaging": {
+    "title": "影像检查",
+    "examsHeading": "检查",
+    "addFirst": "添加第一项检查",
+    "createTitle": "新检查",
+    "editTitle": "编辑检查",
+    "created": "检查已保存",
+    "updated": "检查已更新",
+    "deleted": "检查已删除",
+    "saveFailed": "无法保存检查。",
+    "deleteFailed": "无法删除检查。",
+    "loadError": "无法加载影像检查。",
+    "uploadFailed": "无法上传文件。",
+    "deleteTitle": "删除这项检查？",
+    "deleteDescription": "报告和影像会保留在你的文档中。",
+    "fileCount": "{count, plural, other {# 个文件}}",
+    "form": {
+      "modality": "类型",
+      "date": "日期",
+      "bodyPart": "部位",
+      "side": "侧别",
+      "sideNone": "不适用",
+      "facility": "医院或检查机构",
+      "requestingDoctor": "申请医生",
+      "conclusion": "结论",
+      "documents": "报告和影像",
+      "upload": "上传",
+      "noDocuments": "还没有文档"
+    },
+    "modality": {
+      "MRI": "核磁共振",
+      "CT": "CT",
+      "X_RAY": "X 光",
+      "ULTRASOUND": "超声",
+      "MAMMOGRAPHY": "乳腺钼靶",
+      "OTHER": "其他影像检查"
+    },
+    "side": {
+      "LEFT": "左侧",
+      "RIGHT": "右侧",
+      "BOTH": "双侧"
     }
   }
 }
