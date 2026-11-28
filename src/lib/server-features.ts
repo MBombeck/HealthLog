@@ -61,6 +61,7 @@ export const SERVER_FEATURES = [
   "profile.insurance-number-country",
   "dashboard.tile-comparison-bands",
   "health-connect.sync",
+  "records.imaging",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -175,4 +176,6 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "GET /api/dashboard/snapshot carries tiles.comparison: per ranged tile (weight, bp, pulse when it shows the resting heart rate) avg7 and avg30 as { band: good | fair | low | null, side: above | below | null }, placed in targetBands by the same rule as tiles.attention (bp is the side further from its band), and line, the deviation line in the response language, non-null only while tiles.attention[id] is range (the side of the latest value). Colour the comparison lines and show the line as served.",
   "health-connect.sync":
     "The Android Health Connect sync: POST /api/health-connect/pairing mints a one-time code (QR healthlog-sync://pair?server=…&code=…), POST /api/health-connect/pair exchanges it for a health-connect:write token bound to a Device, GET /api/health-connect/state answers the wanted types and limits, and POST /api/health-connect/batch takes records, aggregates and deletes with one result per item. Early preview.",
+  "records.imaging":
+    "Imaging exams: GET/POST /api/imaging and GET/PATCH/DELETE /api/imaging/{id}, one entry per exam with modality, day, side, body part, facility, requesting doctor, conclusion and the vault documents filed against it (documentIds); module key imaging on /api/auth/me.",
 };

@@ -33210,7 +33210,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 133
+              maxItems: 134
               type: array
               items:
                 type: string
@@ -33273,7 +33273,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 133
+              maxItems: 134
               type: array
               items:
                 type: string
@@ -37034,7 +37034,7 @@ components:
           type: number
           const: 2
         leaves:
-          maxItems: 133
+          maxItems: 134
           type: array
           items:
             type: string
@@ -50901,6 +50901,7 @@ components:
               - profile.insurance-number-country
               - dashboard.tile-comparison-bands
               - health-connect.sync
+              - records.imaging
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices; since
@@ -51079,7 +51080,9 @@ components:
             one-time code (QR healthlog-sync://pair?server=…&code=…), POST /api/health-connect/pair exchanges it for a
             health-connect:write token bound to a Device, GET /api/health-connect/state answers the wanted types and
             limits, and POST /api/health-connect/batch takes records, aggregates and deletes with one result per item.
-            Early preview."
+            Early preview. `records.imaging`: Imaging exams: GET/POST /api/imaging and GET/PATCH/DELETE
+            /api/imaging/{id}, one entry per exam with modality, day, side, body part, facility, requesting doctor,
+            conclusion and the vault documents filed against it (documentIds); module key imaging on /api/auth/me."
       required:
         - version
         - buildSha
@@ -55070,6 +55073,104 @@ components:
                 - clusterWindowHours
               additionalProperties: {}
             - type: "null"
+        imagingExams:
+          default: []
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                minLength: 1
+              modality:
+                type: string
+                enum:
+                  - MRI
+                  - CT
+                  - X_RAY
+                  - ULTRASOUND
+                  - MAMMOGRAPHY
+                  - OTHER
+              performedAt:
+                type: string
+                minLength: 1
+              side:
+                anyOf:
+                  - type: string
+                    enum:
+                      - LEFT
+                      - RIGHT
+                      - BOTH
+                  - type: "null"
+              bodyPart:
+                type:
+                  - string
+                  - "null"
+              bodyPartEncrypted:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+              facility:
+                type:
+                  - string
+                  - "null"
+              facilityEncrypted:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+              requestingDoctor:
+                type:
+                  - string
+                  - "null"
+              requestingDoctorEncrypted:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+              conclusion:
+                type:
+                  - string
+                  - "null"
+              conclusionEncrypted:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+              createdAt:
+                type: string
+                minLength: 1
+              updatedAt:
+                type: string
+                minLength: 1
+            required:
+              - id
+              - modality
+              - performedAt
+              - createdAt
+              - updatedAt
+            additionalProperties: {}
+        imagingExamDocumentLinks:
+          default: []
+          type: array
+          items:
+            type: object
+            properties:
+              examId:
+                type: string
+                minLength: 1
+              targetId:
+                type: string
+                minLength: 1
+              createdAt:
+                type: string
+                minLength: 1
+            required:
+              - examId
+              - targetId
+              - createdAt
+            additionalProperties: {}
         allergies:
           default: []
           type: array
@@ -58262,6 +58363,8 @@ components:
         - seizureTypes
         - seizureEvents
         - seizureSettings
+        - imagingExams
+        - imagingExamDocumentLinks
         - allergies
         - familyHistory
         - workouts
