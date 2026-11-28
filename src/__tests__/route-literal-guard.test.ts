@@ -28,8 +28,7 @@
  * (`"/medi" + "cations"`), and a path held in a variable named elsewhere.
  * `/api/...` literals never match, because the page must follow the opening
  * quote directly. The care page (`/care`, `/checkups` on the wire) has its
- * own builder and guards (`visit-links.ts`, `care-wire-paths.test.ts`,
- * `visit-link-guard.test.ts`).
+ * own builder and guard (`visit-links.ts`, `care-wire-paths.test.ts`).
  */
 import { existsSync } from "node:fs";
 import { join } from "node:path";

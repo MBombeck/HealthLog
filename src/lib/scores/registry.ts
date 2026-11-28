@@ -13,10 +13,10 @@
  *     Recharge, a vendor sleep score). It is named after the row's source,
  *     shown on the vendor's scale and never gets a HealthLog band.
  *
- * `src/lib/scores/__tests__/score-registry.test.ts` holds the code to this
- * file: every `<ScoreRing>` call site and every anatomy slug must be listed
- * here, so a new ring or a new score page cannot appear without a decision
- * about which score it shows.
+ * `src/lib/scores/__tests__/score-registry.test.ts` holds the register of
+ * every `<ScoreRing>` call site and checks every score slug against the
+ * scores here, so a new ring or a new score page cannot appear without a
+ * decision about which score it shows.
  */
 import type { HealthLogScoreKind } from "@/lib/analytics/score/shared";
 import { translateOrNull } from "@/lib/i18n/translate-code";
@@ -43,9 +43,9 @@ export interface HealthLogScoreEntry {
   titleKey: string;
   /**
    * The metric whose glossary short form names it on a tile
-   * (`metricName(...).short`); absent when the name is already short.
+   * (`metricName(...).short`): a composite metric key or a measurement type.
    */
-  shortMetric?: string;
+  metric: string;
 }
 
 export const HEALTHLOG_SCORES: Readonly<
@@ -55,17 +55,19 @@ export const HEALTHLOG_SCORES: Readonly<
     bandKind: "health",
     slug: "health",
     titleKey: "insights.healthScore.label",
-    shortMetric: "HEALTH_SCORE",
+    metric: "HEALTH_SCORE",
   },
   READINESS: {
     bandKind: "readiness",
     slug: "readiness",
     titleKey: "insights.derived.composite.READINESS.title",
+    metric: "READINESS",
   },
   SLEEP_SCORE: {
     bandKind: "sleep",
     slug: "sleep",
     titleKey: "insights.derived.composite.SLEEP_SCORE.title",
+    metric: "SLEEP_SCORE",
   },
   // The computed proxy. Its page redirects (readiness for a proxy account,
   // device scores for a device account); the slug stays reachable for links
@@ -74,16 +76,19 @@ export const HEALTHLOG_SCORES: Readonly<
     bandKind: "recovery",
     slug: "recovery",
     titleKey: "insights.derived.scores.recovery",
+    metric: "RECOVERY_SCORE",
   },
   STRESS_SCORE: {
     bandKind: "stress",
     slug: "stress",
     titleKey: "insights.derived.scores.stress",
+    metric: "STRESS_SCORE",
   },
   STRAIN_SCORE: {
     bandKind: "strain",
     slug: "strain",
     titleKey: "insights.derived.scores.strain",
+    metric: "STRAIN_SCORE",
   },
 };
 
@@ -91,60 +96,32 @@ type ShortTranslate = (key: string) => string;
 
 /**
  * A score's short name for a tile ("Gesundheit", "Schlafscore",
- * "Bereitschaft"): the glossary short form where the score has one, else its
- * name. Every surface and the wire (`shortLabel`) read it from here.
+ * "Bereitschaft"): the glossary's `short` form for the score's concept,
+ * reached through `metricName`. The one implementation: every surface and the
+ * wire (`shortLabel`) read it from here.
  */
 export function scoreShortLabel(
   id: HealthLogScoreId,
   t: ShortTranslate,
 ): string {
-  const entry = HEALTHLOG_SCORES[id];
-  return entry.shortMetric
-    ? metricName(entry.shortMetric, t).short
-    : t(entry.titleKey);
+  return metricName(HEALTHLOG_SCORES[id].metric, t).short;
 }
 
-/** Every slug `/insights/scores/<slug>` may answer to. */
-export const SCORE_SLUGS: readonly string[] = HEALTHLOG_SCORE_IDS.map(
-  (id) => HEALTHLOG_SCORES[id].slug,
-);
+/** True for an id that names one of HealthLog's own scores. */
+export function isHealthLogScoreId(id: string): id is HealthLogScoreId {
+  return (HEALTHLOG_SCORE_IDS as readonly string[]).includes(id);
+}
 
 /**
- * Every file that draws a `<ScoreRing>`, with the scores it may draw.
- * `planned` marks a site a 1.50 package is still building; the register
- * test accepts its absence and holds it like any other once it exists.
+ * The wire's `shortLabel` for a payload keyed by a metric or ring id: the
+ * score's short name, null for an id that is not a HealthLog score.
  */
-export const SCORE_RING_SITES: Readonly<
-  Record<string, { scores: readonly HealthLogScoreId[]; planned?: true }>
-> = {
-  "src/components/dashboard/today-scores.tsx": {
-    scores: ["HEALTH_SCORE", "SLEEP_SCORE", "READINESS"],
-  },
-  "src/components/insights/derived/score-anatomy-view.tsx": {
-    scores: [
-      "READINESS",
-      "SLEEP_SCORE",
-      "RECOVERY_SCORE",
-      "STRESS_SCORE",
-      "STRAIN_SCORE",
-    ],
-  },
-  // The shared score tile: the start page's row and the Insights row draw
-  // every score through it.
-  "src/components/insights/derived/score-ring-tile.tsx": {
-    scores: [
-      "READINESS",
-      "SLEEP_SCORE",
-      "HEALTH_SCORE",
-      "STRESS_SCORE",
-      "STRAIN_SCORE",
-    ],
-  },
-  "src/components/insights/derived/hero-strip.tsx": {
-    scores: ["READINESS", "SLEEP_SCORE", "HEALTH_SCORE"],
-    planned: true,
-  },
-};
+export function scoreShortLabelOrNull(
+  id: string,
+  t: ShortTranslate,
+): string | null {
+  return isHealthLogScoreId(id) ? scoreShortLabel(id, t) : null;
+}
 
 /**
  * The one proxy rule. A `RECOVERY_SCORE` row from `COMPUTED` is HealthLog's

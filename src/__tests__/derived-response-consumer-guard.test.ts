@@ -901,6 +901,10 @@ const CONSUMERS: Readonly<Record<string, ConsumerBinding>> = {
     file: join(DERIVED_COMPONENTS, "composite-score-anatomy.tsx"),
     accesses: ["assessment.updatedAt"],
   },
+  shortLabel: {
+    file: join(DERIVED_COMPONENTS, "wellness-scores.tsx"),
+    accesses: ["r.shortLabel"],
+  },
 };
 
 const WIRE_ONLY_METRIC =
@@ -968,6 +972,7 @@ describe("derived response consumer guard", () => {
       reason: ["derived.reason", "derived.status"],
       assessment: ["assessment"],
       ai: ["ai"],
+      shortLabel: ["shortLabel"],
     };
     for (const [index, lineage] of apiSuccessLineageBranches(
       ROUTE_FILE,
@@ -999,6 +1004,9 @@ describe("derived response consumer guard", () => {
     }
     expect(variableCall(ROUTE_FILE, "assessment")).toBe(
       "resolveDerivedAssessment",
+    );
+    expect(variableCall(ROUTE_FILE, "shortLabel")).toBe(
+      "scoreShortLabelOrNull",
     );
 
     const nestedShapes = [
@@ -1033,13 +1041,19 @@ describe("derived response consumer guard", () => {
     assertBatchSchemaReferencesSingleShape(SCHEMA_FILE);
     // `ai` rides the single-metric route only: the batch serves the
     // deterministic assessment and resolves no capability. The schema marks
-    // the field optional for exactly this reason.
-    const singleRouteOnly = ["ai"];
+    // the field optional for exactly this reason. `shortLabel` is worded in
+    // the reader's full locale, so the batch handler adds it after the cache
+    // (whose cell keys on the two-way assessment locale), not in the cached
+    // payload; the handler's own assertion is below.
+    const singleRouteOnly = ["ai", "shortLabel"];
     assertBatchProducerLineage(
       BATCH_ROUTE_FILE,
       responseFields.filter((field) => !singleRouteOnly.includes(field)),
     );
     assertBatchClientHandoff(DERIVED_BATCH_CLIENT, VITALS_DASHBOARD);
+    expect(readFileSync(BATCH_ROUTE_FILE, "utf8")).toMatch(
+      /shortLabel: scoreShortLabelOrNull\(entry\.metric, t\)/,
+    );
   });
 
   it("accounts for every meaningful schema leaf without a generic sweep", () => {

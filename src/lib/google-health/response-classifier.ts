@@ -70,6 +70,7 @@ export class GoogleHealthApiError extends IntegrationApiError {
     httpStatus: number | undefined;
     reason: string;
     upstreamError?: string;
+    retryAfterMs?: number;
   }) {
     super({ vendor: GOOGLE_HEALTH_VENDOR, ...opts });
     this.name = "GoogleHealthApiError";

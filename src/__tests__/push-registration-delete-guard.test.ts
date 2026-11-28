@@ -9,7 +9,8 @@
  * works if no verdict reaches a delete around it. So:
  *
  * 1. The files that delete a push registration (a device row, a Live Activity
- *    token, a Web Push subscription, a device's push-to-start token) are a
+ *    token, a Web Push subscription, a device's push-to-start token, a Wallet
+ *    pass registration) are a
  *    closed list, each with the reason it deletes. A new one fails here and
  *    has to say whether it acts on a verdict.
  * 2. Every file that reads a gone verdict (`shouldDisable`, a relay
@@ -34,7 +35,7 @@ import {
 const SRC = join(process.cwd(), "src");
 
 const REGISTRATION_DELETE =
-  /\b(?:device|liveActivityToken|pushSubscription)\s*\.\s*delete(?:Many)?\s*\(|\bdeleteDeviceRows(?:In)?\s*\(|\bdeviceDeleteWrites\s*\(|\bliveActivityPushToken\s*:\s*null\b/;
+  /\b(?:device|liveActivityToken|pushSubscription|walletPassRegistration)\s*\.\s*delete(?:Many)?\s*\(|\bdeleteDeviceRows(?:In)?\s*\(|\bdeviceDeleteWrites\s*\(|\bliveActivityPushToken\s*:\s*null\b/;
 const GONE_VERDICT =
   /\bshouldDisable\b|\bactivityGone\b|["']Unregistered["']|["']unregistered["']|\bactivity_gone\b|===\s*410\b/;
 const BREAKER = /\bforgetGoneRegistrations\s*\(/;
@@ -60,6 +61,8 @@ const DELETERS: Record<string, string> = {
     "an Activity the relay ended or found gone on its end; update verdicts go through the breaker in live-activity.ts",
   "lib/push-relay/live-activity-report.ts":
     "the app's posted set of Activities replaces the stored one",
+  "lib/emergency-card/wallet-pass/web-service.ts":
+    "Wallet unregisters a device, or a new registration replaces the oldest past the cap",
 };
 
 /** Files that read a gone verdict and delete nothing themselves, and why. */
@@ -76,8 +79,6 @@ const VERDICT_READERS: Record<string, string> = {
   "lib/emergency-card/wallet-pass/push-local.ts":
     "classifies Apple's answer to a Wallet push for push.ts",
   "lib/push-relay/wallet.ts": "reads the relay's answer to a Wallet push",
-  "lib/emergency-card/wallet-pass/push.ts":
-    "Wallet pass registrations, not yet a kind of the breaker",
 };
 
 function code(file: string): string {

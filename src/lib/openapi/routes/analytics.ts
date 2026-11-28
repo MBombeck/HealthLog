@@ -32,6 +32,7 @@ import {
   HEALTH_SCORE_NUMBER_BAND_DESCRIPTION,
   healthScoreBasis,
   healthScoreWeights,
+  SCORE_SHORT_LABEL_DESCRIPTION,
 } from "./insights/schemas";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
 import { isoDateTime } from "@/lib/validations/datetime";
@@ -455,6 +456,12 @@ const healthScoreReport = z
       .optional()
       .describe(
         "Attached when an illness episode was active as of the scored instant — the instant the score was computed for, not a fresh now. The score is NOT penalised; this frames it. Null when no episode was open. On this route the key is always present; it is optional in the shape because other producers of the report omit it.",
+      ),
+    shortLabel: z
+      .string()
+      .optional()
+      .describe(
+        `${SCORE_SHORT_LABEL_DESCRIPTION} Set on every response of \`GET /api/analytics\`.`,
       ),
   })
   .meta({

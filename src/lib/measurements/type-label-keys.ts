@@ -213,6 +213,10 @@ export const MEASUREMENT_TYPE_SHORT_LABEL_KEYS: Partial<
   HRV_RMSSD: "measurements.shortTypeHrvRmssd",
   SCI_SCORE: "measurements.shortTypeSciScore",
   AFIB_BURDEN: "measurements.shortTypeAfibBurden",
+  SLEEP_SCORE: "measurements.shortTypeSleepScore",
+  RECOVERY_SCORE: "measurements.shortTypeRecoveryScore",
+  STRESS_SCORE: "measurements.shortTypeStressScore",
+  STRAIN_SCORE: "measurements.shortTypeStrainScore",
 };
 
 /** A metric's full name and the form for a one-line slot. */
@@ -229,7 +233,8 @@ export interface MetricName {
  */
 /**
  * Metrics read as one value that are no single `MeasurementType`: blood
- * pressure is systolic over diastolic, the Health score is composed. Same contract as the maps above, the
+ * pressure is systolic over diastolic, the Health score and readiness are
+ * composed. Same contract as the maps above, the
  * full name and the glossary's short form, reached through `metricName`.
  */
 export const COMPOSITE_METRIC_LABEL_KEYS = {
@@ -240,6 +245,10 @@ export const COMPOSITE_METRIC_LABEL_KEYS = {
   HEALTH_SCORE: {
     full: "insights.healthScore.label",
     short: "measurements.shortTypeHealthScore",
+  },
+  READINESS: {
+    full: "insights.derived.composite.READINESS.title",
+    short: "measurements.shortTypeReadiness",
   },
 } as const;
 

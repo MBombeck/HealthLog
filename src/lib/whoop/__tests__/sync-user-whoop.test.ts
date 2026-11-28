@@ -81,6 +81,7 @@ import {
 } from "../sync-core";
 import { syncUserWhoop } from "../sync";
 import { WhoopApiError } from "../response-classifier";
+import { withPageWalkLedger } from "@/lib/integrations/page-walk";
 
 const directWhoopSyncSource = readFileSync(
   join(process.cwd(), "src/lib/whoop/sync.ts"),
@@ -169,6 +170,27 @@ describe("syncUserWhoop — all-403 looks-healthy guard", () => {
     expect(total).toBe(0);
     // No collection was 403'd → this is a genuine "nothing changed" tick.
     expect(recordSyncSuccess).toHaveBeenCalledWith("user1", "whoop");
+  });
+
+  it("notes the first failed collection's error for the backfill's retry rule", async () => {
+    const outage = new WhoopApiError({
+      verb: "fetchSleep",
+      classification: "transient",
+      httpStatus: 502,
+      reason: "http_502",
+    });
+    syncUserRecovery.mockResolvedValue(1);
+    syncUserSleep.mockRejectedValue(outage);
+    syncUserCycle.mockRejectedValue(new Error("later"));
+    syncUserWorkout.mockResolvedValue(0);
+    syncUserBody.mockResolvedValue(0);
+
+    const { result, failure } = await withPageWalkLedger(() =>
+      syncUserWhoop("user1"),
+    );
+
+    expect(result.failed).toBe(true);
+    expect(failure).toBe(outage);
   });
 
   it("short-circuits without stamping success when parked at error_reauth", async () => {

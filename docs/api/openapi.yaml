@@ -16367,6 +16367,7 @@ paths:
                         available: true
                         reason: null
                         onDeviceAllowed: true
+                      shortLabel: null
                     error: null
                 readinessFresh:
                   summary: "READINESS that describes today: every counted vital and the scored night are from the reader's today (`fresh`
@@ -16427,6 +16428,7 @@ paths:
                         available: true
                         reason: null
                         onDeviceAllowed: true
+                      shortLabel: Readiness
                     error: null
                 readinessStale:
                   summary: "READINESS before the night has synced: the last blend, from `asOfDay`; shown as 'last 61 on Nov 24' with no
@@ -16485,6 +16487,7 @@ paths:
                         available: true
                         reason: null
                         onDeviceAllowed: true
+                      shortLabel: Readiness
                     error: null
         "401": *a1
         "403": *a18
@@ -50013,6 +50016,7 @@ components:
               - account.dismissed-hints
               - daily.asks
               - daily.scores-short-labels
+              - insights.scores-short-labels
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices; since
@@ -50168,7 +50172,12 @@ components:
             session. `daily.scores-short-labels`: Each start-page score carries shortLabel, its short name for a tile
             from the score registry, worded in the response language: GET /api/daily/morning scores.sleep and
             scores.readiness, and GET /api/daily/digest score (the Health score). Render it as is; the web shows the
-            same words."
+            same words. `insights.scores-short-labels`: Every score payload carries shortLabel, the score's short name
+            for a tile from the glossary's short form through the score registry, worded in the response language: GET
+            /api/insights/derived and each GET /api/insights/derived/batch entry (null for a metric that is no HealthLog
+            score), GET /api/insights/score-history, healthScore on GET /api/analytics, and on GET
+            /api/dashboard/snapshot healthScore and each scoreRings entry (null on MED_COMPLIANCE). Render it as given,
+            never a short name of the client's own."
       required:
         - version
         - buildSha
@@ -79829,6 +79838,13 @@ components:
                   type: integer
                   minimum: 0
                   maximum: 100
+                shortLabel:
+                  description: "1.50 (`insights.scores-short-labels`) — the score's short name for a tile, a chip or a one-line header
+                    (de: Bereitschaft, Schlafscore, Gesundheit, Erholung, Stress, Belastung), worded in the response
+                    language from the glossary's `short` form through the score registry. Render it as given; never
+                    shorten a score's name on the client. Set on every read of this route; optional in the shape for
+                    snapshots other producers build."
+                  type: string
                 band:
                   type: string
                   enum:
@@ -80126,6 +80142,15 @@ components:
                   - taken
                   - scheduled
                 additionalProperties: false
+              shortLabel:
+                description: "1.50 (`insights.scores-short-labels`) — the score's short name for a tile, a chip or a one-line header
+                  (de: Bereitschaft, Schlafscore, Gesundheit, Erholung, Stress, Belastung), worded in the response
+                  language from the glossary's `short` form through the score registry. Render it as given; never
+                  shorten a score's name on the client. Set on every read of this route; null on MED_COMPLIANCE, which
+                  is no score."
+                type:
+                  - string
+                  - "null"
             required:
               - id
               - score
@@ -81774,6 +81799,12 @@ components:
                 - episodeCount
               additionalProperties: false
             - type: "null"
+        shortLabel:
+          description: "1.50 (`insights.scores-short-labels`) — the score's short name for a tile, a chip or a one-line header
+            (de: Bereitschaft, Schlafscore, Gesundheit, Erholung, Stress, Belastung), worded in the response language
+            from the glossary's `short` form through the score registry. Render it as given; never shorten a score's
+            name on the client. Set on every response of `GET /api/analytics`."
+          type: string
       required:
         - composite
         - pillars
@@ -84133,6 +84164,15 @@ components:
           description: The `statusText` capability behind the model-written assessment. Present on the single-metric route; absent
             on the batch route, whose assessments are always the deterministic text.
           $ref: "#/components/schemas/AiCapabilityState"
+        shortLabel:
+          description: "1.50 (`insights.scores-short-labels`) — the score's short name for a tile, a chip or a one-line header
+            (de: Bereitschaft, Schlafscore, Gesundheit, Erholung, Stress, Belastung), worded in the response language
+            from the glossary's `short` form through the score registry. Render it as given; never shorten a score's
+            name on the client. Set for READINESS, SLEEP_SCORE, RECOVERY_SCORE, STRESS_SCORE and STRAIN_SCORE; null for
+            every other metric."
+          type:
+            - string
+            - "null"
       required:
         - metric
         - status
@@ -84142,6 +84182,7 @@ components:
         - provenance
         - reason
         - assessment
+        - shortLabel
       additionalProperties: false
       description: Flat `Derived<T>` envelope for one derived wellness metric. Pure compute over the rollup tier (no LLM, no
         narrative). iOS decodes one stable shape and combines values across metrics; coverage/confidence/provenance let
@@ -84280,11 +84321,18 @@ components:
           description: "The person's usual range behind the newest point: median and scaled MAD of the values in the 30 days
             before it, from its own side of the last seam. Null with fewer than seven such days. Describes, does not
             grade."
+        shortLabel:
+          type: string
+          description: "1.50 (`insights.scores-short-labels`) — the score's short name for a tile, a chip or a one-line header
+            (de: Bereitschaft, Schlafscore, Gesundheit, Erholung, Stress, Belastung), worded in the response language
+            from the glossary's `short` form through the score registry. Render it as given; never shorten a score's
+            name on the client."
       required:
         - score
         - days
         - points
         - band
+        - shortLabel
       additionalProperties: false
       description: One score's daily course over a trailing window, for a history chart with a day per point.
     InsightsGlp1PlateauResponseEnvelope:
@@ -101865,7 +101913,7 @@ components:
                     - "null"
                 shortLabel:
                   description: The score's short name for a tile, from the score registry and worded in the response language
-                    ("Gesundheit", "Health score"). Render it as is. Absent on older cached digests. Feature key
+                    ("Gesundheit", "Health"). Render it as is. Absent on older cached digests. Feature key
                     `daily.scores-short-labels`.
                   type: string
               required:
@@ -102277,10 +102325,10 @@ components:
                 type: string
                 description: "Stable action token. Beside the rail's tokens: `dose.snooze:<medicationId>` (the medication's own snooze,
                   `POST /api/medications/intake` with status `snoozed`), `relay.yes` / `relay.no` (the relay question),
-                  `admin.notice.later` (sets the admin notice aside), `admin.setup.open` (with `href`),
-                  `ask.later:<dismissKey>` (sets the ask aside until the next local day: `POST
-                  /api/daily/digest/dismiss` with that key, `ask-later:<YYYY-MM-DD>:<itemKey>`). Labels are the short
-                  verbs under `daily.action.*`. A consent row (`push_relay`) carries exactly No and Yes, never a later."
+                  `admin.setup.open` (with `href`), `ask.later:<dismissKey>` (sets the ask aside until the next local
+                  day: `POST /api/daily/digest/dismiss` with that key, `ask-later:<YYYY-MM-DD>:<itemKey>`). Labels are
+                  the short verbs under `daily.action.*`. A consent row (`push_relay`) carries exactly No and Yes, never
+                  a later."
               href:
                 description: Deep-link when navigational.
                 type: string

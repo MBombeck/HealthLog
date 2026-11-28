@@ -57,6 +57,7 @@ export const SERVER_FEATURES = [
   "account.dismissed-hints",
   "daily.asks",
   "daily.scores-short-labels",
+  "insights.scores-short-labels",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -163,4 +164,6 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "GET /api/integrations/overview returns one row per data source and delivery channel: key, group (source | channel), setUp, status (active | error | off, null when not set up), reason (a connection-health reason, or not_connected | paused | switched_off | auto_disabled | sending_paused | delivery_failing), lastAt, offered and setupNote (own_credentials | null). Render status as it comes.",
   "daily.scores-short-labels":
     "Each start-page score carries shortLabel, its short name for a tile from the score registry, worded in the response language: GET /api/daily/morning scores.sleep and scores.readiness, and GET /api/daily/digest score (the Health score). Render it as is; the web shows the same words.",
+  "insights.scores-short-labels":
+    "Every score payload carries shortLabel, the score's short name for a tile from the glossary's short form through the score registry, worded in the response language: GET /api/insights/derived and each GET /api/insights/derived/batch entry (null for a metric that is no HealthLog score), GET /api/insights/score-history, healthScore on GET /api/analytics, and on GET /api/dashboard/snapshot healthScore and each scoreRings entry (null on MED_COMPLIANCE). Render it as given, never a short name of the client's own.",
 };

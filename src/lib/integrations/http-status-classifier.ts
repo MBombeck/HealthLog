@@ -102,6 +102,12 @@ export class IntegrationApiError extends Error {
    * collection endpoints, which signal failure through the status code alone.
    */
   readonly upstreamError: string | undefined;
+  /**
+   * How long the provider asked to wait (`Retry-After`, in ms), when the
+   * failed response said. The backfill retry rule reads it as the floor of
+   * its wait (`jobs/integration-backfill-retry.ts`), for every provider.
+   */
+  readonly retryAfterMs: number | undefined;
 
   constructor(opts: {
     vendor: string;
@@ -110,6 +116,7 @@ export class IntegrationApiError extends Error {
     httpStatus: number | undefined;
     reason: string;
     upstreamError?: string;
+    retryAfterMs?: number;
   }) {
     const statusLabel =
       typeof opts.httpStatus === "number" ? opts.httpStatus : "?";
@@ -125,6 +132,7 @@ export class IntegrationApiError extends Error {
     this.httpStatus = opts.httpStatus;
     this.reason = opts.reason;
     this.upstreamError = opts.upstreamError;
+    this.retryAfterMs = opts.retryAfterMs;
   }
 }
 
