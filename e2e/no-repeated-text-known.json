@@ -11,9 +11,6 @@
     "/coach": ["Building your typical range: 6 of 7 days"],
     "/emergency-card": ["Implants and devices", "Date of birth"],
     "/insights/catalog": ["Not tracked yet", "Connect a source"],
-    "/insights/workouts": [
-      "Not enough earlier weeks or months to compare with yet."
-    ],
     "/medications": ["No doses yet"],
     "/mental-wellbeing": ["No check-in yet"],
     "/settings/advanced": ["Delete all data"],
