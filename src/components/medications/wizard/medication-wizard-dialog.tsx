@@ -35,6 +35,7 @@ import { useAiCapability } from "@/hooks/use-ai-capability";
 import { toast } from "sonner";
 import { Loader2, Sparkles } from "lucide-react";
 
+import { ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
 import { DialogClose } from "@/components/ui/dialog";
 import { InlineAction } from "@/components/ui/inline-action";
@@ -433,18 +434,16 @@ function WizardDialogShell({
         // `md:pr-3` gives back the dialog body's scrollbar gutter, which
         // `p-0` would otherwise take away from its `-mr-3`.
         bodyClassName="gap-0 p-0 md:pr-3"
-        footer={
-          <WizardFooter
-            blocker={blocker ? t(blocker) : null}
-            isFirstStep={isFirstStep}
-            isLastStep={isLastStep}
-            submitting={submitting}
-            label={primaryCtaLabel}
-            onBack={goBack}
-            onNext={goNext}
-            onSubmit={() => void onSubmit()}
-          />
-        }
+        footer={wizardFooter({
+          blocked: blocker !== null,
+          isFirstStep,
+          isLastStep,
+          submitting,
+          label: primaryCtaLabel,
+          onBack: goBack,
+          onNext: goNext,
+          onSubmit: () => void onSubmit(),
+        })}
       >
         <div
           data-slot="medication-wizard-dialog"
@@ -459,6 +458,7 @@ function WizardDialogShell({
           aria-busy={submitting || undefined}
           className="flex flex-col"
         >
+          {blocker && <WizardBlockedHint text={t(blocker)} />}
           {/* Step body. The sheet's own header (title row and progress band)
               sits above it; this column carries the same inset on both
               sides as the header: `p-4` in the phone sheet, none in the
@@ -564,19 +564,34 @@ function WizardDialogShell({
   );
 }
 
+const WIZARD_BLOCKED_HINT_ID = "wizard-blocked-hint";
+
 /**
- * Back (Cancel on the first step), then Next or Save. A disabled Next or Save
- * names what still holds the step to a screen reader (`blocker`, from the
- * same gate that disables it); on screen the step's own heading and the
- * disabled button say it already.
- *
- * Cancel stands where Back stands on every later step, in the same style. It
- * closes through the sheet itself (Radix's close, which both the bottom sheet
- * and the dialog are built on), so typed input meets the sheet's shared
- * discard question exactly as the close button and Escape do.
+ * What still holds a disabled Next or Save, for a screen reader only (the
+ * buttons point here); on screen the step's heading and the disabled button
+ * say it already.
  */
-function WizardFooter({
-  blocker,
+function WizardBlockedHint({ text }: { text: string }) {
+  return (
+    <p
+      id={WIZARD_BLOCKED_HINT_ID}
+      className="sr-only"
+      data-slot="wizard-blocked-hint"
+      aria-live="polite"
+    >
+      {text}
+    </p>
+  );
+}
+
+/**
+ * The wizard's footer. Its row spans the footer: Back (Cancel on the first
+ * step) at the left edge, Next or Save at the right, so Back never moves with
+ * the width of the label beside it. Returned as the `ActionPair` element
+ * itself, which the sheet's footer then lets have the whole row.
+ */
+function wizardFooter({
+  blocked,
   isFirstStep,
   isLastStep,
   submitting,
@@ -585,7 +600,7 @@ function WizardFooter({
   onNext,
   onSubmit,
 }: {
-  blocker: string | null;
+  blocked: boolean;
   isFirstStep: boolean;
   isLastStep: boolean;
   submitting: boolean;
@@ -594,73 +609,112 @@ function WizardFooter({
   onNext: () => void;
   onSubmit: () => void;
 }) {
-  const { t } = useTranslations();
-  const describedBy = blocker ? "wizard-blocked-hint" : undefined;
   return (
-    <div className="flex w-full flex-col gap-2">
-      {blocker && (
-        <p
-          id="wizard-blocked-hint"
-          className="sr-only"
-          data-slot="wizard-blocked-hint"
-          aria-live="polite"
-        >
-          {blocker}
-        </p>
+    <ActionPair pairClassName="w-full auto-cols-auto justify-between">
+      <WizardBackButton
+        isFirstStep={isFirstStep}
+        submitting={submitting}
+        onBack={onBack}
+      />
+      <WizardForwardButton
+        blocked={blocked}
+        isLastStep={isLastStep}
+        submitting={submitting}
+        label={label}
+        onNext={onNext}
+        onSubmit={onSubmit}
+      />
+    </ActionPair>
+  );
+}
+
+/**
+ * Back, or Cancel on the first step, in the same place and style. Cancel
+ * closes through the sheet itself (Radix's close, which both the bottom sheet
+ * and the dialog are built on), so typed input meets the sheet's shared
+ * discard question exactly as the close button and Escape do.
+ */
+function WizardBackButton({
+  isFirstStep,
+  submitting,
+  onBack,
+}: {
+  isFirstStep: boolean;
+  submitting: boolean;
+  onBack: () => void;
+}) {
+  const { t } = useTranslations();
+  return isFirstStep ? (
+    <DialogClose asChild>
+      <Button
+        type="button"
+        variant="ghost"
+        disabled={submitting}
+        data-slot="wizard-cancel"
+        className="h-11"
+      >
+        {t("common.cancel")}
+      </Button>
+    </DialogClose>
+  ) : (
+    <Button
+      type="button"
+      variant="ghost"
+      onClick={onBack}
+      disabled={submitting}
+      data-slot="wizard-back"
+      className="h-11"
+    >
+      {t("medications.wizard.nav.back")}
+    </Button>
+  );
+}
+
+/**
+ * Next, or Save on the last step. Disabled while the step is incomplete; it
+ * then points a screen reader at the sentence that says why.
+ */
+function WizardForwardButton({
+  blocked,
+  isLastStep,
+  submitting,
+  label,
+  onNext,
+  onSubmit,
+}: {
+  blocked: boolean;
+  isLastStep: boolean;
+  submitting: boolean;
+  label: string;
+  onNext: () => void;
+  onSubmit: () => void;
+}) {
+  const describedBy = blocked ? WIZARD_BLOCKED_HINT_ID : undefined;
+  return !isLastStep ? (
+    <Button
+      type="button"
+      onClick={onNext}
+      disabled={blocked}
+      aria-describedby={describedBy}
+      data-slot="wizard-next"
+      className="h-11"
+    >
+      {label}
+    </Button>
+  ) : (
+    <Button
+      type="button"
+      onClick={onSubmit}
+      disabled={blocked || submitting}
+      aria-describedby={describedBy}
+      data-slot="wizard-save"
+      aria-busy={submitting || undefined}
+      className="h-11"
+    >
+      {submitting && (
+        <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
       )}
-      <div className="flex w-full items-center justify-between gap-2">
-        {isFirstStep ? (
-          <DialogClose asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              disabled={submitting}
-              data-slot="wizard-cancel"
-              className="h-11"
-            >
-              {t("common.cancel")}
-            </Button>
-          </DialogClose>
-        ) : (
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={onBack}
-            disabled={submitting}
-            data-slot="wizard-back"
-            className="h-11"
-          >
-            {t("medications.wizard.nav.back")}
-          </Button>
-        )}
-        {!isLastStep ? (
-          <Button
-            type="button"
-            onClick={onNext}
-            disabled={blocker !== null}
-            aria-describedby={describedBy}
-            data-slot="wizard-next"
-            className="h-11"
-          >
-            {label}
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            onClick={onSubmit}
-            disabled={blocker !== null || submitting}
-            aria-describedby={describedBy}
-            data-slot="wizard-save"
-            aria-busy={submitting || undefined}
-            className="h-11"
-          >
-            {submitting && (
-              <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-            )}
-            {label}
-          </Button>
-        )}
-      </div>
-    </div>
+      {label}
+    </Button>
   );
 }

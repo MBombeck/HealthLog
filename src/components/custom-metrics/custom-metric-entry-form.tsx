@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
 import { DateTimeField } from "@/components/ui/date-time-field";
 import { Input } from "@/components/ui/input";
@@ -108,7 +109,7 @@ export function CustomMetricEntryForm({
   }
 
   const footerNode = (
-    <>
+    <ActionPair>
       {onCancel ? (
         <Button
           type="button"
@@ -125,7 +126,7 @@ export function CustomMetricEntryForm({
         ) : null}
         {t("common.save")}
       </Button>
-    </>
+    </ActionPair>
   );
 
   return (

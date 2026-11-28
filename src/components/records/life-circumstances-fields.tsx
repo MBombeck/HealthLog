@@ -26,8 +26,6 @@ export function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      {/* Block, so the colon follows a label that wraps instead of standing
-          alone at the far edge as a flex item. */}
       <Label htmlFor={id} className="block leading-snug">
         {label}
       </Label>

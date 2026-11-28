@@ -1,22 +1,10 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { Loader2, RotateCcw } from "lucide-react";
 
-import {
-  ChevronsRight,
-  Loader2,
-  MoreHorizontal,
-  Plus,
-  RotateCcw,
-} from "lucide-react";
-
+import { ActionMenu, ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { FieldGroup } from "@/components/ui/field-group";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,12 +12,11 @@ import { glucoseFractionDigits, type GlucoseUnit } from "@/lib/glucose";
 import { useTranslations } from "@/lib/i18n/context";
 
 /**
- * The measurement form's action row: the reset menu, Cancel, "Save and next
- * value" when the form offers it, and Save. Both submit buttons name the form
- * by id, so they still submit it when the row is portalled into a sheet's
- * footer slot; `onSaveNext` runs on the click, before the submit it starts.
- * With the second button on a phone, Cancel gives way to it: the sheet's
- * close button and a swipe still cancel.
+ * The measurement form's action row: the "⋯" with reset (and Cancel, when
+ * the pair is taken by "Save and next value"), then the pair. Both submit
+ * buttons name the form by id, so they still submit it when the row is
+ * portalled into a sheet's footer slot; `onSaveNext` runs on the click,
+ * before the submit it starts.
  */
 export function MeasurementFormFooter({
   loading,
@@ -49,69 +36,47 @@ export function MeasurementFormFooter({
 }) {
   const { t } = useTranslations();
   return (
-    <div className="flex w-full items-center justify-between gap-2">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="size-11"
-            disabled={loading}
-            aria-label={t("common.moreOptions")}
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          <DropdownMenuItem onClick={onReset}>
-            <RotateCcw className="mr-2 h-4 w-4" />
-            {t("measurements.formReset")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <div className="flex items-center gap-2">
-        {onCancel && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={loading}
-            className={onSaveNext ? "max-sm:hidden" : undefined}
-          >
-            {t("common.cancel")}
-          </Button>
-        )}
-        {onSaveNext && (
-          <Button
-            type="submit"
-            form={formId}
-            variant="outline"
-            disabled={loading}
-            onClick={onSaveNext}
-            data-testid="measurement-save-next"
-          >
-            <ChevronsRight className="size-4" aria-hidden="true" />
-            {t("measurements.saveAndNext")}
-          </Button>
-        )}
+    <ActionPair>
+      <ActionMenu disabled={loading}>
+        <DropdownMenuItem onClick={onReset}>
+          <RotateCcw className="mr-2 h-4 w-4" />
+          {t("measurements.formReset")}
+        </DropdownMenuItem>
+      </ActionMenu>
+      {onSaveNext ? (
         <Button
           type="submit"
           form={formId}
+          variant="outline"
           disabled={loading}
-          onClick={onSave}
-          data-testid="measurement-save"
+          onClick={onSaveNext}
+          data-testid="measurement-save-next"
         >
-          {loading ? (
-            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <Plus className="h-4 w-4" />
-          )}
-          {t("common.save")}
+          {t("measurements.saveAndNext")}
         </Button>
-      </div>
-    </div>
+      ) : onCancel ? (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={loading}
+        >
+          {t("common.cancel")}
+        </Button>
+      ) : null}
+      <Button
+        type="submit"
+        form={formId}
+        disabled={loading}
+        onClick={onSave}
+        data-testid="measurement-save"
+      >
+        {loading ? (
+          <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+        ) : null}
+        {t("common.save")}
+      </Button>
+    </ActionPair>
   );
 }
 
@@ -176,9 +141,7 @@ function UnitLabel({ htmlFor, label }: { htmlFor: string; label: string }) {
   const name = match ? match[1] : label;
   const unit = match ? match[2] : null;
   return (
-    // `after:-ml-1` pulls the label's colon back against the unit: the colon
-    // is a flex item of its own here, and the row gap set it apart.
-    <Label htmlFor={htmlFor} className="flex items-baseline gap-1 after:-ml-1">
+    <Label htmlFor={htmlFor} className="flex items-baseline gap-1">
       <span className="truncate">{name}</span>
       {unit ? (
         <span className="text-muted-foreground shrink-0 text-xs font-normal">
@@ -190,9 +153,9 @@ function UnitLabel({ htmlFor, label }: { htmlFor: string; label: string }) {
 }
 
 /**
- * The blood pressure row: systolic, diastolic and an optional pulse, each
- * placeholder the person's own last reading, and the "Last …" line under
- * the row. Systolic takes the focus when the form opens.
+ * The blood pressure row: systolic, diastolic and an optional pulse, empty
+ * until typed in (no last reading as a placeholder, the same as the edit
+ * sheet). Systolic takes the focus when the form opens.
  */
 export function BloodPressureFields({
   sys,
@@ -201,11 +164,9 @@ export function BloodPressureFields({
   onSys,
   onDia,
   onPulse,
-  placeholders,
   autoFocus,
   invalid,
   describedBy,
-  lastLine,
 }: {
   sys: string;
   dia: string;
@@ -213,11 +174,9 @@ export function BloodPressureFields({
   onSys: (next: string) => void;
   onDia: (next: string) => void;
   onPulse: (next: string) => void;
-  placeholders: { sys?: string; dia?: string };
   autoFocus: boolean;
   invalid: boolean;
   describedBy?: string;
-  lastLine: ReactNode;
 }) {
   const { t } = useTranslations();
   return (
@@ -232,7 +191,6 @@ export function BloodPressureFields({
           step="1"
           value={sys}
           onChange={(e) => onSys(e.target.value)}
-          placeholder={placeholders.sys}
           autoFocus={autoFocus}
           required
           aria-required="true"
@@ -252,7 +210,6 @@ export function BloodPressureFields({
           step="1"
           value={dia}
           onChange={(e) => onDia(e.target.value)}
-          placeholder={placeholders.dia}
           required
           aria-required="true"
           aria-invalid={invalid || undefined}
@@ -277,11 +234,6 @@ export function BloodPressureFields({
           max={220}
         />
       </div>
-      {lastLine ? (
-        <p className="text-muted-foreground text-xs sm:col-span-3">
-          {lastLine}
-        </p>
-      ) : null}
     </div>
   );
 }

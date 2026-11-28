@@ -89,7 +89,6 @@ export function HandoverDecisionForm({
               >
                 <div className="min-w-0 flex-1">
                   <Label
-                    noColon
                     htmlFor={guardian.decidable ? id : undefined}
                     className="block truncate text-sm font-medium"
                   >
