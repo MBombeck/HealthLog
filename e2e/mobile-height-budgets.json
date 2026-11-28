@@ -2,7 +2,7 @@
   "about": "Page height in CSS px on a phone (chromium-mobile), measured by mobile-height.spec.ts as the larger of main.scrollHeight and document.scrollingElement.scrollHeight, on the e2e-mobile-routes record (one or two of everything). `budget` is the ceiling: measured on 2026-11-27 plus 5 %, rounded up to 100. A page that grows past it fails; a page more than 15 % under it fails too, so a shorter page writes its lower number down. Raise a budget only in a reviewed change that says why. `target` is where the page should arrive: the 1.50 sub-page audit's target for the pages it named, scaled from the demo record it measured to this one; for the other pages the budget itself.",
   "pages": {
     "/achievements": {
-      "budget": 6100,
+      "budget": 2500,
       "target": 2400
     },
     "/settings/health-record": {
@@ -26,8 +26,8 @@
       "target": 2200
     },
     "/emergency-card": {
-      "budget": 2900,
-      "target": 2000
+      "budget": 1300,
+      "target": 1300
     },
     "/admin": {
       "budget": 2900,
@@ -54,8 +54,8 @@
       "target": 1200
     },
     "/notifications": {
-      "budget": 2100,
-      "target": 1200
+      "budget": 800,
+      "target": 800
     },
     "/medications": {
       "budget": 900,
@@ -66,8 +66,8 @@
       "target": 800
     },
     "/mental-wellbeing": {
-      "budget": 1300,
-      "target": 1300
+      "budget": 800,
+      "target": 800
     },
     "/cycle": {
       "budget": 1600,

@@ -177,7 +177,6 @@ export function CycleView() {
     <div className="space-y-6">
       <PageHeader
         title={<span data-tour-id="cycle-hero">{t("cycle.title")}</span>}
-        description={t("cycle.subtitle")}
         actions={
           // One action. The settings glyph that used to sit beside it was a
           // second door to the tab directly below, and no other page in the
@@ -203,7 +202,7 @@ export function CycleView() {
             tab strip: TabsList `h-9` (2.25rem) + the Tabs root `gap-2` (0.5rem)
             + the content's `mt-4` (1rem). Below `lg` the column stacks first and
             the offset collapses to zero. */}
-        <div className="flex flex-col gap-4 lg:sticky lg:top-6 lg:mt-15">
+        <div className="order-2 flex flex-col gap-4 lg:sticky lg:top-6 lg:order-1 lg:mt-15">
           {/* Wheel — the signature ring on the premium wellness-tile surface.
               `data-revealed` must sit on an ANCESTOR of `.wellness-tile-rise`
               — the keyframe selector is `[data-revealed="true"]
@@ -308,36 +307,36 @@ export function CycleView() {
           ) : null}
         </div>
 
-        <Tabs value={tab} onValueChange={(v) => setTab(v as CycleTab)}>
-          {/* v1.15.10 — the four German labels (Kalender/Prognosen/
-              Erkenntnisse/Einstellungen) overflowed the `flex-1` equal-width
-              cells at 375 px and forced a horizontal scroll. Below `sm` the
-              triggers size to their content (`text-xs`, no `flex-1`) and the
-              strip scrolls cleanly if needed; from `sm` up they reclaim the
-              equal-width `flex-1` layout. */}
+        <Tabs
+          value={tab}
+          onValueChange={(v) => setTab(v as CycleTab)}
+          className="order-1 lg:order-2" // a phone: calendar first
+        >
+          {/* Four equal cells; below `sm` `text-xs` and a tighter inset fit
+              the German labels at 390 px, longer locales still scroll. */}
           <TabsList className="scroll-touch w-full max-w-full overflow-x-auto">
             <TabsTrigger
               value="calendar"
-              className="text-xs sm:flex-1 sm:text-sm"
+              className="px-2 text-xs sm:px-3 sm:text-sm"
             >
               {t("cycle.tabs.calendar")}
             </TabsTrigger>
             <TabsTrigger
               value="predictions"
-              className="text-xs sm:flex-1 sm:text-sm"
+              className="px-2 text-xs sm:px-3 sm:text-sm"
             >
               {t("cycle.tabs.predictions")}
             </TabsTrigger>
             <TabsTrigger
               value="insights"
-              className="text-xs sm:flex-1 sm:text-sm"
+              className="px-2 text-xs sm:px-3 sm:text-sm"
             >
               {t("cycle.tabs.insights")}
             </TabsTrigger>
             {canManageCycle && (
               <TabsTrigger
                 value="settings"
-                className="text-xs sm:flex-1 sm:text-sm"
+                className="px-2 text-xs sm:px-3 sm:text-sm"
               >
                 {t("cycle.tabs.settings")}
               </TabsTrigger>

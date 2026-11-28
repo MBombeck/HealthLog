@@ -9888,7 +9888,6 @@
   },
   "achievements": {
     "title": "업적",
-    "subtitle": "건강을 기록하고 약을 제때 복용하면 업적을 얻어요.",
     "loginRequired": "업적을 보려면 로그인해 주세요.",
     "points": "포인트",
     "unlocked": "달성",
@@ -9896,7 +9895,6 @@
     "allCompleted": "모든 업적을 달성했어요!",
     "completed": "완료",
     "goalReached": "목표 달성",
-    "remainingUnlocks": "{count}개 더 달성 가능",
     "noneUnlockedYet": "아직 달성한 업적이 없어요.",
     "pointsValue": "{points, plural, other {#포인트}}",
     "metricCount": "{count}",
@@ -10150,9 +10148,7 @@
         "description": "7일 연속으로 수면 데이터를 기록해요."
       }
     },
-    "nextProgressLabel": "달성까지 진행률",
     "completedOn": "{date} 완료",
-    "locked": "잠김",
     "criterionHint": "{current} / {target}",
     "progressPercent": "{percent}%",
     "categories": {
@@ -10180,7 +10176,6 @@
   "notifications": {
     "title": "채널별 알림",
     "eventColumn": "이벤트",
-    "subtitle": "어떤 알림을 어떤 채널로 받을지 선택하세요.",
     "loadError": "알림 설정을 불러오지 못했어요.",
     "noChannels": "설정 > 연동에서 알림 채널을 먼저 설정해 주세요.",
     "goToSettings": "채널 설정으로 이동",
@@ -10778,7 +10773,6 @@
     },
     "disclaimer": "이 예측은 기록한 데이터로 추정한 설명일 뿐, 피임 방법도 의학적 조언도 아니에요. 피임 없는 성관계가 안전하다는 뜻은 절대 아니에요. 피임이나 의학적 결정은 의료 전문가와 상의해 주세요.",
     "title": "생리 주기",
-    "subtitle": "생리와 증상을 기록하고, 다음에 무엇이 올지 확인해 보세요.",
     "tabs": {
       "calendar": "캘린더",
       "predictions": "예측",
@@ -12012,7 +12006,6 @@
   },
   "illness": {
     "title": "아픈 날",
-    "subtitle": "아픈 기간과 컨디션 변화를 돌아보는 기록이에요.",
     "settings": {
       "viewDescription": "아픈 기간을 카드로 볼지 간단한 목록으로 볼지 선택하세요.",
       "orderDescription": "아픈 기간을 원하는 순서대로 끌어서 옮기세요."
@@ -12466,9 +12459,7 @@
   },
   "mentalHealth": {
     "pageTitle": "정신 건강",
-    "pageDescription": "검증된 자가 점검 네 가지예요. 한 번의 점수보다 시간에 따른 추이가 더 많은 걸 말해줘요.",
     "attributionLabel": "출처",
-    "attributionShow": "{instrument} 출처와 라이선스",
     "choosePrompt": "점검을 선택하세요",
     "start": "시작",
     "back": "뒤로",
@@ -12481,12 +12472,6 @@
       "gad7": "GAD-7 (걱정)",
       "who5": "WHO-5 (웰빙)",
       "sci": "SCI (수면)"
-    },
-    "instrumentSub": {
-      "phq9": "우울 선별, 9문항",
-      "gad7": "불안 선별, 7문항",
-      "who5": "웰빙 점검, 5문항",
-      "sci": "수면 점검, 8문항"
     },
     "functionalOptionalHint": "선택 사항이에요. 이 문항에 답하지 않아도 제출할 수 있어요.",
     "result": {
@@ -12525,7 +12510,6 @@
       "title": "내 기록",
       "empty": "아직 점검 기록이 없어요. 하나를 마치면 추이가 여기에 나타나요.",
       "flaggedBadge": "지원 안내 표시됨",
-      "chartTitle": "점수 추이",
       "totalLabel": "점수",
       "bandLabel": "분류",
       "answersToggle": "답변",
@@ -13220,15 +13204,11 @@
       "titleRecord": "{name}님의 문서 보관함이 비어 있어요"
     },
     "detail": {
-      "title": "문서 상세",
       "summary": {
         "title": "요약",
         "pending": "요약을 준비하고 있어요.",
-        "none": "이 문서는 아직 요약이 없어요.",
         "withheld": "요약을 만들었지만 안전 검사를 통과하지 못해 표시하지 않아요. 다시 시도하거나 문서를 직접 읽어 보세요.",
-        "unavailable": "이 문서는 요약을 만들 수 없었어요.",
-        "generate": "요약 생성",
-        "generating": "생성 중…"
+        "unavailable": "이 문서는 요약을 만들 수 없었어요."
       },
       "index": {
         "outcome": {
@@ -13253,7 +13233,6 @@
       "titlePlaceholder": "제목 입력",
       "kindLabel": "종류",
       "dateLabel": "문서 날짜",
-      "previewUnavailable": "이 파일 형식은 미리보기를 지원하지 않아요",
       "uploadedMeta": "{date} 추가, {size}",
       "importedFrom": "{system}에서 가져옴",
       "importedFromWithId": "{system}에서 가져옴, ID {id}",
@@ -13263,8 +13242,7 @@
       "share": "공유",
       "labValuesLink": "검사 결과 {count, plural, other {#개}} 보기",
       "saved": "변경 사항이 저장됨",
-      "saving": "저장 중…",
-      "previewNotOnDevice": "이 브라우저는 페이지 안에서 PDF를 표시할 수 없습니다"
+      "saving": "저장 중…"
     },
     "dropOverlay": {
       "title": "파일을 놓아 업로드",
@@ -16254,7 +16232,7 @@
       "missBody": "링크가 철회되었거나 만료되었을 수 있습니다. 카드 소유자가 새 링크를 만들 수 있습니다.",
       "title": "QR 링크",
       "loadError": "링크 상태를 불러오지 못했습니다.",
-      "disclosure": "코드를 스캔하는 사람은 로그인 없이 선택한 항목을 볼 수 있습니다. 링크에 만료일을 정하고 언제든지 철회할 수 있으며, 열람 기록이 남습니다.",
+      "disclosure": "코드를 스캔하는 사람은 로그인 없이 선택한 항목을 볼 수 있습니다.",
       "fieldsLabel": "링크에 표시할 항목",
       "expiryLabel": "링크 만료",
       "expiry": {
@@ -16276,17 +16254,17 @@
       "revoke": "링크 철회",
       "revokeTitle": "응급 카드 링크를 철회할까요?",
       "revokeBody": "이 코드가 인쇄된 카드는 더 이상 작동하지 않습니다. 새 링크를 만들고 카드를 다시 인쇄할 수 있습니다.",
-      "error": "링크를 변경하지 못했습니다. 다시 시도하세요."
+      "error": "링크를 변경하지 못했습니다. 다시 시도하세요.",
+      "disclosureMore": "링크에 만료일을 정하고 언제든지 철회할 수 있으며, 열람 기록이 남습니다."
     },
     "page": {
       "title": "응급 카드",
-      "description": "외출 시를 위한 응급 정보입니다.",
       "loadError": "응급 카드를 불러오지 못했습니다.",
       "offlineHint": "앱은 의도적으로 오프라인에서 작동하지 않습니다. 연결 없이 카드를 가지고 다니려면 휴대폰에 사본을 저장하세요. 저장한 날의 내용이 표시됩니다.",
       "downloadError": "다운로드에 실패했습니다. 다시 시도하세요.",
-      "saveOffline": "오프라인 사본 저장",
-      "wallet": "지갑 카드 (PDF)",
-      "walletWithQr": "QR 코드 포함 지갑 카드 (PDF)",
+      "saveOffline": "오프라인 사본",
+      "wallet": "PDF 카드",
+      "walletWithQr": "QR 코드 포함 PDF",
       "preview": "내 카드"
     },
     "name": "이름",
@@ -16388,7 +16366,8 @@
         "title": "응급 카드가 준비됐어요",
         "body": "이 iPhone에서 Apple 지갑에 추가하세요."
       }
-    }
+    },
+    "fieldsCount": "{total}개 중 {count}개"
   },
   "treatmentSeries": {
     "heading": "치료 과정",

@@ -9888,7 +9888,6 @@
   },
   "achievements": {
     "title": "Osiągnięcia",
-    "subtitle": "Zdobywaj osiągnięcia, śledząc swoje zdrowie i przyjmując leki na czas.",
     "loginRequired": "Zaloguj się, aby zobaczyć osiągnięcia.",
     "points": "Punkty",
     "unlocked": "Odblokowano",
@@ -9896,7 +9895,6 @@
     "allCompleted": "Wszystkie osiągnięcia odblokowane!",
     "completed": "Ukończono",
     "goalReached": "Cel osiągnięty",
-    "remainingUnlocks": "Jeszcze {count} do odblokowania",
     "noneUnlockedYet": "Nie odblokowano jeszcze żadnego osiągnięcia.",
     "pointsValue": "{points, plural, one {# punkt} few {# punkty} many {# punktów} other {# punktu}}",
     "metricCount": "{count}",
@@ -10150,9 +10148,7 @@
         "description": "Dane o śnie zapisane przez 7 kolejnych dni."
       }
     },
-    "nextProgressLabel": "Postęp do odblokowania",
     "completedOn": "Ukończono {date}",
-    "locked": "Zablokowane",
     "criterionHint": "{current} / {target}",
     "progressPercent": "{percent}%",
     "categories": {
@@ -10180,7 +10176,6 @@
   "notifications": {
     "title": "Powiadomienia wg kanału",
     "eventColumn": "Zdarzenie",
-    "subtitle": "Wybierz, które powiadomienia chcesz otrzymywać i którym kanałem.",
     "loadError": "Nie udało się załadować ustawień powiadomień.",
     "noChannels": "Najpierw skonfiguruj kanał powiadomień w Ustawienia > Integracje.",
     "goToSettings": "Przejdź do ustawień kanału",
@@ -10778,7 +10773,6 @@
     },
     "disclaimer": "Te prognozy to opisowe szacunki na podstawie zapisanych danych, a nie metoda antykoncepcji ani porada medyczna. Nigdy nie oznaczają, że współżycie bez zabezpieczenia jest bezpieczne. W sprawach antykoncepcji lub decyzji medycznych skonsultuj się z pracownikiem ochrony zdrowia.",
     "title": "Cykl",
-    "subtitle": "Zapisuj miesiączkę i objawy oraz sprawdzaj, co dalej.",
     "tabs": {
       "calendar": "Kalendarz",
       "predictions": "Prognozy",
@@ -12012,7 +12006,6 @@
   },
   "illness": {
     "title": "Choroby",
-    "subtitle": "Retrospektywny zapis Twoich epizodów chorób i dolegliwości.",
     "settings": {
       "viewDescription": "Wybierz, czy epizody mają być wyświetlane jako karty czy zwarta lista.",
       "orderDescription": "Przeciągnij epizody w kolejność, w jakiej chcesz je widzieć."
@@ -12466,9 +12459,7 @@
   },
   "mentalHealth": {
     "pageTitle": "Dobrostan psychiczny",
-    "pageDescription": "Cztery zwalidowane, dobrowolne testy: liczy się przebieg w czasie, nie pojedynczy wynik.",
     "attributionLabel": "Źródło",
-    "attributionShow": "Źródło i licencja: {instrument}",
     "choosePrompt": "Wybierz sprawdzenie",
     "start": "Rozpocznij",
     "back": "Wstecz",
@@ -12481,12 +12472,6 @@
       "gad7": "GAD-7 (lęk)",
       "who5": "WHO-5 (samopoczucie)",
       "sci": "SCI (sen)"
-    },
-    "instrumentSub": {
-      "phq9": "Przesiew depresji, 9 pytań",
-      "gad7": "Przesiew lęku, 7 pytań",
-      "who5": "Test samopoczucia, 5 pytań",
-      "sci": "Test snu, 8 pytań"
     },
     "functionalOptionalHint": "Opcjonalne: możesz wysłać bez odpowiedzi na to pytanie.",
     "result": {
@@ -12525,7 +12510,6 @@
       "title": "Twoja historia",
       "empty": "Brak sprawdzeń. Twój trend pojawi się tutaj po ukończeniu pierwszego.",
       "flaggedBadge": "Pokazano wsparcie",
-      "chartTitle": "Przebieg wyniku",
       "totalLabel": "Wynik",
       "bandLabel": "Kategoria",
       "answersToggle": "Odpowiedzi",
@@ -13220,15 +13204,11 @@
       "titleRecord": "Sejf dokumentów {name} jest pusty"
     },
     "detail": {
-      "title": "Szczegóły dokumentu",
       "summary": {
         "title": "Podsumowanie",
         "pending": "Podsumowanie jest przygotowywane.",
-        "none": "Dla tego dokumentu nie wygenerowano jeszcze podsumowania.",
         "withheld": "Podsumowanie zostało wygenerowane, ale nie przeszło kontroli bezpieczeństwa, więc nie jest wyświetlane. Możesz spróbować ponownie lub przeczytać sam dokument.",
-        "unavailable": "Nie udało się wygenerować podsumowania dla tego dokumentu.",
-        "generate": "Wygeneruj podsumowanie",
-        "generating": "Generowanie…"
+        "unavailable": "Nie udało się wygenerować podsumowania dla tego dokumentu."
       },
       "index": {
         "outcome": {
@@ -13253,7 +13233,6 @@
       "titlePlaceholder": "Dodaj tytuł",
       "kindLabel": "Typ",
       "dateLabel": "Data dokumentu",
-      "previewUnavailable": "Brak podglądu dla tego typu pliku",
       "uploadedMeta": "Dodano {date}, {size}",
       "importedFrom": "Zaimportowano z: {system}",
       "importedFromWithId": "Zaimportowano z: {system}, ID {id}",
@@ -13263,8 +13242,7 @@
       "share": "Udostępnij",
       "labValuesLink": "Zobacz {count, plural, one {# wynik badania} few {# wyniki badań} many {# wyników badań} other {# wyniku badania}}",
       "saved": "Zmiany zapisane",
-      "saving": "Zapisywanie…",
-      "previewNotOnDevice": "Ta przeglądarka nie wyświetla plików PDF na stronie"
+      "saving": "Zapisywanie…"
     },
     "dropOverlay": {
       "title": "Upuść pliki, aby je przesłać",
@@ -16254,7 +16232,7 @@
       "missBody": "Link mógł zostać cofnięty lub wygasnąć. Osoba, do której należy karta, może utworzyć nowy.",
       "title": "Link QR",
       "loadError": "Nie udało się wczytać stanu linku.",
-      "disclosure": "Każdy, kto zeskanuje kod, zobaczy zaznaczone pozycje bez logowania. Możesz ustawić koniec ważności i w każdej chwili cofnąć link; każde otwarcie jest zapisywane.",
+      "disclosure": "Każdy, kto zeskanuje kod, zobaczy zaznaczone pozycje bez logowania.",
       "fieldsLabel": "Co pokazuje link",
       "expiryLabel": "Koniec ważności linku",
       "expiry": {
@@ -16276,17 +16254,17 @@
       "revoke": "Cofnij link",
       "revokeTitle": "Cofnąć link do karty ratunkowej?",
       "revokeBody": "Wydrukowane karty z tym kodem przestaną działać. Możesz utworzyć nowy link i wydrukować kartę ponownie.",
-      "error": "Nie udało się zmienić linku. Spróbuj ponownie."
+      "error": "Nie udało się zmienić linku. Spróbuj ponownie.",
+      "disclosureMore": "Możesz ustawić koniec ważności i w każdej chwili cofnąć link; każde otwarcie jest zapisywane."
     },
     "page": {
       "title": "Karta ratunkowa",
-      "description": "Twoje dane ratunkowe na czas poza domem.",
       "loadError": "Nie udało się wczytać karty ratunkowej.",
       "offlineHint": "Aplikacja celowo nie działa offline. Zapisz kopię w telefonie, by mieć kartę bez połączenia; pokazuje stan z dnia zapisu.",
       "downloadError": "Pobieranie się nie udało. Spróbuj ponownie.",
-      "saveOffline": "Zapisz kopię offline",
-      "wallet": "Karta do portfela (PDF)",
-      "walletWithQr": "Karta z kodem QR (PDF)",
+      "saveOffline": "Kopia offline",
+      "wallet": "Karta w PDF",
+      "walletWithQr": "PDF z kodem QR",
       "preview": "Twoja karta"
     },
     "name": "Imię i nazwisko",
@@ -16388,7 +16366,8 @@
         "title": "Twoja karta ratunkowa jest gotowa",
         "body": "Dodaj ją do Apple Wallet na tym iPhonie."
       }
-    }
+    },
+    "fieldsCount": "{count} z {total}"
   },
   "treatmentSeries": {
     "heading": "Serie zabiegów",
