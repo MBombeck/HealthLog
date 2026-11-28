@@ -290,8 +290,8 @@ describe("connect-source state copy", () => {
       ) as Record<string, never>,
     }));
 
-  it("covers all ten locales", () => {
-    expect(LOCALES.length).toBe(10);
+  it("covers all eleven locales", () => {
+    expect(LOCALES.length).toBe(11);
   });
 
   it.each(LOCALES)(
