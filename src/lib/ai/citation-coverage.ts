@@ -98,6 +98,9 @@ import { foldForMatch } from "@/lib/i18n/fold-for-match";
  */
 const NORMATIVE_KEYWORDS: Record<Locale, readonly string[]> = {
   en: ["target", "should", "normal range", "above", "below"],
+  // Chinese has no case and no diacritics to fold, so these are the exact
+  // words a Chinese reply uses for a normative claim.
+  "zh-CN": ["目标", "应当", "正常范围", "高于", "低于"],
   de: ["ziel", "sollte", "normalbereich", "uber", "unter"],
   fr: [
     "objectif",

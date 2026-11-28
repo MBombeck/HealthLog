@@ -116,6 +116,16 @@ export interface RangeProse {
  * whitespace, so a report that printed a non-breaking space still reads.
  */
 export const RANGE_PROSE: Record<Locale, RangeProse> = {
+  // Chinese lab sheets print the window as "3.5 至 5.0" or "3.5～5.0" and the
+  // bounds as "低于 5.0" / "高于 3.5" / "不超过" / "不低于". The tilde and the
+  // full-width dash are separators the numeric reader already handles, so the
+  // word lists stay words.
+  "zh-CN": {
+    twoSided: ["至", "到"],
+    upper: ["小于", "低于", "不超过", "不超过", "以下", "最多"],
+    lower: ["大于", "高于", "不低于", "以上", "至少", "最少"],
+    filler: ["参考范围", "参考值", "参考", "正常范围", "范围"],
+  },
   de: {
     twoSided: ["bis zu", "bis"],
     upper: [

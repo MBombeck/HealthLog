@@ -81,6 +81,10 @@ export const WORDING: Readonly<
     nl: phq9Nl,
     "pt-BR": phq9PtBr,
     ru: phq9Ru,
+    // Item wording stays English until a native speaker has reviewed it
+    // clinically; `mentalHealth.wording.*` tells the reader the translation
+    // is not yet validated, and pointing this at `en` is what makes that true.
+    "zh-CN": phq9En,
   },
   GAD7: {
     en: gad7En,
@@ -93,6 +97,10 @@ export const WORDING: Readonly<
     nl: gad7Nl,
     "pt-BR": gad7PtBr,
     ru: gad7Ru,
+    // Item wording stays English until a native speaker has reviewed it
+    // clinically; `mentalHealth.wording.*` tells the reader the translation
+    // is not yet validated, and pointing this at `en` is what makes that true.
+    "zh-CN": gad7En,
   },
   WHO5: {
     en: who5En,
@@ -105,6 +113,10 @@ export const WORDING: Readonly<
     nl: who5Nl,
     "pt-BR": who5PtBr,
     ru: who5Ru,
+    // Item wording stays English until a native speaker has reviewed it
+    // clinically; `mentalHealth.wording.*` tells the reader the translation
+    // is not yet validated, and pointing this at `en` is what makes that true.
+    "zh-CN": who5En,
   },
   SCI: {
     en: sciEn,
@@ -117,5 +129,9 @@ export const WORDING: Readonly<
     nl: sciNl,
     "pt-BR": sciPtBr,
     ru: sciRu,
+    // Item wording stays English until a native speaker has reviewed it
+    // clinically; `mentalHealth.wording.*` tells the reader the translation
+    // is not yet validated, and pointing this at `en` is what makes that true.
+    "zh-CN": sciEn,
   },
 };

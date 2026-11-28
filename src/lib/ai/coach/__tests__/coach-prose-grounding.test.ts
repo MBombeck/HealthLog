@@ -662,6 +662,7 @@ describe("population-norm banks, one per locale", () => {
     ko: "건강한 성인은 7~9시간 자요.",
     "pt-BR": "A maioria dos adultos precisa de 7 a 9 horas de sono.",
     ru: "Здоровые взрослые обычно спят от 7 до 9 часов.",
+  "zh-CN": "健康成年人通常每晚睡 7 到 9 小时。",
   };
 
   it.each(locales)("%s reads its reference sentence as a norm", (locale) => {

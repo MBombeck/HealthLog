@@ -207,6 +207,11 @@ const HARMLESS: Record<Locale, readonly string[]> = {
     "Сократите кофеин до 200 мг в день.",
     "Рекомендуется не больше 2000 мг натрия в день.",
   ],
+  "zh-CN": [
+    "改变剂量前请先咨询医生。",
+    "不要在未咨询药师的情况下减半服用。",
+    "如果医生同意，可以逐步减少剂量。",
+  ],
 };
 
 describe("dose screen false-positive corpus", () => {
