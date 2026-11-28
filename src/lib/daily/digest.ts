@@ -24,15 +24,10 @@ import type { DailyBriefing, DailyBriefingSignal } from "@/lib/ai/schema";
 import type { AiCapabilityState } from "@/lib/ai/capabilities/types";
 import type { ArrivalKind } from "@/lib/arrivals/types";
 import { encounterKindLabelKey } from "@/lib/encounters/kind-label";
-import { CARE_WIRE_PATH, visitsPath } from "@/lib/encounters/visit-links";
+import { CARE_WIRE_PATH } from "@/lib/encounters/visit-links";
 import type { MedsTodayBlock } from "@/lib/dashboard/meds-today";
 import type { ModuleKey } from "@/lib/modules/registry";
 import type { ServerTranslator } from "@/lib/i18n/server-translator";
-import type {
-  ScoreBasis,
-  ScoreDeltaReason,
-  ScorePillarId,
-} from "@/lib/analytics/score/types";
 import {
   MAX_PRIORITY_ACTIONS,
   isDismissibleKind,
@@ -48,8 +43,16 @@ import {
   sameTimeBaselineItemKey,
   syncIssueItemKey,
   tensionWindowItemKey,
-  upcomingVisitItemKey,
 } from "@/lib/daily/priority-item-key";
+import { buildUpcomingVisitItems } from "@/lib/daily/upcoming-visit-items";
+import { allClearLine, healthScoreFlag } from "@/lib/daily/in-range-claim";
+import { digestScore, type DailyDigestScore } from "@/lib/daily/digest-score";
+export type { DailyDigestScore };
+import {
+  asksFromDigest,
+  type AdminAskKind,
+  type DailyAsk,
+} from "@/lib/daily/asks";
 import {
   milestoneCopy,
   milestoneHref,
@@ -108,7 +111,7 @@ export const COACH_CHECKIN_RESURFACE_DAYS = 14;
 
 /**
  * Closed allowlist of the check-in card's two MUTATING intents (§2.3.2). The
- * generic, id-less `PriorityCard` forwards only a single `intent` string, so
+ * generic, id-less ask card (`today-asks.tsx`) forwards only a single `intent` string, so
  * the target plan id is appended after the ":" — the Today handler recovers it
  * and PATCHes the existing plan-lifecycle route. "Adjust" is navigation (an
  * `href` into the coach), so it carries no plan id and never mutates here.
@@ -126,59 +129,11 @@ function moduleEnabled(map: DigestModuleMap, key: ModuleKey): boolean {
   return map[key] !== false;
 }
 
-export interface DailyDigestScore {
-  value: number;
-  /** The worse of the number's band and the worst pillar's (shipped apps). */
-  band: string;
-  /** 1.50: the number's own band; the web draws this. Old caches lack it. */
-  numberBand?: string;
-  delta: number | null;
-  /** Additive score identity; omitted by older cached digests. */
-  deltaReason?: ScoreDeltaReason | null;
-  scoreVersion?: number;
-  composition?: ScorePillarId[];
-  /**
-   * v1.35.0 — the resolved "this score is configured" flag, carried
-   * straight from the snapshot's health-score block. Omitted by older
-   * cached digests, like its siblings above.
-   */
-  configured?: boolean;
-  /**
-   * v1.38 — how broad the set behind the number is, carried straight
-   * from the snapshot's health-score block. Since v1.38 a score exists
-   * at one or two areas of health as well as three and is computed the
-   * same way at each, so this block is what tells a narrow score from a
-   * broad one. Omitted by older cached digests, like its siblings above.
-   */
-  scoreBasis?: ScoreBasis;
-  /**
-   * Whole weeks the score has held where it is (same band, within two
-   * points, computed the same way), read off the stored daily scores. Null
-   * when it has not held for two weeks, when the stored record does not
-   * reach today, or when the score moved. Optional so older cached digests
-   * stay valid.
-   */
-  steadyWeeks?: number | null;
-  /**
-   * True when the run reaches back past everything the read covered, so
-   * `steadyWeeks` is a lower bound ("at least"), not the run's start.
-   */
-  steadyAtLeast?: boolean;
-  /**
-   * The pillar in a worse band than the score, its band and its worded line
-   * (the snapshot's). Shown wherever the score is; optional for old caches.
-   */
-  bandSetter?: ScorePillarId | null;
-  bandSetterBand?: "yellow" | "red" | null;
-  bandSetterLine?: string | null;
-}
-
 /** A broken integration, deterministically derived from `IntegrationStatus`. */
 export interface DailyDigestSyncIssue {
-  /** Integration token (`withings`, `whoop`, …). */
-  integration: string;
-  /** The failure state the row carries (`error_reauth`, `disconnected`, …). */
-  state: string;
+  integration: string; // `withings`, `whoop`, …
+  state: string; // `error_reauth`, `disconnected`, …
+  lastSuccessAt?: string | null; // ISO; null when no sync ever landed
 }
 
 /**
@@ -441,6 +396,10 @@ export interface DailyDigestInput {
   cycle?: TodayCycle | null;
   /** How long the score has held; see `DailyDigestScore.steadyWeeks`. */
   scoreSteady?: SteadyRun | null;
+  /** The admin question open for this reader (`load-digest.ts`), if any. */
+  adminAsk?: AdminAskKind | null;
+  /** Dose item keys whose snooze is running (`load-digest.ts`). */
+  snoozedDoseItemKeys?: ReadonlySet<string>;
 }
 
 export interface DailyDigest {
@@ -489,6 +448,8 @@ export interface DailyDigest {
   line: string;
   /** Bounded 0–3 rail items, never padded. */
   worthALook: PriorityItem[];
+  /** What the start page asks today: 0 to 2 rows (`asks.ts`), often none. */
+  asks: DailyAsk[];
   /**
    * The day's newest arrival while it is still news (< `JUST_IN_WINDOW_MS`
    * old), else null. Drives the hero's calm "just in" chip.
@@ -692,82 +653,6 @@ function buildPreventiveCareItem(
         href: CARE_WIRE_PATH,
       },
     ],
-  };
-}
-
-/**
- * Booked visits as rail lines: one item for everything booked today, and one
- * for the next day that has a visit within the two-day horizon.
- *
- * Today's item stays for the whole local day, also after the visit's start
- * time: the visit's reminder fires at that time, and the rail used to drop the
- * visit at exactly that moment. Several visits on one day share one item and
- * are named together, so a busy day cannot fill the three-item rail with
- * appointments alone.
- *
- * No module gate: a visit is core, like the checkups page it lives on. No
- * action beyond opening the visit either — there is nothing to do about an
- * appointment except keep it, and a "mark done" here would duplicate the
- * visit's own status field with a second place to set it.
- *
- * The action opens where the appointment lives: the visit itself, or the
- * visits list for a day with several. The bare `/checkups` it used to carry
- * sent every tap on an appointment to the preventive-care list the
- * appointment is not on.
- */
-function buildUpcomingVisitItems(
-  visits: readonly DailyDigestUpcomingVisit[],
-  t: Translate,
-): { today: PriorityItem | null; next: PriorityItem | null } {
-  const item = (group: readonly DailyDigestUpcomingVisit[]): PriorityItem => {
-    // Through the key resolver, never `encounters.kind.${kind}`: the enum is
-    // `ROUTINE` and the bundle leaf is `routine`, so the interpolated form put
-    // raw dot notation on a lock screen.
-    const names = group.map(
-      (visit) =>
-        visit.practitionerName ??
-        t(encounterKindLabelKey(visit.kind as EncounterKind)),
-    );
-    const what = Array.from(new Set(names)).join(", ");
-    const offset = group[0].dayOffset;
-    return {
-      kind: "upcoming_visit",
-      itemKey: upcomingVisitItemKey(offset, group[0].id),
-      title: t("daily.item.upcomingVisit.title"),
-      body:
-        offset <= 0
-          ? t("daily.item.upcomingVisit.bodyToday", { what })
-          : offset === 1
-            ? t("daily.item.upcomingVisit.bodyTomorrow", { what })
-            : t("daily.item.upcomingVisit.bodyDayAfterTomorrow", { what }),
-      status: "info",
-      actions: [
-        {
-          // The wire keeps the check-up item's label and intent: the shipped
-          // iOS app routes `checkup.view` and knows no other token for this
-          // item, so a new intent would leave its tap inert. The web card
-          // relabels it from the kind (`actionLabelKey` in
-          // `priority-card.tsx`); the switch to `visit.view` waits for an
-          // app that understands it.
-          labelKey: "daily.action.viewCheckups",
-          intent: "checkup.view",
-          href: visitsPath(group.map((visit) => visit.id)),
-        },
-      ],
-    };
-  };
-
-  const valid = visits.filter(
-    (visit) => !Number.isNaN(new Date(visit.occurredAt).getTime()),
-  );
-  const today = valid.filter((visit) => visit.dayOffset <= 0);
-  const later = valid.filter((visit) => visit.dayOffset > 0);
-  const nextOffset =
-    later.length > 0 ? Math.min(...later.map((v) => v.dayOffset)) : null;
-  const next = later.filter((visit) => visit.dayOffset === nextOffset);
-  return {
-    today: today.length > 0 ? item(today) : null,
-    next: next.length > 0 ? item(next) : null,
   };
 }
 
@@ -1092,7 +977,7 @@ function composeLine(
     if (candidate && !HAS_NUMBER.test(candidate)) return candidate;
   }
   if (score) return t("daily.line.scoreReady");
-  return t("daily.line.allClear");
+  return allClearLine(healthScoreFlag(score), t) ?? t("daily.line.scoreReady");
 }
 
 /**
@@ -1273,9 +1158,8 @@ export function buildDailyDigest(
     item.actions = item.actions.slice(0, MAX_PRIORITY_ACTIONS);
   }
 
-  // Drop anything the user already dismissed (observational kinds only).
-  // This also runs before the bounded slice so a dismissal makes room for the
-  // next enabled candidate.
+  // Drop what the user dismissed (observational kinds only), before the
+  // bounded slice, so a dismissal makes room for the next candidate.
   const visible =
     input.dismissedItemKeys.size === 0
       ? enabled
@@ -1299,6 +1183,7 @@ export function buildDailyDigest(
       ),
       briefing,
       scoreValue: input.score?.value ?? null,
+      scoreFlag: healthScoreFlag(input.score),
       medsToday: input.medsToday,
       visits: (input.upcomingVisits ?? []).flatMap((visit) =>
         visit.timeLabel === undefined ||
@@ -1327,13 +1212,7 @@ export function buildDailyDigest(
     t,
   );
 
-  const score: DailyDigestScore | null = input.score
-    ? {
-        ...input.score,
-        steadyWeeks: input.scoreSteady?.weeks ?? null,
-        steadyAtLeast: input.scoreSteady?.atLeast ?? false,
-      }
-    : null;
+  const score = digestScore(input.score, input.scoreSteady, t);
 
   return {
     generatedAt: input.now.toISOString(),
@@ -1349,6 +1228,7 @@ export function buildDailyDigest(
       : null,
     line: composeLine(overview, topSignal, input.score, t),
     worthALook: rail,
+    asks: asksFromDigest(input, worthALook, t), // own opt-out, own cap
     justIn,
     reactionLine,
     ai: input.ai,

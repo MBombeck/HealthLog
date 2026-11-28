@@ -1,6 +1,6 @@
 "use client";
 
-import { Compass, Send } from "lucide-react";
+import { Compass } from "lucide-react";
 
 import { DecisionCard } from "@/components/settings/decision-card";
 import { useAuth } from "@/hooks/use-auth";
@@ -12,28 +12,17 @@ import {
 } from "@/lib/queries/use-server-setup";
 
 /**
- * The one notice to an admin about the server itself, dismissed once per
- * admin under `adminNoticesDismissed`. Nothing is forced and nothing
- * redirects. Never on a demo deploy (the server answers `offered: false`).
+ * The one notice to an admin about the server itself, on the admin start
+ * page, dismissed once per admin under `adminNoticesDismissed`: the server
+ * setup exists and is not finished, so it offers the setup. Nothing is
+ * forced and nothing redirects. Never on a demo deploy (the server answers
+ * `offered: false`). The relay question stands right under it on that page.
  *
- * It says one of two things, the first that holds:
- *
- * - the server setup exists and is not finished: it offers the setup;
- * - the push relay is still undecided: it names the question, which waits on
- *   the admin start page, and links there. An upgraded server has its setup
- *   stamped finished, so without this an admin who never opens the admin
- *   pages would never hear of the relay.
- *
- * On the admin start page (`surface="admin"`) only the first shows: the
- * relay question itself stands right under it. The same `DecisionCard` as the
- * relay question: the way forward is the primary answer, "Not now" the
- * secondary one.
+ * The dashboard asks the same question in its ask card (the digest's
+ * `asks`, kind `server_setup` or `push_relay`), with the same answers and
+ * the same "Not now".
  */
-export function ServerSetupNotice({
-  surface,
-}: {
-  surface: "admin" | "dashboard";
-}) {
+export function ServerSetupNotice() {
   const { t } = useTranslations();
   const { user } = useAuth();
   const isAdmin = user?.role === "ADMIN";
@@ -41,53 +30,25 @@ export function ServerSetupNotice({
   const { data } = useServerSetup({ enabled: isAdmin });
   const dismiss = useDismissServerSetupNotice();
   if (!isAdmin || !data?.offered || !data.noticePending) return null;
+  if (data.completedAt !== null) return null;
 
-  const decline = {
-    label: t("admin.serverSetup.notice.dismiss"),
-    slot: "server-setup-notice-dismiss",
-    onClick: () => dismiss.mutate(),
-  };
-
-  if (data.completedAt === null) {
-    return (
-      <DecisionCard
-        data-slot="server-setup-notice"
-        data-notice="setup"
-        icon={Compass}
-        title={t("admin.serverSetup.notice.title")}
-        body={t("admin.serverSetup.notice.body")}
-        pending={dismiss.isPending}
-        decline={decline}
-        accept={{
-          label: t("admin.serverSetup.notice.open"),
-          slot: "server-setup-notice-open",
-          href: "/onboarding/server",
-        }}
-      />
-    );
-  }
-
-  const relay = user?.push?.relay;
-  if (
-    surface !== "dashboard" ||
-    relay?.canDecide !== true ||
-    relay.operatorDecision !== "undecided"
-  ) {
-    return null;
-  }
   return (
     <DecisionCard
       data-slot="server-setup-notice"
-      data-notice="relay"
-      icon={Send}
-      title={t("admin.pushRelay.question.title")}
-      body={t("admin.serverSetup.notice.relayBody")}
+      data-notice="setup"
+      icon={Compass}
+      title={t("admin.serverSetup.notice.title")}
+      body={t("admin.serverSetup.notice.body")}
       pending={dismiss.isPending}
-      decline={decline}
+      decline={{
+        label: t("admin.serverSetup.notice.dismiss"),
+        slot: "server-setup-notice-dismiss",
+        onClick: () => dismiss.mutate(),
+      }}
       accept={{
-        label: t("admin.serverSetup.notice.relayOpen"),
+        label: t("admin.serverSetup.notice.open"),
         slot: "server-setup-notice-open",
-        href: "/admin",
+        href: "/onboarding/server",
       }}
     />
   );

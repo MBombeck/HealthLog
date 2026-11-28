@@ -108,14 +108,14 @@ function primaryActions(html: string): string[] {
 }
 
 describe("<IntegrationCard> per state", () => {
-  it("ok: Working, one sentence, last data, no button", () => {
+  it("ok: Active, one sentence, last data, no button", () => {
     const html = render(
       "oura",
       connected(healthFixture({ lastDataAt: hoursAgo(1) })),
     );
     expect(html).toMatch(/data-slot="integration-card"[^>]*data-state="ok"/);
     expect(badgeState(html)).toBe("ok");
-    expect(html).toContain(">Working<");
+    expect(html).toContain(">Active<");
     expect(html).toContain("Data is arriving.");
     expect(html).toContain('data-slot="integration-last-data"');
     expect(html).toContain("Last data: today,");
@@ -187,7 +187,7 @@ describe("<IntegrationCard> per state", () => {
       ),
     );
     expect(badgeState(html)).toBe("limited");
-    expect(html).toContain(">Limited<");
+    expect(html).toContain(">Active<");
     expect(html).toContain(
       "Data is arriving. Your Withings plan does not include SpO2, vascular age, and 3 more.",
     );
@@ -221,7 +221,7 @@ describe("<IntegrationCard> per state", () => {
     expect(html).toContain(">Reconnect<");
   });
 
-  it("degraded: Delayed, dated, reassuring, no button", () => {
+  it("degraded: Error, dated, reassuring, no button", () => {
     const html = render(
       "withings",
       connected(
@@ -233,14 +233,14 @@ describe("<IntegrationCard> per state", () => {
       ),
     );
     expect(badgeState(html)).toBe("degraded");
-    expect(html).toContain(">Delayed<");
+    expect(html).toContain(">Error<");
     expect(html).toMatch(
       /Withings has not answered reliably since (today|yesterday), [^.]+\. HealthLog keeps trying; nothing to do on your side\./,
     );
     expect(primaryActions(html)).toEqual([]);
   });
 
-  it("action required, reauth: Action needed and exactly one Reconnect", () => {
+  it("action required, reauth: Error and exactly one Reconnect", () => {
     const html = render(
       "google-health",
       connected(
@@ -252,7 +252,7 @@ describe("<IntegrationCard> per state", () => {
       ),
     );
     expect(badgeState(html)).toBe("action_required");
-    expect(html).toContain(">Action needed<");
+    expect(html).toContain(">Error<");
     expect(html).toContain(
       "The Google Health connection has expired. Reconnect to keep data coming.",
     );
@@ -291,15 +291,15 @@ describe("<IntegrationCard> per state", () => {
       /data-slot="integration-card"[^>]*data-state="not_connected"/,
     );
     expect(badgeState(html)).toBeNull();
-    expect(html).toContain("Not connected.");
+    // The off chip says "not connected"; no sentence repeats it.
+    expect(html).toMatch(/data-slot="status-chip"[^>]*data-tone="off"/);
+    expect(html).not.toContain("Not connected.");
     expect(html).toContain('data-testid="withings-setup-guide"');
     expect(html).toContain('data-testid="withings-redirect-guide"');
     expect(html).toContain('id="withings-clientid"');
-    expect(html).toContain('data-testid="withings-connect"');
-    // Connecting needs stored credentials first, and the card says so.
-    expect(html).toMatch(
-      /data-testid="withings-connect"[^>]*disabled=""|disabled=""[^>]*data-testid="withings-connect"/,
-    );
+    // Connecting needs stored credentials first: no greyed-out button, the
+    // card says what is missing instead.
+    expect(html).not.toContain('data-testid="withings-connect"');
     expect(html).toContain('data-testid="integration-unavailable"');
     expect(html).not.toContain('data-slot="integration-details-toggle"');
   });
@@ -325,7 +325,7 @@ describe("<IntegrationCard> per state", () => {
       ),
       "de",
     );
-    expect(html).toContain(">Verzögert<");
+    expect(html).toContain(">Fehler<");
     expect(html).toContain("obwohl Oura sonst täglich liefert.");
     expect(html).toContain("Details für eine Fehlermeldung");
   });
@@ -378,7 +378,7 @@ describe("<IntegrationCard> menu and actions", () => {
     const badge = html.match(
       /<span[^>]*data-slot="integration-health-badge"[^>]*>([\s\S]*?)<\/span>(?=<\/div>)/,
     )?.[1];
-    expect(badge).toContain("Delayed");
+    expect(badge).toContain("Error");
     expect(html).not.toMatch(
       /data-slot="integration-health-badge"[^>]*aria-hidden="true"/,
     );

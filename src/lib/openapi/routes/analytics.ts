@@ -245,6 +245,12 @@ const scorePillarIdEnum = z.enum(SCORE_PILLAR_IDS);
 
 const pillarValue = z.object({
   score: z.number(),
+  band: z
+    .enum(["green", "yellow", "red"])
+    .optional()
+    .describe(
+      "1.50 (feature `insights.score-origin`) — the pillar's own band, resolved on the server from its score by the rule every HealthLog score follows (green from 70, yellow from 50; a pillar score is higher-better). Draw the pillar from this, never from thresholds of your own. Optional so a payload from an older server stays valid; this server sets it on every scored pillar.",
+    ),
   observed: z.object({
     value: z
       .number()

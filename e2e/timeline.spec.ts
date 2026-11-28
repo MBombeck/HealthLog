@@ -146,6 +146,30 @@ test("switching it on opens the readiness inventory, which leads to the timeline
   await expect(toggle).toHaveAttribute("aria-checked", "false", {
     timeout: 20_000,
   });
+  // The card's dismissal lives on the account, which every project and
+  // worker shares: start from it open, and answer the close below locally so
+  // no other test meets the card already put away.
+  const restored = await page.evaluate(async () => {
+    const res = await fetch("/api/auth/me/dismissed-hints", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ restore: ["timeline-readiness"] }),
+    });
+    return res.status;
+  });
+  expect(restored).toBe(200);
+  const dismissals: unknown[] = [];
+  await page.route("**/api/auth/me/dismissed-hints", async (route) => {
+    dismissals.push(route.request().postDataJSON());
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        data: { dismissedHints: ["timeline-readiness"] },
+        error: null,
+      }),
+    });
+  });
   await toggle.click();
 
   const sheet = page.locator('[data-slot="timeline-readiness-sheet"]');
@@ -176,6 +200,7 @@ test("switching it on opens the readiness inventory, which leads to the timeline
   await expect(
     page.locator('[data-slot="timeline-readiness-card"]'),
   ).toHaveCount(0);
+  expect(dismissals).toEqual([{ dismiss: ["timeline-readiness"] }]);
 });
 
 test("the timeline hands the selected day to the day view through ?day=", async ({

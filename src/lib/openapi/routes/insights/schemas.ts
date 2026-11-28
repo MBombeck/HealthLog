@@ -421,6 +421,13 @@ export const dashboardScorePillar = z
       .describe(
         "The pillar's own 0–100 score when it counted toward the health score; null when it did not.",
       ),
+    band: z
+      .enum(["green", "yellow", "red"])
+      .nullable()
+      .optional()
+      .describe(
+        "1.50 (feature `insights.score-origin`) — the pillar's own band, resolved on the server from its score by the rule every HealthLog score follows (green from 70, yellow from 50). Null when the pillar did not count. Draw the pillar from this, never from thresholds of your own. Optional so older cached snapshots stay valid.",
+      ),
     reason: z
       .string()
       .nullable()
@@ -1578,7 +1585,11 @@ export const dashboardSnapshotResponse = z
             "v1.48.0 — the slot instants (ISO 8601, ascending) of the doses `scheduledToday` counts. Since v1.48.2 that excludes as-needed intakes and the pending doses of a medication paused, or a course ended, earlier in the day. The Today medications fact uses them to tell whether any dose was due yet (at or before now, or a candidate for one of them whose `availableFrom` has passed): before the first, with nothing taken, it names the next dose; otherwise it counts taken against the whole day's `scheduledToday`. Absent on a snapshot cached by an older server.",
           ),
         nextDueAt: z.string().nullable(),
-        nextDueOverdue: z.boolean(),
+        nextDueOverdue: z
+          .boolean()
+          .describe(
+            "True when the dose at `nextDueAt` is `overdue` by the dose resolver: past its on-time window, before its miss cutoff, nothing recorded on it. The same rule as `currentDose.state` and the medication read's `nextDueOverdue`; a dose inside its on-time window is `due`, not overdue.",
+          ),
         nextDueMedicationName: z.string().nullable(),
         nextDueMedicationId: z.string().nullable(),
         dueCandidates: z
@@ -2602,6 +2613,12 @@ const healthScorePillar = z.object({
         status: z.literal("ok"),
         value: z.object({
           score: z.number(),
+          band: z
+            .enum(["green", "yellow", "red"])
+            .optional()
+            .describe(
+              "1.50 (feature `insights.score-origin`) — the pillar's own band, resolved on the server from its score by the rule every HealthLog score follows (green from 70, yellow from 50; a pillar score is higher-better). Draw the pillar from this, never from thresholds of your own. Optional so a payload from an older server stays valid; this server sets it on every scored pillar.",
+            ),
           observed: z.object({
             value: z.number(),
             unit: z.string(),

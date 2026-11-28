@@ -158,12 +158,12 @@ test.describe("the Health Score panel at phone width", () => {
     await page.goto("/insights", { waitUntil: "domcontentloaded" });
 
     const tile = page.locator(
-      '[data-slot="wellness-score-tile"][data-metric="HEALTH_SCORE"]',
+      '[data-slot="score-ring-tile"][data-score="HEALTH_SCORE"]',
     );
     await expect(tile).toBeVisible();
     await expect(tile).toHaveAttribute("href", "/insights/scores/health");
     // The ring names the pillar that sets its band, never the withheld one.
-    const note = tile.locator('[data-slot="wellness-score-note"]');
+    const note = tile.locator('[data-slot="score-ring-tile-line"]');
     await expect(note).toBeVisible();
     await expect(note).not.toContainText(/check-in|safety/i);
     await settleForOverflowMeasurement(page);

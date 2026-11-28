@@ -168,6 +168,7 @@ const METRIC_PAGES: ReadonlyMap<string, string> = new Map([
   ["compliance", "medications"],
   ["glp1-plateau", "medications"],
   // Derived scores with pages of their own.
+  ["health-score", "scores/health"],
   ["readiness", "scores/readiness"],
   ["sleep-score", "scores/sleep"],
   ["stress-score", "scores/stress"],

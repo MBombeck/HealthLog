@@ -10,7 +10,7 @@ import { STORAGE_STATE_PATH } from "./setup/global-setup";
  *
  *   1. "Connect with ChatGPT" CTA visible
  *   2. After click → device-code panel showing userCode + verificationUrl
- *   3. After mocked poll flips to `connected` → "ChatGPT connected" badge
+ *   3. After mocked poll flips to `connected` → the "Active" status chip
  */
 test.describe("settings AI codex device flow (mocked)", () => {
   test.use({ storageState: STORAGE_STATE_PATH });
@@ -115,11 +115,14 @@ test.describe("settings AI codex device flow (mocked)", () => {
       page.getByRole("link", { name: /chatgpt\.com\/codex\/device/i }),
     ).toBeVisible();
 
-    // Step 3 — once the polling loop hits `connected`, the badge appears.
-    // The poll runs at the device-flow `intervalSeconds` (1 second).
-    await expect(page.getByText(/chatgpt connected/i).first()).toBeVisible({
-      timeout: 15_000,
-    });
+    // Step 3 — once the polling loop hits `connected`, the provider's status
+    // chip reads active. The poll runs at the device-flow `intervalSeconds`
+    // (1 second).
+    await expect(
+      page
+        .getByTestId("ai-provider-config-codex")
+        .locator('[data-slot="status-chip"][data-tone="active"]'),
+    ).toBeVisible({ timeout: 15_000 });
 
     // The device-code panel should disappear once connected (the
     // settings card swaps to the connected layout).

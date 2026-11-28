@@ -286,25 +286,29 @@ function BriefingSkeleton() {
   return (
     <div
       data-slot="daily-briefing-skeleton"
-      className="space-y-3 motion-reduce:animate-none"
+      className="space-y-4 motion-reduce:animate-none"
       aria-hidden="true"
     >
-      <div className="space-y-2">
-        <Skeleton className="h-3 w-11/12 rounded" />
-        <Skeleton className="h-3 w-10/12 rounded" />
-        <Skeleton className="h-3 w-9/12 rounded" />
-        <Skeleton className="h-3 w-8/12 rounded" />
-      </div>
-      <div className="space-y-2">
-        {[0, 1, 2].map((i) => (
-          <div
-            key={i}
-            className="border-border/40 bg-card/30 flex h-16 items-center rounded-md border p-3"
-          >
-            <Skeleton className="h-3 w-1/3 rounded" />
-          </div>
-        ))}
-      </div>
+      <InsightSectionCard>
+        <div className="space-y-2">
+          <Skeleton className="h-3 w-11/12 rounded" />
+          <Skeleton className="h-3 w-10/12 rounded" />
+          <Skeleton className="h-3 w-9/12 rounded" />
+          <Skeleton className="h-3 w-8/12 rounded" />
+        </div>
+      </InsightSectionCard>
+      <InsightSectionCard>
+        <div className="space-y-2">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="border-border/40 bg-card/30 flex h-16 items-center rounded-md border p-3"
+            >
+              <Skeleton className="h-3 w-1/3 rounded" />
+            </div>
+          ))}
+        </div>
+      </InsightSectionCard>
     </div>
   );
 }
@@ -373,110 +377,71 @@ export function DailyBriefing({
           ) : undefined
         }
       />
-      <InsightSectionCard slot="daily-briefing" className="overflow-hidden">
-        {loading ? (
-          <>
-            <span className="sr-only" aria-live="polite">
-              {t("insights.dailyBriefing.loadingLabel")}
-            </span>
-            <BriefingSkeleton />
-          </>
-        ) : briefing ? (
-          // v1.18.10 — body block rhythm matches the sibling insights cards
-          // (`correlation-card` uses `space-y-3` between its chart /
-          // interpretation / source blocks). The briefing card carried a
-          // looser `space-y-4`, which read as taller than its neighbours on
-          // the overview. One token, no new spacing scale.
-          <div className="space-y-3">
-            {/* The v1.21.2 recall/forward-look block is gone: the card
-                  opens straight on "signals of the day". The narrative
-                  memory read as a second briefing paragraph above the
-                  structured list and pulled the card down; the server
-                  still resolves `briefingMemory` for other consumers. */}
-            <BriefingParagraph text={briefing.paragraph} />
-            {/* v1.18.7 — "Signals of the day": the present-focused lead.
-                Renders above the longer-horizon key-findings list when the
-                briefing carries fresh now-signals. */}
-            {briefing.signalsOfDay && briefing.signalsOfDay.length > 0 && (
-              <div className="space-y-2">
-                <p
-                  data-slot="daily-briefing-signals-title"
-                  className="text-foreground text-xs font-semibold tracking-wide uppercase"
-                >
-                  {t("insights.dailyBriefing.signalsTitle")}
-                </p>
-                <div data-slot="daily-briefing-signals" className="space-y-2">
-                  {briefing.signalsOfDay.map((signal, index) => (
-                    <SignalRow
-                      key={`${signal.sourceMetric}-${index}`}
-                      signal={signal}
-                    />
-                  ))}
+      {loading ? (
+        <>
+          <span className="sr-only" aria-live="polite">
+            {t("insights.dailyBriefing.loadingLabel")}
+          </span>
+          <BriefingSkeleton />
+        </>
+      ) : briefing ? (
+        <div className="space-y-4">
+          {/* The briefing text is its own card. What the day flags and what
+              stands out over the longer run share a second card under it,
+              so the prose reads on its own instead of running into a list. */}
+          {briefing.paragraph || updatedAt || generationFailed ? (
+            <InsightSectionCard slot="daily-briefing">
+              <BriefingParagraph text={briefing.paragraph} />
+              {(updatedAt || generationFailed) && (
+                <div className="border-border/60 space-y-1.5 border-t pt-3">
+                  {updatedAt && (
+                    <p
+                      data-slot="daily-briefing-updated"
+                      className="text-muted-foreground text-right text-xs"
+                    >
+                      {formatUpdatedLabel(
+                        updatedAt,
+                        t,
+                        fmt.dateShort,
+                        fmt.time,
+                        displayTz,
+                      )}
+                    </p>
+                  )}
+                  {/* v1.25 — the held briefing is shown, but the last refresh
+                        attempt failed (provider timeout / error). State it plainly
+                        and offer a retry so the staleness reads as held, not
+                        current. The card only mounts while the briefing
+                        capability is available, so a provider exists. */}
+                  {generationFailed && (
+                    <p
+                      data-slot="daily-briefing-refresh-failed"
+                      className="text-muted-foreground flex flex-wrap items-center justify-end gap-x-1.5 gap-y-1 text-right text-xs"
+                    >
+                      <span>
+                        {t("insights.dailyBriefing.refreshFailedHint")}
+                      </span>
+                      {onRegenerate && (
+                        <button
+                          type="button"
+                          onClick={onRegenerate}
+                          disabled={regenerating}
+                          data-slot="daily-briefing-refresh-failed-retry"
+                          className="text-foreground/80 hover:text-foreground underline underline-offset-2 disabled:opacity-60"
+                        >
+                          {t("insights.dailyBriefing.retryAction")}
+                        </button>
+                      )}
+                    </p>
+                  )}
                 </div>
-              </div>
-            )}
-            {briefing.keyFindings.length > 0 && (
-              <div className="space-y-2">
-                <p
-                  data-slot="daily-briefing-findings-title"
-                  className="text-foreground text-xs font-semibold tracking-wide uppercase"
-                >
-                  {t("insights.dailyBriefing.keyFindingsTitle")}
-                </p>
-                <div data-slot="daily-briefing-findings" className="space-y-2">
-                  {briefing.keyFindings.map((finding, index) => (
-                    <KeyFindingRow
-                      key={`${finding.sourceMetric}-${index}`}
-                      finding={finding}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-            {(updatedAt || generationFailed) && (
-              <div className="border-border/60 space-y-1.5 border-t pt-3">
-                {updatedAt && (
-                  <p
-                    data-slot="daily-briefing-updated"
-                    className="text-muted-foreground text-right text-xs"
-                  >
-                    {formatUpdatedLabel(
-                      updatedAt,
-                      t,
-                      fmt.dateShort,
-                      fmt.time,
-                      displayTz,
-                    )}
-                  </p>
-                )}
-                {/* v1.25 — the held briefing is shown, but the last refresh
-                      attempt failed (provider timeout / error). State it plainly
-                      and offer a retry so the staleness reads as held, not
-                      current. The card only mounts while the briefing
-                      capability is available, so a provider exists. */}
-                {generationFailed && (
-                  <p
-                    data-slot="daily-briefing-refresh-failed"
-                    className="text-muted-foreground flex flex-wrap items-center justify-end gap-x-1.5 gap-y-1 text-right text-xs"
-                  >
-                    <span>{t("insights.dailyBriefing.refreshFailedHint")}</span>
-                    {onRegenerate && (
-                      <button
-                        type="button"
-                        onClick={onRegenerate}
-                        disabled={regenerating}
-                        data-slot="daily-briefing-refresh-failed-retry"
-                        className="text-foreground/80 hover:text-foreground underline underline-offset-2 disabled:opacity-60"
-                      >
-                        {t("insights.dailyBriefing.retryAction")}
-                      </button>
-                    )}
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        ) : (
+              )}
+            </InsightSectionCard>
+          ) : null}
+          <BriefingLists briefing={briefing} />
+        </div>
+      ) : (
+        <InsightSectionCard slot="daily-briefing">
           <EmptyState
             data-slot="daily-briefing-empty"
             variant="plain"
@@ -531,8 +496,8 @@ export function DailyBriefing({
               ) : null
             }
           />
-        )}
-      </InsightSectionCard>
+        </InsightSectionCard>
+      )}
     </section>
   );
 }
@@ -551,5 +516,55 @@ function BriefingParagraph({ text }: { text: string | null | undefined }) {
     >
       <ProseBlocks text={text} />
     </div>
+  );
+}
+
+/**
+ * What the day flags and what stands out over the longer run, together in
+ * one card under the briefing text. Nothing when neither list has a row.
+ */
+function BriefingLists({ briefing }: { briefing: DailyBriefingPayload }) {
+  const { t } = useTranslations();
+  const signals = briefing.signalsOfDay ?? [];
+  if (signals.length === 0 && briefing.keyFindings.length === 0) return null;
+  return (
+    <InsightSectionCard slot="daily-briefing-lists" className="overflow-hidden">
+      {signals.length > 0 && (
+        <div className="space-y-2">
+          <p
+            data-slot="daily-briefing-signals-title"
+            className="text-foreground text-xs font-semibold tracking-wide uppercase"
+          >
+            {t("insights.dailyBriefing.signalsTitle")}
+          </p>
+          <div data-slot="daily-briefing-signals" className="space-y-2">
+            {signals.map((signal, index) => (
+              <SignalRow
+                key={`${signal.sourceMetric}-${index}`}
+                signal={signal}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+      {briefing.keyFindings.length > 0 && (
+        <div className="space-y-2">
+          <p
+            data-slot="daily-briefing-findings-title"
+            className="text-foreground text-xs font-semibold tracking-wide uppercase"
+          >
+            {t("insights.dailyBriefing.keyFindingsTitle")}
+          </p>
+          <div data-slot="daily-briefing-findings" className="space-y-2">
+            {briefing.keyFindings.map((finding, index) => (
+              <KeyFindingRow
+                key={`${finding.sourceMetric}-${index}`}
+                finding={finding}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </InsightSectionCard>
   );
 }

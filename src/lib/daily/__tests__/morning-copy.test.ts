@@ -133,6 +133,7 @@ function base(locale: Locale, over: Partial<MorningInput>): MorningInput {
     dosesToday: 0,
     visitToday: null,
     readinessAsOfLabel: null,
+    scoreFlag: null,
     ...over,
   };
 }

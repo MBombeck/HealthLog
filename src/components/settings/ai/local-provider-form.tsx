@@ -143,15 +143,19 @@ export function LocalProviderForm({
       </div>
       <div>
         <Label htmlFor="ai-local-key">{t("settings.ai.localKeyLabel")}</Label>
-        <PasswordInput
-          id="ai-local-key"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          placeholder={
-            userProvider?.hasLocalKey ? t("settings.ai.savedShort") : ""
-          }
-          className="mt-1"
-        />
+        <div className="mt-1 flex items-center gap-2 [&>div]:min-w-0 [&>div]:flex-1">
+          <PasswordInput
+            id="ai-local-key"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            placeholder={
+              userProvider?.hasLocalKey ? t("settings.ai.savedShort") : ""
+            }
+          />
+          {userProvider?.hasLocalKey ? (
+            <RemoveSavedKeyButton field="localKey" />
+          ) : null}
+        </div>
       </div>
       <div>
         <Label htmlFor="ai-local-model">{t("settings.ai.modelLabel")}</Label>
@@ -199,7 +203,6 @@ export function LocalProviderForm({
       )}
 
       <SettingsCardActions>
-        {userProvider?.hasLocalKey && <RemoveSavedKeyButton field="localKey" />}
         <Button
           type="submit"
           size="sm"

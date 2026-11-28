@@ -24,6 +24,7 @@ import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { readDashboardSnapshotCached } from "@/lib/dashboard/snapshot-read";
+import { healthScoreFlag } from "@/lib/daily/in-range-claim";
 import {
   lastNightFromSnapshot,
   MORNING_CACHE_TTL_MS,
@@ -676,6 +677,7 @@ export async function loadDailyMorning(
     readinessAsOfLabel: readiness?.asOfDay
       ? shortDate(readiness.asOfDay, locale)
       : null,
+    scoreFlag: healthScoreFlag(snapshot.healthScore),
   };
 
   const morning = buildDailyMorning(input, t);

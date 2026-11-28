@@ -21,7 +21,7 @@ import ptBR from "../../../../../messages/pt-BR.json";
 import {
   diagnosticsText,
   formatHealthInstant,
-  healthBadgeLabel,
+  healthStatusTone,
   healthSentence,
   namedItemList,
 } from "../integration-health-copy";
@@ -198,13 +198,12 @@ describe("healthSentence", () => {
   });
 
   it.each(locales)(
-    "has a sentence and a badge word for every state and reason in %s",
+    "has a sentence and a status tone for every state and reason in %s",
     (locale) => {
       const tl = translator(locale);
       const f = makeFormatters(locale, "Europe/Berlin", "AUTO", "AUTO");
       for (const state of CONNECTION_HEALTH_STATES) {
-        const word = healthBadgeLabel(state, tl);
-        expect(word).not.toContain("settings.");
+        expect(["active", "error"]).toContain(healthStatusTone(state));
       }
       for (const reason of CONNECTION_HEALTH_REASONS) {
         for (const since of [null, "2026-10-14T16:40:00.000Z"]) {

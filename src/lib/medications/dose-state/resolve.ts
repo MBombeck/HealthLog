@@ -94,9 +94,7 @@ export function resolveDoseState(
 ): ResolvedDose {
   const base = {
     slotInstant: band.at,
-    dueAt: band.onTimeStart,
-    overdueSince: band.onTimeEnd,
-    missedAfter: band.overdueEnd,
+    ...doseInstantsOfBand(band),
     takenAt: outcome?.skipped ? null : (outcome?.takenAt ?? null),
     takenVia: outcome?.takenAt ? (outcome.takenVia ?? null) : null,
   };
@@ -132,6 +130,34 @@ export function openDoseStateAt(
   if (t < instants.dueAt.getTime()) return "pending";
   if (t <= instants.overdueSince.getTime()) return "due";
   return "overdue";
+}
+
+/**
+ * Whether an unanswered dose on these instants is overdue at `now`: past its
+ * on-time window, not yet past the miss cutoff. The one definition of
+ * "overdue" for a dose. `currentDose.state`, the today rows, the
+ * medication read's and the dashboard's `nextDueOverdue`, the MCP schedule
+ * tool and the Live Activity answer from it, directly or through
+ * {@link resolveDoseState}, so a dose inside its on-time window reads `due`
+ * everywhere. `dose-overdue-single-definition.test.ts` refuses a second
+ * computation.
+ */
+export function isDoseOverdue(
+  instants: { dueAt: Date; overdueSince: Date; missedAfter: Date },
+  now: Date,
+): boolean {
+  return openDoseStateAt(instants, now) === "overdue";
+}
+
+/** A slot band's three dose instants, as the resolver names them. */
+export function doseInstantsOfBand(
+  band: Pick<SlotBand, "onTimeStart" | "onTimeEnd" | "overdueEnd">,
+): { dueAt: Date; overdueSince: Date; missedAfter: Date } {
+  return {
+    dueAt: band.onTimeStart,
+    overdueSince: band.onTimeEnd,
+    missedAfter: band.overdueEnd,
+  };
 }
 
 /**

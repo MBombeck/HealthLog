@@ -4,65 +4,56 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * Dashboard hero — page + header wiring pins.
+ * Dashboard top — page + header wiring pins.
  *
- * The legacy opt-in `DashboardHero` (gated on a layout `heroVisible`
- * flag) was retired. Since 1.50 the morning block leads the dashboard and
- * the digest-driven `TodayHero` stands in when the morning read is
- * missing. Pinned here:
+ * Since 1.50 the dashboard opens with what today asks (the ask card, only
+ * when the digest carries asks) and the score row, both on the tile strip's
+ * grid. The morning block and the Today hero are gone. Pinned here:
  *
- *   - the page mounts `MorningBlock`, then `TodayHero` as its fallback, and
- *     no longer references the legacy hero, its skeleton, or the
- *     `heroVisible` gate;
- *   - the greeting paragraph lives in the header on every mount (the
- *     header owns it unconditionally now that the legacy hero — which
- *     once carried it — is gone), while the page itself derives no
- *     welcome text.
+ *   - the page hands both to the tile grid as its `lead`, the asks first, and
+ *     no longer references the morning block, the Today hero, the legacy
+ *     hero, its skeleton, or the `heroVisible` gate;
+ *   - the greeting paragraph lives in the header on every mount, while the
+ *     page itself derives no welcome text.
  */
 const HEADER_PATH = join(
   process.cwd(),
   "src/components/dashboard/dashboard-header.tsx",
 );
 
-describe("dashboard hero — page wiring", () => {
+describe("dashboard top — page wiring", () => {
   const src = dashboardSource();
 
-  it("mounts the morning block above the tile strip, the TodayHero as its fallback", () => {
-    const blockIdx = src.indexOf("<MorningBlock");
-    const heroIdx = src.indexOf("<TodayHero");
-    const stripIdx = src.indexOf("dashboard-tile-strip");
-    expect(blockIdx).toBeGreaterThan(-1);
-    expect(heroIdx).toBeGreaterThan(blockIdx);
-    expect(stripIdx).toBeGreaterThan(heroIdx);
+  it("leads the tile grid with the asks, then the score row", () => {
+    const lead = src.indexOf("lead={");
+    const asks = src.indexOf("<TodayAsks", lead);
+    const scores = src.indexOf("<TodayScores", asks);
+    const strip = src.indexOf("stripEntries={stripEntries}", scores);
+    expect(lead).toBeGreaterThan(-1);
+    expect(asks).toBeGreaterThan(lead);
+    expect(scores).toBeGreaterThan(asks);
+    expect(strip).toBeGreaterThan(scores);
+    // The asks render from the digest as delivered; the page ranks nothing.
+    expect(src).toContain("asks={digestQuery.data.asks ?? []}");
   });
 
-  it("asks an empty filtered digest to render its all-clear state", () => {
-    expect(src).toContain("renderFilteredHeroAllClear");
-    expect(src).toContain(
-      "renderFilteredAllClear={renderFilteredHeroAllClear}",
-    );
-    expect(src).toContain(
-      "(layout.enabledHeroItemKinds ?? PRIORITY_ITEM_KINDS).length",
-    );
-  });
-
-  it("hides the top card, its skeleton and its error card only on an explicit false", () => {
-    // One decision in front of the whole branch (`morningSlot`), so
-    // switching the card off leaves no reserve and no retry card where it
-    // stood; the cases of that decision are pinned in
-    // `morning-block.test.tsx`.
+  it("the layout switch hides the score row, its skeleton and its error card, never the asks", () => {
     expect(src).toContain("visible: layout.todayCardVisible !== false");
+    const asks = src.indexOf("<TodayAsks");
     const block = src.indexOf('todaySlot === "block"');
-    const skeleton = src.indexOf("<MorningSkeleton", block);
-    const hero = src.indexOf("<TodayHero", skeleton);
-    const error = src.indexOf("<QueryErrorCard", hero);
-    expect(block).toBeGreaterThan(-1);
+    const skeleton = src.indexOf("<TodayScoresSkeleton", block);
+    const error = src.indexOf("<QueryErrorCard", skeleton);
+    // The asks are rendered ahead of, and outside, the slot decision.
+    expect(asks).toBeGreaterThan(-1);
+    expect(asks).toBeLessThan(block);
     expect(skeleton).toBeGreaterThan(block);
-    expect(hero).toBeGreaterThan(skeleton);
-    expect(error).toBeGreaterThan(hero);
-    // The old hero skeleton would paint a different footprint than the
-    // block it stands for.
-    expect(src).not.toContain("<TodayHeroSkeleton");
+    expect(error).toBeGreaterThan(skeleton);
+  });
+
+  it("no longer mounts the morning block or the Today hero", () => {
+    expect(src).not.toContain("MorningBlock");
+    expect(src).not.toContain("TodayHero");
+    expect(src).not.toContain("ServerSetupNotice");
   });
 
   it("no longer references the retired legacy hero", () => {
@@ -78,7 +69,7 @@ describe("dashboard hero — page wiring", () => {
   });
 });
 
-describe("dashboard hero — header greeting", () => {
+describe("dashboard top — header greeting", () => {
   const header = readFileSync(HEADER_PATH, "utf8");
 
   it("renders the greeting unconditionally (no showGreeting gate)", () => {

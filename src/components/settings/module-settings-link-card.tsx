@@ -30,7 +30,7 @@ export function ModuleSettingsLinkCard({ id }: { id: ModuleSettingsPageId }) {
           "settings.sections.modules.pages.moduleSettingsDescription",
         )}
       />
-      <SettingsCardActions align="start">
+      <SettingsCardActions>
         <Button asChild variant="outline" size="sm">
           <Link href={`/settings/modules/${id}`}>
             {t("settings.sections.modules.openModuleSettings")}

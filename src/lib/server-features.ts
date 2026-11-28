@@ -54,6 +54,9 @@ export const SERVER_FEATURES = [
   "medication.low-stock-trigger",
   "insights.score-origin",
   "medication.efficacy-result",
+  "account.dismissed-hints",
+  "daily.asks",
+  "daily.scores-short-labels",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -138,8 +141,10 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "push.device on /api/auth/me and in the POST /api/devices answer carries liveActivityStartToken (the server holds a push-to-start token the relay still takes) and liveActivityPushToken (it holds the legacy Live Activity push token of the direct path), booleans only, so the app re-sends a token only when the server lacks it.",
   "insights.chart-context":
     "GET /api/insights/context returns the marks a metric chart draws: medications[] (start, stop, doseChange, pause, resume with date, name, dose, estimated, href), illnesses[] (acute episodes, start, end, label, href) and cyclePhases[] (phase, start, end inclusive), read from the timeline lanes, each empty when its module is off or its section not shared; optional from/to cut the window.",
+  "account.dismissed-hints":
+    "GET /api/auth/me carries dismissedHints, the ids of the one-time hints the account has closed (a family such as timeline-readiness, or family.member such as i18n-banner.fr); PATCH /api/auth/me/dismissed-hints with dismiss and/or restore changes it and answers the stored list. Restoring a family restores its members. Show a hint only while neither its id nor its family is listed.",
   "daily.morning":
-    "GET /api/daily/morning returns the morning read: lead (rank 0 to 10, key, one sentence, language) chosen by fixed rules from the day's own readings, and cards night and today_different with ring (score and band null unless fresh, asOfDay), up to three lines and sourceValues (device scores under the vendor's name and scale, no band). The to-do card is DailyDigest.worthALook as before.",
+    "GET /api/daily/morning returns the morning read: lead (rank 0 to 10, key, one sentence, language) chosen by fixed rules from the day's own readings, cards night and today_different with ring (score and band null unless fresh, asOfDay), up to three lines and sourceValues (device scores under the vendor's name and scale, no band), and scores.sleep / scores.readiness (ring, one line, href; null when the record has no such score) for the start page's score tiles beside DailyDigest.score.",
   "measurements.series-kinds":
     "GET /api/measurements/series takes kinds=a,b,c (at most 8, each once, the same days) in place of kind and answers { series: [...] }, one single-kind answer per kind in the order asked; kind alone keeps the single answer.",
   "devices.ignored-fields":
@@ -151,7 +156,11 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
   "medication.low-stock-trigger":
     "GET /api/medications and GET /api/medications/{id} (and the create and edit answers) carry lowStockTriggerDays: max(lowStockRunwayDays, reorderLeadDays + one dose-interval) with the medication's own lead over the account default, null when the alert is off or nothing is consumed on a cadence; a row is low on stock when runwayDays <= lowStockTriggerDays.",
   "insights.score-origin":
-    "RECOVERY_SCORE, STRESS_SCORE and STRAIN_SCORE values on GET /api/insights/derived carry origin (estimate | device | computed) and deviceSource (the measurement source of a device value, else null); the health score composite carries weights (one { id, weight } per counted pillar, summing to 1) and each snapshot healthScore.pillars row its weight (null when it did not count).",
+    "RECOVERY_SCORE, STRESS_SCORE and STRAIN_SCORE values on GET /api/insights/derived carry origin (estimate | device | computed) and deviceSource (the measurement source of a device value, else null); the health score composite carries weights (one { id, weight } per counted pillar, summing to 1) and each snapshot healthScore.pillars row its weight (null when it did not count); every scored pillar carries its own band (green | yellow | red), resolved on the server: value.band on the score report's pillars (/api/analytics) and band on each snapshot healthScore.pillars row (null when it did not count).",
   "medication.efficacy-result":
     "GET /api/medications/{id}/efficacy carries targets[].result: { direction (lower | higher | unchanged | null), text }, the before/after comparison in one sentence in the reader's language.",
+  "daily.asks":
+    "GET /api/daily/digest carries asks: every row the start page asks today, often none (kind, tier safety | decision | due, itemKey, title, body, subject, exactly two actions with the primary first, learnMore), ranked on the server, never capped or folded; render as delivered, no card when empty. Later is dose.snooze:<medicationId> on a dose and ask.later:<dismissKey> on other reminders; the admin rows (push_relay, server_setup) come only to a browser session.",
+  "daily.scores-short-labels":
+    "Each start-page score carries shortLabel, its short name for a tile from the score registry, worded in the response language: GET /api/daily/morning scores.sleep and scores.readiness, and GET /api/daily/digest score (the Health score). Render it as is; the web shows the same words.",
 };

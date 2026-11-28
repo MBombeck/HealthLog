@@ -13,6 +13,7 @@ import type { ZodOpenApiObject } from "zod-openapi";
 
 import { ARRIVAL_KINDS } from "@/lib/arrivals/types";
 import { PRIORITY_ITEM_KINDS } from "@/lib/daily/priority-item";
+import { DAILY_ASK_KINDS, DAILY_ASK_TIERS } from "@/lib/daily/asks";
 import {
   MAX_TODAY_FACTS,
   MAX_TODAY_FACTS_NARROW,
@@ -74,7 +75,60 @@ const priorityItemSchema = z
   .meta({
     id: "DailyPriorityItem",
     description:
-      "One 'worth a look' rail item. The single model every daily-value consumer renders through PriorityCard.",
+      "One 'worth a look' rail item. The single model every daily-value consumer reads; the start page renders the rows `asks` selects.",
+  });
+
+const dailyAskSchema = z
+  .object({
+    kind: z
+      .enum([...DAILY_ASK_KINDS])
+      .describe(
+        "What is asked. `dose_window`, `coach_checkin`, `preventive_care`, `upcoming_visit` and `sync_issue` (a reconnect only, never a quiet source) are the rail's own kinds; `push_relay` and `server_setup` are the admin question the admin start page asks (only on a browser session on the admin's own record, never on a Bearer request).",
+      ),
+    tier: z
+      .enum([...DAILY_ASK_TIERS])
+      .describe(
+        "Why it is asked, in the order asks are ranked: `safety` (a dose past its on-time window), `decision` (a question only the reader can answer: the admin question, a coach check-in), `due` (a dose takeable now, check-ups due now, a visit today or tomorrow, a source whose sign-in expired or was refused and that has delivered nothing for a day).",
+      ),
+    itemKey: z
+      .string()
+      .describe(
+        "Stable identity, namespaced `<kind>:...`; the rail item's own key for the rail kinds.",
+      ),
+    title: z.string().describe("Localised headline (resolved server-side)."),
+    body: z.string().nullable().describe("One sentence, plain text, or null."),
+    subject: z
+      .string()
+      .nullable()
+      .describe(
+        "The name of what is asked about (a dose's medication), for an action's confirmation; null otherwise.",
+      ),
+    actions: z
+      .array(
+        z.object({
+          labelKey: z.string().describe("i18n key, resolved client-side."),
+          intent: z
+            .string()
+            .describe(
+              "Stable action token. Beside the rail's tokens: `dose.snooze:<medicationId>` (the medication's own snooze, `POST /api/medications/intake` with status `snoozed`), `relay.yes` / `relay.no` (the relay question), `admin.notice.later` (sets the admin notice aside), `admin.setup.open` (with `href`), `ask.later:<dismissKey>` (sets the ask aside until the next local day: `POST /api/daily/digest/dismiss` with that key, `ask-later:<YYYY-MM-DD>:<itemKey>`). Labels are the short verbs under `daily.action.*`. A consent row (`push_relay`) carries exactly No and Yes, never a later.",
+            ),
+          href: z.string().optional().describe("Deep-link when navigational."),
+        }),
+      )
+      .length(2)
+      .describe("Exactly two actions; the first is the primary one."),
+    learnMore: z
+      .object({
+        labelKey: z.string().describe("i18n key, resolved client-side."),
+        href: z.string().describe("Documentation page."),
+      })
+      .nullable()
+      .describe("A link set at the end of `body`, or null."),
+  })
+  .meta({
+    id: "DailyAsk",
+    description:
+      "One row of the start page's ask card. The policy is the server's (`resolveDailyAsks`): only what needs an action today and is time-relevant, never an observation; a running snooze, a dismissed notice and Rest mode (check-ups, coach check-in) hold it back; ranked safety, then decision, then due, in the digest's order inside a tier.",
   });
 
 const todayFactSchema = z
@@ -180,6 +234,12 @@ export const dailyDigestResponse = z
           .describe(
             "The line naming that pillar, worded in the response language. Shown under the score wherever the score is shown; null when there is no setter.",
           ),
+        shortLabel: z
+          .string()
+          .optional()
+          .describe(
+            'The score\'s short name for a tile, from the score registry and worded in the response language ("Gesundheit", "Health score"). Render it as is. Absent on older cached digests. Feature key `daily.scores-short-labels`.',
+          ),
       })
       .nullable()
       .describe(
@@ -271,6 +331,11 @@ export const dailyDigestResponse = z
     worthALook: z
       .array(priorityItemSchema)
       .describe("Bounded 0–3 rail items, never padded."),
+    asks: z
+      .array(dailyAskSchema)
+      .describe(
+        `What the start page asks today, in order, never padded. The rules keep it short and empty on most days, and then no ask card is shown. Render every row as delivered; do not re-rank, fold, drop or add rows. Every row has exactly two actions, the primary first. Additive since 1.50.`,
+      ),
     justIn: z
       .object({
         kind: z
@@ -379,6 +444,26 @@ const morningRingSchema = z
   })
   .meta({ id: "DailyMorningRing" });
 
+const morningScoreSchema = z
+  .object({
+    shortLabel: z
+      .string()
+      .describe(
+        'The score\'s short name for the tile, from the score registry and worded in the response language ("Schlafscore", "Bereitschaft"). Render it as is. Feature key `daily.scores-short-labels`.',
+      ),
+    ring: morningRingSchema.describe(
+      "The ring as the cards carry it: no number when not fresh.",
+    ),
+    line: z
+      .string()
+      .nullable()
+      .describe(
+        "One line beside the ring, worded on the server: the night's time asleep, the heaviest pull on readiness, or when the last value was.",
+      ),
+    href: z.string().describe("The score's own page."),
+  })
+  .meta({ id: "DailyMorningScore" });
+
 const morningCardTitleKey = z
   .enum(Object.values(MORNING_CARD_TITLE_KEYS))
   .describe(
@@ -437,7 +522,7 @@ export const dailyMorningResponse = z
         key: z
           .enum([...MORNING_LEAD_KEYS])
           .describe(
-            "The rule by name: floor (a confirmed safety floor in the last 24 hours), rest_mode, coincident (two or more independent signals outside their usual range: blood pressure counts once, resting heart rate and pulse once, weight and glucose never), vital_outside, sleep_pending, source_quiet (first and second quiet day only), readiness (fresh, yellow or red), night_notable, in_range, planned, nothing.",
+            "The rule by name: floor (a confirmed safety floor in the last 24 hours), rest_mode, coincident (two or more independent signals outside their usual range: blood pressure counts once, resting heart rate and pulse once, weight and glucose never), vital_outside, sleep_pending, source_quiet (first and second quiet day only), readiness (fresh, yellow or red), night_notable, in_range (today's values counted and all in range, or an ordinary night; while the Health score flags a pillar, its `band` below green, that pillar is named instead and the day is never called in range), planned, nothing.",
           ),
         text: z
           .string()
@@ -452,6 +537,22 @@ export const dailyMorningResponse = z
       .max(MORNING_CARD_KINDS.length)
       .describe(
         "Night first, then what is different today; a card without content is absent. The third card of the morning ('to do today') is `DailyDigest.worthALook` as delivered, with the digest's medications and cycle facts from `today`.",
+      ),
+    scores: z
+      .object({
+        sleep: morningScoreSchema
+          .nullable()
+          .describe(
+            "Last night's sleep score: fresh only for last night. Null when the sleep module is off or no sleep reaches this record.",
+          ),
+        readiness: morningScoreSchema
+          .nullable()
+          .describe(
+            "Today's readiness: fresh only when every input is from today. Null when the recovery module is off or there is none.",
+          ),
+      })
+      .describe(
+        "The start page's score tiles beside the Health score (`DailyDigest.score`). A tile whose score is null is not shown. Additive since 1.50.",
       ),
     toDo: z
       .object({ titleKey: morningCardTitleKey, title: z.string() })

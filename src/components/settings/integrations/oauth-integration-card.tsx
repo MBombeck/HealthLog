@@ -358,19 +358,21 @@ export function OAuthIntegrationCardView({
           </div>
         }
         connectAction={
-          <Button
-            type="button"
-            size="sm"
-            className="min-h-11 w-full sm:min-h-9 sm:w-auto"
-            disabled={!configured}
-            onClick={connect}
-            data-slot="integration-primary-action"
-            data-action="connect"
-            data-testid={`${provider}-connect`}
-          >
-            <Link2 className="size-3.5" aria-hidden="true" />
-            {t(`${i18nPrefix}Connect`)}
-          </Button>
+          // Without stored credentials there is nothing to connect with; the
+          // setup fold says what is missing, so no greyed-out button.
+          configured ? (
+            <Button
+              type="button"
+              size="sm"
+              onClick={connect}
+              data-slot="integration-primary-action"
+              data-action="connect"
+              data-testid={`${provider}-connect`}
+            >
+              <Link2 className="size-3.5" aria-hidden="true" />
+              {t(`${i18nPrefix}Connect`)}
+            </Button>
+          ) : null
         }
       />
     );
