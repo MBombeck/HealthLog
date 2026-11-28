@@ -12,6 +12,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BellRing, Pill } from "lucide-react";
 
+import { ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
 import { InlineAction } from "@/components/ui/inline-action";
 import { DoseStateLabel } from "@/components/medications/dose-state-label";
@@ -32,12 +33,7 @@ import { DOSE_ACTION_TERM } from "@/lib/medications/dose-state/terms";
 import { queryKeys } from "@/lib/query-keys";
 import { userDayKey } from "@/lib/tz/format";
 
-import {
-  ActionPair,
-  OverviewCard,
-  PAIR_BUTTON,
-  type OverviewCompliance,
-} from "./anatomy";
+import { OverviewCard, type OverviewCompliance } from "./anatomy";
 
 /** One of today's doses, from the server's today list. */
 export interface TodayDose {
@@ -318,7 +314,7 @@ function TodayActions({
   const backfill = (
     <Button
       variant="outline"
-      className={PAIR_BUTTON}
+
       onClick={onBackfill}
       data-slot="medication-overview-backfill"
     >
@@ -327,23 +323,19 @@ function TodayActions({
   );
   if (!canAct) {
     return (
-      <ActionPair
-        secondary={backfill}
-        primary={
-          onHistory ? (
-            <Button
-              variant="outline"
-              className={PAIR_BUTTON}
-              onClick={onHistory}
-              data-slot="medication-overview-history"
-            >
-              {t("medications.detail.tabs.verlauf")}
-            </Button>
-          ) : (
-            <span aria-hidden="true" />
-          )
-        }
-      />
+      <ActionPair>
+        {backfill}
+        {onHistory ? (
+          <Button
+            variant="outline"
+
+            onClick={onHistory}
+            data-slot="medication-overview-history"
+          >
+            {t("medications.detail.tabs.verlauf")}
+          </Button>
+        ) : null}
+      </ActionPair>
     );
   }
 
@@ -389,26 +381,23 @@ function TodayActions({
           {t(DOSE_ACTION_TERM.snooze, { minutes: snooze.minutes })}
         </InlineAction>
       ) : null}
-      <ActionPair
-        secondary={
-          asNeeded ? (
-            backfill
-          ) : (
-            <Button
-              variant="outline"
-              className={PAIR_BUTTON}
-              onClick={() => void recordIntake(true, takeSlot)}
-              disabled={!!intakeLoading}
-              aria-busy={intakeLoading === "skip" || undefined}
-              data-slot="medication-intake-skip"
-            >
-              {t(DOSE_ACTION_TERM.skip)}
-            </Button>
-          )
-        }
-        primary={
+      <ActionPair>
+        {asNeeded ? (
+          backfill
+        ) : (
           <Button
-            className={PAIR_BUTTON}
+            variant="outline"
+
+            onClick={() => void recordIntake(true, takeSlot)}
+            disabled={!!intakeLoading}
+            aria-busy={intakeLoading === "skip" || undefined}
+            data-slot="medication-intake-skip"
+          >
+            {t(DOSE_ACTION_TERM.skip)}
+          </Button>
+        )}
+        {
+          <Button
             onClick={() => void recordIntake(false, takeSlot)}
             disabled={!!intakeLoading}
             aria-busy={intakeLoading === "take" || undefined}
@@ -419,7 +408,7 @@ function TodayActions({
               : t(DOSE_ACTION_TERM.take)}
           </Button>
         }
-      />
+      </ActionPair>
     </div>
   );
 }

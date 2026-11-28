@@ -183,9 +183,7 @@ test.describe("medication detail page", () => {
     ).toHaveCount(1);
     // Every pair is two buttons of one width.
     for (const card of [today, intake]) {
-      const buttons = card.locator(
-        '[data-slot="overview-action-pair"] > button',
-      );
+      const buttons = card.locator('[data-slot="action-pair"] > button');
       await expect(buttons).toHaveCount(2);
       const [a, b] = await Promise.all([
         buttons.nth(0).boundingBox(),

@@ -13,6 +13,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarCheck } from "lucide-react";
 
+import { ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -29,12 +30,7 @@ import { dateOnlyAtNoonUtc, dateOnlyKey } from "@/lib/tz/date-only";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { cn } from "@/lib/utils";
 
-import {
-  ActionPair,
-  OverviewCard,
-  PAIR_BUTTON,
-  type OverviewCompliance,
-} from "./anatomy";
+import { OverviewCard, type OverviewCompliance } from "./anatomy";
 
 /** Days the intake grid spans: today and the thirteen before it. */
 export const GRID_DAYS = 14;
@@ -254,34 +250,26 @@ export function IntakeCard({
       slot="medication-overview-intake"
       actions={
         onBackfill || onHistory ? (
-          <ActionPair
-            secondary={
-              onBackfill ? (
-                <Button
-                  variant="outline"
-                  className={PAIR_BUTTON}
-                  onClick={onBackfill}
-                  data-slot="medication-overview-intake-backfill"
-                >
-                  {t("medications.detail.verlauf.backfill")}
-                </Button>
-              ) : undefined
-            }
-            primary={
-              onHistory ? (
-                <Button
-                  variant="outline"
-                  className={PAIR_BUTTON}
-                  onClick={onHistory}
-                  data-slot="medication-overview-intake-history"
-                >
-                  {t("medications.detail.tabs.verlauf")}
-                </Button>
-              ) : (
-                <span aria-hidden="true" />
-              )
-            }
-          />
+          <ActionPair>
+            {onBackfill ? (
+              <Button
+                variant="outline"
+                onClick={onBackfill}
+                data-slot="medication-overview-intake-backfill"
+              >
+                {t("medications.detail.verlauf.backfill")}
+              </Button>
+            ) : undefined}
+            {onHistory ? (
+              <Button
+                variant="outline"
+                onClick={onHistory}
+                data-slot="medication-overview-intake-history"
+              >
+                {t("medications.detail.tabs.verlauf")}
+              </Button>
+            ) : null}
+          </ActionPair>
         ) : undefined
       }
     >

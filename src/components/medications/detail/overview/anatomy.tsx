@@ -2,8 +2,8 @@
 
 /**
  * The anatomy every overview card shares: a header with an icon, a title and
- * a chip; one sentence; one figure or a short list; and a pair of
- * equal-width buttons at the foot, the secondary left, the primary right.
+ * a chip; at most one sentence; one figure or a short list; and the shared
+ * `ActionPair` at the foot, the secondary left, the primary right.
  * The cards sit in one row on a wide screen and stretch to the same height,
  * so the button pairs line up.
  */
@@ -64,25 +64,3 @@ export function OverviewCard({
     </Card>
   );
 }
-
-/**
- * Two equal-width framed buttons: the secondary left, the filled primary
- * right. A missing secondary leaves its half empty, so the primary stays in
- * the same place on every card.
- */
-export function ActionPair({
-  secondary,
-  primary,
-}: {
-  secondary?: ReactNode;
-  primary: ReactNode;
-}) {
-  return (
-    <div className="grid grid-cols-2 gap-2" data-slot="overview-action-pair">
-      {secondary ?? <span aria-hidden="true" />}
-      {primary}
-    </div>
-  );
-}
-
-export const PAIR_BUTTON = "min-h-11 w-full sm:min-h-9";

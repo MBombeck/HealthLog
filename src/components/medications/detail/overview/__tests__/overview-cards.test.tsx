@@ -147,11 +147,11 @@ describe("intake card", () => {
         onHistory={() => {}}
       />,
     );
-    const pair = html.slice(html.indexOf('data-slot="overview-action-pair"'));
+    const pair = html.slice(html.indexOf('data-slot="action-pair"'));
     expect(pair.indexOf("medication-overview-intake-backfill")).toBeLessThan(
       pair.indexOf("medication-overview-intake-history"),
     );
-    expect(html).toContain("grid grid-cols-2");
+    expect(html).toContain("auto-cols-fr");
   });
 
   it("counts takes for an as-needed medication, with no rate", () => {

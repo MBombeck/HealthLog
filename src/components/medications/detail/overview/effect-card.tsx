@@ -8,13 +8,14 @@
 
 import { ArrowRight, TrendingUp } from "lucide-react";
 
+import { ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { MedicationEfficacyDTO } from "@/lib/medications/efficacy/build-efficacy";
 
-import { ActionPair, OverviewCard, PAIR_BUTTON } from "./anatomy";
+import { OverviewCard } from "./anatomy";
 import { EfficacySparkline } from "./efficacy-sparkline";
 
 export function EffectCard({
@@ -54,34 +55,28 @@ export function EffectCard({
       }
       slot="medication-overview-effect"
       actions={
-        <ActionPair
-          secondary={
-            mayRetarget ? (
-              <Button
-                variant="outline"
-                className={PAIR_BUTTON}
-                onClick={onRetarget}
-                data-slot="medication-overview-effect-retarget"
-              >
-                {t("medications.detail.overview.changeMetric")}
-              </Button>
-            ) : undefined
-          }
-          primary={
-            onDetails ? (
-              <Button
-                variant="outline"
-                className={PAIR_BUTTON}
-                onClick={onDetails}
-                data-slot="medication-overview-effect-details"
-              >
-                {t("medications.detail.overview.details")}
-              </Button>
-            ) : (
-              <span aria-hidden="true" />
-            )
-          }
-        />
+        <ActionPair>
+          {mayRetarget ? (
+            <Button
+              variant="outline"
+
+              onClick={onRetarget}
+              data-slot="medication-overview-effect-retarget"
+            >
+              {t("medications.detail.overview.changeMetric")}
+            </Button>
+          ) : undefined}
+          {onDetails ? (
+            <Button
+              variant="outline"
+
+              onClick={onDetails}
+              data-slot="medication-overview-effect-details"
+            >
+              {t("medications.detail.overview.details")}
+            </Button>
+          ) : null}
+        </ActionPair>
       }
     >
       {query.isLoading ? (
