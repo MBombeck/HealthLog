@@ -124,7 +124,8 @@
         "symptomDefinitions": 2,
         "lifeEvents": 3,
         "seizureTypes": 1,
-        "seizureEvents": 2
+        "seizureEvents": 2,
+        "imagingExams": 1
       }
     }
   },
@@ -346,7 +347,8 @@
           "symptomDefinitions": 2,
           "lifeEvents": 3,
           "seizureTypes": 1,
-          "seizureEvents": 2
+          "seizureEvents": 2,
+          "imagingExams": 1
         },
         "accountSettingsApplied": 70,
         "skipped": {

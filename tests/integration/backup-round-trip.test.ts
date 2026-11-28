@@ -2856,6 +2856,7 @@ const PORTABLE_MODEL_ONLY_DR: Readonly<Record<string, string>> = {
   LabResultDocumentLink: DOCUMENTS_ONLY_DR,
   MedicationDocumentLink: DOCUMENTS_ONLY_DR,
   VaccinationDocumentLink: DOCUMENTS_ONLY_DR,
+  ImagingExamDocumentLink: DOCUMENTS_ONLY_DR,
 };
 
 /**

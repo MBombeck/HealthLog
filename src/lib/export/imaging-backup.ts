@@ -76,11 +76,14 @@ export async function buildImagingBackupSection(
       where: { userId },
       orderBy: [{ performedAt: "desc" }, { id: "asc" }],
     }),
-    prisma.imagingExamDocumentLink.findMany({
-      where: { userId },
-      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-      select: { examId: true, documentId: true, createdAt: true },
-    }),
+    // A portable file carries no documents, so it carries no links to them.
+    disasterRecovery
+      ? prisma.imagingExamDocumentLink.findMany({
+          where: { userId },
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+          select: { examId: true, documentId: true, createdAt: true },
+        })
+      : Promise.resolve([]),
   ]);
 
   return {

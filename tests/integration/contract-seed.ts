@@ -940,6 +940,7 @@ export async function seedContractAccount(
       facility: "Contract radiology",
       requestingDoctor: "Contract orthopaedics",
       conclusion: "Contract conclusion",
+      ...(ids.document ? { documentIds: [ids.document] } : {}),
     }),
   );
   await write("nutrients", "POST", "api/nutrients/batch", {

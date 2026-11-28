@@ -8,13 +8,12 @@
  * is the group's one add row. No summary zone, no hint text.
  */
 import { useState } from "react";
-import { Plus, ScanLine } from "lucide-react";
+import { Paperclip, Plus, ScanLine } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ListGroup, ListItem } from "@/components/ui/list-row";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
-import { RowValue } from "@/components/ui/row-value";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
@@ -125,13 +124,24 @@ export function ImagingView() {
                 meta={meta(exam)}
                 trailing={
                   exam.documents.length > 0 ? (
-                    <RowValue>
-                      {t("imaging.fileCount", {
+                    <span
+                      data-slot="imaging-file-count"
+                      className="inline-flex items-center gap-1"
+                      aria-label={t("imaging.fileCount", {
                         count: exam.documents.length,
                       })}
-                    </RowValue>
+                    >
+                      <Paperclip
+                        className="text-muted-foreground size-3.5"
+                        aria-hidden
+                      />
+                      {exam.documents.length}
+                    </span>
                   ) : undefined
                 }
+                // One rule for the whole group: no row carries a chevron,
+                // whether it shows a file count or not.
+                chevron={false}
                 onSelect={canManage ? () => openSheet(exam) : undefined}
               />
             ))}

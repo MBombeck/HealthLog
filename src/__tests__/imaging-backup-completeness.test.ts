@@ -150,7 +150,12 @@ async function roundTrip(purpose: "disaster-recovery" | "portable-export") {
 describe.each(["disaster-recovery", "portable-export"] as const)(
   "imaging backup completeness (%s)",
   (purpose) => {
-    it.each(["ImagingExam", "ImagingExamDocumentLink"])(
+    // A portable file carries no documents and so no links to them.
+    it.each(
+      purpose === "disaster-recovery"
+        ? ["ImagingExam", "ImagingExamDocumentLink"]
+        : ["ImagingExam"],
+    )(
       "restores every %s column with the value it left with",
       async (model) => {
         const { exam, link, writes } = await roundTrip(purpose);

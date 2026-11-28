@@ -125,6 +125,8 @@ export function ImagingDocuments({
               ref={fileInput}
               accept={IMAGING_UPLOAD_ACCEPT}
               multiple
+              tabIndex={-1}
+              aria-label={t("imaging.form.upload")}
               data-slot="imaging-upload-input"
               onChange={(e) => void onFiles(e.target.files)}
             />

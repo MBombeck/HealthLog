@@ -124,7 +124,8 @@
         "symptomDefinitions": 0,
         "lifeEvents": 0,
         "seizureTypes": 0,
-        "seizureEvents": 0
+        "seizureEvents": 0,
+        "imagingExams": 0
       }
     }
   },
@@ -346,7 +347,8 @@
           "symptomDefinitions": 0,
           "lifeEvents": 0,
           "seizureTypes": 0,
-          "seizureEvents": 0
+          "seizureEvents": 0,
+          "imagingExams": 0
         },
         "accountSettingsApplied": 0,
         "skipped": {
@@ -883,6 +885,8 @@
     "SeizureEvent": [],
     "SeizureRescueDose": [],
     "SeizureDiarySettings": [],
+    "ImagingExam": [],
+    "ImagingExamDocumentLink": [],
     "LifeEvent": [],
     "UserHealthProfile": [],
     "HealthProfileFactRevision": [],
@@ -1891,6 +1895,8 @@
     "customVaccines": [],
     "vaccinations": [],
     "vaccinationDocumentLinks": [],
+    "imagingExams": [],
+    "imagingExamDocumentLinks": [],
     "measurementReminders": [],
     "measurementReminderEvents": [],
     "coachConversations": [],
