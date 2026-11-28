@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 307,
-  "total": 95534,
+  "total": 95445,
   "entries": {
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
     "app/api/admin/notifications/reminder-check/route.ts :: apiHandler(arg)": 206,
@@ -65,7 +65,7 @@
     "components/charts/medication-compliance-chart.tsx :: MedicationComplianceChart": 533,
     "components/charts/mood-chart.tsx :: MoodChart": 472,
     "components/charts/mood-heatmap.tsx :: MoodHeatmap": 296,
-    "components/charts/trend-card.tsx :: TrendCard": 324,
+    "components/charts/trend-card.tsx :: TrendCard": 323,
     "components/clinician/clinician-view.tsx :: ClinicianView": 224,
     "components/command-palette/command-palette.tsx :: PaletteBody": 333,
     "components/custom-metrics/custom-metric-chart.tsx :: CustomMetricChart": 228,
@@ -132,7 +132,7 @@
     "components/measurement-reminders/vorsorge-section.tsx :: VorsorgeSection": 332,
     "components/measurements/measurement-form.tsx :: MeasurementForm": 380,
     "components/medications/detail/efficacy/efficacy-chart.tsx :: EfficacyChart": 361,
-    "components/medications/detail/medication-detail-tabs.tsx :: MedicationDetailTabs": 540,
+    "components/medications/detail/medication-detail-tabs.tsx :: MedicationDetailTabs": 452,
     "components/medications/dose-strength-curve.tsx :: DoseStrengthCurve": 266,
     "components/medications/glp1-medication-card.tsx :: Glp1MedicationCard": 333,
     "components/medications/injection-site-picker.tsx :: InjectionSitePicker": 287,

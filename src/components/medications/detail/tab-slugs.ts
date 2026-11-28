@@ -5,42 +5,53 @@
  */
 export const TAB_SLUGS = [
   "overview",
-  "effect",
-  "schedule",
-  "supply",
   "history",
+  "effect",
   "injection",
-  "advanced",
+  "settings",
 ] as const;
 export type TabSlug = (typeof TAB_SLUGS)[number];
 
 /**
- * Slugs an old link may still carry. The tabs used to have German slugs in
- * every language; links in old reports, notifications and bookmarks keep
- * landing on the same tab. The Erinnerung tab folded into the schedule tab,
- * and the API tab into the advanced one.
+ * Slugs an old link may still carry, and the tab each one opens now. The
+ * tabs once had German slugs in every language, and there were six of them:
+ * the schedule, supply and advanced tabs folded into the settings tab. A
+ * bookmark, a report or a low-stock push sent before either change still
+ * opens the page where its controls live.
  */
 export const LEGACY_TAB_SLUGS: Record<string, TabSlug> = {
   uebersicht: "overview",
   wirkung: "effect",
-  zeitplan: "schedule",
-  bestand: "supply",
   verlauf: "history",
   injektion: "injection",
-  erweitert: "advanced",
-  erinnerung: "schedule",
-  api: "advanced",
+  schedule: "settings",
+  supply: "settings",
+  advanced: "settings",
+  zeitplan: "settings",
+  bestand: "settings",
+  erweitert: "settings",
+  erinnerung: "settings",
+  api: "settings",
+  einstellungen: "settings",
 };
 
-/** The tab labels; the message keys predate the English slugs. */
+/**
+ * The settings sheet an old slug opens on arrival: the supply tab's links
+ * (the low-stock push among them) land on the supply sheet, not only on the
+ * tab that holds it.
+ */
+export const LEGACY_TAB_SHEETS: Record<string, "supply"> = {
+  supply: "supply",
+  bestand: "supply",
+};
+
+/** The tab labels. */
 export const TAB_LABEL_KEYS: Record<TabSlug, string> = {
   overview: "medications.detail.tabs.uebersicht",
-  effect: "medications.detail.tabs.wirkung",
-  schedule: "medications.detail.tabs.zeitplan",
-  supply: "medications.detail.tabs.bestand",
   history: "medications.detail.tabs.verlauf",
+  effect: "medications.detail.tabs.wirkung",
   injection: "medications.detail.tabs.injektion",
-  advanced: "medications.detail.tabs.erweitert",
+  settings: "medications.detail.tabs.einstellungen",
 };
 
 /**

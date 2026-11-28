@@ -98,6 +98,9 @@ import { foldForMatch } from "@/lib/i18n/fold-for-match";
  */
 const NORMATIVE_KEYWORDS: Record<Locale, readonly string[]> = {
   en: ["target", "should", "normal range", "above", "below"],
+  // Chinese has no case and no diacritics to fold, so these are the exact
+  // words a Chinese reply uses for a normative claim.
+  "zh-CN": ["目标", "应当", "正常范围", "高于", "低于"],
   de: ["ziel", "sollte", "normalbereich", "uber", "unter"],
   fr: [
     "objectif",
@@ -210,6 +213,16 @@ const NORMATIVE_KEYWORDS: Record<Locale, readonly string[]> = {
  */
 const NEVER_MATCHES = /(?!)/u;
 
+/**
+ * Languages that write without spaces between words. The "not preceded by a
+ * letter" edge exists so "should" does not match inside "shoulder"; 目标 has no
+ * such longer word around it, and every Chinese keyword is preceded by another
+ * Han character (`你的收缩压应当…`), so the edge would make the whole bank
+ * match nothing. Multi-character alternations are specific enough to stand on
+ * their own there.
+ */
+const NO_WORD_BOUNDARY_LOCALES: ReadonlySet<string> = new Set(["zh-CN"]);
+
 const NORMATIVE_MATCHERS: Record<Locale, RegExp> = Object.fromEntries(
   locales.map((locale) => {
     const bank = NORMATIVE_KEYWORDS[locale];
@@ -217,7 +230,12 @@ const NORMATIVE_MATCHERS: Record<Locale, RegExp> = Object.fromEntries(
     const alternation = bank
       .map((kw) => kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
       .join("|");
-    return [locale, new RegExp(`(?<![\\p{L}\\p{N}])(?:${alternation})`, "u")];
+    return [
+      locale,
+      NO_WORD_BOUNDARY_LOCALES.has(locale)
+        ? new RegExp(`(?:${alternation})`, "u")
+        : new RegExp(`(?<![\\p{L}\\p{N}])(?:${alternation})`, "u"),
+    ];
   }),
 ) as Record<Locale, RegExp>;
 

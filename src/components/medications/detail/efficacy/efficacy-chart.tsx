@@ -225,7 +225,7 @@ export function EfficacyChart({
               tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
               tickLine={false}
               axisLine={false}
-              width={40}
+              width={axisUnitSuffix(unitSuffix) ? 72 : 40}
               unit={axisUnitSuffix(unitSuffix)}
             />
             <YAxis

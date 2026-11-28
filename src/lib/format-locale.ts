@@ -34,6 +34,7 @@ const INTL_LOCALE_MAP: Record<Locale, string> = {
   nl: "nl-NL",
   "pt-BR": "pt-BR",
   ru: "ru-RU",
+  "zh-CN": "zh-CN",
 };
 
 export function resolveIntlLocale(locale: Locale): string {

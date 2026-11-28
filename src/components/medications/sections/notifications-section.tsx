@@ -22,7 +22,6 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
 import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
@@ -52,6 +51,11 @@ export interface NotificationsSectionProps {
   autoMarkTaken?: boolean;
   /** What the reminders will do, in words (`ReminderPlanLine`). */
   plan?: React.ReactNode;
+  /**
+   * One line: the name and the switch (or the iPhone chip), no helper, no
+   * plan, no channel chips. The settings tab's row.
+   */
+  compact?: boolean;
 }
 
 interface NotificationChannel {
@@ -98,6 +102,7 @@ export function NotificationsBody({
   notificationsEnabled,
   autoMarkTaken = false,
   plan = null,
+  compact = false,
 }: NotificationsSectionProps) {
   const { t } = useTranslations();
   const { isAuthenticated } = useAuth();
@@ -168,7 +173,10 @@ export function NotificationsBody({
   }
 
   return (
-    <div className="space-y-3" data-slot="medication-detail-notifications-body">
+    <div
+      className={compact ? undefined : "space-y-3"}
+      data-slot="medication-detail-notifications-body"
+    >
       {clientManaged ? (
         // v1.5.5 §9.6 — iPhone-managed path. The switch is hidden;
         // the read-only chip tells the user where the toggle lives.
@@ -179,22 +187,37 @@ export function NotificationsBody({
           className="space-y-1"
           data-slot="notifications-client-managed-chip"
         >
-          <Badge variant="outline" className="font-normal">
-            {t("medications.detail.notifications.clientManagedChip")}
-          </Badge>
-          <p className="text-muted-foreground text-sm">
-            {t("medications.detail.notifications.clientManagedHint")}
-          </p>
+          {compact ? (
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-foreground text-sm font-medium">
+                {t("medications.detail.notifications.switchLabel")}
+              </span>
+              <Badge variant="outline" className="font-normal">
+                {t("medications.detail.notifications.clientManagedChip")}
+              </Badge>
+            </div>
+          ) : (
+            <>
+              <Badge variant="outline" className="font-normal">
+                {t("medications.detail.notifications.clientManagedChip")}
+              </Badge>
+              <p className="text-muted-foreground text-sm">
+                {t("medications.detail.notifications.clientManagedHint")}
+              </p>
+            </>
+          )}
         </div>
       ) : (
         <SwitchRow
           label={t("medications.detail.notifications.switchLabel")}
           description={
-            autoMarkTaken
-              ? t("medications.detail.notifications.helperAutoRecorded")
-              : localEnabled
-                ? t("medications.detail.notifications.helperOn")
-                : t("medications.detail.notifications.helperOff")
+            compact
+              ? undefined
+              : autoMarkTaken
+                ? t("medications.detail.notifications.helperAutoRecorded")
+                : localEnabled
+                  ? t("medications.detail.notifications.helperOn")
+                  : t("medications.detail.notifications.helperOff")
           }
           id={SWITCH_ID}
           checked={localEnabled}
@@ -206,9 +229,10 @@ export function NotificationsBody({
 
       {/* When the reminders come and when the dose counts as missed, read
           off the resolved next dose. */}
-      {!autoMarkTaken && plan}
+      {!compact && !autoMarkTaken && plan}
 
-      {readsCallerPrefs &&
+      {!compact &&
+        readsCallerPrefs &&
         Array.isArray(status?.channels) &&
         status.channels.length > 0 && (
           <div
@@ -224,25 +248,5 @@ export function NotificationsBody({
           </div>
         )}
     </div>
-  );
-}
-
-/**
- * Quiet cross-link: WHICH channels deliver the reminder (push / Telegram /
- * ntfy, quiet hours) is configured globally, not per medication. Those are the
- * caller's own settings, so the page leaves it out of a shared record.
- */
-export function ManageChannelsLink() {
-  const { t } = useTranslations();
-  return (
-    <p className="text-muted-foreground text-xs">
-      <Link
-        href="/settings/integrations#channels"
-        className="focus-visible:ring-ring rounded-sm underline underline-offset-2 focus-visible:ring-2 focus-visible:outline-none"
-        data-slot="zeitplan-manage-channels-link"
-      >
-        {t("medications.detail.zeitplan.manageChannels")}
-      </Link>
-    </p>
   );
 }

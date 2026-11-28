@@ -6,6 +6,10 @@
  * runtime request parsing, so the wire contract stays single-source.
  */
 import { TILE_ATTENTION_REASONS } from "@/lib/dashboard/tile-priority";
+import {
+  COMPARISON_BANDS,
+  COMPARISON_SIDES,
+} from "@/lib/dashboard/tile-comparison";
 import { dashboardScorePillarsExample } from "@/lib/openapi/examples";
 import { recoveryEmptySchema } from "../recovery-empty";
 import { trendSentiment, trendVerdict } from "../trend-verdict";
@@ -1346,6 +1350,19 @@ export const glucoseClinicalSchema = z
       "Server-authoritative glucose clinical panel over the trailing 30-day window. Figures from sparse spot data are a SPOT-READING ESTIMATE (a % of readings), not a CGM time-in-range AGP; `isSpotEstimate` is derived from reading density (true below ~hourly, false for a continuous CGM stream such as Nightscout) and `stillLearning` gates assertion when the window has too few readings or too short a span. `distribution` carries the Battelino 2019 TIR/TBR/TAR fractions (level-2 nested in level-1) plus minutes-of-a-day equivalents; `gmi` (Bergenstal 2018) + `estimatedA1c` (Nathan 2008 ADAG) derive from the mean; `variability` is SD + CV% with the Monnier 2017 ≥36% instability flag; `advanced` is the disclosure tier — J-index (Wojcicki 1995) + LBGI/HBGI (Kovatchev hypo/hyper risk). All blocks are null when there are no readings; `advanced.jIndex` is null for a single-reading window.",
   });
 
+const tileComparisonTone = z
+  .object({
+    band: z
+      .enum(COMPARISON_BANDS)
+      .nullable()
+      .describe("Null when there is no mean or no band to judge it against."),
+    side: z
+      .enum(COMPARISON_SIDES)
+      .nullable()
+      .describe("Null inside the green band and when `band` is null."),
+  })
+  .meta({ id: "DashboardTileComparisonTone" });
+
 export const dashboardSnapshotResponse = z
   .object({
     user: z.object({
@@ -1511,6 +1528,24 @@ export const dashboardSnapshotResponse = z
         .optional()
         .describe(
           'v1.50 — every widget whose tile is switched on, in the order the tile row shows them: pinned widgets (`widgets[].pinned`) first, then those in `attention` (range, change, today), then the rest; each group by saved order. A client shows as many as fit one row and puts the rest behind "All values" (open state in `layout.tilesExpanded`). The web counts columns as max(2, floor((width + 12) / 188)) for the strip width in CSS px (11 rem tiles, 0.75 rem gap): two on a phone, three from about 600 px, six at 1440 px; never one tile alone, never a partial second row. Widgets without data are not removed here; skip them when rendering.',
+        ),
+      comparison: z
+        .record(
+          z.string(),
+          z.object({
+            avg7: tileComparisonTone,
+            avg30: tileComparisonTone,
+            line: z
+              .string()
+              .nullable()
+              .describe(
+                "The tile's deviation line in the response language (`Above target range`, `Below target range`), non-null only while `tiles.attention[id]` is `range`: it names the side of the latest value. Render as served.",
+              ),
+          }),
+        )
+        .optional()
+        .describe(
+          "Server feature `dashboard.tile-comparison-bands`: per tile widget id (`weight`, `bp`, `pulse`), where the tile's 7- and 30-day means sit against the person's target band in `targetBands`: `good` inside the green band, `fair` in the orange wings, `low` beyond them, with `side` naming the crossed edge. `bp` carries the side further from its band (systolic on a tie). `pulse` is judged only when the tile shows the resting heart rate. A widget without a band is absent. Colour the comparison lines from this; never place a value in `targetBands` on the client.",
         ),
       directions: z
         .record(z.string(), trendVerdict)

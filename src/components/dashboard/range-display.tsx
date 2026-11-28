@@ -1,6 +1,6 @@
 /**
  * Range-display helpers for the dashboard tile strip and chart grid:
- * traffic-light colour classes, the colour-legend hint block, the
+ * the colour of a served comparison tone, the colour-legend hint block, the
  * minutes→hours sleep projection, and the timezone-aware greeting hour.
  *
  * Extracted from the dashboard page; the composition (which tile uses
@@ -9,6 +9,7 @@
 import type * as React from "react";
 import type { TrafficRange } from "@/lib/analytics/value-bands";
 import type { DataSummary } from "@/lib/analytics/trends";
+import type { ComparisonTone } from "@/lib/dashboard/tile-comparison";
 
 export interface RangeDisplayConfig {
   range: TrafficRange | null;
@@ -46,25 +47,20 @@ export function toHoursSummary(s: DataSummary): DataSummary {
   };
 }
 
-/** 0 inside the green band, 1 in the orange wings, 2 beyond; -1 unjudged. */
-export function getRangeTone(
-  value: number | null | undefined,
-  config: RangeDisplayConfig,
-): -1 | 0 | 1 | 2 {
-  const range = config.range;
-  if (value == null || !range) return -1;
-  if (value >= range.greenMin && value <= range.greenMax) return 0;
-  if (value >= range.orangeMin && value <= range.orangeMax) return 1;
-  return 2;
-}
+const TONE_CLASS = {
+  good: "text-success",
+  fair: "text-warning",
+  low: "text-destructive",
+} as const;
 
-export function getRangeColorClass(
-  value: number | null | undefined,
-  config: RangeDisplayConfig,
+/**
+ * The colour of a comparison line from the tone the server placed it in
+ * (`tiles.comparison`); no colour while the tone is unknown or unjudged.
+ */
+export function comparisonToneClass(
+  tone: ComparisonTone | null | undefined,
 ): string | undefined {
-  return [undefined, "text-success", "text-warning", "text-destructive"][
-    getRangeTone(value, config) + 1
-  ];
+  return tone?.band ? TONE_CLASS[tone.band] : undefined;
 }
 
 export function getRangeHint(
