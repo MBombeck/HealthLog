@@ -5867,9 +5867,7 @@
       },
       "integrations": {
         "title": "Integracje",
-        "connectionsHeading": "Połączenia",
-        "channelsHeading": "Kanały dostarczania",
-        "matrixLink": "Powiadomienia wg kanału"
+        "channelsHeading": "Kanały dostarczania"
       },
       "notifications": {
         "title": "Powiadomienia",
@@ -7374,9 +7372,7 @@
       "description": "Skonfigurowane na tym koncie, ale bez własnej karty ustawień."
     },
     "healthConnectFolder": {
-      "name": "Health Connect z folderu",
-      "description": "Pobierane z folderu WebDAV lub Nextcloud co sześć godzin. Konfiguracja i zmiany w sekcji Import.",
-      "manage": "Otwórz ustawienia folderu"
+      "name": "Health Connect z folderu"
     },
     "healthConnectApp": {
       "connect": "Połącz urządzenie z Androidem",
@@ -7386,39 +7382,25 @@
       "qrAlt": "Kod QR dla HealthLog Sync",
       "preview": "HealthLog Sync na Androida, wersja zapoznawcza",
       "disconnectTitle": "Odłączyć {device}?",
-      "disconnectBody": "Telefon przestanie synchronizować, dopóki nie połączysz go ponownie."
+      "disconnectBody": "Telefon przestanie synchronizować, dopóki nie połączysz go ponownie.",
+      "name": "HealthLog Sync"
     },
     "withingsViewData": "Zobacz swoje pomiary",
     "whoopViewData": "Zobacz swoją regenerację",
     "googleHealthViewData": "Zobacz swoje kroki",
-    "apiTokens": "Tokeny API",
     "measurementsToken": {
-      "title": "Tokeny pomiarów",
-      "description": "Utwórz token, aby waga, zegarek, aplikacja dietetyczna lub automatyka domowa mogły dodawać pomiary, wartości Twoich metryk własnych i dzienne sumy składników odżywczych.",
-      "scopeNote": "Może tylko dodawać pomiary do Twojej dokumentacji, wartości do już utworzonych metryk własnych oraz dzienne sumy składników odżywczych, dopóki moduł składników odżywczych jest włączony; niczego nie odczyta, nie zmieni ani nie usunie. Pomiary i sumy składników są oznaczane jako zewnętrzne. Identyfikator metryki własnej to część po /custom-metrics/ w adresie jej strony.",
-      "nutrientsLink": "Zobacz spożycie składników odżywczych",
-      "createFailed": "Nie udało się utworzyć tokenu. Spróbuj ponownie.",
       "namePlaceholder": "Nazwa, np. Home Assistant",
       "appleHealth": {
         "label": "Zapisuj pomiary w Apple Health",
         "createHint": "Aplikacja HealthLog na Twoim iPhonie doda wtedy pomiary z tego tokenu do Apple Health.",
-        "toggleAria": "Zapisuj pomiary z {name} w Apple Health",
         "updateFailed": "Nie udało się zmienić ustawienia Apple Health. Spróbuj ponownie.",
         "unattributed": "Pomiarów wysłanych, zanim pojawiło się to ustawienie, nie da się przypisać do żadnego tokenu, więc nie trafiają do Apple Health."
       }
     },
     "workoutsToken": {
-      "title": "Tokeny treningów",
-      "description": "Utwórz token, aby mostek zegarka lub skrypt synchronizacji mogły dodawać Twoje treningi.",
-      "scopeNote": "Może wyłącznie dodawać nowe treningi do Twojej dokumentacji. Nie odczyta danych, niczego nie zmieni ani nie usunie i nie utworzy kolejnego tokenu. Dodane przez niego treningi są oznaczane jako pochodzące z urządzenia zewnętrznego, a jeśli telefon zapisał tę samą sesję, widzisz zapis z telefonu.",
-      "createFailed": "Nie udało się utworzyć tokenu. Spróbuj ponownie.",
       "namePlaceholder": "Nazwa, np. Garmin"
     },
     "documentsToken": {
-      "title": "Tokeny dokumentów",
-      "description": "Utwórz token, aby Paperless-ngx, Papra lub skrypt importu mogły dodawać dokumenty do Twojego archiwum.",
-      "scopeNote": "Może wyłącznie dodawać nowe dokumenty do Twojego archiwum. Niczego nie wyświetli, nie otworzy, nie pobierze, nie zmieni ani nie usunie i nie utworzy kolejnego tokenu. Dowiaduje się tylko, czy plik został zapisany, a nie to, jak został opisany.",
-      "createFailed": "Nie udało się utworzyć tokenu. Spróbuj ponownie.",
       "namePlaceholder": "Nazwa, np. Paperless-ngx"
     },
     "tokenCreated": "Token utworzony. Skopiuj go teraz! Nie zostanie pokazany ponownie.",
@@ -7436,17 +7418,11 @@
     "revokedTokensTitle": "Cofnięte tokeny ({count})",
     "tokenTableName": "Nazwa",
     "tokenTablePermissions": "Uprawnienia",
-    "tokenTableStatus": "Status",
     "tokenTableCreated": "Utworzono",
     "tokenTableLastUsed": "Ostatnio użyto",
     "tokenTableActions": "Akcje",
     "noActiveTokens": "Brak aktywnych tokenów.",
     "tokenNeverUsed": "Nigdy",
-    "apiEndpointsTitle": "Punkty końcowe API",
-    "apiEndpointMethod": "Metoda",
-    "apiEndpointPath": "Ścieżka",
-    "apiEndpointAuth": "Uwierzytelnianie",
-    "apiEndpointExample": "Przykład treści",
     "dangerZone": "Usuń wszystkie dane",
     "dangerZoneDescription": "Kasuje całą Twoją dokumentację zdrowotną i wszystkie połączenia integracji.",
     "dangerZoneConfirm": "Usunąć wszystkie dane?",
@@ -8271,7 +8247,115 @@
     },
     "passkeyRenameFailed": "Nie udało się zmienić nazwy klucza dostępu.",
     "passkeyRemoveFailed": "Nie udało się usunąć klucza dostępu.",
-    "apiEndpointsShow": "Pokaż endpointy"
+    "integrationList": {
+      "channels": "Kanały dostarczania",
+      "sources": "Źródła danych",
+      "addTitle": "Dodaj",
+      "allAdded": "Wszystko, co oferuje ten serwer, jest skonfigurowane.",
+      "noSources": "Brak źródeł danych",
+      "noChannels": "Brak kanałów dostarczania",
+      "ownCredentials": "Wymaga własnych danych aplikacji",
+      "syncNow": "Synchronizuj teraz",
+      "lastAt": "Ostatnio: {when}",
+      "never": "Jeszcze nie",
+      "apns": "Aplikacja na iPhone’a",
+      "facts": {
+        "status": "Stan",
+        "reason": "Powód",
+        "lastSync": "Ostatnia synchronizacja",
+        "lastDelivery": "Ostatnie dostarczenie",
+        "brings": "Dostarcza",
+        "delivers": "Dostarcza do",
+        "lastFailure": "Ostatni błąd",
+        "lastFailureWith": "{when}, {reason}",
+        "setup": "Konfiguracja"
+      },
+      "reason": {
+        "dataArriving": "Dane napływają",
+        "firstSyncPending": "Oczekuje na pierwszą synchronizację",
+        "planLimited": "Plan nie obejmuje wszystkiego",
+        "permissionLimited": "Brakuje części uprawnień",
+        "providerErrors": "Dostawca odpowiada niestabilnie",
+        "syncStalled": "Synchronizacja stoi",
+        "noNewData": "Brak nowych danych",
+        "unexpectedSilence": "Od dawna brak danych",
+        "reauthRequired": "Logowanie wygasło",
+        "pausedAfterErrors": "Wstrzymano po błędach",
+        "notConnected": "Nie połączono",
+        "paused": "Wstrzymano",
+        "switchedOff": "Wyłączono",
+        "autoDisabled": "Wyłączono po odmowie",
+        "sendingPaused": "Wysyłanie wstrzymane",
+        "deliveryFailing": "Ostatnie dostarczenie nieudane"
+      },
+      "brings": {
+        "appleHealth": "Wszystko ze Zdrowia przez aplikację na iPhone’a",
+        "withings": "Waga, ciśnienie, sen",
+        "whoop": "Regeneracja, sen, obciążenie",
+        "googleHealth": "Fitbit i Pixel Watch",
+        "garmin": "Sen, HRV, stres, aktywność",
+        "oura": "Gotowość, sen, HRV",
+        "polar": "Regeneracja, sen, trening",
+        "strava": "Aktywności jako treningi",
+        "nightscout": "Ciągły pomiar glukozy",
+        "dawarich": "Miejsca i trasy jako kontekst",
+        "healthConnectFolder": "Eksport Health Connect z WebDAV lub Nextcloud",
+        "documentSources": "Dokumenty z Paperless-ngx lub Papra",
+        "telegram": "Czat Telegram przez twojego bota",
+        "ntfy": "Temat ntfy",
+        "webPush": "Ta przeglądarka",
+        "webhook": "JSON na własny adres",
+        "email": "Przypomnienia e-mailem",
+        "apns": "Powiadomienia na iPhonie",
+        "healthConnectApp": "Health Connect przez aplikację na Androida"
+      }
+    },
+    "tokenList": {
+      "title": "Tokeny",
+      "newToken": "Nowy token",
+      "empty": "Brak tokenów",
+      "caption": "Twoje tokeny",
+      "scopeColumn": "Dostęp",
+      "more": "Więcej",
+      "scopeMoreLabel": "Na co pozwala ten dostęp",
+      "mirrorMoreLabel": "Co oznacza zapis do Apple Zdrowie",
+      "revoked": "Unieważniony",
+      "hideRevoked": "Ukryj unieważnione",
+      "menuLabel": "Akcje dla {name}",
+      "copied": "Skopiowano",
+      "scope": {
+        "all": "Pełny dostęp",
+        "measurements": "Pomiary",
+        "workouts": "Treningi",
+        "documents": "Dokumenty",
+        "medication": "Lek",
+        "mcpRead": "MCP, odczyt",
+        "mcpWrite": "MCP, zapis",
+        "fhir": "FHIR",
+        "profile": "Profil"
+      },
+      "scopeInfo": {
+        "measurements": "Dodaje pomiary, wartości własnych metryk i dzienne sumy składników do twojej dokumentacji. Nie może niczego odczytać, zmienić ani usunąć.",
+        "workouts": "Dodaje nowe treningi do twojej dokumentacji. Nie może niczego odczytać, zmienić ani usunąć.",
+        "documents": "Dodaje nowe dokumenty do twojego archiwum. Nie może niczego wyświetlić, otworzyć, zmienić ani usunąć."
+      },
+      "create": {
+        "failed": "Nie udało się utworzyć tokena. Spróbuj ponownie.",
+        "createdTitle": "Token utworzony",
+        "done": "Gotowe",
+        "shownOnce": "Token jest wyświetlany tylko teraz.",
+        "expiry": "Ważny przez",
+        "expiryYear": "1 rok",
+        "expiryDays": "{days, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}}"
+      },
+      "api": {
+        "title": "API",
+        "address": "Adres",
+        "copyAddress": "Kopiuj adres API",
+        "endpoints": "Punkty końcowe",
+        "openReference": "Otwórz dokumentację"
+      }
+    }
   },
   "admin": {
     "title": "Administracja",

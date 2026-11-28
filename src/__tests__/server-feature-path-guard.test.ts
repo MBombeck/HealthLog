@@ -28,6 +28,7 @@ import { SERVER_FEATURES, type ServerFeature } from "@/lib/server-features";
 /** Paths added since v1.49.0, by the key that tells a client they exist. */
 const FEATURE_KEY_PATHS: Record<string, ServerFeature> = {
   "/api/daily/morning": "daily.morning",
+  "/api/integrations/overview": "integrations.overview",
   "/api/setup": "setup.resolved-state",
   "/api/health-connect/pairing": "health-connect.sync",
   "/api/health-connect/pair": "health-connect.sync",
