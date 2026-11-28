@@ -14589,7 +14589,10 @@
       "treatmentSeriesCreate": "{name} добавил(а) курс лечения",
       "treatmentSeriesUpdate": "{name} изменил(а) курс лечения",
       "treatmentSeriesDelete": "{name} удалил(а) курс лечения",
-      "treatmentSeriesRestore": "{name} восстановил(а) курс лечения"
+      "treatmentSeriesRestore": "{name} восстановил(а) курс лечения",
+      "imagingExamCreate": "{name} добавил(а) исследование",
+      "imagingExamUpdate": "{name} изменил(а) исследование",
+      "imagingExamDelete": "{name} удалил(а) исследование"
     },
     "section": {
       "measurements": {

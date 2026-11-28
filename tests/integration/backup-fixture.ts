@@ -1297,7 +1297,7 @@ export async function seedEveryTwoEndedModel(
     },
   });
 
-  // v1.50 — an imaging exam with every text field and its report filed.
+  // an imaging exam with every text field and its report filed.
   const imagingExam = await prisma.imagingExam.create({
     data: {
       userId: OWNER_ID,

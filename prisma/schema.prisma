@@ -1238,7 +1238,7 @@ model User {
   // `vaccinations` module key, which governs the surfaces and not the store.
   vaccinationRecords                        VaccinationRecord[]
   vaccinationDocumentLinks                  VaccinationDocumentLink[]
-  // v1.50 — imaging exams (MRI, CT, X-ray, ...), one row per exam, with the
+  // imaging exams (MRI, CT, X-ray, ...), one row per exam, with the
   // report and the pictures filed in the document vault beside it. Gated by
   // the `imaging` module key, which governs the surfaces and not the store.
   imagingExams                              ImagingExam[]
@@ -5668,7 +5668,7 @@ model AppSettings {
   // operator/CLI escape hatch (`scripts/disable-mfa.ts`, toggling this off)
   // keeps the policy from locking anyone out irrecoverably.
   mfaRequired                     Boolean  @default(false) @map("mfa_required")
-  /// v1.50 — the same requirement for administrator accounts only. On by
+  /// the same requirement for administrator accounts only. On by
   /// default, existing installs included: an admin account reaches every
   /// person's settings, so it is the one a password alone should not open.
   mfaRequiredForAdmins            Boolean  @default(true) @map("mfa_required_for_admins")
@@ -12238,7 +12238,7 @@ model HealthConnectRemoteSource {
 
 // ─── Imaging exams ────────────────────────────────────────────
 
-/// v1.50 — the kind of imaging exam. Closed and small on purpose; OTHER
+/// the kind of imaging exam. Closed and small on purpose; OTHER
 /// absorbs the rest (PET, scintigraphy, DEXA, ...) until a value earns its
 /// own entry, which is an append to this enum.
 enum ImagingModality {
@@ -12262,7 +12262,7 @@ enum ImagingSide {
   @@map("imaging_side")
 }
 
-/// v1.50 — one imaging exam (MRI, CT, X-ray, ultrasound, mammography).
+/// one imaging exam (MRI, CT, X-ray, ultrasound, mammography).
 ///
 /// The files are not here. The written report and the pictures stay in the
 /// document vault (`InboundDocument`) and are filed against the exam through

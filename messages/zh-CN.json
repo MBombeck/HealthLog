@@ -14558,7 +14558,10 @@
       "treatmentSeriesCreate": "{name} 添加了一个治疗序列",
       "treatmentSeriesUpdate": "{name} 编辑了一个治疗序列",
       "treatmentSeriesDelete": "{name} 删除了一个治疗序列",
-      "treatmentSeriesRestore": "{name} 恢复了一个治疗序列"
+      "treatmentSeriesRestore": "{name} 恢复了一个治疗序列",
+      "imagingExamCreate": "{name} 记录了一项影像检查",
+      "imagingExamUpdate": "{name} 编辑了一项影像检查",
+      "imagingExamDelete": "{name} 删除了一项影像检查"
     },
     "section": {
       "measurements": {

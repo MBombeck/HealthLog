@@ -571,7 +571,7 @@ describe("clinician view — every catalogue leaf has a renderer or a reason", (
   it("reads a plausible catalogue", () => {
     // Sanity floor: a degraded import would satisfy every loop below
     // vacuously, which is the failure mode a pair guard dies of.
-    expect(STRUCTURED_LEAF_IDS).toHaveLength(21);
+    expect(STRUCTURED_LEAF_IDS).toHaveLength(22);
     expect(Object.keys(DISPOSITIONS).sort()).toEqual(
       [...STRUCTURED_LEAF_IDS].sort(),
     );

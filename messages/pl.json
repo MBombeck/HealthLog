@@ -14589,7 +14589,10 @@
       "treatmentSeriesCreate": "{name} dodał(a) serię zabiegów",
       "treatmentSeriesUpdate": "{name} edytował(a) serię zabiegów",
       "treatmentSeriesDelete": "{name} usunął/usunęła serię zabiegów",
-      "treatmentSeriesRestore": "{name} przywrócił(a) serię zabiegów"
+      "treatmentSeriesRestore": "{name} przywrócił(a) serię zabiegów",
+      "imagingExamCreate": "{name} dodał badanie obrazowe",
+      "imagingExamUpdate": "{name} edytował badanie obrazowe",
+      "imagingExamDelete": "{name} usunął badanie obrazowe"
     },
     "section": {
       "measurements": {

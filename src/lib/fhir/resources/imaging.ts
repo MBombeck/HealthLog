@@ -18,29 +18,44 @@ import type {
   FhirReference,
 } from "@/lib/fhir/types";
 
-const MODALITY_TEXT: Record<string, string> = {
-  MRI: "MRI",
-  CT: "CT",
-  X_RAY: "X-ray",
-  ULTRASOUND: "Ultrasound",
-  MAMMOGRAPHY: "Mammography",
-  OTHER: "Imaging",
-};
+function modalityText(modality: string): string {
+  switch (modality) {
+    case "MRI":
+      return "MRI";
+    case "CT":
+      return "CT";
+    case "X_RAY":
+      return "X-ray";
+    case "ULTRASOUND":
+      return "Ultrasound";
+    case "MAMMOGRAPHY":
+      return "Mammography";
+    default:
+      return "Imaging";
+  }
+}
 
-const SIDE_TEXT: Record<string, string> = {
-  LEFT: "left",
-  RIGHT: "right",
-  BOTH: "both sides",
-};
+function sideText(side: string | null): string | null {
+  switch (side) {
+    case "LEFT":
+      return "left";
+    case "RIGHT":
+      return "right";
+    case "BOTH":
+      return "both sides";
+    default:
+      return null;
+  }
+}
 
 export function imagingReportsFromReportData(
   data: Pick<DoctorReportData, "imagingExams">,
 ): FhirDiagnosticReport[] {
   return (data.imagingExams ?? []).map((exam, i) => {
     const text = [
-      MODALITY_TEXT[exam.modality] ?? MODALITY_TEXT.OTHER,
+      modalityText(exam.modality),
       exam.bodyPart,
-      exam.side ? SIDE_TEXT[exam.side] : null,
+      sideText(exam.side),
     ]
       .filter(Boolean)
       .join(", ");

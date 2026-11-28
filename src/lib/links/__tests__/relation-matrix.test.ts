@@ -50,7 +50,7 @@ function linkTables(): Map<string, string> {
 const KINDS = [...RELATED_KINDS] as RelatedKind[];
 
 /**
- * Link sources that are not kinds of the matrix. An imaging exam (v1.50)
+ * Link sources that are not kinds of the matrix. An imaging exam
  * files its report and pictures and is read from its own page only.
  */
 const OUTSIDE_MATRIX: ReadonlySet<string> = new Set(["imagingExam"]);

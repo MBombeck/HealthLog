@@ -14589,7 +14589,10 @@
       "treatmentSeriesCreate": "{name} hat eine Behandlungsserie angelegt",
       "treatmentSeriesUpdate": "{name} hat eine Behandlungsserie bearbeitet",
       "treatmentSeriesDelete": "{name} hat eine Behandlungsserie gelöscht",
-      "treatmentSeriesRestore": "{name} hat eine Behandlungsserie wiederhergestellt"
+      "treatmentSeriesRestore": "{name} hat eine Behandlungsserie wiederhergestellt",
+      "imagingExamCreate": "{name} hat eine Bildgebung eingetragen",
+      "imagingExamUpdate": "{name} hat eine Bildgebung bearbeitet",
+      "imagingExamDelete": "{name} hat eine Bildgebung gelöscht"
     },
     "section": {
       "measurements": {

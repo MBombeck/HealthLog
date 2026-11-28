@@ -193,7 +193,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
     icon: ICON.labs,
     tourId: "nav-labs",
   },
-  // v1.50 (#1672) — imaging exams, beside lab results. Owned by `imaging` in
+  // imaging exams, beside lab results. Owned by `imaging` in
   // the surface map (default-on); SURFACE-gated like `/vaccinations`.
   {
     href: "/imaging",

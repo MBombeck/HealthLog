@@ -14589,7 +14589,10 @@
       "treatmentSeriesCreate": "{name}님이 치료 과정을 추가했습니다",
       "treatmentSeriesUpdate": "{name}님이 치료 과정을 수정했습니다",
       "treatmentSeriesDelete": "{name}님이 치료 과정을 삭제했습니다",
-      "treatmentSeriesRestore": "{name}님이 치료 과정을 복원했습니다"
+      "treatmentSeriesRestore": "{name}님이 치료 과정을 복원했습니다",
+      "imagingExamCreate": "{name}님이 영상 검사를 기록했어요",
+      "imagingExamUpdate": "{name}님이 영상 검사를 수정했어요",
+      "imagingExamDelete": "{name}님이 영상 검사를 삭제했어요"
     },
     "section": {
       "measurements": {

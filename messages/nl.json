@@ -14589,7 +14589,10 @@
       "treatmentSeriesCreate": "{name} heeft een behandelreeks toegevoegd",
       "treatmentSeriesUpdate": "{name} heeft een behandelreeks bewerkt",
       "treatmentSeriesDelete": "{name} heeft een behandelreeks verwijderd",
-      "treatmentSeriesRestore": "{name} heeft een behandelreeks hersteld"
+      "treatmentSeriesRestore": "{name} heeft een behandelreeks hersteld",
+      "imagingExamCreate": "{name} heeft een beeldvormingsonderzoek vastgelegd",
+      "imagingExamUpdate": "{name} heeft een beeldvormingsonderzoek bewerkt",
+      "imagingExamDelete": "{name} heeft een beeldvormingsonderzoek verwijderd"
     },
     "section": {
       "measurements": {

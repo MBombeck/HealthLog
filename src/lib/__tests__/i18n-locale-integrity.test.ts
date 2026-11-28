@@ -277,6 +277,8 @@ describe("i18n locale file integrity", () => {
   // See `docs/audit/v1415-i18n-coverage.md` §Legitimate EN==DE==key cases.
   const PLACEHOLDER_ALLOWLIST = new Set<string>([
     "settings.ntfy",
+    // "CT" is the same abbreviation for computed tomography in EN and DE.
+    "imaging.modality.CT",
     // v1.4.19 — "BMI" is the same acronym in EN and DE,
     // and the medical / fitness "Optimal", "Fitness", "Normal"
     // categories are technical terms that German clinics also use

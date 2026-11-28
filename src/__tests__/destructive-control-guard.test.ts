@@ -395,6 +395,14 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: ["AlertDialog"],
   },
   {
+    file: "components/imaging/use-imaging.ts",
+    destroys:
+      "one imaging exam with its document links; the report and the pictures stay in the vault",
+    triggers: ["components/imaging/imaging-sheet.tsx"],
+    recovery: "permanent",
+    confirm: ["AlertDialog"],
+  },
+  {
     file: "components/seizures/use-seizures.ts",
     destroys:
       "one recorded seizure with its rescue doses (and the intakes they wrote), one rescue dose, or a seizure type no seizure names",

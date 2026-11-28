@@ -14589,7 +14589,10 @@
       "treatmentSeriesCreate": "{name} ha aggiunto un ciclo di trattamento",
       "treatmentSeriesUpdate": "{name} ha modificato un ciclo di trattamento",
       "treatmentSeriesDelete": "{name} ha eliminato un ciclo di trattamento",
-      "treatmentSeriesRestore": "{name} ha ripristinato un ciclo di trattamento"
+      "treatmentSeriesRestore": "{name} ha ripristinato un ciclo di trattamento",
+      "imagingExamCreate": "{name} ha registrato un esame di diagnostica",
+      "imagingExamUpdate": "{name} ha modificato un esame di diagnostica",
+      "imagingExamDelete": "{name} ha eliminato un esame di diagnostica"
     },
     "section": {
       "measurements": {

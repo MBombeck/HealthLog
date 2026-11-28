@@ -204,6 +204,10 @@ export default defineConfig({
         // through stable data-slots, not a mobile layout, so it runs in one
         // project.
         "vaccinations.spec.ts",
+        // The imaging journey records and deletes exams on the one shared
+        // account and moves its module on and off; two projects would read
+        // each other's rows.
+        "imaging.spec.ts",
         // The seizure-diary journey records seizures on the one shared
         // account and reads the count back, and moves its module on and off.
         // Two projects mutating it in parallel would read each other's rows.

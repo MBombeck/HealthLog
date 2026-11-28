@@ -928,6 +928,20 @@ export async function seedContractAccount(
     clusterCount: 2,
     clusterWindowHours: 24,
   });
+  // An imaging exam with every text field, so the list and detail reads
+  // have a row to answer with.
+  keep(
+    "imagingExam",
+    await write("imaging-exam", "POST", "api/imaging", {
+      modality: "MRI",
+      performedAt: daysAgo(12).toISOString(),
+      side: "LEFT",
+      bodyPart: "Knee",
+      facility: "Contract radiology",
+      requestingDoctor: "Contract orthopaedics",
+      conclusion: "Contract conclusion",
+    }),
+  );
   await write("nutrients", "POST", "api/nutrients/batch", {
     entries: [1, 2, 3].map((n) => ({
       day: dayKey(daysAgo(n)),
@@ -1234,6 +1248,7 @@ const PATH_PARAM_SOURCES: Record<string, Record<string, string>> = {
   "/api/practitioners/{id}": { id: "practitioner" },
   "/api/encounters/{id}": { id: "encounter" },
   "/api/vaccinations/{id}": { id: "vaccination" },
+  "/api/imaging/{id}": { id: "imagingExam" },
   "/api/illness/episodes/{id}": { id: "illness" },
   "/api/illness/episodes/{id}/day-logs": { id: "illness" },
   "/api/illness/episodes/{id}/correlation": { id: "illness" },

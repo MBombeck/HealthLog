@@ -8,22 +8,21 @@ import { PageAuthGate } from "@/components/ui/page-auth-gate";
 import { ImagingView } from "@/components/imaging/imaging-view";
 
 /**
- * Imaging exams (#1672). Gated on the resolved `modules.imaging` flag from
- * `GET /api/auth/me`: default-on, so only an explicit `false` hides it. A
- * direct hit with the module off goes home; the `/api/imaging*` routes stay
- * reachable, so this is a UX redirect, never the security boundary.
+ * Imaging exams (#1672). With the `imaging` module off the navigation entry
+ * is gone, and a deep link lands on the shell's module notice
+ * (`ModulePageGate`, through `nav:/imaging` in the surface map) instead of
+ * this page. The `/api/imaging*` routes stay reachable, so the gate is the
+ * surface's, never the security boundary. An unauthenticated visitor is sent
+ * to login.
  */
 export default function ImagingPage() {
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const { isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
-  const enabled = user?.modules?.imaging !== false;
 
   useEffect(() => {
-    if (isLoading) return;
-    if (!isAuthenticated) router.push("/auth/login");
-    else if (!enabled) router.push("/");
-  }, [isLoading, isAuthenticated, enabled, router]);
+    if (!isLoading && !isAuthenticated) router.push("/auth/login");
+  }, [isLoading, isAuthenticated, router]);
 
-  if (isLoading || !isAuthenticated || !enabled) return <PageAuthGate />;
+  if (isLoading || !isAuthenticated) return <PageAuthGate />;
   return <ImagingView />;
 }

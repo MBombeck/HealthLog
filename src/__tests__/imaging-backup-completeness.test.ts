@@ -15,9 +15,6 @@
  * `src/lib/export/imaging-backup.ts`, or the `side:` line in its restore, and
  * this goes red naming the column.
  */
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
 import { describe, expect, it, vi } from "vitest";
 
 process.env.ENCRYPTION_KEY ??=
@@ -28,12 +25,16 @@ import {
   buildImagingBackupSection,
   restoreImagingData,
 } from "@/lib/export/imaging-backup";
+import type { RestoreSkipLog } from "@/lib/export/restore-skips";
 import { parseBackupPayload } from "@/lib/validations/backup";
+import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 
-const SCHEMA = readFileSync(
-  join(process.cwd(), "prisma", "schema.prisma"),
-  "utf8",
-);
+import { readSource } from "./helpers/source-files";
+
+const SCHEMA = readSource("prisma/schema.prisma", [
+  "model ImagingExam {",
+  "model ImagingExamDocumentLink {",
+]);
 
 /** Columns the backup is right to leave out, each with its reason. */
 const EXCLUDED: Record<string, Record<string, string>> = {
@@ -101,9 +102,16 @@ async function roundTrip(purpose: "disaster-recovery" | "portable-export") {
     imagingExam: { findMany: vi.fn().mockResolvedValue([exam]) },
     imagingExamDocumentLink: { findMany: vi.fn().mockResolvedValue([link]) },
   };
-  const section = await buildImagingBackupSection(source as never, "owner", {
-    purpose,
-  });
+  const section = await buildImagingBackupSection(
+    source as unknown as Pick<
+      PrismaClient,
+      "imagingExam" | "imagingExamDocumentLink"
+    >,
+    "owner",
+    {
+      purpose,
+    },
+  );
   const parsed = parseBackupPayload({
     schemaVersion: "2",
     exportedAt: new Date().toISOString(),
@@ -128,8 +136,13 @@ async function roundTrip(purpose: "disaster-recovery" | "portable-export") {
       findMany: vi.fn().mockResolvedValue([{ id: "doc-1" }]),
     },
   };
-  const skips: never[] = [];
-  await restoreImagingData(tx as never, "owner", parsed, skips);
+  const skips: RestoreSkipLog = [];
+  await restoreImagingData(
+    tx as unknown as Prisma.TransactionClient,
+    "owner",
+    parsed,
+    skips,
+  );
   expect(skips).toEqual([]);
   return { exam, link, writes };
 }

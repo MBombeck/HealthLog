@@ -644,6 +644,24 @@ function seizureVerb(
     case "seizures.settings.update":
       return line("seizureSettingsUpdate");
     default:
+      return imagingVerb(t, action, name);
+  }
+}
+
+/** Imaging exams (#1672): recording is WRITE, editing and removing MANAGE. */
+function imagingVerb(
+  t: Translator,
+  action: string,
+  name: string,
+): string | null {
+  switch (action) {
+    case "imaging.exam.create":
+      return t("recordSharing.activityVerb.imagingExamCreate", { name });
+    case "imaging.exam.update":
+      return t("recordSharing.activityVerb.imagingExamUpdate", { name });
+    case "imaging.exam.delete":
+      return t("recordSharing.activityVerb.imagingExamDelete", { name });
+    default:
       return null;
   }
 }

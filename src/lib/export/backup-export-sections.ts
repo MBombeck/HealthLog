@@ -253,7 +253,7 @@ export const BACKUP_EXPORT_SECTIONS: readonly BackupExportSection[] = [
     },
   },
   {
-    // Imaging exams and their filed documents (v1.50).
+    // Imaging exams and their filed documents.
     name: "imaging",
     build: async (ctx) => {
       const imaging = await buildImagingBackupSection(ctx.prisma, ctx.userId, {

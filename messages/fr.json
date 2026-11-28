@@ -14589,7 +14589,10 @@
       "treatmentSeriesCreate": "{name} a ajouté une série de soins",
       "treatmentSeriesUpdate": "{name} a modifié une série de soins",
       "treatmentSeriesDelete": "{name} a supprimé une série de soins",
-      "treatmentSeriesRestore": "{name} a restauré une série de soins"
+      "treatmentSeriesRestore": "{name} a restauré une série de soins",
+      "imagingExamCreate": "{name} a enregistré un examen d'imagerie",
+      "imagingExamUpdate": "{name} a modifié un examen d'imagerie",
+      "imagingExamDelete": "{name} a supprimé un examen d'imagerie"
     },
     "section": {
       "measurements": {

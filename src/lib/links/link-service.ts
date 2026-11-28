@@ -5,9 +5,8 @@
 import type { Prisma } from "@/generated/prisma/client";
 
 /**
- * A bound matching the document bulk route's own cap. A link call is a
- * user-driven filing action, not an import path, so a request naming more ids
- * than this is a client defect rather than a large but legitimate batch.
+ * The document bulk route's own cap. A link call is a filing action, not an
+ * import, so naming more ids than this is a client defect.
  */
 export const MAX_TARGETS_PER_CALL = 100;
 
@@ -19,6 +18,7 @@ export type LinkSourceKind =
   | "conditionEpisode"
   | "medication"
   | "labResult"
+  // Imaging: outside the relation matrix, read from the exam only.
   | "imagingExam";
 
 /** The record a link points at. */
@@ -188,8 +188,6 @@ const SOURCES: Record<
     relationField: "labResult",
     softDeletes: true,
   },
-  // v1.50 — an imaging exam files its report and its pictures. Hard-deleted,
-  // so there is no tombstone to filter on.
   imagingExam: {
     delegate: (tx) => narrow<OwnedRowDelegate>(tx.imagingExam),
     relationField: "exam",
@@ -318,12 +316,8 @@ const LINK_TABLES: Partial<
     targetColumn: "episodeId",
     target: CONDITION_ENDPOINT,
   },
-  // The SAME table as `encounter:document`, read from the other end. A
-  // document's detail sheet answers "which visits is this filed against"
-  // and the visit's own sheet answers "what did this visit produce"; both
-  // questions live in `encounter_document_links`, so this is a second
-  // direction rather than a fourth table. The three-table ceiling counts
-  // tables.
+  // The SAME table as `encounter:document`, read from the document's end
+  // ("which visits is this filed against").
   "document:encounter": {
     delegate: (tx) => narrow<LinkRowDelegate>(tx.encounterDocumentLink),
     sourceColumn: "documentId",
@@ -443,9 +437,6 @@ const LINK_TABLES: Partial<
     targetColumn: "medicationId",
     target: MEDICATION_ENDPOINT,
   },
-  // v1.50 — `imaging_exam_document_links`: an exam's report and pictures,
-  // written and read from the exam. Imaging is not one of the six kinds of
-  // the relation matrix; the exam is its only reader.
   "imagingExam:document": {
     delegate: (tx) => narrow<LinkRowDelegate>(tx.imagingExamDocumentLink),
     sourceColumn: "examId",

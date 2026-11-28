@@ -195,8 +195,8 @@ describe("<HealthRecordExportPanel> — the first run", () => {
     expect(groupChip(html, "labs")).toBe("0/1");
     expect(groupChip(html, "medications")).toBe("0/5");
     // ALLERGIES, ILLNESS_EPISODES, SEIZURES, VISITS, SURGICAL_HISTORY,
-    // IMMUNIZATIONS.
-    expect(groupChip(html, "history")).toBe("0/6");
+    // IMMUNIZATIONS, IMAGING_EXAMS.
+    expect(groupChip(html, "history")).toBe("0/7");
     expect(groupChip(html, "cardio")).toBe("0/18");
     expect(groupChip(html, "activity")).toBe("0/24");
     expect(groupChip(html, "sleepRecovery")).toBe("0/19");

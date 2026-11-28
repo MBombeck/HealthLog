@@ -10,7 +10,7 @@ import { ImagingModality, ImagingSide } from "@/generated/prisma/enums";
 import { base64BytesSchema, isoDateTime } from "@/lib/export/backup-schema-kit";
 
 /**
- * One imaging exam (v1.50, #1672). Each text field travels as ciphertext on a
+ * One imaging exam (#1672). Each text field travels as ciphertext on a
  * disaster-recovery file (`*Encrypted`) and readable on a portable one.
  */
 export const imagingExamBackupSchema = z

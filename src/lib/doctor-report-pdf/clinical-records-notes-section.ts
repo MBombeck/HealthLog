@@ -335,8 +335,6 @@ export function buildClinicalRecordsNotesSection(
   // The surgical history, reference data on its own leaf
   // (`surgical-history-section.ts`).
   y = drawSurgicalHistoryTable(context, y);
-
-  // Imaging exams, reference data on their own leaf (`imaging-section.ts`).
   y = drawImagingTable(context, y);
 
   // The immunization history. Reference data (not time-windowed), populated

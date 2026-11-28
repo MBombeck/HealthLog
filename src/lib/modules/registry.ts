@@ -196,7 +196,7 @@ export const MODULE_KEYS = [
   // stumbled on. No egress. The data routes gate on it like the illness
   // journal's: a record with the diary off answers `seizures.disabled`.
   "seizures",
-  // v1.50 (#1672) — imaging exams (`/imaging`): one entry per MRI, CT, X-ray,
+  // imaging exams (`/imaging`): one entry per MRI, CT, X-ray,
   // ultrasound or mammography, with its report and pictures filed from the
   // document vault. Default-on, no `optIn` marker: no egress, and the
   // surfaces are inert until the person records an exam. SURFACE-gated like

@@ -53,14 +53,14 @@ export function ImagingView() {
         .join(" "),
     ]
       .filter(Boolean)
-      .join(" · ");
+      .join(", ");
   const meta = (exam: ImagingExam) =>
     [
       formatCalendarDate(exam.performedAt.slice(0, 10), dateFormat, locale),
       exam.facility,
     ]
       .filter(Boolean)
-      .join(" · ");
+      .join(", ");
 
   return (
     <div className="space-y-6" data-slot="imaging-page">

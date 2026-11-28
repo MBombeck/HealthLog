@@ -247,7 +247,7 @@ const registeredPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   // The seizure diary, behind its own module (appended, spread order
   // is load-bearing).
   ...seizurePaths,
-  // Imaging exams (v1.50, appended, spread order is load-bearing).
+  // Imaging exams (appended, spread order is load-bearing).
   ...imagingPaths,
   // The environmental-context overview. Its own module because nothing else
   // owns the surface (appended, spread order is load-bearing).

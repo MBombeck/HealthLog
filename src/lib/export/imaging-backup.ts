@@ -1,5 +1,5 @@
 /**
- * Imaging exams (v1.50, #1672), with both backup ends in one file.
+ * Imaging exams (#1672), with both backup ends in one file.
  *
  * A disaster-recovery payload carries the four sealed text fields verbatim as
  * base64; a portable export opens them, because a portable file exists to be
