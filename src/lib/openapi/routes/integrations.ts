@@ -1267,6 +1267,11 @@ const integrationOverview = z
     items: z
       .array(integrationOverviewItem)
       .describe("Every source, then every channel, always, in display order."),
+    fitbitRemovalNotice: z
+      .boolean()
+      .describe(
+        "The same flag as on `GET /api/integrations/status`: the account held a Fitbit connection when the integration was removed and has not dismissed the note. The list page reads it here, so it needs no second read of the connection facts.",
+      ),
   })
   .meta({ id: "IntegrationOverview" });
 

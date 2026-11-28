@@ -35,6 +35,8 @@ import { showErrorToast } from "@/lib/errors/error-toast";
 import { translateCode } from "@/lib/i18n/translate-code";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { runConnectionTest } from "@/components/settings/test-connection-button";
+import { useIntegrationOverview } from "@/lib/queries/use-integration-overview";
+import type { OverviewChannelKey } from "@/lib/integrations/overview";
 
 export type ChannelType = "TELEGRAM" | "NTFY" | "WEB_PUSH" | "APNS";
 
@@ -96,22 +98,19 @@ export function channelStatusTone(state: ChannelState): StatusChipTone {
 
 /**
  * The chip a channel card shows in its header: off until the channel is set
- * up and switched on, an error while the delivery ledger reports one for it,
- * active otherwise.
+ * up and switched on, otherwise the status the integrations overview resolved
+ * for it (`resolveChannelState`, the one channel rule), read from the cache
+ * the Integrations page already holds.
  */
 export function useChannelStatusTone(
-  type: ChannelType | null,
+  key: OverviewChannelKey,
   isAuthenticated: boolean,
   live: boolean,
 ): StatusChipTone {
-  const statuses = useNotificationChannelStatuses(isAuthenticated);
+  const overview = useIntegrationOverview(isAuthenticated);
   if (!live) return "off";
-  const row = type
-    ? (Array.isArray(statuses.data) ? statuses.data : []).find(
-        (channel) => channel.type === type,
-      )
-    : undefined;
-  return row && channelStatusTone(row.state) === "error" ? "error" : "active";
+  const item = overview.data?.items.find((entry) => entry.key === key);
+  return item?.status === "error" ? "error" : "active";
 }
 
 export function NotificationStatusCard() {

@@ -18,7 +18,7 @@
 
 import { useEffect, useRef } from "react";
 import { Link2, Send, type LucideIcon } from "lucide-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { FitbitRemovalNotice } from "@/components/settings/integrations/fitbit-removal-notice";
 import {
@@ -30,7 +30,7 @@ import { overviewKeyFromHash } from "@/components/settings/integrations/integrat
 import { IntegrationSheet } from "@/components/settings/integrations/integration-sheet";
 import { openIntegrationsAdd } from "@/components/settings/integrations/integrations-add-button";
 import { useOAuthReturnToasts } from "@/components/settings/integrations/oauth-return";
-import { useIntegrationStatuses } from "@/components/settings/integrations/shared";
+import { useIntegrationOverview } from "@/lib/queries/use-integration-overview";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { Button } from "@/components/ui/button";
@@ -40,11 +40,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import type { IntegrationCallbackUrls } from "@/lib/integrations/callback-urls";
-import { apiGet } from "@/lib/api/api-fetch";
-import type {
-  IntegrationOverview,
-  IntegrationOverviewItem,
-} from "@/lib/integrations/overview";
+import type { IntegrationOverviewItem } from "@/lib/integrations/overview";
 import { queryKeys } from "@/lib/query-keys";
 import { useUrlSearch, writeUrlState } from "@/lib/url-state";
 
@@ -70,15 +66,7 @@ export function IntegrationsSection({
   const { t } = useTranslations();
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
-  const overview = useQuery({
-    queryKey: queryKeys.integrationsOverview(),
-    queryFn: () => apiGet<IntegrationOverview>("/api/integrations/overview"),
-    enabled: isAuthenticated,
-    refetchOnWindowFocus: true,
-  });
-  // The envelope the sheets read; fetched with the page so a sheet opens
-  // with its card already filled in.
-  const { data: envelope } = useIntegrationStatuses(isAuthenticated);
+  const overview = useIntegrationOverview(isAuthenticated);
   useOAuthReturnToasts();
 
   const search = useUrlSearch();
@@ -133,7 +121,9 @@ export function IntegrationsSection({
 
   return (
     <div className="space-y-6" data-tour-id="integrations-hero">
-      {envelope?.fitbitRemovalNotice === true ? <FitbitRemovalNotice /> : null}
+      {overview.data?.fitbitRemovalNotice === true ? (
+        <FitbitRemovalNotice />
+      ) : null}
 
       {overview.isError ? (
         <QueryErrorCard

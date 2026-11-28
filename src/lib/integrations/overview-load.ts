@@ -53,6 +53,7 @@ export async function loadIntegrationOverview(
         whoopClientSecretEncrypted: true,
         googleHealthClientIdEncrypted: true,
         googleHealthClientSecretEncrypted: true,
+        fitbitRemovalNoticeAt: true,
       },
     }),
     prisma.healthConnectRemoteSource.findUnique({
@@ -146,5 +147,8 @@ export async function loadIntegrationOverview(
     }),
   );
 
-  return { items: [...sources, ...channels] };
+  return {
+    items: [...sources, ...channels],
+    fitbitRemovalNotice: !!user?.fitbitRemovalNoticeAt,
+  };
 }

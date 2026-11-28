@@ -101033,8 +101033,14 @@ components:
           items:
             $ref: "#/components/schemas/IntegrationOverviewItem"
           description: Every source, then every channel, always, in display order.
+        fitbitRemovalNotice:
+          type: boolean
+          description: "The same flag as on `GET /api/integrations/status`: the account held a Fitbit connection when the
+            integration was removed and has not dismissed the note. The list page reads it here, so it needs no second
+            read of the connection facts."
       required:
         - items
+        - fitbitRemovalNotice
       additionalProperties: false
     IntegrationOverviewItem:
       type: object

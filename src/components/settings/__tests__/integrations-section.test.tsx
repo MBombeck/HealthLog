@@ -137,6 +137,7 @@ beforeEach(() => {
       item("webhook"),
       item("apns", { offered: false }),
     ],
+    fitbitRemovalNotice: false,
   };
 });
 

@@ -103,6 +103,8 @@ export interface IntegrationOverviewItem {
 
 export interface IntegrationOverview {
   items: IntegrationOverviewItem[];
+  /** The Fitbit removal note is still to be shown (as on the status envelope). */
+  fitbitRemovalNotice: boolean;
 }
 
 export interface SourceInput {
@@ -191,6 +193,33 @@ export interface ChannelRowInput {
   nextRetryAt: Date | null;
 }
 
+/**
+ * A set-up channel's status and reason: the one rule for a delivery channel's
+ * state. The overview row, `GET /api/notifications/status` and every channel
+ * card read it from here, so no two of them can word one channel two ways.
+ */
+export function resolveChannelState(
+  row: ChannelRowInput,
+  now: Date,
+): { status: OverviewStatus; reason: OverviewReason | null } {
+  if (!row.enabled) {
+    return row.disabledReason
+      ? { status: "error", reason: "auto_disabled" }
+      : { status: "off", reason: "switched_off" };
+  }
+  if (row.nextRetryAt && row.nextRetryAt.getTime() > now.getTime()) {
+    return { status: "error", reason: "sending_paused" };
+  }
+  const lastFailed =
+    row.consecutiveFailures > 0 &&
+    row.lastFailureAt !== null &&
+    (row.lastSuccessAt === null ||
+      row.lastFailureAt.getTime() > row.lastSuccessAt.getTime());
+  return lastFailed
+    ? { status: "error", reason: "delivery_failing" }
+    : { status: "active", reason: null };
+}
+
 /** One delivery channel's row. `row` is its `NotificationChannel`, if any. */
 export function resolveChannelItem(input: {
   key: OverviewChannelKey;
@@ -203,42 +232,12 @@ export function resolveChannelItem(input: {
   if (!row) {
     return { ...base, setUp: false, status: null, reason: null, lastAt: null };
   }
-  const lastAt = row.lastSuccessAt?.toISOString() ?? null;
-  if (!row.enabled) {
-    return row.disabledReason
-      ? {
-          ...base,
-          setUp: true,
-          status: "error",
-          reason: "auto_disabled",
-          lastAt,
-        }
-      : { ...base, setUp: true, status: "off", reason: "switched_off", lastAt };
-  }
-  if (row.nextRetryAt && row.nextRetryAt.getTime() > now.getTime()) {
-    return {
-      ...base,
-      setUp: true,
-      status: "error",
-      reason: "sending_paused",
-      lastAt,
-    };
-  }
-  const lastFailed =
-    row.consecutiveFailures > 0 &&
-    row.lastFailureAt !== null &&
-    (row.lastSuccessAt === null ||
-      row.lastFailureAt.getTime() > row.lastSuccessAt.getTime());
-  if (lastFailed) {
-    return {
-      ...base,
-      setUp: true,
-      status: "error",
-      reason: "delivery_failing",
-      lastAt,
-    };
-  }
-  return { ...base, setUp: true, status: "active", reason: null, lastAt };
+  return {
+    ...base,
+    setUp: true,
+    ...resolveChannelState(row, now),
+    lastAt: row.lastSuccessAt?.toISOString() ?? null,
+  };
 }
 
 /** The `NotificationChannel.type` behind each channel key. */
