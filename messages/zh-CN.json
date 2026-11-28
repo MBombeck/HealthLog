@@ -955,6 +955,10 @@
     "morning": {
       "heroItemsTitle": "今日待办",
       "heroItemsDescription": "选择哪些类型的条目可以出现在“今日待办”里。"
+    },
+    "tileComparison": {
+      "above": "高于目标范围",
+      "below": "低于目标范围"
     }
   },
   "measurements": {
@@ -2218,38 +2222,37 @@
         "deleteRow": {
           "failed": "无法删除该服药记录。"
         },
-        "viewRecent90": "最近 90 天",
-        "viewAll": "完整历史",
-        "viewToggleLabel": "历史范围"
+        "viewToggleLabel": "历史范围",
+        "viewRecentShort": "90天",
+        "viewAllShort": "全部"
       },
       "verlauf": {
         "loading": "正在加载历史……",
         "loadError": "无法加载历史。",
         "empty": "此期间还没有服药记录。",
         "summaryEmpty": "还没有可计分的服药。",
-        "adherenceBarLabel": "准时 {onTime}，延迟 {late}，漏服 {missed}",
         "add": "记录服药",
         "rowActionsLabel": "{time} 的操作",
         "markAsTaken": "标记为已服",
         "markAsSkipped": "标记为已跳过",
-        "adHocTag": "计划外",
-        "takenDetail": "计划 {planned}，实际 {taken}",
         "doseTaken": "剂量：{dose}",
-        "status": {
-          "ad_hoc": "计划外"
-        },
         "pin": {
           "action": "归属到 {time} 时段",
           "release": "解除归属",
           "pinnedTag": "已归属",
           "pinnedToast": "服药已归属到该时段",
           "unpinnedToast": "已解除归属",
-          "dueContext": "原本应于：{time}（{delta}）",
           "confirmTitle": "归属到 {time} 时段？",
           "confirmBody": "这次服药会计入该时段，与直接在该时段记录完全一样：按实际服用时间判定准时或延迟，因此依从率不会被虚高。你可随时解除归属。",
           "confirmCancel": "取消",
           "confirmAction": "归属"
-        }
+        },
+        "backfill": "补记过去的服药",
+        "extraColumn": "额外",
+        "takenAt": "{time} 服用",
+        "weekOf": "{date} 这一周",
+        "thisWeek": "本周",
+        "showEarlier": "显示更早的几周"
       },
       "notifications": {
         "title": "通知",
@@ -2362,33 +2365,24 @@
       },
       "tabs": {
         "uebersicht": "概览",
-        "zeitplan": "计划",
-        "bestand": "库存",
         "verlauf": "历史",
         "injektion": "注射",
-        "erweitert": "高级",
-        "wirkung": "效果"
+        "wirkung": "效果",
+        "einstellungen": "设置"
       },
       "shell": {
         "loadFailed": "无法加载此药物。",
         "tablistLabel": "药物详情分区"
       },
       "uebersicht": {
-        "statusTitle": "状态",
         "nextDoseLabel": "下次剂量",
-        "nextDoseNone": "没有即将到期的剂量。",
-        "nextDoseAsNeeded": "按需服用，没有计划剂量。",
         "nextDoseNotTracked": "未追踪，仅作记录。",
         "pausedHint": "已暂停：不发送提醒。",
         "reminderLabel": "提醒",
-        "reminderOn": "开",
         "reminderOff": "关",
         "supplyLabel": "库存",
         "supplyRunway": "约可用 {days, plural, other {# 天}}",
-        "jumpToZeitplan": "打开计划",
-        "jumpToBestand": "打开库存",
-        "complianceTitle": "依从性",
-        "complianceEmpty": "还没有依从性数据。"
+        "complianceTitle": "依从性"
       },
       "bestand": {
         "title": "库存",
@@ -2470,15 +2464,7 @@
       },
       "erweitert": {
         "group": {
-          "lifecycle": "生命周期",
-          "externalApi": "外部 API",
-          "data": "数据",
-          "danger": "危险操作"
-        },
-        "editor": {
-          "title": "在编辑器中修改药物",
-          "helper": "在分步编辑器中修改名称、治疗类别、频率和计划。",
-          "button": "打开编辑器"
+          "data": "数据"
         }
       },
       "zeitplan": {
@@ -2488,8 +2474,6 @@
         "scheduleLabel": "计划 {index}",
         "fullEditNote": "频率、治疗类别与疗程在“高级 > 生命周期”的编辑器中修改。",
         "graceEcho": "提醒持续时长：{minutes, plural, other {# 分钟}}",
-        "reminderTitle": "提醒",
-        "manageChannels": "管理通知渠道",
         "history": {
           "title": "计划历史",
           "currentSince": "当前计划自 {date} 起",
@@ -2540,6 +2524,58 @@
           "orderError": "开始必须早于结束。",
           "noTimes": "还没有设定服药时间。"
         }
+      },
+      "menu": {
+        "label": "药物操作",
+        "resume": "恢复"
+      },
+      "settingsTab": {
+        "groups": {
+          "period": "期间"
+        },
+        "rows": {
+          "history": "历史",
+          "medication": "药物",
+          "export": "导出",
+          "import": "导入",
+          "api": "API 访问",
+          "codes": "临床编码",
+          "channels": "通知渠道"
+        },
+        "intakeCount": "{count, plural, other {#次服药}}",
+        "withAllData": "连同其全部数据",
+        "courseCount": "{count, plural, other {#个疗程}}"
+      },
+      "overview": {
+        "changeMetric": "更换测量",
+        "metricField": "测量",
+        "details": "详情",
+        "since": "自那以后",
+        "daysChip": "{days, plural, other {#天}}",
+        "today": {
+          "progress": "{taken} / {total}",
+          "noneToday": "今天没有计划剂量。",
+          "asNeededTaken": "今天已服用{count, plural, other {#次}}。"
+        },
+        "intake": {
+          "title": "服药",
+          "missedNone": "{days, plural, other {#天}}内你没有漏服任何剂量。",
+          "missedSome": "{days, plural, other {#天}}内你漏服了{count, plural, other {#剂}}。",
+          "asNeededCount": "{count, plural, =0 {{days}天内未服用。} other {{days}天内服用#次。}}"
+        },
+        "legend": {
+          "taken": "{count, plural, other {已服 #}}",
+          "late": "{count, plural, other {延迟 #}}",
+          "missed": "{count, plural, other {漏服 #}}",
+          "skipped": "{count, plural, other {跳过 #}}"
+        },
+        "plan": {
+          "title": "计划",
+          "since": "自 {date} 起",
+          "range": "{start} 至 {end}",
+          "autoRecorded": "自动记录",
+          "reminderOn": "开，{minutes, plural, other {#分钟}}"
+        }
       }
     },
     "logInjectionSiteTitle": "记录注射部位",
@@ -2580,7 +2616,6 @@
       "intro": "这种药物本应影响的那些测量，在你开始用它前后是如何变化的。它只显示在时间上与它吻合的内容，从不给出关于你的治疗或剂量的建议。",
       "notEligible": "这项药物没有可以对标的结果指标。",
       "startFallback": "没有设定开始日期，因此比较以你第一条已记录的读数为参照点。",
-      "noStart": "为这项药物设定开始日期，即可比较开始前后的读数。",
       "primaryBadge": "主要目标",
       "noSeries": "这个目标还没有记录任何读数。",
       "startMarker": "开始",
@@ -2599,12 +2634,7 @@
         "error": "无法保存该更改，请重试。"
       },
       "beforeAfter": {
-        "summary": "之前均值 {before}，之后均值 {after}，变化 {delta}。",
-        "counts": "依据开始前 {beforeCount, plural, other {# 次读数}}与开始后 {afterCount} 次读数。",
-        "needBefore": "开始前的读数还太少。比较需要开始前后的数据各覆盖约 {weeks, plural, other {# 周}}。",
-        "needAfter": "开始后的读数还太少。比较需要开始前后的数据各覆盖约 {weeks, plural, other {# 周}}。",
-        "needStart": "设定开始日期，即可比较开始前后的读数。",
-        "needData": "读数还太少。比较需要开始前后的数据各覆盖约 {weeks, plural, other {# 周}}。"
+        "counts": "依据开始前 {beforeCount, plural, other {# 次读数}}与开始后 {afterCount} 次读数。"
       },
       "insights": {
         "title": "药物效果",
@@ -2638,7 +2668,8 @@
         "needAfter": "开始时的变化要求开始后至少 {days, plural, other {# 天}}有读数，且分布在 {span, plural, other {# 天}}之内，并落在已服药的日子里。",
         "fitFailed": "这些读数无法拟合，因此不显示开始时的变化。",
         "autocorrelation": "每日数值在相邻日之间相关很强，因此即便是这些区间也可能偏窄。"
-      }
+      },
+      "method": "计算方法"
     },
     "import": {
       "resultSuccess": "{imported, plural, other {已导入 # 条服药}}",
@@ -2853,7 +2884,6 @@
     "leaflet": {
       "title": "说明书",
       "find": "查找说明书",
-      "open": "打开",
       "saved": "官方说明书",
       "newTab": "（在新标签页中打开）",
       "opensIn": "会在{authority}的检索中打开，并预填该药物。",
@@ -2870,7 +2900,8 @@
       "urlInvalid": "请输入以 https:// 开头的链接",
       "savedToast": "说明书链接已保存",
       "removedToast": "说明书链接已移除",
-      "saveError": "无法保存该说明书链接"
+      "saveError": "无法保存该说明书链接",
+      "searchShort": "搜索"
     }
   },
   "charts": {
@@ -16539,6 +16570,15 @@
     "metricLabels": {
       "systolicBloodPressure": "收缩压",
       "diastolicBloodPressure": "舒张压"
+    },
+    "efficacyResult": {
+      "lower": "自开始以来，均值降低了 {amount}。",
+      "higher": "自开始以来，均值升高了 {amount}。",
+      "unchanged": "自开始以来，均值基本保持不变。",
+      "needBefore": "开始前的读数还不足以进行比较。",
+      "needAfter": "开始后的读数还不足以进行比较。",
+      "needStart": "添加开始日期，即可比较前后变化。",
+      "needData": "读数还不足以进行比较。"
     }
   }
 }
