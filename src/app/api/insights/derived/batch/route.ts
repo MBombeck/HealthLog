@@ -42,6 +42,8 @@ import { instructionLocale } from "@/lib/ai/prompts/output-language";
 import { resolveModuleMap } from "@/lib/modules/gate";
 import { DERIVED_MODULE } from "../route";
 import { ownRecord } from "@/lib/own-key";
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+import { scoreShortLabelOrNull } from "@/lib/scores/registry";
 
 export const dynamic = "force-dynamic";
 
@@ -224,13 +226,22 @@ export const GET = apiHandler(async (request: NextRequest) => {
   // module is disabled for the user. Resolved per request (NOT folded into
   // the SWR key) and applied to a NEW object so the cached map is never
   // mutated; a module toggle takes effect on the next read.
+  // The score's short name rides each entry in the reader's full locale,
+  // added here rather than in the cached body, whose cell keys on the
+  // two-way assessment locale.
   const moduleMap = await resolveModuleMap(user.id);
+  const { t } = getServerTranslator(locale);
   const gatedMetrics = Object.fromEntries(
-    Object.entries(map).filter(([key]) => {
-      const metric = key.includes(":") ? key.slice(0, key.indexOf(":")) : key;
-      const mod = DERIVED_MODULE[metric as DerivedMetricId];
-      return !(mod && moduleMap[mod] === false);
-    }),
+    Object.entries(map)
+      .filter(([key]) => {
+        const metric = key.includes(":") ? key.slice(0, key.indexOf(":")) : key;
+        const mod = DERIVED_MODULE[metric as DerivedMetricId];
+        return !(mod && moduleMap[mod] === false);
+      })
+      .map(([key, entry]) => [
+        key,
+        { ...entry, shortLabel: scoreShortLabelOrNull(entry.metric, t) },
+      ]),
   );
 
   annotate({

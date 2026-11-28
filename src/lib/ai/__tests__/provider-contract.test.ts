@@ -33,7 +33,7 @@ vi.mock("undici", async (importOriginal) => {
  * Provider-contract tests: every concrete AIProvider implementation must
  * satisfy the same shape — return a `CompletionResult` with the four
  * required fields populated. This is the "consolidated behind one
- * interface" guarantee from Phase C1 acceptance criterion #1.
+ * interface" guarantee of the v1.4.15 provider abstraction.
  *
  * Each test stubs the provider's network dependency and asserts the
  * shape on a happy path. Error paths live in each provider's dedicated

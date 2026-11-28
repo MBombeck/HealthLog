@@ -10,7 +10,7 @@ import { InfoPopover } from "@/components/ui/info-popover";
  * the point of capture, so a first-time user never has to leave the sheet to
  * understand a term.
  *
- * L2 (`.planning/audits/2026-07-18-qa-ui.md`) — this used to be a
+ * This used to be a
  * self-contained hover `Tooltip`, which never opens reliably on tap; the
  * cycle sheet is a thumb-first surface, so it now wraps the click-opened
  * `InfoPopover` (the app's one (i) info-affordance since the v1.28.17

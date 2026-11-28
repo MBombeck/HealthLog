@@ -7,7 +7,7 @@ import { showErrorToast } from "@/lib/errors/error-toast";
 import { RotateCcw } from "lucide-react";
 
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
-import { ActionMenu } from "@/components/ui/action-pair";
+import { ActionMenu } from "@/components/ui/action-menu";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-button";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";

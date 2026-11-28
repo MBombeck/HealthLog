@@ -6,8 +6,8 @@
  * 2-4 turns within a minute and the snapshot would otherwise rebuild
  * from the same rows each turn. Caching the result for 60s shaves the
  * ~10 measurement reads + the GLP-1 / mood / intake side-fetches off
- * every turn after the first, which `.planning/round-v1433-audit-perf.md`
- * §3.3 estimates at 200-800 ms of server-side tail.
+ * every turn after the first, which a v1.4.33 perf audit
+ * estimated at 200-800 ms of server-side tail.
  *
  * Scope is part of the cache key so a switch from `last30days` to
  * `last7days` (or a different `sources` set) computes fresh. The map

@@ -13,8 +13,13 @@
  * The per-user-scalar pattern of `show-nav-counts` next door: 60/min rate
  * limit, a 4 KB body cap, Zod safeParse with a 422, an audit row, an explicit
  * write. Idempotent.
+ *
+ * Resolved on the caller (`requireActorAuth`), the same account
+ * `/api/auth/me` reads the list from. A guardian inside a managed profile
+ * closes the hint on their own list, which is the one their screen shows;
+ * written to the profile's row it would land where nobody reads it.
  */
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireActorAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
@@ -30,7 +35,7 @@ const PATCH_RATE_LIMIT = 60;
 const PATCH_WINDOW_MS = 60_000;
 
 export const PATCH = apiHandler(async (req: Request) => {
-  const { user } = await requireAuth();
+  const { user } = await requireActorAuth();
 
   const rl = await checkRateLimit(
     `dismissed-hints:patch:${user.id}`,

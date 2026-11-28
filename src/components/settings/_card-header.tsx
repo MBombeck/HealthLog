@@ -10,8 +10,8 @@
  * justify-between` permutations across `account-section.tsx`,
  * `integrations-section.tsx`, `notification-status-card.tsx`,
  * `telegram-card.tsx`, `ntfy-card.tsx`, `web-push-card.tsx`,
- * `api-section.tsx`, and `advanced-section.tsx`. The audit's mechanical
- * drift report (`.planning/round-v1433-audit-settings.md` §2.5) listed
+ * `api-section.tsx`, and `advanced-section.tsx`. A mechanical drift
+ * report listed
  * one card with `mb-4 flex items-center gap-2`, the next with
  * `flex flex-col gap-3 sm:flex-row sm:justify-between`, another with
  * `flex flex-wrap items-start justify-between`, etc.
@@ -28,10 +28,19 @@
  */
 
 import * as React from "react";
+import dynamic from "next/dynamic";
 import type { LucideIcon } from "lucide-react";
 
-import { InfoPopover } from "@/components/ui/info-popover";
 import { cn } from "@/lib/utils";
+
+/**
+ * Loaded only by a card that has an `info`: every settings and admin card
+ * renders this header, and a static import put the popover runtime on the
+ * first load of every page that shows one, (i) or not.
+ */
+const InfoPopover = dynamic(() =>
+  import("@/components/ui/info-popover").then((mod) => mod.InfoPopover),
+);
 
 export interface SettingsCardHeaderProps {
   /** Lucide icon component; rendered as `text-muted-foreground h-5 w-5`.

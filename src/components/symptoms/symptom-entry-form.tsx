@@ -24,7 +24,8 @@ import { useId, useState } from "react";
 import { createPortal } from "react-dom";
 import { Loader2, RotateCcw } from "lucide-react";
 
-import { ActionMenu, ActionPair } from "@/components/ui/action-pair";
+import { ActionMenu } from "@/components/ui/action-menu";
+import { ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
 import { DateTimeField } from "@/components/ui/date-time-field";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";

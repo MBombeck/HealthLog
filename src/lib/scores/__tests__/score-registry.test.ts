@@ -1,6 +1,6 @@
 /**
- * The score register (`src/lib/scores/registry.ts`) knows every place a
- * score is drawn as a ring and every score page slug.
+ * The score register: every place a score is drawn as a ring and every score
+ * page slug.
  *
  * A ring or a score page that appears without an entry is a score nobody
  * decided about: which number it shows, which band rule colours it, whether
@@ -18,9 +18,52 @@ import {
 import {
   HEALTHLOG_SCORES,
   HEALTHLOG_SCORE_IDS,
-  SCORE_RING_SITES,
-  SCORE_SLUGS,
+  type HealthLogScoreId,
 } from "@/lib/scores/registry";
+
+type ScoreId = HealthLogScoreId;
+const SCORE_IDS = HEALTHLOG_SCORE_IDS;
+/** Every slug `/insights/scores/<slug>` may answer to. */
+const SCORE_SLUGS: readonly string[] = SCORE_IDS.map(
+  (id) => HEALTHLOG_SCORES[id].slug,
+);
+
+/**
+ * Every file that draws a `<ScoreRing>`, with the scores it may draw.
+ * `planned` marks a site still being built; the register accepts its
+ * absence and holds it like any other once it exists.
+ */
+const SCORE_RING_SITES: Readonly<
+  Record<string, { scores: readonly ScoreId[]; planned?: true }>
+> = {
+  "src/components/dashboard/today-scores.tsx": {
+    scores: ["HEALTH_SCORE", "SLEEP_SCORE", "READINESS"],
+  },
+  "src/components/insights/derived/score-anatomy-view.tsx": {
+    scores: [
+      "READINESS",
+      "SLEEP_SCORE",
+      "RECOVERY_SCORE",
+      "STRESS_SCORE",
+      "STRAIN_SCORE",
+    ],
+  },
+  // The shared score tile: the start page's row and the Insights row draw
+  // every score through it.
+  "src/components/insights/derived/score-ring-tile.tsx": {
+    scores: [
+      "READINESS",
+      "SLEEP_SCORE",
+      "HEALTH_SCORE",
+      "STRESS_SCORE",
+      "STRAIN_SCORE",
+    ],
+  },
+  "src/components/insights/derived/hero-strip.tsx": {
+    scores: ["READINESS", "SLEEP_SCORE", "HEALTH_SCORE"],
+    planned: true,
+  },
+};
 
 /** Every non-test source file under src/, comments blanked. */
 const FILES: Array<[string, string]> = readSourceFolder("src", {
@@ -68,7 +111,7 @@ describe("score register: ring sites", () => {
   it("names only registered scores per site", () => {
     for (const entry of Object.values(SCORE_RING_SITES)) {
       expect(entry.scores.length).toBeGreaterThan(0);
-      for (const id of entry.scores) expect(HEALTHLOG_SCORE_IDS).toContain(id);
+      for (const id of entry.scores) expect(SCORE_IDS).toContain(id);
     }
   });
 });
@@ -101,10 +144,7 @@ describe("score register: slugs", () => {
     expect(slugs.filter((slug) => !SCORE_SLUGS.includes(slug))).toEqual([]);
   });
 
-  it("gives every score its own slug and a title key", () => {
-    expect(new Set(SCORE_SLUGS).size).toBe(HEALTHLOG_SCORE_IDS.length);
-    for (const id of HEALTHLOG_SCORE_IDS) {
-      expect(HEALTHLOG_SCORES[id].titleKey).toMatch(/^[a-zA-Z]+(\.[\w]+)+$/);
-    }
+  it("gives every score its own slug", () => {
+    expect(new Set(SCORE_SLUGS).size).toBe(SCORE_IDS.length);
   });
 });

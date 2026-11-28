@@ -9,7 +9,7 @@ import { reasoningTitleOf } from "./reasoning/support";
 /**
  * Deterministic mock AI provider for tests.
  *
- * Phase C1 (v1.4.15): provider abstraction review. The route layer at
+ * Provider abstraction review: the route layer at
  * `/api/insights/generate` only depends on the `AIProvider` interface.
  * Real providers (Codex / OpenAI / Anthropic / Local) talk to upstream
  * services that cannot be exercised cheaply in CI; this implementation

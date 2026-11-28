@@ -1,55 +1,14 @@
 /**
- * The mental-wellbeing page promises that questionnaire answers and scores
- * never reach the Coach, another AI feature or a connected AI assistant.
- * This file binds that sentence to the one classification that keeps it
- * (`src/lib/ai/model-bound-data.ts`) and to the exits that apply it.
- *
- * The end-to-end proof against a real record, every MCP read and every
- * Coach read included, is `tests/integration/questionnaires-stay-out-of-models.test.ts`.
+ * The one classification of what never reaches a model
+ * (`src/lib/ai/model-bound-data.ts`): its filter, and the exits that apply
+ * it. The sentence it keeps true, and the instruments it covers, are held
+ * with every other privacy promise in `privacy-promise-guard.test.ts`.
  */
 import { describe, expect, it } from "vitest";
 
-import en from "../../messages/en.json";
-import {
-  isModelVisibleMeasurementType,
-  MODEL_EXCLUDED_MEASUREMENT_TYPES,
-  MODEL_EXCLUDED_SECTIONS,
-  withoutModelBoundExclusions,
-} from "@/lib/ai/model-bound-data";
-import { isModelVisibleSection } from "@/lib/day/model-projection";
-import {
-  INSTRUMENT_MEASUREMENT_TYPE,
-  INSTRUMENT_ORDER,
-} from "@/lib/mental-health/instruments";
-import { getSignal } from "@/lib/signals/registry";
+import { withoutModelBoundExclusions } from "@/lib/ai/model-bound-data";
 
 import { readSource, readSourceFolder } from "./helpers/source-files";
-
-describe("the questionnaire promise", () => {
-  it("is still the sentence this guard holds", () => {
-    // Changing the sentence means re-reading what it promises against the
-    // classification below.
-    expect(en.mentalHealth.privacyNote).toMatch(
-      /Answers and scores never reach the AI Coach, any other AI feature or an AI assistant you connected\./,
-    );
-  });
-
-  it("covers every instrument on the page, by its section and its score", () => {
-    expect(isModelVisibleSection("assessments")).toBe(false);
-    expect(MODEL_EXCLUDED_SECTIONS.has("assessments")).toBe(true);
-    for (const instrument of INSTRUMENT_ORDER) {
-      const type = INSTRUMENT_MEASUREMENT_TYPE[instrument];
-      expect(isModelVisibleMeasurementType(type), type).toBe(false);
-      // The signal registry says the same for every surface it governs.
-      const signal = getSignal(type);
-      expect(signal, type).toBeDefined();
-      expect(signal!.surfaces.coachSnapshot, type).toBe(false);
-      expect(signal!.surfaces.mcp, type).toBe(false);
-      expect(signal!.surfaces.correlationEligible, type).toBe(false);
-    }
-    expect(MODEL_EXCLUDED_MEASUREMENT_TYPES.size).toBe(INSTRUMENT_ORDER.length);
-  });
-});
 
 describe("withoutModelBoundExclusions", () => {
   it("drops a reading, a section item, a keyed entry and a bare type", () => {

@@ -1355,14 +1355,11 @@ describe("Garmin history backfill through a Garmin outage", () => {
       kind: "garmin-backfill",
       data: { userId: USER_ID, enqueuedAt: new Date().toISOString(), slice: 2 },
     };
-    let error: unknown;
     for (let i = 0; i < INTEGRATION_BACKFILL_TRANSIENT_ATTEMPTS + 5; i++) {
-      try {
-        await drainIntegrationBackfillAdmission([admissionJob(payload)]);
-      } catch (err) {
-        error = err;
-        break;
-      }
+      const before = fake.sends.length;
+      // Giving up is a terminal state on the card, not a thrown job.
+      await drainIntegrationBackfillAdmission([admissionJob(payload)]);
+      if (fake.sends.length === before) break;
       payload = lastAdmission();
     }
     // Every failed run but the last was sent again, with its count.
@@ -1375,16 +1372,13 @@ describe("Garmin history backfill through a Garmin outage", () => {
         (_, i) => i + 1,
       ),
     );
-    expect(String(error)).toMatch(
-      new RegExp(
-        `gave up after ${INTEGRATION_BACKFILL_TRANSIENT_ATTEMPTS} attempts: garmin backfill incomplete for user .* \\(slice \\d+: Garmin dailySummaries error: 500\\)`,
-      ),
-    );
 
     const { getIntegrationStatus } = await import("@/lib/integrations/status");
     const status = await getIntegrationStatus(USER_ID, "garmin");
     expect(status.state).toBe("error_transient");
-    expect(status.lastError).toContain("Garmin dailySummaries error: 500");
+    expect(status.lastError).toContain(
+      `History import paused after ${INTEGRATION_BACKFILL_TRANSIENT_ATTEMPTS} failed attempts: Garmin dailySummaries error: 500`,
+    );
     expect(status.lastError).not.toContain(USER_ID);
     const row = await getPrismaClient().integrationStatus.findFirst({
       where: { userId: USER_ID, integration: "garmin" },

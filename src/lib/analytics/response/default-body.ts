@@ -20,6 +20,8 @@ import { readBpInTargetBlock } from "./bp-in-target";
 import { readCorrelationBlock } from "./correlations";
 import { readGlucoseBlocks } from "./glucose";
 import { readHealthScoreBlock } from "./health-score";
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+import { scoreShortLabel } from "@/lib/scores/registry";
 import { computeSleepStageBreakdown } from "./sleep-stages";
 import { roundTo } from "@/lib/stats/central";
 import { bmiOf } from "@/lib/analytics/classifications";
@@ -159,7 +161,17 @@ export async function buildAnalyticsResponse(
     glucoseByContext: glucoseByContextOut,
     glucoseClinical: glucoseClinicalOut,
     correlations: correlationsWithPatterns,
-    healthScore,
+    // The score's short name for a tile rides the report; the body's cache
+    // cell is per locale, so it is worded in the reader's language.
+    healthScore: healthScore
+      ? {
+          ...healthScore,
+          shortLabel: scoreShortLabel(
+            "HEALTH_SCORE",
+            getServerTranslator(locale).t,
+          ),
+        }
+      : healthScore,
     sleepStages,
     // The latest night's source-discrepancy annotation, computed
     // inside the slim slice's per-night post-pass. Additive: the dashboard

@@ -13,13 +13,16 @@
  *   - transient (a 5xx, a 429, a timeout, a dropped connection): the slice is
  *     sent again as the next slice of the same chain, after a backoff that
  *     doubles from five minutes up to six hours, with jitter, and never
- *     sooner than the provider's `Retry-After`. The progress note the runner
+ *     sooner than the provider's `Retry-After`. When another job of the
+ *     import already waits, that one carries it on and nothing is sent
+ *     (`integration-backfill-claim.ts`). The progress note the runner
  *     keeps is untouched, so the retry starts where the failed slice stopped.
  *     After `INTEGRATION_BACKFILL_TRANSIENT_ATTEMPTS` failed runs in a row the
- *     chain gives up: the failure goes on the integration's ledger under the
- *     `backfill` leg, so the card shows it, and the job fails with the
- *     slice's own message, so system status names the integration and slice.
- *     The next restart's discovery offers the import again from its note.
+ *     chain gives up, as a terminal state rather than a throw: the failure
+ *     goes on the integration's ledger under the `backfill` leg, so the card
+ *     shows it, the wide event names the integration and slice
+ *     (`integration_backfill.gave_up`), and the job completes. The next
+ *     restart's discovery offers the import again from its note.
  *   - permanent (the provider refused the credentials): no retry can help.
  *     The connection is parked for re-authorisation, which the card shows as
  *     "reconnect", unless the runner already did that.
@@ -39,11 +42,11 @@ import {
   type IntegrationKey,
 } from "@/lib/integrations/status";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
-import {
-  enqueueIntegrationBackfillAdmission,
-  type IntegrationBackfillAdmissionPayload,
-  type IntegrationBackfillKind,
+import type {
+  IntegrationBackfillAdmissionPayload,
+  IntegrationBackfillKind,
 } from "@/lib/jobs/integration-backfill-admission";
+import { sendBackfillUnlessWaiting } from "@/lib/jobs/integration-backfill-claim";
 import { annotate } from "@/lib/logging/context";
 
 /** Failed runs in a row a slice gets before the chain gives up. */
@@ -185,7 +188,8 @@ export type BackfillFailureOutcome =
 
 /**
  * Decide on a thrown slice. `handled` means the job may complete: the slice
- * was sent again. Otherwise the job fails with `error`.
+ * was sent again, or the chain gave up and recorded that as its terminal
+ * state. Otherwise the job fails with `error`.
  */
 export async function handleBackfillFailure(
   job: Job<IntegrationBackfillAdmissionPayload>,
@@ -232,7 +236,7 @@ export async function handleBackfillFailure(
     );
     const boss = getGlobalBoss();
     const sent = boss
-      ? await enqueueIntegrationBackfillAdmission(
+      ? await sendBackfillUnlessWaiting(
           boss,
           {
             kind: payload.kind,
@@ -246,7 +250,19 @@ export async function handleBackfillFailure(
           delaySeconds,
         )
       : null;
-    if (sent) {
+    if (sent?.kind === "waiting") {
+      // Another job of the import waits already (a fresh offer from boot
+      // discovery) and picks up from the progress note: a retry beside it
+      // would be a second chain.
+      annotate({
+        action: {
+          name: "integration_backfill.retry_covered",
+          details: { kind: payload.kind, slice, attempt: failures },
+        },
+      });
+      return { handled: true };
+    }
+    if (sent?.kind === "sent") {
       annotate({
         action: {
           name: "integration_backfill.retry_scheduled",
@@ -266,8 +282,12 @@ export async function handleBackfillFailure(
     return { handled: false, error: err };
   }
 
-  // Given up. The ledger hears it once per chain, not once per pg-boss retry
-  // of the job that gave up.
+  // Given up: a terminal state, not a throw. The ledger records it under the
+  // `backfill` leg, which is what the card shows, and the job completes, so
+  // pg-boss does not run a chain that has already used its attempts once
+  // more per retry. The next restart's discovery offers the import again
+  // from its note. The ledger hears it once per chain even if an older job
+  // that gave up is still being retried by pg-boss.
   const retryCount =
     (job as Partial<JobWithMetadata<IntegrationBackfillAdmissionPayload>>)
       .retryCount ?? 0;
@@ -293,13 +313,10 @@ export async function handleBackfillFailure(
         slice,
         attempts: failures,
         status: failure.httpStatus,
+        terminal: true,
+        error: messageOf(err),
       },
     },
   });
-  return {
-    handled: false,
-    error: new Error(`gave up after ${failures} attempts: ${messageOf(err)}`, {
-      cause: err,
-    }),
-  };
+  return { handled: true };
 }

@@ -95,7 +95,7 @@ describe("SETTINGS_SECTION_SLUGS", () => {
     // v1.4.3 split the dashboard panel: layout stays under `dashboard`,
     // per-metric overrides moved to their own `thresholds` slug so it's
     // a top-level entry in the settings nav.
-    // v1.4.16 phase B7 added the consolidated `export` section between
+    // v1.4.16 added the consolidated `export` section between
     // `api` and `advanced` so every "give me my data out" path lives in
     // one place.
     // v1.4.25 W5e added `sources` between `thresholds` and `ai`; v1.4.34

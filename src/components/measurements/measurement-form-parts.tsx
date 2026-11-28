@@ -2,7 +2,8 @@
 
 import { Loader2, RotateCcw } from "lucide-react";
 
-import { ActionMenu, ActionPair } from "@/components/ui/action-pair";
+import { ActionMenu } from "@/components/ui/action-menu";
+import { ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { FieldGroup } from "@/components/ui/field-group";

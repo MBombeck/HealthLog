@@ -51,6 +51,7 @@ export class WhoopApiError extends IntegrationApiError {
     httpStatus: number | undefined;
     reason: string;
     upstreamError?: string;
+    retryAfterMs?: number;
   }) {
     super({ vendor: "WHOOP", ...opts });
     this.name = "WhoopApiError";

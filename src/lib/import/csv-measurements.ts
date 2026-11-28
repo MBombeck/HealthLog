@@ -197,10 +197,57 @@ export function splitCsvRows(text: string): string[][] {
   return rows;
 }
 
-/** True when an ISO-8601 datetime string carries an explicit offset (`Z` or ±HH:MM). */
-function hasExplicitOffset(value: string): boolean {
-  // Offset is in the time portion, after the `T`. Match a trailing Z or ±HH:MM.
-  return /([zZ]|[+-]\d{2}:?\d{2})$/.test(value.trim());
+/**
+ * An ISO-8601 date and time, `T` or a space between them, with or without an
+ * offset. Anything else is not read at all: a trailing `-2026` in
+ * `11-05-2026` once passed for an offset, and the date then went to
+ * `new Date()`, which read it month-first in the server's zone (5 November).
+ */
+const ISO_DATE_TIME =
+  /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2})(?:[.,](\d{1,9}))?)?\s*([zZ]|[+-]\d{2}(?::?\d{2})?)?$/;
+
+type ParsedInstant =
+  | { ok: true; at: Date }
+  | { ok: false; reason: "missing_timezone_offset" | "invalid_timestamp" };
+
+/** Read a `measuredAt` cell: strict ISO-8601 with an explicit offset. */
+function parseMeasuredAt(raw: string): ParsedInstant {
+  const m = ISO_DATE_TIME.exec(raw);
+  if (!m) return { ok: false, reason: "invalid_timestamp" };
+  const [, y, mo, d, h, mi, sec, frac, offset] = m;
+  if (offset === undefined) {
+    return { ok: false, reason: "missing_timezone_offset" };
+  }
+  const [year, month, day, hour, minute, second] = [y, mo, d, h, mi, sec].map(
+    (part) => Number(part ?? 0),
+  );
+  // The fields as written must name a real wall-clock time: `Date.UTC`
+  // rolls 30 February over into March without a word.
+  const wall = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+  if (
+    wall.getUTCFullYear() !== year ||
+    wall.getUTCMonth() !== month - 1 ||
+    wall.getUTCDate() !== day ||
+    wall.getUTCHours() !== hour ||
+    wall.getUTCMinutes() !== minute ||
+    wall.getUTCSeconds() !== second
+  ) {
+    return { ok: false, reason: "invalid_timestamp" };
+  }
+  let offsetMinutes = 0;
+  if (offset !== "Z" && offset !== "z") {
+    const sign = offset.startsWith("-") ? -1 : 1;
+    const digits = offset.slice(1).replace(":", "");
+    const oh = Number(digits.slice(0, 2));
+    const om = Number(digits.slice(2) || "0");
+    if (oh > 14 || om > 59) return { ok: false, reason: "invalid_timestamp" };
+    offsetMinutes = sign * (oh * 60 + om);
+  }
+  const millis = frac ? Math.floor(Number(`0.${frac}`) * 1000) : 0;
+  return {
+    ok: true,
+    at: new Date(wall.getTime() + millis - offsetMinutes * 60_000),
+  };
 }
 
 const KNOWN_TYPES = new Set(measurementTypeEnum.options as readonly string[]);
@@ -304,15 +351,12 @@ export function parseCsvMeasurements(
       skip("invalid_timestamp");
       continue;
     }
-    if (!hasExplicitOffset(rawMeasuredAt)) {
-      skip("missing_timezone_offset");
+    const instant = parseMeasuredAt(rawMeasuredAt);
+    if (!instant.ok) {
+      skip(instant.reason);
       continue;
     }
-    const measuredAt = new Date(rawMeasuredAt);
-    if (Number.isNaN(measuredAt.getTime())) {
-      skip("invalid_timestamp");
-      continue;
-    }
+    const measuredAt = instant.at;
     if (!isPlausibleEntryInstant(measuredAt, { now })) {
       skip("implausible_timestamp");
       continue;

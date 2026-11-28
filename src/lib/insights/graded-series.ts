@@ -1,8 +1,7 @@
 /**
  * Shared graded-series compressor for AI insight snapshots.
  *
- * Background — see `.planning/research/ai-payload-compression-audit.md`.
- * The seven per-card status generators embedded the FULL daily array
+ * Background: the seven per-card status generators embedded the FULL daily array
  * per metric (`bucketSeries`, up to ~360 daily buckets + ~24 monthly)
  * plus correlation pair arrays, and originally never touched the WEEK /
  * MONTH / YEAR rollup tier. A daily-weigher's `weight-status` snapshot ran

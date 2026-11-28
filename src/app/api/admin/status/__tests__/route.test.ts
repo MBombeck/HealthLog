@@ -75,11 +75,16 @@ vi.mock("@/lib/jobs/job-failures", () => ({
   readFailingQueues: vi.fn(),
 }));
 
+vi.mock("@/lib/notifications/gone-registrations", () => ({
+  readGoneHolds: vi.fn(),
+}));
+
 // v1.4.25 — `/api/admin/status` now reads the legacy-form
 import { GET } from "../route";
 import { prisma } from "@/lib/db";
 import { requireAdmin, HttpError } from "@/lib/api-handler";
 import { readFailingQueues } from "@/lib/jobs/job-failures";
+import { readGoneHolds } from "@/lib/notifications/gone-registrations";
 
 const ADMIN_CTX = {
   authMethod: "cookie" as const,
@@ -102,6 +107,7 @@ beforeEach(() => {
   vi.mocked(prisma.session.count).mockResolvedValue(0);
   vi.mocked(prisma.appSettings.findUnique).mockResolvedValue(null);
   vi.mocked(readFailingQueues).mockResolvedValue([]);
+  vi.mocked(readGoneHolds).mockResolvedValue([]);
 });
 
 describe("GET /api/admin/status (integration health summary)", () => {
@@ -274,6 +280,38 @@ describe("GET /api/admin/status (integration health summary)", () => {
         }),
       ],
     });
+  });
+
+  it("lists a push channel whose deletions are held among the failing jobs", async () => {
+    vi.mocked(readFailingQueues).mockResolvedValueOnce(null);
+    vi.mocked(readGoneHolds).mockResolvedValueOnce([
+      {
+        channel: "apns",
+        count: 50,
+        trippedAt: new Date("2026-11-27T10:00:00.000Z"),
+        until: new Date("2026-11-28T10:00:00.000Z"),
+      },
+    ]);
+
+    const res = await GET();
+    const body = (await res.json()) as {
+      data: {
+        failingJobs: {
+          queues: Array<{ queue: string; failures: number; lastError: string }>;
+        };
+      };
+    };
+
+    expect(body.data.failingJobs.queues).toEqual([
+      expect.objectContaining({
+        queue: "push-registration-cleanup:apns",
+        failures: 50,
+        lastFailedAt: "2026-11-27T10:00:00.000Z",
+      }),
+    ]);
+    expect(body.data.failingJobs.queues[0].lastError).toContain(
+      "push configuration",
+    );
   });
 
   it("carries the login-IP geo state the public version route no longer shows", async () => {

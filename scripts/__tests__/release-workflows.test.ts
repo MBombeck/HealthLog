@@ -430,6 +430,18 @@ describe("edge image and fix-line check", () => {
     expect(step?.run).toContain("node scripts/release-policy.mjs pr");
     expect(step?.env?.SOURCE_BRANCH).toBe("${{ github.head_ref }}");
   });
+
+  it("checks every pull request's commits and body for tooling attribution", () => {
+    const workflow = loadWorkflow("migration-immutability.yml");
+    const job = workflow.jobs["attribution"];
+    const step = job?.steps?.find((s) => s.run?.includes("attribution"));
+
+    expect(workflow.on?.pull_request?.branches).toEqual(["main", "release/**"]);
+    expect(workflow.on?.pull_request?.types).toContain("edited");
+    expect(job?.if).toBe("github.event_name == 'pull_request'");
+    expect(step?.run).toContain("node scripts/release-policy.mjs attribution");
+    expect(step?.env?.PR_BODY).toBe("${{ github.event.pull_request.body }}");
+  });
 });
 
 const NIGHTLY_HEAD = "1".repeat(40);

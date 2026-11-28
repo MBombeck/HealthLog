@@ -2524,32 +2524,40 @@
           "short": "Gesundheit"
         },
         "en": {
-          "name": "Health score"
+          "name": "Health score",
+          "short": "Health"
         },
         "fr": {
-          "name": "Score de santé"
+          "name": "Score de santé",
+          "short": "Santé"
         },
         "es": {
-          "name": "Puntuación de salud"
+          "name": "Puntuación de salud",
+          "short": "Salud"
         },
         "it": {
-          "name": "Punteggio di salute"
+          "name": "Punteggio di salute",
+          "short": "Salute"
         },
         "pl": {
-          "name": "Wynik zdrowia"
+          "name": "Wynik zdrowia",
+          "short": "Zdrowie"
         },
         "ko": {
-          "name": "건강 점수"
+          "name": "건강 점수",
+          "short": "건강"
         },
         "nl": {
           "name": "Gezondheidsscore",
           "short": "Gezondheid"
         },
         "pt-BR": {
-          "name": "Pontuação de saúde"
+          "name": "Pontuação de saúde",
+          "short": "Saúde"
         },
         "ru": {
-          "name": "Балл здоровья"
+          "name": "Балл здоровья",
+          "short": "Здоровье"
         }
       },
       "anchors": [
@@ -2987,34 +2995,44 @@
       "wire": "composite READINESS",
       "terms": {
         "de": {
-          "name": "Bereitschaft"
+          "name": "Bereitschaft",
+          "short": "Bereitschaft"
         },
         "en": {
-          "name": "Readiness"
+          "name": "Readiness",
+          "short": "Readiness"
         },
         "fr": {
-          "name": "Disponibilité"
+          "name": "Disponibilité",
+          "short": "Disponibilité"
         },
         "es": {
-          "name": "Disposición"
+          "name": "Disposición",
+          "short": "Disposición"
         },
         "it": {
-          "name": "Prontezza"
+          "name": "Prontezza",
+          "short": "Prontezza"
         },
         "pl": {
-          "name": "Gotowość"
+          "name": "Gotowość",
+          "short": "Gotowość"
         },
         "ko": {
-          "name": "준비도"
+          "name": "준비도",
+          "short": "준비도"
         },
         "nl": {
-          "name": "Paraatheid"
+          "name": "Paraatheid",
+          "short": "Paraatheid"
         },
         "pt-BR": {
-          "name": "Prontidão"
+          "name": "Prontidão",
+          "short": "Prontidão"
         },
         "ru": {
-          "name": "Готовность"
+          "name": "Готовность",
+          "short": "Готовность"
         }
       },
       "anchors": [
@@ -3024,6 +3042,7 @@
           "match": "exact"
         }
       ],
+      "shortKey": "measurements.shortTypeReadiness",
       "forbidden": {
         "de": [],
         "en": [],
@@ -3048,34 +3067,44 @@
       "wire": "composite SLEEP_SCORE",
       "terms": {
         "de": {
-          "name": "Schlafscore"
+          "name": "Schlafscore",
+          "short": "Schlafscore"
         },
         "en": {
-          "name": "Sleep score"
+          "name": "Sleep score",
+          "short": "Sleep score"
         },
         "fr": {
-          "name": "Score de sommeil"
+          "name": "Score de sommeil",
+          "short": "Score de sommeil"
         },
         "es": {
-          "name": "Puntuación de sueño"
+          "name": "Puntuación de sueño",
+          "short": "Puntuación de sueño"
         },
         "it": {
-          "name": "Punteggio del sonno"
+          "name": "Punteggio del sonno",
+          "short": "Punteggio del sonno"
         },
         "pl": {
-          "name": "Wynik snu"
+          "name": "Wynik snu",
+          "short": "Wynik snu"
         },
         "ko": {
-          "name": "수면 점수"
+          "name": "수면 점수",
+          "short": "수면 점수"
         },
         "nl": {
-          "name": "Slaapscore"
+          "name": "Slaapscore",
+          "short": "Slaapscore"
         },
         "pt-BR": {
-          "name": "Pontuação de sono"
+          "name": "Pontuação de sono",
+          "short": "Pontuação de sono"
         },
         "ru": {
-          "name": "Балл сна"
+          "name": "Балл сна",
+          "short": "Балл сна"
         }
       },
       "anchors": [
@@ -3090,6 +3119,7 @@
           "match": "exact"
         }
       ],
+      "shortKey": "measurements.shortTypeSleepScore",
       "forbidden": {
         "de": [],
         "en": [],
@@ -3109,34 +3139,44 @@
       "wire": "measurement type RECOVERY_SCORE",
       "terms": {
         "de": {
-          "name": "Erholungsscore"
+          "name": "Erholungsscore",
+          "short": "Erholung"
         },
         "en": {
-          "name": "Recovery score"
+          "name": "Recovery score",
+          "short": "Recovery"
         },
         "fr": {
-          "name": "Score de récupération"
+          "name": "Score de récupération",
+          "short": "Récupération"
         },
         "es": {
-          "name": "Puntuación de recuperación"
+          "name": "Puntuación de recuperación",
+          "short": "Recuperación"
         },
         "it": {
-          "name": "Punteggio di recupero"
+          "name": "Punteggio di recupero",
+          "short": "Recupero"
         },
         "pl": {
-          "name": "Wynik regeneracji"
+          "name": "Wynik regeneracji",
+          "short": "Regeneracja"
         },
         "ko": {
-          "name": "회복 점수"
+          "name": "회복 점수",
+          "short": "회복"
         },
         "nl": {
-          "name": "Herstelscore"
+          "name": "Herstelscore",
+          "short": "Herstel"
         },
         "pt-BR": {
-          "name": "Pontuação de recuperação"
+          "name": "Pontuação de recuperação",
+          "short": "Recuperação"
         },
         "ru": {
-          "name": "Балл восстановления"
+          "name": "Балл восстановления",
+          "short": "Восстановление"
         }
       },
       "anchors": [
@@ -3156,6 +3196,7 @@
           "match": "exact"
         }
       ],
+      "shortKey": "measurements.shortTypeRecoveryScore",
       "forbidden": {
         "de": [],
         "en": [],
@@ -9619,34 +9660,44 @@
       "description": "The Stress score metric (STRESS_SCORE).",
       "terms": {
         "de": {
-          "name": "Stressscore"
+          "name": "Stressscore",
+          "short": "Stress"
         },
         "en": {
-          "name": "Stress score"
+          "name": "Stress score",
+          "short": "Stress"
         },
         "fr": {
-          "name": "Score de stress"
+          "name": "Score de stress",
+          "short": "Stress"
         },
         "es": {
-          "name": "Puntuación de estrés"
+          "name": "Puntuación de estrés",
+          "short": "Estrés"
         },
         "it": {
-          "name": "Punteggio di stress"
+          "name": "Punteggio di stress",
+          "short": "Stress"
         },
         "pl": {
-          "name": "Wynik stresu"
+          "name": "Wynik stresu",
+          "short": "Stres"
         },
         "ko": {
-          "name": "스트레스 점수"
+          "name": "스트레스 점수",
+          "short": "스트레스"
         },
         "nl": {
-          "name": "Stressscore"
+          "name": "Stressscore",
+          "short": "Stress"
         },
         "pt-BR": {
-          "name": "Pontuação de estresse"
+          "name": "Pontuação de estresse",
+          "short": "Estresse"
         },
         "ru": {
-          "name": "Балл стресса"
+          "name": "Балл стресса",
+          "short": "Стресс"
         }
       },
       "anchors": [
@@ -9661,6 +9712,7 @@
           "match": "exact"
         }
       ],
+      "shortKey": "measurements.shortTypeStressScore",
       "forbidden": {
         "de": [
           "Stress-Score",
@@ -9686,34 +9738,44 @@
       "description": "The Strain score metric (STRAIN_SCORE).",
       "terms": {
         "de": {
-          "name": "Belastungsscore"
+          "name": "Belastungsscore",
+          "short": "Belastung"
         },
         "en": {
-          "name": "Strain score"
+          "name": "Strain score",
+          "short": "Strain"
         },
         "fr": {
-          "name": "Score d'effort"
+          "name": "Score d'effort",
+          "short": "Effort"
         },
         "es": {
-          "name": "Puntuación de esfuerzo diario"
+          "name": "Puntuación de esfuerzo diario",
+          "short": "Esfuerzo"
         },
         "it": {
-          "name": "Punteggio di sforzo"
+          "name": "Punteggio di sforzo",
+          "short": "Sforzo"
         },
         "pl": {
-          "name": "Wynik obciążenia"
+          "name": "Wynik obciążenia",
+          "short": "Obciążenie"
         },
         "ko": {
-          "name": "부하 점수"
+          "name": "부하 점수",
+          "short": "부하"
         },
         "nl": {
-          "name": "Belastingsscore"
+          "name": "Belastingsscore",
+          "short": "Belasting"
         },
         "pt-BR": {
-          "name": "Pontuação de esforço"
+          "name": "Pontuação de esforço",
+          "short": "Esforço"
         },
         "ru": {
-          "name": "Балл напряжения"
+          "name": "Балл напряжения",
+          "short": "Напряжение"
         }
       },
       "anchors": [
@@ -9728,6 +9790,7 @@
           "match": "exact"
         }
       ],
+      "shortKey": "measurements.shortTypeStrainScore",
       "forbidden": {
         "de": [
           "Belastungs-Score",
