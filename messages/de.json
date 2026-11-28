@@ -7561,6 +7561,14 @@
       "description": "Wird alle sechs Stunden aus deinem WebDAV- oder Nextcloud-Ordner abgeholt. Eingerichtet und geändert wird es unter Import.",
       "manage": "Ordner-Einstellungen öffnen"
     },
+    "healthConnectApp": {
+      "connect": "Android-Gerät verbinden",
+      "disconnect": "Trennen",
+      "newCode": "Neuer Code",
+      "validUntil": "Gültig bis {time}",
+      "qrAlt": "QR-Code für HealthLog Sync",
+      "preview": "HealthLog Sync für Android, Vorschau"
+    },
     "withingsViewData": "Messwerte ansehen",
     "whoopViewData": "Erholung ansehen",
     "googleHealthViewData": "Schritte ansehen",

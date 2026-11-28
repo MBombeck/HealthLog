@@ -74,6 +74,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 function measurementSourceFor(key: ConnectionKey): MeasurementSource | null {
   if (key === "apple-health") return "APPLE_HEALTH";
+  if (key === "health-connect-app") return "HEALTH_CONNECT";
   return INTEGRATION_MEASUREMENT_SOURCE[key] ?? null;
 }
 

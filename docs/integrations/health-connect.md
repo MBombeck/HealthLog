@@ -1,10 +1,11 @@
 # Health Connect import
 
 HealthLog reads the export file of Android's Health Connect and folds
-it into the same timeline as every other source. There is no Android
-app and no live sync: you export from the phone, and either upload the
-file or let HealthLog fetch the scheduled export from a WebDAV or
-Nextcloud folder (see the last section); a background job imports it. Rows from this path carry the source
+it into the same timeline as every other source. You export from the
+phone, and either upload the file or let HealthLog fetch the scheduled
+export from a WebDAV or Nextcloud folder; a background job imports it.
+A live sync through a small Android app, HealthLog Sync, is in early
+preview (see the last section). Rows from this path carry the source
 `HEALTH_CONNECT`.
 
 ## What you need
@@ -246,3 +247,117 @@ The endpoints are `GET`, `PUT` and `DELETE /api/import/health-connect-remote`
 and `POST /api/import/health-connect-remote/fetch`; the background pass is the
 `health-connect-remote-fetch` queue, hourly, reading only the folders that are
 due.
+
+## HealthLog Sync for Android (early preview)
+
+HealthLog Sync is a small open-source Android app (Apache-2.0, package
+`dev.healthlog.sync`) that reads Health Connect in the background and sends
+what changed to your own HealthLog server. The app is in testing; the server
+side ships with 1.50.0 behind the feature key `health-connect.sync` on
+`GET /api/version`. It writes with the same mapping and the same rules as the
+export import, so a record that arrives live and later in an export ends up as
+one row.
+
+### Pairing
+
+Under **Settings > Integrations**, "Connect Android device" shows a QR code.
+Scan it with the app. The code is valid for ten minutes and pairs one device
+once; "New code" makes another. The app gets a token that can do exactly two
+things: read the sync state and send batches. It cannot read your data back.
+The token lasts a year and every sync moves that out, so a phone in use never
+expires and a lost one stops within a year. The paired phone is listed in the
+same group; "Disconnect" removes it and its token at once.
+
+A phone that stops syncing is told like a quiet iPhone: the same stall rule,
+the same notice, linked to `/settings/integrations#health-connect-app`.
+
+### What it sends
+
+Spot readings (weight, body fat, lean mass, blood pressure, resting heart
+rate, RMSSD, SpO2, respiratory rate, glucose, body temperature, VO2 max),
+heart-rate series, sleep with its stages, and exercise sessions as records;
+steps, active energy and distance as day totals computed by Health Connect,
+so its own app priority already removed doubles; heart rate older than 90
+days as hourly means; and the ids Health Connect reports deleted. Hydration,
+nutrition and cycle records are not taken yet; `state` lists what is.
+
+### The wire
+
+The QR code holds `healthlog-sync://pair?server=<origin>&code=hcp_<32 hex>`.
+
+| Route                              | Auth                                     | What it does                                                                                        |
+| ---------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `POST /api/health-connect/pairing` | session, recent sign-in                  | mints the code, answers `{ code, expiresAt, link }`                                                 |
+| `POST /api/health-connect/pair`    | the code in the body                     | answers `{ token, tokenExpiresAt, deviceId, server: { version } }`                                  |
+| `GET /api/health-connect/state`    | device token                             | wanted types and aggregates, apps to leave out, `rawHeartRateFrom`, newest reading per type, limits |
+| `POST /api/health-connect/batch`   | device token, `Idempotency-Key` required | records, aggregates, deletes; one result per item                                                   |
+
+A spot reading's `fields` use the export's column names and units (`weight`
+and `mass` in grams, `systolic`/`diastolic` mmHg, `level` mmol/L with
+`relation_to_meal`, `temperature` °C, and so on). Instants are ISO 8601 with
+seconds; instants carry `zoneOffsetSeconds`, sessions and series
+`startZoneOffsetSeconds`/`endZoneOffsetSeconds`.
+
+```json
+{
+  "phase": "live",
+  "records": [
+    {
+      "id": "6b1f…",
+      "type": "WeightRecord",
+      "package": "com.sec.android.app.shealth",
+      "deviceType": 3,
+      "time": "2026-11-30T06:12:00Z",
+      "zoneOffsetSeconds": 3600,
+      "fields": { "weight": 81250 }
+    },
+    {
+      "id": "…",
+      "type": "HeartRateRecord",
+      "start": "…Z",
+      "end": "…Z",
+      "samples": [{ "time": "…Z", "bpm": 62 }]
+    },
+    {
+      "id": "…",
+      "type": "SleepSessionRecord",
+      "start": "…Z",
+      "end": "…Z",
+      "stages": [{ "start": "…Z", "end": "…Z", "stage": 5 }]
+    },
+    {
+      "id": "…",
+      "type": "ExerciseSessionRecord",
+      "start": "…Z",
+      "end": "…Z",
+      "exerciseType": 56
+    }
+  ],
+  "aggregates": [
+    {
+      "metric": "STEPS_COUNT_TOTAL",
+      "day": "2026-11-29",
+      "value": 9123,
+      "computedAt": "…Z"
+    },
+    {
+      "metric": "HEART_RATE_BPM",
+      "hour": "2026-03-01T07",
+      "zoneOffsetSeconds": 3600,
+      "avg": 64,
+      "min": 51,
+      "max": 92
+    }
+  ],
+  "deletes": ["…"]
+}
+```
+
+The answer has one result per item, `inserted`, `updated`, `unchanged`,
+`skipped` (with a reason such as `same_reading_other_source` or
+`type_not_wanted`), `rejected` (malformed), `deleted` or `not_found`. A batch
+holds at most 500 items, 5,000 heart-rate samples and 4 MiB. Too many batches
+a minute, or too many heavy batches at once on the server, answer 429 with
+`Retry-After`; the app waits and sends the same batch with the same key. Any
+401 means the phone was disconnected and has to be paired again. The full
+contract is in the OpenAPI document under these four paths.

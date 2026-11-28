@@ -21,6 +21,7 @@ import { showErrorToast } from "@/lib/errors/error-toast";
 import { AppleHealthCard } from "@/components/settings/integrations/apple-health-card";
 import { DawarichCard } from "@/components/settings/integrations/dawarich-card";
 import { HealthConnectFolder } from "@/components/settings/integrations/health-connect-folder-card";
+import { HealthConnectAppConnection } from "@/components/settings/integrations/health-connect-app-connection";
 import { FitbitRemovalNotice } from "@/components/settings/integrations/fitbit-removal-notice";
 import { GarminCard } from "@/components/settings/integrations/garmin-card";
 import { GoogleHealthCard } from "@/components/settings/integrations/google-health-card";
@@ -371,6 +372,7 @@ export function ConnectionsPanel({
       <HealthConnectFolder
         viewModel={pickStatus(integrationStatus, "health-connect-remote")}
       />
+      <HealthConnectAppConnection />
       {environmentOn ? (
         <div id="dawarich" className="scroll-mt-28">
           <DawarichCard viewModel={pickStatus(integrationStatus, "dawarich")} />

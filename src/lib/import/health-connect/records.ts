@@ -183,6 +183,9 @@ export function mapHourlyPulse(
 ): PendingRow {
   const dayKey = agg.hour.slice(0, 10);
   const hour = Number(agg.hour.slice(11, 13));
+  // The local wall clock counted on the UTC axis, as the export's hourly
+  // fold counts `epoch + offset`; the offset is taken off below.
+  // eslint-disable-next-line healthlog/no-utc-day-key -- wall-clock arithmetic, not a day boundary
   const localHourStart = Date.parse(`${dayKey}T00:00:00Z`) + hour * HOUR_MS;
   return roundPendingRow({
     type: "PULSE",

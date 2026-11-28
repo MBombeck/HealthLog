@@ -7561,6 +7561,14 @@
       "description": "Загружается из вашей папки WebDAV или Nextcloud каждые шесть часов. Настраивается и меняется в разделе «Импорт».",
       "manage": "Открыть настройки папки"
     },
+    "healthConnectApp": {
+      "connect": "Подключить Android-устройство",
+      "disconnect": "Отключить",
+      "newCode": "Новый код",
+      "validUntil": "Действителен до {time}",
+      "qrAlt": "QR-код для HealthLog Sync",
+      "preview": "HealthLog Sync для Android, предварительная версия"
+    },
     "withingsViewData": "Посмотреть ваши измерения",
     "whoopViewData": "Посмотреть ваше восстановление",
     "googleHealthViewData": "Посмотреть ваши шаги",

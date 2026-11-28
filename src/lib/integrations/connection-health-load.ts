@@ -155,6 +155,7 @@ export async function loadConnectionFacts(
     whoopConn,
     googleHealthConn,
     healthKitArrivals,
+    androidDevices,
   ] = await Promise.all([
     prisma.integrationStatus.findMany({
       where: { userId },
@@ -217,6 +218,12 @@ export async function loadConnectionFacts(
           orderBy: { lastReceivedAt: "desc" },
         })
       : [],
+    wanted.has("health-connect-app")
+      ? prisma.device.findMany({
+          where: { userId, platform: "android", apiTokenId: { not: null } },
+          select: { lastSeen: true, healthIngestAt: true },
+        })
+      : [],
   ]);
 
   const ledger = new Map<string, LedgerRow>(
@@ -239,6 +246,8 @@ export async function loadConnectionFacts(
     "health-connect-remote": !!dbUser?.healthConnectRemoteSource?.enabled,
     // Apple Health is "connected" once the phone has delivered anything.
     "apple-health": false,
+    // Connected while a paired Android device exists.
+    "health-connect-app": androidDevices.length > 0,
   };
   const legacyLastSyncedAt: Partial<Record<ConnectionKey, Date | null>> = {
     withings: withingsConn?.lastSyncedAt ?? null,
@@ -255,6 +264,8 @@ export async function loadConnectionFacts(
         lastData.set(key, measured);
         return;
       }
+      // The devices' own delivery stamps carry the Android sync.
+      if (key === "health-connect-app") return;
       if (!connected[key]) return;
       if (key === "dawarich") {
         lastData.set(key, await newestDawarichDayAt(userId));
@@ -281,6 +292,17 @@ export async function loadConnectionFacts(
           lastSyncedAt: dbUser?.healthKitLastSyncedAt ?? null,
           arrivals: healthKitArrivals,
           newestMeasuredAt: lastData.get("apple-health") ?? null,
+          silentSince: silence.get(key) ?? null,
+          now,
+        }),
+      );
+      continue;
+    }
+    if (key === "health-connect-app") {
+      out.set(
+        key,
+        androidSyncFacts({
+          devices: androidDevices,
           silentSince: silence.get(key) ?? null,
           now,
         }),
@@ -420,6 +442,59 @@ function appleHealthFacts(input: {
   };
   return {
     key: "apple-health",
+    connected,
+    syncHealth,
+    lastDataAt,
+    ledgerAlerted: false,
+    healthWithoutSilence: resolveConnectionHealth({
+      ...common,
+      silentSince: null,
+    }),
+    health: resolveConnectionHealth({
+      ...common,
+      silentSince: iso(input.silentSince),
+    }),
+    silentSince: input.silentSince,
+  };
+}
+
+/**
+ * The Android Health Connect sync, from its paired devices: connected while
+ * one exists, alive by the newest batch any of them delivered in the
+ * background (`healthIngestAt`), checked against the push cadence the iPhone
+ * is held to.
+ */
+function androidSyncFacts(input: {
+  devices: Array<{ lastSeen: Date; healthIngestAt: Date | null }>;
+  silentSince: Date | null;
+  now: Date;
+}): ConnectionFacts {
+  const connected = input.devices.length > 0;
+  const lastSeen = newestOf(...input.devices.map((d) => d.lastSeen));
+  const lastDataAt = newestOf(...input.devices.map((d) => d.healthIngestAt));
+  const syncHealth = resolveSyncVerdict({
+    configured: connected,
+    connected,
+    lastDataAt,
+    legacyLastSyncedAt: lastSeen,
+    cadence: PUSH_CADENCE,
+    now: input.now,
+  });
+  const common = {
+    syncHealth,
+    connected,
+    ledgerState: null,
+    lastSuccessAt: iso(lastSeen),
+    lastAttemptAt: iso(lastSeen),
+    failingSince: null,
+    failingLegs: [],
+    recentCalls: [],
+    lastDataAt: iso(lastDataAt),
+    silenceWindowMs: SOURCE_PROFILES["health-connect-app"].silenceWindowMs,
+    now: input.now.getTime(),
+  };
+  return {
+    key: "health-connect-app",
     connected,
     syncHealth,
     lastDataAt,

@@ -88,15 +88,9 @@ const recordBase = {
     .max(255)
     .optional()
     .meta({ description: "`metadata.dataOrigin.packageName`." }),
-  deviceType: z
-    .number()
-    .int()
-    .min(0)
-    .max(64)
-    .optional()
-    .meta({
-      description: "`metadata.device.type` (Health Connect `Device.TYPE_*`).",
-    }),
+  deviceType: z.number().int().min(0).max(64).optional().meta({
+    description: "`metadata.device.type` (Health Connect `Device.TYPE_*`).",
+  }),
   lastModified: isoDateTime().optional(),
 };
 
@@ -380,11 +374,9 @@ export const hcStateResultSchema = z
       description:
         "Heart rate before this instant is sent as `HEART_RATE_BPM` hourly aggregates, from it on as samples.",
     }),
-    historyFrom: isoDateTime()
-      .nullable()
-      .meta({
-        description: "How far back to read; null is the whole history.",
-      }),
+    historyFrom: isoDateTime().nullable().meta({
+      description: "How far back to read; null is the whole history.",
+    }),
     types: z
       .record(
         z.string(),

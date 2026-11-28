@@ -587,9 +587,9 @@ describe("T4d — `health-connect:write` opens exactly two doors", () => {
       "app/api/health-connect/state/route.ts",
     ]);
     const methods = (rel: string) =>
-      [...read(rel).matchAll(/export const (GET|POST|PUT|PATCH|DELETE)\b/g)].map(
-        (m) => m[1],
-      );
+      [
+        ...read(rel).matchAll(/export const (GET|POST|PUT|PATCH|DELETE)\b/g),
+      ].map((m) => m[1]);
     expect(methods("app/api/health-connect/batch/route.ts")).toEqual(["POST"]);
     expect(methods("app/api/health-connect/state/route.ts")).toEqual(["GET"]);
     // The helper refuses every credential but the scope itself: a session and
