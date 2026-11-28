@@ -5228,7 +5228,8 @@
       "statusInRange": "na faixa",
       "statusBelow": "abaixo da faixa",
       "statusAbove": "acima da faixa",
-      "directionFlat": "sem mudança"
+      "directionFlat": "sem mudança",
+      "dismiss": "Ocultar até o próximo exame"
     },
     "navGripStrength": "Força de preensão",
     "navPainNrs": "Dor",

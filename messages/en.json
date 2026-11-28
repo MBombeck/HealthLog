@@ -5228,7 +5228,8 @@
       "statusInRange": "in range",
       "statusBelow": "below range",
       "statusAbove": "above range",
-      "directionFlat": "no change"
+      "directionFlat": "no change",
+      "dismiss": "Hide until the next panel"
     },
     "navGripStrength": "Grip strength",
     "navPainNrs": "Pain",

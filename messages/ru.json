@@ -5228,7 +5228,8 @@
       "statusInRange": "в диапазоне",
       "statusBelow": "ниже диапазона",
       "statusAbove": "выше диапазона",
-      "directionFlat": "без изменений"
+      "directionFlat": "без изменений",
+      "dismiss": "Скрыть до следующего анализа"
     },
     "navGripStrength": "Сила хвата",
     "navPainNrs": "Боль",
