@@ -955,6 +955,10 @@
     "morning": {
       "heroItemsTitle": "Do zrobienia dziś",
       "heroItemsDescription": "Wybierz, jakie typy elementów mogą się pojawiać w sekcji „Do zrobienia dziś”."
+    },
+    "tileComparison": {
+      "above": "Powyżej zakresu",
+      "below": "Poniżej zakresu"
     }
   },
   "measurements": {

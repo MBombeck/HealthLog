@@ -955,6 +955,10 @@
     "morning": {
       "heroItemsTitle": "À faire aujourd'hui",
       "heroItemsDescription": "Choisissez les types d’éléments qui peuvent apparaître dans « À faire aujourd'hui »."
+    },
+    "tileComparison": {
+      "above": "Au-dessus de la plage",
+      "below": "En dessous de la plage"
     }
   },
   "measurements": {
