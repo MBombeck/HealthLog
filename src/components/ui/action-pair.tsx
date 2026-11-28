@@ -26,7 +26,9 @@ import { cn } from "@/lib/utils";
  * `AlertDialogFooter` lay their children out through this, so a call site
  * passes its buttons and nothing else. A footer that portals its buttons in
  * from the form (a lone host `<div>` as the only child) gets the whole row,
- * and the form renders its own `ActionPair` into it.
+ * and the form renders its own `ActionPair` into it; so does a footer whose
+ * only child is an `ActionPair` of its own (the medication wizard spans the
+ * row, Back at the left edge, Next at the right).
  *
  * Labels are written to fit half a phone row. Should one not (a long locale
  * on a narrow phone), the two buttons stack, each the full width, the
@@ -81,10 +83,12 @@ function ActionPair({
     return () => observer.disconnect();
   });
 
+  // A footer that brings its own row (a portal host, or an `ActionPair`
+  // with its own width rules) gets the whole row, not a cell of this one.
   if (
     items.length === 1 &&
     React.isValidElement(items[0]) &&
-    items[0].type === "div"
+    (items[0].type === "div" || items[0].type === ActionPair)
   ) {
     return items[0];
   }
