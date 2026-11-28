@@ -32,13 +32,13 @@
  * - A button with a close-sounding label that does something else (marks a
  *   task done, saves): its `onClick` is not close-only.
  */
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 import {
+  readSource,
   readSourceText,
   requireFloor,
   walkSourceFiles,
@@ -52,9 +52,10 @@ const CLOSE_NAME = /close|dismiss|done|decline|hide/i;
 
 /** Every message key whose English text is a bare close word. */
 function closeWordKeys(): Set<string> {
-  const en = JSON.parse(
-    readFileSync(join(process.cwd(), "messages", "en.json"), "utf8"),
-  ) as Record<string, unknown>;
+  const en = JSON.parse(readSource("messages/en.json", '"common"')) as Record<
+    string,
+    unknown
+  >;
   const keys = new Set<string>();
   const walk = (node: unknown, prefix: string) => {
     if (typeof node === "string") {
