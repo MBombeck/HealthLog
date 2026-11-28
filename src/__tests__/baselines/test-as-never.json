@@ -1,7 +1,7 @@
 {
   "$comment": "as never casts in tests, per test file under src/. Maintained by src/__tests__/test-realism-ratchet.test.ts.",
-  "count": 517,
-  "total": 5291,
+  "count": 516,
+  "total": 5290,
   "entries": {
     "__tests__/api/auth/login/mfa-branch.test.ts": 10,
     "__tests__/api/auth/mfa/verify.test.ts": 9,
@@ -501,7 +501,6 @@
     "lib/notifications/senders/__tests__/ntfy.test.ts": 1,
     "lib/notifications/senders/__tests__/push-attempt-record.test.ts": 14,
     "lib/notifications/senders/__tests__/webhook.test.ts": 1,
-    "lib/onboarding/__tests__/first-result-config.test.ts": 1,
     "lib/oura/__tests__/client.test.ts": 3,
     "lib/polar/__tests__/client.test.ts": 2,
     "lib/profile/__tests__/health-facts.test.ts": 1,

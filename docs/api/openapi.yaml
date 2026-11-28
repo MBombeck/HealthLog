@@ -7538,7 +7538,7 @@ paths:
       tags:
         - Admin
       summary: The first-admin server setup's state
-      description: The steps (accounts, notifications, ai, privacy, health), the finish stamp, whether the start-page notice
+      description: The steps (account-mfa, signups, relay, ai, recovery), the finish stamp, whether the start-page notice
         shows for this admin, and the environment facts the steps show. Admin-only, cookie-only.
       responses:
         "200":
@@ -7617,6 +7617,59 @@ paths:
                 $ref: "#/components/schemas/AdminSetupHealthEnvelope"
         "401": *a1
         "403": *a28
+        "422": *a4
+        "429": *a5
+  /api/setup:
+    get:
+      tags:
+        - Onboarding
+      summary: The resolved setup state
+      description: Where the person setup stands and the rows of the setup card, resolved on the server so the web and the
+        iPhone app render the same thing; for an admin on a browser session also the server setup and the rows of Admin
+        › Setup. Rows are detected from their domain (a medication exists, a factor is enrolled, the relay is on), so a
+        row completes wherever it was done. Cookie or wildcard Bearer; a narrow token is refused. Feature key
+        `setup.resolved-state`.
+      responses:
+        "200":
+          description: The setup state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetupStateEnvelope"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
+    patch:
+      tags:
+        - Onboarding
+      summary: Hide or show the setup card
+      description: "`cardDismissed: true` hides the dashboard setup card for this account on every device; `false` clears the
+        hide, and the card comes back only while `cardShown`'s other conditions hold (a flow started on 1.50, at least
+        one row `todo` or `warning`, not a demo deploy); it touches no row and nothing else. Settings › Account › Setup
+        lists the same rows either way. Refused on a demo deploy (403 `setup.demo`). Rate-limited to 30 writes per 10
+        minutes. Cookie or wildcard Bearer."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetupPatchRequest"
+      responses:
+        "200":
+          description: The setup state after the write.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetupStateEnvelope"
+        "401": *a1
+        "403":
+          description: "`meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
+            generic auth gate answers it before the route's own checks run. Otherwise: A demo deploy."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
   /api/medications/intake:
@@ -24629,7 +24682,24 @@ paths:
 
 
         The `units` step is the one answer with a consequence outside this state: it writes the record's `glucoseUnit`
-        and `unitPreference`, which every display surface already reads, and records the answer beside them.
+        and `unitPreference`, which every display surface already reads, and records the answer beside them. Its fields,
+        all optional: `glucoseUnit` (`mg/dL` | `mmol/L`, nullable), `unitPreference` (`metric` | `imperial`, nullable),
+        `timezone` (an IANA zone) and `medicineRegistry`; an omitted field leaves the recorded answer alone, an explicit
+        `null` clears a unit.
+
+
+        `sources` is additive (1.50): the answered list is merged into the recorded one as a set and never replaces it,
+        so the web (the services it connected) and the app (Apple Health) each add their own and neither erases the
+        other's. Which device holds which permission is the app's business, not this record's.
+
+
+        The server confirms the flow itself (1.50). When a write leaves no screen of the pinned flow owed (`currentStep`
+        null on `GET /api/setup`) and the account is not stamped yet, the same request passes the questions this flow
+        does not show, stamps the account (`onboardingCompletedAt`, which ends the first-run redirect), derives the
+        module map once, and answers the state after that. A client only answers its screens; it never calls a separate
+        confirm. For "someone I look after" the `profile` screen is the `confirm` step: send `managedRecordId` with it
+        when a profile was created, so the answers land on that record (same checks and refusals as `POST
+        /api/onboarding/complete`: 404, 422), or send it without one, which confirms and derives onto nobody.
 
 
         Cookie or wildcard Bearer, and the CALLER's own record only: a request made while the session is acting on
@@ -24738,6 +24808,11 @@ paths:
         - Onboarding
       summary: Stamp onboarding as complete, and derive the module map
       description: >-
+        Since 1.50 the setup flow is confirmed by `PATCH /api/onboarding/answers` once its last owed screen is answered;
+        a client of the flow does not call this route. It stays for "finish later" (stamp the account without answers,
+        which ends the first-run redirect) and for callers that confirm explicitly.
+
+
         Marks onboarding finished and saves whatever profile fields came with it, then clears the proxy-readable pending
         cookie so the next navigation stops redirecting to `/onboarding`.
 
@@ -35008,11 +35083,11 @@ components:
         step:
           type: string
           enum:
-            - accounts
-            - notifications
+            - account-mfa
+            - signups
+            - relay
             - ai
-            - privacy
-            - health
+            - recovery
         status:
           type: string
           enum:
@@ -35021,6 +35096,14 @@ components:
       required:
         - step
         - status
+      additionalProperties: false
+    SetupPatchRequest:
+      type: object
+      properties:
+        cardDismissed:
+          type: boolean
+      required:
+        - cardDismissed
       additionalProperties: false
     MedicationApiEndpointPutRequest:
       type: object
@@ -42769,6 +42852,10 @@ components:
             status:
               type: string
               const: done
+            managedRecordId:
+              type: string
+              minLength: 1
+              maxLength: 64
           required:
             - step
           additionalProperties: false
@@ -47346,21 +47433,22 @@ components:
                 route — route.retired; search — search.invalid; security_activity — security_activity.invalid; seizures
                 — seizures.disabled, seizures.event.notFound, seizures.invalid, seizures.rescue.medicationNotFound,
                 seizures.rescue.medicationRequired, seizures.rescue.notAsNeeded, seizures.rescue.notFound,
-                seizures.type.inUse, seizures.type.limit, seizures.type.notFound; share-link —
-                share-link.document.decryptFailed, share-link.document.notFound, share-link.document.rateLimited,
-                share-link.documents.invalid, share-link.report.notFound, share-link.report.rateLimited,
-                share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf; sharing —
-                sharing.accept.expired, sharing.accept.not_found, sharing.accept.not_pending, sharing.accept.revoked,
-                sharing.access.denied, sharing.invite.duplicate, sharing.invite.invalid, sharing.invite.invalid_scope,
-                sharing.invite.manage_browser_only, sharing.invite.no_account, sharing.invite.refused,
-                sharing.invite.self, sharing.not_permitted, sharing.renounce.already_ended, sharing.renounce.not_found,
-                sharing.revoke.already_ended, sharing.revoke.not_found, sharing.session.changed, sharing.switch.invalid,
-                sharing.switch.wrong_transport; source-priority — source-priority.body.invalid_json,
-                source-priority.body.invalid_shape; symptoms — symptoms.batch.invalid, symptoms.batch.too_large,
-                symptoms.definition.limitReached, symptoms.definition.notFound, symptoms.episode.notOpen,
-                symptoms.event.notFound, symptoms.invalid; timeline — timeline.invalid; treatment_series —
-                treatment_series.condition-not-found, treatment_series.invalid, treatment_series.practitioner-not-found;
-                tokens — tokens.documents.ceiling_reached, tokens.measurements.ceiling_reached,
+                seizures.type.inUse, seizures.type.limit, seizures.type.notFound; setup — setup.demo, setup.invalid,
+                setup.rateLimited; share-link — share-link.document.decryptFailed, share-link.document.notFound,
+                share-link.document.rateLimited, share-link.documents.invalid, share-link.report.notFound,
+                share-link.report.rateLimited, share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf;
+                sharing — sharing.accept.expired, sharing.accept.not_found, sharing.accept.not_pending,
+                sharing.accept.revoked, sharing.access.denied, sharing.invite.duplicate, sharing.invite.invalid,
+                sharing.invite.invalid_scope, sharing.invite.manage_browser_only, sharing.invite.no_account,
+                sharing.invite.refused, sharing.invite.self, sharing.not_permitted, sharing.renounce.already_ended,
+                sharing.renounce.not_found, sharing.revoke.already_ended, sharing.revoke.not_found,
+                sharing.session.changed, sharing.switch.invalid, sharing.switch.wrong_transport; source-priority —
+                source-priority.body.invalid_json, source-priority.body.invalid_shape; symptoms —
+                symptoms.batch.invalid, symptoms.batch.too_large, symptoms.definition.limitReached,
+                symptoms.definition.notFound, symptoms.episode.notOpen, symptoms.event.notFound, symptoms.invalid;
+                timeline — timeline.invalid; treatment_series — treatment_series.condition-not-found,
+                treatment_series.invalid, treatment_series.practitioner-not-found; tokens —
+                tokens.documents.ceiling_reached, tokens.measurements.ceiling_reached,
                 tokens.mirror.not_measurement_token, tokens.workouts.ceiling_reached; vaccination —
                 vaccination.booster-invalid, vaccination.booster-no-antigen, vaccination.booster-out-of-scope,
                 vaccination.custom-vaccine-not-found, vaccination.custom.invalid, vaccination.custom.name-taken,
@@ -50653,6 +50741,7 @@ components:
               - medication.efficacy-result
               - account.dismissed-hints
               - daily.asks
+              - setup.resolved-state
               - daily.scores-short-labels
               - insights.scores-short-labels
               - profile.insurance-number-country
@@ -50809,7 +50898,13 @@ components:
             decision | due, itemKey, title, body, subject, exactly two actions with the primary first, learnMore),
             ranked on the server, never capped or folded; render as delivered, no card when empty. Later is
             dose.snooze:<medicationId> on a dose and ask.later:<dismissKey> on other reminders; the admin rows
-            (push_relay, server_setup) come only to a browser session. `daily.scores-short-labels`: Each start-page
+            (push_relay, server_setup) come only to a browser session. `setup.resolved-state`: GET /api/setup resolves
+            where the person setup stands (status, currentStep, the pinned segments with their screens and statuses) and
+            the setup rows (tasks: id, status todo | done | declined | warning, value, deadline with deadlineDate and
+            deadlineTimeZone in the profile zone, count), firstRunOwed (the first-run gate), and the card's shown and
+            dismissed state; PATCH /api/setup takes cardDismissed. PATCH /api/onboarding/answers confirms the flow
+            itself once nothing is owed (confirm takes managedRecordId) and merges sources additively. Ids are closed
+            lists; skip an unknown one. instance is null on a Bearer token. `daily.scores-short-labels`: Each start-page
             score carries shortLabel, its short name for a tile from the score registry, worded in the response
             language: GET /api/daily/morning scores.sleep and scores.readiness, and GET /api/daily/digest score (the
             Health score). Render it as is; the web shows the same words. `insights.scores-short-labels`: Every score
@@ -56088,6 +56183,19 @@ components:
                     - type: string
                       minLength: 1
                     - type: "null"
+                plan:
+                  default: null
+                  anyOf:
+                    - type: array
+                      items:
+                        type: string
+                    - type: "null"
+                cardDismissedAt:
+                  default: null
+                  anyOf:
+                    - type: string
+                      minLength: 1
+                    - type: "null"
                 createdAt:
                   type: string
                   minLength: 1
@@ -56100,6 +56208,8 @@ components:
                 - firstResult
                 - modulesDerivedAt
                 - completedAt
+                - plan
+                - cardDismissedAt
               additionalProperties: {}
             - type: "null"
         practitioners:
@@ -66157,22 +66267,31 @@ components:
               id:
                 type: string
                 enum:
-                  - accounts
-                  - notifications
+                  - account-mfa
+                  - signups
+                  - relay
                   - ai
-                  - privacy
-                  - health
+                  - recovery
               status:
                 type: string
                 enum:
                   - pending
                   - done
                   - skipped
+              at:
+                description: 1.50 — when an admin passed the step with Later or Not now; absent on a pass the setup inferred.
+                type: string
+                format: date-time
+                pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              by:
+                description: 1.50 — the admin who passed the step.
+                type: string
             required:
               - id
               - status
             additionalProperties: false
-          description: Every step, in order. A missing stored step reads pending.
+          description: "Every step, in order (1.50: account-mfa, signups, relay, ai, recovery; a 1.49 setup reads through its old
+            ids). A missing stored step reads pending."
         noticePending:
           type: boolean
           description: "Whether the notice shows for the calling admin: offered, not dismissed by this admin, and either the setup
@@ -66324,6 +66443,368 @@ components:
       required:
         - state
         - signals
+      additionalProperties: false
+    SetupStateEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/SetupState"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    SetupState:
+      type: object
+      properties:
+        person:
+          type: object
+          properties:
+            firstRunOwed:
+              type: boolean
+              description: "The first run is still owed: the account is not stamped complete, the same gate as the web's first-run
+                redirect. Show the setup flow exactly when this is true; it turns false when the last owed screen is
+                answered (the server confirms on that write)."
+            status:
+              type: string
+              enum:
+                - pending
+                - done
+            currentStep:
+              anyOf:
+                - type: string
+                  enum:
+                    - who
+                    - areas
+                    - units
+                    - profile
+                    - sources
+                    - reminders
+                    - ai
+                - type: "null"
+              description: The screen the flow resumes on; null when nothing is owed.
+            segments:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    enum:
+                      - you
+                      - profile
+                      - sources
+                      - reminders
+                      - ai
+                  screens:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          enum:
+                            - who
+                            - areas
+                            - units
+                            - profile
+                            - sources
+                            - reminders
+                            - ai
+                        status:
+                          type: string
+                          enum:
+                            - pending
+                            - done
+                            - skipped
+                      required:
+                        - id
+                        - status
+                      additionalProperties: false
+                required:
+                  - id
+                  - screens
+                additionalProperties: false
+              description: The segments pinned when the flow started (fixed for the flow), each with its screens. Clients map screen
+                ids to their own screens and skip an id they do not know.
+            planned:
+              type: boolean
+              description: The flow started on 1.50, so its segments are pinned.
+            cardShown:
+              type: boolean
+              description: Whether the dashboard shows the setup card.
+            cardDismissed:
+              type: boolean
+              description: "The person hid the setup card (PATCH /api/setup). Only the card: the rows stay in Settings › Account ›
+                Setup. `cardShown` already accounts for it."
+            tasks:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    enum:
+                      - resume
+                      - medication
+                      - second-factor
+                      - about-you
+                      - reading
+                      - source
+                      - second-channel
+                      - coach
+                      - managed-profile
+                  status:
+                    type: string
+                    enum:
+                      - todo
+                      - done
+                      - declined
+                      - warning
+                    description: todo waits; done is set up; declined is an explicit no, settled and never asked again; warning is a
+                      detected problem or a deadline under seven days.
+                  value:
+                    anyOf:
+                      - type: string
+                        enum:
+                          - on
+                          - off
+                          - passkey
+                          - authenticator
+                          - invited
+                          - anyone
+                          - own-keys
+                          - server-key
+                          - central-account
+                          - saved
+                          - key-added
+                          - add-key
+                      - type: "null"
+                    description: What a settled row shows (closed vocabulary), or null.
+                  deadline:
+                    anyOf:
+                      - type: string
+                        format: date-time
+                        pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                      - type: "null"
+                    description: The second-factor policy's date, while it applies.
+                  deadlineDate:
+                    anyOf:
+                      - type: string
+                        pattern: ^\d{4}-\d{2}-\d{2}$
+                      - type: "null"
+                    description: "The deadline's calendar day (YYYY-MM-DD) in the profile's time zone: the day to show. Null without a
+                      deadline."
+                  deadlineTimeZone:
+                    description: The IANA zone the deadline is read in (the profile's). Null without a deadline.
+                    type:
+                      - string
+                      - "null"
+                  count:
+                    anyOf:
+                      - type: object
+                        properties:
+                          done:
+                            type: integer
+                            minimum: -9007199254740991
+                            maximum: 9007199254740991
+                          total:
+                            type: integer
+                            minimum: -9007199254740991
+                            maximum: 9007199254740991
+                        required:
+                          - done
+                          - total
+                        additionalProperties: false
+                      - type: "null"
+                    description: For a row that is a group (services configured).
+                required:
+                  - id
+                  - status
+                  - value
+                  - deadline
+                  - deadlineDate
+                  - deadlineTimeZone
+                  - count
+                additionalProperties: false
+          required:
+            - firstRunOwed
+            - status
+            - currentStep
+            - segments
+            - planned
+            - cardShown
+            - cardDismissed
+            - tasks
+          additionalProperties: false
+        instance:
+          anyOf:
+            - type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - pending
+                    - done
+                currentStep:
+                  anyOf:
+                    - type: string
+                      enum:
+                        - account-mfa
+                        - signups
+                        - relay
+                        - ai
+                        - recovery
+                    - type: "null"
+                steps:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        enum:
+                          - account-mfa
+                          - signups
+                          - relay
+                          - ai
+                          - recovery
+                      status:
+                        type: string
+                        enum:
+                          - pending
+                          - done
+                          - skipped
+                    required:
+                      - id
+                      - status
+                    additionalProperties: false
+                tasks:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        enum:
+                          - second-factor
+                          - signups
+                          - relay
+                          - ai
+                          - recovery
+                          - email
+                          - sso
+                          - services
+                          - backups
+                          - error-reporting
+                      status:
+                        type: string
+                        enum:
+                          - todo
+                          - done
+                          - declined
+                          - warning
+                        description: todo waits; done is set up; declined is an explicit no, settled and never asked again; warning is a
+                          detected problem or a deadline under seven days.
+                      value:
+                        anyOf:
+                          - type: string
+                            enum:
+                              - on
+                              - off
+                              - passkey
+                              - authenticator
+                              - invited
+                              - anyone
+                              - own-keys
+                              - server-key
+                              - central-account
+                              - saved
+                              - key-added
+                              - add-key
+                          - type: "null"
+                        description: What a settled row shows (closed vocabulary), or null.
+                      deadline:
+                        anyOf:
+                          - type: string
+                            format: date-time
+                            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                          - type: "null"
+                        description: The second-factor policy's date, while it applies.
+                      deadlineDate:
+                        anyOf:
+                          - type: string
+                            pattern: ^\d{4}-\d{2}-\d{2}$
+                          - type: "null"
+                        description: "The deadline's calendar day (YYYY-MM-DD) in the profile's time zone: the day to show. Null without a
+                          deadline."
+                      deadlineTimeZone:
+                        description: The IANA zone the deadline is read in (the profile's). Null without a deadline.
+                        type:
+                          - string
+                          - "null"
+                      count:
+                        anyOf:
+                          - type: object
+                            properties:
+                              done:
+                                type: integer
+                                minimum: -9007199254740991
+                                maximum: 9007199254740991
+                              total:
+                                type: integer
+                                minimum: -9007199254740991
+                                maximum: 9007199254740991
+                            required:
+                              - done
+                              - total
+                            additionalProperties: false
+                          - type: "null"
+                        description: For a row that is a group (services configured).
+                    required:
+                      - id
+                      - status
+                      - value
+                      - deadline
+                      - deadlineDate
+                      - deadlineTimeZone
+                      - count
+                    additionalProperties: false
+              required:
+                - status
+                - currentStep
+                - steps
+                - tasks
+              additionalProperties: false
+            - type: "null"
+          description: Admins on a browser session only; null on a Bearer token.
+        offers:
+          type: object
+          properties:
+            relay:
+              type: string
+              enum:
+                - on
+                - off
+                - undecided
+            ai:
+              type: boolean
+              description: A provider can serve the Coach for this record now.
+          required:
+            - relay
+            - ai
+          additionalProperties: false
+      required:
+        - person
+        - instance
+        - offers
       additionalProperties: false
     MedicationIntakeAggregateEnvelope:
       type: object

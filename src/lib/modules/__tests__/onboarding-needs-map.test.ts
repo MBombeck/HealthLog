@@ -145,6 +145,14 @@ describe("deriveOnboardingModuleDefaults", () => {
     ).toBe(false);
   });
 
+  it("keeps medications and the doctor report at their default when not asked", () => {
+    const { preferences } = deriveOnboardingModuleDefaults(
+      needs({ medication: null, visit: null }),
+    );
+    expect(preferences.medications).toBe(true);
+    expect(preferences.doctorReport).toBe(true);
+  });
+
   it("switches the immunization log on for a record somebody else runs", () => {
     for (const recordTarget of ["someone-else", "both"] as const) {
       expect(

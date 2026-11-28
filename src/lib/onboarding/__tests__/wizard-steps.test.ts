@@ -1,565 +1,305 @@
 /**
- * v1.39 — the step machine behind the setup screens.
+ * 1.50 — the person setup's step machine: the segments pinned on "who", the
+ * screens inside them, where a person resumes, and which URLs may be shown.
  *
- * Pure, so every question the screens ask — which screen is next, where a
- * returning person resumes, whether a URL may be visited, what the counter
- * says — is answered here without a browser. The server publishes the ledger
- * and the answers; this file turns them into a route.
+ * The stepper's count is the contract that matters most: it is fixed for
+ * the flow (a screen inside a segment only advances the fill), so these pin
+ * that the plan, once pinned, does not move when the answers or the server's
+ * offers do.
  */
 import { describe, expect, it } from "vitest";
 
 import {
-  defaultOnboardingSteps,
   emptyOnboardingNeeds,
+  isOnboardingSettled,
+  onboardingOffersFromAi,
   type OnboardingNeeds,
   type OnboardingStateDto,
-  type OnboardingStepId,
   type OnboardingStepStatus,
 } from "../needs";
+import { toOnboardingStateDto } from "../needs-store";
 import {
-  BROWSER_CONNECTABLE_SOURCES,
   canVisitScreen,
-  isOnboardingPathname,
-  questionsToPassBeforeConfirm,
-  chooseFirstResultTask,
-  firstResultApplies,
+  computePlan,
+  ledgerStepOf,
   nextScreen,
+  parsePinnedPlan,
   previousScreen,
-  questionScreens,
+  questionsToPassBeforeConfirm,
   resumeScreen,
   screenOrder,
-  stepCounter,
-  stepTrack,
-  unitsQuestionApplies,
+  stepperPosition,
+  type FlowState,
+  type PersonSegmentId,
 } from "../wizard-steps";
 
-function state(
-  statuses: Partial<Record<OnboardingStepId, OnboardingStepStatus>> = {},
-  needs: Partial<OnboardingNeeds> = {},
-  extra: Partial<
-    Pick<OnboardingStateDto, "completedAt" | "firstResult" | "offers">
-  > = {},
-): OnboardingStateDto {
-  return {
-    steps: defaultOnboardingSteps().map((step) => ({
-      ...step,
-      status: statuses[step.id] ?? step.status,
-    })),
-    needs: { ...emptyOnboardingNeeds(), ...needs },
-    completedAt: extra.completedAt ?? null,
-    firstResult: extra.firstResult ?? null,
-    offers: extra.offers ?? { ai: false },
-  };
+const NO_UNITS = { glucoseUnit: null, unitPreference: null } as const;
+const AT = new Date("2026-11-01T09:00:00.000Z");
+
+function flow(
+  needs: Partial<OnboardingNeeds>,
+  statuses: Record<string, OnboardingStepStatus> = {},
+  options: { ai?: boolean; plan?: PersonSegmentId[] | null } = {},
+): FlowState {
+  const state = toOnboardingStateDto(
+    {
+      needsJson: { ...emptyOnboardingNeeds(), ...needs },
+      stepsJson: Object.entries(statuses).map(([id, status]) => ({
+        id,
+        status,
+      })),
+      firstResultJson: null,
+      modulesDerivedAt: null,
+      completedAt: null,
+    },
+    NO_UNITS,
+    { ai: options.ai ?? false },
+  );
+  return { ...state, plan: options.plan ?? null };
 }
 
-/** Every question answered, no units question in play. */
-const QUESTIONS_DONE = {
-  who: "done",
-  areas: "done",
-  medication: "done",
-  sources: "done",
-  visit: "done",
-} as const;
-
-describe("unitsQuestionApplies", () => {
-  it("is off while no area needs a unit", () => {
-    expect(unitsQuestionApplies(state({}, { areas: ["mood", "sleep"] }))).toBe(
-      false,
-    );
-  });
-
-  it("is on for glucose or weight while the account holds no preference", () => {
-    expect(unitsQuestionApplies(state({}, { areas: ["glucose"] }))).toBe(true);
-    expect(unitsQuestionApplies(state({}, { areas: ["weight-body"] }))).toBe(
-      true,
-    );
-  });
-
-  it("is off when the server resolved units from the account's own columns", () => {
-    // `units: done` with no recorded answer is exactly what
-    // `resolveOnboardingSteps` publishes for an account that holds both.
-    expect(
-      unitsQuestionApplies(state({ units: "done" }, { areas: ["glucose"] })),
-    ).toBe(false);
-  });
-
-  it("stays in the order once the flow itself recorded the answer", () => {
-    expect(
-      unitsQuestionApplies(
-        state(
-          { units: "done" },
-          {
-            areas: ["glucose"],
-            units: {
-              glucoseUnit: "mmol/L",
-              unitPreference: null,
-              timezone: null,
-              medicineRegistry: null,
-            },
-          },
-        ),
-      ),
-    ).toBe(true);
-  });
-
-  it("stays in the order after a deliberate skip, so it can be revisited", () => {
-    expect(
-      unitsQuestionApplies(state({ units: "skipped" }, { areas: ["glucose"] })),
-    ).toBe(true);
-  });
-});
-
-describe("questionScreens", () => {
-  it("is the five questions, plus units only when it applies", () => {
-    expect(questionScreens(state())).toEqual([
-      "who",
-      "areas",
-      "medication",
+describe("computePlan", () => {
+  it("gives a person's own record four segments, three without the Coach", () => {
+    expect(computePlan("me", true)).toEqual([
+      "you",
       "sources",
-      "visit",
+      "reminders",
+      "ai",
     ]);
-    expect(questionScreens(state({}, { areas: ["glucose"] }))).toEqual([
-      "who",
-      "areas",
-      "medication",
+    expect(computePlan("me", false)).toEqual(["you", "sources", "reminders"]);
+    expect(computePlan(null, false)).toEqual(["you", "sources", "reminders"]);
+  });
+
+  it("gives someone looked after the profile and nothing that connects", () => {
+    expect(computePlan("someone-else", true)).toEqual(["you", "profile"]);
+  });
+
+  it("ends 'both' on the profile", () => {
+    expect(computePlan("both", true)).toEqual([
+      "you",
       "sources",
-      "visit",
-      "units",
+      "reminders",
+      "ai",
+      "profile",
     ]);
   });
 });
 
-describe("chooseFirstResultTask", () => {
-  it("prefers a connection the browser can complete, in the person's own order", () => {
-    expect(
-      chooseFirstResultTask({
-        ...emptyOnboardingNeeds(),
-        sources: ["manual", "apple-health", "oura", "withings"],
-        medication: "yes",
-        areas: ["blood-pressure"],
-      }),
-    ).toEqual({ task: "connect-source", target: "oura" });
-  });
-
-  it("never offers a source the browser cannot connect", () => {
-    for (const source of ["manual", "apple-health", "file"] as const) {
-      expect(BROWSER_CONNECTABLE_SOURCES).not.toContain(source);
-      expect(
-        chooseFirstResultTask({ ...emptyOnboardingNeeds(), sources: [source] }),
-      ).toBeNull();
-    }
-  });
-
-  it("offers the first medication only for a daily schedule", () => {
-    expect(
-      chooseFirstResultTask({
-        ...emptyOnboardingNeeds(),
-        medication: "yes",
-        areas: ["mood"],
-      }),
-    ).toEqual({ task: "add-medication", target: null });
-    expect(
-      chooseFirstResultTask({
-        ...emptyOnboardingNeeds(),
-        medication: "sometimes",
-        areas: ["mood"],
-      }),
-    ).toEqual({ task: "log-reading", target: "mood" });
-  });
-
-  it("falls back to one reading for the first area, and to nothing", () => {
-    expect(
-      chooseFirstResultTask({
-        ...emptyOnboardingNeeds(),
-        areas: ["weight-body", "glucose"],
-      }),
-    ).toEqual({ task: "log-reading", target: "weight-body" });
-    expect(chooseFirstResultTask(emptyOnboardingNeeds())).toBeNull();
-  });
-
-  /**
-   * v1.38.19 — the choice used to read the answers alone, so an
-   * account whose WHOOP had been delivering for months was told to go and
-   * connect WHOOP. A source that is already delivering is not a task; the
-   * priority falls through to the next one the person's answers name.
-   */
-  it("passes over a source that is already delivering", () => {
-    const needs: OnboardingNeeds = {
-      ...emptyOnboardingNeeds(),
-      sources: ["whoop", "oura"],
-      medication: "yes",
-      areas: ["sleep"],
-    };
-    expect(chooseFirstResultTask(needs, new Set(["whoop"]))).toEqual({
-      task: "connect-source",
-      target: "oura",
-    });
-    expect(chooseFirstResultTask(needs, new Set(["whoop", "oura"]))).toEqual({
-      task: "add-medication",
-      target: null,
-    });
-    expect(
-      chooseFirstResultTask(
-        { ...needs, medication: "no" },
-        new Set(["whoop", "oura"]),
-      ),
-    ).toEqual({ task: "log-reading", target: "sleep" });
-  });
-
-  it("is unchanged when nothing is known about the connections", () => {
-    const needs: OnboardingNeeds = {
-      ...emptyOnboardingNeeds(),
-      sources: ["whoop"],
-      medication: "yes",
-    };
-    expect(chooseFirstResultTask(needs)).toEqual(
-      chooseFirstResultTask(needs, new Set()),
-    );
+describe("parsePinnedPlan", () => {
+  it("reads a stored plan and refuses anything malformed", () => {
+    expect(parsePinnedPlan(["you", "sources"])).toEqual(["you", "sources"]);
+    expect(parsePinnedPlan(["sources", "you"])).toBeNull();
+    expect(parsePinnedPlan(["you", "you"])).toBeNull();
+    expect(parsePinnedPlan(["you", "nope"])).toBeNull();
+    expect(parsePinnedPlan(null)).toBeNull();
+    expect(parsePinnedPlan([])).toBeNull();
   });
 });
 
-describe("firstResultApplies", () => {
-  it("is off when there is no task to offer", () => {
-    expect(firstResultApplies(state(QUESTIONS_DONE))).toBe(false);
+describe("the pinned plan holds the stepper still", () => {
+  it("keeps the count when the server stops offering the Coach", () => {
+    const pinned = flow(
+      { recordTarget: "me" },
+      { who: "done" },
+      { ai: false, plan: ["you", "sources", "reminders", "ai"] },
+    );
+    expect(stepperPosition(pinned, "areas").segments).toHaveLength(4);
   });
 
-  it("is off for a record somebody else will run", () => {
-    // The three tasks write the CALLER's record, and the routes refuse under
-    // a switch — so for "someone I look after" the profile is created on the
-    // confirm screen and the flow ends there.
-    expect(
-      firstResultApplies(
-        state(QUESTIONS_DONE, {
-          recordTarget: "someone-else",
-          areas: ["blood-pressure"],
-        }),
-      ),
-    ).toBe(false);
-    expect(
-      firstResultApplies(
-        state(QUESTIONS_DONE, {
-          recordTarget: "both",
-          areas: ["blood-pressure"],
-        }),
-      ),
-    ).toBe(true);
+  it("fills a segment a third per screen and never adds one", () => {
+    const state = flow({ recordTarget: "me" }, {}, { ai: true });
+    expect(stepperPosition(state, "who")).toMatchObject({
+      current: 0,
+      fraction: 1 / 3,
+    });
+    expect(stepperPosition(state, "units")).toMatchObject({
+      current: 0,
+      fraction: 1,
+    });
+    expect(stepperPosition(state, "reminders")).toMatchObject({
+      current: 2,
+      fraction: 1,
+    });
   });
 });
 
 describe("screenOrder", () => {
-  it("runs welcome, the questions, confirm, the follow-ups, the first result, done", () => {
-    expect(
-      screenOrder(
-        state(
-          {},
-          { recordTarget: "me", areas: ["glucose"], medication: "yes" },
-        ),
-      ),
-    ).toEqual([
-      "welcome",
+  it("walks the plan's screens in order", () => {
+    expect(screenOrder(flow({ recordTarget: "me" }, {}, { ai: true }))).toEqual(
+      ["who", "areas", "units", "sources", "reminders", "ai"],
+    );
+    expect(screenOrder(flow({ recordTarget: "someone-else" }))).toEqual([
       "who",
       "areas",
-      "medication",
-      "sources",
-      "visit",
       "units",
-      "confirm",
-      "reminders",
-      "first-result",
-      "done",
+      "profile",
     ]);
   });
 
-  it("drops the first-result screen when nothing can be offered", () => {
-    expect(screenOrder(state({}, { recordTarget: "me" }))).toEqual([
-      "welcome",
-      "who",
-      "areas",
-      "medication",
-      "sources",
-      "visit",
-      "confirm",
-      "done",
-    ]);
+  it("drops an unanswered AI screen the server no longer offers", () => {
+    const state = flow(
+      { recordTarget: "me" },
+      {},
+      { ai: false, plan: ["you", "sources", "reminders", "ai"] },
+    );
+    expect(screenOrder(state)).not.toContain("ai");
+  });
+
+  it("keeps an answered AI screen, so Back still reaches it", () => {
+    const state = flow(
+      { recordTarget: "me" },
+      { ai: "done" },
+      { ai: false, plan: ["you", "sources", "reminders", "ai"] },
+    );
+    expect(screenOrder(state)).toContain("ai");
   });
 });
 
-describe("resumeScreen", () => {
-  it("starts a record that never entered the flow on the welcome screen", () => {
-    expect(resumeScreen(state())).toBe("welcome");
+describe("resumeScreen and canVisitScreen", () => {
+  it("starts a fresh account on who and refuses anything past it", () => {
+    const state = flow({});
+    expect(resumeScreen(state)).toBe("who");
+    expect(canVisitScreen(state, "who")).toBe(true);
+    expect(canVisitScreen(state, "areas")).toBe(false);
   });
 
-  it("resumes at the first question still pending", () => {
-    expect(resumeScreen(state({ who: "done" }, { recordTarget: "me" }))).toBe(
-      "areas",
+  it("resumes on the first screen still owed", () => {
+    const state = flow(
+      { recordTarget: "me" },
+      { who: "done", areas: "done" },
+      { ai: true },
     );
-    expect(
-      resumeScreen(
-        state(
-          { who: "done", areas: "skipped", medication: "done" },
-          { recordTarget: "me", medication: "no" },
-        ),
-      ),
-    ).toBe("sources");
+    expect(resumeScreen(state)).toBe("units");
+    expect(canVisitScreen(state, "who")).toBe(true);
+    expect(canVisitScreen(state, "units")).toBe(true);
+    expect(canVisitScreen(state, "sources")).toBe(false);
   });
 
-  it("puts a restarted flow back on the first question even though the answers remain", () => {
-    // `POST /api/onboarding/restart` resets the ledger and keeps the answers
-    // as prefill: every step pending, Q1 answered.
-    expect(
-      resumeScreen(
-        state(
-          {},
-          { recordTarget: "me", areas: ["glucose"], medication: "yes" },
-        ),
-      ),
-    ).toBe("who");
-  });
-
-  it("goes to confirm once every question is settled", () => {
-    expect(resumeScreen(state(QUESTIONS_DONE, { recordTarget: "me" }))).toBe(
-      "confirm",
+  it("has nothing owed once every screen is answered or passed", () => {
+    const state = flow(
+      { recordTarget: "me" },
+      {
+        who: "done",
+        areas: "skipped",
+        units: "done",
+        sources: "skipped",
+        reminders: "skipped",
+      },
     );
+    expect(resumeScreen(state)).toBeNull();
+    expect(canVisitScreen(state, "reminders")).toBe(true);
   });
 
-  it("skips a units question the account already answers", () => {
-    expect(
-      resumeScreen(
-        state(
-          { ...QUESTIONS_DONE, units: "done" },
-          { recordTarget: "me", areas: ["glucose"] },
-        ),
-      ),
-    ).toBe("confirm");
-  });
-
-  it("stops on the units question while it is still owed", () => {
-    expect(
-      resumeScreen(
-        state(QUESTIONS_DONE, { recordTarget: "me", areas: ["glucose"] }),
-      ),
-    ).toBe("units");
-  });
-
-  it("offers the reminders, then the first result after confirm, then done", () => {
-    const afterConfirm = state(
-      { ...QUESTIONS_DONE, units: "done", confirm: "done" },
-      { recordTarget: "me", medication: "yes" },
-      { completedAt: "2026-09-10T08:00:00.000Z" },
+  it("tracks the profile screen on confirm for someone looked after, on done for both", () => {
+    expect(ledgerStepOf("profile", "someone-else")).toBe("confirm");
+    expect(ledgerStepOf("profile", "both")).toBe("done");
+    const both = flow(
+      { recordTarget: "both" },
+      {
+        who: "done",
+        areas: "done",
+        units: "done",
+        sources: "done",
+        reminders: "done",
+      },
     );
-    expect(resumeScreen(afterConfirm)).toBe("reminders");
-    const confirmed = {
-      ...afterConfirm,
-      steps: afterConfirm.steps.map((s) =>
-        s.id === "reminders" ? { ...s, status: "done" as const } : s,
-      ),
-    };
-    expect(resumeScreen(confirmed)).toBe("first-result");
-    expect(
-      resumeScreen({
-        ...confirmed,
-        steps: confirmed.steps.map((s) =>
-          s.id === "first-result" ? { ...s, status: "skipped" as const } : s,
-        ),
-      }),
-    ).toBe("done");
+    expect(resumeScreen(both)).toBe("profile");
   });
 
-  it("goes straight to done after confirm when no task applies", () => {
-    expect(
-      resumeScreen(
-        state(
-          { ...QUESTIONS_DONE, confirm: "done" },
-          { recordTarget: "me" },
-          { completedAt: "2026-09-10T08:00:00.000Z" },
-        ),
-      ),
-    ).toBe("done");
+  it("refuses a screen the flow does not contain", () => {
+    const state = flow({ recordTarget: "someone-else" }, { who: "done" });
+    expect(canVisitScreen(state, "sources")).toBe(false);
+    expect(canVisitScreen(state, "reminders")).toBe(false);
   });
 });
 
-describe("nextScreen / previousScreen", () => {
-  const s = state({}, { recordTarget: "me", areas: ["weight-body"] });
-
-  it("walks the order in both directions", () => {
-    expect(nextScreen(s, "welcome")).toBe("who");
-    expect(nextScreen(s, "visit")).toBe("units");
-    expect(nextScreen(s, "units")).toBe("confirm");
-    expect(nextScreen(s, "confirm")).toBe("first-result");
-    expect(nextScreen(s, "done")).toBeNull();
-    expect(previousScreen(s, "who")).toBe("welcome");
-    expect(previousScreen(s, "welcome")).toBeNull();
-    expect(previousScreen(s, "confirm")).toBe("units");
-  });
-
-  it("steps over the units question when it does not apply", () => {
-    const noUnits = state({}, { recordTarget: "me", areas: ["mood"] });
-    expect(nextScreen(noUnits, "visit")).toBe("confirm");
-    expect(previousScreen(noUnits, "confirm")).toBe("visit");
-  });
-
-  it("answers null for a screen that is not in this flow's order", () => {
-    const noUnits = state({}, { recordTarget: "me", areas: ["mood"] });
-    expect(nextScreen(noUnits, "units")).toBeNull();
-  });
-});
-
-describe("canVisitScreen", () => {
-  const midway = state(
-    { who: "done", areas: "done" },
-    { recordTarget: "me", areas: ["glucose"] },
-  );
-
-  it("allows every screen up to the resume point and refuses the ones ahead", () => {
-    expect(canVisitScreen(midway, "welcome")).toBe(true);
-    expect(canVisitScreen(midway, "who")).toBe(true);
-    expect(canVisitScreen(midway, "medication")).toBe(true);
-    expect(canVisitScreen(midway, "sources")).toBe(false);
-    expect(canVisitScreen(midway, "confirm")).toBe(false);
-    expect(canVisitScreen(midway, "done")).toBe(false);
-  });
-
-  it("always admits the first question, which is where the welcome screen goes", () => {
-    expect(canVisitScreen(state(), "who")).toBe(true);
-    expect(canVisitScreen(state(), "areas")).toBe(false);
-  });
-
-  it("refuses a screen the order does not contain", () => {
-    const noUnits = state(QUESTIONS_DONE, {
-      recordTarget: "me",
-      areas: ["mood"],
-    });
-    expect(canVisitScreen(noUnits, "units")).toBe(false);
-    expect(canVisitScreen(noUnits, "first-result")).toBe(false);
+describe("next and previous", () => {
+  it("steps through the order", () => {
+    const state = flow({ recordTarget: "me" }, {}, { ai: true });
+    expect(nextScreen(state, "units")).toBe("sources");
+    expect(nextScreen(state, "ai")).toBeNull();
+    expect(previousScreen(state, "areas")).toBe("who");
+    expect(previousScreen(state, "who")).toBeNull();
   });
 });
 
 describe("questionsToPassBeforeConfirm", () => {
-  it("passes the units question the flow never showed, and nothing shown", () => {
-    // No unit-bearing area: Q6 is hidden, still pending, and the completion
-    // route would otherwise answer "incomplete" — the first real run's find.
-    expect(
-      questionsToPassBeforeConfirm(
-        state(QUESTIONS_DONE, { recordTarget: "me", areas: ["mood"] }),
-      ),
-    ).toEqual(["units"]);
-    // Units shown and answered: nothing to pass.
-    expect(
-      questionsToPassBeforeConfirm(
-        state(
-          { ...QUESTIONS_DONE, units: "done" },
-          {
-            recordTarget: "me",
-            areas: ["glucose"],
-            units: {
-              glucoseUnit: "mg/dL",
-              unitPreference: null,
-              timezone: null,
-              medicineRegistry: null,
-            },
-          },
-        ),
-      ),
-    ).toEqual([]);
+  it("passes the questions this flow does not ask", () => {
+    const state = flow(
+      { recordTarget: "me" },
+      { who: "done", areas: "done", units: "done", sources: "done" },
+    );
+    expect(questionsToPassBeforeConfirm(state)).toEqual([
+      "medication",
+      "visit",
+    ]);
   });
 
-  it("never passes a question the person still owes on screen", () => {
-    expect(
-      questionsToPassBeforeConfirm(
-        state({ who: "done" }, { recordTarget: "me", areas: ["mood"] }),
-      ),
-    ).toEqual(["units"]);
-  });
-
-  it("leaves the first-result step to the confirm screen's own rule", () => {
-    expect(
-      questionsToPassBeforeConfirm(
-        state(QUESTIONS_DONE, { recordTarget: "me" }),
-      ),
-    ).not.toContain("first-result");
+  it("passes sources too for someone looked after", () => {
+    const state = flow(
+      { recordTarget: "someone-else" },
+      { who: "done", areas: "done", units: "done" },
+    );
+    expect(questionsToPassBeforeConfirm(state)).toEqual([
+      "medication",
+      "sources",
+      "visit",
+    ]);
   });
 });
 
-describe("isOnboardingPathname", () => {
-  it("covers the front door and every step, and nothing that only starts alike", () => {
-    expect(isOnboardingPathname("/onboarding")).toBe(true);
-    expect(isOnboardingPathname("/onboarding/who")).toBe(true);
-    expect(isOnboardingPathname("/onboarding/first-result")).toBe(true);
-    expect(isOnboardingPathname("/onboarding-export")).toBe(false);
-    expect(isOnboardingPathname("/")).toBe(false);
+describe("the Coach offer", () => {
+  it("is offered only while a provider can serve the record", () => {
+    const offer = (available: boolean, reason: string | null) =>
+      onboardingOffersFromAi({
+        capabilities: { coach: { available, reason } },
+      }).ai;
+    expect(offer(true, null)).toBe(true);
+    expect(offer(false, "consent_required")).toBe(true);
+    expect(offer(false, "no_provider")).toBe(false);
+    expect(offer(false, "operator_disabled")).toBe(false);
+    expect(offer(false, "user_disabled")).toBe(false);
   });
 });
 
-describe("stepCounter and the step bar", () => {
-  /**
-   * The bar is drawn from `stepTrack` (`OnboardingShell` hands it to the
-   * frame, which fills every segment up to the screen's index); the counter
-   * must name exactly that place, on every screen of every branch.
-   */
-  function expectAgreement(flow: OnboardingStateDto) {
-    const track = stepTrack(flow);
-    for (const [index, screen] of track.entries()) {
-      expect(stepCounter(flow, screen), screen).toEqual({
-        current: index + 1,
-        total: track.length,
-      });
-    }
-    expect(stepCounter(flow, "welcome")).toBeNull();
-    expect(track).toEqual(screenOrder(flow).filter((s) => s !== "welcome"));
-  }
+describe("a ledger a 1.48 server wrote", () => {
+  const legacyRow = {
+    needsJson: {
+      recordTarget: "me",
+      areas: ["mood", "glucose"],
+      medication: "yes",
+      sources: [],
+      visit: null,
+      units: { glucoseUnit: null, unitPreference: null },
+    },
+    stepsJson: [
+      { id: "who", status: "done" },
+      { id: "areas", status: "done" },
+      { id: "medication", status: "done" },
+      { id: "sources", status: "skipped" },
+      { id: "visit", status: "skipped" },
+      { id: "units", status: "skipped" },
+      { id: "confirm", status: "done" },
+      { id: "first-result", status: "skipped" },
+      { id: "done", status: "done" },
+    ],
+    firstResultJson: null,
+    modulesDerivedAt: AT,
+    completedAt: AT,
+  };
 
-  const branches: Array<[string, OnboardingStateDto]> = [
-    [
-      "an admin's first run, AI offered, medication and units",
-      state(
-        { ...QUESTIONS_DONE, confirm: "done" },
-        { recordTarget: "me", areas: ["glucose"], medication: "yes" },
-        { offers: { ai: true }, completedAt: "2026-09-10T08:00:00.000Z" },
-      ),
-    ],
-    [
-      "an invited person, AI not offered",
-      state(
-        {},
-        { recordTarget: "me", areas: ["sleep"] },
-        { offers: { ai: false } },
-      ),
-    ],
-    [
-      "AI offered, nothing else to follow up",
-      state(
-        {},
-        { recordTarget: "me", areas: ["labs"] },
-        { offers: { ai: true } },
-      ),
-    ],
-    [
-      "a skipped units step stays on the track",
-      state(
-        { ...QUESTIONS_DONE, units: "skipped" },
-        { recordTarget: "me", areas: ["weight-body"], medication: "sometimes" },
-      ),
-    ],
-    [
-      "somebody else's record ends at confirm",
-      state(
-        {},
-        { recordTarget: "someone-else", medication: "yes" },
-        { offers: { ai: true } },
-      ),
-    ],
-  ];
-
-  it.each(branches)("agree for %s", (_name, flow) => {
-    expectAgreement(flow);
-  });
-
-  it("counts the whole track, not the questions only", () => {
-    const flow = branches[0][1];
-    expect(stepCounter(flow, "who")).toEqual({
-      current: 1,
-      total: stepTrack(flow).length,
-    });
-    expect(stepCounter(flow, "done")?.current).toBe(stepTrack(flow).length);
+  it("stays settled, with every follow-up read as passed", () => {
+    const state: OnboardingStateDto = toOnboardingStateDto(
+      legacyRow,
+      NO_UNITS,
+      {
+        ai: true,
+      },
+    );
+    expect(state.steps.find((s) => s.id === "reminders")?.status).toBe(
+      "skipped",
+    );
+    expect(isOnboardingSettled(state)).toBe(true);
+    expect(resumeScreen({ ...state, plan: null })).toBeNull();
   });
 });

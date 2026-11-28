@@ -93,6 +93,8 @@ export async function writeServerSetupStep(
   id: ServerSetupStepId,
   status: "done" | "skipped",
   now: Date = new Date(),
+  /** The admin who passed the step, kept with a "Later" (`at`, `by`). */
+  by?: string,
 ): Promise<void> {
   // The steps are one document, read and written back whole, so two steps
   // settled at the same moment are written under the settings row's lock.
@@ -102,6 +104,7 @@ export async function writeServerSetupStep(
       parseServerSetupSteps(row?.serverSetupStepsJson ?? null),
       id,
       status,
+      by ? { at: now.toISOString(), by } : undefined,
     );
     const completedAt =
       row?.serverSetupCompletedAt ??
@@ -138,13 +141,26 @@ export async function dismissServerSetupNotice(
 }
 
 /**
- * Whether a person flow screen should point an admin at the server setup:
- * an admin, on a server that offers it, whose setup is not finished.
+ * Whether the setup front door sends this admin into the server setup: an
+ * admin, on a server that offers it, whose setup is neither finished nor
+ * set aside with "Finish later".
  */
 export async function serverSetupOpenFor(user: {
+  id: string;
   role: string;
 }): Promise<boolean> {
   if (user.role !== "ADMIN" || !serverSetupOfferedHere()) return false;
-  const row = await readRow();
-  return row?.serverSetupCompletedAt == null;
+  const [row, admin] = await Promise.all([
+    readRow(),
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: { adminNoticesDismissed: true },
+    }),
+  ]);
+  // "Finish later" in the server setup sets it aside for this admin (the
+  // notice's own dismissal); the open steps then wait on Admin › Setup.
+  return (
+    row?.serverSetupCompletedAt == null &&
+    !(admin?.adminNoticesDismissed ?? []).includes(SERVER_SETUP_NOTICE_ID)
+  );
 }

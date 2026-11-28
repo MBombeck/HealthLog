@@ -250,6 +250,20 @@ describe("applyOnboardingAnswer and the two list answers", () => {
     );
     expect(sources.needs.sources).toEqual(["oura", "manual"]);
   });
+
+  it("merges a sources answer into the recorded one instead of replacing it", () => {
+    const first = applyOnboardingAnswer(
+      blank(),
+      { step: "sources", sources: ["withings"] },
+      AT,
+    );
+    const second = applyOnboardingAnswer(
+      first,
+      { step: "sources", sources: ["apple-health", "withings"] },
+      AT,
+    );
+    expect(second.needs.sources).toEqual(["withings", "apple-health"]);
+  });
 });
 
 describe("isOnboardingSettled", () => {
