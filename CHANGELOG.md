@@ -165,6 +165,7 @@
 
 - No sentence about the day calls it in range while the Health score flags something. "All 4 of today's values sit inside their usual range" could stand beside "Blood pressure: needs attention" under the score. The morning sentence now names the flagged area instead ("Blood pressure needs attention in your health score today."), the Today line says only how many values were checked, and "Nothing needs your attention today" is never said beside a flag. Every such sentence goes through one rule that reads the score's flagged pillar, and a test fails when a new one is added beside it.
 - A night 20 to 60 minutes off the usual is no longer called "close to your usual" in the morning sentence; it says the difference, as the night card already did.
+- A reference range printed in Chinese or Japanese is read instead of passing through unread. A report sets its digits, decimal dot, range dash and unit in the fullwidth block ("３．５～５．０", "ｍｍｏｌ／Ｌ"), which matched no number at all, so the window was stored and the reading was then judged against no band, with nothing anywhere saying the window had been printed. The comparison now folds the fullwidth rendering of ASCII onto ASCII, while the stored text keeps exactly the digits the lab set; the fullwidth "、" and "。" are left alone, Han and Kana are untouched, and the halfwidth notation every other report prints reads as before. This is the first step of zh-CN. ([#1528](https://github.com/MBombeck/HealthLog/issues/1528))
 
 ### Security
 

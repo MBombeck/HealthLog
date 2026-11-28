@@ -53,6 +53,7 @@
  */
 import { type Locale } from "@/lib/i18n/config";
 import {
+  foldFullWidthToAscii,
   normaliseApostrophes,
   stripDiacritics,
 } from "@/lib/i18n/fold-for-match";
@@ -556,9 +557,12 @@ export function parseReferenceRange(
   // Fold for MATCHING only — the stored text stays exactly what the report
   // printed. Accents go so a table written "jusqu'a" meets a report's
   // "jusqu'à"; the curled apostrophe a word processor emits becomes the
-  // straight one the table carries. Everything else, notably the digits and
-  // their separators, is left alone.
-  let candidate = normaliseApostrophes(stripDiacritics(text));
+  // straight one the table carries; the fullwidth forms a Chinese or Japanese
+  // sheet prints become ASCII, so "３．５～５．０" reads as the window it is.
+  // Everything else, notably a decimal comma, is left alone.
+  let candidate = normaliseApostrophes(
+    stripDiacritics(foldFullWidthToAscii(text)),
+  );
   const bracketed = /^[[(](.*)[\])]$/u.exec(candidate);
   if (bracketed) candidate = bracketed[1].trim();
 
