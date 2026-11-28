@@ -76,7 +76,7 @@ export function WorkoutDetailHeader({ workout }: WorkoutDetailHeaderProps) {
       <div className="flex min-w-0 items-start gap-4">
         {renderSportIconBadge(workout.sportType)}
         <div className="min-w-0 flex-1 space-y-1">
-          <p className="text-muted-foreground text-xs tracking-wide uppercase">
+          <p className="text-muted-foreground text-xs">
             {sourceLine(workout, t)}
           </p>
           <h2 className="truncate text-lg font-semibold sm:text-xl">

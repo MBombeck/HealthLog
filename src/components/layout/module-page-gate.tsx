@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
@@ -10,9 +9,7 @@ import {
   NAV_DESTINATIONS,
   navDestinationModule,
 } from "@/components/layout/nav-model";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { useTranslations } from "@/lib/i18n/context";
 import type { ModuleKey } from "@/lib/modules/registry";
 import { surfaceModule } from "@/lib/modules/surface";
 
@@ -81,7 +78,7 @@ export function switchedOffModule(
  * the tour) gets the notice rather than a redirect, which would drop where
  * they were, and rather than the page's own error rows, which would say
  * "could not be loaded" about a module that is not there. The notice reads
- * the reason from `moduleAccess` and offers Settings only when the record's
+ * the reason from `moduleAccess` and offers "Turn on" only when the record's
  * own switch is what is off.
  *
  * Paint, not enforcement: every route behind a module refuses on its own
@@ -92,7 +89,6 @@ export function switchedOffModule(
 export function ModulePageGate({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { user } = useAuth();
-  const { t } = useTranslations();
 
   const moduleKey = switchedOffModule(pathname, user?.modules);
   if (moduleKey === undefined) return <>{children}</>;
@@ -105,13 +101,6 @@ export function ModulePageGate({ children }: { children: ReactNode }) {
     <ModuleDisabledNotice
       moduleKey={moduleKey}
       icon={Icon ? <Icon className="size-6" /> : undefined}
-      action={
-        <Button asChild size="sm">
-          <Link href="/settings/modules" data-slot="module-off-open-settings">
-            {t("moduleOff.openModules")}
-          </Link>
-        </Button>
-      }
     />
   );
 }

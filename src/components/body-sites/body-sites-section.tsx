@@ -36,6 +36,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Hint } from "@/components/ui/hint";
 import { InHeaderSlot } from "@/components/layout/header-slot";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
@@ -87,11 +88,7 @@ export function BodySitesSection({
   return (
     <section aria-labelledby="body-sites-title" className="space-y-4">
       <InHeaderSlot>
-        <PageHeader
-          titleId="body-sites-title"
-          title={t("bodySites.title")}
-          description={t("bodySites.description")}
-        />
+        <PageHeader titleId="body-sites-title" title={t("bodySites.title")} />
       </InHeaderSlot>
 
       {list.isError ? (
@@ -107,11 +104,14 @@ export function BodySitesSection({
           ))}
         </div>
       ) : sites.length === 0 ? (
-        <EmptyState
-          icon={<PersonStanding className="size-6" aria-hidden />}
-          title={t("bodySites.emptyTitle")}
-          description={t("bodySites.emptyDescription")}
-        />
+        <div className="space-y-3">
+          <EmptyState
+            icon={<PersonStanding className="size-6" aria-hidden />}
+            title={t("bodySites.emptyTitle")}
+          />
+          {/* A site is not added here; it comes from a procedure or a condition. */}
+          <Hint reason="operation">{t("bodySites.emptyDescription")}</Hint>
+        </div>
       ) : (
         <div className="space-y-6">
           <div className="space-y-3" data-slot="body-sites-filter">

@@ -212,7 +212,6 @@ export function DocumentsView() {
       <PullToRefreshIndicator {...pull} />
       <PageHeader
         title={t("documents.title")}
-        description={t("documents.subtitle")}
         actions={
           canManageDocuments || !inSharedRecord ? (
             <VaultPageActions
@@ -303,7 +302,6 @@ export function DocumentsView() {
             t,
             inSharedRecord ? (user?.accountAccess?.active ?? null) : null,
           )}
-          description={t("documents.empty.description")}
           action={
             canManageDocuments ? (
               <Button
@@ -320,7 +318,6 @@ export function DocumentsView() {
         <EmptyState
           icon={<SearchX className="size-6" aria-hidden />}
           title={t("documents.empty.noMatchesTitle")}
-          description={t("documents.empty.noMatchesDescription")}
           action={
             <Button variant="outline" onClick={clearFilters}>
               {t("documents.filter.clear")}

@@ -187,7 +187,6 @@ export interface AdminShellProps {
   active?: AdminSectionSlug;
   /** A page outside the sections (Admin › Setup) names itself. */
   title?: string;
-  subtitle?: string;
   children: React.ReactNode;
 }
 
@@ -240,12 +239,7 @@ function useActivePillInView(activeSlug: string | null) {
   return stripRef;
 }
 
-export function AdminShell({
-  active,
-  title,
-  subtitle,
-  children,
-}: AdminShellProps) {
+export function AdminShell({ active, title, children }: AdminShellProps) {
   const pathname = usePathname();
   const { t } = useTranslations();
   const { user } = useAuth();
@@ -274,21 +268,12 @@ export function AdminShell({
     (activeSlug === null
       ? t("admin.title")
       : t(`admin.section.${activeSlug}.title`));
-  const headingSubtitle =
-    subtitle ??
-    (activeSlug === null
-      ? t("admin.subtitle")
-      : t(`admin.section.${activeSlug}.subtitle`));
 
   // Same two-copy heading as the Settings shell (mobile above the chip strip,
   // desktop inside the grid row) and the same primitive, so the two consoles
   // cannot drift a step apart again.
   const headingBlock = (mobile = false) => (
-    <PageHeader
-      headingAs={mobile ? "div" : "h1"}
-      title={headingTitle}
-      description={headingSubtitle}
-    />
+    <PageHeader headingAs={mobile ? "div" : "h1"} title={headingTitle} />
   );
 
   // v1.4.25 — AuthShell wraps the page in `px-4 py-6 md:px-6`

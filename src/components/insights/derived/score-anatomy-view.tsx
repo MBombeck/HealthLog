@@ -215,7 +215,7 @@ export function ScoreAnatomyView({
       ) : null}
       {contributors.length > 0 || (noFactorsNote && !insufficient) ? (
         <div data-slot="score-anatomy-contributors" className="space-y-3">
-          <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+          <p className="text-muted-foreground text-xs font-semibold">
             {contributorsHeading ??
               t("insights.derived.anatomy.contributorsLabel")}
           </p>

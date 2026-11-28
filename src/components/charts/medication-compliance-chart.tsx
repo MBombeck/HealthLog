@@ -501,7 +501,7 @@ export function MedicationComplianceChart({
           {showTrendChip && trend && TrendIcon ? (
             <span
               className={cn(
-                "bg-muted/40 text-2xs inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium tracking-wide uppercase",
+                "bg-muted/40 text-2xs inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium",
                 trendColor,
               )}
               data-slot="medication-trend-chip"
@@ -571,7 +571,6 @@ export function MedicationComplianceChart({
       ) : !hasData && noMedications ? (
         <EmptyState
           variant="plain"
-          size="compact"
           data-slot="medication-compliance-no-medications"
           className="flex h-48 items-center justify-center"
           icon={<Pill className="size-4" />}

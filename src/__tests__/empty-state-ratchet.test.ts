@@ -87,7 +87,7 @@ describe("empty states go through EmptyState (ratchet)", () => {
     const hits = findHandWrittenEmptyStates(files).sort();
     expect(
       hits,
-      'A new hand-written empty state: render it through <EmptyState variant="plain" size="compact"> (or ChartEmptyState on a chart body). A site that moved over: remove its entry.',
+      'A new hand-written empty state: render it through <EmptyState variant="plain"> (or ChartEmptyState on a chart body). A site that moved over: remove its entry.',
     ).toEqual([...REMAINING].sort());
   });
 

@@ -77,13 +77,7 @@ export function LabValuesList({ biomarkerId }: { biomarkerId: string }) {
   }
 
   if (readings.length === 0) {
-    return (
-      <EmptyState
-        variant="plain"
-        size="compact"
-        title={t("labs.detail.emptyTitle")}
-      />
-    );
+    return <EmptyState variant="plain" title={t("labs.detail.emptyTitle")} />;
   }
 
   return (

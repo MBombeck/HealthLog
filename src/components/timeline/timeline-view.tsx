@@ -508,11 +508,7 @@ export function TimelineView() {
 
   return (
     <div className="space-y-6" data-slot="timeline-page">
-      <PageHeader
-        title={t("timeline.title")}
-        description={t("timeline.subtitle")}
-        actions={addButton}
-      />
+      <PageHeader title={t("timeline.title")} actions={addButton} />
 
       {readiness.data && showReadinessCard(readiness.data, cardDismissed) && (
         <ReadinessCard
@@ -572,11 +568,7 @@ export function TimelineView() {
           }
         />
       ) : isEmpty || !data || !window_ ? (
-        <EmptyState
-          title={t("timeline.empty.title")}
-          description={t("timeline.empty.description")}
-          action={addButton}
-        />
+        <EmptyState title={t("timeline.empty.title")} action={addButton} />
       ) : (
         <>
           {/* Desktop and tablet: the chart. */}

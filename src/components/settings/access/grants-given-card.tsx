@@ -72,7 +72,6 @@ export function GrantsGivenCard() {
           <EmptyState
             icon={<Users className="size-6" />}
             title={t("recordSharing.given.emptyTitle")}
-            description={t("recordSharing.given.emptyDescription")}
           />
         )}
         {given.length > 0 && (

@@ -172,7 +172,6 @@ export function VorsorgeDashboardCard() {
         ) : upcoming.length === 0 ? (
           <EmptyState
             variant="plain"
-            size="compact"
             title={t("measurementReminders.dashboard.empty")}
             action={
               <Button asChild variant="outline" size="sm">

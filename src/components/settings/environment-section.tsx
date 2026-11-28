@@ -345,7 +345,6 @@ export function EnvironmentSection() {
           ) : (
             <EmptyState
               variant="plain"
-              size="compact"
               title={t("settings.sections.environment.home.none")}
             />
           )}
@@ -382,7 +381,6 @@ export function EnvironmentSection() {
             homeResults.length === 0 && (
               <EmptyState
                 variant="plain"
-                size="compact"
                 title={t("settings.sections.environment.noResults")}
               />
             )}
@@ -474,7 +472,6 @@ export function EnvironmentSection() {
           ) : (
             <EmptyState
               variant="plain"
-              size="compact"
               title={t("settings.sections.environment.travel.none")}
             />
           )}
@@ -514,7 +511,6 @@ export function EnvironmentSection() {
             travelResults.length === 0 && (
               <EmptyState
                 variant="plain"
-                size="compact"
                 title={t("settings.sections.environment.noResults")}
               />
             )}

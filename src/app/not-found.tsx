@@ -40,9 +40,7 @@ export default async function NotFound() {
         <Logo className="text-primary" size={32} />
       </div>
       <div className="max-w-sm space-y-2 text-center">
-        <p className="text-muted-foreground text-xs tracking-wider uppercase">
-          404
-        </p>
+        <p className="text-muted-foreground text-xs">404</p>
         <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
           {t("notFound.title")}
         </h1>

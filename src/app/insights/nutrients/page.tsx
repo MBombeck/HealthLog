@@ -6,6 +6,7 @@ import { Coffee, KeyRound, Leaf, Wine } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Hint } from "@/components/ui/hint";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
 import { HydrationCard } from "@/components/insights/nutrients/hydration-card";
@@ -100,7 +101,7 @@ export default function InsightsNutrientsPage() {
     return (
       <SubPageShell
         title={t("nutrients.page.title")}
-        description={t("nutrients.page.description")}
+        info={t("nutrients.page.description")}
       >
         <QueryErrorCard
           error={overview.error}
@@ -117,34 +118,33 @@ export default function InsightsNutrientsPage() {
     return (
       <SubPageShell
         title={t("nutrients.page.title")}
-        description={t("nutrients.page.description")}
+        info={t("nutrients.page.description")}
       >
         {lastAttempt ? (
-          <EmptyState
-            icon={<Leaf className="size-6" />}
-            title={t("nutrients.page.lastAttemptTitle")}
-            description={
-              <>
-                {t(lastAttemptReasonKey(lastAttempt.topReason))}
-                <span className="mt-1 block text-xs">
-                  {t("nutrients.page.lastAttemptAt", {
-                    date: fmt.dateTime(lastAttempt.at),
-                  })}
-                </span>
-              </>
-            }
-          />
+          <>
+            <EmptyState
+              icon={<Leaf className="size-6" />}
+              title={t("nutrients.page.lastAttemptTitle")}
+            />
+            {/* Why the last import left nothing, and when: the one clue a
+                person has for fixing the food tracker's setup. */}
+            <Hint reason="operation" data-slot="nutrients-last-attempt">
+              {t(lastAttemptReasonKey(lastAttempt.topReason))}{" "}
+              {t("nutrients.page.lastAttemptAt", {
+                date: fmt.dateTime(lastAttempt.at),
+              })}
+            </Hint>
+          </>
         ) : (
           <EmptyState
             icon={<Leaf className="size-6" />}
             title={t("nutrients.page.emptyTitle")}
-            description={t("nutrients.page.emptyDescription")}
             action={
               // A food tracker posts its day totals with a measurement token;
               // the empty page names that route, so it opens it too.
               <Button asChild>
                 <Link
-                  href="/settings/api#measurements-token"
+                  href="/settings/api?new-token=1"
                   data-slot="nutrients-empty-token-link"
                 >
                   <KeyRound aria-hidden="true" />
@@ -165,7 +165,7 @@ export default function InsightsNutrientsPage() {
   return (
     <SubPageShell
       title={t("nutrients.page.title")}
-      description={t("nutrients.page.description")}
+      info={t("nutrients.page.description")}
     >
       <HydrationCard />
       {overview.isLoading ? null : (

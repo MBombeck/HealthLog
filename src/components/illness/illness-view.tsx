@@ -527,7 +527,6 @@ export function IllnessView() {
           <EmptyState
             icon={<Stethoscope className="size-6" />}
             title={t("illness.empty.title")}
-            description={t("illness.empty.body")}
             action={
               canAddEpisode ? (
                 <Button onClick={() => setNewOpen(true)}>

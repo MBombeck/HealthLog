@@ -91,16 +91,14 @@ function Section({
         data-slot="privacy-section-de"
         lang="de"
       >
-        <p className="text-foreground/80 text-xs font-medium tracking-wider uppercase">
-          Deutsch
-        </p>
+        <p className="text-foreground/80 text-xs font-medium">Deutsch</p>
         {bodyDe}
       </div>
       <details
         className="border-border/60 group bg-card/40 rounded-md border"
         data-slot="privacy-section-en"
       >
-        <summary className="text-foreground hover:bg-muted/50 cursor-pointer list-none rounded-md px-3 py-2 text-xs font-medium tracking-wider uppercase select-none">
+        <summary className="text-foreground hover:bg-muted/50 cursor-pointer list-none rounded-md px-3 py-2 text-xs font-medium select-none">
           English translation
           <span
             aria-hidden="true"
@@ -224,7 +222,7 @@ export default function PrivacyPage() {
         className="mx-auto max-w-3xl space-y-10 px-4 py-8 md:px-6 md:py-12"
       >
         <div className="space-y-3">
-          <p className="text-muted-foreground text-xs tracking-wider uppercase">
+          <p className="text-muted-foreground text-xs">
             Policy version {POLICY_VERSION}
           </p>
           <h1 className="text-3xl font-bold tracking-tight md:text-4xl">

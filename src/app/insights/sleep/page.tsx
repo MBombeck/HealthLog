@@ -59,13 +59,12 @@ export default function InsightsSchlafPage() {
     return (
       <SubPageShell
         title={t("insights.sleep.title")}
-        description={t("insights.sleep.description")}
+        info={t("insights.sleep.description")}
         explainerMetric="sleep"
       >
         <MetricEmptyState
           icon={<Moon className="size-6" />}
           title={t("insights.emptyState.sleep.title")}
-          description={t("insights.emptyState.sleep.description")}
           cta={
             <Button size="sm" asChild>
               <Link href="/settings/integrations">
@@ -82,7 +81,7 @@ export default function InsightsSchlafPage() {
   return (
     <SubPageShell
       title={t("insights.sleep.title")}
-      description={t("insights.sleep.description")}
+      info={t("insights.sleep.description")}
       explainerMetric="sleep"
       chartContext
       coachLaunch

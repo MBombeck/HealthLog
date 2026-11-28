@@ -98,7 +98,6 @@ describe("<VisitsSection>", () => {
   it("paints the empty state, with one action, when there is no visit", () => {
     const html = render({ upcoming: [], past: [] });
     expect(html).toContain("No visit recorded yet");
-    expect(html).toContain("A date is enough");
     expect(html).toContain('data-slot="visits-add"');
     // An empty account is not an error, and the two states never share copy.
     expect(html).not.toContain("Visits could not be loaded.");

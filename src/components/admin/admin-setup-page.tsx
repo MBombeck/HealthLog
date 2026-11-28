@@ -26,11 +26,7 @@ export function AdminSetupPage() {
   const decided = tasks.filter(isSettled).length;
 
   return (
-    <AdminShell
-      active="system-status"
-      title={t("setup.admin.title")}
-      subtitle={t("setup.admin.subtitle")}
-    >
+    <AdminShell active="system-status" title={t("setup.admin.title")}>
       {setup.isError ? (
         <QueryErrorRow
           error={setup.error}

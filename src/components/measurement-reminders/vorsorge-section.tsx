@@ -223,7 +223,6 @@ export function VorsorgeSection({
                 {t("measurementReminders.sectionTitle")}
               </span>
             }
-            description={t("measurementReminders.sectionDescription")}
             actions={
               <>
                 {wrenchButton}
@@ -248,7 +247,6 @@ export function VorsorgeSection({
           icon={CalendarClock}
           titleId="vorsorge-section-title"
           title={t("measurementReminders.sectionTitle")}
-          description={t("measurementReminders.sectionDescription")}
           status={addButton}
         />
       )}
@@ -313,7 +311,6 @@ export function VorsorgeSection({
         <EmptyState
           icon={<Plus className="size-6" />}
           title={t("measurementReminders.empty.title")}
-          description={t("measurementReminders.empty.description")}
           action={
             canManageMeasurements ? (
               <Button type="button" onClick={openCreate}>

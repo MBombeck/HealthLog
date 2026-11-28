@@ -234,7 +234,6 @@ function LabListEmpty({
     <EmptyState
       icon={<FlaskConical className="size-6" />}
       title={t("labs.emptyTitle")}
-      description={t("labs.emptyDescription")}
       action={
         canAddLab ? (
           // Results also arrive in bulk: Apple Health's Health Records and a
@@ -264,7 +263,6 @@ function LabListNoMatches({ onReset }: { onReset: () => void }) {
     <EmptyState
       icon={<FlaskConical className="size-6" />}
       title={t("labs.filter.noMatchesTitle")}
-      description={t("labs.filter.noMatchesDescription")}
       action={
         <Button variant="outline" onClick={onReset}>
           {t("dataList.resetFilters")}

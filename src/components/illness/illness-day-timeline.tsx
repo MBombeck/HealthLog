@@ -40,7 +40,7 @@ function DayLogRow({ log }: { log: IllnessDayLogDTO }) {
 
   return (
     <div className="border-border/60 space-y-2 border-l-2 pl-3">
-      <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+      <p className="text-muted-foreground text-xs font-medium">
         {/* v1.42 — the logged day opens the whole day. */}
         <DayLink date={log.date.slice(0, 10)}>
           {fmt.dateShortSmartCalendar(log.date)}
@@ -65,11 +65,7 @@ function DayLogRow({ log }: { log: IllnessDayLogDTO }) {
           })}
         </div>
       ) : (
-        <EmptyState
-          variant="plain"
-          size="compact"
-          title={t("illness.timeline.noSymptoms")}
-        />
+        <EmptyState variant="plain" title={t("illness.timeline.noSymptoms")} />
       )}
 
       {log.functionalImpact !== null ? (
@@ -139,7 +135,6 @@ export function IllnessDayTimeline({
         ) : dayLogs.length === 0 ? (
           <EmptyState
             variant="plain"
-            size="compact"
             title={t("illness.timeline.empty")}
             action={
               canManageIllness ? (

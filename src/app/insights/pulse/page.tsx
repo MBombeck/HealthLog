@@ -101,13 +101,12 @@ export default function InsightsPulsPage() {
     return (
       <SubPageShell
         title={t("insights.pulseSectionTitle")}
-        description={t("insights.subPage.pulsDescription")}
+        info={t("insights.subPage.pulsDescription")}
         explainerMetric="pulse"
       >
         <MetricEmptyState
           icon={<Heart className="size-6" />}
           title={t("insights.emptyState.pulse.title")}
-          description={t("insights.emptyState.pulse.description")}
           cta={
             <Button size="sm" asChild>
               <Link href="/measurements?add=PULSE">
@@ -124,7 +123,7 @@ export default function InsightsPulsPage() {
   return (
     <SubPageShell
       title={t("insights.pulseSectionTitle")}
-      description={t("insights.subPage.pulsDescription")}
+      info={t("insights.subPage.pulsDescription")}
       explainerMetric="pulse"
       statStrip={
         <MetricStatStrip

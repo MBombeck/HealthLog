@@ -109,7 +109,6 @@ export function ArchivedTagsCard({ catalog }: ArchivedTagsCardProps) {
       {archived.length === 0 ? (
         <EmptyState
           variant="plain"
-          size="compact"
           title={t("mood.manage.archivedEmpty")}
           data-slot="mood-archived-empty"
         />

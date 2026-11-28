@@ -82,7 +82,7 @@ export function AssessmentResult({
 
       <PageHeader
         title={t(`mentalHealth.instrument.${key}`)}
-        description={t(`mentalHealth.instrumentDescription.${key}`)}
+        info={t(`mentalHealth.instrumentDescription.${key}`)}
         headingRef={headingRef}
         focusable
       />

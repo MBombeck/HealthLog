@@ -32,9 +32,12 @@ import { cn } from "@/lib/utils";
 function ActionPair({
   className,
   pairClassName,
+  variant = "footer",
   children,
   ...props
 }: React.ComponentProps<"div"> & {
+  /** `footer` for a view's actions, `compact` for a list row's own pair. */
+  variant?: ActionPairVariant;
   /**
    * Width rules of the pair itself, for a surface that lines several pairs
    * up in one column (the start page's asks give every button one width).
@@ -55,7 +58,7 @@ function ActionPair({
   React.useLayoutEffect(() => {
     const row = rowRef.current;
     const pair = pairRef.current;
-    if (!row || !pair) return;
+    if (!row || !pair || variant === "compact") return;
     const fit = () => {
       pair.dataset.stacked = "false";
       const menu = menuRef.current;
@@ -111,10 +114,8 @@ function ActionPair({
       <div
         ref={pairRef}
         data-slot="action-pair"
-        className={cn(
-          "ml-auto grid w-max shrink-0 auto-cols-fr grid-flow-col gap-2 *:w-full data-[stacked=true]:w-auto data-[stacked=true]:min-w-0 data-[stacked=true]:flex-1 data-[stacked=true]:auto-cols-auto data-[stacked=true]:grid-flow-row max-sm:w-full max-sm:*:min-h-11",
-          pairClassName,
-        )}
+        data-variant={variant}
+        className={cn(PAIR_CLASS[variant], pairClassName)}
       >
         {actions}
       </div>
@@ -167,4 +168,39 @@ function flatten(children: React.ReactNode): React.ReactNode[] {
   );
 }
 
-export { ActionMenuSlot, ActionPair, MenuInHeaderContext };
+/**
+ * The two pair styles, and nothing else styles a pair (UI standards §15).
+ * Both: the secondary a grey fill, no frame, both buttons one width.
+ *
+ * - `footer`: a sheet's, a dialog's, the wizard's actions; the primary is the
+ *   filled `default`, the one primary of the view. A secondary passed as
+ *   `outline` is drawn as the grey `neutral` here, so the call sites keep
+ *   their props.
+ * - `compact`: a list row's own two actions (the start page's asks); the
+ *   primary `tonal`, both the `compact` size. Two equal halves of the cell it
+ *   stands in, which a list sizes to its widest pair; a single action takes
+ *   the right half. It never stacks: the labels are budgeted to fit.
+ */
+type ActionPairVariant = "footer" | "compact";
+
+const PAIR_CLASS: Record<ActionPairVariant, string> = {
+  footer:
+    "ml-auto grid w-max shrink-0 auto-cols-fr grid-flow-col gap-2 *:w-full data-[stacked=true]:w-auto data-[stacked=true]:min-w-0 data-[stacked=true]:flex-1 data-[stacked=true]:auto-cols-auto data-[stacked=true]:grid-flow-row max-sm:w-full max-sm:*:min-h-11 *:data-[variant=outline]:border-transparent *:data-[variant=outline]:bg-muted *:data-[variant=outline]:text-muted-foreground *:data-[variant=outline]:font-normal *:data-[variant=outline]:shadow-none *:data-[variant=outline]:hover:bg-muted/70 *:data-[variant=outline]:hover:text-foreground",
+  compact: "grid w-full grid-cols-[1fr_1fr] gap-2 *:w-full *:only:col-start-2",
+};
+
+/** The button props of one side of a pair, so no call site picks a look. */
+function actionPairButton(
+  variant: ActionPairVariant,
+  side: "primary" | "secondary",
+): { variant: "default" | "tonal" | "neutral"; size: "sm" | "compact" } {
+  if (variant === "compact") {
+    return {
+      variant: side === "primary" ? "tonal" : "neutral",
+      size: "compact",
+    };
+  }
+  return { variant: side === "primary" ? "default" : "neutral", size: "sm" };
+}
+
+export { ActionMenuSlot, ActionPair, MenuInHeaderContext, actionPairButton };

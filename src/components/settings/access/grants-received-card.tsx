@@ -90,7 +90,6 @@ export function GrantsReceivedCard() {
           <EmptyState
             icon={<FolderOpen className="size-6" />}
             title={t("recordSharing.received.emptyTitle")}
-            description={t("recordSharing.received.emptyDescription")}
           />
         )}
         {received.length > 0 && (

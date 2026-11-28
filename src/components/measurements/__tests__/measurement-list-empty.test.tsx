@@ -62,13 +62,13 @@ describe("MeasurementList — empty state", () => {
     const html = render();
     expect(html).toContain('role="status"');
     expect(html).toContain('aria-live="polite"');
-    expect(html).toContain("border-dashed");
+    expect(html).toContain('data-slot="empty-state-title"');
   });
 
-  it("renders the localized title and description", () => {
+  it("renders the localized title, and no sentence under it", () => {
     const html = render();
     expect(html).toContain("No measurements yet");
-    expect(html).toContain(
+    expect(html).not.toContain(
       "Log your weight, blood pressure, pulse, or other vitals",
     );
   });

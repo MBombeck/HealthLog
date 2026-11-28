@@ -73,13 +73,12 @@ export default function InsightsBlutdruckPage() {
     return (
       <SubPageShell
         title={t("insights.bloodPressureSectionTitle")}
-        description={t("insights.subPage.blutdruckDescription")}
+        info={t("insights.subPage.blutdruckDescription")}
         explainerMetric="bloodPressure"
       >
         <MetricEmptyState
           icon={<HeartPulse className="size-6" />}
           title={t("insights.emptyState.bloodPressure.title")}
-          description={t("insights.emptyState.bloodPressure.description")}
           cta={
             <Button size="sm" asChild>
               <Link href="/measurements?add=BLOOD_PRESSURE">
@@ -119,7 +118,7 @@ export default function InsightsBlutdruckPage() {
   return (
     <SubPageShell
       title={t("insights.bloodPressureSectionTitle")}
-      description={t("insights.subPage.blutdruckDescription")}
+      info={t("insights.subPage.blutdruckDescription")}
       explainerMetric="bloodPressure"
       chartContext
       coachLaunch

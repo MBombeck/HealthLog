@@ -78,7 +78,7 @@ export function BiomarkerAliases({
 
   return (
     <div className="space-y-2" data-slot="biomarker-aliases">
-      <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+      <p className="text-muted-foreground text-xs font-medium">
         {t("labs.aliases.title")}
       </p>
       {aliases.length > 0 ? (

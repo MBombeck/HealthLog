@@ -271,7 +271,6 @@ export function ActivityCalendarCard() {
             !data.available.load ? (
               <EmptyState
                 variant="plain"
-                size="compact"
                 title={t("activityCalendar.empty")}
                 data-slot="activity-calendar-empty"
               />

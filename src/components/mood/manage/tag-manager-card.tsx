@@ -310,7 +310,7 @@ export function TagManagerCard({ catalog }: TagManagerCardProps) {
       </div>
 
       {visible.categories.length === 0 && (
-        <EmptyState variant="plain" size="compact" title={t("common.noData")} />
+        <EmptyState variant="plain" title={t("common.noData")} />
       )}
 
       {visible.categories.map((category) => {

@@ -184,7 +184,6 @@ export function SecuritySessionsCard({
         {!isLoading && !isError && sessions.length === 0 && (
           <EmptyState
             variant="plain"
-            size="compact"
             title={t("settings.security.sessionsEmpty")}
           />
         )}

@@ -10,7 +10,7 @@
       "target": 2600
     },
     "/settings/anamnesis": {
-      "budget": 4300,
+      "budget": 3900,
       "target": 2500
     },
     "/admin/system-status": {
@@ -38,11 +38,11 @@
       "target": 1700
     },
     "/mood": {
-      "budget": 1000,
+      "budget": 900,
       "target": 800
     },
     "/settings/access": {
-      "budget": 2600,
+      "budget": 2000,
       "target": 1300
     },
     "/settings/sources": {
@@ -114,16 +114,16 @@
       "target": 1400
     },
     "/insights/sources": {
-      "budget": 1000,
-      "target": 1000
-    },
-    "/settings/security": {
-      "budget": 1700,
-      "target": 1700
-    },
-    "/settings/layout": {
       "budget": 900,
       "target": 900
+    },
+    "/settings/security": {
+      "budget": 1600,
+      "target": 1600
+    },
+    "/settings/layout": {
+      "budget": 800,
+      "target": 800
     },
     "/settings/score": {
       "budget": 1700,
@@ -146,12 +146,12 @@
       "target": 3300
     },
     "/settings/advanced": {
-      "budget": 900,
-      "target": 900
+      "budget": 800,
+      "target": 800
     },
     "/settings/about": {
-      "budget": 1000,
-      "target": 1000
+      "budget": 900,
+      "target": 900
     },
     "/admin/coach": {
       "budget": 3700,
@@ -166,8 +166,8 @@
       "target": 2700
     },
     "/admin/backups": {
-      "budget": 2600,
-      "target": 2600
+      "budget": 2000,
+      "target": 2000
     },
     "/admin/module-availability": {
       "budget": 2000,

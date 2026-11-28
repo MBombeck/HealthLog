@@ -62,7 +62,7 @@ export default function InsightsMetricValuesPage({
   return (
     <SubPageShell
       title={t("insights.subPage.valuesPageTitle", { metric: metricLabel })}
-      description={t("insights.subPage.valuesPageDescription")}
+      info={t("insights.subPage.valuesPageDescription")}
       backLink={
         <BackLink
           href={backHref}

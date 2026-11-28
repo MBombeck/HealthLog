@@ -144,7 +144,6 @@ export function TitrationTimeline({
       {!hasPlan ? (
         <EmptyState
           variant="plain"
-          size="compact"
           title={t("medications.titration.empty")}
           data-slot="titration-timeline-empty"
         />

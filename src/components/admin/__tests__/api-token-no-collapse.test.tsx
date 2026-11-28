@@ -74,7 +74,7 @@ describe("ApiTokenOverviewSection — no collapse button", () => {
     // The toggle previously surfaced as <button aria-expanded={…}>.
     // No button on the section header should carry that attribute now.
     const sectionHeader = html.match(
-      /<div\b[^>]*flex items-center[^>]*>[\s\S]*?<\/div>/,
+      /<div\b[^>]*flex[^>]*items-center[^>]*>[\s\S]*?<\/div>/,
     );
     expect(sectionHeader).not.toBeNull();
     expect(sectionHeader![0]).not.toMatch(/aria-expanded=/);

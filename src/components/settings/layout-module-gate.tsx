@@ -1,13 +1,10 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 
 import { ModuleDisabledNotice } from "@/components/layout/module-disabled-notice";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useMounted } from "@/hooks/use-mounted";
-import { useTranslations } from "@/lib/i18n/context";
 import type { ModuleKey } from "@/lib/modules/registry";
 
 /**
@@ -37,22 +34,10 @@ export function LayoutModuleGate({
 }) {
   const hydrated = useMounted();
   const { user } = useAuth();
-  const { t } = useTranslations();
 
   const disabled =
     hydrated && moduleKey !== undefined && user?.modules?.[moduleKey] === false;
 
   if (!disabled || moduleKey === undefined) return <>{children}</>;
-  return (
-    <ModuleDisabledNotice
-      moduleKey={moduleKey}
-      action={
-        <Button asChild size="sm">
-          <Link href="/settings/modules" data-slot="module-off-open-settings">
-            {t("moduleOff.openModules")}
-          </Link>
-        </Button>
-      }
-    />
-  );
+  return <ModuleDisabledNotice moduleKey={moduleKey} />;
 }

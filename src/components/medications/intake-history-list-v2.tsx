@@ -293,10 +293,8 @@ export function IntakeHistoryListV2({
         ) : events.length === 0 ? (
           <EmptyState
             variant="plain"
-            size="compact"
             icon={<History className="size-6" />}
             title={t("medications.intakeHistoryEmptyTitle")}
-            description={t("medications.intakeHistoryEmptyDescription")}
             action={
               <Button asChild size="sm">
                 <Link href="/medications">

@@ -82,7 +82,7 @@ export function DashboardLayoutSection({ id }: { id: string }) {
               upper strip, the chart in the lower row); the spacers reserve
               the drag handle and the arrow pair so the headings line up with
               the switches below. */}
-          <div className="text-muted-foreground flex items-center gap-2 px-3 pb-1 text-xs font-medium tracking-wide uppercase">
+          <div className="text-muted-foreground flex items-center gap-2 px-3 pb-1 text-xs font-medium">
             <span className="w-7" aria-hidden="true" />
             <span className="flex-1" aria-hidden="true" />
             <span className="w-12 text-center">

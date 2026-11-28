@@ -519,7 +519,6 @@ export function CompositionSection({
       {ingredients.length === 0 ? (
         <EmptyState
           variant="plain"
-          size="compact"
           title={t("medications.composition.empty")}
         />
       ) : (

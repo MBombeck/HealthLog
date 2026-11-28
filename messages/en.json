@@ -73,7 +73,8 @@
       "active": "Active",
       "error": "Error",
       "off": "Off",
-      "running": "Running"
+      "running": "Running",
+      "done": "Done"
     }
   },
   "apiErrors": {
@@ -805,13 +806,6 @@
   },
   "dashboard": {
     "title": "Dashboard",
-    "greeting": {
-      "morning": "Good morning",
-      "day": "Hello",
-      "evening": "Good evening"
-    },
-    "welcomeBack": "{greeting}, welcome back.",
-    "welcomeBackWithName": "{greeting}, {name}, welcome back.",
     "greetingSalutation": "Hi, {name}",
     "streakLabel": "days in a row",
     "weight": "Weight",
@@ -893,7 +887,6 @@
     "dragHandle": "Drag to reorder",
     "dragHandleHint": "Drag the handle to reorder this widget. You can also use the Up and Down arrow buttons, or focus the handle and press Space and the arrow keys.",
     "emptyTitle": "Your dashboard is empty",
-    "emptyDescription": "Log your first measurement or mood entry. Tiles and charts appear automatically as data lands.",
     "emptyAddMeasurement": "Add your first measurement",
     "staleHint": "Last reading {count} d ago",
     "staleHintWeeksOne": "Last reading 1 week ago",
@@ -948,9 +941,6 @@
       "body": "Without copies of the keys this server uses, its data cannot be recovered after a reinstall. It takes a few minutes.",
       "action": "Open the kit"
     },
-    "greetingOnly": "{greeting}.",
-    "welcomeNew": "Welcome.",
-    "welcomeNewWithName": "Welcome, {name}.",
     "quickAddSeizure": "Log seizure",
     "morning": {
       "heroItemsTitle": "To do today",
@@ -963,7 +953,6 @@
   },
   "measurements": {
     "title": "Measurements",
-    "subtitle": "Log readings and browse the full history.",
     "addMeasurement": "Add",
     "editMeasurement": "Edit measurement",
     "type": "Type",
@@ -1059,7 +1048,6 @@
     "emptyTitle": "No measurements yet",
     "emptyDescription": "Log your weight, blood pressure, pulse, or other vitals to start tracking trends.",
     "emptyFilteredTitle": "No measurements match this filter",
-    "emptyFilteredDescription": "Try a different type or clear the filter to see all measurements.",
     "emptyAddFirst": "Add your first measurement",
     "emptyResetFilter": "Show all types",
     "comment": "Comment",
@@ -1254,7 +1242,6 @@
   },
   "mood": {
     "title": "Mood",
-    "subtitle": "How you felt, day by day.",
     "mentalWellbeingLink": "Take a mental-wellbeing check-in",
     "addEntry": "Add",
     "editEntry": "Edit entry",
@@ -1278,9 +1265,7 @@
     "allMoods": "All moods",
     "entryCount": "{count, plural, one {# entry} other {# entries}}",
     "emptyTitle": "No mood entries yet",
-    "emptyDescription": "Log how you feel today to spot patterns over time.",
     "emptyFilteredTitle": "No mood entries match this filter",
-    "emptyFilteredDescription": "Try a different mood level or clear the filter to see all entries.",
     "emptyAddFirst": "Log your first mood",
     "emptyResetFilter": "Show all moods",
     "actions": "Actions",
@@ -1597,7 +1582,6 @@
   },
   "medications": {
     "title": "Medications",
-    "subtitle": "Your medications, their schedules and every dose taken.",
     "loginRequired": "Please sign in to manage medications.",
     "addMedication": "Add",
     "firstMedication": "Add first medication",
@@ -1615,7 +1599,6 @@
       "failedToast": "No intake recorded. Please try again"
     },
     "emptyTitle": "No medications yet",
-    "emptyDescription": "Add medications, doses and their times to track adherence.",
     "loadFailed": "Could not load medications",
     "retryLoad": "Retry",
     "inactive": "Paused",
@@ -2146,7 +2129,6 @@
     "intakeSourceVia": "via {origin}",
     "intakeRecordedAutomatically": "Recorded automatically",
     "intakeHistoryEmptyTitle": "No intakes recorded yet",
-    "intakeHistoryEmptyDescription": "Log a dose on the daily intake page to start building the history.",
     "intakeHistoryEmptyAction": "Open daily intake",
     "intakeHistoryColTaken": "Taken",
     "intakeHistoryColScheduled": "Scheduled",
@@ -2397,7 +2379,6 @@
           "USED_UP": "Used up"
         },
         "empty": "No supply recorded.",
-        "emptyHelper": "Register a pack or container to track remaining supply and runway.",
         "emptyCta": "Register a pack",
         "addButton": "Register",
         "lowStockLinkOn": "Low-stock notification: below {days, plural, one {# day} other {# days}}",
@@ -2862,7 +2843,6 @@
       "clearSearch": "Clear search",
       "treatmentPeriod": "Treatment period",
       "noMatchesTitle": "No matching medications",
-      "noMatchesDescription": "Try adjusting your search query or filters.",
       "countOne": "{count} medication",
       "countFew": "{count} medications",
       "countOther": "{count} medications"
@@ -3166,7 +3146,6 @@
     "noAnalysisYet": "No assessment yet.",
     "assessmentPreparing": "Preparing your assessment…",
     "emptyTitle": "Not enough data yet",
-    "emptyDescription": "Insights light up once you've logged a handful of measurements. Start with weight or blood pressure.",
     "emptyAddMeasurement": "Add a measurement",
     "editMode": {
       "done": "Done",
@@ -3188,11 +3167,9 @@
       "saveSuccess": "Overview layout saved",
       "saveError": "Could not save your overview layout",
       "resetSuccess": "Overview reset to defaults",
-      "emptyTitle": "Every card is hidden",
-      "emptyDescription": "You've hidden every section. Open customize to bring cards back."
+      "emptyTitle": "Every card is hidden"
     },
     "bmiEmptyTitle": "Set your height to see BMI",
-    "bmiEmptyDescription": "BMI needs your height. Add it under Settings > Account.",
     "bmiEmptyAction": "Open account settings",
     "loadError": "Failed to load insights",
     "heroRegenerating": "Regenerating",
@@ -3312,7 +3289,6 @@
       "keyFindingsTitle": "Key findings",
       "signalsTitle": "Signals of the day",
       "emptyTitle": "No briefing yet",
-      "emptyDescription": "Generate today's briefing to get a narrative read of your trends.",
       "emptyAction": "Generate briefing",
       "loadingLabel": "Synthesizing today's briefing",
       "refreshFailedHint": "Couldn't refresh the briefing. Showing the last one.",
@@ -5360,7 +5336,6 @@
         "cta": "View recordings"
       },
       "emptyTitle": "No ECG recordings yet",
-      "emptyDescription": "ECG recordings sync from a compatible single-lead device. Once your device uploads a recording, it appears here.",
       "emptyCta": "Connect a device"
     },
     "intradayPulse": {
@@ -5398,7 +5373,6 @@
       "coachPrefill": "I haven’t added any medications yet. What should I know before I start tracking medication compliance here?"
     },
     "scoreHistory": {
-      "healthDescription": "Your Health score day by day, as it was shown on each day.",
       "emptyDescription": "No score was recorded in this range yet.",
       "usualRange": "Shaded: your usual range, {lo} to {hi}.",
       "seam": "The line breaks where what counts toward the score changed."
@@ -5415,7 +5389,6 @@
       "notEnough": "Too few readings",
       "hourRange": "{start}–{end}",
       "emptyTitle": "No complete readings in this range",
-      "emptyDescription": "Readings with both a systolic and a diastolic value show up here.",
       "error": "The time-of-day averages could not be loaded.",
       "chartTitle": {
         "morning": "Blood pressure in the morning",
@@ -5877,9 +5850,7 @@
       },
       "integrations": {
         "title": "Integrations",
-        "connectionsHeading": "Connections",
-        "channelsHeading": "Delivery channels",
-        "matrixLink": "Notifications per channel"
+        "channelsHeading": "Delivery channels"
       },
       "notifications": {
         "title": "Notifications",
@@ -7384,9 +7355,7 @@
       "description": "Configured on this account without a settings card of its own."
     },
     "healthConnectFolder": {
-      "name": "Health Connect from a folder",
-      "description": "Fetched from your WebDAV or Nextcloud folder every six hours. Set up and changed under Import.",
-      "manage": "Open the folder settings"
+      "name": "Health Connect from a folder"
     },
     "healthConnectApp": {
       "connect": "Connect Android device",
@@ -7396,39 +7365,25 @@
       "qrAlt": "QR code for HealthLog Sync",
       "preview": "HealthLog Sync for Android, preview",
       "disconnectTitle": "Disconnect {device}?",
-      "disconnectBody": "The phone stops syncing until you pair it again."
+      "disconnectBody": "The phone stops syncing until you pair it again.",
+      "name": "HealthLog Sync"
     },
     "withingsViewData": "View your measurements",
     "whoopViewData": "View your recovery",
     "googleHealthViewData": "View your steps",
-    "apiTokens": "API tokens",
     "measurementsToken": {
-      "title": "Measurement tokens",
-      "description": "Mint a token so a scale, a watch bridge, a food tracker or your home automation can add readings, custom-metric values and daily nutrient totals.",
-      "scopeNote": "It can only add readings to your own record, values to custom metrics you already created, and daily nutrient totals while the nutrients module is on; it cannot read, change or delete anything. Readings and nutrient totals are marked as external. A custom metric's ID is the part after /custom-metrics/ in its page's address.",
-      "nutrientsLink": "View nutrient intake",
-      "createFailed": "The token could not be created. Please try again.",
       "namePlaceholder": "Name, e.g. Home Assistant",
       "appleHealth": {
         "label": "Write readings to Apple Health",
         "createHint": "The HealthLog app on your iPhone then adds this token's readings to Apple Health.",
-        "toggleAria": "Write readings from {name} to Apple Health",
         "updateFailed": "The Apple Health setting could not be changed. Please try again.",
         "unattributed": "Readings sent before this setting existed can't be matched to a token, so they stay out of Apple Health."
       }
     },
     "workoutsToken": {
-      "title": "Workout tokens",
-      "description": "Mint a token so a watch bridge or a sync script can add your workouts.",
-      "scopeNote": "It can only add new workouts to your own record. It cannot read your data, change or delete anything, or create another token. Workouts it adds are marked as coming from an external device, and when your phone recorded the same session, you see the phone's copy.",
-      "createFailed": "The token could not be created. Please try again.",
       "namePlaceholder": "Name, e.g. Garmin"
     },
     "documentsToken": {
-      "title": "Document tokens",
-      "description": "Mint a token so Paperless-ngx, Papra or the import script can add documents to your vault.",
-      "scopeNote": "It can only add new documents to your own vault. It cannot list, open, download, change or delete anything, and it cannot create another token. What it gets back is whether a file was stored, not how you filed it.",
-      "createFailed": "The token could not be created. Please try again.",
       "namePlaceholder": "Name, e.g. Paperless-ngx"
     },
     "tokenCreated": "Token created. Copy it now! It won't be shown again.",
@@ -7446,17 +7401,11 @@
     "revokedTokensTitle": "Revoked tokens ({count})",
     "tokenTableName": "Name",
     "tokenTablePermissions": "Permissions",
-    "tokenTableStatus": "Status",
     "tokenTableCreated": "Created",
     "tokenTableLastUsed": "Last used",
     "tokenTableActions": "Actions",
     "noActiveTokens": "No active tokens available.",
     "tokenNeverUsed": "Never",
-    "apiEndpointsTitle": "API endpoints",
-    "apiEndpointMethod": "Method",
-    "apiEndpointPath": "Path",
-    "apiEndpointAuth": "Authentication",
-    "apiEndpointExample": "Body example",
     "dangerZone": "Delete all data",
     "dangerZoneDescription": "Erases your whole health record and every integration connection.",
     "dangerZoneConfirm": "Delete all data?",
@@ -8281,11 +8230,118 @@
     },
     "passkeyRenameFailed": "Could not rename the passkey.",
     "passkeyRemoveFailed": "Could not remove the passkey.",
-    "apiEndpointsShow": "Show endpoints"
+    "integrationList": {
+      "channels": "Delivery channels",
+      "sources": "Data sources",
+      "addTitle": "Add",
+      "allAdded": "Everything this server offers is set up.",
+      "noSources": "No data source yet",
+      "noChannels": "No delivery channel yet",
+      "ownCredentials": "Needs your own app credentials",
+      "syncNow": "Sync now",
+      "lastAt": "Last {when}",
+      "never": "Not yet",
+      "apns": "iPhone app",
+      "facts": {
+        "status": "Status",
+        "reason": "Reason",
+        "lastSync": "Last sync",
+        "lastDelivery": "Last delivery",
+        "brings": "Brings in",
+        "delivers": "Delivers to",
+        "lastFailure": "Last failure",
+        "lastFailureWith": "{when}, {reason}",
+        "setup": "Setup"
+      },
+      "reason": {
+        "dataArriving": "Data is arriving",
+        "firstSyncPending": "First sync pending",
+        "planLimited": "Plan withholds some data",
+        "permissionLimited": "Some permissions missing",
+        "providerErrors": "Provider not responding reliably",
+        "syncStalled": "Sync has stalled",
+        "noNewData": "No new data",
+        "unexpectedSilence": "No data for a while",
+        "reauthRequired": "Sign-in expired",
+        "pausedAfterErrors": "Paused after errors",
+        "notConnected": "Not connected",
+        "paused": "Paused",
+        "switchedOff": "Switched off",
+        "autoDisabled": "Switched off after a refusal",
+        "sendingPaused": "Sending paused",
+        "deliveryFailing": "Last delivery failed"
+      },
+      "brings": {
+        "appleHealth": "Everything in Health, through the iPhone app",
+        "withings": "Weight, blood pressure, sleep",
+        "whoop": "Recovery, sleep, strain",
+        "googleHealth": "Fitbit and Pixel Watch",
+        "garmin": "Sleep, HRV, stress, activity",
+        "oura": "Readiness, sleep, HRV",
+        "polar": "Recovery, sleep, training",
+        "strava": "Activities as workouts",
+        "nightscout": "Continuous glucose",
+        "dawarich": "Places and routes for context",
+        "healthConnectFolder": "Health Connect export from WebDAV or Nextcloud",
+        "documentSources": "Documents from Paperless-ngx or Papra",
+        "telegram": "A Telegram chat through your bot",
+        "ntfy": "An ntfy topic",
+        "webPush": "This browser",
+        "webhook": "JSON to an address of your own",
+        "email": "Reminders by email",
+        "apns": "Notifications on the iPhone",
+        "healthConnectApp": "Health Connect, through the Android app"
+      }
+    },
+    "tokenList": {
+      "title": "Tokens",
+      "newToken": "New token",
+      "empty": "No token yet",
+      "caption": "Your tokens",
+      "scopeColumn": "Access",
+      "more": "More",
+      "scopeMoreLabel": "What this access allows",
+      "mirrorMoreLabel": "What writing to Apple Health means",
+      "revoked": "Revoked",
+      "hideRevoked": "Hide revoked",
+      "menuLabel": "Actions for {name}",
+      "copied": "Copied",
+      "scope": {
+        "all": "Full access",
+        "measurements": "Readings",
+        "workouts": "Workouts",
+        "documents": "Documents",
+        "medication": "Medication",
+        "mcpRead": "MCP, read",
+        "mcpWrite": "MCP, write",
+        "fhir": "FHIR",
+        "profile": "Profile"
+      },
+      "scopeInfo": {
+        "measurements": "Adds readings, custom metric values and daily nutrient totals to your record. It cannot read, change or delete anything.",
+        "workouts": "Adds new workouts to your record. It cannot read, change or delete anything.",
+        "documents": "Adds new documents to your vault. It cannot list, open, change or delete anything."
+      },
+      "create": {
+        "failed": "The token could not be created. Please try again.",
+        "createdTitle": "Token created",
+        "done": "Done",
+        "shownOnce": "The token is shown only now.",
+        "expiry": "Valid for",
+        "expiryYear": "1 year",
+        "expiryDays": "{days, plural, one {# day} other {# days}}"
+      },
+      "api": {
+        "title": "API",
+        "address": "Address",
+        "copyAddress": "Copy API address",
+        "endpoints": "Endpoints",
+        "openReference": "Open reference"
+      }
+    }
   },
   "admin": {
     "title": "Administration",
-    "subtitle": "System status, users, and settings",
     "settingsSaveError": "Failed to save settings",
     "systemStatus": "System status",
     "systemStatusDescription": "Runtime state of this instance: database, worker, and record counts.",
@@ -8316,8 +8372,6 @@
       "byokHint": "A user's own key (BYOK, ChatGPT login or local provider) always takes precedence; the server key is the last step in the provider chain.",
       "consentHint": "Requests over the server key require the user's active AI consent; without a consent receipt nothing is sent.",
       "baseUrlHint": "The base URL selects the API: an Anthropic URL such as https://api.anthropic.com/v1 is understood, any other host is called on the OpenAI-compatible API.",
-      "statusConfigured": "Configured",
-      "statusNotConfigured": "Not configured",
       "keyLabel": "API key",
       "keyPlaceholder": "sk-...",
       "keyPlaceholderSet": "Stored ({preview}). Enter a new key to replace it",
@@ -8517,7 +8571,6 @@
       "qrAlt": "QR code for the invite link",
       "loadError": "Could not load the invites.",
       "emptyTitle": "No invites yet",
-      "emptyDescription": "Create an invite link to admit someone while registration is closed.",
       "colStatus": "Status",
       "colCreated": "Created",
       "colExpires": "Expires",
@@ -8577,14 +8630,11 @@
     "tokenCreated": "Created",
     "tokenNeverUsed": "Never",
     "tokensEmptyTitle": "No API tokens yet",
-    "tokensEmptyDescription": "Tokens are issued when a native client signs in or via Settings > Account.",
     "loginOverviewDescription": "Sign-in and auth events across all accounts, filterable and exportable as CSV.",
     "loginOverviewFilterLabel": "Filter events",
     "allAuthEvents": "All auth events",
     "failedOnly": "Failed only",
-    "loginEmptyDescription": "Sign-ins, sign-outs, and passkey changes will show up here.",
     "loginEmptyFailedTitle": "No failed sign-in attempts",
-    "loginEmptyFailedDescription": "That's the safe state. Switch to all events to see successful sign-ins.",
     "loginEmptyResetFilter": "Show all events",
     "showingEntries": "Showing {count} of {total} auth entries",
     "status": "Status",
@@ -8678,32 +8728,25 @@
     },
     "section": {
       "system-status": {
-        "title": "System status",
-        "subtitle": "Worker, database, and integration health at a glance."
+        "title": "System status"
       },
       "general": {
-        "title": "General",
-        "subtitle": "Registration, default language, and other app-wide toggles."
+        "title": "General"
       },
       "services": {
-        "title": "Push and channels",
-        "subtitle": "Notification channels, Web Push keys, the push relay and delivery health for the whole server."
+        "title": "Push and channels"
       },
       "integrations": {
-        "title": "Monitoring",
-        "subtitle": "Configure Umami, GlitchTip and bug reports."
+        "title": "Monitoring"
       },
       "coach": {
-        "title": "Coach",
-        "subtitle": "Assistant surfaces, the server key, and feedback quality in one place."
+        "title": "Coach"
       },
       "reminders": {
-        "title": "Reminders",
-        "subtitle": "Tune medication reminder thresholds and run a manual check."
+        "title": "Reminders"
       },
       "users": {
         "title": "Users",
-        "subtitle": "Manage user accounts, roles, and active sessions.",
         "filter": {
           "all": "All",
           "admin": "Admins",
@@ -8717,7 +8760,6 @@
         "forceLogoutFailed": "Failed to force logout",
         "cannotLogoutSelf": "Cannot force-logout yourself",
         "emptyTitle": "No users in this view",
-        "emptyDescription": "There are no users matching the current filter.",
         "emptyResetFilter": "Show all users",
         "deletionPending": "Deletion on {date}",
         "deletionPendingNoDate": "Deletion pending",
@@ -8738,16 +8780,13 @@
         "deleteUserFailed": "Could not delete the account"
       },
       "invites": {
-        "title": "Invites",
-        "subtitle": "Mint, track, and revoke registration invite links."
+        "title": "Invites"
       },
       "api-tokens": {
-        "title": "API & tokens",
-        "subtitle": "Active bearer tokens issued to native clients and integrations."
+        "title": "API & tokens"
       },
       "login-overview": {
-        "title": "Login overview",
-        "subtitle": "Audit trail of authentication and admin events."
+        "title": "Login overview"
       },
       "auditLog": {
         "filterActor": "Actor (user id or username)",
@@ -8780,7 +8819,6 @@
       },
       "app-logs": {
         "title": "App logs",
-        "subtitle": "Tail the most recent structured wide-events emitted by this process.",
         "processNote": "Showing app-process logs only; worker-process logs go to Loki when that integration is configured.",
         "filterTraceId": "Trace ID",
         "filterAction": "Action contains…",
@@ -9035,20 +9073,16 @@
         "restoreSkippedSeizureIntakeReference": "Seizure rescue dose linked to a medication intake the file does not contain (kept without the link)"
       },
       "danger-zone": {
-        "title": "Danger zone",
-        "subtitle": "Destructive system-wide operations."
+        "title": "Danger zone"
       },
       "about": {
-        "title": "About",
-        "subtitle": "Version, license, and update status."
+        "title": "About"
       },
       "module-availability": {
-        "title": "Modules",
-        "subtitle": "Turn modules on or off for every account on this server."
+        "title": "Modules"
       },
       "encryption": {
         "title": "Encryption",
-        "subtitle": "Encryption coverage and key-rotation status for data at rest.",
         "loadError": "Failed to load encryption status.",
         "coverageTitle": "Coverage",
         "coverageDescription": "How many encrypted rows sit under each key id.",
@@ -9504,8 +9538,6 @@
       },
       "question": {
         "title": "Use the HealthLog push relay?",
-        "askTitle": "Notifications via push relay?",
-        "askBody": "The content stays encrypted.",
         "body": "Notifications for the App Store app, end-to-end encrypted: the relay only sees when one is sent.",
         "yes": "Yes",
         "no": "No",
@@ -9589,7 +9621,6 @@
       "notice": {
         "title": "Set up this server",
         "body": "Five short steps for sign-ups, notifications, AI and privacy; skip or change any of them later.",
-        "bodyShort": "Five short steps for sign-ups, notifications, AI and privacy.",
         "open": "Start the setup",
         "dismiss": "Not now"
       }
@@ -10955,7 +10986,6 @@
   },
   "measurementReminders": {
     "sectionTitle": "Care",
-    "sectionDescription": "Reminders for what to measure or check, when, and where.",
     "markDone": "Done",
     "delete": "Delete",
     "deleteConfirmTitle": "Delete reminder?",
@@ -11093,13 +11123,11 @@
   },
   "labs": {
     "title": "Lab results",
-    "subtitle": "Your blood work and biomarker readings.",
     "addResult": "Add value",
     "addDescription": "Record a biomarker reading from a lab report.",
     "addFirst": "Add your first result",
     "importAction": "Import from Apple Health or CSV",
     "emptyTitle": "No lab results yet",
-    "emptyDescription": "Record bloodwork like HbA1c, LDL or ferritin to track it over time and share it with your doctor.",
     "referenceLabel": "Reference",
     "readingsCount": "{count, plural, one {# reading} other {# readings}}",
     "deleteConfirmTitle": "Delete lab result?",
@@ -11171,7 +11199,6 @@
     "restoreError": "Could not restore the reading",
     "detail": {
       "emptyTitle": "No readings yet",
-      "emptyDescription": "Add a value to start tracking this biomarker over time.",
       "title": "Biomarker",
       "genericDescription": "A lab biomarker you track. Add readings to follow how it trends against its reference range.",
       "valuesTitle": "{marker}: all readings",
@@ -11211,7 +11238,6 @@
       "deleteConfirmTitle": "Delete biomarker?",
       "deleteConfirmDescription": "The biomarker and all of its recorded values are permanently deleted. This cannot be undone.",
       "emptyTitle": "No biomarkers yet",
-      "emptyDescription": "Define markers like LDL or HbA1c to record values against them.",
       "loadError": "Could not load biomarkers",
       "noRange": "No reference range",
       "form": {
@@ -11520,8 +11546,7 @@
       "markerCountOne": "{count} biomarker",
       "markerCountFew": "{count} biomarkers",
       "markerCountOther": "{count} biomarkers",
-      "noMatchesTitle": "No matching biomarkers",
-      "noMatchesDescription": "Try adjusting your search query or filters."
+      "noMatchesTitle": "No matching biomarkers"
     },
     "source": {
       "OCR": "Scanned report",
@@ -11616,22 +11641,18 @@
   },
   "moduleOff": {
     "disabled": {
-      "description": "{module} is off for this record, so its pages stay hidden. Turn it back on to bring them back.",
       "title": "{module} is switched off"
     },
     "notGranted": {
-      "description": "{module} sits outside the sections shared with you. What a shared record covers is decided by the person who owns it.",
       "title": "Not part of the shared access"
     },
     "unavailable": {
-      "description": "The operator switched {module} off for every account on this server. No setting of your own can bring it back.",
       "title": "Not available on this server"
     },
-    "openModules": "Open Settings, Modules"
+    "turnOn": "Turn on"
   },
   "vaccinations": {
     "title": "Vaccinations",
-    "subtitle": "Your immunization record, dose by dose.",
     "listLoadError": "Vaccinations could not be loaded.",
     "series": {
       "booster": "Booster",
@@ -12487,7 +12508,6 @@
       "editTitle": "Edit allergy",
       "formDescription": "The substance is stored as plain text; the reaction and note are encrypted.",
       "emptyTitle": "No allergies recorded",
-      "emptyDescription": "Add substances you react to and their reactions.",
       "loadError": "Couldn't load your allergies.",
       "deletedToast": "Allergy deleted",
       "deleteError": "Couldn't delete the allergy.",
@@ -12549,7 +12569,6 @@
       "editTitle": "Edit family history",
       "formDescription": "The relationship and condition are stored as plain text; the note is encrypted.",
       "emptyTitle": "No family history recorded",
-      "emptyDescription": "Add conditions that run in your family.",
       "loadError": "Couldn't load your family history.",
       "deletedToast": "Entry deleted",
       "deleteError": "Couldn't delete the entry.",
@@ -12907,7 +12926,6 @@
   },
   "documents": {
     "title": "Documents",
-    "subtitle": "Every letter, report and scan in one searchable place, encrypted at rest.",
     "pageUpload": "Upload",
     "ownerOnlyUpload": "Documents can only be added by the record owner.",
     "kind": {
@@ -12987,7 +13005,6 @@
       "description": "Store doctor letters, lab reports, imaging, prescriptions and vaccination records. They are encrypted and searchable by type, condition and year.",
       "action": "Upload a first document",
       "noMatchesTitle": "No matching documents",
-      "noMatchesDescription": "Nothing matches the current search and filters.",
       "titleRecord": "{name}'s document vault is empty"
     },
     "detail": {
@@ -13241,8 +13258,7 @@
       },
       "pickMore": "Pick more",
       "finishedHint": "Search again or change a filter to pick more documents.",
-      "maxReached": "You can import up to {max, plural, one {# document} other {# documents}} at a time.",
-      "noMatchHint": "Try part of the name, or clear the tag and dates."
+      "maxReached": "You can import up to {max, plural, one {# document} other {# documents}} at a time."
     },
     "customize": "Customize view",
     "layout": {
@@ -13266,7 +13282,6 @@
       "entryLabel": "Recently deleted ({count})",
       "loadError": "Couldn't load Recently deleted.",
       "emptyTitle": "Nothing in Recently deleted",
-      "emptyDescription": "Documents you delete wait here for {days, plural, one {# day} other {# days}} before they are removed for good.",
       "count": "Deleted documents ({count})",
       "restoreAll": "Restore all",
       "restore": "Restore",
@@ -13375,9 +13390,7 @@
     },
     "detail": {
       "title": "Custom metric",
-      "genericDescription": "A measurement you track. Add values to follow it over time.",
       "emptyTitle": "No values yet",
-      "emptyDescription": "Add your first value to start charting this metric.",
       "valuesTitle": "{metric}: all values",
       "valuesDescription": "Every logged value for this metric.",
       "backToMetric": "Back to {metric}"
@@ -13549,7 +13562,6 @@
       },
       "syncIssue": {
         "title": "Sync needs attention",
-        "askTitle": "Sync stopped",
         "body": "{integration} isn't syncing. Reconnect to keep your data current."
       },
       "sourceQuiet": {
@@ -13603,10 +13615,9 @@
       "logDose": "Take",
       "later": "Later",
       "answer": "Answer",
-      "learnMore": "More",
       "open": "Open",
       "setUp": "Set up",
-      "reconnectShort": "Reconnect",
+      "reconnectShort": "Connect",
       "reconnect": "Reconnect",
       "viewCheckups": "Open Care",
       "checkinKeep": "Keep it",
@@ -13617,6 +13628,23 @@
       "viewEcg": "View recording",
       "viewSteps": "View steps",
       "openSource": "Open"
+    },
+    "ask": {
+      "medication": "Medication",
+      "overdue": "Overdue {time}",
+      "overdueNow": "Overdue",
+      "due": "Due {time}",
+      "dueNow": "Due now",
+      "checkupDue": "Check-up due",
+      "visitToday": "Visit today",
+      "visitTomorrow": "Visit tomorrow",
+      "signedOut": "Disconnected",
+      "planFallback": "Your plan",
+      "planReview": "Check-in due",
+      "setupTitle": "This server",
+      "setupMeta": "Not set up",
+      "relayTitle": "Push relay?",
+      "relayMeta": "Encrypted"
     },
     "today": {
       "deltaShort": "{delta} vs baseline",
@@ -13970,7 +13998,6 @@
       "title": "Who can open my record",
       "description": "Ended access stays listed, so you can always see who had it and when.",
       "emptyTitle": "Nobody else can open your record",
-      "emptyDescription": "Invite someone above if you want them to be able to read it.",
       "loadError": "The list could not be loaded.",
       "revoke": "End access",
       "withdrawInvite": "Withdraw",
@@ -13984,7 +14011,6 @@
       "title": "Records I can open",
       "description": "An invitation gives you nothing until you accept it.",
       "emptyTitle": "Nobody has shared a record with you",
-      "emptyDescription": "When someone invites you, the invitation appears here.",
       "loadError": "The list could not be loaded.",
       "accept": "Accept",
       "accepting": "Accepting…",
@@ -14002,7 +14028,6 @@
       "description": "Every time someone else opened your record.",
       "retention": "This covers the last {days, plural, one {# day} other {# days}}. Older entries are deleted.",
       "emptyTitle": "Nobody has opened your record",
-      "emptyDescription": "Openings by anyone other than you appear here, one line per person per day.",
       "loadError": "The activity could not be loaded.",
       "opened": "{name} opened your record {count}×",
       "acted": "{name} made a change in your record",
@@ -14013,7 +14038,6 @@
       "hint": "Who did what in this profile: every guardian's changes, yours included.",
       "action": "Show activity",
       "emptyTitle": "Nothing recorded yet",
-      "emptyDescription": "Changes a guardian makes in this profile appear here, and openings one line per guardian per day.",
       "you": "You",
       "opened": "{name} opened the profile {count}×",
       "acted": "{name} made a change in the profile",
@@ -14401,11 +14425,9 @@
     },
     "bodySiteWithSide": "{site} ({side})",
     "sectionTitle": "Visits",
-    "sectionDescription": "Past and booked visits in one place.",
     "add": "Visit",
     "loadError": "Visits could not be loaded.",
     "emptyTitle": "No visit recorded yet",
-    "emptyDescription": "A date is enough. Everything else is optional.",
     "upcomingHeading": "Upcoming",
     "pastHeading": "Past",
     "createTitle": "Record a visit",
@@ -14503,9 +14525,7 @@
     "searchPlaceholder": "Search name, practice or specialty",
     "loadError": "The address book could not be loaded.",
     "emptyTitle": "No entry yet",
-    "emptyDescription": "Add a practice so you can pick it when you record a visit.",
     "noMatchTitle": "No match",
-    "noMatchDescription": "No entry matches this search.",
     "createTitle": "Add an entry",
     "editTitle": "Edit entry",
     "formDescription": "Only the name is required.",
@@ -14891,7 +14911,6 @@
   },
   "timeline": {
     "title": "Timeline",
-    "subtitle": "What happened when, beside your values.",
     "standing": "Ongoing",
     "startUnknown": "start unknown",
     "zoom": {
@@ -15704,7 +15723,6 @@
       "seizureDaysValue": "on {count, plural, one {# day} other {# days}}"
     },
     "title": "Seizure diary",
-    "subtitle": "Seizures as they were seen, with the type, the duration and the rescue medication given.",
     "loadError": "The seizure diary could not be loaded.",
     "saveError": "That could not be saved. Please try again.",
     "untyped": "No type",
@@ -15894,7 +15912,6 @@
     "types": {
       "title": "Seizure types",
       "emptyTitle": "No seizure types yet",
-      "emptyDescription": "Set up the person's seizure types once, ideally with the care team.",
       "newTitle": "Add a seizure type",
       "editTitle": "Edit seizure type",
       "description": "The classification is chosen by you or the care team; HealthLog does not classify.",
@@ -16023,10 +16040,10 @@
       "fieldsLabel": "What the link shows",
       "expiryLabel": "Link ends",
       "expiry": {
-        "none": "Never, until revoked",
         "30": "In 30 days",
         "365": "In one year",
-        "730": "In two years"
+        "730": "In two years",
+        "none": "Never, until revoked"
       },
       "create": "Make the link",
       "qrAlt": "QR code for the emergency card link",
@@ -16466,7 +16483,6 @@
     },
     "admin": {
       "title": "Server setup",
-      "subtitle": "Each decision shows its value; every row opens its setting.",
       "cardTitle": "First start",
       "progress": "{done} of {total} decided.",
       "resume": "Continue the server setup",

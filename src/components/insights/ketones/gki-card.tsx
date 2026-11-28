@@ -71,9 +71,7 @@ export function GkiCard() {
         ) : !latest ? (
           <EmptyState
             variant="plain"
-            size="compact"
             title={t("insights.bloodKetones.gki.emptyTitle")}
-            description={t("insights.bloodKetones.gki.emptyDescription")}
           />
         ) : (
           <>

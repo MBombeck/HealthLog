@@ -275,10 +275,8 @@ export default function AchievementsPage() {
   if (!isAuthenticated) {
     return (
       <div className="space-y-6">
-        <PageHeader
-          title={t("achievements.title")}
-          description={t("achievements.loginRequired")}
-        />
+        <PageHeader title={t("achievements.title")} />
+        <EmptyState variant="plain" title={t("achievements.loginRequired")} />
       </div>
     );
   }
@@ -374,7 +372,6 @@ export default function AchievementsPage() {
       {grouped.length === 0 ? (
         <EmptyState
           variant="plain"
-          size="compact"
           icon={<Trophy className="size-6" />}
           title={t("achievements.noneUnlockedYet")}
         />

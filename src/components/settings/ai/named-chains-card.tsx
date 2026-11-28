@@ -255,7 +255,6 @@ function NamedChainsEditor({ data }: { data: NamedChainsData }) {
       {draft.chains.length === 0 ? (
         <EmptyState
           variant="plain"
-          size="compact"
           data-slot="named-chains-empty"
           title={t("settings.ai.namedChains.empty")}
         />

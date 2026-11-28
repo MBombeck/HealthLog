@@ -131,6 +131,8 @@ const LEGIT_IDENTICAL = new Set<string>([
   "settings.integrations.oura.scope.items.vo2max",
   // Brand / product / proper nouns.
   "settings.googleHealth",
+  // The Android app's own name.
+  "settings.healthConnectApp.name",
   // 1.50 — the setup's source row and Admin › Setup row name a product and a
   // protocol that keep their English names.
   "setup.person.sources.names.google-health",

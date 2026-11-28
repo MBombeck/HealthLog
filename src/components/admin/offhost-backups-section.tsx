@@ -179,9 +179,6 @@ export function OffhostBackupsSection() {
         <EmptyState
           icon={<CloudUpload className="size-6" />}
           title={t("admin.section.backups.offhost.notConfiguredTitle")}
-          description={t(
-            "admin.section.backups.offhost.notConfiguredDescription",
-          )}
         />
       ) : offhost ? (
         <div className="space-y-2">

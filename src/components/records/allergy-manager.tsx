@@ -173,7 +173,6 @@ export function AllergyManager({
         <EmptyState
           icon={<ShieldAlert className="size-6" />}
           title={t("records.allergies.emptyTitle")}
-          description={t("records.allergies.emptyDescription")}
           action={
             <Button onClick={openNew}>{t("records.allergies.addFirst")}</Button>
           }

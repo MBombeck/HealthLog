@@ -383,7 +383,7 @@ export function HealthKitMetricPage({
     return (
       <SubPageShell
         title={title}
-        description={description}
+        info={description}
         explainerMetric={explainerMetric}
         explainerParams={explainerParams}
         statStrip={<MetricStatStripSkeleton />}
@@ -401,7 +401,7 @@ export function HealthKitMetricPage({
     return (
       <SubPageShell
         title={title}
-        description={description}
+        info={description}
         explainerMetric={explainerMetric}
         explainerParams={explainerParams}
       >
@@ -428,14 +428,13 @@ export function HealthKitMetricPage({
     return (
       <SubPageShell
         title={title}
-        description={description}
+        info={description}
         explainerMetric={explainerMetric}
         explainerParams={explainerParams}
       >
         <MetricEmptyState
           icon={emptyStateIcon}
           title={t(`${i18nPrefix}.emptyState.title`)}
-          description={t(`${i18nPrefix}.emptyState.description`)}
           cta={ctaNode}
           coachPrefill={coachPrefill ?? sharedCoachPrefill(t, title)}
         />
@@ -446,7 +445,7 @@ export function HealthKitMetricPage({
   return (
     <SubPageShell
       title={title}
-      description={description}
+      info={description}
       explainerMetric={explainerMetric}
       explainerParams={explainerParams}
       statStrip={

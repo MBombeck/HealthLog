@@ -211,7 +211,6 @@ export default function InsightsMedikamentePage() {
         <EmptyState
           icon={<Pill className="size-6" />}
           title={t("insights.emptyState.medication.title")}
-          description={t("insights.emptyState.medication.description")}
           action={
             <Button size="sm" asChild>
               <Link href="/medications">
@@ -231,7 +230,7 @@ export default function InsightsMedikamentePage() {
     <SubPageShell
       disclaimer="notCause"
       title={t("insights.medicationCompliance")}
-      description={t("insights.subPage.medikamenteDescription")}
+      info={t("insights.subPage.medikamenteDescription")}
       explainerMetric="medications"
       coachLaunch
     >
@@ -409,7 +408,7 @@ function MedicationComplianceCalendar({
   }
 
   if (!data?.dailyCompliance) {
-    return <EmptyState size="compact" title={t("insights.complianceNoData")} />;
+    return <EmptyState title={t("insights.complianceNoData")} />;
   }
 
   return (

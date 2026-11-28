@@ -114,8 +114,7 @@ export function AssessmentHistory({
       <div data-slot="mental-health-history" data-pinned={instrument}>
         <EmptyState
           icon={<Activity className="size-6" />}
-          title={t("mentalHealth.history.title")}
-          description={t("mentalHealth.history.empty")}
+          title={t("mentalHealth.history.empty")}
         />
       </div>
     );

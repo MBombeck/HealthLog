@@ -102,7 +102,7 @@ export function TelegramCard({
   }
 
   const statusTone = useChannelStatusTone(
-    "TELEGRAM",
+    "telegram",
     isAuthenticated,
     Boolean(
       settings &&
