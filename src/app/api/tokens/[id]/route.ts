@@ -12,6 +12,7 @@ import { parseJsonBody } from "@/lib/api/body";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { updateMeasurementTokenSchema } from "@/lib/validations/tokens";
 import { setMeasurementTokenMirror } from "@/lib/measurements/token-mirror";
+import { revokeDeviceCascade } from "@/lib/devices/revoke";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -39,10 +40,23 @@ export const DELETE = apiHandler(
       return apiError("Token not found", 404);
     }
 
-    await prisma.apiToken.update({
-      where: { id },
-      data: { revoked: true },
+    // A token an Android device was paired with is that device's pairing:
+    // revoking it unpairs the device, through the same cascade as removing
+    // the device, so the connection ends with it instead of standing as a
+    // connected source that only ever answers 401.
+    const pairedDevice = await prisma.device.findUnique({
+      where: { apiTokenId: id },
+      select: { id: true, userId: true },
     });
+    if (pairedDevice && pairedDevice.userId === user.id) {
+      await revokeDeviceCascade(user.id, pairedDevice.id);
+      annotate({ meta: { unpaired_device: true } });
+    } else {
+      await prisma.apiToken.update({
+        where: { id },
+        data: { revoked: true },
+      });
+    }
     void sendSecurityAlert(user.id, "token_revoked");
 
     return apiSuccess({ revoked: true });

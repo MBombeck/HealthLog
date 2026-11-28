@@ -44,6 +44,9 @@ interface FitBatchRow {
 const TERMINAL_STATES: readonly string[] = ["done", "failed"];
 
 /** The job as the status route answers it. Counts only. */
+/** `GET /api/import/fit/status` as the batch reads it. */
+type FitBatchStatus = { job: FitImportJob | null; importRunning: boolean };
+
 export interface FitImportJob {
   jobId: string;
   status: string;
@@ -220,7 +223,7 @@ export function FitImportSource() {
               });
             },
             status: () =>
-              apiGet<{ job: FitImportJob | null }>("/api/import/fit/status", {
+              apiGet<FitBatchStatus>("/api/import/fit/status", {
                 credentials: "include",
               }),
             sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),

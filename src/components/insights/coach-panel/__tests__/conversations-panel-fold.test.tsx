@@ -92,7 +92,9 @@ describe("<NewChatFab>", () => {
     expect(button).toContain('aria-label="New conversation"');
     expect(button).toContain("size-14");
     expect(button).toContain("rounded-full");
-    expect(button).toContain("from-primary");
+    // Ink, as the floating Coach button is: one face for both.
+    expect(button).toContain("bg-primary text-background");
+    expect(button).not.toContain("gradient");
     // Above the composer by default, beside it where the column is wide.
     expect(button).toContain("bottom-full");
     expect(button).toContain("@min-[54rem]/composer:bottom-8");

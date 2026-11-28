@@ -63,6 +63,19 @@ export const IMPORT_BUSY_CODE = "import.apple_health.busy";
 export const IMPORT_BUSY_MESSAGE =
   "An import is already running for this account. Wait for it to finish, then upload again.";
 
+/**
+ * The one rule for "this account has an import running", of any kind. The
+ * create below refuses a second import on it, and the status reads publish
+ * it, so a client waits on a read instead of sending its file again.
+ */
+export function activeImportWhere(userId: string, now: Date) {
+  return {
+    userId,
+    status: { in: [...ACTIVE_IMPORT_STATUSES] },
+    startedAt: { gte: new Date(now.getTime() - ACTIVE_IMPORT_MAX_AGE_MS) },
+  } satisfies Prisma.ImportJobWhereInput;
+}
+
 export type CreateImportJobResult =
   { created: { id: string } } | { busy: { id: string; status: string } };
 
@@ -78,11 +91,7 @@ export async function createImportJobUnlessBusy(
   return prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`apple-health-import:${data.userId}`}))`;
     const running = await tx.importJob.findFirst({
-      where: {
-        userId: data.userId,
-        status: { in: [...ACTIVE_IMPORT_STATUSES] },
-        startedAt: { gte: new Date(now.getTime() - ACTIVE_IMPORT_MAX_AGE_MS) },
-      },
+      where: activeImportWhere(data.userId, now),
       orderBy: { startedAt: "desc" },
       select: { id: true, status: true },
     });

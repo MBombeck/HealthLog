@@ -35,6 +35,7 @@ import {
   type RecentCall,
 } from "./connection-health";
 import { SOURCE_PROFILES } from "./watchdog-classify";
+import { pairedDeviceWhere } from "@/lib/health-connect/pairing";
 import {
   INTEGRATION_MEASUREMENT_SOURCE,
   INTEGRATION_WORKOUT_SOURCE,
@@ -422,7 +423,7 @@ function appleHealthFacts(input: {
 
 /**
  * The Android Health Connect sync, from its paired devices: connected while
- * one exists, alive by the newest batch any of them delivered in the
+ * one exists (`pairedDeviceWhere`: its token lives), alive by the newest batch any of them delivered in the
  * background (`healthIngestAt`), checked against the push cadence the iPhone
  * is held to.
  */
@@ -432,7 +433,7 @@ async function androidSyncFacts(
   now: Date,
 ): Promise<ConnectionFacts> {
   const devices = await prisma.device.findMany({
-    where: { userId, platform: "android", apiTokenId: { not: null } },
+    where: { userId, ...pairedDeviceWhere(now) },
     select: { lastSeen: true, healthIngestAt: true },
   });
   const input = { silentSince: silentSince ?? null, now };

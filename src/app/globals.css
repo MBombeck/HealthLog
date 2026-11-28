@@ -220,9 +220,8 @@ body,
 
   /*
    * Brand accent tokens — identity colours with no semantic (status)
-   * twin. `--brand-pink` is the Coach-gradient / Apple-Health accent
-   * (`from-primary to-brand-pink`, the iOS-source badge, the recording
-   * mic). Per-theme values ride the `--dracula-pink` primitive, which
+   * twin. `--brand-pink` is the Apple-Health accent (the iOS-source
+   * badge, the ECG grid, one correlation hue). The Coach is ink. Per-theme values ride the `--dracula-pink` primitive, which
    * the light theme overrides to its AA-tuned counterpart:
    * dark #ff79c6 — 6.86:1 card / 5.97:1 bg; light #a3134d — 7.32:1
    * card / 6.83:1 bg (WCAG relative-luminance, computed).

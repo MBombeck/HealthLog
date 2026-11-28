@@ -1149,7 +1149,7 @@ function renderDrawerSurface({
         ) : null}
         <div
           aria-hidden="true"
-          className="from-primary to-brand-pink flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br shadow-sm"
+          className="bg-primary flex size-9 shrink-0 items-center justify-center rounded-full shadow-sm"
         >
           <Sparkles className="text-background size-4" />
         </div>

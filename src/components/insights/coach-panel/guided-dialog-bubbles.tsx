@@ -45,7 +45,7 @@ function GuidedAvatar({ icon: Icon }: { icon: typeof ClipboardCheck }) {
   return (
     <div
       aria-hidden="true"
-      className="from-primary to-brand-pink mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br"
+      className="bg-primary mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full"
     >
       <Icon className="text-background size-3.5" />
     </div>

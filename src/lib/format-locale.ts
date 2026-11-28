@@ -166,6 +166,15 @@ export interface Formatters {
    * added when the date falls outside the reader's current year.
    */
   dateShortSmartCalendar: (value: DateInput) => string;
+  /**
+   * Two `dateShortSmart` dates as one range, joined the way the locale joins
+   * a range (`Intl.DateTimeFormat#formatRange`), never by a dash of our own:
+   * "19.–25.02." in German, "2/19 ~ 2/25" in Korean. The year is added to
+   * both ends when either falls outside the current year.
+   */
+  dateRangeShortSmart: (from: DateInput, to: DateInput) => string;
+  /** `dateRangeShortSmart` for two STATED calendar dates, read as `dateShortSmartCalendar` reads them. */
+  dateRangeShortSmartCalendar: (from: DateInput, to: DateInput) => string;
   /** Full date + time; hour cycle follows the `timeFormat` preference. */
   dateTime: (value: DateInput) => string;
   /** Time only, e.g. "14:30" or "2:30 PM" per the `timeFormat` preference. */
@@ -209,6 +218,38 @@ export function formatDecimal(
     maximumFractionDigits: maxFractionDigits,
     useGrouping: false,
   }).format(value);
+}
+
+/**
+ * Two short dates as one range in the locale's own range form
+ * (`formatRange`), rendered in `renderTz`. The year is added when either end
+ * falls outside the reader's current year, read in `readerTz`.
+ */
+function shortDateRange(
+  localeTag: string,
+  renderTz: string,
+  readerTz: string,
+  from: Date,
+  to: Date,
+): string {
+  const yearIn = (d: Date, zone: string) =>
+    getDateTimeFormat(localeTag, { timeZone: zone, year: "numeric" }).format(d);
+  const current = yearIn(new Date(), readerTz);
+  const thisYear =
+    yearIn(from, renderTz) === current && yearIn(to, renderTz) === current;
+  return getDateTimeFormat(localeTag, {
+    timeZone: renderTz,
+    day: "2-digit",
+    month: "2-digit",
+    ...(thisYear ? {} : { year: "numeric" as const }),
+  }).formatRange(from, to);
+}
+
+/** A stated calendar day (`YYYY-MM-DD` or a noon-UTC anchor) as a Date. */
+function calendarDay(value: DateInput): Date {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? new Date(`${value}T12:00:00.000Z`)
+    : asDate(value);
 }
 
 /**
@@ -320,6 +361,12 @@ export function makeFormatters(
         ...(year === currentYear ? {} : { year: "numeric" as const }),
       }).format(d);
     },
+
+    dateRangeShortSmart: (from, to) =>
+      shortDateRange(dateLocale, tz, tz, asDate(from), asDate(to)),
+
+    dateRangeShortSmartCalendar: (from, to) =>
+      shortDateRange(dateLocale, "UTC", tz, calendarDay(from), calendarDay(to)),
 
     dateTime: (value) =>
       getDateTimeFormat(dateLocale, {

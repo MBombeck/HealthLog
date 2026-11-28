@@ -72,9 +72,12 @@ function fakeServer(
     async status() {
       if (pollsUntilDone > 0) {
         pollsUntilDone--;
-        return { job: latest && { ...latest, status: "parsing" } };
+        return {
+          job: latest && { ...latest, status: "parsing" },
+          importRunning: true,
+        };
       }
-      return { job: latest && { ...latest } };
+      return { job: latest && { ...latest }, importRunning: false };
     },
     sleep: async () => {},
     cancelled: () => false,
@@ -147,7 +150,7 @@ describe("runFitBatch", () => {
           : json(202, {
               data: { jobId: "j1", status: "done", idempotent: true },
             }),
-      status: async () => ({ job: null }),
+      status: async () => ({ job: null, importRunning: false }),
       sleep: async (ms) => {
         waits.push(ms);
       },
@@ -159,10 +162,15 @@ describe("runFitBatch", () => {
     expect(waits).toEqual([12_000]);
   });
 
-  it("gives up on a file while another import keeps running", async () => {
+  it("gives up on a file while another import keeps running, sending it once", async () => {
+    let uploads = 0;
     const deps: FitBatchDeps = {
-      upload: async () => json(409, { error: "busy" }),
-      status: async () => ({ job: null }),
+      upload: async () => {
+        uploads++;
+        return json(409, { error: "busy" });
+      },
+      // Another kind of import (Apple Health, Health Connect): no FIT job.
+      status: async () => ({ job: null, importRunning: true }),
       sleep: async () => {},
       cancelled: () => false,
     };
@@ -170,6 +178,45 @@ describe("runFitBatch", () => {
       status: "failed",
       reason: "busy",
     });
+    expect(uploads).toBe(1);
+  });
+
+  it("waits on the status read and sends the file again once the account is free", async () => {
+    let uploads = 0;
+    let reads = 0;
+    const deps: FitBatchDeps = {
+      upload: async () =>
+        ++uploads === 1
+          ? json(409, { error: "busy" })
+          : json(202, {
+              data: { jobId: "j1", status: "done", idempotent: true },
+            }),
+      status: async () => ({ job: null, importRunning: ++reads < 3 }),
+      sleep: async () => {},
+      cancelled: () => false,
+    };
+    expect(await importFitFile(file("a.fit"), deps)).toEqual({
+      status: "duplicate",
+    });
+    expect(uploads).toBe(2);
+    expect(reads).toBe(3);
+  });
+
+  it("stops the run at a file that waited out another import; the rest wait", async () => {
+    const uploads: string[] = [];
+    const deps: FitBatchDeps = {
+      upload: async (f) => {
+        uploads.push(f.name);
+        return json(409, { error: "busy" });
+      },
+      status: async () => ({ job: null, importRunning: true }),
+      sleep: async () => {},
+      cancelled: () => false,
+    };
+    expect(
+      await run([file("a.fit"), file("b.fit"), file("c.fit")], deps),
+    ).toEqual(["failed", undefined, undefined]);
+    expect(uploads).toEqual(["a.fit"]);
   });
 
   it("refuses a file over the cap without sending it", async () => {

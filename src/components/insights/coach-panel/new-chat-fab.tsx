@@ -45,9 +45,8 @@ export function NewChatFab({
         "absolute right-4 bottom-full z-10 mb-3 size-14 rounded-full shadow-lg sm:right-6",
         // Beside the capped composer, in the column's bottom right corner.
         "@min-[54rem]/composer:right-8 @min-[54rem]/composer:bottom-8 @min-[54rem]/composer:mb-0",
-        // The Coach button's face: a dark glyph on the brand gradient.
-        "from-primary to-brand-pink text-background bg-gradient-to-br",
-        "hover:from-primary/90 hover:to-brand-pink/90",
+        // The Coach button's face: ink like the floating Coach button.
+        "bg-primary text-background hover:bg-primary/90",
         "focus-visible:ring-offset-background focus-visible:ring-offset-2",
         className,
       )}
