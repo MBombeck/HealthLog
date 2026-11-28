@@ -229,7 +229,7 @@ type ActionPairVariant = "footer" | "compact";
 
 const PAIR_CLASS: Record<ActionPairVariant, string> = {
   footer:
-    "ml-auto grid w-max shrink-0 auto-cols-fr grid-flow-col gap-2 *:w-full data-[stacked=true]:w-auto data-[stacked=true]:min-w-0 data-[stacked=true]:flex-1 data-[stacked=true]:auto-cols-auto data-[stacked=true]:grid-flow-row max-sm:w-full max-sm:*:min-h-11 *:data-[variant=outline]:border-transparent *:data-[variant=outline]:bg-muted *:data-[variant=outline]:text-foreground *:data-[variant=outline]:shadow-none *:data-[variant=outline]:hover:bg-muted/70",
+    "ml-auto grid w-max shrink-0 auto-cols-fr grid-flow-col gap-2 *:w-full data-[stacked=true]:w-auto data-[stacked=true]:min-w-0 data-[stacked=true]:flex-1 data-[stacked=true]:auto-cols-auto data-[stacked=true]:grid-flow-row max-sm:w-full max-sm:*:min-h-11 *:data-[variant=outline]:border-transparent *:data-[variant=outline]:bg-muted *:data-[variant=outline]:text-muted-foreground *:data-[variant=outline]:font-normal *:data-[variant=outline]:shadow-none *:data-[variant=outline]:hover:bg-muted/70 *:data-[variant=outline]:hover:text-foreground",
   compact: "grid w-full grid-cols-[1fr_1fr] gap-2 *:w-full *:only:col-start-2",
 };
 
