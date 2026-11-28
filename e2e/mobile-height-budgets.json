@@ -1,0 +1,193 @@
+{
+  "about": "Page height in CSS px on a phone (chromium-mobile), measured by mobile-height.spec.ts as the larger of main.scrollHeight and document.scrollingElement.scrollHeight, on the e2e-mobile-routes record (one or two of everything). `budget` is the ceiling: measured on 2026-11-27 plus 5 %, rounded up to 100. A page that grows past it fails; a page more than 15 % under it fails too, so a shorter page writes its lower number down. Raise a budget only in a reviewed change that says why. `target` is where the page should arrive: the 1.50 sub-page audit's target for the pages it named, scaled from the demo record it measured to this one; for the other pages the budget itself.",
+  "pages": {
+    "/achievements": {
+      "budget": 6100,
+      "target": 2400
+    },
+    "/settings/health-record": {
+      "budget": 6900,
+      "target": 2600
+    },
+    "/settings/anamnesis": {
+      "budget": 4300,
+      "target": 2500
+    },
+    "/admin/system-status": {
+      "budget": 3800,
+      "target": 2200
+    },
+    "/settings/layout/dashboard": {
+      "budget": 4400,
+      "target": 2200
+    },
+    "/measurements": {
+      "budget": 2400,
+      "target": 2200
+    },
+    "/emergency-card": {
+      "budget": 2900,
+      "target": 2000
+    },
+    "/admin": {
+      "budget": 2900,
+      "target": 1700
+    },
+    "/settings/notifications": {
+      "budget": 2700,
+      "target": 1700
+    },
+    "/mood": {
+      "budget": 1000,
+      "target": 800
+    },
+    "/settings/access": {
+      "budget": 2600,
+      "target": 1300
+    },
+    "/settings/sources": {
+      "budget": 1900,
+      "target": 1000
+    },
+    "/settings/modules": {
+      "budget": 2300,
+      "target": 1200
+    },
+    "/notifications": {
+      "budget": 2100,
+      "target": 1200
+    },
+    "/medications": {
+      "budget": 900,
+      "target": 800
+    },
+    "/vaccinations": {
+      "budget": 800,
+      "target": 800
+    },
+    "/mental-wellbeing": {
+      "budget": 1300,
+      "target": 1300
+    },
+    "/cycle": {
+      "budget": 1600,
+      "target": 1600
+    },
+    "/care": {
+      "budget": 800,
+      "target": 800
+    },
+    "/care/practitioners": {
+      "budget": 800,
+      "target": 800
+    },
+    "/labs": {
+      "budget": 800,
+      "target": 800
+    },
+    "/illness": {
+      "budget": 800,
+      "target": 800
+    },
+    "/seizures": {
+      "budget": 800,
+      "target": 800
+    },
+    "/timeline": {
+      "budget": 800,
+      "target": 800
+    },
+    "/coach": {
+      "budget": 2500,
+      "target": 2500
+    },
+    "/coach/plans": {
+      "budget": 800,
+      "target": 800
+    },
+    "/insights/catalog": {
+      "budget": 7800,
+      "target": 7300
+    },
+    "/insights/workouts": {
+      "budget": 1400,
+      "target": 1400
+    },
+    "/insights/sources": {
+      "budget": 1000,
+      "target": 1000
+    },
+    "/settings/security": {
+      "budget": 1700,
+      "target": 1700
+    },
+    "/settings/layout": {
+      "budget": 900,
+      "target": 900
+    },
+    "/settings/score": {
+      "budget": 1700,
+      "target": 1700
+    },
+    "/settings/thresholds": {
+      "budget": 2200,
+      "target": 2200
+    },
+    "/settings/environment": {
+      "budget": 1900,
+      "target": 1900
+    },
+    "/settings/mcp": {
+      "budget": 1700,
+      "target": 1700
+    },
+    "/settings/privacy": {
+      "budget": 3300,
+      "target": 3300
+    },
+    "/settings/advanced": {
+      "budget": 900,
+      "target": 900
+    },
+    "/settings/about": {
+      "budget": 1000,
+      "target": 1000
+    },
+    "/admin/coach": {
+      "budget": 3700,
+      "target": 3700
+    },
+    "/admin/encryption": {
+      "budget": 3100,
+      "target": 3100
+    },
+    "/admin/app-logs": {
+      "budget": 2700,
+      "target": 2700
+    },
+    "/admin/backups": {
+      "budget": 2600,
+      "target": 2600
+    },
+    "/admin/module-availability": {
+      "budget": 2000,
+      "target": 2000
+    },
+    "/admin/services": {
+      "budget": 1700,
+      "target": 1700
+    },
+    "/admin/general": {
+      "budget": 1400,
+      "target": 1400
+    },
+    "/admin/login-overview": {
+      "budget": 3800,
+      "target": 3800
+    },
+    "/admin/integrations": {
+      "budget": 1200,
+      "target": 1200
+    }
+  }
+}

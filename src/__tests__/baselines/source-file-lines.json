@@ -3,7 +3,7 @@
   "count": 71,
   "total": 77276,
   "entries": {
-    "components/cycle/log-day-sheet.tsx": 1640,
+    "components/cycle/log-day-sheet.tsx": 1645,
     "components/insights/coach-panel/chat-bubble.tsx": 821,
     "components/insights/coach-panel/coach-conversation.tsx": 1241,
     "components/insights/coach-panel/use-coach.ts": 1486,

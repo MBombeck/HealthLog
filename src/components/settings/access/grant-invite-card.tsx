@@ -198,9 +198,9 @@ export function GrantInviteCard() {
         </FieldGroup>
         <fieldset className="space-y-1.5" data-slot="grant-invite-access">
           {/* The `Label` primitive is a `<label>` and cannot name a group, so
-              the legend mirrors its type and its trailing colon by hand rather
+              the legend mirrors its type by hand rather
               than mislabelling one radio as the heading of both. */}
-          <legend className="text-sm leading-none font-medium after:content-[':']">
+          <legend className="text-sm leading-none font-medium">
             {t("recordSharing.invite.accessLegend")}
           </legend>
           <div className="space-y-2">
@@ -249,7 +249,7 @@ export function GrantInviteCard() {
           </p>
         ) : (
           <fieldset className="space-y-1.5" data-slot="grant-invite-scope">
-            <legend className="text-sm leading-none font-medium after:content-[':']">
+            <legend className="text-sm leading-none font-medium">
               {t("recordSharing.invite.scopeLegend")}
             </legend>
             <div className="space-y-2">

@@ -437,7 +437,7 @@ function PassForm({
                   })
                 }
               />
-              <Label noColon htmlFor={`wallet-field-${f}`} className="text-sm">
+              <Label htmlFor={`wallet-field-${f}`} className="text-sm">
                 {t(`emergencyCard.fields.${f}`)}
               </Label>
             </div>

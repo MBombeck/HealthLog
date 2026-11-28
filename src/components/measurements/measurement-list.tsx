@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { Activity, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 
 import { SelectionActionBar } from "@/components/data-list";
+import { ActionMenu } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/ui/empty-state";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -104,6 +106,7 @@ export function MeasurementList({
     );
   };
   const filters = useMeasurementListFilters(lockedType);
+  const [selecting, setSelecting] = useState(false);
   const { typeFilter, page, clearSelection, goToPage, setTypeFilter } = filters;
 
   // The day rows whose drill-down is open; each opens a one-shot read of the
@@ -159,6 +162,7 @@ export function MeasurementList({
 
   const rows: MeasurementRowContext = {
     canManage,
+    selecting,
     selectedIds: filters.selectedIds,
     expandedDayKeys,
     toggleExpand,
@@ -185,7 +189,19 @@ export function MeasurementList({
             </div>
           )
         ) : (
-          <MeasurementFilterRail filters={filters} total={data?.meta?.total} />
+          <MeasurementFilterRail
+            filters={filters}
+            total={data?.meta?.total}
+            action={
+              isMobile && canManage && data?.measurements?.length ? (
+                <SelectModeMenu
+                  selecting={selecting}
+                  onToggle={() => setSelecting(!selecting)}
+                  onLeave={clearSelection}
+                />
+              ) : undefined
+            }
+          />
         )}
 
         {isLoading ? (
@@ -226,26 +242,11 @@ export function MeasurementList({
         )}
 
         {/* Page-scoped multi-select action bar. */}
-        <SelectionActionBar
-          domain="measurements"
+        <MeasurementSelectionBar
           count={selectedOnPage}
           onClear={clearSelection}
           onConfirmDelete={onConfirmBulkDelete}
           isDeleting={bulkDeleteMutation.isPending}
-          confirmTitle={
-            selectedOnPage === 1
-              ? t("measurements.bulkDeleteConfirmTitleOne")
-              : t("measurements.bulkDeleteConfirmTitle", {
-                  count: String(selectedOnPage),
-                })
-          }
-          confirmBody={
-            selectedOnPage === 1
-              ? t("measurements.bulkDeleteConfirmBodyOne")
-              : t("measurements.bulkDeleteConfirmBody", {
-                  count: String(selectedOnPage),
-                })
-          }
         />
 
         {totalPages > 1 && (
@@ -364,5 +365,65 @@ function MeasurementListPagination({
         </Button>
       </div>
     </div>
+  );
+}
+
+/** The phone list's "⋯": enter or leave its selection mode. */
+function SelectModeMenu({
+  selecting,
+  onToggle,
+  onLeave,
+}: {
+  selecting: boolean;
+  onToggle: () => void;
+  /** Leaving the mode drops what it had selected. */
+  onLeave: () => void;
+}) {
+  const { t } = useTranslations();
+  return (
+    <ActionMenu quiet slot="measurement-list-more">
+      <DropdownMenuItem
+        onClick={() => {
+          if (selecting) onLeave();
+          onToggle();
+        }}
+      >
+        {selecting ? t("dataList.clearSelection") : t("dataList.select")}
+      </DropdownMenuItem>
+    </ActionMenu>
+  );
+}
+
+/** The page-scoped multi-select action bar, its copy counted. */
+function MeasurementSelectionBar({
+  count,
+  onClear,
+  onConfirmDelete,
+  isDeleting,
+}: {
+  count: number;
+  onClear: () => void;
+  onConfirmDelete: () => void;
+  isDeleting: boolean;
+}) {
+  const { t } = useTranslations();
+  return (
+    <SelectionActionBar
+      domain="measurements"
+      count={count}
+      onClear={onClear}
+      onConfirmDelete={onConfirmDelete}
+      isDeleting={isDeleting}
+      confirmTitle={
+        count === 1
+          ? t("measurements.bulkDeleteConfirmTitleOne")
+          : t("measurements.bulkDeleteConfirmTitle", { count: String(count) })
+      }
+      confirmBody={
+        count === 1
+          ? t("measurements.bulkDeleteConfirmBodyOne")
+          : t("measurements.bulkDeleteConfirmBody", { count: String(count) })
+      }
+    />
   );
 }

@@ -138,7 +138,7 @@ function FactRow({
             }
           }}
         >
-          <Label htmlFor={inputId} className="sr-only" noColon>
+          <Label htmlFor={inputId} className="sr-only">
             {t(COACH_MEMORY_LIST_KEYS.edit)}
           </Label>
           <Textarea

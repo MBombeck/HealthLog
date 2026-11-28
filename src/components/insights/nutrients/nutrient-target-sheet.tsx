@@ -4,8 +4,10 @@ import { useId, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { RotateCcw } from "lucide-react";
 
+import { ActionMenu } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
-import { ConfirmButton } from "@/components/ui/confirm-button";
+import { ConfirmDialog } from "@/components/ui/confirm-button";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
@@ -63,6 +65,7 @@ export function NutrientTargetSheet({
   const [value, setValue] = useState(seedValue);
   const [direction, setDirection] = useState<Direction>(seedDirection);
   const [error, setError] = useState<string | null>(null);
+  const [confirmReset, setConfirmReset] = useState(false);
 
   const parsed = parseDecimalEntry(value);
   const empty = value.trim() === "";
@@ -94,46 +97,33 @@ export function NutrientTargetSheet({
       description={t("nutrients.macros.sheetDescription")}
       className="sm:max-w-md"
       footer={
-        <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+        <>
           {current ? (
             // Neutral like the threshold sheet's reset: the chart goes back
             // to the reference, and a new target is one save away.
-            <ConfirmButton
-              slot="nutrients-target-reset"
-              variant="ghost"
-              size="sm"
-              icon={<RotateCcw className="size-3.5" />}
-              label={t("nutrients.macros.clearTarget")}
-              title={t("nutrients.macros.removeTitle")}
-              body={t("nutrients.macros.removeBody")}
-              confirmLabel={t("nutrients.macros.clearTarget")}
-              disabled={busy}
-              pending={busy && mutation.variables === null}
-              onConfirm={() => mutation.mutate(null)}
-            />
-          ) : (
-            <span aria-hidden="true" />
-          )}
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-              disabled={busy}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              type="submit"
-              form={formId}
-              size="sm"
-              disabled={!valid || busy}
-              data-slot="nutrients-target-save"
-            >
-              {t("common.save")}
-            </Button>
-          </div>
-        </div>
+            <ActionMenu disabled={busy} slot="nutrients-target-more">
+              <DropdownMenuItem onClick={() => setConfirmReset(true)}>
+                <RotateCcw className="mr-2 size-4" />
+                {t("nutrients.macros.clearTarget")}
+              </DropdownMenuItem>
+            </ActionMenu>
+          ) : null}
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={busy}
+          >
+            {t("common.cancel")}
+          </Button>
+          <Button
+            type="submit"
+            form={formId}
+            disabled={!valid || busy}
+            data-slot="nutrients-target-save"
+          >
+            {t("common.save")}
+          </Button>
+        </>
       }
     >
       <form
@@ -207,6 +197,16 @@ export function NutrientTargetSheet({
           </p>
         ) : null}
       </form>
+      <ConfirmDialog
+        open={confirmReset}
+        onOpenChange={setConfirmReset}
+        slot="nutrients-target-reset"
+        title={t("nutrients.macros.removeTitle")}
+        body={t("nutrients.macros.removeBody")}
+        confirmLabel={t("nutrients.macros.clearTarget")}
+        pending={busy && mutation.variables === null}
+        onConfirm={() => mutation.mutate(null)}
+      />
     </ResponsiveSheet>
   );
 }

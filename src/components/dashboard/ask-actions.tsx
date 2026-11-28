@@ -11,16 +11,18 @@
  * decisions, each row its own question, so each row carries its own filled
  * primary and its weight matches the row beside it.
  *
- * Layout (variant A): every button the same fixed width, sized to the
- * longest short label in the ten languages (`daily.action.*`, "Skonfiguruj",
- * "Reconnecter"), so the buttons stand in one aligned column on the right of
- * a wide card, the secondary left of the primary. In a narrow card they sit
- * under the text as one row split into equal parts; a single action takes
- * the right part, where the primary stands in every other row.
+ * The pair is the shared `ActionPair`, with one rule of its own: in a wide
+ * card every button has the same fixed width, sized to the longest short
+ * label in the ten languages (`daily.action.*`, "Skonfiguruj",
+ * "Reconnecter"), so the buttons of all rows stand in one aligned column on
+ * the right. In a narrow card they sit under the text as one row split in
+ * halves; a single action takes the right half, where the primary stands in
+ * every other row.
  */
 import type { ReactNode } from "react";
 import Link from "next/link";
 
+import { ActionPair } from "@/components/ui/action-pair";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -29,8 +31,8 @@ export type AskAction =
   | { key: string; label: string; href: string }
   | { key: string; label: string; onClick: () => void };
 
-/** The one size every button in the card shares. */
-const ACTION_CLASS = "min-h-11 w-full px-2 sm:min-h-9 @min-[44.25rem]:w-28";
+/** The button's height; the pair owns its width. */
+const ACTION_CLASS = "min-h-11 px-2 sm:min-h-9";
 
 export function AskActions({
   actions,
@@ -45,18 +47,15 @@ export function AskActions({
   // Shown with the primary last, on the right (UI standards §12).
   const ordered = [...actions].reverse();
   return (
-    <div
+    <ActionPair
       data-slot="today-ask-actions"
-      className={cn(
-        "grid gap-2 @min-[44.25rem]:flex @min-[44.25rem]:shrink-0 @min-[44.25rem]:justify-end",
-        ordered.length > 2 ? "grid-cols-3" : "grid-cols-2",
-        ordered.length === 1 && "[&>*]:col-start-2",
-      )}
+      className="@min-[44.25rem]:w-auto @min-[44.25rem]:shrink-0"
+      pairClassName="w-full grid-cols-2 *:only:col-start-2 @min-[44.25rem]:w-max @min-[44.25rem]:grid-cols-none @min-[44.25rem]:auto-cols-[7rem]"
     >
       {ordered.map((action) =>
         renderAction(action, action.key === primaryKey, pending),
       )}
-    </div>
+    </ActionPair>
   );
 }
 

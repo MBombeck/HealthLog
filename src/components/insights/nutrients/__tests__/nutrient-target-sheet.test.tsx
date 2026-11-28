@@ -71,12 +71,12 @@ describe("<NutrientTargetSheet>", () => {
     );
   });
 
-  it("names the bounds and orders the footer remove, Cancel, Save", () => {
+  it("names the bounds and orders the footer menu, Cancel, Save", () => {
     const html = render({ value: 120, direction: "limit" });
     expect(html).toContain("Daily target: Protein");
     expect(html).toContain("Protein per day (g)");
     expect(html).toContain("Above 0, at most");
-    const remove = html.indexOf('data-slot="nutrients-target-reset"');
+    const remove = html.indexOf('data-slot="nutrients-target-more"');
     const cancel = html.indexOf(">Cancel<");
     const save = html.indexOf('data-slot="nutrients-target-save"');
     expect(remove).toBeGreaterThan(-1);
@@ -88,7 +88,7 @@ describe("<NutrientTargetSheet>", () => {
 
   it("offers no remove when no target is set", () => {
     const html = render(null);
-    expect(html).not.toContain("nutrients-target-reset");
+    expect(html).not.toContain("nutrients-target-more");
     expect(html).toContain('value=""');
   });
 });

@@ -23,7 +23,7 @@ import {
   isValidTimezone,
   shiftDateKey,
 } from "@/lib/tz/format";
-import type { Formatters } from "@/lib/format-locale";
+import { resolveIntlLocale, type Formatters } from "@/lib/format-locale";
 import { pluralKey } from "./plural";
 import { defaultLocale, type Locale } from "./config";
 
@@ -211,4 +211,36 @@ export function formatDateOrRelative(
     );
   }
   return fmt.dateTime(iso);
+}
+
+/**
+ * The compact relative label of a list row's meta line: "vor 7 Std.",
+ * "3 days ago", "il y a 2 j". The short style comes from
+ * `Intl.RelativeTimeFormat`, so it needs no strings of its own; a week or
+ * more back it is the date. Under a minute it says "just now" through the
+ * same key as the long form.
+ */
+export function formatRelativeShort(
+  iso: Date | string,
+  t: (key: string) => string,
+  locale: Locale,
+  fmt: Pick<Formatters, "date">,
+  nowMs: number = Date.now(),
+): string {
+  const target = iso instanceof Date ? iso.getTime() : new Date(iso).getTime();
+  if (Number.isNaN(target)) return "";
+  const diffMs = nowMs - target;
+  if (diffMs < 0) return fmt.date(iso);
+  if (diffMs < 60_000) return t("insights.relativeJustNow");
+  const rtf = new Intl.RelativeTimeFormat(resolveIntlLocale(locale), {
+    style: "short",
+    numeric: "always",
+  });
+  const minutes = Math.floor(diffMs / 60_000);
+  if (minutes < 60) return rtf.format(-minutes, "minute");
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return rtf.format(-hours, "hour");
+  const days = Math.floor(hours / 24);
+  if (days < 7) return rtf.format(-days, "day");
+  return fmt.date(iso);
 }
