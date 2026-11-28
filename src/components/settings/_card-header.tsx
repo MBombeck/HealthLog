@@ -28,10 +28,19 @@
  */
 
 import * as React from "react";
+import dynamic from "next/dynamic";
 import type { LucideIcon } from "lucide-react";
 
-import { InfoPopover } from "@/components/ui/info-popover";
 import { cn } from "@/lib/utils";
+
+/**
+ * Loaded only by a card that has an `info`: every settings and admin card
+ * renders this header, and a static import put the popover runtime on the
+ * first load of every page that shows one, (i) or not.
+ */
+const InfoPopover = dynamic(() =>
+  import("@/components/ui/info-popover").then((mod) => mod.InfoPopover),
+);
 
 export interface SettingsCardHeaderProps {
   /** Lucide icon component; rendered as `text-muted-foreground h-5 w-5`.

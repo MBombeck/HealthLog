@@ -1,7 +1,7 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+
+import { readSource } from "@/__tests__/helpers/source-files";
 
 vi.mock("@/lib/i18n/context", () => ({
   useTranslations: () => ({ t: (k: string) => k }),
@@ -32,10 +32,10 @@ describe("<ActionPair>", () => {
   // the dropdown it would import lands on every page with a dialog (about
   // 20 KB gz on first load). The menu and its dropdown live in action-menu.tsx.
   it("does not import the dropdown menu", () => {
-    const src = readFileSync(
-      join(process.cwd(), "src/components/ui/action-pair.tsx"),
-      "utf8",
-    );
+    const src = readSource("src/components/ui/action-pair.tsx", [
+      "function ActionPair(",
+      "isActionMenu",
+    ]);
     expect(src).not.toMatch(
       /from\s+["']@\/components\/ui\/(dropdown-menu|action-menu)["']/,
     );
