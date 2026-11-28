@@ -53,6 +53,7 @@ export const SERVER_FEATURES = [
   "medication.side-effect-headache",
   "medication.low-stock-trigger",
   "insights.score-origin",
+  "medication.efficacy-result",
   "account.dismissed-hints",
   "daily.asks",
   "daily.scores-short-labels",
@@ -160,6 +161,8 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "GET /api/medications and GET /api/medications/{id} (and the create and edit answers) carry lowStockTriggerDays: max(lowStockRunwayDays, reorderLeadDays + one dose-interval) with the medication's own lead over the account default, null when the alert is off or nothing is consumed on a cadence; a row is low on stock when runwayDays <= lowStockTriggerDays.",
   "insights.score-origin":
     "RECOVERY_SCORE, STRESS_SCORE and STRAIN_SCORE values on GET /api/insights/derived carry origin (estimate | device | computed) and deviceSource (the measurement source of a device value, else null); the health score composite carries weights (one { id, weight } per counted pillar, summing to 1) and each snapshot healthScore.pillars row its weight (null when it did not count); every scored pillar carries its own band (green | yellow | red), resolved on the server: value.band on the score report's pillars (/api/analytics) and band on each snapshot healthScore.pillars row (null when it did not count).",
+  "medication.efficacy-result":
+    "GET /api/medications/{id}/efficacy carries targets[].result: { direction (lower | higher | unchanged | null), text }, the before/after comparison in one sentence in the reader's language.",
   "daily.asks":
     "GET /api/daily/digest carries asks: every row the start page asks today, often none (kind, tier safety | decision | due, itemKey, title, body, subject, exactly two actions with the primary first, learnMore), ranked on the server, never capped or folded; render as delivered, no card when empty. Later is dose.snooze:<medicationId> on a dose and ask.later:<dismissKey> on other reminders; the admin rows (push_relay, server_setup) come only to a browser session.",
   "daily.scores-short-labels":

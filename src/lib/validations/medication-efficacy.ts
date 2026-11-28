@@ -177,6 +177,23 @@ const targetViewSchema = z.object({
   beforeAfter: beforeAfterSchema,
   levelShift: levelShiftSchema,
   segmented: segmentedSchema,
+  result: z
+    .object({
+      direction: z
+        .enum(["lower", "higher", "unchanged"])
+        .nullable()
+        .describe(
+          "The before/after comparison's direction; null while either side lacks the readings for a comparison. A change under 2 % of the before-mean reads `unchanged`.",
+        ),
+      text: z
+        .string()
+        .describe(
+          "The comparison in one sentence, worded in the reader's language; when `direction` is null it says which side is short of readings. Clients show it verbatim.",
+        ),
+    })
+    .describe(
+      "v1.50 — the result sentence the effect view leads with. Descriptive only: no verdict on whether the medication works.",
+    ),
 });
 
 export const medicationEfficacyResponseSchema = z.object({

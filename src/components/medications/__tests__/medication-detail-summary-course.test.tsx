@@ -29,10 +29,7 @@ const payload = {
   ],
 };
 
-function render(
-  courseStatus: "UPCOMING" | "CURRENT" | "ENDED",
-  note: string | null = null,
-) {
+function render(courseStatus: "UPCOMING" | "CURRENT" | "ENDED") {
   return renderToStaticMarkup(
     <I18nProvider initialLocale="en">
       <QueryClientProvider client={new QueryClient()}>
@@ -44,7 +41,6 @@ function render(
           payload={payload}
           oneShot={false}
           startsOn="2026-09-20T00:00:00.000Z"
-          note={note}
         />
       </QueryClientProvider>
     </I18nProvider>,
@@ -74,21 +70,13 @@ describe("<MedicationDetailSummary> — course status (#1040)", () => {
   });
 });
 
-describe("<MedicationDetailSummary> — the medication's own note (#1371)", () => {
-  it("shows the note in foreground text, keeping its line breaks", () => {
-    const html = render("CURRENT", "With food\nNot with milk");
-    expect(html).toContain('data-slot="medication-detail-note"');
-    expect(html).toContain("With food\nNot with milk");
-    expect(html).toContain("whitespace-pre-line");
-    // The note text itself is never muted; only the icon is.
-    expect(html).toMatch(
-      /data-slot="medication-detail-note" class="[^"]*\bwhitespace-pre-line\b[^"]*"/,
-    );
-    expect(html).toContain('<span class="min-w-0">With food');
-    expect(html).not.toMatch(/medication-detail-note" class="[^"]*muted/);
-  });
-
-  it("renders nothing for a medication without a note", () => {
-    expect(render("CURRENT")).not.toContain("medication-detail-note");
+describe("<MedicationDetailSummary> — one line", () => {
+  it("names the dose and the cadence without the course window", () => {
+    const html = render("CURRENT");
+    expect(html).toContain('data-slot="medication-detail-cadence-line"');
+    expect(html).toContain("500 mg");
+    // The start and end dates moved into the overview's plan card.
+    expect(html).not.toContain("Start");
+    expect(html).not.toContain("medication-detail-note");
   });
 });
