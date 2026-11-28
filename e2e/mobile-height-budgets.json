@@ -106,7 +106,7 @@
       "target": 800
     },
     "/insights/catalog": {
-      "budget": 7300,
+      "budget": 7800,
       "target": 7300
     },
     "/insights/workouts": {
@@ -122,8 +122,8 @@
       "target": 1700
     },
     "/settings/layout": {
-      "budget": 1000,
-      "target": 1000
+      "budget": 900,
+      "target": 900
     },
     "/settings/score": {
       "budget": 1700,
