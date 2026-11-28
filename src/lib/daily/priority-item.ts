@@ -55,7 +55,7 @@ export type PriorityItemKind = (typeof PRIORITY_ITEM_KINDS)[number];
  * Switches of the start page that are no rail kind: categories only the
  * asks know (`feature_offer`, `asks.ts`). Stored beside the rail kinds in
  * `enabledHeroItemKinds`, under the same rule, so a new one also needs the
- * data migration described above (0579 for `feature_offer`).
+ * data migration described above (0580 for `feature_offer`).
  */
 export const ASK_ONLY_CATEGORIES = ["feature_offer"] as const;
 
