@@ -155,24 +155,21 @@ describe.each(["disaster-recovery", "portable-export"] as const)(
       purpose === "disaster-recovery"
         ? ["ImagingExam", "ImagingExamDocumentLink"]
         : ["ImagingExam"],
-    )(
-      "restores every %s column with the value it left with",
-      async (model) => {
-        const { exam, link, writes } = await roundTrip(purpose);
-        const original: Record<string, unknown> =
-          model === "ImagingExam" ? exam : link;
-        const written = writes[model]?.[0];
-        expect(written, `${model} was not written`).toBeDefined();
-        const missing: string[] = [];
-        for (const { name } of scalarFields(model)) {
-          if (name in EXCLUDED[model]) continue;
-          if (comparable(written![name]) !== comparable(original[name])) {
-            missing.push(name);
-          }
+    )("restores every %s column with the value it left with", async (model) => {
+      const { exam, link, writes } = await roundTrip(purpose);
+      const original: Record<string, unknown> =
+        model === "ImagingExam" ? exam : link;
+      const written = writes[model]?.[0];
+      expect(written, `${model} was not written`).toBeDefined();
+      const missing: string[] = [];
+      for (const { name } of scalarFields(model)) {
+        if (name in EXCLUDED[model]) continue;
+        if (comparable(written![name]) !== comparable(original[name])) {
+          missing.push(name);
         }
-        expect(missing).toEqual([]);
-      },
-    );
+      }
+      expect(missing).toEqual([]);
+    });
   },
 );
 
