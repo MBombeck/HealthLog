@@ -4176,11 +4176,8 @@
     "navRecovery": "设备评分",
     "workouts": {
       "title": "运动",
-      "description": "最近的跑步、骑行、步行与力量训练，已跨 Apple Watch 与 Withings 来源去重。",
       "emptyState": {
-        "title": "还没有运动记录",
-        "description": "运动会从你 iPhone 上的 Apple Health 以及 Withings 同步。你也可以手动记录一次。",
-        "coachPrefill": "我还没有记录任何运动。记录运动为什么重要，我应该先从什么开始？"
+        "title": "还没有运动记录"
       },
       "detail": {
         "backToList": "返回运动列表",
@@ -4261,7 +4258,6 @@
         "other": "其他"
       },
       "loadError": "无法加载你的运动",
-      "loadMore": "加载更多运动",
       "loadingMore": "正在加载更多运动",
       "loadMoreError": "无法加载更多运动",
       "countOne": "{count} 次运动",
@@ -4269,7 +4265,6 @@
       "countFew": "{count} 次运动",
       "filterLabel": "按运动类型筛选",
       "filterAll": "全部运动类型",
-      "filterEmpty": "你的历史中没有这类运动。",
       "manual": {
         "logWorkout": "记录运动",
         "sheetTitle": "记录运动",
@@ -4302,6 +4297,17 @@
         "editTitle": "编辑运动",
         "editAction": "编辑",
         "updated": "运动已更新"
+      },
+      "customize": {
+        "calendar": "日历",
+        "calendarShows": "日历显示"
+      },
+      "column": {
+        "workout": "训练",
+        "distance": "距离",
+        "energy": "能量",
+        "pulse": "脉搏",
+        "duration": "时长"
       },
       "load": {
         "title": "训练负荷",
@@ -15495,26 +15501,15 @@
     }
   },
   "activityCalendar": {
-    "title": "活动日历",
-    "periodLabel": "日历跨度",
-    "period": {
-      "week": "周",
-      "month": "月"
-    },
-    "weekRange": "{start} 至 {end}",
     "previous": "上一周期",
     "next": "下一周期",
-    "metricLabel": "按什么给日期上色",
     "metric": {
       "steps": "步数",
       "activeMinutes": "活动分钟",
-      "load": "训练负荷"
+      "load": "训练负荷",
+      "workouts": "训练"
     },
-    "empty": "此周期内还没有步数、活动分钟或运动。",
     "loadError": "无法加载活动日历。",
-    "weekGoalsColumn": "每周目标",
-    "weekGoalsMet": "每周目标全部达成",
-    "weekGoalsNotMet": "每周目标未全部达成",
     "cell": {
       "steps": "{value, plural, other {# 步}}",
       "activeMinutes": "{value} 活动分钟",
@@ -15530,19 +15525,7 @@
       "high": "远高于你的平常",
       "in_progress": "今天，仍在进行中"
     },
-    "legend": "与此前 12 周对比：",
     "noBaseline": "有 14 天数据后才会显示你的平常范围。",
-    "summary": {
-      "steps": "{value, plural, other {# 步}}",
-      "activeMinutes": "{value} 活动分钟",
-      "workouts": "{value} 次运动",
-      "load": "平均训练负荷 {value}",
-      "usual": "到此时你的平常水平：{value}",
-      "noUsual": "此前还没有足够的周或月可供对比。",
-      "usualThroughYesterday": "截至昨天 {value}，你的平常到这时为 {usual}",
-      "firstDay": "第一天结束后才会与你的平常水平对比。"
-    },
-    "sportCount": "{sport}：{count}",
     "goal": {
       "workoutsPerWeek": "每周运动次数",
       "activeMinutesPerWeek": "每周活动分钟",
@@ -15550,11 +15533,7 @@
       "stepsPerMonth": "每月步数"
     },
     "goalOf": "{target} 中的 {value}",
-    "setGoals": "设置目标",
-    "editGoals": "更改目标",
     "goalsSheet": {
-      "title": "活动目标",
-      "description": "留空表示不设目标。",
       "none": "无目标",
       "invalid": "{min} 到 {max} 之间的整数。",
       "saveError": "无法保存目标。"
@@ -15563,7 +15542,10 @@
       "title": "活动日历",
       "body": "以月为单位查看你的步数，与你自己的常态相比。",
       "cta": "打开日历"
-    }
+    },
+    "caption": "与之前 12 周相比",
+    "legendLess": "较少",
+    "legendMore": "较多"
   },
   "sourceProvenance": {
     "title": "数值来自哪里",
@@ -16224,10 +16206,10 @@
       "fieldsLabel": "链接显示的内容",
       "expiryLabel": "链接到期",
       "expiry": {
-        "none": "永不，直到被撤销",
         "30": "30 天后",
         "365": "一年后",
-        "730": "两年后"
+        "730": "两年后",
+        "none": "永不，直到被撤销"
       },
       "create": "生成链接",
       "qrAlt": "急救卡链接的二维码",
@@ -16511,5 +16493,25 @@
       "needStart": "添加开始日期，即可比较前后变化。",
       "needData": "读数还不足以进行比较。"
     }
+  },
+  "pageCustomize": {
+    "title": "自定义页面",
+    "back": "返回",
+    "group": {
+      "display": "显示",
+      "capture": "记录",
+      "reminders": "提醒",
+      "data": "数据"
+    },
+    "goals": "目标",
+    "goalsSet": "{count, plural, other {已设 # 项}}",
+    "sources": "来源",
+    "import": "导入",
+    "export": "导出"
+  },
+  "list": {
+    "showMore": "{count, plural, other {再显示 # 项}}",
+    "noMatches": "没有匹配项",
+    "resetFilter": "重置筛选"
   }
 }
