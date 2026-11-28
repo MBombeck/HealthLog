@@ -270,6 +270,46 @@ describe("makeFormatters", () => {
       // that prints as 2025 in New York must carry the year.
       expect(nyFmt.dateShortSmart(newYearUtcEve)).toContain("2025");
     });
+
+    it("joins a date range the locale's way, not with a dash of our own", () => {
+      const from = new Date("2026-02-19T10:00:00Z");
+      const to = new Date("2026-02-25T10:00:00Z");
+      for (const locale of ["de", "en", "pl", "ko"] as const) {
+        const f = makeFormatters(locale, "UTC", "AUTO", "AUTO");
+        const expected = new Intl.DateTimeFormat(resolveIntlLocale(locale), {
+          timeZone: "UTC",
+          day: "2-digit",
+          month: "2-digit",
+        });
+        expect(f.dateRangeShortSmart(from, to)).toBe(
+          expected.formatRange(from, to),
+        );
+      }
+      const de = makeFormatters("de", "UTC", "AUTO", "AUTO");
+      expect(de.dateRangeShortSmart(from, to)).not.toBe(
+        `${de.dateShortSmart(from)}–${de.dateShortSmart(to)}`,
+      );
+      expect(de.dateRangeShortSmart(from, from)).toBe(de.dateShortSmart(from));
+    });
+
+    it("gives a range the year when either end is outside the current year", () => {
+      const de = makeFormatters("de", "UTC", "AUTO", "AUTO");
+      const range = de.dateRangeShortSmart(
+        new Date("2025-12-28T10:00:00Z"),
+        new Date("2026-01-03T10:00:00Z"),
+      );
+      expect(range).toContain("2025");
+      expect(range).toContain("2026");
+      expect(de.dateRangeShortSmartCalendar("2025-12-28", "2026-01-03")).toBe(
+        range,
+      );
+      expect(de.dateRangeShortSmartCalendar("2026-02-19", "2026-02-25")).toBe(
+        de.dateRangeShortSmart(
+          new Date("2026-02-19T10:00:00Z"),
+          new Date("2026-02-25T10:00:00Z"),
+        ),
+      );
+    });
   });
 });
 

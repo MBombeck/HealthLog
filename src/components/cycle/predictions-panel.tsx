@@ -117,10 +117,10 @@ export function PredictionsPanel({
                 <Row
                   hue={FERTILE_HUE}
                   label={t("cycle.predictions.fertileWindow")}
-                  value={`${formatDate(prediction.fertileWindowStart, fmt)}–${formatDate(
+                  value={fmt.dateRangeShortSmartCalendar(
+                    prediction.fertileWindowStart,
                     prediction.fertileWindowEnd,
-                    fmt,
-                  )}`}
+                  )}
                 />
               ) : null}
               {prediction.predictedOvulation ? (
@@ -284,11 +284,12 @@ function HistoryCard({
                     className="flex items-center justify-between gap-3 py-2 text-sm"
                   >
                     <span className="text-foreground tabular-nums">
-                      {formatDate(c.startDate, fmt)}
-                      {"–"}
                       {c.endDate
-                        ? formatDate(c.endDate, fmt)
-                        : t("cycle.history.ongoing")}
+                        ? fmt.dateRangeShortSmartCalendar(
+                            c.startDate,
+                            c.endDate,
+                          )
+                        : `${formatDate(c.startDate, fmt)}–${t("cycle.history.ongoing")}`}
                     </span>
                     <span className="text-muted-foreground flex items-center gap-2 tabular-nums">
                       {c.lengthDays != null

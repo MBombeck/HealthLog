@@ -91,11 +91,14 @@ function NestedEpisodes({ episodes }: { episodes?: IllnessEpisodeDTO[] }) {
               <span className="truncate">{child.label}</span>
               <span className="text-muted-foreground shrink-0">
                 {allFlares
-                  ? fmt.dateShortSmart(new Date(child.onsetAt))
-                  : `${t(`illness.lifecycle.${child.lifecycle}`)}, ${fmt.dateShortSmart(new Date(child.onsetAt))}`}
+                  ? ""
+                  : `${t(`illness.lifecycle.${child.lifecycle}`)}, `}
                 {child.resolvedAt
-                  ? `–${fmt.dateShortSmart(new Date(child.resolvedAt))}`
-                  : ""}
+                  ? fmt.dateRangeShortSmart(
+                      new Date(child.onsetAt),
+                      new Date(child.resolvedAt),
+                    )
+                  : fmt.dateShortSmart(new Date(child.onsetAt))}
               </span>
             </Link>
           </li>
@@ -286,7 +289,10 @@ function ResolvedRow({
   const { t } = useTranslations();
   const fmt = useFormatters();
   const span = episode.resolvedAt
-    ? `${fmt.dateShortSmart(new Date(episode.onsetAt))}–${fmt.dateShortSmart(new Date(episode.resolvedAt))}`
+    ? fmt.dateRangeShortSmart(
+        new Date(episode.onsetAt),
+        new Date(episode.resolvedAt),
+      )
     : fmt.dateShortSmart(new Date(episode.onsetAt));
   const count = flares?.length ?? 0;
   const meta = [
