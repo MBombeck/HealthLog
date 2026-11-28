@@ -13,7 +13,8 @@
  * An id is a family from `DISMISSIBLE_HINTS`, optionally followed by `.` and
  * a member: the machine-translation banner is dismissed per language
  * (`i18n-banner.fr`), the getting-started checklist per row
- * (`getting-started.add-measurement`). Restoring a family restores its
+ * (`getting-started.add-measurement`), the lab changes card per newest panel
+ * (`labs-changes.<YYYY-MM-DD>`). Restoring a family restores its
  * members too. Client-safe: no server imports.
  */
 
@@ -30,6 +31,12 @@ export const DISMISSIBLE_HINTS = [
   "i18n-banner",
   /** The getting-started checklist: the whole card, or one row of it. */
   "getting-started",
+  /**
+   * The "since your last panel" lab changes card, per newest panel: the
+   * member is that panel's day (`labs-changes.2026-11-20`), so a new panel
+   * brings the card back.
+   */
+  "labs-changes",
 ] as const;
 
 export type DismissibleHint = (typeof DISMISSIBLE_HINTS)[number];

@@ -313,7 +313,7 @@ const REGISTRY: DestructiveEntry[] = [
     destroys:
       "the custom target range for one metric — both halves at once for blood pressure",
     recovery: "permanent",
-    confirm: ["ConfirmButton"],
+    confirm: ["ConfirmDialog"],
   },
   {
     file: "components/settings/dashboard-layout/use-dashboard-layout-draft.ts",
@@ -541,7 +541,7 @@ const REGISTRY: DestructiveEntry[] = [
     triggers: ["components/timeline/life-event-form.tsx"],
     // The route soft-deletes; there is no restore route or surface yet.
     recovery: "tombstoned-no-restore",
-    confirm: ["ConfirmButton"],
+    confirm: ["ConfirmDialog"],
   },
 
   // ── Cycle ───────────────────────────────────────────────────────────────
@@ -551,7 +551,7 @@ const REGISTRY: DestructiveEntry[] = [
       "a whole logged cycle day — flow, temperature, symptoms, note — or a custom symptom from the catalogue",
     triggers: ["components/cycle/log-day-sheet.tsx"],
     recovery: "tombstoned-no-restore",
-    confirm: ["ConfirmButton", "ConfirmDialog"],
+    confirm: ["ConfirmDialog"],
   },
   {
     file: "components/cycle/use-cycle-feed.ts",

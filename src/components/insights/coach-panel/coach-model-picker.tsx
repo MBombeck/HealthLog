@@ -229,7 +229,7 @@ export function CoachModelPicker() {
   return (
     <div data-slot="coach-model-picker" className="flex flex-col gap-4">
       <div>
-        <Label htmlFor="coach-quick-provider" noColon>
+        <Label htmlFor="coach-quick-provider">
           {t("insights.coach.frame.provider")}
         </Label>
         <NativeSelect
@@ -273,7 +273,7 @@ export function CoachModelPicker() {
 
       {model.kind === "preset" ? (
         <div>
-          <Label htmlFor="coach-quick-model" noColon>
+          <Label htmlFor="coach-quick-model">
             {t("settings.ai.modelLabel")}
           </Label>
           <NativeSelect
@@ -365,7 +365,7 @@ function GatewayModelField({
         if (changed) onSave(draft.trim() || null);
       }}
     >
-      <Label htmlFor="coach-quick-gateway-model" noColon>
+      <Label htmlFor="coach-quick-gateway-model">
         {t("settings.ai.modelLabel")}
       </Label>
       <div className="flex items-center gap-2">

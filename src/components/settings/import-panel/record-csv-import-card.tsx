@@ -253,21 +253,14 @@ function RecordCsvImportSheet({
       description={t(`recordImport.sheetDescription.${kind}`)}
       footer={
         done ? (
-          <Button
-            type="button"
-            size="sm"
-            className="min-h-11"
-            onClick={() => onOpenChange(false)}
-          >
+          <Button type="button" onClick={() => onOpenChange(false)}>
             {t("recordImport.close")}
           </Button>
         ) : (
-          <div className="flex flex-wrap justify-end gap-2">
+          <>
             <Button
               type="button"
               variant="outline"
-              size="sm"
-              className="min-h-11"
               disabled={!file || busy || missing.length > 0}
               data-slot="record-import-check"
               onClick={() => send(true)}
@@ -276,8 +269,6 @@ function RecordCsvImportSheet({
             </Button>
             <Button
               type="button"
-              size="sm"
-              className="min-h-11"
               disabled={!check || busy || check.inserted === 0}
               data-slot="record-import-run"
               onClick={() => send(false)}
@@ -286,7 +277,7 @@ function RecordCsvImportSheet({
                 ? t("recordImport.run", { count: fmt.integer(check.inserted) })
                 : t("recordImport.runIdle")}
             </Button>
-          </div>
+          </>
         )
       }
     >

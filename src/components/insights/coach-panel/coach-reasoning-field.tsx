@@ -182,7 +182,7 @@ export function CoachReasoningSelect({
     return (
       <div data-slot="coach-reasoning-field" className="flex flex-col gap-1">
         <div className="flex min-h-11 items-center justify-between gap-4">
-          <Label htmlFor={id} noColon className="min-w-0 truncate">
+          <Label htmlFor={id} className="min-w-0 truncate">
             {t(REASONING_SETTING_KEYS.label)}
           </Label>
           {select}
@@ -193,9 +193,7 @@ export function CoachReasoningSelect({
   }
   return (
     <div data-slot="coach-reasoning-field">
-      <Label htmlFor={id} noColon>
-        {t(REASONING_SETTING_KEYS.label)}
-      </Label>
+      <Label htmlFor={id}>{t(REASONING_SETTING_KEYS.label)}</Label>
       {select}
       {lockedNote}
     </div>
