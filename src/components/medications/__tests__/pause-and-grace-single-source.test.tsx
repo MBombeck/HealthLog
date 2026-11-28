@@ -14,8 +14,6 @@
  * state from the stored `active` and overrides it only while its own write
  * is in flight.
  */
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, expect, it } from "vitest";
@@ -26,21 +24,19 @@ import {
   effectiveGraceMinutes,
 } from "@/lib/medications/scheduling/grace";
 
+import { readSource, readSourceFolder } from "@/__tests__/helpers/source-files";
+
 import { usePauseToggle } from "../sections/destructive-zone-section";
 
-const ROOT = join(__dirname, "../../../..");
-const SRC = join(ROOT, "src");
-
-function sourceFiles(dir: string): string[] {
-  const out: string[] = [];
-  for (const name of readdirSync(dir)) {
-    if (name === "generated" || name === "__tests__") continue;
-    const path = join(dir, name);
-    if (statSync(path).isDirectory()) out.push(...sourceFiles(path));
-    else if (/\.(ts|tsx)$/.test(name) && !/\.test\.tsx?$/.test(name))
-      out.push(path);
-  }
-  return out;
+/** Every source file under `src/`, tests and the generated client left out. */
+function sourceFiles(): Array<[string, string]> {
+  return readSourceFolder("src", {
+    floor: 1500,
+    include: (rel) =>
+      !rel.startsWith("generated/") &&
+      !rel.includes("__tests__/") &&
+      !/\.test\.tsx?$/.test(rel),
+  });
 }
 
 describe("the on-time window has one rule", () => {
@@ -79,10 +75,9 @@ describe("the on-time window has one rule", () => {
   it("is the only fallback in the tree", () => {
     const offenders: string[] = [];
     let scanned = 0;
-    for (const file of sourceFiles(SRC)) {
-      const rel = relative(ROOT, file);
+    for (const [file, text] of sourceFiles()) {
+      const rel = `src/${file}`;
       if (rel === "src/lib/medications/scheduling/grace.ts") continue;
-      const text = readFileSync(file, "utf8");
       scanned += 1;
       // A numeric default after the stored value, on one line or across two.
       if (/reminderGraceMinutes\s*\)?\s*(\?\?|\|\|)\s*\d/.test(text)) {
@@ -106,9 +101,8 @@ describe("the on-time window has one rule", () => {
       "src/components/medications/detail/overview/plan-card.tsx",
       "src/components/medications/sections/settings-section.tsx",
     ]) {
-      expect(readFileSync(join(ROOT, rel), "utf8"), rel).toMatch(
-        /effectiveGraceMinutes\(/,
-      );
+      // The anchor is the assertion: readSource throws when it is gone.
+      expect(readSource(rel, "effectiveGraceMinutes(")).toBeTruthy();
     }
   });
 });
@@ -138,9 +132,9 @@ describe("the pause state has one source", () => {
   });
 
   it("keeps no copy of it seeded at mount", () => {
-    const text = readFileSync(
-      join(SRC, "components/medications/sections/destructive-zone-section.tsx"),
-      "utf8",
+    const text = readSource(
+      "src/components/medications/sections/destructive-zone-section.tsx",
+      ["export function usePauseToggle", "return { paused, busy, toggle }"],
     );
     const hook = text.slice(
       text.indexOf("export function usePauseToggle"),

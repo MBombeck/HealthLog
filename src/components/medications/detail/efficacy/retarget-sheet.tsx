@@ -113,22 +113,18 @@ export function RetargetSheet({
       onOpenChange={onOpenChange}
       title={t("medications.detail.overview.changeMetric")}
       footer={
-        <div className="grid w-full grid-cols-2 gap-2">
+        <>
           {isOverride ? (
             <Button
               variant="outline"
-              className="min-h-11 w-full sm:min-h-9"
               disabled={busy}
               onClick={() => void apply(true)}
               data-slot="medication-wirkung-retarget-reset"
             >
               {t("medications.efficacy.retarget.reset")}
             </Button>
-          ) : (
-            <span />
-          )}
+          ) : null}
           <Button
-            className="min-h-11 w-full sm:min-h-9"
             disabled={busy || value === ""}
             aria-busy={busy || undefined}
             onClick={() => void apply(false)}
@@ -136,7 +132,7 @@ export function RetargetSheet({
           >
             {t("medications.efficacy.retarget.apply")}
           </Button>
-        </div>
+        </>
       }
     >
       <div data-slot="medication-wirkung-retarget">

@@ -21,7 +21,6 @@
 import {
   CalendarDays,
   Check,
-  CircleCheck,
   Link2,
   Pencil,
   SkipForward,
@@ -36,7 +35,10 @@ import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
-import { DoseStateLabel } from "@/components/medications/dose-state-label";
+import {
+  DOSE_STATE_LOOK,
+  DoseStateLabel,
+} from "@/components/medications/dose-state-label";
 import type { DeletedIntakeSnapshot } from "@/components/medications/use-medication-intake";
 import { intakeDeleteLabel } from "@/components/medications/intake-dose-label";
 import {
@@ -170,9 +172,13 @@ export function LedgerDoseRow({
   const onTime =
     state === "taken" ||
     (row.kind === "ad_hoc" && Boolean(row.intake?.takenAt));
+  const takenLook = DOSE_STATE_LOOK.taken;
   const trailing = onTime ? (
     <span className="inline-flex items-center" data-slot="ledger-status">
-      <CircleCheck aria-hidden="true" className="text-success size-4" />
+      <takenLook.icon
+        aria-hidden="true"
+        className={cn("size-4", takenLook.tone)}
+      />
       <span className="sr-only">{t(DOSE_STATE_TERM.taken)}</span>
     </span>
   ) : state ? (
