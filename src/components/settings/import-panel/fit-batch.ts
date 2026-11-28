@@ -56,7 +56,8 @@ export interface FitBatchJob {
 
 export interface FitBatchDeps {
   upload(file: File): Promise<Response>;
-  status(): Promise<{ job: FitBatchJob | null }>;
+  /** `importRunning`: an import of any kind holds the account. */
+  status(): Promise<{ job: FitBatchJob | null; importRunning: boolean }>;
   sleep(ms: number): Promise<void>;
   /** True once the card is gone; the run stops at the next step. */
   cancelled(): boolean;
@@ -65,9 +66,11 @@ export interface FitBatchDeps {
 const POLL_MS = 2000;
 /** A job not finished after this long is reported, not waited on forever. */
 const POLL_LIMIT = 450;
-/** Waits on the rate limit or a running import before giving up on a file. */
+/** Waits on the rate limit before giving up on a file. */
 const RETRY_LIMIT = 30;
 const BUSY_WAIT_MS = 10_000;
+/** Status reads while another import holds the account: five minutes. */
+const BUSY_POLL_LIMIT = 30;
 const RATE_WAIT_MS = 15_000;
 
 const count = (v: unknown) =>
@@ -129,6 +132,26 @@ async function waitForJob(
   return { status: "failed", reason: "retry" };
 }
 
+/**
+ * Wait, on the status read, until no import holds the account. True once it
+ * is free, false when the wait ran out, `null` when the run was cancelled.
+ * The file is never sent to find out: an upload is up to 10 MB written to the
+ * server's disk before the refusal.
+ */
+async function waitUntilFree(deps: FitBatchDeps): Promise<boolean | null> {
+  for (let i = 0; i < BUSY_POLL_LIMIT; i++) {
+    if (deps.cancelled()) return null;
+    await deps.sleep(BUSY_WAIT_MS);
+    if (deps.cancelled()) return null;
+    try {
+      if (!(await deps.status()).importRunning) return true;
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
 /** Upload one file and follow its job. `null` when the run was cancelled. */
 export async function importFitFile(
   file: File,
@@ -136,7 +159,6 @@ export async function importFitFile(
 ): Promise<FitFileState | null> {
   if (file.size > FIT_BATCH_FILE_MAX_BYTES)
     return { status: "failed", reason: "tooLarge" };
-  let lastWait: "busy" | "rate" = "rate";
   for (let attempt = 0; attempt < RETRY_LIMIT; attempt++) {
     if (deps.cancelled()) return null;
     let res: Response;
@@ -146,13 +168,13 @@ export async function importFitFile(
       return { status: "failed", reason: "retry" };
     }
     if (res.status === 429) {
-      lastWait = "rate";
       await deps.sleep(retryAfterMs(res));
       continue;
     }
     if (res.status === 409) {
-      lastWait = "busy";
-      await deps.sleep(BUSY_WAIT_MS);
+      const free = await waitUntilFree(deps);
+      if (free === null) return null;
+      if (!free) return { status: "failed", reason: "busy" };
       continue;
     }
     if (res.status === 413) return { status: "failed", reason: "tooLarge" };
@@ -171,10 +193,14 @@ export async function importFitFile(
       return { status: "failed", reason: "retry" };
     }
   }
-  return { status: "failed", reason: lastWait === "busy" ? "busy" : "retry" };
+  return { status: "failed", reason: "retry" };
 }
 
-/** Run the files in order, reporting each file's state as it changes. */
+/**
+ * Run the files in order, reporting each file's state as it changes. A file
+ * that waited out another import stops the run: the files after it would
+ * only wait the same wait, so they stay "waiting".
+ */
 export async function runFitBatch(
   files: readonly File[],
   deps: FitBatchDeps,
@@ -186,5 +212,6 @@ export async function runFitBatch(
     const state = await importFitFile(files[i]!, deps);
     if (state === null) return;
     onState(i, state);
+    if (state.status === "failed" && state.reason === "busy") return;
   }
 }

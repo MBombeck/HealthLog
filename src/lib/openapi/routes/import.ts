@@ -606,14 +606,17 @@ export const importPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Import"],
       summary: "The caller's latest activity file import",
       description:
-        "The most recent activity FIT file import job of the caller, or `null` when there has never been one.",
+        "The most recent activity FIT file import job of the caller, or `null` when there has never been one. `importRunning` is true while an import of any kind holds the account, the same rule an upload is refused on with 409; a client waits on this read instead of sending the file again.",
       responses: {
         "200": {
           description: "The latest job, or null.",
           content: {
             "application/json": {
               schema: dataEnvelope(
-                z.object({ job: fitImportJob.nullable() }),
+                z.object({
+                  job: fitImportJob.nullable(),
+                  importRunning: z.boolean(),
+                }),
                 "FitImportStatusEnvelope",
               ),
             },
