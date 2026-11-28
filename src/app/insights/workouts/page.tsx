@@ -9,6 +9,7 @@ import { getUnswitchedSession } from "@/lib/auth/acting-carrier";
 import { readWorkoutsListCached } from "@/lib/workouts/list-read";
 import { resolveModuleMap } from "@/lib/modules/gate";
 import { queryKeys } from "@/lib/query-keys";
+import { WORKOUTS_PAGE_SIZE } from "@/lib/workouts/page-size";
 
 import InsightsWorkoutsPageClient from "./page-client";
 
@@ -16,8 +17,8 @@ import InsightsWorkoutsPageClient from "./page-client";
  * Thin RSC wrapper around the (client) workouts list page.
  *
  * `/insights/workouts` is the workouts surface. Its above-the-fold content —
- * the workout rows — waited for the client `useInfiniteWorkouts({ limit: 100 })`
- * to fetch `/api/workouts?limit=100` after hydrate, so the first paint flashed
+ * the workout rows — waited for the client `useInfiniteWorkouts({ limit: WORKOUTS_PAGE_SIZE })`
+ * to fetch `/api/workouts?limit=8` after hydrate, so the first paint flashed
  * the loading skeleton before the list filled in. This wrapper runs the SAME
  * cached read the API route uses (`readWorkoutsListCached`, the shared
  * `caches.workouts` projection cell) during SSR and hands it to TanStack
@@ -26,11 +27,11 @@ import InsightsWorkoutsPageClient from "./page-client";
  *
  * Contract notes (the v1.30.9 dashboard / v1.30.13 medications template):
  *  - The query key comes ONLY from the central factory. The client infinite
- *    cell keys on `queryKeys.workoutsRecentList({ limit: 100, offset:
+ *    cell keys on `queryKeys.workoutsRecentList({ limit: 8, offset:
  *    undefined, since, sportType })`; offsets are page parameters, never cache
  *    key segments, so this seeded key equals the client's by construction.
  *  - The projection filter matches the route's too: all-null filter params hash
- *    to the same `userId|||` projection cache slot a `?limit=100` request
+ *    to the same `userId|||` projection cache slot a `?limit=8` request
  *    builds, so the prefetch and the API path share one dedup pass.
  *  - The dehydrated first page is JSON-round-tripped and wrapped in TanStack's
  *    `{ pages, pageParams }` infinite-data shape. Prisma `Date`s therefore
@@ -71,7 +72,7 @@ export default async function InsightsWorkoutsPage() {
       // absent key reads as enabled; only an explicit `false` disables.
       if (modules.workouts !== false) {
         const list = await readWorkoutsListCached(user.id, {
-          limit: 100,
+          limit: WORKOUTS_PAGE_SIZE,
           offset: 0,
           since: null,
           until: null,
@@ -83,7 +84,7 @@ export default async function InsightsWorkoutsPage() {
         const firstPage = JSON.parse(JSON.stringify(list));
         queryClient.setQueryData(
           queryKeys.workoutsRecentList({
-            limit: 100,
+            limit: WORKOUTS_PAGE_SIZE,
             offset: undefined,
             since: undefined,
             sportType: undefined,

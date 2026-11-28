@@ -35,17 +35,18 @@ function workout(id: number): MockWorkout {
 test.describe("workout history pagination", () => {
   test.use({ storageState: STORAGE_STATE_PATH });
 
-  test("loads canonical rows beyond 100 once without duplicate ids", async ({
+  test("pages 8 at a time through one 'show more' row without duplicate ids", async ({
     page,
   }) => {
-    const firstPage = Array.from({ length: 100 }, (_, index) =>
+    const firstPage = Array.from({ length: 8 }, (_, index) =>
       workout(index + 1),
     );
+    // The second page overlaps the first by one canonical row.
     const secondPage = [
-      workout(100),
-      ...Array.from({ length: 99 }, (_, index) => workout(index + 101)),
+      workout(8),
+      ...Array.from({ length: 7 }, (_, index) => workout(index + 9)),
     ];
-    const thirdPage = [workout(200), workout(201)];
+    const thirdPage = [workout(16), workout(17)];
     const observedOffsets: number[] = [];
     let releaseFirstPage!: () => void;
     const firstPageGate = new Promise<void>((resolve) => {
@@ -61,42 +62,24 @@ test.describe("workout history pagination", () => {
       const limit = Number(url.searchParams.get("limit") ?? "50");
       const offset = Number(url.searchParams.get("offset") ?? "0");
 
-      if (limit !== 100) {
-        await route.fulfill({
-          contentType: "application/json",
-          body: JSON.stringify({
-            data: {
-              workouts: firstPage.slice(0, limit),
-              meta: {
-                total: 201,
-                limit,
-                offset,
-                droppedDuplicates: 0,
-              },
-            },
-            error: null,
-          }),
-        });
-        return;
-      }
-
       observedOffsets.push(offset);
       if (offset === 0) await firstPageGate;
-      if (offset === 100) await secondPageGate;
+      if (offset === 8) await secondPageGate;
       const workouts =
-        offset === 0 ? firstPage : offset === 100 ? secondPage : thirdPage;
+        offset === 0 ? firstPage : offset === 8 ? secondPage : thirdPage;
 
       await route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({
           data: {
             workouts,
-            meta: {
-              total: 201,
-              limit,
-              offset,
-              droppedDuplicates: 0,
-            },
+            meta: { total: 17, limit, offset, droppedDuplicates: 0 },
+            ...(offset === 0
+              ? {
+                  sports: [{ sportType: "running", count: 17 }],
+                  sources: ["APPLE_HEALTH"],
+                }
+              : {}),
           },
           error: null,
         }),
@@ -109,32 +92,33 @@ test.describe("workout history pagination", () => {
     releaseFirstPage();
 
     const rows = page.locator('[data-slot="workout-list-row"]');
-    await expect(rows).toHaveCount(100);
+    await expect(rows).toHaveCount(8);
     await expect(page.locator('[data-slot="workouts-loading"]')).toHaveCount(0);
+    await expect(page.locator('[data-slot="workout-list-count"]')).toHaveText(
+      "17",
+    );
 
-    const loadMore = page.getByRole("button", { name: "Load more workouts" });
-    await loadMore.click();
-    await expect(
-      page.getByRole("button", { name: "Loading more workouts" }),
-    ).toBeDisabled();
+    const more = page.locator('[data-slot="list-more"] button');
+    await expect(more).toHaveText("Show 8 more");
+    await more.click();
+    await expect(more).toBeDisabled();
     releaseSecondPage();
 
     await expect(
-      page.locator('a[href="/insights/workouts/workout-101"]'),
+      page.locator('a[href="/insights/workouts/workout-9"]'),
     ).toHaveCount(1);
     await expect(
-      page.locator('a[href="/insights/workouts/workout-100"]'),
+      page.locator('a[href="/insights/workouts/workout-8"]'),
     ).toHaveCount(1);
-    await expect(rows).toHaveCount(199);
+    await expect(rows).toHaveCount(15);
 
-    await page.getByRole("button", { name: "Load more workouts" }).click();
+    await expect(more).toHaveText("Show 2 more");
+    await more.click();
     await expect(
-      page.locator('a[href="/insights/workouts/workout-201"]'),
+      page.locator('a[href="/insights/workouts/workout-17"]'),
     ).toHaveCount(1);
-    await expect(rows).toHaveCount(201);
-    await expect(
-      page.getByRole("button", { name: "Load more workouts" }),
-    ).toHaveCount(0);
-    expect(observedOffsets).toEqual([0, 100, 200]);
+    await expect(rows).toHaveCount(17);
+    await expect(page.locator('[data-slot="list-more"]')).toHaveCount(0);
+    expect(observedOffsets).toEqual([0, 8, 16]);
   });
 });

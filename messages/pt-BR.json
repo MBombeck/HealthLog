@@ -4157,11 +4157,8 @@
     "navRecovery": "Pontuações do dispositivo",
     "workouts": {
       "title": "Treinos",
-      "description": "Corridas, pedaladas, caminhadas e sessões de força recentes, deduplicadas entre as fontes Apple Watch e Withings.",
       "emptyState": {
-        "title": "Ainda não há treinos",
-        "description": "Os treinos sincronizam do Apple Health no seu iPhone e da Withings. Você também pode registrar um manualmente.",
-        "coachPrefill": "Ainda não registrei treinos. Por que acompanhá-los importa, e no que devo focar primeiro?"
+        "title": "Ainda não há treinos"
       },
       "detail": {
         "backToList": "Voltar aos treinos",
@@ -4242,7 +4239,6 @@
         "other": "Outro"
       },
       "loadError": "Não foi possível carregar seus treinos",
-      "loadMore": "Carregar mais treinos",
       "loadingMore": "Carregando mais treinos",
       "loadMoreError": "Não foi possível carregar mais treinos",
       "countOne": "{count} treino",
@@ -4250,7 +4246,6 @@
       "countFew": "{count} treinos",
       "filterLabel": "Filtrar por esporte",
       "filterAll": "Todos os esportes",
-      "filterEmpty": "Não há sessões deste esporte no seu histórico.",
       "manual": {
         "logWorkout": "Registrar treino",
         "sheetTitle": "Registrar treino",
@@ -4284,15 +4279,16 @@
         "editAction": "Editar",
         "updated": "Treino atualizado"
       },
-      "load": {
-        "title": "Carga de treino",
-        "fitness": "Condicionamento",
-        "fatigue": "Fadiga",
-        "form": "Forma",
-        "explainer": "O condicionamento é o seu impulso de treino pela frequência cardíaca em média ao longo de cerca de seis semanas, a fadiga ao longo de cerca de uma semana, e a forma é a diferença entre os dois. Os números comparam você com o seu próprio passado, não com outras pessoas ou outros apps.",
-        "warmingUp": "Com base em {days, plural, one {# dia} other {# dias}} até agora: até completar seis semanas, o condicionamento aparece mais baixo do que é.",
-        "coverage": "{rated} {days, plural, one {do último # dia} other {dos últimos # dias}} puderam ser avaliados. Um dia sem dados de atividade, ou com um treino que não pôde ser pontuado, fica de fora em vez de contar como descanso.",
-        "asOf": "Em {date}, o último dia que pôde ser avaliado."
+      "customize": {
+        "calendar": "Calendário",
+        "calendarShows": "O calendário mostra"
+      },
+      "column": {
+        "workout": "Treino",
+        "distance": "Distância",
+        "energy": "Energia",
+        "pulse": "Pulso",
+        "duration": "Duração"
       }
     },
     "bloodGlucose": {
@@ -15474,26 +15470,15 @@
     }
   },
   "activityCalendar": {
-    "title": "Calendário de atividade",
-    "periodLabel": "Período do calendário",
-    "period": {
-      "week": "Semana",
-      "month": "Mês"
-    },
-    "weekRange": "{start} a {end}",
     "previous": "Período anterior",
     "next": "Próximo período",
-    "metricLabel": "Colorir os dias por",
     "metric": {
       "steps": "Passos",
       "activeMinutes": "Minutos ativos",
-      "load": "Carga de treino"
+      "load": "Carga de treino",
+      "workouts": "Treinos"
     },
-    "empty": "Ainda não há passos, minutos ativos ou treinos neste período.",
     "loadError": "Não foi possível carregar o calendário de atividade.",
-    "weekGoalsColumn": "Metas semanais",
-    "weekGoalsMet": "Todas as metas semanais cumpridas",
-    "weekGoalsNotMet": "Nem todas as metas semanais cumpridas",
     "cell": {
       "steps": "{value, plural, one {# passo} other {# passos}}",
       "activeMinutes": "{value} minutos ativos",
@@ -15509,19 +15494,7 @@
       "high": "Bem acima do seu habitual",
       "in_progress": "Hoje, ainda em andamento"
     },
-    "legend": "Em comparação com as suas 12 semanas anteriores:",
     "noBaseline": "A sua faixa habitual aparece depois de 14 dias com dados.",
-    "summary": {
-      "steps": "{value, plural, one {# passo} other {# passos}}",
-      "activeMinutes": "{value} minutos ativos",
-      "workouts": "{value} treinos",
-      "load": "Carga de treino média {value}",
-      "usual": "Seu habitual até este ponto: {value}",
-      "noUsual": "Ainda não há semanas ou meses anteriores suficientes para comparar.",
-      "usualThroughYesterday": "Até ontem {value}, seu habitual até então {usual}",
-      "firstDay": "Comparado com o seu habitual quando o primeiro dia terminar."
-    },
-    "sportCount": "{sport}: {count}",
     "goal": {
       "workoutsPerWeek": "Treinos por semana",
       "activeMinutesPerWeek": "Minutos ativos por semana",
@@ -15529,20 +15502,19 @@
       "stepsPerMonth": "Passos por mês"
     },
     "goalOf": "{value} de {target}",
-    "setGoals": "Definir metas",
-    "editGoals": "Alterar metas",
     "goalsSheet": {
-      "title": "Metas de atividade",
-      "description": "Deixe um campo em branco para não ter meta.",
       "none": "Sem meta",
       "invalid": "Um número inteiro de {min} a {max}.",
       "saveError": "Não foi possível salvar as metas."
     },
     "crossLink": {
       "title": "Calendário de atividade",
-      "body": "Seus passos por semana ou por mês, em relação ao seu próprio habitual.",
+      "body": "Seus passos por mês, em relação ao seu próprio habitual.",
       "cta": "Abrir calendário"
-    }
+    },
+    "caption": "Comparado às suas 12 semanas anteriores",
+    "legendLess": "menos",
+    "legendMore": "mais"
   },
   "sourceProvenance": {
     "title": "De onde vêm os valores",
@@ -16207,10 +16179,10 @@
       "fieldsLabel": "O que o link mostra",
       "expiryLabel": "O link termina",
       "expiry": {
-        "none": "Nunca, até revogar",
         "30": "Em 30 dias",
         "365": "Em um ano",
-        "730": "Em dois anos"
+        "730": "Em dois anos",
+        "none": "Nunca, até revogar"
       },
       "create": "Criar o link",
       "qrAlt": "Código QR do link do cartão de emergência",
@@ -16485,5 +16457,25 @@
       "systolicBloodPressure": "Pressão arterial sistólica",
       "diastolicBloodPressure": "Pressão arterial diastólica"
     }
+  },
+  "pageCustomize": {
+    "title": "Personalizar página",
+    "back": "Voltar",
+    "group": {
+      "display": "Exibição",
+      "capture": "Registro",
+      "reminders": "Lembretes",
+      "data": "Dados"
+    },
+    "goals": "Metas",
+    "goalsSet": "{count, plural, one {# definida} other {# definidas}}",
+    "sources": "Fontes",
+    "import": "Importar",
+    "export": "Exportar"
+  },
+  "list": {
+    "showMore": "{count, plural, one {Mostrar mais #} other {Mostrar mais #}}",
+    "noMatches": "Nenhum resultado",
+    "resetFilter": "Limpar filtro"
   }
 }

@@ -4157,11 +4157,8 @@
     "navRecovery": "Wyniki urządzeń",
     "workouts": {
       "title": "Treningi",
-      "description": "Ostatnie biegi, jazdy, marsze i treningi siłowe, zdeduplikowane między Apple Watch a Withings.",
       "emptyState": {
-        "title": "Brak treningów",
-        "description": "Treningi trafiają tu z Apple Zdrowie na iPhonie i z Withings. Możesz też wpisać trening ręcznie.",
-        "coachPrefill": "Nie zapisałem jeszcze treningów. Dlaczego warto je śledzić i na czym powinienem się najpierw skupić?"
+        "title": "Brak treningów"
       },
       "detail": {
         "backToList": "Powrót do treningów",
@@ -4242,7 +4239,6 @@
         "other": "Inne"
       },
       "loadError": "Nie udało się wczytać treningów",
-      "loadMore": "Wczytaj więcej treningów",
       "loadingMore": "Wczytywanie kolejnych treningów",
       "loadMoreError": "Nie udało się wczytać kolejnych treningów",
       "countOne": "{count} trening",
@@ -4250,7 +4246,6 @@
       "countFew": "{count} treningi",
       "filterLabel": "Filtruj według sportu",
       "filterAll": "Wszystkie sporty",
-      "filterEmpty": "Brak treningów tego sportu w Twojej historii.",
       "manual": {
         "logWorkout": "Zarejestruj trening",
         "sheetTitle": "Zarejestruj trening",
@@ -4284,15 +4279,16 @@
         "editAction": "Edytuj",
         "updated": "Trening zaktualizowany"
       },
-      "load": {
-        "title": "Obciążenie treningowe",
-        "fitness": "Wydolność",
-        "fatigue": "Zmęczenie",
-        "form": "Forma",
-        "explainer": "Wydolność to twój bodziec treningowy z tętna uśredniony z około sześciu tygodni, zmęczenie z około tygodnia, a forma to różnica. Liczby porównuje się z twoją własną przeszłością, nie z innymi osobami ani aplikacjami.",
-        "warmingUp": "Na podstawie {days, plural, one {dotychczasowego # dnia} few {dotychczasowych # dni} many {dotychczasowych # dni} other {dotychczasowych # dnia}}: dopóki nie minie sześć tygodni, wydolność wychodzi niższa, niż jest.",
-        "coverage": "Udało się ocenić {rated} z {days, plural, one {ostatniego # dnia} few {ostatnich # dni} many {ostatnich # dni} other {ostatnich # dnia}}. Dzień bez danych o aktywności lub z treningiem, którego nie dało się ocenić, jest pomijany, a nie liczony jako odpoczynek.",
-        "asOf": "Stan na {date}, ostatni dzień, który dało się ocenić."
+      "customize": {
+        "calendar": "Kalendarz",
+        "calendarShows": "Kalendarz pokazuje"
+      },
+      "column": {
+        "workout": "Trening",
+        "distance": "Dystans",
+        "energy": "Energia",
+        "pulse": "Tętno",
+        "duration": "Czas"
       }
     },
     "bloodGlucose": {
@@ -15474,26 +15470,15 @@
     }
   },
   "activityCalendar": {
-    "title": "Kalendarz aktywności",
-    "periodLabel": "Zakres kalendarza",
-    "period": {
-      "week": "Tydzień",
-      "month": "Miesiąc"
-    },
-    "weekRange": "od {start} do {end}",
     "previous": "Poprzedni okres",
     "next": "Następny okres",
-    "metricLabel": "Koloruj dni według",
     "metric": {
       "steps": "Kroki",
       "activeMinutes": "Aktywne minuty",
-      "load": "Obciążenie treningowe"
+      "load": "Obciążenie treningowe",
+      "workouts": "Treningi"
     },
-    "empty": "W tym okresie nie ma jeszcze kroków, aktywnych minut ani treningów.",
     "loadError": "Nie udało się wczytać kalendarza aktywności.",
-    "weekGoalsColumn": "Cele tygodniowe",
-    "weekGoalsMet": "Wszystkie cele tygodniowe osiągnięte",
-    "weekGoalsNotMet": "Nie wszystkie cele tygodniowe osiągnięte",
     "cell": {
       "steps": "{value, plural, one {# krok} few {# kroki} many {# kroków} other {# kroku}}",
       "activeMinutes": "Aktywne minuty: {value}",
@@ -15509,19 +15494,7 @@
       "high": "Znacznie powyżej twojej normy",
       "in_progress": "Dziś, jeszcze trwa"
     },
-    "legend": "W porównaniu z twoimi 12 wcześniejszymi tygodniami:",
     "noBaseline": "Twój zwykły zakres pojawi się po 14 dniach z danymi.",
-    "summary": {
-      "steps": "{value, plural, one {# krok} few {# kroki} many {# kroków} other {# kroku}}",
-      "activeMinutes": "Aktywne minuty: {value}",
-      "workouts": "Treningi: {value}",
-      "load": "Średnie obciążenie treningowe {value}",
-      "usual": "Twoja norma do tego momentu: {value}",
-      "noUsual": "Za mało wcześniejszych tygodni lub miesięcy do porównania.",
-      "usualThroughYesterday": "Do wczoraj {value}, twoja zwykła wartość do tego dnia {usual}",
-      "firstDay": "Porównanie ze zwykłą wartością pojawi się po zakończeniu pierwszego dnia."
-    },
-    "sportCount": "{sport}: {count}",
     "goal": {
       "workoutsPerWeek": "Treningi w tygodniu",
       "activeMinutesPerWeek": "Aktywne minuty w tygodniu",
@@ -15529,20 +15502,19 @@
       "stepsPerMonth": "Kroki w miesiącu"
     },
     "goalOf": "{value} z {target}",
-    "setGoals": "Ustaw cele",
-    "editGoals": "Zmień cele",
     "goalsSheet": {
-      "title": "Cele aktywności",
-      "description": "Zostaw pole puste, jeśli nie chcesz celu.",
       "none": "Brak celu",
       "invalid": "Liczba całkowita od {min} do {max}.",
       "saveError": "Nie udało się zapisać celów."
     },
     "crossLink": {
       "title": "Kalendarz aktywności",
-      "body": "Twoje kroki w tygodniu lub miesiącu na tle twojej normy.",
+      "body": "Twoje kroki w miesiącu na tle twojej normy.",
       "cta": "Otwórz kalendarz"
-    }
+    },
+    "caption": "Względem twoich 12 poprzednich tygodni",
+    "legendLess": "mniej",
+    "legendMore": "więcej"
   },
   "sourceProvenance": {
     "title": "Skąd pochodzą wartości",
@@ -16207,10 +16179,10 @@
       "fieldsLabel": "Co pokazuje link",
       "expiryLabel": "Koniec ważności linku",
       "expiry": {
-        "none": "Nigdy, do cofnięcia",
         "30": "Za 30 dni",
         "365": "Za rok",
-        "730": "Za dwa lata"
+        "730": "Za dwa lata",
+        "none": "Nigdy, do cofnięcia"
       },
       "create": "Utwórz link",
       "qrAlt": "Kod QR do linku karty ratunkowej",
@@ -16485,5 +16457,25 @@
       "systolicBloodPressure": "Ciśnienie skurczowe",
       "diastolicBloodPressure": "Ciśnienie rozkurczowe"
     }
+  },
+  "pageCustomize": {
+    "title": "Dostosuj stronę",
+    "back": "Wstecz",
+    "group": {
+      "display": "Widok",
+      "capture": "Rejestrowanie",
+      "reminders": "Przypomnienia",
+      "data": "Dane"
+    },
+    "goals": "Cele",
+    "goalsSet": "{count, plural, one {# ustawiony} few {# ustawione} many {# ustawionych} other {# ustawione}}",
+    "sources": "Źródła",
+    "import": "Importuj",
+    "export": "Eksportuj"
+  },
+  "list": {
+    "showMore": "{count, plural, one {Pokaż kolejny #} few {Pokaż kolejne #} many {Pokaż kolejnych #} other {Pokaż kolejne #}}",
+    "noMatches": "Brak wyników",
+    "resetFilter": "Wyczyść filtr"
   }
 }

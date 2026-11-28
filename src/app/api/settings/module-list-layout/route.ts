@@ -1,5 +1,6 @@
 /**
- * GET / PUT the list presentation for the labs, illness and checkups lists.
+ * GET / PUT the list presentation for the labs, illness, checkups and
+ * workouts pages.
  *
  * GET returns every list resolved, defaults filled in, with `saved` per list
  * so a client can tell a stored choice from a default. PUT changes one list
@@ -65,8 +66,17 @@ export const PUT = apiHandler(async (request: Request) => {
   });
   if (!parsed.ok) return parsed.error;
 
-  const { list, view, order, sortDir, groupBy, groupsOpen, categoryOrder } =
-    parsed.data;
+  const {
+    list,
+    view,
+    order,
+    sortDir,
+    groupBy,
+    groupsOpen,
+    categoryOrder,
+    summary,
+    summaryMeasure,
+  } = parsed.data;
   // Preserve-when-absent: one stored read fills whichever field the body
   // left out, and every other list stays as stored. Only fields a person has
   // chosen are written, so a field never picked keeps following the default.
@@ -81,6 +91,8 @@ export const PUT = apiHandler(async (request: Request) => {
       ...(groupBy ? { groupBy } : {}),
       ...(groupsOpen ? { groupsOpen } : {}),
       ...(categoryOrder ? { categoryOrder: [...new Set(categoryOrder)] } : {}),
+      ...(summary !== undefined ? { summary } : {}),
+      ...(summaryMeasure ? { summaryMeasure } : {}),
     };
     const next = { ...stored, [list]: nextChoices };
     await tx.user.update({
@@ -101,6 +113,8 @@ export const PUT = apiHandler(async (request: Request) => {
       groupsOpen: layout.lists[list].groupsOpen,
       orderLength: layout.lists[list].order.length,
       categoryOrderLength: layout.lists[list].categoryOrder.length,
+      summary: layout.lists[list].summary,
+      summaryMeasure: layout.lists[list].summaryMeasure,
     },
   });
   return apiSuccess(layout);

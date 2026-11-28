@@ -857,7 +857,7 @@ const INSIGHTS_ROUTES: readonly RouteCase[] = [
     painted: (page) =>
       page
         .locator(
-          '#main-content [data-slot="workout-list"], #main-content [data-slot="empty-state"]',
+          '#main-content [data-slot="workout-list"], #main-content [data-slot="workouts-empty"]',
         )
         .first(),
   },

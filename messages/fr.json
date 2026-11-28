@@ -4157,11 +4157,8 @@
     "navRecovery": "Scores des appareils",
     "workouts": {
       "title": "Entraînements",
-      "description": "Courses, sorties à vélo, marches et séances de musculation récentes, dédupliquées entre Apple Watch et Withings.",
       "emptyState": {
-        "title": "Aucun entraînement",
-        "description": "Vos entraînements arrivent d'Apple Santé sur l'iPhone et de Withings. Vous pouvez aussi en saisir un à la main.",
-        "coachPrefill": "Je n’ai pas encore enregistré d’entraînement. Pourquoi les suivre, et sur quoi me concentrer en premier ?"
+        "title": "Aucun entraînement"
       },
       "detail": {
         "backToList": "Retour aux entraînements",
@@ -4242,7 +4239,6 @@
         "other": "Autre"
       },
       "loadError": "Vos séances n'ont pas pu être chargées",
-      "loadMore": "Charger plus de séances",
       "loadingMore": "Chargement de séances supplémentaires",
       "loadMoreError": "Les séances supplémentaires n'ont pas pu être chargées",
       "countOne": "{count} séance",
@@ -4250,7 +4246,6 @@
       "countFew": "{count} séances",
       "filterLabel": "Filtrer par sport",
       "filterAll": "Tous les sports",
-      "filterEmpty": "Aucune séance de ce sport dans votre historique.",
       "manual": {
         "logWorkout": "Saisir un entraînement",
         "sheetTitle": "Saisir un entraînement",
@@ -4284,15 +4279,16 @@
         "editAction": "Modifier",
         "updated": "Entraînement mis à jour"
       },
-      "load": {
-        "title": "Charge d'entraînement",
-        "fitness": "Condition",
-        "fatigue": "Fatigue",
-        "form": "Fraîcheur",
-        "explainer": "La condition est votre impulsion d'entraînement par fréquence cardiaque moyennée sur environ six semaines, la fatigue sur environ une semaine, et la fraîcheur est la différence. Les chiffres se comparent à votre propre passé, pas à d'autres personnes ni à d'autres apps.",
-        "warmingUp": "Sur {days, plural, one {# jour} other {# jours}} pour l'instant : tant que six semaines ne sont pas couvertes, la condition paraît plus basse qu'elle ne l'est.",
-        "coverage": "{rated} {days, plural, =1 {du dernier jour} other {des # derniers jours}} ont pu être évalués. Un jour sans données d'activité, ou avec un entraînement qui n'a pas pu être évalué, est écarté au lieu de compter comme repos.",
-        "asOf": "Au {date}, le dernier jour qui a pu être évalué."
+      "customize": {
+        "calendar": "Calendrier",
+        "calendarShows": "Le calendrier affiche"
+      },
+      "column": {
+        "workout": "Séance",
+        "distance": "Distance",
+        "energy": "Énergie",
+        "pulse": "Pouls",
+        "duration": "Durée"
       }
     },
     "bloodGlucose": {
@@ -15474,26 +15470,15 @@
     }
   },
   "activityCalendar": {
-    "title": "Calendrier d'activité",
-    "periodLabel": "Période du calendrier",
-    "period": {
-      "week": "Semaine",
-      "month": "Mois"
-    },
-    "weekRange": "{start} au {end}",
     "previous": "Période précédente",
     "next": "Période suivante",
-    "metricLabel": "Colorer les jours selon",
     "metric": {
       "steps": "Pas",
       "activeMinutes": "Minutes actives",
-      "load": "Charge d'entraînement"
+      "load": "Charge d'entraînement",
+      "workouts": "Séances"
     },
-    "empty": "Aucun pas, aucune minute active ni aucun entraînement sur cette période pour l'instant.",
     "loadError": "Le calendrier d'activité n'a pas pu être chargé.",
-    "weekGoalsColumn": "Objectifs hebdomadaires",
-    "weekGoalsMet": "Tous les objectifs hebdomadaires atteints",
-    "weekGoalsNotMet": "Objectifs hebdomadaires pas tous atteints",
     "cell": {
       "steps": "{value, plural, one {# pas} other {# pas}}",
       "activeMinutes": "{value} minutes actives",
@@ -15509,19 +15494,7 @@
       "high": "Bien au-dessus de votre habitude",
       "in_progress": "Aujourd’hui, en cours"
     },
-    "legend": "Comparé à vos 12 semaines précédentes :",
     "noBaseline": "Votre plage habituelle apparaît après 14 jours avec des données.",
-    "summary": {
-      "steps": "{value, plural, one {# pas} other {# pas}}",
-      "activeMinutes": "{value} minutes actives",
-      "workouts": "{value} entraînements",
-      "load": "Charge d'entraînement moyenne {value}",
-      "usual": "Votre habitude à ce stade : {value}",
-      "noUsual": "Pas encore assez de semaines ou de mois précédents pour comparer.",
-      "usualThroughYesterday": "Jusqu’à hier {value}, votre habitude à ce stade {usual}",
-      "firstDay": "Comparé à votre habitude dès que le premier jour est terminé."
-    },
-    "sportCount": "{sport} : {count}",
     "goal": {
       "workoutsPerWeek": "Entraînements par semaine",
       "activeMinutesPerWeek": "Minutes actives par semaine",
@@ -15529,20 +15502,19 @@
       "stepsPerMonth": "Pas par mois"
     },
     "goalOf": "{value} sur {target}",
-    "setGoals": "Définir des objectifs",
-    "editGoals": "Modifier les objectifs",
     "goalsSheet": {
-      "title": "Objectifs d'activité",
-      "description": "Laissez un champ vide pour ne pas fixer d'objectif.",
       "none": "Aucun objectif",
       "invalid": "Un nombre entier de {min} à {max}.",
       "saveError": "Les objectifs n'ont pas pu être enregistrés."
     },
     "crossLink": {
       "title": "Calendrier d'activité",
-      "body": "Vos pas par semaine ou par mois, comparés à votre habitude.",
+      "body": "Vos pas par mois, comparés à votre habitude.",
       "cta": "Ouvrir le calendrier"
-    }
+    },
+    "caption": "Par rapport à vos 12 semaines précédentes",
+    "legendLess": "moins",
+    "legendMore": "plus"
   },
   "sourceProvenance": {
     "title": "D'où viennent les valeurs",
@@ -16207,10 +16179,10 @@
       "fieldsLabel": "Ce que le lien affiche",
       "expiryLabel": "Fin du lien",
       "expiry": {
-        "none": "Jamais, jusqu'à révocation",
         "30": "Dans 30 jours",
         "365": "Dans un an",
-        "730": "Dans deux ans"
+        "730": "Dans deux ans",
+        "none": "Jamais, jusqu'à révocation"
       },
       "create": "Créer le lien",
       "qrAlt": "Code QR du lien vers la carte d'urgence",
@@ -16485,5 +16457,25 @@
       "systolicBloodPressure": "Tension artérielle systolique",
       "diastolicBloodPressure": "Tension artérielle diastolique"
     }
+  },
+  "pageCustomize": {
+    "title": "Personnaliser la page",
+    "back": "Retour",
+    "group": {
+      "display": "Affichage",
+      "capture": "Saisie",
+      "reminders": "Rappels",
+      "data": "Données"
+    },
+    "goals": "Objectifs",
+    "goalsSet": "{count, plural, one {# défini} other {# définis}}",
+    "sources": "Sources",
+    "import": "Importer",
+    "export": "Exporter"
+  },
+  "list": {
+    "showMore": "{count, plural, one {Afficher # de plus} other {Afficher # de plus}}",
+    "noMatches": "Aucun résultat",
+    "resetFilter": "Réinitialiser le filtre"
   }
 }

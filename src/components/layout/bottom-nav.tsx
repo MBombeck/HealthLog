@@ -29,6 +29,7 @@ import {
 import {
   CAPTURE_KIND_ORDER,
   CapturePicker,
+  captureKindForPath,
   visibleCaptureKinds,
 } from "@/components/layout/capture-picker";
 import { cn } from "@/lib/utils";
@@ -71,6 +72,18 @@ const PRIMARY_LEFT: ReadonlyArray<NavLink> = [
 const PRIMARY_RIGHT: ReadonlyArray<NavLink> = [
   { href: "/insights", tKey: "nav.insights", icon: ICON.insights },
 ];
+
+/**
+ * The tab bar's capture: on a domain page it opens that page's form directly
+ * (`captureKindForPath`), everywhere else the chooser.
+ */
+function TabBarCapture(props: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const pathname = usePathname();
+  return <CapturePicker {...props} direct={captureKindForPath(pathname)} />;
+}
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -260,7 +273,7 @@ export function BottomNav() {
         </div>
       </nav>
 
-      <CapturePicker open={captureOpen} onOpenChange={setCaptureOpen} />
+      <TabBarCapture open={captureOpen} onOpenChange={setCaptureOpen} />
 
       <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
         <SheetContent

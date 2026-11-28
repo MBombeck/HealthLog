@@ -22,6 +22,8 @@ let mockModulePrefs: ModuleListPrefs = {
   groupBy: "none",
   groupsOpen: "expanded",
   categoryOrder: [],
+  summary: true,
+  summaryMeasure: "steps",
 };
 
 const displayZone = vi.hoisted(() => ({ current: "UTC" }));
@@ -88,6 +90,8 @@ describe("<LabList>", () => {
       groupBy: "none",
       groupsOpen: "expanded",
       categoryOrder: [],
+      summary: true,
+      summaryMeasure: "steps",
     };
   });
 
@@ -188,6 +192,8 @@ describe("<LabList>", () => {
       groupBy: "category",
       groupsOpen: "expanded",
       categoryOrder: [],
+      summary: true,
+      summaryMeasure: "steps",
     };
 
     const queryClient = new QueryClient({
@@ -262,6 +268,8 @@ describe("<LabList>", () => {
       groupBy: "none",
       groupsOpen: "expanded",
       categoryOrder: [],
+      summary: true,
+      summaryMeasure: "steps",
     };
 
     const queryClient = new QueryClient({

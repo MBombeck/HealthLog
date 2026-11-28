@@ -235,4 +235,161 @@ function ListItem({
   );
 }
 
-export { ListGroup, ListItem, ListRow };
+/**
+ * The heading row above a group (domain page template, zone 4): the group's
+ * name and its count on the left, the one filter control on the right. The
+ * count appears here and nowhere else on the page.
+ */
+function ListHeading({
+  title,
+  count,
+  action,
+  className,
+  id,
+}: {
+  title: React.ReactNode;
+  count?: React.ReactNode;
+  /** The one filter control (`MenuSelect`, or a "Filter" button). */
+  action?: React.ReactNode;
+  className?: string;
+  id?: string;
+}) {
+  return (
+    <div
+      data-slot="list-heading"
+      className={cn(
+        "flex min-h-9 items-center justify-between gap-3",
+        className,
+      )}
+    >
+      <h2 id={id} className="min-w-0 truncate text-base font-semibold">
+        {title}
+        {count !== undefined ? (
+          <span
+            data-slot="list-heading-count"
+            className="text-muted-foreground ml-2 font-normal tabular-nums"
+          >
+            {count}
+          </span>
+        ) : null}
+      </h2>
+      {action ? (
+        <div className="flex shrink-0 items-center">{action}</div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Columns of a row on a wide screen: the same row gains them, it does not
+ * become a table of its own. Each cell is a fixed width, right-aligned, so a
+ * group's cells and its `ListHead` stand on the same lines. Hidden on a
+ * phone, where the row keeps its one trailing value.
+ */
+function ListColumns({
+  cells,
+  className,
+}: {
+  cells: ReadonlyArray<{
+    key: string;
+    content: React.ReactNode;
+    strong?: boolean;
+  }>;
+  className?: string;
+}) {
+  return (
+    <div
+      data-slot="list-columns"
+      className={cn("hidden items-center md:flex", className)}
+    >
+      {cells.map((cell) => (
+        <span
+          key={cell.key}
+          data-column={cell.key}
+          className={cn(
+            "w-28 truncate text-right text-sm whitespace-nowrap tabular-nums",
+            cell.strong
+              ? "text-foreground font-semibold"
+              : "text-muted-foreground font-normal",
+          )}
+        >
+          {cell.content}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * The quiet column head of a group on a wide screen: the title column's name
+ * over the row titles, then one name per `ListColumns` cell.
+ */
+function ListHead({
+  title,
+  columns,
+  withIcon = true,
+}: {
+  title: React.ReactNode;
+  columns: ReadonlyArray<{ key: string; label: React.ReactNode }>;
+  /** Whether the rows carry an icon tile the title column starts after. */
+  withIcon?: boolean;
+}) {
+  return (
+    <li
+      data-slot="list-head"
+      aria-hidden="true"
+      className="text-muted-foreground hidden min-h-11 items-center gap-2.5 px-4 text-xs md:flex"
+    >
+      {withIcon ? <span className="size-8 shrink-0" /> : null}
+      <span className="min-w-0 flex-1 truncate">{title}</span>
+      <span className="flex items-center">
+        {columns.map((column) => (
+          <span key={column.key} className="w-28 truncate text-right">
+            {column.label}
+          </span>
+        ))}
+      </span>
+    </li>
+  );
+}
+
+/**
+ * The last row of a group that shows only part of its records: "Weitere n
+ * zeigen". No pagination bar.
+ */
+function ListMoreRow({
+  label,
+  onSelect,
+  busy = false,
+  error,
+}: {
+  label: string;
+  onSelect: () => void;
+  busy?: boolean;
+  /** Said in the row when the last attempt failed; the row retries. */
+  error?: string;
+}) {
+  return (
+    <li data-slot="list-more">
+      <button
+        type="button"
+        onClick={onSelect}
+        disabled={busy}
+        aria-busy={busy || undefined}
+        className="text-muted-foreground hover:bg-muted/40 hover:text-foreground focus-visible:ring-ring/50 flex min-h-12 w-full items-center justify-center px-4 text-sm transition-colors focus-visible:ring-[3px] focus-visible:outline-none focus-visible:ring-inset disabled:opacity-60"
+      >
+        {error ?? label}
+      </button>
+    </li>
+  );
+}
+
+export {
+  ListColumns,
+  ListGroup,
+  ListHead,
+  ListHeading,
+  ListItem,
+  ListMoreRow,
+  ListRow,
+};

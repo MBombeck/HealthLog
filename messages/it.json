@@ -4157,11 +4157,8 @@
     "navRecovery": "Punteggi del dispositivo",
     "workouts": {
       "title": "Allenamenti",
-      "description": "Corse, uscite in bici, camminate e sessioni di forza recenti, deduplicati tra Apple Watch e Withings.",
       "emptyState": {
-        "title": "Nessun allenamento",
-        "description": "Gli allenamenti arrivano da Salute di Apple sull'iPhone e da Withings. Puoi anche registrarne uno a mano.",
-        "coachPrefill": "Non ho ancora registrato allenamenti. Perché conta monitorarli e su cosa dovrei concentrarmi per primo?"
+        "title": "Nessun allenamento"
       },
       "detail": {
         "backToList": "Torna agli allenamenti",
@@ -4242,7 +4239,6 @@
         "other": "Altro"
       },
       "loadError": "Non è stato possibile caricare i tuoi allenamenti",
-      "loadMore": "Carica altri allenamenti",
       "loadingMore": "Caricamento di altri allenamenti",
       "loadMoreError": "Non è stato possibile caricare altri allenamenti",
       "countOne": "{count} allenamento",
@@ -4250,7 +4246,6 @@
       "countFew": "{count} allenamenti",
       "filterLabel": "Filtra per sport",
       "filterAll": "Tutti gli sport",
-      "filterEmpty": "Nessuna sessione di questo sport nella tua cronologia.",
       "manual": {
         "logWorkout": "Registra allenamento",
         "sheetTitle": "Registra allenamento",
@@ -4284,15 +4279,16 @@
         "editAction": "Modifica",
         "updated": "Allenamento aggiornato"
       },
-      "load": {
-        "title": "Carico di allenamento",
-        "fitness": "Forma di base",
-        "fatigue": "Affaticamento",
-        "form": "Freschezza",
-        "explainer": "La forma di base è il tuo impulso di allenamento dalla frequenza cardiaca mediato su circa sei settimane, l'affaticamento su circa una settimana, e la freschezza è la differenza. I numeri si confrontano con il tuo passato, non con altre persone o altre app.",
-        "warmingUp": "Su {days, plural, one {# giorno} other {# giorni}} finora: finché non sono coperte sei settimane, la forma di base risulta più bassa di quanto sia.",
-        "coverage": "{rated} {days, plural, =1 {dell'ultimo giorno} other {degli ultimi # giorni}} sono stati valutati. Un giorno senza dati di attività, o con un allenamento che non è stato possibile valutare, viene escluso invece di contare come riposo.",
-        "asOf": "Al {date}, l'ultimo giorno che è stato possibile valutare."
+      "customize": {
+        "calendar": "Calendario",
+        "calendarShows": "Il calendario mostra"
+      },
+      "column": {
+        "workout": "Allenamento",
+        "distance": "Distanza",
+        "energy": "Energia",
+        "pulse": "Polso",
+        "duration": "Durata"
       }
     },
     "bloodGlucose": {
@@ -15474,26 +15470,15 @@
     }
   },
   "activityCalendar": {
-    "title": "Calendario attività",
-    "periodLabel": "Periodo del calendario",
-    "period": {
-      "week": "Settimana",
-      "month": "Mese"
-    },
-    "weekRange": "dal {start} al {end}",
     "previous": "Periodo precedente",
     "next": "Periodo successivo",
-    "metricLabel": "Colora i giorni per",
     "metric": {
       "steps": "Passi",
       "activeMinutes": "Minuti attivi",
-      "load": "Carico di allenamento"
+      "load": "Carico di allenamento",
+      "workouts": "Allenamenti"
     },
-    "empty": "Ancora nessun passo, minuto attivo o allenamento in questo periodo.",
     "loadError": "Impossibile caricare il calendario attività.",
-    "weekGoalsColumn": "Obiettivi settimanali",
-    "weekGoalsMet": "Tutti gli obiettivi settimanali raggiunti",
-    "weekGoalsNotMet": "Non tutti gli obiettivi settimanali raggiunti",
     "cell": {
       "steps": "{value, plural, one {# passo} other {# passi}}",
       "activeMinutes": "{value} minuti attivi",
@@ -15509,19 +15494,7 @@
       "high": "Molto sopra il tuo solito",
       "in_progress": "Oggi, ancora in corso"
     },
-    "legend": "Rispetto alle tue 12 settimane precedenti:",
     "noBaseline": "Il tuo intervallo abituale compare dopo 14 giorni con dati.",
-    "summary": {
-      "steps": "{value, plural, one {# passo} other {# passi}}",
-      "activeMinutes": "{value} minuti attivi",
-      "workouts": "{value} allenamenti",
-      "load": "Carico di allenamento medio {value}",
-      "usual": "Il tuo solito fino a questo punto: {value}",
-      "noUsual": "Non ci sono ancora abbastanza settimane o mesi precedenti per un confronto.",
-      "usualThroughYesterday": "Fino a ieri {value}, il tuo solito fino a quel punto {usual}",
-      "firstDay": "Il confronto con il tuo solito arriva quando il primo giorno è finito."
-    },
-    "sportCount": "{sport}: {count}",
     "goal": {
       "workoutsPerWeek": "Allenamenti a settimana",
       "activeMinutesPerWeek": "Minuti attivi a settimana",
@@ -15529,20 +15502,19 @@
       "stepsPerMonth": "Passi al mese"
     },
     "goalOf": "{value} di {target}",
-    "setGoals": "Imposta obiettivi",
-    "editGoals": "Modifica obiettivi",
     "goalsSheet": {
-      "title": "Obiettivi di attività",
-      "description": "Lascia vuoto un campo per non avere un obiettivo.",
       "none": "Nessun obiettivo",
       "invalid": "Un numero intero da {min} a {max}.",
       "saveError": "Impossibile salvare gli obiettivi."
     },
     "crossLink": {
       "title": "Calendario attività",
-      "body": "I tuoi passi per settimana o per mese, rispetto al tuo solito.",
+      "body": "I tuoi passi per mese, rispetto al tuo solito.",
       "cta": "Apri il calendario"
-    }
+    },
+    "caption": "Rispetto alle tue 12 settimane precedenti",
+    "legendLess": "meno",
+    "legendMore": "più"
   },
   "sourceProvenance": {
     "title": "Da dove vengono i valori",
@@ -16207,10 +16179,10 @@
       "fieldsLabel": "Cosa mostra il link",
       "expiryLabel": "Scadenza del link",
       "expiry": {
-        "none": "Mai, fino alla revoca",
         "30": "Tra 30 giorni",
         "365": "Tra un anno",
-        "730": "Tra due anni"
+        "730": "Tra due anni",
+        "none": "Mai, fino alla revoca"
       },
       "create": "Crea il link",
       "qrAlt": "Codice QR del link alla tessera di emergenza",
@@ -16485,5 +16457,25 @@
       "systolicBloodPressure": "Pressione arteriosa sistolica",
       "diastolicBloodPressure": "Pressione arteriosa diastolica"
     }
+  },
+  "pageCustomize": {
+    "title": "Personalizza pagina",
+    "back": "Indietro",
+    "group": {
+      "display": "Visualizzazione",
+      "capture": "Registrazione",
+      "reminders": "Promemoria",
+      "data": "Dati"
+    },
+    "goals": "Obiettivi",
+    "goalsSet": "{count, plural, one {# impostato} other {# impostati}}",
+    "sources": "Fonti",
+    "import": "Importa",
+    "export": "Esporta"
+  },
+  "list": {
+    "showMore": "{count, plural, one {Mostra altro #} other {Mostra altri #}}",
+    "noMatches": "Nessun risultato",
+    "resetFilter": "Reimposta filtro"
   }
 }

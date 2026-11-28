@@ -82,6 +82,12 @@ const periodComparisonSchema = z
         "The usual figure for the completed days (today excluded); equals `usual` once the period is over, null before the period's first day has ended.",
       ),
     referencePeriods: z.number().int(),
+    change: z
+      .number()
+      .nullable()
+      .describe(
+        "`completedValue` against `usualToDate` as a signed fraction (0.18 = 18 % above the usual). Null while either is null or the usual is zero. A client shows it as given.",
+      ),
   })
   .meta({ id: "ActivityPeriodComparison" });
 

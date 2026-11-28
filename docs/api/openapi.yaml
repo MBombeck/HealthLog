@@ -39211,6 +39211,7 @@ components:
             - labs
             - illness
             - vorsorge
+            - workouts
         view:
           type: string
           enum:
@@ -39249,6 +39250,14 @@ components:
             type: string
             minLength: 1
             maxLength: 64
+        summary:
+          type: boolean
+        summaryMeasure:
+          type: string
+          enum:
+            - steps
+            - activeMinutes
+            - load
       required:
         - version
         - list
@@ -62180,6 +62189,29 @@ components:
           description: v1.44 — on the first page (`offset=0`) only, account-wide whatever the filter. Absent on later pages and
             older servers.
           $ref: "#/components/schemas/WorkoutTrainingLoad"
+        sports:
+          description: "The sports of the whole deduped history whatever the filter, most frequent first: the vocabulary of a
+            sport filter. First page only; absent on later pages and older servers."
+          type: array
+          items:
+            type: object
+            properties:
+              sportType:
+                type: string
+              count:
+                type: integer
+                exclusiveMinimum: 0
+                maximum: 9007199254740991
+            required:
+              - sportType
+              - count
+            additionalProperties: false
+        sources:
+          description: The sources the deduped history comes from, most frequent first. First page only; absent on later pages and
+            older servers.
+          type: array
+          items:
+            type: string
       required:
         - workouts
         - meta
@@ -63475,6 +63507,12 @@ components:
           type: integer
           minimum: -9007199254740991
           maximum: 9007199254740991
+        change:
+          description: "`completedValue` against `usualToDate` as a signed fraction (0.18 = 18 % above the usual). Null while
+            either is null or the usual is zero. A client shows it as given."
+          type:
+            - number
+            - "null"
       required:
         - value
         - daysWithData
@@ -63483,6 +63521,7 @@ components:
         - usual
         - usualToDate
         - referencePeriods
+        - change
       additionalProperties: false
     ActivityGoals:
       type: object
@@ -88309,17 +88348,20 @@ components:
               $ref: "#/components/schemas/ModuleListPrefs"
             vorsorge:
               $ref: "#/components/schemas/ModuleListPrefs"
+            workouts:
+              $ref: "#/components/schemas/ModuleListPrefs"
           required:
             - labs
             - illness
             - vorsorge
+            - workouts
           additionalProperties: false
       required:
         - version
         - lists
       additionalProperties: false
-      description: Per-user presentation of the labs, illness and checkups lists. Display-only; a client that does not render
-        a list ignores it.
+      description: Per-user presentation of the labs, illness, checkups and workouts pages. Display-only; a client that does
+        not render a list ignores it.
     ModuleListPrefs:
       type: object
       properties:
@@ -88369,6 +88411,19 @@ components:
             from the live data are ignored; a category missing from the list follows the listed ones in the default
             order, and "other" left at the end of the list stays last. Default empty (the default order). The other
             lists ignore it.
+        summary:
+          type: boolean
+          description: Whether the page shows its summary card (on the workouts page, the activity calendar). Default true. The
+            lists without a summary ignore it.
+        summaryMeasure:
+          type: string
+          enum:
+            - steps
+            - activeMinutes
+            - load
+          description: 'What the summary card shows: the activity calendar colours its days by steps, active minutes or training
+            load. Default "steps"; a measure the account has no data for falls back to the first it has. Only the
+            workouts page reads it.'
         saved:
           type: boolean
           description: True when the server holds a choice for this list; false means every field is a default.
@@ -88379,6 +88434,8 @@ components:
         - groupBy
         - groupsOpen
         - categoryOrder
+        - summary
+        - summaryMeasure
         - saved
       additionalProperties: false
     ModuleListLayoutSavedEnvelope:

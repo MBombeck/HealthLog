@@ -4157,11 +4157,8 @@
     "navRecovery": "기기 점수",
     "workouts": {
       "title": "운동",
-      "description": "최근 달리기, 자전거, 걷기, 근력 운동 세션이에요. Apple Watch와 Withings 소스 사이 중복은 정리했어요.",
       "emptyState": {
-        "title": "아직 운동 기록이 없어요",
-        "description": "운동은 iPhone의 Apple Health와 Withings에서 동기화돼요. 직접 기록할 수도 있어요.",
-        "coachPrefill": "아직 운동을 기록한 적이 없어요. 운동 기록이 왜 중요하고, 무엇부터 신경 써야 하나요?"
+        "title": "아직 운동 기록이 없어요"
       },
       "detail": {
         "backToList": "운동으로 돌아가기",
@@ -4242,7 +4239,6 @@
         "other": "기타"
       },
       "loadError": "운동을 불러오지 못했어요",
-      "loadMore": "운동 더 불러오기",
       "loadingMore": "운동을 더 불러오는 중",
       "loadMoreError": "운동을 더 불러오지 못했어요",
       "countOne": "운동 {count}개",
@@ -4250,7 +4246,6 @@
       "countFew": "운동 {count}개",
       "filterLabel": "종목별 필터",
       "filterAll": "전체 종목",
-      "filterEmpty": "기록에 이 종목의 세션이 없어요.",
       "manual": {
         "logWorkout": "운동 기록",
         "sheetTitle": "운동 기록",
@@ -4284,15 +4279,16 @@
         "editAction": "편집",
         "updated": "운동을 업데이트했습니다"
       },
-      "load": {
-        "title": "훈련 부하",
-        "fitness": "체력",
-        "fatigue": "피로",
-        "form": "컨디션",
-        "explainer": "체력은 심박 기반 훈련 자극을 약 6주 동안, 피로는 약 1주 동안 평균한 값이고, 컨디션은 그 차이입니다. 이 숫자는 다른 사람이나 다른 앱이 아니라 내 과거와 비교하는 값입니다.",
-        "warmingUp": "지금까지 {days, plural, other {#일}} 기준: 6주가 채워질 때까지는 체력이 실제보다 낮게 나옵니다.",
-        "coverage": "최근 {days, plural, other {#일}} 중 {rated}일을 평가할 수 있었습니다. 활동 데이터가 없는 날이나 평가할 수 없는 운동이 있는 날은 휴식일로 세지 않고 제외합니다.",
-        "asOf": "{date} 기준, 평가할 수 있었던 마지막 날입니다."
+      "customize": {
+        "calendar": "캘린더",
+        "calendarShows": "캘린더 표시 항목"
+      },
+      "column": {
+        "workout": "운동",
+        "distance": "거리",
+        "energy": "에너지",
+        "pulse": "맥박",
+        "duration": "시간"
       }
     },
     "bloodGlucose": {
@@ -15474,26 +15470,15 @@
     }
   },
   "activityCalendar": {
-    "title": "활동 캘린더",
-    "periodLabel": "캘린더 기간",
-    "period": {
-      "week": "주",
-      "month": "월"
-    },
-    "weekRange": "{start} ~ {end}",
     "previous": "이전 기간",
     "next": "다음 기간",
-    "metricLabel": "날짜 색상 기준",
     "metric": {
       "steps": "걸음 수",
       "activeMinutes": "활동 시간(분)",
-      "load": "운동 부하"
+      "load": "운동 부하",
+      "workouts": "운동"
     },
-    "empty": "이 기간에는 아직 걸음 수, 활동 시간, 운동 기록이 없습니다.",
     "loadError": "활동 캘린더를 불러오지 못했습니다.",
-    "weekGoalsColumn": "주간 목표",
-    "weekGoalsMet": "주간 목표를 모두 달성함",
-    "weekGoalsNotMet": "주간 목표를 모두 달성하지는 못함",
     "cell": {
       "steps": "{value, plural, other {#걸음}}",
       "activeMinutes": "활동 {value}분",
@@ -15509,19 +15494,7 @@
       "high": "평소보다 훨씬 많음",
       "in_progress": "오늘, 아직 진행 중"
     },
-    "legend": "이전 12주와 비교:",
     "noBaseline": "데이터가 있는 날이 14일이 되면 평소 범위가 표시됩니다.",
-    "summary": {
-      "steps": "{value, plural, other {#걸음}}",
-      "activeMinutes": "활동 {value}분",
-      "workouts": "운동 {value}회",
-      "load": "평균 운동 부하 {value}",
-      "usual": "이 시점까지의 평소 값: {value}",
-      "noUsual": "비교할 이전 주나 달이 아직 충분하지 않습니다.",
-      "usualThroughYesterday": "어제까지 {value}, 그때까지의 평소 {usual}",
-      "firstDay": "첫날이 끝나면 평소와 비교합니다."
-    },
-    "sportCount": "{sport}: {count}",
     "goal": {
       "workoutsPerWeek": "주당 운동 횟수",
       "activeMinutesPerWeek": "주당 활동 시간(분)",
@@ -15529,20 +15502,19 @@
       "stepsPerMonth": "월간 걸음 수"
     },
     "goalOf": "{target} 중 {value}",
-    "setGoals": "목표 설정",
-    "editGoals": "목표 변경",
     "goalsSheet": {
-      "title": "활동 목표",
-      "description": "목표를 두지 않으려면 칸을 비워 두세요.",
       "none": "목표 없음",
       "invalid": "{min}부터 {max}까지의 정수를 입력하세요.",
       "saveError": "목표를 저장하지 못했습니다."
     },
     "crossLink": {
       "title": "활동 캘린더",
-      "body": "주 또는 월 단위의 걸음 수를 내 평소 값과 비교합니다.",
+      "body": "월 단위의 걸음 수를 내 평소 값과 비교합니다.",
       "cta": "캘린더 열기"
-    }
+    },
+    "caption": "직전 12주 대비",
+    "legendLess": "적음",
+    "legendMore": "많음"
   },
   "sourceProvenance": {
     "title": "값의 출처",
@@ -16207,10 +16179,10 @@
       "fieldsLabel": "링크에 표시할 항목",
       "expiryLabel": "링크 만료",
       "expiry": {
-        "none": "철회할 때까지 유지",
         "30": "30일 후",
         "365": "1년 후",
-        "730": "2년 후"
+        "730": "2년 후",
+        "none": "철회할 때까지 유지"
       },
       "create": "링크 만들기",
       "qrAlt": "응급 카드 링크 QR 코드",
@@ -16485,5 +16457,25 @@
       "systolicBloodPressure": "수축기 혈압",
       "diastolicBloodPressure": "이완기 혈압"
     }
+  },
+  "pageCustomize": {
+    "title": "페이지 맞춤 설정",
+    "back": "뒤로",
+    "group": {
+      "display": "표시",
+      "capture": "기록",
+      "reminders": "알림",
+      "data": "데이터"
+    },
+    "goals": "목표",
+    "goalsSet": "{count, plural, other {#개 설정됨}}",
+    "sources": "소스",
+    "import": "가져오기",
+    "export": "내보내기"
+  },
+  "list": {
+    "showMore": "{count, plural, other {#개 더 보기}}",
+    "noMatches": "결과 없음",
+    "resetFilter": "필터 초기화"
   }
 }

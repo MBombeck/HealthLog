@@ -10,8 +10,7 @@ import { InfoPopover } from "@/components/ui/info-popover";
 import { Button } from "@/components/ui/button";
 import { TargetAdjustButton } from "@/components/insights/target-adjust-button";
 import { TargetAdjustProvider } from "@/lib/insights/target-adjust-context";
-import { metricScopeFromExplainer } from "@/components/insights/coach-metric-scope";
-import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
+import { useCoachMetricScope } from "@/components/insights/use-coach-metric-scope";
 import { useScrollResetOnRoute } from "@/hooks/use-scroll-reset-on-route";
 import { useTranslations } from "@/lib/i18n/context";
 import { SUB_PAGE_SLUGS } from "@/lib/insights/sub-page-metric";
@@ -265,7 +264,6 @@ export function SubPageShell({
   children,
 }: SubPageShellProps) {
   const { t } = useTranslations();
-  const launch = useCoachLaunch();
   // v1.10.2 — the "show all readings" link carries the originating metric
   // page as a `from` param so the values sub-page can offer a back-link to
   // where the user drilled in from (e.g. `weight → show all values → back to
@@ -301,29 +299,10 @@ export function SubPageShell({
     return () => window.cancelAnimationFrame(handle);
   }, [focusOnMount]);
 
-  // v1.21.0 — register the page's metric as the Coach launch
-  // context's ambient scope while the sub-page is mounted, so the global
-  // FAB opens a conversation pre-scoped to this metric with a data-aware
-  // seed question. Only when the page opted in (`coachLaunch`) and its
-  // `explainerMetric` maps to a snapshot source; mobility / gait micro-
-  // metrics with no map entry leave the FAB on its default snapshot. The
-  // cleanup lifts the scope on navigation away.
-  const registerScope = launch?.registerScope;
-  useEffect(() => {
-    if (!coachLaunch || !registerScope) return;
-    const resolved = metricScopeFromExplainer(explainerMetric);
-    if (!resolved) return;
-    return registerScope(
-      {
-        metric: resolved.metric,
-        also: resolved.also,
-        window: resolved.window,
-      },
-      // v1.22 — `question` is now an i18n key; resolve it so the composer
-      // seed reads in the user's language.
-      t(resolved.question),
-    );
-  }, [coachLaunch, registerScope, explainerMetric, t]);
+  // v1.21.0 — register the page's metric as the Coach launch context's
+  // ambient scope while the sub-page is mounted, only when the page opted in
+  // (`coachLaunch`); see `useCoachMetricScope`.
+  useCoachMetricScope(coachLaunch ? explainerMetric : undefined);
 
   return (
     // The target-adjust provider bridges the header gear (rendered just

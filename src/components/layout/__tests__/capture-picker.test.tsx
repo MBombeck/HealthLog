@@ -53,7 +53,11 @@ vi.mock("@/components/measurements/entry/use-entry-recall", () => ({
   useRecentEntryTypes: () => recentRef.value,
 }));
 
-import { CapturePicker, captureFormDescription } from "../capture-picker";
+import {
+  CapturePicker,
+  captureFormDescription,
+  captureKindForPath,
+} from "../capture-picker";
 
 function render() {
   return renderToStaticMarkup(
@@ -132,5 +136,14 @@ describe("the capture form's description", () => {
     );
     expect(captureFormDescription("mood", t)).toBeUndefined();
     expect(captureFormDescription(null, t)).toBeUndefined();
+  });
+});
+
+describe("the tab bar's plus on a domain page", () => {
+  it("opens the workout form on the workouts page and the chooser elsewhere", () => {
+    expect(captureKindForPath("/insights/workouts")).toBe("workout");
+    expect(captureKindForPath("/insights/workouts/w-1")).toBeNull();
+    expect(captureKindForPath("/")).toBeNull();
+    expect(captureKindForPath(null)).toBeNull();
   });
 });

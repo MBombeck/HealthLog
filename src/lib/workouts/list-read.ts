@@ -127,6 +127,31 @@ export interface WorkoutsResult {
    * paging through history does not recompute it per page.
    */
   trainingLoad?: TrainingLoad;
+  /**
+   * The sports the account has, most frequent first, over the whole deduped
+   * history whatever the filter: the vocabulary of the sport filter, so
+   * choosing one sport never empties the menu it was chosen from. First page
+   * only.
+   */
+  sports?: Array<{ sportType: string; count: number }>;
+  /** The sources the account's workouts come from, most frequent first. First page only. */
+  sources?: string[];
+}
+
+/** Count a projection's rows by a key, most frequent first, ties by key. */
+function countBy(
+  rows: readonly CanonicalWorkoutRow[],
+  keyOf: (row: CanonicalWorkoutRow) => string | null,
+): Array<{ key: string; count: number }> {
+  const counts = new Map<string, number>();
+  for (const row of rows) {
+    const key = keyOf(row);
+    if (key === null) continue;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return [...counts]
+    .map(([key, count]) => ({ key, count }))
+    .sort((a, b) => b.count - a.count || a.key.localeCompare(b.key));
 }
 
 export async function buildWorkoutsProjection(
@@ -263,16 +288,34 @@ export async function readWorkoutsListCached(
 
   // Deliberately excludes `limit`/`offset` — every page of one normalized
   // filter combination shares this cached projection.
-  const projectionKey = `${userId}|${filters.since ?? ""}|${filters.until ?? ""}|${filters.sportType ?? ""}`;
+  const projectionFor = (f: WorkoutFilterParams) =>
+    cached(
+      caches.workouts,
+      `${userId}|${f.since ?? ""}|${f.until ?? ""}|${f.sportType ?? ""}`,
+      () => buildWorkoutsProjection(userId, f),
+      annotate,
+    );
 
-  const projection = await cached(
-    caches.workouts,
-    projectionKey,
-    () => buildWorkoutsProjection(userId, filters),
-    annotate,
-  );
+  const projection = await projectionFor(filters);
 
   const page = sliceWorkoutsProjection(projection, params.limit, params.offset);
   if (params.offset !== 0) return page;
-  return { ...page, trainingLoad: await readTrainingLoad(userId) };
+  // The facets describe the whole history: an unfiltered request reuses its
+  // own projection, a filtered one reads the unfiltered cell beside it.
+  const unfiltered =
+    filters.since === null &&
+    filters.until === null &&
+    filters.sportType === null
+      ? projection
+      : await projectionFor({ since: null, until: null, sportType: null });
+  return {
+    ...page,
+    trainingLoad: await readTrainingLoad(userId),
+    sports: countBy(unfiltered.canonical, (row) => row.sportType).map(
+      ({ key, count }) => ({ sportType: key, count }),
+    ),
+    sources: countBy(unfiltered.canonical, (row) => row.source).map(
+      ({ key }) => key,
+    ),
+  };
 }

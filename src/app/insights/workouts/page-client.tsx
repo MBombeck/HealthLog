@@ -1,69 +1,67 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Activity } from "lucide-react";
+import { useState } from "react";
 
-import { cn } from "@/lib/utils";
-import { useTranslations } from "@/lib/i18n/context";
-import { useInfiniteWorkouts } from "@/hooks/use-workouts";
-import { MetricEmptyState } from "@/components/insights/metric-empty-state";
-import {
-  SubPageAddButton,
-  SubPageShell,
-} from "@/components/insights/sub-page-shell";
-import { WorkoutList } from "@/components/insights/workout-list";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
-import { ManualWorkoutSheet } from "@/components/workouts/manual-workout-sheet";
-import { TrainingLoadCard } from "@/components/workouts/training-load-card";
-import { useAuth } from "@/hooks/use-auth";
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
-import { canLogWorkout } from "@/lib/workouts/manual-entry";
-import { QueryErrorCard } from "@/components/ui/query-error-card";
-import { translateOrNull } from "@/lib/i18n/translate-code";
-import { EmptyState } from "@/components/ui/empty-state";
 import { ActivityCalendarCard } from "@/components/activity/activity-calendar-card";
+import { WorkoutList } from "@/components/insights/workout-list";
+import { useCoachMetricScope } from "@/components/insights/use-coach-metric-scope";
+import { InfoPopover } from "@/components/ui/info-popover";
+import { ListGroup, ListHeading, ListItem } from "@/components/ui/list-row";
+import { MenuSelect } from "@/components/ui/menu-select";
+import {
+  PageAddButton,
+  PageCustomizeButton,
+} from "@/components/ui/page-customize";
+import { PageHeader } from "@/components/ui/page-header";
+import { QueryErrorCard } from "@/components/ui/query-error-card";
+import { RowValue } from "@/components/ui/row-value";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ManualWorkoutSheet } from "@/components/workouts/manual-workout-sheet";
+import { WorkoutsCustomizeSheet } from "@/components/workouts/workouts-customize-sheet";
+import { useAuth } from "@/hooks/use-auth";
+import { useInfiniteWorkouts } from "@/hooks/use-workouts";
+import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import { useScrollResetOnRoute } from "@/hooks/use-scroll-reset-on-route";
+import { useTranslations } from "@/lib/i18n/context";
+import { translateOrNull } from "@/lib/i18n/translate-code";
+import { useModuleListPrefs } from "@/lib/module-list-prefs";
+import { canLogWorkout } from "@/lib/workouts/manual-entry";
+import { WORKOUTS_PAGE_SIZE } from "@/lib/workouts/page-size";
+
+const ALL_SPORTS = "all";
 
 /**
- * v1.4.32 — `/insights/workouts`.
+ * `/insights/workouts`, a domain page (`domain-page-template.md`): the title
+ * with its (i), the wrench ("Seite anpassen") and, on a wide screen, "Add";
+ * the activity calendar as the one summary; then the workouts under one
+ * heading with their count and the one filter, the sport.
  *
- * Workouts list sub-page. Pairs with the iOS HKWorkout ingest path
- * (`POST /api/workouts/batch`) and the v1.4.30 cross-source picker so
- * twin workouts from Apple Watch + Withings ScanWatch collapse to a
- * single row. The page is the user-visible surface for the workout
- * data the iOS client already syncs.
+ * On a phone the tab bar's plus opens the workout form directly
+ * (`captureKindForPath`). The module gate stands in front of this page: an
+ * account with workouts off meets the module notice instead
+ * (`ModulePageGate`), and the API refuses it.
  *
- * v1.32 — the `page.tsx` RSC wrapper server-prefetches the first page in
- * TanStack's infinite-data shape. Explicit "Load more" requests append
- * canonical offset pages while keeping the already-rendered history visible.
- *
- * Renders three states:
- *   - loading shell while the workouts query resolves,
- *   - empty state when the user has no workouts yet (CTA points at
- *     the iOS / Apple Health onboarding cue — there is no manual
- *     workout-entry form today),
- *   - the deduped list otherwise. Each row links to
- *     `/insights/workouts/[id]` for the detail surface.
- *
- * A sport filter narrows the list server-side through the `sportType`
- * parameter the route and the hook already accept. The chips offer only
- * sports the account actually has, captured from the unfiltered read, so
- * choosing one never empties the row it was chosen from. The RSC prefetch
- * seeds the unfiltered key only, so a filtered view costs one client fetch.
+ * The `page.tsx` RSC wrapper server-prefetches the first page of the
+ * unfiltered list under the same key this page reads.
  */
 export default function InsightsWorkoutsPageClient() {
   const { t, tCount } = useTranslations();
   const [sportType, setSportType] = useState<string | undefined>(undefined);
   const [logOpen, setLogOpen] = useState(false);
+  const [customizeOpen, setCustomizeOpen] = useState(false);
   const { user } = useAuth();
   const capabilities = useRecordCapabilities();
   const showLog = canLogWorkout(capabilities, user?.modules);
+  const { prefs, setSummary, setSummaryMeasure } =
+    useModuleListPrefs("workouts");
+  useScrollResetOnRoute();
+  useCoachMetricScope("workouts");
+
   const {
     workouts,
     total,
     isLoading,
     isEmpty,
-    trainingLoad,
     isError,
     error,
     isFetchNextPageError,
@@ -71,142 +69,156 @@ export default function InsightsWorkoutsPageClient() {
     hasNextPage,
     fetchNextPage,
     refetch,
-  } = useInfiniteWorkouts({ limit: 100, sportType });
+  } = useInfiniteWorkouts({ limit: WORKOUTS_PAGE_SIZE, sportType });
+  // The sport filter's vocabulary and the sources come with the unfiltered
+  // first page; under a filter that cell stays cached beside the filtered one.
+  const { sports, sources } = useInfiniteWorkouts({
+    limit: WORKOUTS_PAGE_SIZE,
+  });
 
-  // The chip row's vocabulary comes from the UNFILTERED read: deriving it
-  // from the filtered list would collapse the row to the one sport already
-  // chosen, leaving no way back. With no filter active this resolves to the
-  // very same query key as the list above, so the two share one query and
-  // the row costs nothing; under a filter it keeps serving that cache.
-  const { workouts: allSports } = useInfiniteWorkouts({ limit: 100 });
-  const sportOptions = useMemo(
-    () => Array.from(new Set(allSports.map((w) => w.sportType))).sort(),
-    [allSports],
-  );
+  const sportLabel = (sport: string) =>
+    translateOrNull(t, `insights.workouts.sport.${sport}`) ?? sport;
 
-  const sportLabel = (sport: string) => {
-    // A sport enum the bundle has no copy for renders as its canonical
-    // string rather than a raw key — same fallback the list rows use.
-    return translateOrNull(t, `insights.workouts.sport.${sport}`) ?? sport;
-  };
+  const noWorkoutsAtAll = isEmpty && sportType === undefined;
 
   return (
-    <SubPageShell
-      title={t("insights.workouts.title")}
-      description={t("insights.workouts.description")}
-      explainerMetric="workouts"
-      coachLaunch
-      headerAction={
-        showLog ? (
-          // The shared header plus; it opens the form in place.
-          <SubPageAddButton
-            label={t("insights.workouts.manual.logWorkout")}
-            onClick={() => setLogOpen(true)}
-            slot="workout-log-manual"
+    <div data-slot="workouts-page" className="space-y-6">
+      <PageHeader
+        title={t("insights.workouts.title")}
+        titleId="insights-subpage-title"
+        titleAccessory={
+          <InfoPopover
+            align="start"
+            triggerDataSlot="metric-explainer-trigger"
+            bodyDataSlot="metric-explainer"
+            iconClassName="size-5"
+            content={t("insights.subPage.explainer.workoutsBody")}
           />
-        ) : null
-      }
-    >
+        }
+        actions={
+          <>
+            <PageCustomizeButton onClick={() => setCustomizeOpen(true)} />
+            {showLog ? (
+              <PageAddButton
+                slot="workout-log-manual"
+                label={t("insights.workouts.manual.logWorkout")}
+                onClick={() => setLogOpen(true)}
+              />
+            ) : null}
+          </>
+        }
+      />
       {showLog ? (
         <ManualWorkoutSheet open={logOpen} onOpenChange={setLogOpen} />
       ) : null}
-      {/* The activity calendar (D1036): steps, active minutes and workouts
-          against the person's own usual. It stands above the list and draws
-          from steps alone too, so an account without workouts still sees
-          its routine. */}
-      <ActivityCalendarCard />
-      {/* No `<MetricRangeControls>` here: workouts are session records, not a
-          MeasurementType series, so the period-over-period range read has
-          nothing to aggregate. */}
-      {isError ? (
-        <QueryErrorCard
-          error={error}
-          title={t("insights.workouts.loadError")}
-          onRetry={() => refetch()}
+      <WorkoutsCustomizeSheet
+        open={customizeOpen}
+        onOpenChange={setCustomizeOpen}
+        summary={prefs.summary}
+        onSummaryChange={setSummary}
+        measure={prefs.summaryMeasure}
+        onMeasureChange={setSummaryMeasure}
+        sources={sources}
+      />
+
+      {/* Zone 3: the summary. It draws from steps alone too, so an account
+          without workouts still sees its routine; "Seite anpassen" turns it
+          off. */}
+      {prefs.summary ? (
+        <ActivityCalendarCard
+          measure={prefs.summaryMeasure}
+          onMeasureChange={setSummaryMeasure}
         />
-      ) : isLoading ? (
-        <div data-slot="workouts-loading" className="space-y-2">
-          <Skeleton className="h-14 w-full rounded-lg" />
-          <Skeleton className="h-14 w-full rounded-lg" />
-          <Skeleton className="h-14 w-full rounded-lg" />
-        </div>
-      ) : isEmpty && sportType === undefined ? (
-        <MetricEmptyState
-          icon={<Activity className="size-6" />}
-          title={t("insights.workouts.emptyState.title")}
-          description={t("insights.workouts.emptyState.description")}
-          cta={
-            showLog ? (
-              <Button size="sm" type="button" onClick={() => setLogOpen(true)}>
-                {t("insights.workouts.manual.logWorkout")}
-              </Button>
+      ) : null}
+
+      {/* Zone 4: the records. */}
+      <section aria-labelledby="workouts-heading" className="space-y-3">
+        <ListHeading
+          id="workouts-heading"
+          title={t("insights.workouts.title")}
+          count={
+            total > 0 ? (
+              <span
+                data-slot="workout-list-count"
+                aria-label={tCount("insights.workouts.count", total)}
+              >
+                {total}
+              </span>
+            ) : undefined
+          }
+          action={
+            sports.length > 1 ? (
+              <MenuSelect
+                value={sportType ?? ALL_SPORTS}
+                label={t("insights.workouts.filterLabel")}
+                slot="workout-sport-filter"
+                options={[
+                  {
+                    value: ALL_SPORTS,
+                    label: t("insights.workouts.filterAll"),
+                  },
+                  ...sports.map((s) => ({
+                    value: s.sportType,
+                    label: sportLabel(s.sportType),
+                  })),
+                ]}
+                onChange={(next) =>
+                  setSportType(next === ALL_SPORTS ? undefined : next)
+                }
+              />
             ) : null
           }
-          coachPrefill={t("insights.workouts.emptyState.coachPrefill")}
         />
-      ) : (
-        <>
-          {sportOptions.length > 1 ? (
-            <div
-              data-slot="workout-sport-filter"
-              role="group"
-              aria-label={t("insights.workouts.filterLabel")}
-              // Borderless page-level blocks track the shell heading's own
-              // card inset, so the row, the count line and the h1 above them
-              // share one left edge.
-              className="flex flex-wrap gap-2 px-4 md:px-6"
-            >
-              {[undefined, ...sportOptions].map((sport) => {
-                const active = sport === sportType;
-                return (
-                  <button
-                    key={sport ?? "all"}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => setSportType(sport)}
-                    className={cn(
-                      "focus-visible:ring-ring inline-flex min-h-11 items-center rounded-full px-3 py-1 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none sm:min-h-8",
-                      active
-                        ? "bg-muted text-foreground"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    {sport === undefined
-                      ? t("insights.workouts.filterAll")
-                      : sportLabel(sport)}
-                  </button>
-                );
-              })}
-            </div>
-          ) : null}
-          <TrainingLoadCard trainingLoad={trainingLoad} />
-          {workouts.length > 0 ? (
-            <>
-              <p
-                data-slot="workout-list-count"
-                className="text-muted-foreground px-4 text-xs md:px-6"
-              >
-                {tCount("insights.workouts.count", total)}
-              </p>
-              <WorkoutList
-                workouts={workouts}
-                hasNextPage={hasNextPage}
-                isFetchingNextPage={isFetchingNextPage}
-                isFetchNextPageError={isFetchNextPageError}
-                onLoadMore={fetchNextPage}
-              />
-            </>
-          ) : (
-            <EmptyState
-              variant="plain"
-              size="compact"
-              title={t("insights.workouts.filterEmpty")}
-              className="px-4 md:px-6"
-              data-slot="workout-list-filter-empty"
+        {isError ? (
+          <QueryErrorCard
+            error={error}
+            title={t("insights.workouts.loadError")}
+            onRetry={() => refetch()}
+          />
+        ) : isLoading ? (
+          <div data-slot="workouts-loading" className="space-y-2">
+            <Skeleton className="h-14 w-full rounded-xl" />
+            <Skeleton className="h-14 w-full rounded-xl" />
+            <Skeleton className="h-14 w-full rounded-xl" />
+          </div>
+        ) : noWorkoutsAtAll ? (
+          // The empty state is one row: what adding does.
+          <ListGroup
+            data-slot="workouts-empty"
+            empty={
+              showLog
+                ? {
+                    label: t("insights.workouts.manual.logWorkout"),
+                    onSelect: () => setLogOpen(true),
+                  }
+                : { label: t("insights.workouts.emptyState.title") }
+            }
+          />
+        ) : workouts.length === 0 ? (
+          <ListGroup data-slot="workout-list-filter-empty">
+            <ListItem
+              title={t("list.noMatches")}
+              onSelect={() => setSportType(undefined)}
+              actionLabel={`${t("list.noMatches")}, ${t("list.resetFilter")}`}
+              trailing={
+                <RowValue className="text-primary">
+                  {t("list.resetFilter")}
+                </RowValue>
+              }
             />
-          )}
-        </>
-      )}
-    </SubPageShell>
+          </ListGroup>
+        ) : (
+          <WorkoutList
+            workouts={workouts}
+            total={total}
+            pageSize={WORKOUTS_PAGE_SIZE}
+            hasNextPage={hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            isFetchNextPageError={isFetchNextPageError}
+            onLoadMore={fetchNextPage}
+          />
+        )}
+      </section>
+    </div>
   );
 }

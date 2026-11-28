@@ -4157,11 +4157,8 @@
     "navRecovery": "Puntuaciones del dispositivo",
     "workouts": {
       "title": "Entrenamientos",
-      "description": "Carreras, salidas en bici, paseos y sesiones de fuerza recientes, deduplicados entre Apple Watch y Withings.",
       "emptyState": {
-        "title": "Aún no hay entrenamientos",
-        "description": "Los entrenamientos llegan desde Apple Salud en el iPhone y desde Withings. También puedes registrar uno a mano.",
-        "coachPrefill": "Aún no he registrado entrenamientos: ¿por qué importa registrarlos y en qué debería centrarme primero?"
+        "title": "Aún no hay entrenamientos"
       },
       "detail": {
         "backToList": "Volver a entrenamientos",
@@ -4242,7 +4239,6 @@
         "other": "Otro"
       },
       "loadError": "No se pudieron cargar tus entrenamientos",
-      "loadMore": "Cargar más entrenamientos",
       "loadingMore": "Cargando más entrenamientos",
       "loadMoreError": "No se pudieron cargar más entrenamientos",
       "countOne": "{count} entrenamiento",
@@ -4250,7 +4246,6 @@
       "countFew": "{count} entrenamientos",
       "filterLabel": "Filtrar por deporte",
       "filterAll": "Todos los deportes",
-      "filterEmpty": "No hay sesiones de este deporte en tu historial.",
       "manual": {
         "logWorkout": "Registrar entrenamiento",
         "sheetTitle": "Registrar entrenamiento",
@@ -4284,15 +4279,16 @@
         "editAction": "Editar",
         "updated": "Entrenamiento actualizado"
       },
-      "load": {
-        "title": "Carga de entrenamiento",
-        "fitness": "Forma de base",
-        "fatigue": "Fatiga",
-        "form": "Estado",
-        "explainer": "La forma de base es tu impulso de entrenamiento por frecuencia cardiaca promediado en unas seis semanas, la fatiga en una semana, y el estado es la diferencia. Las cifras se comparan con tu propio pasado, no con otras personas ni otras apps.",
-        "warmingUp": "Con {days, plural, one {# día} other {# días}} hasta ahora: hasta cubrir seis semanas, la forma de base aparece más baja de lo que es.",
-        "coverage": "Se pudieron valorar {rated} {days, plural, =1 {del último día} other {de los últimos # días}}. Un día sin datos de actividad, o con un entrenamiento que no se pudo puntuar, se omite en lugar de contar como descanso.",
-        "asOf": "A fecha de {date}, el último día que se pudo valorar."
+      "customize": {
+        "calendar": "Calendario",
+        "calendarShows": "El calendario muestra"
+      },
+      "column": {
+        "workout": "Entrenamiento",
+        "distance": "Distancia",
+        "energy": "Energía",
+        "pulse": "Pulso",
+        "duration": "Duración"
       }
     },
     "bloodGlucose": {
@@ -15474,26 +15470,15 @@
     }
   },
   "activityCalendar": {
-    "title": "Calendario de actividad",
-    "periodLabel": "Periodo del calendario",
-    "period": {
-      "week": "Semana",
-      "month": "Mes"
-    },
-    "weekRange": "{start} a {end}",
     "previous": "Periodo anterior",
     "next": "Periodo siguiente",
-    "metricLabel": "Colorear los días por",
     "metric": {
       "steps": "Pasos",
       "activeMinutes": "Minutos activos",
-      "load": "Carga de entrenamiento"
+      "load": "Carga de entrenamiento",
+      "workouts": "Entrenamientos"
     },
-    "empty": "Todavía no hay pasos, minutos activos ni entrenamientos en este periodo.",
     "loadError": "No se pudo cargar el calendario de actividad.",
-    "weekGoalsColumn": "Objetivos semanales",
-    "weekGoalsMet": "Todos los objetivos semanales cumplidos",
-    "weekGoalsNotMet": "No se cumplieron todos los objetivos semanales",
     "cell": {
       "steps": "{value, plural, one {# paso} other {# pasos}}",
       "activeMinutes": "{value} minutos activos",
@@ -15509,19 +15494,7 @@
       "high": "Muy por encima de lo habitual",
       "in_progress": "Hoy, aún en curso"
     },
-    "legend": "Comparado con tus 12 semanas anteriores:",
     "noBaseline": "Tu rango habitual aparece tras 14 días con datos.",
-    "summary": {
-      "steps": "{value, plural, one {# paso} other {# pasos}}",
-      "activeMinutes": "{value} minutos activos",
-      "workouts": "{value} entrenamientos",
-      "load": "Carga de entrenamiento media {value}",
-      "usual": "Lo habitual hasta este punto: {value}",
-      "noUsual": "Aún no hay suficientes semanas o meses anteriores para comparar.",
-      "usualThroughYesterday": "Hasta ayer {value}, lo habitual para ti hasta entonces {usual}",
-      "firstDay": "Se compara con lo habitual cuando termine el primer día."
-    },
-    "sportCount": "{sport}: {count}",
     "goal": {
       "workoutsPerWeek": "Entrenamientos por semana",
       "activeMinutesPerWeek": "Minutos activos por semana",
@@ -15529,20 +15502,19 @@
       "stepsPerMonth": "Pasos por mes"
     },
     "goalOf": "{value} de {target}",
-    "setGoals": "Fijar objetivos",
-    "editGoals": "Cambiar objetivos",
     "goalsSheet": {
-      "title": "Objetivos de actividad",
-      "description": "Deja un campo vacío si no quieres un objetivo.",
       "none": "Sin objetivo",
       "invalid": "Un número entero de {min} a {max}.",
       "saveError": "No se pudieron guardar los objetivos."
     },
     "crossLink": {
       "title": "Calendario de actividad",
-      "body": "Tus pasos por semana o por mes, frente a lo que es habitual para ti.",
+      "body": "Tus pasos por mes, frente a lo que es habitual para ti.",
       "cta": "Abrir calendario"
-    }
+    },
+    "caption": "Frente a tus 12 semanas anteriores",
+    "legendLess": "menos",
+    "legendMore": "más"
   },
   "sourceProvenance": {
     "title": "De dónde vienen los valores",
@@ -16207,10 +16179,10 @@
       "fieldsLabel": "Lo que muestra el enlace",
       "expiryLabel": "El enlace termina",
       "expiry": {
-        "none": "Nunca, hasta revocarlo",
         "30": "En 30 días",
         "365": "En un año",
-        "730": "En dos años"
+        "730": "En dos años",
+        "none": "Nunca, hasta revocarlo"
       },
       "create": "Crear el enlace",
       "qrAlt": "Código QR del enlace a la tarjeta de emergencia",
@@ -16485,5 +16457,25 @@
       "systolicBloodPressure": "Presión arterial sistólica",
       "diastolicBloodPressure": "Presión arterial diastólica"
     }
+  },
+  "pageCustomize": {
+    "title": "Personalizar página",
+    "back": "Atrás",
+    "group": {
+      "display": "Vista",
+      "capture": "Registro",
+      "reminders": "Recordatorios",
+      "data": "Datos"
+    },
+    "goals": "Objetivos",
+    "goalsSet": "{count, plural, one {# definido} other {# definidos}}",
+    "sources": "Fuentes",
+    "import": "Importar",
+    "export": "Exportar"
+  },
+  "list": {
+    "showMore": "{count, plural, one {Mostrar # más} other {Mostrar # más}}",
+    "noMatches": "Sin resultados",
+    "resetFilter": "Restablecer filtro"
   }
 }

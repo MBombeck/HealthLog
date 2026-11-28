@@ -4157,11 +4157,8 @@
     "navRecovery": "Device scores",
     "workouts": {
       "title": "Workouts",
-      "description": "Recent runs, rides, walks and strength sessions, deduped across Apple Watch and Withings sources.",
       "emptyState": {
-        "title": "No workouts yet",
-        "description": "Workouts sync from Apple Health on your iPhone and from Withings. You can also log one by hand.",
-        "coachPrefill": "I haven't logged any workouts yet. Why does tracking them matter, and what should I focus on first?"
+        "title": "No workouts yet"
       },
       "detail": {
         "backToList": "Back to workouts",
@@ -4242,7 +4239,6 @@
         "other": "Other"
       },
       "loadError": "Your workouts could not be loaded",
-      "loadMore": "Load more workouts",
       "loadingMore": "Loading more workouts",
       "loadMoreError": "More workouts could not be loaded",
       "countOne": "{count} workout",
@@ -4250,7 +4246,6 @@
       "countFew": "{count} workouts",
       "filterLabel": "Filter by sport",
       "filterAll": "All sports",
-      "filterEmpty": "No sessions of this sport in your history.",
       "manual": {
         "logWorkout": "Log workout",
         "sheetTitle": "Log workout",
@@ -4284,15 +4279,16 @@
         "editAction": "Edit",
         "updated": "Workout updated"
       },
-      "load": {
-        "title": "Training load",
-        "fitness": "Fitness",
-        "fatigue": "Fatigue",
-        "form": "Form",
-        "explainer": "Fitness is your heart-rate training impulse averaged over about six weeks, fatigue over about one week, and form is the difference. The numbers compare with your own past, not with other people or other apps.",
-        "warmingUp": "Based on {days, plural, one {# day} other {# days}} so far: until six weeks are covered, fitness reads lower than it is.",
-        "coverage": "{rated} of the last {days, plural, one {# day} other {# days}} could be rated. A day with no activity data, or with a workout that could not be scored, is left out rather than counted as rest.",
-        "asOf": "As of {date}, the last day that could be rated."
+      "customize": {
+        "calendar": "Calendar",
+        "calendarShows": "Calendar shows"
+      },
+      "column": {
+        "workout": "Workout",
+        "distance": "Distance",
+        "energy": "Energy",
+        "pulse": "Pulse",
+        "duration": "Duration"
       }
     },
     "bloodGlucose": {
@@ -15474,26 +15470,15 @@
     }
   },
   "activityCalendar": {
-    "title": "Activity calendar",
-    "periodLabel": "Calendar span",
-    "period": {
-      "week": "Week",
-      "month": "Month"
-    },
-    "weekRange": "{start} to {end}",
     "previous": "Previous period",
     "next": "Next period",
-    "metricLabel": "Color the days by",
     "metric": {
       "steps": "Steps",
       "activeMinutes": "Active minutes",
-      "load": "Training load"
+      "load": "Training load",
+      "workouts": "Workouts"
     },
-    "empty": "No steps, active minutes or workouts in this period yet.",
     "loadError": "The activity calendar could not be loaded.",
-    "weekGoalsColumn": "Weekly goals",
-    "weekGoalsMet": "All weekly goals met",
-    "weekGoalsNotMet": "Not all weekly goals met",
     "cell": {
       "steps": "{value, plural, one {# step} other {# steps}}",
       "activeMinutes": "{value} active minutes",
@@ -15509,19 +15494,7 @@
       "high": "Far above your usual",
       "in_progress": "Today, still in progress"
     },
-    "legend": "Compared with your 12 weeks before:",
     "noBaseline": "Your usual range shows after 14 days with data.",
-    "summary": {
-      "steps": "{value, plural, one {# step} other {# steps}}",
-      "activeMinutes": "{value} active minutes",
-      "workouts": "{value} workouts",
-      "load": "Average training load {value}",
-      "usual": "Your usual by this point: {value}",
-      "noUsual": "Not enough earlier weeks or months to compare with yet.",
-      "usualThroughYesterday": "Through yesterday {value}, your usual by then {usual}",
-      "firstDay": "Compared with your usual once the first day is over."
-    },
-    "sportCount": "{sport}: {count}",
     "goal": {
       "workoutsPerWeek": "Workouts per week",
       "activeMinutesPerWeek": "Active minutes per week",
@@ -15529,20 +15502,19 @@
       "stepsPerMonth": "Steps per month"
     },
     "goalOf": "{value} of {target}",
-    "setGoals": "Set goals",
-    "editGoals": "Change goals",
     "goalsSheet": {
-      "title": "Activity goals",
-      "description": "Leave a field empty for no goal.",
       "none": "No goal",
       "invalid": "A whole number from {min} to {max}.",
       "saveError": "The goals could not be saved."
     },
     "crossLink": {
       "title": "Activity calendar",
-      "body": "Your steps as a week or a month, against your own usual.",
+      "body": "Your steps as a month, against your own usual.",
       "cta": "Open calendar"
-    }
+    },
+    "caption": "Against your 12 weeks before",
+    "legendLess": "less",
+    "legendMore": "more"
   },
   "sourceProvenance": {
     "title": "Where values come from",
@@ -16207,10 +16179,10 @@
       "fieldsLabel": "What the link shows",
       "expiryLabel": "Link ends",
       "expiry": {
-        "none": "Never, until revoked",
         "30": "In 30 days",
         "365": "In one year",
-        "730": "In two years"
+        "730": "In two years",
+        "none": "Never, until revoked"
       },
       "create": "Make the link",
       "qrAlt": "QR code for the emergency card link",
@@ -16485,5 +16457,25 @@
       "systolicBloodPressure": "Systolic blood pressure",
       "diastolicBloodPressure": "Diastolic blood pressure"
     }
+  },
+  "pageCustomize": {
+    "title": "Customize page",
+    "back": "Back",
+    "group": {
+      "display": "Display",
+      "capture": "Tracking",
+      "reminders": "Reminders",
+      "data": "Data"
+    },
+    "goals": "Goals",
+    "goalsSet": "{count, plural, one {# set} other {# set}}",
+    "sources": "Sources",
+    "import": "Import",
+    "export": "Export"
+  },
+  "list": {
+    "showMore": "{count, plural, one {Show # more} other {Show # more}}",
+    "noMatches": "No matches",
+    "resetFilter": "Reset filter"
   }
 }

@@ -1,30 +1,31 @@
 "use client";
 
-import { DayLinkAt } from "@/components/day/day-link";
-import Link from "next/link";
-import { HeartPulse, Loader2, Map as MapIcon } from "lucide-react";
-
-import { cn } from "@/lib/utils";
 import { getNumberFormat } from "@/lib/intl/formatter-cache";
 import { formatDurationMinutes } from "@/lib/i18n/duration";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { iconForSport } from "@/lib/workouts/sport-icons";
 import type { WorkoutListEntry } from "@/hooks/use-workouts";
-import { Button } from "@/components/ui/button";
+import {
+  ListColumns,
+  ListGroup,
+  ListHead,
+  ListItem,
+  ListMoreRow,
+} from "@/components/ui/list-row";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 import { formatDistance } from "@/components/insights/workout-detail/format";
 import { translateOrNull } from "@/lib/i18n/translate-code";
 
 /**
- * v1.4.32 — workout list row primitive.
+ * The workouts of the workouts page (domain page template, zone 4): one
+ * `ListGroup`, one `ListItem` per workout. Icon tile, the sport, one meta
+ * line with the start and, on a phone, the distance; the
+ * duration trailing. On a wide screen the same rows gain the distance,
+ * energy and average pulse as columns under a quiet column head. The whole
+ * row opens the workout. The cross-source merge runs on the server, so the
+ * list is already deduped when it lands here.
  *
- * Renders the canonical workouts list returned by `GET /api/workouts`.
- * Each row links to `/insights/workouts/[id]`. The visual shape mirrors
- * the dashboard tile primitives — single-line metadata strip with the
- * sport icon, the date, the duration, and (when present) the distance
- * + active-energy chips. The Apple Watch + Withings cross-source merge
- * runs server-side, so the list is already deduped by the time it
- * lands here.
+ * "Weitere n zeigen" is the last row while the server holds more.
  */
 
 function formatEnergy(kcal: number, locale: string): string {
@@ -35,7 +36,10 @@ function formatEnergy(kcal: number, locale: string): string {
 
 export interface WorkoutListProps {
   workouts: WorkoutListEntry[];
-  className?: string;
+  /** Workouts the server holds for the current filter. */
+  total?: number;
+  /** Rows one more page adds. */
+  pageSize?: number;
   hasNextPage?: boolean;
   isFetchingNextPage?: boolean;
   isFetchNextPageError?: boolean;
@@ -44,7 +48,8 @@ export interface WorkoutListProps {
 
 export function WorkoutList({
   workouts,
-  className,
+  total = workouts.length,
+  pageSize = workouts.length,
   hasNextPage = false,
   isFetchingNextPage = false,
   isFetchNextPageError = false,
@@ -55,144 +60,106 @@ export function WorkoutList({
   // year shows whenever the workout is not from this year.
   const fmt = useFormatters();
   const { preference } = useUnitDisplay();
+  const more = Math.max(0, Math.min(pageSize, total - workouts.length));
 
   return (
-    <ul
-      data-slot="workout-list"
-      className={cn("divide-border divide-y rounded-lg border", className)}
-    >
+    <ListGroup data-slot="workout-list">
+      <ListHead
+        title={t("insights.workouts.column.workout")}
+        columns={[
+          { key: "distance", label: t("insights.workouts.column.distance") },
+          { key: "energy", label: t("insights.workouts.column.energy") },
+          { key: "pulse", label: t("insights.workouts.column.pulse") },
+          { key: "duration", label: t("insights.workouts.column.duration") },
+        ]}
+      />
       {workouts.map((workout) => {
         const Icon = iconForSport(workout.sportType);
-        const sportLabelKey = `insights.workouts.sport.${workout.sportType}`;
-        // Translation keys missing from one locale fall back to the
-        // canonical sport-type string so a new HK enum value never
-        // renders the raw `insights.workouts.sport.x` placeholder.
+        // A sport the bundle has no copy for renders as its canonical string,
+        // never as the raw `insights.workouts.sport.x` key.
         const sportName =
-          translateOrNull(t, sportLabelKey) ?? workout.sportType;
-
+          translateOrNull(t, `insights.workouts.sport.${workout.sportType}`) ??
+          workout.sportType;
+        const duration = formatDurationMinutes(
+          Math.round(workout.durationSec / 60),
+          t,
+        );
+        const distance =
+          workout.distanceM != null
+            ? formatDistance(workout.distanceM, locale, preference)
+            : null;
         return (
-          // v1.42 — the row opens the workout and its date opens the day:
-          // two targets, so the row is a stretched link (the sport name's
-          // link covers the row) and the date sits above it.
-          <li key={workout.id} className="relative">
-            <div
-              data-slot="workout-list-row"
-              className={cn(
-                "flex items-center gap-3 px-3 py-3 text-sm transition-colors",
-                "hover:bg-accent has-[a[data-slot=workout-list-link]:focus-visible]:ring-ring/50 has-[a[data-slot=workout-list-link]:focus-visible]:ring-2",
-              )}
-            >
+          <ListItem
+            key={workout.id}
+            data-slot="workout-list-row"
+            href={`/insights/workouts/${encodeURIComponent(workout.id)}`}
+            icon={
               <span
                 aria-hidden="true"
-                className="bg-muted text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-full"
+                className="bg-muted text-foreground flex size-8 items-center justify-center rounded-lg"
               >
                 <Icon className="size-4" />
               </span>
-              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="flex items-center gap-1.5 truncate font-medium">
-                  <Link
-                    href={`/insights/workouts/${encodeURIComponent(workout.id)}`}
-                    data-slot="workout-list-link"
-                    className="truncate after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
-                  >
-                    {sportName}
-                  </Link>
-                  {/* #67 — discreet glyphs flag which sessions open rich
-                      (map / HR curve). Muted so they never compete with
-                      the sport name. */}
-                  {workout.hasRoute ? (
-                    <MapIcon
-                      className="text-muted-foreground size-3.5 shrink-0"
-                      aria-hidden="true"
-                      data-slot="workout-list-glyph-route"
-                    />
-                  ) : null}
-                  {workout.hasHrSeries ? (
-                    <HeartPulse
-                      className="text-muted-foreground size-3.5 shrink-0"
-                      aria-hidden="true"
-                      data-slot="workout-list-glyph-hr"
-                    />
-                  ) : null}
-                </span>
-                {/* Wraps rather than truncates, so the day it opens
-                    stays readable beside the stats column. */}
-                <span className="text-muted-foreground text-xs">
-                  <DayLinkAt at={workout.startedAt} className="z-10">
-                    {`${fmt.dateWithWeekdaySmart(workout.startedAt)}, ${fmt.time(workout.startedAt)}`}
-                  </DayLinkAt>
-                </span>
-              </div>
-              <div className="flex flex-col items-end gap-0.5 text-xs">
-                <span className="font-medium tabular-nums">
-                  {formatDurationMinutes(
-                    Math.round(workout.durationSec / 60),
-                    t,
-                  )}
-                </span>
-                <span className="text-muted-foreground flex flex-wrap justify-end gap-x-2 tabular-nums">
-                  {workout.distanceM != null ? (
-                    <span data-slot="workout-list-distance">
-                      {formatDistance(workout.distanceM, locale, preference)}
-                    </span>
-                  ) : null}
-                  {workout.activeEnergyKcal != null ? (
-                    <span data-slot="workout-list-energy">
-                      {formatEnergy(workout.activeEnergyKcal, locale)} kcal
-                    </span>
-                  ) : null}
-                  {workout.avgHr != null ? (
-                    <span data-slot="workout-list-avg-hr">
-                      {workout.avgHr} bpm
-                    </span>
-                  ) : null}
-                </span>
-              </div>
-            </div>
-          </li>
+            }
+            title={sportName}
+            meta={
+              <>
+                {`${fmt.dateWithWeekdaySmart(workout.startedAt)}, ${fmt.time(workout.startedAt)}`}
+                {distance ? (
+                  <span data-slot="workout-list-distance" className="md:hidden">
+                    {`, ${distance}`}
+                  </span>
+                ) : null}
+              </>
+            }
+            trailing={
+              <>
+                <span className="md:hidden">{duration}</span>
+                <ListColumns
+                  cells={[
+                    { key: "distance", content: distance },
+                    {
+                      key: "energy",
+                      content:
+                        workout.activeEnergyKcal != null ? (
+                          <span data-slot="workout-list-energy">
+                            {`${formatEnergy(workout.activeEnergyKcal, locale)} kcal`}
+                          </span>
+                        ) : null,
+                    },
+                    {
+                      key: "pulse",
+                      content:
+                        workout.avgHr != null ? (
+                          <span data-slot="workout-list-avg-hr">
+                            {`${workout.avgHr} bpm`}
+                          </span>
+                        ) : null,
+                    },
+                    { key: "duration", content: duration, strong: true },
+                  ]}
+                />
+              </>
+            }
+          />
         );
       })}
-      {hasNextPage ? (
-        <li
-          data-slot="workout-list-load-more"
-          className="flex flex-col items-center gap-2 p-3"
-        >
-          {isFetchNextPageError ? (
-            <p
-              id="workout-list-load-more-error"
-              role="alert"
-              className="text-destructive text-center text-sm"
-            >
-              {t("insights.workouts.loadMoreError")}
-            </p>
-          ) : null}
-          <Button
-            type="button"
-            variant="outline"
-            className="min-h-11 min-w-44"
-            disabled={isFetchingNextPage}
-            aria-busy={isFetchingNextPage || undefined}
-            aria-describedby={
-              isFetchNextPageError ? "workout-list-load-more-error" : undefined
-            }
-            onClick={onLoadMore}
-          >
-            {isFetchingNextPage ? (
-              <>
-                <Loader2
-                  className="size-4 animate-spin motion-reduce:animate-none"
-                  aria-hidden="true"
-                />
-                {t("insights.workouts.loadingMore")}
-              </>
-            ) : isFetchNextPageError ? (
-              t("common.retry")
-            ) : (
-              t("insights.workouts.loadMore")
-            )}
-          </Button>
-        </li>
+      {hasNextPage && onLoadMore ? (
+        <ListMoreRow
+          label={
+            isFetchingNextPage
+              ? t("insights.workouts.loadingMore")
+              : t("list.showMore", { count: more })
+          }
+          busy={isFetchingNextPage}
+          error={
+            isFetchNextPageError
+              ? t("insights.workouts.loadMoreError")
+              : undefined
+          }
+          onSelect={onLoadMore}
+        />
       ) : null}
-    </ul>
+    </ListGroup>
   );
 }

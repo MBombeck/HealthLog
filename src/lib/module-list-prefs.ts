@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * Per-list presentation for the labs, illness and checkups lists: card or
- * list view, a manual order, and (labs only) the sort, the categories and
- * their order.
+ * Per-list presentation for the labs, illness, checkups and workouts pages:
+ * card or list view, a manual order, (labs only) the sort, the categories and
+ * their order, and (workouts only) the summary card and its measure.
  *
  * The choices live on the server (`GET/PUT /api/settings/module-list-layout`,
  * `User.moduleListLayoutJson`) so they follow a person to every device. Until
@@ -44,6 +44,7 @@ import {
   type ModuleGroupsOpen,
   type ModuleListView,
   type ModuleSortDir,
+  type ModuleSummaryMeasure,
 } from "@/lib/settings/module-list-layout";
 
 export type {
@@ -53,6 +54,7 @@ export type {
   ModuleListPrefs,
   ModuleListView,
   ModuleSortDir,
+  ModuleSummaryMeasure,
 } from "@/lib/settings/module-list-layout";
 
 const ENDPOINT = "/api/settings/module-list-layout";
@@ -281,6 +283,8 @@ export function useModuleListPrefs(list: ModuleListKey): {
   setGroupBy: (groupBy: ModuleGroupBy) => void;
   setGroupsOpen: (groupsOpen: ModuleGroupsOpen) => void;
   setCategoryOrder: (categoryOrder: string[]) => void;
+  setSummary: (summary: boolean) => void;
+  setSummaryMeasure: (summaryMeasure: ModuleSummaryMeasure) => void;
 } {
   const queryClient = useQueryClient();
   const { t } = useTranslations();
@@ -309,6 +313,8 @@ export function useModuleListPrefs(list: ModuleListKey): {
         groupBy: entry.groupBy,
         groupsOpen: entry.groupsOpen,
         categoryOrder: entry.categoryOrder,
+        summary: entry.summary,
+        summaryMeasure: entry.summaryMeasure,
       };
     }
     const defaults = moduleListDefaults(list);
@@ -346,6 +352,15 @@ export function useModuleListPrefs(list: ModuleListKey): {
     [write],
   );
 
+  const setSummary = useCallback(
+    (summary: boolean) => write({ summary }),
+    [write],
+  );
+  const setSummaryMeasure = useCallback(
+    (summaryMeasure: ModuleSummaryMeasure) => write({ summaryMeasure }),
+    [write],
+  );
+
   return {
     prefs,
     setView,
@@ -354,5 +369,7 @@ export function useModuleListPrefs(list: ModuleListKey): {
     setGroupBy,
     setGroupsOpen,
     setCategoryOrder,
+    setSummary,
+    setSummaryMeasure,
   };
 }

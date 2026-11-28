@@ -1,40 +1,23 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  CalendarDays,
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  Target,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
-import { TileHeader } from "@/components/insights/tile-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
-import { InlineAction } from "@/components/ui/inline-action";
-import { Progress } from "@/components/ui/progress";
+import { Card, CardContent } from "@/components/ui/card";
+import { MenuSelect } from "@/components/ui/menu-select";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
-import { ScorePill } from "@/components/ui/score-pill";
-import { Segmented } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TagChip } from "@/components/ui/tag-chip";
-import { ActivityGoalsSheet } from "@/components/activity/activity-goals-sheet";
 import { useActivityCalendar } from "@/hooks/use-activity-calendar";
-import {
-  useRecordCapabilities,
-  holdsOwnerRights,
-} from "@/hooks/use-record-capabilities";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { translateOrNull } from "@/lib/i18n/translate-code";
+import type { ModuleSummaryMeasure } from "@/lib/settings/module-list-layout";
 import { cn } from "@/lib/utils";
 import type { ActivityCalendarResponse } from "@/lib/validations/activity-calendar";
 
-type Period = "week" | "month";
-type RatedMetric = "steps" | "activeMinutes" | "load";
 type CalendarDay = ActivityCalendarResponse["days"][number];
 type DayLevel = CalendarDay["level"]["steps"];
+type Figure = "steps" | "activeMinutes" | "workouts" | "load";
 
 /**
  * The series ink, rising intensity: the calendar shows more and less than
@@ -55,6 +38,20 @@ const LEVEL_BAR: Record<DayLevel, string> = {
 
 const LEGEND_LEVELS: DayLevel[] = ["low", "below", "usual", "above", "high"];
 
+export const CALENDAR_MEASURES: readonly ModuleSummaryMeasure[] = [
+  "steps",
+  "activeMinutes",
+  "load",
+];
+
+/** The figures of the period; the load only beside the calendar on a wide screen. */
+const FIGURES: readonly Figure[] = [
+  "steps",
+  "activeMinutes",
+  "workouts",
+  "load",
+];
+
 /** 2024-01-01 is a Monday: seven UTC days from it name the week's columns. */
 function weekdayLabels(locale: string): string[] {
   const fmt = new Intl.DateTimeFormat(locale, {
@@ -70,25 +67,35 @@ function dateOfKey(key: string): Date {
   return new Date(`${key}T12:00:00.000Z`);
 }
 
+/** The measures the account has data for, in their fixed order. */
+export function availableMeasures(
+  data: Pick<ActivityCalendarResponse, "available"> | undefined,
+): ModuleSummaryMeasure[] {
+  if (!data) return [];
+  return CALENDAR_MEASURES.filter((m) => data.available[m]);
+}
+
 /**
- * The activity calendar (D1036): a week or a month of steps, active minutes,
- * workouts and training load against the person's own usual, with the goals
- * they set. Every figure comes from `/api/activity/calendar`; this component
- * draws, it does not compute.
+ * The summary of the workouts page (D1036, domain page template zone 3): a
+ * month of steps, active minutes or training load against the person's own
+ * usual, with the period's figures under a hairline (beside the month on a
+ * wide screen). The month name is the card's title, between its arrows; the
+ * measure is the card's one control, top right. Every figure and every
+ * change comes from `/api/activity/calendar`; this component draws, it does
+ * not compute.
  */
-export function ActivityCalendarCard() {
+export function ActivityCalendarCard({
+  measure: storedMeasure,
+  onMeasureChange,
+}: {
+  /** The person's chosen measure ("Seite anpassen" › Anzeige). */
+  measure: ModuleSummaryMeasure;
+  onMeasureChange: (measure: ModuleSummaryMeasure) => void;
+}) {
   const { t, locale } = useTranslations();
   const fmt = useFormatters();
-  const capabilities = useRecordCapabilities();
-  const [period, setPeriod] = useState<Period>("month");
   const [anchor, setAnchor] = useState<string | null>(null);
-  const [metricChoice, setMetricChoice] = useState<RatedMetric | null>(null);
-  const [goalsOpen, setGoalsOpen] = useState(false);
-  // Each opening mounts a fresh sheet, so its draft starts from the stored
-  // goals; keyed on the count rather than on `open`, so closing keeps the
-  // sheet mounted for its exit animation.
-  const [goalsOpenCount, setGoalsOpenCount] = useState(0);
-  const query = useActivityCalendar(period, anchor);
+  const query = useActivityCalendar("month", anchor);
   const data = query.data;
   const weekdays = useMemo(() => weekdayLabels(locale), [locale]);
   // A calendar day key names the same date everywhere: read it in UTC, where
@@ -104,43 +111,25 @@ export function ActivityCalendarCard() {
     [locale],
   );
 
-  const ratedOptions = useMemo(() => {
-    if (!data) return [] as RatedMetric[];
-    return (["steps", "activeMinutes", "load"] as const).filter(
-      (m) => data.available[m],
-    );
-  }, [data]);
-  const metric: RatedMetric | null =
-    metricChoice && ratedOptions.includes(metricChoice)
-      ? metricChoice
-      : (ratedOptions[0] ?? null);
+  const measures = availableMeasures(data);
+  // A measure the account has no data for falls back to the first it has.
+  const measure: ModuleSummaryMeasure | null = measures.includes(storedMeasure)
+    ? storedMeasure
+    : (measures[0] ?? null);
 
   const periodLabel = data
-    ? period === "month"
-      ? new Intl.DateTimeFormat(locale, {
-          month: "long",
-          year: "numeric",
-          timeZone: "UTC",
-        }).format(dateOfKey(data.start))
-      : t("activityCalendar.weekRange", {
-          start: fmt.dateShortSmartCalendar(data.start),
-          end: fmt.dateShortSmartCalendar(data.end),
-        })
+    ? new Intl.DateTimeFormat(locale, {
+        month: "long",
+        year: "numeric",
+        timeZone: "UTC",
+      }).format(dateOfKey(data.start))
     : "";
 
-  const formatMetric = (m: RatedMetric | "workouts", value: number) =>
+  const formatValue = (m: Figure, value: number) =>
     m === "load" ? fmt.number(value, 1) : fmt.integer(Math.round(value));
 
   const sportLabel = (sport: string) =>
     translateOrNull(t, `insights.workouts.sport.${sport}`) ?? sport;
-
-  const weeklyGoalsSet =
-    data !== undefined &&
-    (data.goals.workoutsPerWeek !== null ||
-      data.goals.activeMinutesPerWeek !== null ||
-      data.goals.stepsPerWeek !== null);
-
-  const levelText = (level: DayLevel) => t(`activityCalendar.level.${level}`);
 
   const dayLabel = (day: CalendarDay) => {
     const parts = [dayNameFormat.format(dateOfKey(day.date))];
@@ -162,7 +151,7 @@ export function ActivityCalendarCard() {
           sports: Object.keys(day.workoutsBySport).map(sportLabel).join(", "),
         }),
       );
-    if (metric) parts.push(levelText(day.level[metric]));
+    if (measure) parts.push(t(`activityCalendar.level.${day.level[measure]}`));
     return parts.join(", ");
   };
 
@@ -177,32 +166,9 @@ export function ActivityCalendarCard() {
     <Card
       id="activity-calendar"
       data-slot="activity-calendar"
-      data-period={period}
       className="scroll-mt-28"
     >
-      <CardHeader>
-        <TileHeader
-          icon={CalendarDays}
-          title={t("activityCalendar.title")}
-          right={
-            <Segmented
-              size="sm"
-              label={t("activityCalendar.periodLabel")}
-              slot="activity-calendar-period"
-              value={period}
-              onChange={(next) => {
-                setPeriod(next);
-                setAnchor(data ? data.start : null);
-              }}
-              options={[
-                { value: "week", label: t("activityCalendar.period.week") },
-                { value: "month", label: t("activityCalendar.period.month") },
-              ]}
-            />
-          }
-        />
-      </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent>
         {query.isError ? (
           <QueryErrorRow
             inset
@@ -211,71 +177,58 @@ export function ActivityCalendarCard() {
             onRetry={() => query.refetch()}
           />
         ) : !data ? (
-          <div data-slot="activity-calendar-loading" className="space-y-2">
-            <Skeleton className="h-8 w-full rounded-lg" />
-            <Skeleton className="h-48 w-full rounded-lg" />
+          <div data-slot="activity-calendar-loading" className="space-y-3">
+            <Skeleton className="h-9 w-full rounded-lg" />
+            <Skeleton className="h-72 w-full rounded-lg" />
           </div>
         ) : (
-          <>
-            <div className="flex items-center justify-between gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="pointer-coarse:size-11"
-                aria-label={t("activityCalendar.previous")}
-                data-slot="activity-calendar-previous"
-                onClick={() => setAnchor(data.previous)}
-              >
-                <ChevronLeft className="size-4" aria-hidden="true" />
-              </Button>
-              <p
-                className="text-sm font-medium"
-                data-slot="activity-calendar-label"
-                aria-live="polite"
-              >
-                {periodLabel}
-              </p>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="pointer-coarse:size-11"
-                aria-label={t("activityCalendar.next")}
-                data-slot="activity-calendar-next"
-                disabled={data.next === null}
-                onClick={() => data.next && setAnchor(data.next)}
-              >
-                <ChevronRight className="size-4" aria-hidden="true" />
-              </Button>
-            </div>
+          <div className="grid gap-4 md:grid-cols-2 md:gap-6">
+            <div className="min-w-0 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="-ml-2 flex min-w-0 items-center">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={t("activityCalendar.previous")}
+                    data-slot="activity-calendar-previous"
+                    onClick={() => setAnchor(data.previous)}
+                  >
+                    <ChevronLeft className="size-4" aria-hidden="true" />
+                  </Button>
+                  <h2
+                    className="truncate text-base font-semibold"
+                    data-slot="activity-calendar-label"
+                    aria-live="polite"
+                  >
+                    {periodLabel}
+                  </h2>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={t("activityCalendar.next")}
+                    data-slot="activity-calendar-next"
+                    disabled={data.next === null}
+                    onClick={() => data.next && setAnchor(data.next)}
+                  >
+                    <ChevronRight className="size-4" aria-hidden="true" />
+                  </Button>
+                </div>
+                {measure && measures.length > 1 ? (
+                  <MenuSelect
+                    value={measure}
+                    label={t("insights.workouts.customize.calendarShows")}
+                    slot="activity-calendar-measure"
+                    options={measures.map((m) => ({
+                      value: m,
+                      label: t(`activityCalendar.metric.${m}`),
+                    }))}
+                    onChange={onMeasureChange}
+                  />
+                ) : null}
+              </div>
 
-            {ratedOptions.length > 1 && metric ? (
-              <Segmented
-                size="sm"
-                stretch
-                label={t("activityCalendar.metricLabel")}
-                slot="activity-calendar-metric"
-                value={metric}
-                onChange={setMetricChoice}
-                options={ratedOptions.map((m) => ({
-                  value: m,
-                  label: t(`activityCalendar.metric.${m}`),
-                }))}
-              />
-            ) : null}
-
-            {!data.available.steps &&
-            !data.available.activeMinutes &&
-            !data.available.workouts &&
-            !data.available.load ? (
-              <EmptyState
-                variant="plain"
-                size="compact"
-                title={t("activityCalendar.empty")}
-                data-slot="activity-calendar-empty"
-              />
-            ) : (
               <div role="table" aria-label={periodLabel} className="space-y-1">
                 <div role="row" className="flex gap-1">
                   {weekdays.map((label, i) => (
@@ -287,262 +240,144 @@ export function ActivityCalendarCard() {
                       {label}
                     </span>
                   ))}
-                  {weeklyGoalsSet && period === "month" ? (
-                    <span role="columnheader" className="w-5 shrink-0">
-                      <span className="sr-only">
-                        {t("activityCalendar.weekGoalsColumn")}
-                      </span>
-                    </span>
-                  ) : null}
                 </div>
-                {rows.map((week, rowIndex) => {
-                  const weekRow = data.weeks[rowIndex];
-                  const allMet =
-                    weekRow && weekRow.goals.length > 0
-                      ? weekRow.goals.every((g) => g.met)
-                      : null;
-                  return (
-                    <div role="row" key={week[0].date} className="flex gap-1">
-                      {week.map((day) => {
-                        const level = metric ? day.level[metric] : "none";
-                        const value =
-                          metric && !day.future ? day[metric] : null;
-                        return (
-                          <div
-                            role="cell"
-                            key={day.date}
-                            data-slot="activity-calendar-day"
-                            data-date={day.date}
-                            data-level={level}
-                            aria-label={dayLabel(day)}
+                {rows.map((week) => (
+                  <div role="row" key={week[0].date} className="flex gap-1">
+                    {week.map((day) => {
+                      const level = measure ? day.level[measure] : "none";
+                      return (
+                        <div
+                          role="cell"
+                          key={day.date}
+                          data-slot="activity-calendar-day"
+                          data-date={day.date}
+                          data-level={level}
+                          aria-label={dayLabel(day)}
+                          className={cn(
+                            "flex min-h-11 flex-1 flex-col items-center gap-1 rounded-lg border px-0.5 py-1",
+                            day.date === data.today &&
+                              "border-primary ring-primary ring-1",
+                          )}
+                        >
+                          <span
+                            aria-hidden="true"
                             className={cn(
-                              "flex min-h-11 flex-1 flex-col items-center gap-1 rounded-lg border px-0.5 py-1",
-                              day.date === data.today && "border-primary",
+                              "text-xs tabular-nums",
+                              day.future || !day.inPeriod
+                                ? "text-muted-foreground"
+                                : "text-foreground",
                             )}
                           >
-                            <span
-                              aria-hidden="true"
-                              className={cn(
-                                "text-xs tabular-nums",
-                                day.future || !day.inPeriod
-                                  ? "text-muted-foreground"
-                                  : "text-foreground",
-                              )}
-                            >
-                              {Number(day.date.slice(8))}
-                            </span>
-                            <span
-                              aria-hidden="true"
-                              className={cn(
-                                "h-1.5 w-full max-w-8 rounded-full",
-                                LEVEL_BAR[level],
-                                !day.inPeriod && "opacity-50",
-                              )}
-                            />
-                            {period === "week" && value !== null ? (
+                            {Number(day.date.slice(8))}
+                          </span>
+                          <span
+                            aria-hidden="true"
+                            className={cn(
+                              "h-1 w-full max-w-8 rounded-full",
+                              LEVEL_BAR[level],
+                              !day.inPeriod && "opacity-50",
+                            )}
+                          />
+                          <span
+                            aria-hidden="true"
+                            className="flex h-1 items-center gap-0.5"
+                          >
+                            {Array.from({
+                              length: Math.min(3, day.workoutCount),
+                            }).map((_, i) => (
                               <span
-                                aria-hidden="true"
-                                className="text-2xs text-foreground tabular-nums"
-                              >
-                                {formatMetric(metric as RatedMetric, value)}
-                              </span>
-                            ) : null}
-                            {day.workoutCount > 0 ? (
-                              <span
-                                aria-hidden="true"
-                                className="flex items-center gap-0.5"
-                              >
-                                {Array.from({
-                                  length: Math.min(3, day.workoutCount),
-                                }).map((_, i) => (
-                                  <span
-                                    key={i}
-                                    className="bg-chart-1 size-1.5 rounded-full"
-                                  />
-                                ))}
-                              </span>
-                            ) : null}
-                          </div>
-                        );
-                      })}
-                      {weeklyGoalsSet && period === "month" ? (
-                        <span
-                          role="cell"
-                          className="flex w-5 shrink-0 items-center justify-center"
-                          data-slot="activity-calendar-week-goal"
-                          data-met={allMet === null ? "none" : String(allMet)}
-                        >
-                          {allMet ? (
-                            <Check
-                              className="text-success size-4"
-                              aria-label={t("activityCalendar.weekGoalsMet")}
-                            />
-                          ) : allMet === false ? (
-                            <span className="sr-only">
-                              {t("activityCalendar.weekGoalsNotMet")}
-                            </span>
-                          ) : null}
-                        </span>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {metric ? (
-              <div
-                className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs"
-                data-slot="activity-calendar-legend"
-              >
-                <span>{t("activityCalendar.legend")}</span>
-                {LEGEND_LEVELS.map((level) => (
-                  <span key={level} className="inline-flex items-center gap-1">
-                    <span
-                      aria-hidden="true"
-                      className={cn("h-1.5 w-4 rounded-full", LEVEL_BAR[level])}
-                    />
-                    {levelText(level)}
-                  </span>
-                ))}
-                {data.baseline[metric] === null ? (
-                  <span data-slot="activity-calendar-no-baseline">
-                    {t("activityCalendar.noBaseline")}
-                  </span>
-                ) : null}
-              </div>
-            ) : null}
-
-            <ul className="space-y-2" data-slot="activity-calendar-summary">
-              {(["steps", "activeMinutes", "workouts", "load"] as const)
-                .filter((m) => data.available[m])
-                .map((m) => {
-                  const s = data.summary[m];
-                  // Compared over completed days only: today has not ended.
-                  const delta =
-                    s.completedValue !== null && s.usualToDate
-                      ? (s.completedValue - s.usualToDate) / s.usualToDate
-                      : null;
-                  const running =
-                    data.today >= data.start && data.today <= data.end;
-                  return (
-                    <li
-                      key={m}
-                      data-slot="activity-calendar-summary-row"
-                      data-metric={m}
-                      className="flex items-start justify-between gap-3"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm">
-                          {t(`activityCalendar.summary.${m}`, {
-                            value:
-                              s.value === null ? "–" : formatMetric(m, s.value),
-                          })}
-                        </p>
-                        <p className="text-muted-foreground text-xs">
-                          {s.usual !== null && s.completedDays === 0
-                            ? t("activityCalendar.summary.firstDay")
-                            : s.usualToDate === null
-                              ? t("activityCalendar.summary.noUsual")
-                              : running
-                                ? t(
-                                    "activityCalendar.summary.usualThroughYesterday",
-                                    {
-                                      value:
-                                        s.completedValue === null
-                                          ? "–"
-                                          : formatMetric(m, s.completedValue),
-                                      usual: formatMetric(m, s.usualToDate),
-                                    },
-                                  )
-                                : t("activityCalendar.summary.usual", {
-                                    value: formatMetric(m, s.usualToDate),
-                                  })}
-                        </p>
-                      </div>
-                      {delta !== null ? (
-                        <ScorePill tone="neutral" numeric className="shrink-0">
-                          {`${delta > 0 ? "+" : ""}${fmt.percent(delta)}`}
-                        </ScorePill>
-                      ) : null}
-                    </li>
-                  );
-                })}
-            </ul>
-
-            {data.sports.length > 0 ? (
-              <div
-                className="flex flex-wrap gap-2"
-                data-slot="activity-calendar-sports"
-              >
-                {data.sports.map((s) => (
-                  <TagChip key={s.sportType}>
-                    {t("activityCalendar.sportCount", {
-                      sport: sportLabel(s.sportType),
-                      count: fmt.integer(s.count),
+                                key={i}
+                                className="bg-chart-1 size-1 rounded-full"
+                              />
+                            ))}
+                          </span>
+                        </div>
+                      );
                     })}
-                  </TagChip>
+                  </div>
                 ))}
               </div>
-            ) : null}
 
-            <div className="space-y-2" data-slot="activity-calendar-goals">
-              {data.goalProgress.map((g) => (
+              {measure ? (
                 <div
-                  key={g.key}
-                  className="space-y-1"
-                  data-slot="activity-calendar-goal"
-                  data-goal-key={g.key}
+                  className="text-muted-foreground flex items-center justify-between gap-2 text-xs whitespace-nowrap"
+                  data-slot="activity-calendar-legend"
                 >
-                  <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="inline-flex items-center gap-1.5">
-                      <Target
-                        className="text-muted-foreground size-4"
-                        aria-hidden="true"
-                      />
-                      {t(`activityCalendar.goal.${g.key}`)}
+                  <span className="min-w-0 truncate">
+                    {data.baseline[measure] === null
+                      ? t("activityCalendar.noBaseline")
+                      : t("activityCalendar.caption")}
+                  </span>
+                  {data.baseline[measure] === null ? null : (
+                    <span className="flex shrink-0 items-center gap-0.5">
+                      <span className="mr-0.5">
+                        {t("activityCalendar.legendLess")}
+                      </span>
+                      {LEGEND_LEVELS.map((level) => (
+                        <span
+                          key={level}
+                          aria-hidden="true"
+                          className={cn(
+                            "h-1 w-2.5 rounded-full",
+                            LEVEL_BAR[level],
+                          )}
+                        />
+                      ))}
+                      <span className="ml-0.5">
+                        {t("activityCalendar.legendMore")}
+                      </span>
                     </span>
-                    <span className="tabular-nums">
-                      {t("activityCalendar.goalOf", {
-                        value: fmt.integer(Math.round(g.value)),
-                        target: fmt.integer(g.target),
-                      })}
-                    </span>
-                  </div>
-                  <Progress
-                    value={Math.min(100, (g.value / g.target) * 100)}
-                    aria-label={t(`activityCalendar.goal.${g.key}`)}
-                  />
+                  )}
                 </div>
-              ))}
-              {holdsOwnerRights(capabilities) ? (
-                <InlineAction
-                  type="button"
-                  tone="primary"
-                  size="xs"
-                  data-slot="activity-calendar-set-goals"
-                  onClick={() => {
-                    setGoalsOpenCount((n) => n + 1);
-                    setGoalsOpen(true);
-                  }}
-                >
-                  {data.goalProgress.length > 0 || weeklyGoalsSet
-                    ? t("activityCalendar.editGoals")
-                    : t("activityCalendar.setGoals")}
-                </InlineAction>
               ) : null}
             </div>
-          </>
+
+            <ul
+              data-slot="activity-calendar-summary"
+              className={cn(
+                "grid grid-cols-3 gap-3 border-t pt-4",
+                "md:flex md:flex-col md:gap-0 md:divide-y md:border-t-0 md:border-l md:pt-0 md:pl-6",
+              )}
+            >
+              {FIGURES.filter((m) => data.available[m]).map((m) => {
+                const s = data.summary[m];
+                return (
+                  <li
+                    key={m}
+                    data-slot="activity-calendar-figure"
+                    data-metric={m}
+                    className={cn(
+                      "grid min-w-0 content-start gap-0.5",
+                      "md:flex-1 md:grid-cols-[minmax(0,1fr)_auto_3.5rem] md:content-center md:items-baseline md:gap-4 md:py-3",
+                      m === "load" && "hidden md:grid",
+                    )}
+                  >
+                    <span className="text-muted-foreground truncate text-xs md:text-sm">
+                      {t(`activityCalendar.metric.${m}`)}
+                    </span>
+                    <span className="text-lg font-semibold tabular-nums md:text-right md:text-2xl">
+                      {s.value === null ? "–" : formatValue(m, s.value)}
+                    </span>
+                    <span
+                      data-slot="activity-calendar-change"
+                      className={cn(
+                        "min-h-4 text-xs font-medium tabular-nums md:text-right",
+                        s.change !== null && s.change > 0
+                          ? "text-success"
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      {s.change === null
+                        ? null
+                        : `${s.change > 0 ? "+" : ""}${fmt.percent(s.change)}`}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         )}
       </CardContent>
-      {data && holdsOwnerRights(capabilities) ? (
-        <ActivityGoalsSheet
-          key={goalsOpenCount}
-          open={goalsOpen}
-          onOpenChange={setGoalsOpen}
-          goals={data.goals}
-        />
-      ) : null}
     </Card>
   );
 }

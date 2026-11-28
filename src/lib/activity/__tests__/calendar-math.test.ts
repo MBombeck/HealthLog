@@ -141,6 +141,8 @@ describe("period against the usual period", () => {
     expect(result.usual).toBe(49000);
     expect(result.usualToDate).toBe(49000);
     expect(result.referencePeriods).toBe(12);
+    // 70 000 against 49 000: the server resolves the change, a client draws it.
+    expect(result.change).toBeCloseTo(21000 / 49000, 10);
   });
 
   it("compares a running period over its completed days, never today's partial day", () => {
@@ -161,6 +163,7 @@ describe("period against the usual period", () => {
     expect(result.completedDays).toBe(2);
     expect(result.completedValue).toBe(4000);
     expect(result.usualToDate).toBe(2000);
+    expect(result.change).toBe(1);
   });
 
   it("has nothing to compare on the first day of a period", () => {
@@ -176,6 +179,7 @@ describe("period against the usual period", () => {
     expect(result.completedDays).toBe(0);
     expect(result.completedValue).toBeNull();
     expect(result.usualToDate).toBeNull();
+    expect(result.change).toBeNull();
   });
 
   it("compares months per day, so February meets March fairly", () => {

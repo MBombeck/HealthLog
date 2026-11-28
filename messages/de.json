@@ -4157,11 +4157,8 @@
     "navRecovery": "Gerätewerte",
     "workouts": {
       "title": "Trainings",
-      "description": "Letzte Läufe, Touren, Spaziergänge und Krafteinheiten, quellenübergreifend entdoppelt zwischen Apple Watch und Withings.",
       "emptyState": {
-        "title": "Noch keine Trainings",
-        "description": "Trainings kommen per Apple Health vom iPhone und von Withings. Du kannst eins auch von Hand erfassen.",
-        "coachPrefill": "Ich habe noch keine Trainings erfasst. Warum lohnt es sich, sie zu erfassen, und worauf sollte ich mich zuerst konzentrieren?"
+        "title": "Noch keine Trainings"
       },
       "detail": {
         "backToList": "Zurück zu Trainings",
@@ -4242,7 +4239,6 @@
         "other": "Sonstiges"
       },
       "loadError": "Deine Trainings konnten nicht geladen werden",
-      "loadMore": "Weitere Trainings laden",
       "loadingMore": "Weitere Trainings werden geladen",
       "loadMoreError": "Weitere Trainings konnten nicht geladen werden",
       "countOne": "{count} Training",
@@ -4250,7 +4246,6 @@
       "countFew": "{count} Trainings",
       "filterLabel": "Nach Sportart filtern",
       "filterAll": "Alle Sportarten",
-      "filterEmpty": "Keine Einheiten dieser Sportart in deinem Verlauf.",
       "manual": {
         "logWorkout": "Training erfassen",
         "sheetTitle": "Training erfassen",
@@ -4284,15 +4279,16 @@
         "editAction": "Bearbeiten",
         "updated": "Training aktualisiert"
       },
-      "load": {
-        "title": "Trainingslast",
-        "fitness": "Fitness",
-        "fatigue": "Ermüdung",
-        "form": "Form",
-        "explainer": "Fitness ist dein Trainingsimpuls aus der Herzfrequenz, gemittelt über etwa sechs Wochen, Ermüdung über etwa eine Woche, und Form ist der Unterschied. Die Zahlen lassen sich mit deinen eigenen früheren vergleichen, nicht mit anderen Menschen oder Apps.",
-        "warmingUp": "Auf Basis von bisher {days, plural, one {# Tag} other {# Tagen}}: Bis sechs Wochen abgedeckt sind, fällt die Fitness niedriger aus, als sie ist.",
-        "coverage": "{rated} {days, plural, =1 {des letzten Tages} other {der letzten # Tage}} ließen sich bewerten. Ein Tag ohne Aktivitätsdaten oder mit einem Training, das sich nicht auswerten ließ, bleibt außen vor, statt als Ruhetag zu zählen.",
-        "asOf": "Stand {date}, der letzte Tag, der sich bewerten ließ."
+      "customize": {
+        "calendar": "Kalender",
+        "calendarShows": "Kalender zeigt"
+      },
+      "column": {
+        "workout": "Training",
+        "distance": "Distanz",
+        "energy": "Energie",
+        "pulse": "Puls",
+        "duration": "Dauer"
       }
     },
     "bloodGlucose": {
@@ -15474,26 +15470,15 @@
     }
   },
   "activityCalendar": {
-    "title": "Aktivitätskalender",
-    "periodLabel": "Zeitraum",
-    "period": {
-      "week": "Woche",
-      "month": "Monat"
-    },
-    "weekRange": "{start} bis {end}",
     "previous": "Vorheriger Zeitraum",
     "next": "Nächster Zeitraum",
-    "metricLabel": "Tage einfärben nach",
     "metric": {
       "steps": "Schritte",
       "activeMinutes": "Aktive Minuten",
-      "load": "Trainingslast"
+      "load": "Trainingslast",
+      "workouts": "Trainings"
     },
-    "empty": "In diesem Zeitraum gibt es noch keine Schritte, aktiven Minuten oder Trainings.",
     "loadError": "Der Aktivitätskalender konnte nicht geladen werden.",
-    "weekGoalsColumn": "Wochenziele",
-    "weekGoalsMet": "Alle Wochenziele erreicht",
-    "weekGoalsNotMet": "Nicht alle Wochenziele erreicht",
     "cell": {
       "steps": "{value, plural, one {# Schritt} other {# Schritte}}",
       "activeMinutes": "{value} aktive Minuten",
@@ -15509,19 +15494,7 @@
       "high": "Weit über deinem Üblichen",
       "in_progress": "Heute, noch nicht vorbei"
     },
-    "legend": "Verglichen mit deinen 12 Wochen davor:",
     "noBaseline": "Dein üblicher Bereich erscheint nach 14 Tagen mit Daten.",
-    "summary": {
-      "steps": "{value, plural, one {# Schritt} other {# Schritte}}",
-      "activeMinutes": "{value} aktive Minuten",
-      "workouts": "{value} Trainings",
-      "load": "Durchschnittliche Trainingslast {value}",
-      "usual": "Bis hierher üblich bei dir: {value}",
-      "noUsual": "Noch zu wenige frühere Wochen oder Monate zum Vergleichen.",
-      "usualThroughYesterday": "Bis gestern {value}, bis dahin üblich bei dir {usual}",
-      "firstDay": "Der Vergleich mit deinem Üblichen kommt, sobald der erste Tag vorbei ist."
-    },
-    "sportCount": "{sport}: {count}",
     "goal": {
       "workoutsPerWeek": "Trainings pro Woche",
       "activeMinutesPerWeek": "Aktive Minuten pro Woche",
@@ -15529,20 +15502,19 @@
       "stepsPerMonth": "Schritte pro Monat"
     },
     "goalOf": "{value} von {target}",
-    "setGoals": "Ziele festlegen",
-    "editGoals": "Ziele ändern",
     "goalsSheet": {
-      "title": "Aktivitätsziele",
-      "description": "Lass ein Feld leer, wenn du dort kein Ziel möchtest.",
       "none": "Kein Ziel",
       "invalid": "Eine ganze Zahl von {min} bis {max}.",
       "saveError": "Die Ziele konnten nicht gespeichert werden."
     },
     "crossLink": {
       "title": "Aktivitätskalender",
-      "body": "Deine Schritte als Woche oder Monat, verglichen mit deinem Üblichen.",
+      "body": "Deine Schritte als Monat, verglichen mit deinem Üblichen.",
       "cta": "Kalender öffnen"
-    }
+    },
+    "caption": "Zu deinen 12 Wochen davor",
+    "legendLess": "weniger",
+    "legendMore": "mehr"
   },
   "sourceProvenance": {
     "title": "Woher die Werte kommen",
@@ -16207,10 +16179,10 @@
       "fieldsLabel": "Was der Link zeigt",
       "expiryLabel": "Link endet",
       "expiry": {
-        "none": "Nie, bis zum Widerruf",
         "30": "In 30 Tagen",
         "365": "In einem Jahr",
-        "730": "In zwei Jahren"
+        "730": "In zwei Jahren",
+        "none": "Nie, bis zum Widerruf"
       },
       "create": "Link erstellen",
       "qrAlt": "QR-Code für den Link zur Notfallkarte",
@@ -16485,5 +16457,25 @@
       "systolicBloodPressure": "Systolischer Blutdruck",
       "diastolicBloodPressure": "Diastolischer Blutdruck"
     }
+  },
+  "pageCustomize": {
+    "title": "Seite anpassen",
+    "back": "Zurück",
+    "group": {
+      "display": "Anzeige",
+      "capture": "Erfassung",
+      "reminders": "Erinnerungen",
+      "data": "Daten"
+    },
+    "goals": "Ziele",
+    "goalsSet": "{count, plural, one {# gesetzt} other {# gesetzt}}",
+    "sources": "Quellen",
+    "import": "Importieren",
+    "export": "Exportieren"
+  },
+  "list": {
+    "showMore": "{count, plural, one {Weitere # zeigen} other {Weitere # zeigen}}",
+    "noMatches": "Keine Treffer",
+    "resetFilter": "Filter zurücksetzen"
   }
 }

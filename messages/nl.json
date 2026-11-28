@@ -4157,11 +4157,8 @@
     "navRecovery": "Apparaatscores",
     "workouts": {
       "title": "Trainingen",
-      "description": "Recente hardloop-, fiets-, wandel- en krachttrainingen, ontdubbeld over bronnen van Apple Watch en Withings.",
       "emptyState": {
-        "title": "Nog geen trainingen",
-        "description": "Trainingen worden gesynchroniseerd vanuit Apple Health op je iPhone en vanuit Withings. Je kunt er ook zelf een vastleggen.",
-        "coachPrefill": "Ik heb nog geen trainingen vastgelegd. Waarom is bijhouden belangrijk, en waar moet ik me eerst op richten?"
+        "title": "Nog geen trainingen"
       },
       "detail": {
         "backToList": "Terug naar trainingen",
@@ -4242,7 +4239,6 @@
         "other": "Overig"
       },
       "loadError": "Je trainingen konden niet worden geladen",
-      "loadMore": "Meer trainingen laden",
       "loadingMore": "Meer trainingen worden geladen",
       "loadMoreError": "Meer trainingen konden niet worden geladen",
       "countOne": "{count} training",
@@ -4250,7 +4246,6 @@
       "countFew": "{count} trainingen",
       "filterLabel": "Filteren op sport",
       "filterAll": "Alle sporten",
-      "filterEmpty": "Geen sessies van deze sport in je geschiedenis.",
       "manual": {
         "logWorkout": "Training vastleggen",
         "sheetTitle": "Training vastleggen",
@@ -4284,15 +4279,16 @@
         "editAction": "Bewerken",
         "updated": "Training bijgewerkt"
       },
-      "load": {
-        "title": "Trainingsbelasting",
-        "fitness": "Fitheid",
-        "fatigue": "Vermoeidheid",
-        "form": "Vorm",
-        "explainer": "Fitheid is je trainingsprikkel uit de hartslag, gemiddeld over ongeveer zes weken, vermoeidheid over ongeveer een week, en vorm is het verschil. De getallen zijn te vergelijken met je eigen verleden, niet met andere mensen of andere apps.",
-        "warmingUp": "Op basis van {days, plural, one {# dag} other {# dagen}} tot nu toe: tot zes weken gedekt zijn, valt de fitheid lager uit dan ze is.",
-        "coverage": "{rated} van de laatste {days, plural, one {# dag} other {# dagen}} konden worden beoordeeld. Een dag zonder activiteitsgegevens, of met een training die niet kon worden beoordeeld, wordt weggelaten in plaats van als rustdag te tellen.",
-        "asOf": "Stand van {date}, de laatste dag die kon worden beoordeeld."
+      "customize": {
+        "calendar": "Kalender",
+        "calendarShows": "Kalender toont"
+      },
+      "column": {
+        "workout": "Training",
+        "distance": "Afstand",
+        "energy": "Energie",
+        "pulse": "Hartslag",
+        "duration": "Duur"
       }
     },
     "bloodGlucose": {
@@ -15474,26 +15470,15 @@
     }
   },
   "activityCalendar": {
-    "title": "Activiteitenkalender",
-    "periodLabel": "Kalenderperiode",
-    "period": {
-      "week": "Week",
-      "month": "Maand"
-    },
-    "weekRange": "{start} t/m {end}",
     "previous": "Vorige periode",
     "next": "Volgende periode",
-    "metricLabel": "Dagen kleuren op",
     "metric": {
       "steps": "Stappen",
       "activeMinutes": "Actieve minuten",
-      "load": "Trainingsbelasting"
+      "load": "Trainingsbelasting",
+      "workouts": "Trainingen"
     },
-    "empty": "Nog geen stappen, actieve minuten of trainingen in deze periode.",
     "loadError": "De activiteitenkalender kon niet worden geladen.",
-    "weekGoalsColumn": "Weekdoelen",
-    "weekGoalsMet": "Alle weekdoelen gehaald",
-    "weekGoalsNotMet": "Niet alle weekdoelen gehaald",
     "cell": {
       "steps": "{value, plural, one {# stap} other {# stappen}}",
       "activeMinutes": "{value} actieve minuten",
@@ -15509,19 +15494,7 @@
       "high": "Ver boven je gewone niveau",
       "in_progress": "Vandaag, nog bezig"
     },
-    "legend": "Vergeleken met je 12 weken daarvoor:",
     "noBaseline": "Je gebruikelijke bereik verschijnt na 14 dagen met gegevens.",
-    "summary": {
-      "steps": "{value, plural, one {# stap} other {# stappen}}",
-      "activeMinutes": "{value} actieve minuten",
-      "workouts": "{value} trainingen",
-      "load": "Gemiddelde trainingsbelasting {value}",
-      "usual": "Gebruikelijk tot dit punt: {value}",
-      "noUsual": "Nog niet genoeg eerdere weken of maanden om mee te vergelijken.",
-      "usualThroughYesterday": "Tot en met gisteren {value}, je gebruikelijke tot dan {usual}",
-      "firstDay": "Vergeleken met je gebruikelijke zodra de eerste dag voorbij is."
-    },
-    "sportCount": "{sport}: {count}",
     "goal": {
       "workoutsPerWeek": "Trainingen per week",
       "activeMinutesPerWeek": "Actieve minuten per week",
@@ -15529,20 +15502,19 @@
       "stepsPerMonth": "Stappen per maand"
     },
     "goalOf": "{value} van {target}",
-    "setGoals": "Doelen instellen",
-    "editGoals": "Doelen wijzigen",
     "goalsSheet": {
-      "title": "Activiteitsdoelen",
-      "description": "Laat een veld leeg als je geen doel wilt.",
       "none": "Geen doel",
       "invalid": "Een heel getal van {min} tot {max}.",
       "saveError": "De doelen konden niet worden opgeslagen."
     },
     "crossLink": {
       "title": "Activiteitenkalender",
-      "body": "Je stappen per week of maand, vergeleken met wat gewoon is voor jou.",
+      "body": "Je stappen per maand, vergeleken met wat gewoon is voor jou.",
       "cta": "Kalender openen"
-    }
+    },
+    "caption": "Tegenover je 12 weken ervoor",
+    "legendLess": "minder",
+    "legendMore": "meer"
   },
   "sourceProvenance": {
     "title": "Waar de waarden vandaan komen",
@@ -16207,10 +16179,10 @@
       "fieldsLabel": "Wat de link toont",
       "expiryLabel": "Link verloopt",
       "expiry": {
-        "none": "Nooit, tot intrekking",
         "30": "Over 30 dagen",
         "365": "Over een jaar",
-        "730": "Over twee jaar"
+        "730": "Over twee jaar",
+        "none": "Nooit, tot intrekking"
       },
       "create": "Link maken",
       "qrAlt": "QR-code voor de link naar de noodkaart",
@@ -16485,5 +16457,25 @@
       "systolicBloodPressure": "Systolische bloeddruk",
       "diastolicBloodPressure": "Diastolische bloeddruk"
     }
+  },
+  "pageCustomize": {
+    "title": "Pagina aanpassen",
+    "back": "Terug",
+    "group": {
+      "display": "Weergave",
+      "capture": "Vastleggen",
+      "reminders": "Herinneringen",
+      "data": "Gegevens"
+    },
+    "goals": "Doelen",
+    "goalsSet": "{count, plural, one {# ingesteld} other {# ingesteld}}",
+    "sources": "Bronnen",
+    "import": "Importeren",
+    "export": "Exporteren"
+  },
+  "list": {
+    "showMore": "{count, plural, one {Nog # tonen} other {Nog # tonen}}",
+    "noMatches": "Geen resultaten",
+    "resetFilter": "Filter wissen"
   }
 }

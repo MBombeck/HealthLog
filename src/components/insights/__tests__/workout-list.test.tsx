@@ -121,12 +121,18 @@ describe("<WorkoutList>", () => {
     expect(html).toContain("freediving");
     expect(html).not.toContain("insights.workouts.sport.");
   });
-  it("renders an accessible load-more control and its pending/error states", () => {
+  it("ends in one 'show n more' row and its pending/error states", () => {
     const ready = render(
-      <WorkoutList workouts={[ROW]} hasNextPage onLoadMore={() => {}} />,
+      <WorkoutList
+        workouts={[ROW]}
+        total={30}
+        pageSize={20}
+        hasNextPage
+        onLoadMore={() => {}}
+      />,
     );
-    expect(ready).toContain('data-slot="workout-list-load-more"');
-    expect(ready).toContain("Load more workouts");
+    expect(ready).toContain('data-slot="list-more"');
+    expect(ready).toContain("Show 20 more");
 
     const pending = render(
       <WorkoutList
@@ -147,8 +153,16 @@ describe("<WorkoutList>", () => {
         onLoadMore={() => {}}
       />,
     );
-    expect(failed).toContain('role="alert"');
     expect(failed).toContain("More workouts could not be loaded");
-    expect(failed).toContain(">Retry<");
+  });
+
+  it("is one list: no glyphs, no chevron beside the duration", () => {
+    const html = render(
+      <WorkoutList workouts={[{ ...ROW, hasRoute: true }]} />,
+    );
+    expect(html).not.toContain("workout-list-glyph");
+    expect(html).not.toContain("lucide-chevron-right");
+    // The desktop columns ride the same row.
+    expect(html).toContain('data-slot="list-columns"');
   });
 });

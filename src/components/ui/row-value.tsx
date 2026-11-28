@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 import { DateField, type DateFieldProps } from "@/components/ui/date-field";
 import { TimeField, type TimeFieldProps } from "@/components/ui/time-field";
@@ -35,16 +35,22 @@ const FIELD = cn(
   "[&_input]:text-right [&_input]:text-base pointer-fine:[&_input]:text-sm [&_input]:font-normal",
 );
 
-/** Plain text as a row's value, ending where a glyph would sit. */
+/**
+ * Plain text as a row's value, ending where a glyph would sit. `chevron` puts
+ * the chevron in that slot, for a row whose value opens its editor (a
+ * setting's current value, "Schritte ›").
+ */
 function RowValue({
   children,
   className,
   title,
+  chevron = false,
 }: {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   className?: string;
   /** The full value as a tooltip, for one that is cut short. */
   title?: string;
+  chevron?: boolean;
 }) {
   return (
     <span
@@ -63,7 +69,12 @@ function RowValue({
       >
         {children}
       </span>
-      <span aria-hidden className={GLYPH_SLOT} />
+      <span
+        aria-hidden
+        className={cn(GLYPH_SLOT, chevron && "text-muted-foreground")}
+      >
+        {chevron ? <ChevronRight className="size-4" /> : null}
+      </span>
     </span>
   );
 }

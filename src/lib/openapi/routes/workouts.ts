@@ -179,6 +179,23 @@ const workoutListResponse = z
       .describe(
         "v1.44 — on the first page (`offset=0`) only, account-wide whatever the filter. Absent on later pages and older servers.",
       ),
+    sports: z
+      .array(
+        z.object({
+          sportType: z.string(),
+          count: z.number().int().positive(),
+        }),
+      )
+      .optional()
+      .describe(
+        "The sports of the whole deduped history whatever the filter, most frequent first: the vocabulary of a sport filter. First page only; absent on later pages and older servers.",
+      ),
+    sources: z
+      .array(z.string())
+      .optional()
+      .describe(
+        "The sources the deduped history comes from, most frequent first. First page only; absent on later pages and older servers.",
+      ),
   })
   .meta({ id: "WorkoutListResponse" });
 
