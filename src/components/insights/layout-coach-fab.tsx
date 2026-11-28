@@ -251,12 +251,10 @@ export function LayoutCoachFab() {
           // and `md:right-8` from `md`, plus the side inset of a phone held
           // sideways.
           "fixed right-[calc(var(--safe-area-right)+1.5rem)] bottom-(--floating-action-bottom) z-40 size-(--floating-action-size) rounded-full shadow-lg md:right-[calc(var(--safe-area-right)+2rem)]",
-          // Dark glyph on the purple/pink gradient — white sat at
-          // ≈2.3:1 against the gradient midpoint; the background token
-          // reads ≈6.5:1.
-          "from-primary to-brand-pink text-background bg-gradient-to-br",
-          "hover:from-primary/90 hover:to-brand-pink/90",
-          // The default ring alone is hard to see against the gradient;
+          // The accent ink with the page colour as its glyph: the one
+          // floating action is ink like every other primary (1.50).
+          "bg-primary text-background hover:bg-primary/90",
+          // The default ring alone is hard to see against the fill;
           // the offset ring draws a clear halo around the circle.
           "focus-visible:ring-offset-background focus-visible:ring-offset-2",
           "transition-[opacity,right] duration-150 motion-reduce:transition-none",
