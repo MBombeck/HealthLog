@@ -79,6 +79,7 @@ import {
   deviceClassFromHc,
   hcExternalId,
   hcHourlyPulseExternalId,
+  HC_RAW_PULSE_WINDOW_MS,
 } from "./mapper";
 import {
   HealthConnectSink,
@@ -96,9 +97,6 @@ import { ownRecord } from "@/lib/own-key";
 const SOURCE = "HEALTH_CONNECT" as const;
 const HOUR_MS = 3_600_000;
 const DAY_MS = 86_400_000;
-
-/** Heart-rate samples newer than this stay per-sample; older ones fold. */
-export const HC_RAW_PULSE_WINDOW_MS = 90 * DAY_MS;
 
 /** Rows written per statement batch. */
 const WRITE_BATCH = 500;

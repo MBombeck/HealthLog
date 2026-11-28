@@ -335,6 +335,10 @@ describe("T3 — the mint sites are frozen", () => {
     "app/api/tokens/documents/route.ts": "[DOCUMENTS_WRITE_SCOPE]",
     // Workout ingest from a bridge (#1054). Same shape again: a literal, one
     // scope, one route that accepts it.
+    // The Android Health Connect sync. Minted only by exchanging a one-time
+    // pairing code the person showed in Settings, one scope from a literal,
+    // two routes that accept it.
+    "app/api/health-connect/pair/route.ts": "[HEALTH_CONNECT_WRITE_SCOPE]",
     "app/api/tokens/workouts/route.ts": "[WORKOUTS_WRITE_SCOPE]",
     // MCP, audience-bound to `/mcp`. `health:write` requires explicit consent.
     "app/api/mcp/tokens/route.ts": "SCOPE_HEALTH_READ / SCOPE_HEALTH_WRITE",
@@ -364,6 +368,7 @@ describe("T3 — the mint sites are frozen", () => {
       "app/api/tokens/measurements/route.ts",
       "app/api/tokens/documents/route.ts",
       "app/api/tokens/workouts/route.ts",
+      "app/api/health-connect/pair/route.ts",
       "app/api/mcp/tokens/route.ts",
       "app/api/mcp/oauth/token/route.ts",
     ];
@@ -415,6 +420,7 @@ describe("T4 — declared scopes are exported constants, never string literals",
     const DECLARED_SCOPES = [
       "DOCUMENTS_WRITE_SCOPE",
       "FHIR_READ_SCOPE",
+      "HEALTH_CONNECT_WRITE_SCOPE",
       "MEASUREMENTS_WRITE_SCOPE",
       "WORKOUTS_WRITE_SCOPE",
     ];
@@ -561,6 +567,40 @@ describe("T4c — `workouts:write` opens exactly one door", () => {
         (m) => m[1],
       ),
     ).toEqual(["POST"]);
+  });
+});
+
+describe("T4d — `health-connect:write` opens exactly two doors", () => {
+  it("one helper declares the scope, and only the state read and the batch call it", () => {
+    // The scope is declared once, in the helper that also insists on the
+    // paired device's own token; its callers are its reach. Not the
+    // measurement reads, not the export, not the mint.
+    const declaring = sourceFiles().filter((rel) =>
+      requireAuthScopes(read(rel)).includes("HEALTH_CONNECT_WRITE_SCOPE"),
+    );
+    expect(declaring).toEqual(["lib/health-connect/device-auth.ts"]);
+    const callers = filesMatching(/requirePairedDevice\s*\(/).filter(
+      (rel) => rel !== "lib/health-connect/device-auth.ts",
+    );
+    expect(callers).toEqual([
+      "app/api/health-connect/batch/route.ts",
+      "app/api/health-connect/state/route.ts",
+    ]);
+    const methods = (rel: string) =>
+      [...read(rel).matchAll(/export const (GET|POST|PUT|PATCH|DELETE)\b/g)].map(
+        (m) => m[1],
+      );
+    expect(methods("app/api/health-connect/batch/route.ts")).toEqual(["POST"]);
+    expect(methods("app/api/health-connect/state/route.ts")).toEqual(["GET"]);
+    // The helper refuses every credential but the scope itself: a session and
+    // a wildcard token pass `requireAuth` and must not reach a device's routes.
+    const helper = readSource(
+      "src/lib/health-connect/device-auth.ts",
+      "requireAuth(HEALTH_CONNECT_WRITE_SCOPE",
+    );
+    expect(helper).toMatch(
+      /auth\.bearerScope\s*!==\s*HEALTH_CONNECT_WRITE_SCOPE/,
+    );
   });
 });
 

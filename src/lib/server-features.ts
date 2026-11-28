@@ -57,6 +57,7 @@ export const SERVER_FEATURES = [
   "daily.asks",
   "daily.scores-short-labels",
   "insights.scores-short-labels",
+  "health-connect.sync",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -163,4 +164,6 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "Each start-page score carries shortLabel, its short name for a tile from the score registry, worded in the response language: GET /api/daily/morning scores.sleep and scores.readiness, and GET /api/daily/digest score (the Health score). Render it as is; the web shows the same words.",
   "insights.scores-short-labels":
     "Every score payload carries shortLabel, the score's short name for a tile from the glossary's short form through the score registry, worded in the response language: GET /api/insights/derived and each GET /api/insights/derived/batch entry (null for a metric that is no HealthLog score), GET /api/insights/score-history, healthScore on GET /api/analytics, and on GET /api/dashboard/snapshot healthScore and each scoreRings entry (null on MED_COMPLIANCE). Render it as given, never a short name of the client's own.",
+  "health-connect.sync":
+    "The Android Health Connect sync: POST /api/health-connect/pairing mints a one-time code (QR healthlog-sync://pair?server=…&code=…), POST /api/health-connect/pair exchanges it for a health-connect:write token bound to a Device, GET /api/health-connect/state answers the wanted types and limits, and POST /api/health-connect/batch takes records, aggregates and deletes with one result per item. Early preview.",
 };
