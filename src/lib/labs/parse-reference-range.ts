@@ -53,6 +53,7 @@
  */
 import { type Locale } from "@/lib/i18n/config";
 import {
+  foldFullWidthToAscii,
   normaliseApostrophes,
   stripDiacritics,
 } from "@/lib/i18n/fold-for-match";
@@ -406,7 +407,9 @@ function proseAlternation(field: keyof RangeProse): string {
 // U+007E and the fullwidth U+FF5E are the separator a Korean lab prints
 // ("3.5~5.0"); both are added here rather than to `twoSided` because they are
 // symbols, and the symbol branch needs no surrounding whitespace.
-const SYMBOL_SEP = String.raw`-|–|—|‒|~|～|…|\.{2,3}`;
+// 〜 (U+301C, the wave dash) is how a Japanese report prints a range; it
+// sits outside the fullwidth block the fold maps onto ASCII.
+const SYMBOL_SEP = String.raw`-|–|—|‒|~|～|〜|…|\.{2,3}`;
 
 /** Prefixes that state a ceiling only. */
 const UPPER_PREFIX = `(?:<=|<|≤|${proseAlternation("upper")})`;
@@ -566,9 +569,12 @@ export function parseReferenceRange(
   // Fold for MATCHING only — the stored text stays exactly what the report
   // printed. Accents go so a table written "jusqu'a" meets a report's
   // "jusqu'à"; the curled apostrophe a word processor emits becomes the
-  // straight one the table carries. Everything else, notably the digits and
-  // their separators, is left alone.
-  let candidate = normaliseApostrophes(stripDiacritics(text));
+  // straight one the table carries; the fullwidth forms a Chinese or Japanese
+  // sheet prints become ASCII, so "３．５～５．０" reads as the window it is.
+  // Everything else, notably a decimal comma, is left alone.
+  let candidate = normaliseApostrophes(
+    stripDiacritics(foldFullWidthToAscii(text)),
+  );
   const bracketed = /^[[(](.*)[\])]$/u.exec(candidate);
   if (bracketed) candidate = bracketed[1].trim();
 

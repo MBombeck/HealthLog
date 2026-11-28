@@ -3,8 +3,9 @@
  * or a LAB typed, rather than compared byte-for-byte.
  *
  * Every matcher that reads a shipped translation and looks for it in stored
- * or transcribed text needs the same three tolerances — case, accents, and the
- * apostrophe a word processor curled — and every matcher that grows its own
+ * or transcribed text needs the same tolerances — case, accents, the
+ * apostrophe a word processor curled, and the fullwidth forms a Chinese or
+ * Japanese report prints for ASCII — and every matcher that grows its own
  * copy of them drifts from the others. One home, so "Perte d'appétit" typed
  * with a straight quote meets the bundle's "Perte d’appétit", and a French
  * report's "jusqu'à" meets a table written "jusqu'a".
@@ -45,6 +46,15 @@ const APOSTROPHES = /[\u2018\u2019\u02bc\u00b4`']/gu;
 const COMBINING_MARKS = /[\u0300-\u036f]/gu;
 
 /**
+ * The fullwidth ASCII block, U+FF01–U+FF5E: the same characters as `!` through
+ * `~`, set wide for use beside Han and Kana.
+ */
+const FULLWIDTH_ASCII = /[\uff01-\uff5e]/gu;
+
+/** The ideographic space, U+3000. `\s` already matches it; this names it. */
+const IDEOGRAPHIC_SPACE = /\u3000/gu;
+
+/**
  * Drop accents by decomposing and removing the combining marks: "é" → "e",
  * "ż" → "z", "Ü" → "U". Punctuation, case and spacing survive untouched, so
  * this is the fold to use where the surrounding characters carry meaning — a
@@ -62,6 +72,30 @@ export function stripDiacritics(raw: string): string {
 /** Collapse every apostrophe variant onto the straight ASCII one. */
 export function normaliseApostrophes(raw: string): string {
   return raw.replace(APOSTROPHES, "'");
+}
+
+/**
+ * Fold the fullwidth rendering of ASCII onto ASCII: "３．５" → "3.5",
+ * "ｍｍｏｌ／Ｌ" → "mmol/L", "７０％" → "70%", and the ideographic space onto an
+ * ordinary one.
+ *
+ * A report printed in Chinese or Japanese sets digits, the decimal dot, a
+ * range hyphen and a unit in the fullwidth block. Those codepoints mean exactly
+ * what their ASCII twins mean and nothing else, so this is a spelling tolerance
+ * rather than a translation — the fullwidth "、" and "。" stay untouched,
+ * because they are punctuation rather than a wide rendering of an ASCII mark.
+ *
+ * Deliberately not NFKC, which would also rewrite compatibility characters
+ * whose meaning differs ("①" → "1", "㈱" → "(株)") and turn a one-sentence rule
+ * into a Unicode compatibility table. Han and Kana are untouched: they have no
+ * ASCII twin to fold onto.
+ */
+export function foldFullWidthToAscii(raw: string): string {
+  return raw
+    .replace(FULLWIDTH_ASCII, (ch) =>
+      String.fromCharCode(ch.charCodeAt(0) - 0xfee0),
+    )
+    .replace(IDEOGRAPHIC_SPACE, " ");
 }
 
 /**
