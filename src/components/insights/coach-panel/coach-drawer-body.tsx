@@ -120,7 +120,7 @@ export function CoachDrawerBody({
               land on one horizontal line, and carries the collapse
               control on its trailing edge. */}
           <div className="border-border/70 flex h-14 shrink-0 items-center justify-between border-b px-4">
-            <h2 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+            <h2 className="text-muted-foreground text-xs font-medium">
               {t("insights.coach.historyTitle")}
             </h2>
             {onToggleHistory && (

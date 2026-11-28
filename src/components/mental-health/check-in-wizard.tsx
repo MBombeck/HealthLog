@@ -36,6 +36,7 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { InlineAction } from "@/components/ui/inline-action";
+import { Hint } from "@/components/ui/hint";
 import { PageHeader } from "@/components/ui/page-header";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -167,10 +168,12 @@ export function CheckInWizard({
       </Button>
 
       <header className="flex flex-col gap-1">
-        <PageHeader
-          title={t(`mentalHealth.instrument.${def.i18nKey}`)}
-          description={t(`mentalHealth.instrumentDescription.${def.i18nKey}`)}
-        />
+        <PageHeader title={t(`mentalHealth.instrument.${def.i18nKey}`)} />
+        {/* The period the answers are about: without it the questions are
+            answered for the wrong stretch of time. */}
+        <Hint reason="operation">
+          {t(`mentalHealth.instrumentDescription.${def.i18nKey}`)}
+        </Hint>
       </header>
 
       <Card className="gap-0 p-0">

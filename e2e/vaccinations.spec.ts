@@ -286,9 +286,9 @@ test.describe("vaccinations", () => {
     // itself instead of bouncing. The hero never paints.
     await page.goto("/vaccinations");
     await expect(page).toHaveURL(/\/vaccinations$/, { timeout: 15_000 });
-    await expect(
-      page.locator('[data-slot="module-off-open-settings"]'),
-    ).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('[data-slot="module-off-turn-on"]')).toBeVisible({
+      timeout: 15_000,
+    });
     await expect(
       page.locator('[data-tour-id="vaccinations-hero"]'),
     ).toHaveCount(0);

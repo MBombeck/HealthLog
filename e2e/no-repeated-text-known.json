@@ -1,0 +1,30 @@
+{
+  "about": "Repeats that no-repeated-text.spec.ts still finds, per route, waiting for the change that removes it. The list only shrinks: a repeat that is gone fails the run until its line is deleted; a new one fails because it is not here. Measured on the e2e-mobile-routes record.",
+  "routes": {
+    "/achievements": ["Record your first taken medication event."],
+    "/admin": ["No off-host bucket is set up."],
+    "/admin/backups": ["No off-host bucket is set up.", "h2: Backups"],
+    "/admin/encryption": ["Not saved yet"],
+    "/admin/services": ["Push and channels"],
+    "/admin/system-status": ["How to fix it", "h2: System status"],
+    "/care/practitioners": ["Allgemeinmedizin und Innere Medizin"],
+    "/coach": ["Building your typical range: 6 of 7 days"],
+    "/emergency-card": ["Implants and devices", "Date of birth"],
+    "/insights/catalog": ["Not tracked yet", "Connect a source"],
+    "/medications": ["No doses yet"],
+    "/mental-wellbeing": ["No check-in yet"],
+    "/settings/advanced": ["Delete all data"],
+    "/settings/anamnesis": ["Not answered yet"],
+    "/settings/health-record": [
+      "One click fills in what a general visit usually needs.",
+      "Apply Standard doctor report",
+      "Nothing here is ever preselected.",
+      "State of mind",
+      "Bleeding after menopause",
+      "Sleep Condition Indicator (SCI)",
+      "Nothing selected yet. Choose what to include, or apply the standard report."
+    ],
+    "/settings/privacy": ["Delete or reset"],
+    "/settings/score": ["Selected, waiting for data"]
+  }
+}

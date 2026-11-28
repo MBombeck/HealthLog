@@ -19,6 +19,8 @@ describe("resolveModuleListLayout", () => {
       groupBy: "none",
       groupsOpen: "expanded",
       categoryOrder: [],
+      summary: true,
+      summaryMeasure: "steps",
       saved: false,
     });
     expect(layout.lists.illness.view).toBe("cards");
@@ -38,6 +40,8 @@ describe("resolveModuleListLayout", () => {
       groupBy: "none",
       groupsOpen: "expanded",
       categoryOrder: [],
+      summary: true,
+      summaryMeasure: "steps",
       saved: true,
     });
     expect(layout.lists.labs.saved).toBe(false);
@@ -55,9 +59,30 @@ describe("resolveModuleListLayout", () => {
       groupBy: "none",
       groupsOpen: "expanded",
       categoryOrder: [],
+      summary: true,
+      summaryMeasure: "steps",
       saved: false,
     });
     expect(layout.lists.vorsorge.saved).toBe(false);
+  });
+});
+
+describe("summary choices", () => {
+  it("keeps the workouts summary and its measure, drops malformed ones", () => {
+    const layout = resolveModuleListLayout({
+      workouts: { summary: false, summaryMeasure: "load" },
+      labs: { summary: "no", summaryMeasure: "calories" },
+    });
+    expect(layout.lists.workouts).toMatchObject({
+      summary: false,
+      summaryMeasure: "load",
+      saved: true,
+    });
+    expect(layout.lists.labs).toMatchObject({
+      summary: true,
+      summaryMeasure: "steps",
+      saved: false,
+    });
   });
 });
 
@@ -76,6 +101,8 @@ describe("category choices", () => {
       groupBy: "none",
       groupsOpen: "expanded",
       categoryOrder: [],
+      summary: true,
+      summaryMeasure: "steps",
       saved: false,
     });
   });

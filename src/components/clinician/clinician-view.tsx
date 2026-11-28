@@ -181,7 +181,7 @@ export function ClinicianView({
     >
       {/* ── Provenance header ───────────────────────────────────────── */}
       <header className="mb-6 space-y-1.5">
-        <PageHeader title={t("clinicianView.title")} description={label} />
+        <PageHeader title={t("clinicianView.title")} meta={label} />
         {report && !documentOnly ? (
           <p className="text-muted-foreground mt-3 text-sm">
             {t("clinicianView.period", {

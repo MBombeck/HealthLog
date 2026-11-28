@@ -130,7 +130,7 @@ export function KeyboardShortcutsDialog({
             <div className="flex flex-col gap-1">
               <h3
                 id={`shortcuts-group-${group.id}`}
-                className="text-muted-foreground text-xs font-medium tracking-wide uppercase"
+                className="text-muted-foreground text-xs font-medium"
               >
                 {group.title}
               </h3>

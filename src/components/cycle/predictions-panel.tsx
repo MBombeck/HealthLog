@@ -96,11 +96,7 @@ export function PredictionsPanel({
               body={t("cycle.predictions.rawModeBody")}
             />
           ) : prediction == null ? (
-            <EmptyState
-              variant="plain"
-              size="compact"
-              title={t("cycle.predictions.none")}
-            />
+            <EmptyState variant="plain" title={t("cycle.predictions.none")} />
           ) : prediction.stillLearning ? (
             <>
               <Learning
@@ -234,11 +230,7 @@ function HistoryCard({
       </CardHeader>
       <CardContent className="space-y-4">
         {!stats || stats.avgLengthDays == null ? (
-          <EmptyState
-            variant="plain"
-            size="compact"
-            title={t("cycle.history.none")}
-          />
+          <EmptyState variant="plain" title={t("cycle.history.none")} />
         ) : (
           <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             <Stat

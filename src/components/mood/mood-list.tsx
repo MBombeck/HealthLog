@@ -702,11 +702,6 @@ export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
                 ? t("mood.emptyTitle")
                 : t("mood.emptyFilteredTitle")
             }
-            description={
-              moodFilter === "ALL"
-                ? t("mood.emptyDescription")
-                : t("mood.emptyFilteredDescription")
-            }
             action={
               moodFilter !== "ALL" ? (
                 <Button

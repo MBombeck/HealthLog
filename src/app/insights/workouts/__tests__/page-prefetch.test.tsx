@@ -8,7 +8,7 @@ import { queryKeys } from "@/lib/query-keys";
  * The `/insights/workouts` server-prefetch key crux + fail-soft.
  *
  * The RSC wrapper (`src/app/insights/workouts/page.tsx`) dehydrates the
- * workouts list so the client `useWorkouts({ limit: 100 })` cell reads it back
+ * workouts list so the client `useWorkouts({ limit: 8 })` cell reads it back
  * on mount instead of flashing the loading skeleton. These tests pin the
  * load-bearing rules:
  *  - the server dehydrates under the EXACT key the hook builds (byte-identical
@@ -43,15 +43,15 @@ const SESSION = { user: { id: "u1", timezone: "Europe/Berlin" } };
 
 const LIST = {
   workouts: [{ id: "w1", sportType: "Running" }],
-  meta: { total: 1, limit: 100, offset: 0, droppedDuplicates: 0 },
+  meta: { total: 1, limit: 8, offset: 0, droppedDuplicates: 0 },
 };
 
 /**
- * The key EXACTLY as `useInfiniteWorkouts({ limit: 100 })` builds it. Offset
+ * The key EXACTLY as `useInfiniteWorkouts({ limit: 8 })` builds it. Offset
  * stays out of the key because it is the infinite query's page parameter.
  */
 const CLIENT_KEY = queryKeys.workoutsRecentList({
-  limit: 100,
+  limit: 8,
   offset: undefined,
   since: undefined,
   sportType: undefined,
@@ -89,16 +89,16 @@ describe("/insights/workouts RSC prefetch", () => {
     expect(q!.state.data).toEqual({ pages: [LIST], pageParams: [0] });
   });
 
-  it("reads the same filter the client's `limit: 100` request would", async () => {
+  it("reads the same filter the client's `limit: 8` request would", async () => {
     getUnswitchedSession.mockResolvedValue(SESSION);
     resolveModuleMap.mockResolvedValue({ workouts: true });
     readWorkoutsListCached.mockResolvedValue(LIST);
 
     await InsightsWorkoutsPage();
     // All-null filter params → the same `userId|||` projection cache slot the
-    // `?limit=100` API request builds, so the two callers share one dedup pass.
+    // `?limit=8` API request builds, so the two callers share one dedup pass.
     expect(readWorkoutsListCached).toHaveBeenCalledWith("u1", {
-      limit: 100,
+      limit: 8,
       offset: 0,
       since: null,
       until: null,

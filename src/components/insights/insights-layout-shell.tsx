@@ -1,7 +1,9 @@
 "use client";
 
+import { WORKOUTS_HREF } from "@/lib/links/hrefs";
 import { useMemo, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { usePathname } from "next/navigation";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useMounted } from "@/hooks/use-mounted";
@@ -33,6 +35,13 @@ import { apiGet } from "@/lib/api/api-fetch";
  * `src/app/insights/page.tsx` body so navigating into a sub-page
  * unmounts the drawer.
  */
+/**
+ * Domain pages the Insights shell hosts (domain page template, zone 2): they
+ * keep the section strip as navigation, but the strip carries no wrench and
+ * no regenerate of its own there; the page's header holds its one wrench.
+ */
+const HOSTED_DOMAIN_PAGES: ReadonlySet<string> = new Set([WORKOUTS_HREF]);
+
 interface InsightsPresence {
   metrics: Record<string, { count: number }>;
   hasMood: boolean;
@@ -54,7 +63,12 @@ export function InsightsLayoutShell({ children }: { children: ReactNode }) {
   // its first render (auth + flags settled), which used to flip the
   // regenerate affordance on at hydration time and trip React #418.
   const mounted = useMounted();
-  const advisorEnabled = mounted && isAuthenticated && briefing.available;
+  const pathname = usePathname();
+  const advisorEnabled =
+    mounted &&
+    isAuthenticated &&
+    briefing.available &&
+    !HOSTED_DOMAIN_PAGES.has(pathname ?? "");
 
   const advisor = useInsightsAdvisorQuery(false);
 

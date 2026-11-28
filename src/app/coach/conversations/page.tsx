@@ -131,9 +131,7 @@ function CoachConversationsBody({ readOnly }: { readOnly: boolean }) {
               {t("insights.coach.historyTitle")}
             </span>
           }
-          description={
-            readOnly ? t("insights.coach.historyReadOnlyNote") : undefined
-          }
+          info={readOnly ? t("insights.coach.historyReadOnlyNote") : undefined}
           actions={
             // Surface the sibling Plans ledger — otherwise it is reachable
             // only from the composer's `+` menu. Plans stay readable with the
@@ -206,7 +204,7 @@ function CoachConversationsBody({ readOnly }: { readOnly: boolean }) {
               data-group={group.id}
               className="flex flex-col gap-1.5"
             >
-              <h2 className="text-muted-foreground px-1 text-xs font-medium tracking-wide uppercase">
+              <h2 className="text-muted-foreground px-1 text-xs font-medium">
                 {t(group.labelKey)}
               </h2>
               <ul className="flex flex-col gap-1">

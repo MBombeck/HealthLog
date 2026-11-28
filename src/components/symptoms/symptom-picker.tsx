@@ -129,7 +129,6 @@ export function SymptomPicker({
           {shown.length === 0 && list.length > 0 ? (
             <EmptyState
               variant="plain"
-              size="compact"
               title={t("symptoms.entry.filterEmpty")}
             />
           ) : null}

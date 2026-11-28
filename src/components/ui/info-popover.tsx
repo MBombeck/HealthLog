@@ -30,6 +30,11 @@ export interface InfoPopoverLink {
  *
  * The trigger is a real button with an accessible name, so keyboard and
  * screen-reader users reach the same content a pointer user gets on tap.
+ *
+ * The trigger carries `data-slot="hint"`: it is the sanctioned place for an
+ * explanation, and the per-route explainer budget in
+ * `e2e/text-budgets.json` counts every visible one. `data-hint` names which
+ * hint it is, for a test that needs to find one in particular.
  */
 export interface InfoPopoverProps {
   /** Body content — plain text or a short mix of text nodes. */
@@ -51,7 +56,7 @@ export interface InfoPopoverProps {
   iconClassName?: string;
   /** Popover alignment relative to the trigger. Defaults to `"end"`. */
   align?: "start" | "center" | "end";
-  /** `data-slot` override for the trigger button. */
+  /** Which hint this is, as `data-hint` on the trigger. */
   triggerDataSlot?: string;
   /** `data-slot` override for the popover body. */
   bodyDataSlot?: string;
@@ -65,7 +70,7 @@ export function InfoPopover({
   icon: Icon = Info,
   iconClassName = "h-3.5 w-3.5",
   align = "end",
-  triggerDataSlot = "info-popover-trigger",
+  triggerDataSlot = "info-popover",
   bodyDataSlot = "info-popover-body",
 }: InfoPopoverProps) {
   const { t } = useTranslations();
@@ -76,7 +81,8 @@ export function InfoPopover({
       <PopoverTrigger asChild>
         <button
           type="button"
-          data-slot={triggerDataSlot}
+          data-slot="hint"
+          data-hint={triggerDataSlot}
           aria-label={label ?? t("common.moreInfo")}
           aria-expanded={open}
           className={cn(

@@ -21,15 +21,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { StatusChip } from "@/components/ui/status-chip";
 import { useTranslations } from "@/lib/i18n/context";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
-import {
-  ConfiguredBadge,
-  PasswordInput,
-  useAdminSettings,
-  useUpdateSettings,
-} from "./_shared";
+import { PasswordInput, useAdminSettings, useUpdateSettings } from "./_shared";
 
 export function WebPushVapidSection() {
   const { t } = useTranslations();
@@ -127,7 +123,7 @@ export function WebPushVapidSection() {
         icon={BellRing}
         title={t("admin.webPushVapidTitle")}
         description={t("admin.webPushVapidDescription")}
-        status={configured ? <ConfiguredBadge /> : null}
+        status={configured ? <StatusChip tone="active" /> : null}
       />
 
       <div className="grid gap-3 sm:grid-cols-2">

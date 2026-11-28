@@ -73,7 +73,8 @@
       "active": "Actief",
       "error": "Fout",
       "off": "Uit",
-      "running": "Bezig"
+      "running": "Bezig",
+      "done": "Klaar"
     }
   },
   "apiErrors": {
@@ -805,13 +806,6 @@
   },
   "dashboard": {
     "title": "Dashboard",
-    "greeting": {
-      "morning": "Goedemorgen",
-      "day": "Hallo",
-      "evening": "Goedenavond"
-    },
-    "welcomeBack": "{greeting}, welkom terug.",
-    "welcomeBackWithName": "{greeting} {name}, welkom terug.",
     "greetingSalutation": "Hoi {name}",
     "streakLabel": "dagen op rij",
     "weight": "Gewicht",
@@ -893,7 +887,6 @@
     "dragHandle": "Slepen om te herschikken",
     "dragHandleHint": "Sleep de greep om deze widget te verplaatsen. Je kunt ook de pijlknoppen Omhoog en Omlaag gebruiken, of de greep selecteren en op Spatie en de pijltjestoetsen drukken.",
     "emptyTitle": "Je dashboard is leeg",
-    "emptyDescription": "Leg je eerste meting of stemming vast. Tegels en grafieken verschijnen automatisch zodra er gegevens binnenkomen.",
     "emptyAddMeasurement": "Je eerste meting toevoegen",
     "staleHint": "Laatste meting {count} d geleden",
     "staleHintWeeksOne": "Laatste meting 1 week geleden",
@@ -948,9 +941,6 @@
       "body": "Zonder kopieën van de sleutels die deze server gebruikt, kunnen de gegevens na een herinstallatie niet worden hersteld. Het kost een paar minuten.",
       "action": "Kit openen"
     },
-    "greetingOnly": "{greeting}.",
-    "welcomeNew": "Welkom.",
-    "welcomeNewWithName": "Welkom, {name}.",
     "quickAddSeizure": "Aanval vastleggen",
     "morning": {
       "heroItemsTitle": "Vandaag te doen",
@@ -963,7 +953,6 @@
   },
   "measurements": {
     "title": "Metingen",
-    "subtitle": "Leg meetwaarden vast en bekijk de volledige geschiedenis.",
     "addMeasurement": "Toevoegen",
     "editMeasurement": "Meting bewerken",
     "type": "Type",
@@ -1059,7 +1048,6 @@
     "emptyTitle": "Nog geen metingen",
     "emptyDescription": "Leg je gewicht, bloeddruk, hartslag of andere vitale waarden vast om trends te volgen.",
     "emptyFilteredTitle": "Geen metingen die aan dit filter voldoen",
-    "emptyFilteredDescription": "Probeer een ander type of wis het filter om alle metingen te zien.",
     "emptyAddFirst": "Je eerste meting toevoegen",
     "emptyResetFilter": "Alle types tonen",
     "comment": "Opmerking",
@@ -1254,7 +1242,6 @@
   },
   "mood": {
     "title": "Stemming",
-    "subtitle": "Hoe je je voelde, dag na dag.",
     "mentalWellbeingLink": "Doe een check-in voor mentaal welzijn",
     "addEntry": "Toevoegen",
     "editEntry": "Registratie bewerken",
@@ -1278,9 +1265,7 @@
     "allMoods": "Alle stemmingen",
     "entryCount": "{count, plural, one {# registratie} other {# registraties}}",
     "emptyTitle": "Nog geen stemmingsregistraties",
-    "emptyDescription": "Leg vast hoe je je vandaag voelt om na verloop van tijd patronen te ontdekken.",
     "emptyFilteredTitle": "Geen stemmingsregistraties die aan dit filter voldoen",
-    "emptyFilteredDescription": "Probeer een ander stemmingsniveau of wis het filter om alle registraties te zien.",
     "emptyAddFirst": "Je eerste stemming vastleggen",
     "emptyResetFilter": "Alle stemmingen tonen",
     "actions": "Acties",
@@ -1597,7 +1582,6 @@
   },
   "medications": {
     "title": "Medicatie",
-    "subtitle": "Je medicatie, de schema's en elke inname.",
     "loginRequired": "Log in om je medicatie te beheren.",
     "addMedication": "Toevoegen",
     "firstMedication": "Eerste medicijn toevoegen",
@@ -1615,7 +1599,6 @@
       "failedToast": "Geen inname geregistreerd. Probeer het opnieuw"
     },
     "emptyTitle": "Nog geen medicatie",
-    "emptyDescription": "Voeg medicijnen, doseringen en innametijden toe om je therapietrouw bij te houden.",
     "loadFailed": "Medicatie kon niet worden geladen",
     "retryLoad": "Opnieuw proberen",
     "inactive": "Gepauzeerd",
@@ -2146,7 +2129,6 @@
     "intakeSourceVia": "via {origin}",
     "intakeRecordedAutomatically": "Automatisch geregistreerd",
     "intakeHistoryEmptyTitle": "Nog geen innames geregistreerd",
-    "intakeHistoryEmptyDescription": "Leg een dosis vast op de pagina met dagelijkse innames om de geschiedenis op te bouwen.",
     "intakeHistoryEmptyAction": "Dagelijkse inname openen",
     "intakeHistoryColTaken": "Ingenomen",
     "intakeHistoryColScheduled": "Gepland",
@@ -2397,7 +2379,6 @@
           "USED_UP": "Op"
         },
         "empty": "Geen voorraad geregistreerd.",
-        "emptyHelper": "Registreer een verpakking of houder om de resterende voorraad en hoelang die nog meegaat bij te houden.",
         "emptyCta": "Verpakking registreren",
         "addButton": "Registreren",
         "lowStockLinkOn": "Melding bij lage voorraad: onder {days, plural, one {# dag} other {# dagen}}",
@@ -2862,7 +2843,6 @@
       "clearSearch": "Zoekopdracht wissen",
       "treatmentPeriod": "Behandelperiode",
       "noMatchesTitle": "Geen passende medicijnen",
-      "noMatchesDescription": "Probeer je zoekopdracht of filters aan te passen.",
       "countOne": "{count} medicijn",
       "countFew": "{count} medicijnen",
       "countOther": "{count} medicijnen"
@@ -3166,7 +3146,6 @@
     "noAnalysisYet": "Nog geen beoordeling.",
     "assessmentPreparing": "Je beoordeling wordt voorbereid…",
     "emptyTitle": "Nog niet genoeg gegevens",
-    "emptyDescription": "Inzichten verschijnen zodra je een handvol metingen hebt vastgelegd. Begin met gewicht of bloeddruk.",
     "emptyAddMeasurement": "Meting toevoegen",
     "editMode": {
       "done": "Klaar",
@@ -3188,11 +3167,9 @@
       "saveSuccess": "Indeling van overzicht opgeslagen",
       "saveError": "De indeling van je overzicht kan niet worden opgeslagen",
       "resetSuccess": "Overzicht teruggezet naar standaard",
-      "emptyTitle": "Alle kaarten zijn verborgen",
-      "emptyDescription": "Je hebt alle secties verborgen. Open Aanpassen om kaarten terug te halen."
+      "emptyTitle": "Alle kaarten zijn verborgen"
     },
     "bmiEmptyTitle": "Stel je lengte in om je BMI te zien",
-    "bmiEmptyDescription": "Voor de BMI is je lengte nodig. Voeg die toe onder Instellingen > Account.",
     "bmiEmptyAction": "Accountinstellingen openen",
     "loadError": "Inzichten kunnen niet worden geladen",
     "heroRegenerating": "Opnieuw genereren",
@@ -3312,7 +3289,6 @@
       "keyFindingsTitle": "Belangrijkste bevindingen",
       "signalsTitle": "Signalen van de dag",
       "emptyTitle": "Nog geen briefing",
-      "emptyDescription": "Genereer de briefing van vandaag voor een beschrijvende kijk op je trends.",
       "emptyAction": "Briefing genereren",
       "loadingLabel": "De briefing van vandaag wordt samengesteld",
       "refreshFailedHint": "De briefing kan niet worden vernieuwd. De laatste wordt getoond.",
@@ -4190,11 +4166,8 @@
     "navRecovery": "Apparaatscores",
     "workouts": {
       "title": "Trainingen",
-      "description": "Recente hardloop-, fiets-, wandel- en krachttrainingen, ontdubbeld over bronnen van Apple Watch en Withings.",
       "emptyState": {
-        "title": "Nog geen trainingen",
-        "description": "Trainingen worden gesynchroniseerd vanuit Apple Health op je iPhone en vanuit Withings. Je kunt er ook zelf een vastleggen.",
-        "coachPrefill": "Ik heb nog geen trainingen vastgelegd. Waarom is bijhouden belangrijk, en waar moet ik me eerst op richten?"
+        "title": "Nog geen trainingen"
       },
       "detail": {
         "backToList": "Terug naar trainingen",
@@ -4275,7 +4248,6 @@
         "other": "Overig"
       },
       "loadError": "Je trainingen konden niet worden geladen",
-      "loadMore": "Meer trainingen laden",
       "loadingMore": "Meer trainingen worden geladen",
       "loadMoreError": "Meer trainingen konden niet worden geladen",
       "countOne": "{count} training",
@@ -4283,7 +4255,6 @@
       "countFew": "{count} trainingen",
       "filterLabel": "Filteren op sport",
       "filterAll": "Alle sporten",
-      "filterEmpty": "Geen sessies van deze sport in je geschiedenis.",
       "manual": {
         "logWorkout": "Training vastleggen",
         "sheetTitle": "Training vastleggen",
@@ -4326,6 +4297,17 @@
         "warmingUp": "Op basis van {days, plural, one {# dag} other {# dagen}} tot nu toe: tot zes weken gedekt zijn, valt de fitheid lager uit dan ze is.",
         "coverage": "{rated} van de laatste {days, plural, one {# dag} other {# dagen}} konden worden beoordeeld. Een dag zonder activiteitsgegevens, of met een training die niet kon worden beoordeeld, wordt weggelaten in plaats van als rustdag te tellen.",
         "asOf": "Stand van {date}, de laatste dag die kon worden beoordeeld."
+      },
+      "customize": {
+        "calendar": "Kalender",
+        "calendarShows": "Kalender toont"
+      },
+      "column": {
+        "workout": "Training",
+        "distance": "Afstand",
+        "energy": "Energie",
+        "pulse": "Hartslag",
+        "duration": "Duur"
       }
     },
     "bloodGlucose": {
@@ -5360,7 +5342,6 @@
         "cta": "Opnamen bekijken"
       },
       "emptyTitle": "Nog geen ECG-opnamen",
-      "emptyDescription": "ECG-opnamen worden gesynchroniseerd vanaf een compatibel apparaat met één afleiding. Zodra je apparaat een opname uploadt, verschijnt die hier.",
       "emptyCta": "Apparaat koppelen"
     },
     "intradayPulse": {
@@ -5398,7 +5379,6 @@
       "coachPrefill": "Ik heb nog geen medicatie toegevoegd. Wat moet ik weten voordat ik hier begin met het bijhouden van mijn medicatietrouw?"
     },
     "scoreHistory": {
-      "healthDescription": "Je gezondheidsscore per dag, zoals die op elke dag werd getoond.",
       "emptyDescription": "In deze periode is nog geen score vastgelegd.",
       "usualRange": "Gearceerd: je gebruikelijke bereik, {lo} tot {hi}.",
       "seam": "De lijn wordt onderbroken op het moment dat veranderde wat meetelt voor de score."
@@ -5415,7 +5395,6 @@
       "notEnough": "Te weinig metingen",
       "hourRange": "{start}–{end}",
       "emptyTitle": "Geen volledige metingen in deze periode",
-      "emptyDescription": "Metingen met zowel een systolische als een diastolische waarde verschijnen hier.",
       "error": "De gemiddelden per moment van de dag konden niet worden geladen.",
       "chartTitle": {
         "morning": "Bloeddruk 's ochtends",
@@ -5877,9 +5856,7 @@
       },
       "integrations": {
         "title": "Koppelingen",
-        "connectionsHeading": "Verbindingen",
-        "channelsHeading": "Bezorgkanalen",
-        "matrixLink": "Meldingen per kanaal"
+        "channelsHeading": "Bezorgkanalen"
       },
       "notifications": {
         "title": "Meldingen",
@@ -7384,9 +7361,7 @@
       "description": "Ingesteld op dit account zonder eigen instellingenkaart."
     },
     "healthConnectFolder": {
-      "name": "Health Connect uit een map",
-      "description": "Wordt elke zes uur uit je WebDAV- of Nextcloud-map opgehaald. Instellen en wijzigen doe je onder Importeren.",
-      "manage": "Mapinstellingen openen"
+      "name": "Health Connect uit een map"
     },
     "healthConnectApp": {
       "connect": "Android-apparaat koppelen",
@@ -7396,39 +7371,25 @@
       "qrAlt": "QR-code voor HealthLog Sync",
       "preview": "HealthLog Sync voor Android, preview",
       "disconnectTitle": "{device} ontkoppelen?",
-      "disconnectBody": "De telefoon synchroniseert niet meer tot je hem opnieuw koppelt."
+      "disconnectBody": "De telefoon synchroniseert niet meer tot je hem opnieuw koppelt.",
+      "name": "HealthLog Sync"
     },
     "withingsViewData": "Je metingen bekijken",
     "whoopViewData": "Je herstel bekijken",
     "googleHealthViewData": "Je stappen bekijken",
-    "apiTokens": "API-tokens",
     "measurementsToken": {
-      "title": "Metingtokens",
-      "description": "Maak een token aan zodat een weegschaal, een horlogekoppeling, een voedingsapp of je domotica metingen, waarden voor je eigen metingen en dagtotalen van voedingsstoffen kan toevoegen.",
-      "scopeNote": "Het kan alleen metingen aan je eigen dossier toevoegen, waarden aan eigen metingen die je al hebt aangemaakt, en dagtotalen van voedingsstoffen zolang de module voedingsstoffen aan staat; lezen, wijzigen of verwijderen kan het niet. Metingen en voedingstotalen worden als extern gemarkeerd. De ID van een eigen meting is het deel na /custom-metrics/ in het adres van de pagina ervan.",
-      "nutrientsLink": "Inname van voedingsstoffen bekijken",
-      "createFailed": "Het token kon niet worden aangemaakt. Probeer het opnieuw.",
       "namePlaceholder": "Naam, bijv. Home Assistant",
       "appleHealth": {
         "label": "Metingen naar Apple Health schrijven",
         "createHint": "De HealthLog-app op je iPhone zet de metingen van dit token dan in Apple Health.",
-        "toggleAria": "Metingen van {name} naar Apple Health schrijven",
         "updateFailed": "De Apple Health-instelling kon niet worden gewijzigd. Probeer het opnieuw.",
         "unattributed": "Metingen die zijn verstuurd voordat deze instelling bestond, kunnen niet aan een token worden gekoppeld en blijven daarom buiten Apple Health."
       }
     },
     "workoutsToken": {
-      "title": "Trainingstokens",
-      "description": "Maak een token aan zodat een horlogekoppeling of een synchronisatiescript je trainingen kan toevoegen.",
-      "scopeNote": "Het kan alleen nieuwe trainingen aan je eigen dossier toevoegen. Het kan je gegevens niet lezen, niets wijzigen of verwijderen en geen ander token aanmaken. Trainingen die het toevoegt, worden gemarkeerd als afkomstig van een extern apparaat, en als je telefoon dezelfde sessie heeft vastgelegd, zie je de versie van je telefoon.",
-      "createFailed": "Het token kon niet worden aangemaakt. Probeer het opnieuw.",
       "namePlaceholder": "Naam, bijv. Garmin"
     },
     "documentsToken": {
-      "title": "Documenttokens",
-      "description": "Maak een token aan zodat Paperless-ngx, Papra of het importscript documenten aan je kluis kan toevoegen.",
-      "scopeNote": "Het kan alleen nieuwe documenten aan je eigen kluis toevoegen. Het kan niets weergeven, openen, downloaden, wijzigen of verwijderen en kan geen ander token aanmaken. Het krijgt alleen terug of een bestand is opgeslagen, niet hoe je het hebt gearchiveerd.",
-      "createFailed": "Het token kon niet worden aangemaakt. Probeer het opnieuw.",
       "namePlaceholder": "Naam, bijv. Paperless-ngx"
     },
     "tokenCreated": "Token aangemaakt. Kopieer het nu! Het wordt niet opnieuw getoond.",
@@ -7446,17 +7407,11 @@
     "revokedTokensTitle": "Ingetrokken tokens ({count})",
     "tokenTableName": "Naam",
     "tokenTablePermissions": "Rechten",
-    "tokenTableStatus": "Status",
     "tokenTableCreated": "Aangemaakt",
     "tokenTableLastUsed": "Laatst gebruikt",
     "tokenTableActions": "Acties",
     "noActiveTokens": "Geen actieve tokens.",
     "tokenNeverUsed": "Nooit",
-    "apiEndpointsTitle": "API-endpoints",
-    "apiEndpointMethod": "Methode",
-    "apiEndpointPath": "Pad",
-    "apiEndpointAuth": "Authenticatie",
-    "apiEndpointExample": "Voorbeeld van de body",
     "dangerZone": "Alle gegevens verwijderen",
     "dangerZoneDescription": "Wist je volledige gezondheidsdossier en alle koppelingen.",
     "dangerZoneConfirm": "Alle gegevens verwijderen?",
@@ -8281,11 +8236,118 @@
     },
     "passkeyRenameFailed": "De naam van de passkey kon niet worden gewijzigd.",
     "passkeyRemoveFailed": "De passkey kon niet worden verwijderd.",
-    "apiEndpointsShow": "Endpoints tonen"
+    "integrationList": {
+      "channels": "Bezorgkanalen",
+      "sources": "Gegevensbronnen",
+      "addTitle": "Toevoegen",
+      "allAdded": "Alles wat deze server aanbiedt, is ingesteld.",
+      "noSources": "Nog geen gegevensbron",
+      "noChannels": "Nog geen bezorgkanaal",
+      "ownCredentials": "Eigen app-gegevens nodig",
+      "syncNow": "Nu synchroniseren",
+      "lastAt": "Laatst {when}",
+      "never": "Nog niet",
+      "apns": "iPhone-app",
+      "facts": {
+        "status": "Status",
+        "reason": "Reden",
+        "lastSync": "Laatste synchronisatie",
+        "lastDelivery": "Laatste bezorging",
+        "brings": "Levert",
+        "delivers": "Bezorgt naar",
+        "lastFailure": "Laatste fout",
+        "lastFailureWith": "{when}, {reason}",
+        "setup": "Instellen"
+      },
+      "reason": {
+        "dataArriving": "Gegevens komen binnen",
+        "firstSyncPending": "Eerste synchronisatie volgt",
+        "planLimited": "Abonnement levert niet alles",
+        "permissionLimited": "Sommige toestemmingen ontbreken",
+        "providerErrors": "Aanbieder reageert onbetrouwbaar",
+        "syncStalled": "Synchronisatie hapert",
+        "noNewData": "Geen nieuwe gegevens",
+        "unexpectedSilence": "Al een tijd geen gegevens",
+        "reauthRequired": "Aanmelding verlopen",
+        "pausedAfterErrors": "Gepauzeerd na fouten",
+        "notConnected": "Niet verbonden",
+        "paused": "Gepauzeerd",
+        "switchedOff": "Uitgeschakeld",
+        "autoDisabled": "Uitgeschakeld na weigering",
+        "sendingPaused": "Verzenden gepauzeerd",
+        "deliveryFailing": "Laatste bezorging mislukt"
+      },
+      "brings": {
+        "appleHealth": "Alles uit Gezondheid, via de iPhone-app",
+        "withings": "Gewicht, bloeddruk, slaap",
+        "whoop": "Herstel, slaap, belasting",
+        "googleHealth": "Fitbit en Pixel Watch",
+        "garmin": "Slaap, HRV, stress, activiteit",
+        "oura": "Paraatheid, slaap, HRV",
+        "polar": "Herstel, slaap, training",
+        "strava": "Activiteiten als trainingen",
+        "nightscout": "Continue glucose",
+        "dawarich": "Plaatsen en routes als context",
+        "healthConnectFolder": "Health Connect-export uit WebDAV of Nextcloud",
+        "documentSources": "Documenten uit Paperless-ngx of Papra",
+        "telegram": "Een Telegram-chat via je bot",
+        "ntfy": "Een ntfy-onderwerp",
+        "webPush": "Deze browser",
+        "webhook": "JSON naar een eigen adres",
+        "email": "Herinneringen per e-mail",
+        "apns": "Meldingen op de iPhone",
+        "healthConnectApp": "Health Connect, via de Android-app"
+      }
+    },
+    "tokenList": {
+      "title": "Tokens",
+      "newToken": "Nieuw token",
+      "empty": "Nog geen token",
+      "caption": "Je tokens",
+      "scopeColumn": "Toegang",
+      "more": "Meer",
+      "scopeMoreLabel": "Wat deze toegang toestaat",
+      "mirrorMoreLabel": "Wat schrijven naar Apple Gezondheid betekent",
+      "revoked": "Ingetrokken",
+      "hideRevoked": "Ingetrokken verbergen",
+      "menuLabel": "Acties voor {name}",
+      "copied": "Gekopieerd",
+      "scope": {
+        "all": "Volledige toegang",
+        "measurements": "Meetwaarden",
+        "workouts": "Trainingen",
+        "documents": "Documenten",
+        "medication": "Medicijn",
+        "mcpRead": "MCP, lezen",
+        "mcpWrite": "MCP, schrijven",
+        "fhir": "FHIR",
+        "profile": "Profiel"
+      },
+      "scopeInfo": {
+        "measurements": "Voegt meetwaarden, waarden van eigen metrieken en dagtotalen van voedingsstoffen toe aan je dossier. Het kan niets lezen, wijzigen of verwijderen.",
+        "workouts": "Voegt nieuwe trainingen toe aan je dossier. Het kan niets lezen, wijzigen of verwijderen.",
+        "documents": "Voegt nieuwe documenten toe aan je kluis. Het kan niets tonen, openen, wijzigen of verwijderen."
+      },
+      "create": {
+        "failed": "Het token kon niet worden aangemaakt. Probeer het opnieuw.",
+        "createdTitle": "Token aangemaakt",
+        "done": "Klaar",
+        "shownOnce": "Het token wordt alleen nu getoond.",
+        "expiry": "Geldig voor",
+        "expiryYear": "1 jaar",
+        "expiryDays": "{days, plural, one {# dag} other {# dagen}}"
+      },
+      "api": {
+        "title": "API",
+        "address": "Adres",
+        "copyAddress": "API-adres kopiëren",
+        "endpoints": "Endpoints",
+        "openReference": "Referentie openen"
+      }
+    }
   },
   "admin": {
     "title": "Beheer",
-    "subtitle": "Systeemstatus, gebruikers en instellingen",
     "settingsSaveError": "Instellingen opslaan mislukt",
     "systemStatus": "Systeemstatus",
     "systemStatusDescription": "Runtimestatus van deze instantie: database, worker en aantallen records.",
@@ -8316,8 +8378,6 @@
       "byokHint": "De eigen sleutel van een gebruiker (BYOK, ChatGPT-login of lokale provider) gaat altijd voor; de serversleutel is de laatste stap in de providerketen.",
       "consentHint": "Verzoeken via de serversleutel vereisen de actieve AI-toestemming van de gebruiker; zonder toestemmingsbewijs wordt niets verzonden.",
       "baseUrlHint": "De basis-URL bepaalt de API: een Anthropic-URL zoals https://api.anthropic.com/v1 wordt herkend, elke andere host wordt aangesproken via de OpenAI-compatibele API.",
-      "statusConfigured": "Geconfigureerd",
-      "statusNotConfigured": "Niet geconfigureerd",
       "keyLabel": "API-sleutel",
       "keyPlaceholder": "sk-...",
       "keyPlaceholderSet": "Opgeslagen ({preview}). Voer een nieuwe sleutel in om deze te vervangen",
@@ -8517,7 +8577,6 @@
       "qrAlt": "QR-code voor de uitnodigingslink",
       "loadError": "De uitnodigingen konden niet worden geladen.",
       "emptyTitle": "Nog geen uitnodigingen",
-      "emptyDescription": "Maak een uitnodigingslink om iemand toe te laten terwijl de registratie gesloten is.",
       "colStatus": "Status",
       "colCreated": "Gemaakt",
       "colExpires": "Verloopt",
@@ -8577,14 +8636,11 @@
     "tokenCreated": "Aangemaakt",
     "tokenNeverUsed": "Nooit",
     "tokensEmptyTitle": "Nog geen API-tokens",
-    "tokensEmptyDescription": "Tokens worden uitgegeven wanneer een native client inlogt of via Instellingen > Account.",
     "loginOverviewDescription": "Inlog- en authenticatiegebeurtenissen van alle accounts, te filteren en te exporteren als CSV.",
     "loginOverviewFilterLabel": "Gebeurtenissen filteren",
     "allAuthEvents": "Alle authenticatiegebeurtenissen",
     "failedOnly": "Alleen mislukte",
-    "loginEmptyDescription": "Inlogs, uitlogs en wijzigingen aan passkeys verschijnen hier.",
     "loginEmptyFailedTitle": "Geen mislukte inlogpogingen",
-    "loginEmptyFailedDescription": "Zo hoort het. Schakel over naar alle gebeurtenissen om geslaagde inlogs te zien.",
     "loginEmptyResetFilter": "Alle gebeurtenissen tonen",
     "showingEntries": "{count} van {total} authenticatieregistraties weergegeven",
     "status": "Status",
@@ -8678,32 +8734,25 @@
     },
     "section": {
       "system-status": {
-        "title": "Systeemstatus",
-        "subtitle": "De status van worker, database en koppelingen in één oogopslag."
+        "title": "Systeemstatus"
       },
       "general": {
-        "title": "Algemeen",
-        "subtitle": "Registratie, standaardtaal en andere appbrede schakelaars."
+        "title": "Algemeen"
       },
       "services": {
-        "title": "Push en kanalen",
-        "subtitle": "Meldingskanalen, Web Push-sleutels, de pushrelay en de bezorgstatus voor de hele server."
+        "title": "Push en kanalen"
       },
       "integrations": {
-        "title": "Bewaking",
-        "subtitle": "Umami, GlitchTip en foutrapporten instellen."
+        "title": "Bewaking"
       },
       "coach": {
-        "title": "Coach",
-        "subtitle": "Assistentonderdelen, de serversleutel en feedbackkwaliteit op één plek."
+        "title": "Coach"
       },
       "reminders": {
-        "title": "Herinneringen",
-        "subtitle": "Stel de drempelwaarden voor medicatieherinneringen af en voer handmatig een controle uit."
+        "title": "Herinneringen"
       },
       "users": {
         "title": "Gebruikers",
-        "subtitle": "Beheer gebruikersaccounts, rollen en actieve sessies.",
         "filter": {
           "all": "Alle",
           "admin": "Beheerders",
@@ -8717,7 +8766,6 @@
         "forceLogoutFailed": "Geforceerd uitloggen mislukt",
         "cannotLogoutSelf": "Je kunt jezelf niet geforceerd uitloggen",
         "emptyTitle": "Geen gebruikers in deze weergave",
-        "emptyDescription": "Er zijn geen gebruikers die aan het huidige filter voldoen.",
         "emptyResetFilter": "Alle gebruikers tonen",
         "deletionPending": "Verwijdering op {date}",
         "deletionPendingNoDate": "Verwijdering gepland",
@@ -8738,16 +8786,13 @@
         "deleteUserFailed": "Het account kon niet worden verwijderd"
       },
       "invites": {
-        "title": "Uitnodigingen",
-        "subtitle": "Registratie-uitnodigingslinks aanmaken, volgen en intrekken."
+        "title": "Uitnodigingen"
       },
       "api-tokens": {
-        "title": "API en tokens",
-        "subtitle": "Actieve bearertokens die zijn uitgegeven aan native clients en koppelingen."
+        "title": "API en tokens"
       },
       "login-overview": {
-        "title": "Inlogoverzicht",
-        "subtitle": "Audittrail van authenticatie- en beheergebeurtenissen."
+        "title": "Inlogoverzicht"
       },
       "auditLog": {
         "filterActor": "Uitvoerder (gebruikers-ID of gebruikersnaam)",
@@ -8780,7 +8825,6 @@
       },
       "app-logs": {
         "title": "Applogs",
-        "subtitle": "Volg de meest recente gestructureerde wide events die dit proces heeft uitgestuurd.",
         "processNote": "Alleen logs van het app-proces worden getoond; logs van het worker-proces gaan naar Loki als die koppeling is geconfigureerd.",
         "filterTraceId": "Trace-ID",
         "filterAction": "Actie bevat…",
@@ -9035,20 +9079,16 @@
         "restoreSkippedSeizureIntakeReference": "Nooddosis van een aanval gekoppeld aan een inname die niet in het bestand staat (bewaard zonder de koppeling)"
       },
       "danger-zone": {
-        "title": "Gevarenzone",
-        "subtitle": "Destructieve bewerkingen voor het hele systeem."
+        "title": "Gevarenzone"
       },
       "about": {
-        "title": "Over",
-        "subtitle": "Versie, licentie en updatestatus."
+        "title": "Over"
       },
       "module-availability": {
-        "title": "Modules",
-        "subtitle": "Zet modules aan of uit voor elk account op deze server."
+        "title": "Modules"
       },
       "encryption": {
         "title": "Versleuteling",
-        "subtitle": "Versleutelingsdekking en status van sleutelrotatie voor opgeslagen gegevens.",
         "loadError": "Versleutelingsstatus laden mislukt.",
         "coverageTitle": "Dekking",
         "coverageDescription": "Hoeveel versleutelde rijen er onder elke sleutel-ID vallen.",
@@ -9504,8 +9544,6 @@
       },
       "question": {
         "title": "De HealthLog-pushrelay gebruiken?",
-        "askTitle": "Meldingen via pushrelay?",
-        "askBody": "De inhoud blijft versleuteld.",
         "body": "Meldingen voor de app uit de App Store, end-to-end versleuteld: de relay ziet alleen wanneer er een wordt verstuurd.",
         "yes": "Ja",
         "no": "Nee",
@@ -9589,7 +9627,6 @@
       "notice": {
         "title": "Deze server inrichten",
         "body": "Vijf korte stappen over aanmeldingen, meldingen, AI en privacy; elke stap kun je overslaan of later wijzigen.",
-        "bodyShort": "Vijf korte stappen over aanmeldingen, meldingen, AI en privacy.",
         "open": "Inrichting starten",
         "dismiss": "Niet nu"
       }
@@ -10955,7 +10992,6 @@
   },
   "measurementReminders": {
     "sectionTitle": "Controles",
-    "sectionDescription": "Herinneringen voor wat je wanneer en waar moet meten of laten controleren.",
     "markDone": "Gedaan",
     "delete": "Verwijderen",
     "deleteConfirmTitle": "Herinnering verwijderen?",
@@ -11093,13 +11129,11 @@
   },
   "labs": {
     "title": "Labuitslagen",
-    "subtitle": "Je bloedonderzoek en biomarkerwaarden.",
     "addResult": "Waarde toevoegen",
     "addDescription": "Leg een biomarkerwaarde uit een labrapport vast.",
     "addFirst": "Je eerste uitslag toevoegen",
     "importAction": "Importeren uit Apple Health of csv",
     "emptyTitle": "Nog geen labuitslagen",
-    "emptyDescription": "Leg bloedwaarden zoals HbA1c, LDL of ferritine vast om ze in de tijd te volgen en met je arts te delen.",
     "referenceLabel": "Referentie",
     "readingsCount": "{count, plural, one {# meting} other {# metingen}}",
     "deleteConfirmTitle": "Labuitslag verwijderen?",
@@ -11171,7 +11205,6 @@
     "restoreError": "De meting kon niet worden hersteld",
     "detail": {
       "emptyTitle": "Nog geen metingen",
-      "emptyDescription": "Voeg een waarde toe om deze biomarker in de tijd te volgen.",
       "title": "Biomarker",
       "genericDescription": "Een labbiomarker die je bijhoudt. Voeg metingen toe om de trend ten opzichte van het referentiebereik te volgen.",
       "valuesTitle": "{marker}: alle metingen",
@@ -11211,7 +11244,6 @@
       "deleteConfirmTitle": "Biomarker verwijderen?",
       "deleteConfirmDescription": "De biomarker en alle vastgelegde waarden worden definitief verwijderd. Dit kan niet ongedaan worden gemaakt.",
       "emptyTitle": "Nog geen biomarkers",
-      "emptyDescription": "Definieer markers zoals LDL of HbA1c om er waarden voor vast te leggen.",
       "loadError": "Biomarkers konden niet worden geladen",
       "noRange": "Geen referentiebereik",
       "form": {
@@ -11520,8 +11552,7 @@
       "markerCountOne": "{count} biomarker",
       "markerCountFew": "{count} biomarkers",
       "markerCountOther": "{count} biomarkers",
-      "noMatchesTitle": "Geen passende biomarkers",
-      "noMatchesDescription": "Probeer je zoekopdracht of filters aan te passen."
+      "noMatchesTitle": "Geen passende biomarkers"
     },
     "source": {
       "OCR": "Gescand verslag",
@@ -11616,22 +11647,18 @@
   },
   "moduleOff": {
     "disabled": {
-      "description": "{module} staat uit voor dit dossier, dus de pagina's ervan blijven verborgen. Zet de module weer aan om ze terug te halen.",
       "title": "{module} is uitgeschakeld"
     },
     "notGranted": {
-      "description": "{module} valt buiten de onderdelen die met je zijn gedeeld. Wat een gedeeld dossier omvat, bepaalt de eigenaar ervan.",
       "title": "Geen onderdeel van de gedeelde toegang"
     },
     "unavailable": {
-      "description": "De beheerder heeft {module} voor alle accounts op deze server uitgeschakeld. Met je eigen instellingen kun je de module niet terugzetten.",
       "title": "Niet beschikbaar op deze server"
     },
-    "openModules": "Instellingen, Modules openen"
+    "turnOn": "Inschakelen"
   },
   "vaccinations": {
     "title": "Vaccinaties",
-    "subtitle": "Je vaccinatieoverzicht, dosis voor dosis.",
     "listLoadError": "De vaccinaties konden niet worden geladen.",
     "series": {
       "booster": "Booster",
@@ -12487,7 +12514,6 @@
       "editTitle": "Allergie bewerken",
       "formDescription": "De stof wordt als platte tekst opgeslagen; de reactie en de notitie worden versleuteld.",
       "emptyTitle": "Geen allergieën vastgelegd",
-      "emptyDescription": "Voeg stoffen toe waarop je reageert, met je reacties erop.",
       "loadError": "Je allergieën konden niet worden geladen.",
       "deletedToast": "Allergie verwijderd",
       "deleteError": "De allergie kon niet worden verwijderd.",
@@ -12549,7 +12575,6 @@
       "editTitle": "Familiegeschiedenis bewerken",
       "formDescription": "De familierelatie en de aandoening worden als platte tekst opgeslagen; de notitie wordt versleuteld.",
       "emptyTitle": "Geen familiegeschiedenis vastgelegd",
-      "emptyDescription": "Voeg aandoeningen toe die in je familie voorkomen.",
       "loadError": "Je familiegeschiedenis kon niet worden geladen.",
       "deletedToast": "Registratie verwijderd",
       "deleteError": "De registratie kon niet worden verwijderd.",
@@ -12907,7 +12932,6 @@
   },
   "documents": {
     "title": "Documenten",
-    "subtitle": "Alle brieven, verslagen en scans op één doorzoekbare plek, versleuteld opgeslagen.",
     "pageUpload": "Uploaden",
     "ownerOnlyUpload": "Alleen de eigenaar van het dossier kan documenten toevoegen.",
     "kind": {
@@ -12987,7 +13011,6 @@
       "description": "Bewaar artsenbrieven, labverslagen, beeldvorming, recepten en vaccinatiebewijzen. Ze worden versleuteld en zijn doorzoekbaar op type, aandoening en jaar.",
       "action": "Een eerste document uploaden",
       "noMatchesTitle": "Geen overeenkomende documenten",
-      "noMatchesDescription": "Niets komt overeen met de huidige zoekopdracht en filters.",
       "titleRecord": "De documentenkluis van {name} is leeg"
     },
     "detail": {
@@ -13241,8 +13264,7 @@
       },
       "pickMore": "Meer kiezen",
       "finishedHint": "Zoek opnieuw of wijzig een filter om meer documenten te kiezen.",
-      "maxReached": "Je kunt maximaal {max, plural, one {# document} other {# documenten}} tegelijk importeren.",
-      "noMatchHint": "Probeer een deel van de naam, of wis het label en de datums."
+      "maxReached": "Je kunt maximaal {max, plural, one {# document} other {# documenten}} tegelijk importeren."
     },
     "customize": "Weergave aanpassen",
     "layout": {
@@ -13266,7 +13288,6 @@
       "entryLabel": "Recent verwijderd ({count})",
       "loadError": "Recent verwijderd kon niet worden geladen.",
       "emptyTitle": "Niets in Recent verwijderd",
-      "emptyDescription": "Wat je verwijdert, wacht hier {days, plural, one {# dag} other {# dagen}} voordat het definitief wordt verwijderd.",
       "count": "Verwijderde documenten ({count})",
       "restoreAll": "Alles herstellen",
       "restore": "Herstellen",
@@ -13375,9 +13396,7 @@
     },
     "detail": {
       "title": "Eigen meting",
-      "genericDescription": "Een meting die je bijhoudt. Voeg waarden toe om het verloop te volgen.",
       "emptyTitle": "Nog geen waarden",
-      "emptyDescription": "Voeg je eerste waarde toe om deze meting in een grafiek te zien.",
       "valuesTitle": "{metric}: alle waarden",
       "valuesDescription": "Alle vastgelegde waarden voor deze meting.",
       "backToMetric": "Terug naar {metric}"
@@ -13549,7 +13568,6 @@
       },
       "syncIssue": {
         "title": "Synchronisatie vraagt aandacht",
-        "askTitle": "Synchronisatie gestopt",
         "body": "{integration} synchroniseert niet. Maak opnieuw verbinding om je gegevens actueel te houden."
       },
       "sourceQuiet": {
@@ -13602,8 +13620,7 @@
     "action": {
       "logDose": "Innemen",
       "later": "Later",
-      "answer": "Antwoorden",
-      "learnMore": "Meer",
+      "answer": "Reageren",
       "open": "Openen",
       "setUp": "Instellen",
       "reconnectShort": "Verbinden",
@@ -13617,6 +13634,23 @@
       "viewEcg": "Opname bekijken",
       "viewSteps": "Stappen bekijken",
       "openSource": "Openen"
+    },
+    "ask": {
+      "medication": "Medicijn",
+      "overdue": "Te laat {time}",
+      "overdueNow": "Te laat",
+      "due": "Om {time}",
+      "dueNow": "Nu aan de beurt",
+      "checkupDue": "Controle nodig",
+      "visitToday": "Bezoek vandaag",
+      "visitTomorrow": "Bezoek morgen",
+      "signedOut": "Niet verbonden",
+      "planFallback": "Je plan",
+      "planReview": "Evaluatie nodig",
+      "setupTitle": "Deze server",
+      "setupMeta": "Niet ingericht",
+      "relayTitle": "Pushrelay?",
+      "relayMeta": "Versleuteld"
     },
     "today": {
       "deltaShort": "{delta} t.o.v. basislijn",
@@ -13970,7 +14004,6 @@
       "title": "Wie mijn dossier kan openen",
       "description": "Beëindigde toegang blijft in de lijst staan, zodat je altijd kunt zien wie toegang had en wanneer.",
       "emptyTitle": "Niemand anders kan je dossier openen",
-      "emptyDescription": "Nodig hierboven iemand uit als je wilt dat die het kan lezen.",
       "loadError": "De lijst kon niet worden geladen.",
       "revoke": "Toegang beëindigen",
       "withdrawInvite": "Intrekken",
@@ -13984,7 +14017,6 @@
       "title": "Dossiers die ik kan openen",
       "description": "Een uitnodiging geeft je niets totdat je die accepteert.",
       "emptyTitle": "Niemand heeft een dossier met je gedeeld",
-      "emptyDescription": "Als iemand je uitnodigt, verschijnt de uitnodiging hier.",
       "loadError": "De lijst kon niet worden geladen.",
       "accept": "Accepteren",
       "accepting": "Accepteren…",
@@ -14002,7 +14034,6 @@
       "description": "Elke keer dat iemand anders je dossier heeft geopend.",
       "retention": "Dit beslaat de afgelopen {days, plural, one {# dag} other {# dagen}}. Oudere vermeldingen worden verwijderd.",
       "emptyTitle": "Niemand heeft je dossier geopend",
-      "emptyDescription": "Openingen door anderen dan jij verschijnen hier, één regel per persoon per dag.",
       "loadError": "De activiteit kon niet worden geladen.",
       "opened": "{name} heeft je dossier {count}× geopend",
       "acted": "{name} heeft iets gewijzigd in je dossier",
@@ -14013,7 +14044,6 @@
       "hint": "Wie wat deed in dit profiel: de wijzigingen van elke verzorger, die van jou inbegrepen.",
       "action": "Activiteit tonen",
       "emptyTitle": "Nog niets vastgelegd",
-      "emptyDescription": "Wijzigingen die een verzorger in dit profiel maakt verschijnen hier, en openingen als één regel per verzorger per dag.",
       "you": "Jij",
       "opened": "{name} opende het profiel {count}×",
       "acted": "{name} heeft iets gewijzigd in het profiel",
@@ -14401,11 +14431,9 @@
     },
     "bodySiteWithSide": "{site} ({side})",
     "sectionTitle": "Bezoeken",
-    "sectionDescription": "Doktersbezoeken, gedaan en gepland, op één plek.",
     "add": "Bezoek",
     "loadError": "Bezoeken konden niet worden geladen.",
     "emptyTitle": "Nog geen bezoek vastgelegd",
-    "emptyDescription": "Een datum is genoeg. Al het andere is optioneel.",
     "upcomingHeading": "Gepland",
     "pastHeading": "Eerder",
     "createTitle": "Bezoek vastleggen",
@@ -14503,9 +14531,7 @@
     "searchPlaceholder": "Zoek op naam, praktijk of specialisme",
     "loadError": "Het adresboek kon niet worden geladen.",
     "emptyTitle": "Nog geen vermelding",
-    "emptyDescription": "Voeg een praktijk toe, zodat je die kunt kiezen wanneer je een bezoek vastlegt.",
     "noMatchTitle": "Geen resultaat",
-    "noMatchDescription": "Geen vermelding komt overeen met deze zoekopdracht.",
     "createTitle": "Vermelding toevoegen",
     "editTitle": "Vermelding bewerken",
     "formDescription": "Alleen de naam is verplicht.",
@@ -14891,7 +14917,6 @@
   },
   "timeline": {
     "title": "Tijdlijn",
-    "subtitle": "Wat er wanneer gebeurde, naast je waarden.",
     "standing": "Lopend",
     "startUnknown": "begin onbekend",
     "zoom": {
@@ -15292,26 +15317,15 @@
     }
   },
   "activityCalendar": {
-    "title": "Activiteitenkalender",
-    "periodLabel": "Kalenderperiode",
-    "period": {
-      "week": "Week",
-      "month": "Maand"
-    },
-    "weekRange": "{start} t/m {end}",
     "previous": "Vorige periode",
     "next": "Volgende periode",
-    "metricLabel": "Dagen kleuren op",
     "metric": {
       "steps": "Stappen",
       "activeMinutes": "Actieve minuten",
-      "load": "Trainingsbelasting"
+      "load": "Trainingsbelasting",
+      "workouts": "Trainingen"
     },
-    "empty": "Nog geen stappen, actieve minuten of trainingen in deze periode.",
     "loadError": "De activiteitenkalender kon niet worden geladen.",
-    "weekGoalsColumn": "Weekdoelen",
-    "weekGoalsMet": "Alle weekdoelen gehaald",
-    "weekGoalsNotMet": "Niet alle weekdoelen gehaald",
     "cell": {
       "steps": "{value, plural, one {# stap} other {# stappen}}",
       "activeMinutes": "{value} actieve minuten",
@@ -15327,19 +15341,7 @@
       "high": "Ver boven je gewone niveau",
       "in_progress": "Vandaag, nog bezig"
     },
-    "legend": "Vergeleken met je 12 weken daarvoor:",
     "noBaseline": "Je gebruikelijke bereik verschijnt na 14 dagen met gegevens.",
-    "summary": {
-      "steps": "{value, plural, one {# stap} other {# stappen}}",
-      "activeMinutes": "{value} actieve minuten",
-      "workouts": "{value} trainingen",
-      "load": "Gemiddelde trainingsbelasting {value}",
-      "usual": "Gebruikelijk tot dit punt: {value}",
-      "noUsual": "Nog niet genoeg eerdere weken of maanden om mee te vergelijken.",
-      "usualThroughYesterday": "Tot en met gisteren {value}, je gebruikelijke tot dan {usual}",
-      "firstDay": "Vergeleken met je gebruikelijke zodra de eerste dag voorbij is."
-    },
-    "sportCount": "{sport}: {count}",
     "goal": {
       "workoutsPerWeek": "Trainingen per week",
       "activeMinutesPerWeek": "Actieve minuten per week",
@@ -15347,20 +15349,19 @@
       "stepsPerMonth": "Stappen per maand"
     },
     "goalOf": "{value} van {target}",
-    "setGoals": "Doelen instellen",
-    "editGoals": "Doelen wijzigen",
     "goalsSheet": {
-      "title": "Activiteitsdoelen",
-      "description": "Laat een veld leeg als je geen doel wilt.",
       "none": "Geen doel",
       "invalid": "Een heel getal van {min} tot {max}.",
       "saveError": "De doelen konden niet worden opgeslagen."
     },
     "crossLink": {
       "title": "Activiteitenkalender",
-      "body": "Je stappen per week of maand, vergeleken met wat gewoon is voor jou.",
+      "body": "Je stappen per maand, vergeleken met wat gewoon is voor jou.",
       "cta": "Kalender openen"
-    }
+    },
+    "caption": "Tegenover je 12 weken ervoor",
+    "legendLess": "minder",
+    "legendMore": "meer"
   },
   "sourceProvenance": {
     "title": "Waar de waarden vandaan komen",
@@ -15704,7 +15705,6 @@
       "seizureDaysValue": "op {count, plural, one {# dag} other {# dagen}}"
     },
     "title": "Aanvalsdagboek",
-    "subtitle": "Aanvallen zoals ze zijn waargenomen, met het type, de duur en de gegeven noodmedicatie.",
     "loadError": "Het aanvalsdagboek kon niet worden geladen.",
     "saveError": "Opslaan is niet gelukt. Probeer het opnieuw.",
     "untyped": "Geen type",
@@ -15894,7 +15894,6 @@
     "types": {
       "title": "Aanvalstypen",
       "emptyTitle": "Nog geen aanvalstypen",
-      "emptyDescription": "Stel de aanvalstypen van de persoon één keer in, het liefst samen met het behandelteam.",
       "newTitle": "Aanvalstype toevoegen",
       "editTitle": "Aanvalstype bewerken",
       "description": "De classificatie kies jij of het behandelteam; HealthLog classificeert niet.",
@@ -16023,10 +16022,10 @@
       "fieldsLabel": "Wat de link toont",
       "expiryLabel": "Link verloopt",
       "expiry": {
-        "none": "Nooit, tot intrekking",
         "30": "Over 30 dagen",
         "365": "Over een jaar",
-        "730": "Over twee jaar"
+        "730": "Over twee jaar",
+        "none": "Nooit, tot intrekking"
       },
       "create": "Link maken",
       "qrAlt": "QR-code voor de link naar de noodkaart",
@@ -16466,7 +16465,6 @@
     },
     "admin": {
       "title": "Serverinstallatie",
-      "subtitle": "Elke beslissing toont haar waarde; elke rij opent de bijbehorende instelling.",
       "cardTitle": "Eerste start",
       "progress": "{done} van {total} beslist.",
       "resume": "Serverinstallatie voortzetten",
@@ -16521,5 +16519,25 @@
       "count": "{done} van {total}",
       "until": "Vóór {date}"
     }
+  },
+  "pageCustomize": {
+    "title": "Pagina aanpassen",
+    "back": "Terug",
+    "group": {
+      "display": "Weergave",
+      "capture": "Vastleggen",
+      "reminders": "Herinneringen",
+      "data": "Gegevens"
+    },
+    "goals": "Doelen",
+    "goalsSet": "{count, plural, one {# ingesteld} other {# ingesteld}}",
+    "sources": "Bronnen",
+    "import": "Importeren",
+    "export": "Exporteren"
+  },
+  "list": {
+    "showMore": "{count, plural, one {Nog # tonen} other {Nog # tonen}}",
+    "noMatches": "Geen resultaten",
+    "resetFilter": "Filter wissen"
   }
 }

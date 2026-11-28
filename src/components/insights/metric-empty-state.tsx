@@ -38,8 +38,6 @@ export interface MetricEmptyStateProps {
   icon: ReactNode;
   /** Empty-state headline (already localised). */
   title: string;
-  /** One-line scaffold beneath the headline (already localised). */
-  description: string;
   /** Primary CTA — usually a `<Button asChild><Link/></Button>`. */
   cta: ReactNode;
   /**
@@ -54,18 +52,12 @@ export interface MetricEmptyStateProps {
 export function MetricEmptyState({
   icon,
   title,
-  description,
   cta,
   coachPrefill,
 }: MetricEmptyStateProps) {
   return (
     <>
-      <EmptyState
-        icon={icon}
-        title={title}
-        description={description}
-        action={cta}
-      />
+      <EmptyState icon={icon} title={title} action={cta} />
       <CoachLaunchButton prefill={coachPrefill ?? undefined} />
     </>
   );

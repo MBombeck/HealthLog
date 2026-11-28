@@ -69,6 +69,8 @@ describe("parseModuleListPrefs", () => {
       groupBy: "none",
       groupsOpen: "expanded",
       categoryOrder: [],
+      summary: true,
+      summaryMeasure: "steps",
     });
   });
 

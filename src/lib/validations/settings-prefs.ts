@@ -1,7 +1,7 @@
 /**
  * Request schemas for the per-user Settings preferences that are not part of
- * the account payload: the list presentation of the labs, illness and
- * checkups lists. Shared by the route and the OpenAPI registry so the wire
+ * the account payload: the list presentation of the labs, illness, checkups
+ * and workouts pages. Shared by the route and the OpenAPI registry so the wire
  * contract has one source.
  */
 import { z } from "zod/v4";
@@ -15,6 +15,7 @@ import {
   MODULE_LIST_ORDER_MAX,
   MODULE_LIST_VIEWS,
   MODULE_SORT_DIRS,
+  MODULE_SUMMARY_MEASURES,
 } from "@/lib/settings/module-list-layout";
 
 export const moduleListLayoutPutSchema = z
@@ -33,5 +34,7 @@ export const moduleListLayoutPutSchema = z
       .array(z.string().min(1).max(MODULE_LIST_ID_MAX))
       .max(MODULE_LIST_CATEGORY_ORDER_MAX)
       .optional(),
+    summary: z.boolean().optional(),
+    summaryMeasure: z.enum(MODULE_SUMMARY_MEASURES).optional(),
   })
   .strict();

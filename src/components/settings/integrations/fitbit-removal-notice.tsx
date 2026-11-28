@@ -18,7 +18,7 @@ import { queryKeys } from "@/lib/query-keys";
  * Fitbit Web API off on 30 October 2026; the note says so, says the imported
  * data stays, and names the two ways to keep Fitbit data coming: the Google
  * Health card on this page and the Health Connect import. The server decides
- * whether it shows (`fitbitRemovalNotice` on the status envelope); dismissing
+ * whether it shows (`fitbitRemovalNotice` on the integrations overview and the status envelope); dismissing
  * it clears the flag for good.
  */
 export function FitbitRemovalNotice() {
@@ -32,9 +32,14 @@ export function FitbitRemovalNotice() {
         "/api/integrations/fitbit-removal-notice/dismiss",
       ),
     onSuccess: () =>
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.integrationsStatus(),
-      }),
+      Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.integrationsStatus(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.integrationsOverview(),
+        }),
+      ]),
     onError: () => showErrorToast(t("settings.fitbitRemoval.dismissFailed")),
   });
   return (

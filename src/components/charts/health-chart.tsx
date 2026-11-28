@@ -337,7 +337,7 @@ export function HealthChart({
       )}
 
       {mini && (
-        <div className="text-muted-foreground text-2xs mb-1 font-medium tracking-wider uppercase">
+        <div className="text-muted-foreground text-2xs mb-1 font-medium">
           {title}
         </div>
       )}

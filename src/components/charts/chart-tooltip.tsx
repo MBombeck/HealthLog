@@ -92,7 +92,7 @@ export function RichChartTooltip({
     >
       {label ? (
         <div
-          className="text-muted-foreground mb-1.5 text-[11px] tracking-wide uppercase"
+          className="text-muted-foreground text-2xs mb-1.5"
           data-slot="rich-chart-tooltip-label"
         >
           {label}
@@ -118,7 +118,7 @@ export function RichChartTooltip({
             </div>
             {row.delta ? (
               <span
-                className="text-muted-foreground mt-0.5 ml-3.5 text-[11px]"
+                className="text-muted-foreground text-2xs mt-0.5 ml-3.5"
                 data-slot="rich-chart-tooltip-delta"
               >
                 {row.delta}

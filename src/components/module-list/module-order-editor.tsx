@@ -99,13 +99,7 @@ export function ModuleOrderEditor({ items, onChange }: ModuleOrderEditorProps) {
   }
 
   if (items.length === 0) {
-    return (
-      <EmptyState
-        variant="plain"
-        size="compact"
-        title={t("moduleList.reorder.empty")}
-      />
-    );
+    return <EmptyState variant="plain" title={t("moduleList.reorder.empty")} />;
   }
 
   return (

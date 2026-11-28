@@ -211,7 +211,6 @@ export function SecurityKeysCard({
         {keys.length === 0 ? (
           <EmptyState
             variant="plain"
-            size="compact"
             title={t("settings.security.keys.empty")}
           />
         ) : (

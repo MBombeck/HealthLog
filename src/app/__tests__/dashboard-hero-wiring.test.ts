@@ -69,17 +69,12 @@ describe("dashboard top — page wiring", () => {
   });
 });
 
-describe("dashboard top — header greeting", () => {
+describe("dashboard top — header", () => {
   const header = readFileSync(HEADER_PATH, "utf8");
 
-  it("renders the greeting unconditionally (no showGreeting gate)", () => {
-    // The greeting line renders on every mount — the legacy hero that
-    // once owned it is gone, so there is no `showGreeting` prop to gate
-    // it. The `min-h-5` line-box reservation keeps the header stable
-    // through the post-hydration name swap.
+  it("renders no greeting line under the title", () => {
     expect(header).not.toContain("showGreeting");
-    expect(header).toContain("min-h-5");
-    expect(header).toContain('data-slot="dashboard-header-greeting"');
+    expect(header).not.toContain("dashboard-header-greeting");
   });
 
   it("the page mounts the header without a greeting prop", () => {

@@ -175,7 +175,6 @@ export function BackupsSection() {
           <EmptyState
             icon={<Database className="size-6" />}
             title={t("admin.section.backups.emptyTitle")}
-            description={t("admin.section.backups.emptyDescription")}
             action={
               <Button
                 size="sm"

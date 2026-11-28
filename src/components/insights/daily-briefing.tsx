@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Hint } from "@/components/ui/hint";
 import { ListRow } from "@/components/ui/list-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SectionHeading } from "@/components/ui/section-heading";
@@ -461,13 +462,6 @@ export function DailyBriefing({
                   ? t("insights.dailyBriefing.failedTitle")
                   : t("insights.dailyBriefing.emptyTitle")
             }
-            description={
-              omittedReason === "ungrounded"
-                ? t("insights.dailyBriefing.omittedUngroundedDescription")
-                : generationFailed
-                  ? t(failedDescriptionKey)
-                  : t("insights.dailyBriefing.emptyDescription")
-            }
             action={
               onRegenerate ? (
                 // v1.4.28 — switch the empty-state CTA from
@@ -496,6 +490,15 @@ export function DailyBriefing({
               ) : null
             }
           />
+          {/* Why a briefing is missing, when it is not simply "not yet":
+              without it the retry reads as a button that does nothing. */}
+          {omittedReason === "ungrounded" || generationFailed ? (
+            <Hint reason="operation" data-slot="daily-briefing-empty-reason">
+              {omittedReason === "ungrounded"
+                ? t("insights.dailyBriefing.omittedUngroundedDescription")
+                : t(failedDescriptionKey)}
+            </Hint>
+          ) : null}
         </InsightSectionCard>
       )}
     </section>
@@ -533,7 +536,7 @@ function BriefingLists({ briefing }: { briefing: DailyBriefingPayload }) {
         <div className="space-y-2">
           <p
             data-slot="daily-briefing-signals-title"
-            className="text-foreground text-xs font-semibold tracking-wide uppercase"
+            className="text-foreground text-xs font-semibold"
           >
             {t("insights.dailyBriefing.signalsTitle")}
           </p>
@@ -551,7 +554,7 @@ function BriefingLists({ briefing }: { briefing: DailyBriefingPayload }) {
         <div className="space-y-2">
           <p
             data-slot="daily-briefing-findings-title"
-            className="text-foreground text-xs font-semibold tracking-wide uppercase"
+            className="text-foreground text-xs font-semibold"
           >
             {t("insights.dailyBriefing.keyFindingsTitle")}
           </p>

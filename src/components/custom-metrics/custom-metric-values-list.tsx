@@ -93,7 +93,6 @@ export function CustomMetricValuesList({
     return (
       <EmptyState
         variant="plain"
-        size="compact"
         title={t("customMetrics.detail.emptyTitle")}
       />
     );

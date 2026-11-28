@@ -60,6 +60,10 @@ export interface WorkoutListPayload {
   meta: WorkoutListMeta;
   /** v1.44 — first page only; see `GET /api/workouts`. */
   trainingLoad?: TrainingLoad;
+  /** First page only: the account's sports, most frequent first. */
+  sports?: Array<{ sportType: string; count: number }>;
+  /** First page only: the sources the history comes from. */
+  sources?: string[];
 }
 
 export interface UseWorkoutsOptions {
@@ -184,7 +188,11 @@ export interface UseInfiniteWorkoutsResult {
   total: number;
   isLoading: boolean;
   isEmpty: boolean;
-  /** v1.44 — fitness, fatigue and form, from the first page. */
+  /** The account's sports over the whole history, from the first page. */
+  sports: Array<{ sportType: string; count: number }>;
+  /** The sources the history comes from, from the first page. */
+  sources: string[];
+  /** Fitness, fatigue and form, from the first page. */
   trainingLoad: TrainingLoad | undefined;
   error: Error | null;
   /** True when the first page failed and there is no history to preserve. */
@@ -225,7 +233,10 @@ export function useInfiniteWorkouts(
     [pages],
   );
   const total = query.data?.pages[0]?.meta.total ?? 0;
-  const trainingLoad = query.data?.pages[0]?.trainingLoad;
+  const firstPage = query.data?.pages[0];
+  const sports = useMemo(() => firstPage?.sports ?? [], [firstPage]);
+  const sources = useMemo(() => firstPage?.sources ?? [], [firstPage]);
+  const trainingLoad = firstPage?.trainingLoad;
   const isEmpty =
     Boolean(isAuthenticated) &&
     query.data !== undefined &&
@@ -236,6 +247,8 @@ export function useInfiniteWorkouts(
     total,
     isLoading: query.isLoading,
     isEmpty,
+    sports,
+    sources,
     trainingLoad,
     error: query.error as Error | null,
     isError: query.isError && query.data === undefined,

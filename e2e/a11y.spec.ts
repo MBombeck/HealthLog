@@ -857,7 +857,7 @@ const INSIGHTS_ROUTES: readonly RouteCase[] = [
     painted: (page) =>
       page
         .locator(
-          '#main-content [data-slot="workout-list"], #main-content [data-slot="empty-state"]',
+          '#main-content [data-slot="workout-list"], #main-content [data-slot="workouts-empty"]',
         )
         .first(),
   },
@@ -957,14 +957,13 @@ const ADMIN_AND_BASELINE_ROUTES: readonly RouteCase[] = [
         .first(),
   },
   {
-    // The settings heading belongs to `<SettingsShell>`, i.e. the chrome —
-    // waiting on it says nothing about the section body below. The
-    // connections panel is that body. This route has no data-gated content of
-    // its own: every provider card renders immediately and fills in its
-    // status pill later, so the panel's presence is the honest ceiling here.
+    // The settings heading belongs to `<SettingsShell>`, i.e. the chrome;
+    // waiting on it says nothing about the section body below. The two lists
+    // are that body, and they exist once the overview has answered.
     name: "/settings/integrations",
     path: "/settings/integrations",
-    painted: (page) => page.locator('[data-slot="connections-panel"]:visible'),
+    painted: (page) =>
+      page.locator('[data-slot="integration-list"]:visible').first(),
   },
   {
     // The heading comes from `<AdminShell>` and is on screen while every card

@@ -82,7 +82,7 @@ const PINNED_AFFORDANCES: Record<
   // The third `text-success` is the success arm of StatusItem's tone table:
   // the two status grids used to spell the tint at every call site and now
   // name a tone instead, so the marker lives here once.
-  "src/components/admin/_shared.tsx": { "text-success": 3, "toast.success": 1 },
+  "src/components/admin/_shared.tsx": { "text-success": 2, "toast.success": 1 },
   // v1.44: the activity calendar's per-week tick for "every weekly goal met",
   // a state of a row the person reads, not the outcome of a write.
   "src/components/activity/activity-calendar-card.tsx": { "text-success": 1 },
@@ -383,14 +383,6 @@ const PINNED_AFFORDANCES: Record<
   "src/components/settings/ai/openai-provider-form.tsx": { "text-success": 1 },
   "src/components/settings/ai/response-timeout-card.tsx": { "text-success": 1 },
   "src/components/settings/ai/runtime-actions-row.tsx": { "text-success": 2 },
-  // The two added by the measurement-ingest mint card are the one-shot
-  // token panel and its copy tick, both rendered only once a token actually
-  // exists; the toast fires only after the clipboard write resolves. Same
-  // shape as the MCP connector card two files over.
-  "src/components/settings/api-section.tsx": {
-    "text-success": 4,
-    "toast.success": 1,
-  },
   // The delete-with-undo toast, the same one the conversation list and the
   // history rail raise for the same delete.
   "src/components/settings/coach-conversations-memory-card.tsx": {
@@ -405,7 +397,7 @@ const PINNED_AFFORDANCES: Record<
   "src/components/settings/insights-pill-order-section.tsx": {
     "toast.success": 1,
   },
-  "src/components/settings/integrations/connections-panel.tsx": {
+  "src/components/settings/integrations/oauth-return.ts": {
     "toast.success": 2,
   },
   // The saved-credentials confirmation line.
@@ -423,7 +415,7 @@ const PINNED_AFFORDANCES: Record<
     "text-success": 1,
   },
   // "Copied" beside the diagnostics copy button.
-  "src/components/settings/integrations/integration-card.tsx": {
+  "src/components/settings/integrations/integration-card-parts.tsx": {
     "text-success": 1,
   },
   "src/components/settings/integrations/nightscout-card.tsx": {
@@ -466,7 +458,7 @@ const PINNED_AFFORDANCES: Record<
   // The "Active" tone of the status chip: a connection's state, never that a
   // write succeeded. Every integration, channel and module badge that carried
   // its own copy of this class now renders through it.
-  "src/components/ui/status-chip.tsx": { "text-success": 1 },
+  "src/components/ui/status-chip.tsx": { "text-success": 2 },
 };
 
 /**

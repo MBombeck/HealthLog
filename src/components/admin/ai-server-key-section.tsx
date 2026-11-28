@@ -6,7 +6,7 @@ import { AlertTriangle, KeyRound, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
-import { Badge } from "@/components/ui/badge";
+import { StatusChip } from "@/components/ui/status-chip";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Button } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
@@ -118,13 +118,7 @@ export function AiServerKeySection() {
         icon={KeyRound}
         title={t("admin.aiServerKey.title")}
         description={t("admin.aiServerKey.description")}
-        status={
-          <Badge variant={configured ? "default" : "outline"}>
-            {configured
-              ? t("admin.aiServerKey.statusConfigured")
-              : t("admin.aiServerKey.statusNotConfigured")}
-          </Badge>
-        }
+        status={<StatusChip tone={configured ? "active" : "off"} />}
       />
 
       <div className="space-y-4">

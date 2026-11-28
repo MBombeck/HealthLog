@@ -66,7 +66,7 @@ export function DoseHistoryColumnRulings() {
           <dt className="text-foreground flex flex-wrap items-baseline gap-x-2 text-xs">
             <code className="font-mono">{ruling.column}</code>
             <span
-              className="text-muted-foreground text-2xs uppercase"
+              className="text-muted-foreground text-2xs"
               data-verdict={ruling.verdict}
             >
               {verdictFor(ruling.verdict)}

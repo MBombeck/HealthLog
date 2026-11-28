@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { SwitchRow } from "@/components/ui/switch-row";
 import { ListGroup, ListItem } from "@/components/ui/list-row";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
@@ -165,10 +166,8 @@ export default function NotificationsPage() {
   if (!isAuthenticated) {
     return (
       <div className="space-y-6">
-        <PageHeader
-          title={t("notifications.title")}
-          description={t("notifications.loginRequired")}
-        />
+        <PageHeader title={t("notifications.title")} />
+        <EmptyState variant="plain" title={t("notifications.loginRequired")} />
       </div>
     );
   }

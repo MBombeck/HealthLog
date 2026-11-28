@@ -256,6 +256,11 @@ export interface PeriodComparison {
   usualToDate: number | null;
   /** Earlier periods the usual was computed from. */
   referencePeriods: number;
+  /**
+   * `completedValue` against `usualToDate` as a signed fraction (0.18 = 18 %
+   * above the usual); null while either is missing or the usual is zero.
+   */
+  change: number | null;
 }
 
 export type SummaryMetric = RatedMetric | "workouts";
@@ -344,6 +349,10 @@ export function comparePeriod(input: {
     usual,
     usualToDate: completed === 0 ? null : usualToDate,
     referencePeriods: rates.length,
+    change:
+      completed === 0 || done.value === null || !usualToDate
+        ? null
+        : (done.value - usualToDate) / usualToDate,
   };
 }
 

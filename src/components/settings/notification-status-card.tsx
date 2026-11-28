@@ -35,6 +35,8 @@ import { showErrorToast } from "@/lib/errors/error-toast";
 import { translateCode } from "@/lib/i18n/translate-code";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { runConnectionTest } from "@/components/settings/test-connection-button";
+import { useIntegrationOverview } from "@/lib/queries/use-integration-overview";
+import type { OverviewChannelKey } from "@/lib/integrations/overview";
 
 export type ChannelType = "TELEGRAM" | "NTFY" | "WEB_PUSH" | "APNS";
 
@@ -81,37 +83,29 @@ export function useNotificationChannelStatuses(enabled: boolean) {
   });
 }
 
-/** A delivery state as one of the three status words. */
-export function channelStatusTone(state: ChannelState): StatusChipTone {
-  switch (state) {
-    case "active":
-      return "active";
-    case "auto_disabled":
-    case "sending_paused":
-      return "error";
-    case "manually_disabled":
-      return "off";
-  }
-}
+/** The overview key of each channel this list shows. */
+const OVERVIEW_KEY: Record<ChannelType, OverviewChannelKey> = {
+  TELEGRAM: "telegram",
+  NTFY: "ntfy",
+  WEB_PUSH: "web-push",
+  APNS: "apns",
+};
 
 /**
  * The chip a channel card shows in its header: off until the channel is set
- * up and switched on, an error while the delivery ledger reports one for it,
- * active otherwise.
+ * up and switched on, otherwise the status the integrations overview resolved
+ * for it (`resolveChannelState`, the one channel rule), read from the cache
+ * the Integrations page already holds.
  */
 export function useChannelStatusTone(
-  type: ChannelType | null,
+  key: OverviewChannelKey,
   isAuthenticated: boolean,
   live: boolean,
 ): StatusChipTone {
-  const statuses = useNotificationChannelStatuses(isAuthenticated);
+  const overview = useIntegrationOverview(isAuthenticated);
   if (!live) return "off";
-  const row = type
-    ? (Array.isArray(statuses.data) ? statuses.data : []).find(
-        (channel) => channel.type === type,
-      )
-    : undefined;
-  return row && channelStatusTone(row.state) === "error" ? "error" : "active";
+  const item = overview.data?.items.find((entry) => entry.key === key);
+  return item?.status === "error" ? "error" : "active";
 }
 
 export function NotificationStatusCard() {
@@ -122,6 +116,9 @@ export function NotificationStatusCard() {
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useNotificationChannelStatuses(isAuthenticated);
+  // The chip is the integrations overview's status (`resolveChannelState`,
+  // the one channel rule), so this list and the channel cards agree.
+  const overview = useIntegrationOverview(isAuthenticated);
 
   const reEnable = useMutation({
     // Confirms in place: the channel's badge turns back to "Active".
@@ -212,6 +209,11 @@ export function NotificationStatusCard() {
           <ChannelRow
             key={ch.id}
             channel={ch}
+            tone={
+              overview.data?.items.find(
+                (entry) => entry.key === OVERVIEW_KEY[ch.type],
+              )?.status ?? null
+            }
             formatDateTime={(iso) => fmt.dateTime(iso)}
             t={t}
             onReEnable={() => reEnable.mutate(ch.id)}
@@ -227,6 +229,7 @@ export function NotificationStatusCard() {
 
 function ChannelRow({
   channel,
+  tone,
   formatDateTime,
   t,
   onReEnable,
@@ -235,6 +238,8 @@ function ChannelRow({
   testPending,
 }: {
   channel: ChannelStatus;
+  /** Null while the overview loads, or for a channel it does not list. */
+  tone: StatusChipTone | null;
   formatDateTime: (iso: string | Date) => string;
   t: (key: string, vars?: Record<string, string | number>) => string;
   onReEnable: () => void;
@@ -251,11 +256,13 @@ function ChannelRow({
       <div className="space-y-1">
         <div className="flex items-center gap-2">
           <span className="font-medium">{channel.label}</span>
-          <StatusChip
-            tone={channelStatusTone(channel.state)}
-            data-testid={`notification-status-badge-${channel.type}`}
-            data-state={channel.state}
-          />
+          {tone ? (
+            <StatusChip
+              tone={tone}
+              data-testid={`notification-status-badge-${channel.type}`}
+              data-state={channel.state}
+            />
+          ) : null}
         </div>
         <dl className="text-muted-foreground space-y-0.5 text-xs">
           {channel.lastSuccessAt && (

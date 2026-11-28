@@ -187,11 +187,7 @@ export function LeafSection({
           {t("clinicianView.sectionUnavailable")}
         </p>
       ) : empty ? (
-        <EmptyState
-          variant="plain"
-          size="compact"
-          title={t("clinicianView.sectionEmpty")}
-        />
+        <EmptyState variant="plain" title={t("clinicianView.sectionEmpty")} />
       ) : (
         children
       )}

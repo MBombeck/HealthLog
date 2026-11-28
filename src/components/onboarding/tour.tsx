@@ -728,7 +728,7 @@ export function OnboardingTour({
       >
         <header className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase tabular-nums">
+            <p className="text-muted-foreground text-xs font-medium tabular-nums">
               {t("onboarding.tour.stepOf", {
                 current: counter.current,
                 total: counter.total,

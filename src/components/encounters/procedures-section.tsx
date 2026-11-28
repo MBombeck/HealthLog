@@ -17,10 +17,11 @@
  * never makes the others disappear.
  */
 import { Plus, Scissors, Search } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Hint } from "@/components/ui/hint";
 import { FieldGroup } from "@/components/ui/field-group";
 import { Input } from "@/components/ui/input";
 import { InHeaderSlot } from "@/components/layout/header-slot";
@@ -87,7 +88,6 @@ export function ProceduresSection({ enabled = true }: { enabled?: boolean }) {
         <PageHeader
           titleId="procedures-section-title"
           title={t("encounters.procedures.title")}
-          description={t("encounters.procedures.description")}
           // The empty state carries the add action while there is none.
           actions={
             !list.isPending && !list.isError && total === 0 && !filtered
@@ -110,12 +110,7 @@ export function ProceduresSection({ enabled = true }: { enabled?: boolean }) {
           ))}
         </div>
       ) : total === 0 ? (
-        <EmptyState
-          icon={<Scissors className="size-6" aria-hidden />}
-          title={t("encounters.procedures.emptyTitle")}
-          description={t("encounters.procedures.emptyDescription")}
-          action={addButton ?? undefined}
-        />
+        <ProceduresEmpty action={addButton ?? undefined} />
       ) : (
         <div className="space-y-4">
           <div className="space-y-3" data-slot="procedures-filter">
@@ -235,5 +230,25 @@ export function ProceduresSection({ enabled = true }: { enabled?: boolean }) {
         kind="PROCEDURE"
       />
     </section>
+  );
+}
+
+/**
+ * No procedure yet. A procedure is a visit of that kind, so the way in is
+ * said once: without the line the button below it is the only hint.
+ */
+function ProceduresEmpty({ action }: { action?: ReactNode }) {
+  const { t } = useTranslations();
+  return (
+    <div className="space-y-3">
+      <EmptyState
+        icon={<Scissors className="size-6" aria-hidden />}
+        title={t("encounters.procedures.emptyTitle")}
+        action={action}
+      />
+      <Hint reason="operation">
+        {t("encounters.procedures.emptyDescription")}
+      </Hint>
+    </div>
   );
 }

@@ -321,6 +321,8 @@ export interface DailyDigestInput {
   firstName?: string | null;
   /** `medsToday.nextDueAt` as a local time in the reader's format. */
   nextDoseTimeLabel?: string | null;
+  /** An instant on the reader's clock ("08:00"); absent, an ask has no time. */
+  localTime?: (instant: Date) => string;
   /**
    * Last night as the morning reads it (`resolveLastNight`, through
    * `lastNightFromSnapshot`): whether it is in, with its duration, and whether
@@ -383,10 +385,7 @@ export interface DailyDigestInput {
    * valid; the builder treats a missing value as "nothing landed today".
    */
   arrivals?: readonly DailyDigestArrival[];
-  /**
-   * The reader's locale, for the overview's count-bearing strings. Optional
-   * so a fixture that predates the overview stays valid (English then).
-   */
+  /** The reader's locale for counted strings; absent means English. */
   locale?: Locale;
   /** Rest Mode, when an illness episode is active (illness module). */
   restMode?: TodayRestMode | null;

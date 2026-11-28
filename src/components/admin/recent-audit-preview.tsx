@@ -98,7 +98,6 @@ export function RecentAuditPreview() {
           // overview card without doubling the dashed border. Reuses
           // the existing audit-empty string.
           <EmptyState
-            size="compact"
             variant="plain"
             icon={<ScrollText className="size-5" />}
             title={t("admin.overview.auditEmpty")}

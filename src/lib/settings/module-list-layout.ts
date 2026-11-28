@@ -1,6 +1,6 @@
 /**
- * List presentation for the labs, illness and checkups lists, persisted in
- * `User.moduleListLayoutJson`.
+ * List presentation for the labs, illness, checkups and workouts pages,
+ * persisted in `User.moduleListLayoutJson`.
  *
  * Three independent choices per list, all display-only:
  *
@@ -18,6 +18,9 @@
  *   category-key allow-list `GET /api/labs/overview` applies before it
  *   answers `categories` (`applyCategoryOrder` in this module), so every client receives the
  *   categories already in the person's order. Same tolerance as `order`.
+ * - `summary` / `summaryMeasure`: a page's summary card ("Seite anpassen" ›
+ *   Anzeige): whether it shows, and what it shows. Only the workouts page
+ *   reads them today (the activity calendar and its measure).
  *
  * Null / missing column = the defaults below. The GET never lazy-writes, and
  * the PUT stores only the fields a person has actually chosen, so a default
@@ -30,7 +33,12 @@
  * person built is carried over instead of reset.
  */
 
-export const MODULE_LIST_KEYS = ["labs", "illness", "vorsorge"] as const;
+export const MODULE_LIST_KEYS = [
+  "labs",
+  "illness",
+  "vorsorge",
+  "workouts",
+] as const;
 export type ModuleListKey = (typeof MODULE_LIST_KEYS)[number];
 
 export const MODULE_LIST_VIEWS = ["cards", "list"] as const;
@@ -50,6 +58,14 @@ export type ModuleGroupBy = (typeof MODULE_GROUP_BYS)[number];
 
 export const MODULE_GROUPS_OPEN = ["expanded", "flagged", "collapsed"] as const;
 export type ModuleGroupsOpen = (typeof MODULE_GROUPS_OPEN)[number];
+
+/** What a page's summary card can show (the workouts calendar's measures). */
+export const MODULE_SUMMARY_MEASURES = [
+  "steps",
+  "activeMinutes",
+  "load",
+] as const;
+export type ModuleSummaryMeasure = (typeof MODULE_SUMMARY_MEASURES)[number];
 
 /** Longest order a list keeps; a longer one is cut, never refused. */
 export const MODULE_LIST_ORDER_MAX = 500;
@@ -117,6 +133,8 @@ export interface ModuleListPrefs {
   groupBy: ModuleGroupBy;
   groupsOpen: ModuleGroupsOpen;
   categoryOrder: string[];
+  summary: boolean;
+  summaryMeasure: ModuleSummaryMeasure;
 }
 
 export interface ModuleListPrefsEntry extends ModuleListPrefs {
@@ -136,6 +154,8 @@ const BASE_DEFAULTS: ModuleListPrefs = {
   groupBy: "none",
   groupsOpen: "expanded",
   categoryOrder: [],
+  summary: true,
+  summaryMeasure: "steps",
 };
 
 /** Labs opens on the compact list, the dense reading table (#40). */
@@ -143,6 +163,7 @@ const LIST_DEFAULTS: Record<ModuleListKey, ModuleListPrefs> = {
   labs: { ...BASE_DEFAULTS, view: "list" },
   illness: { ...BASE_DEFAULTS },
   vorsorge: { ...BASE_DEFAULTS },
+  workouts: { ...BASE_DEFAULTS },
 };
 
 export function moduleListDefaults(list: ModuleListKey): ModuleListPrefs {
@@ -182,6 +203,15 @@ export function isModuleGroupsOpen(value: unknown): value is ModuleGroupsOpen {
   );
 }
 
+export function isModuleSummaryMeasure(
+  value: unknown,
+): value is ModuleSummaryMeasure {
+  return (
+    typeof value === "string" &&
+    (MODULE_SUMMARY_MEASURES as readonly string[]).includes(value)
+  );
+}
+
 /** Keep string ids of a sane length, first occurrence wins, capped. */
 export function normaliseModuleListOrder(
   raw: unknown,
@@ -216,6 +246,8 @@ export function storedModuleListChoices(
     groupBy?: unknown;
     groupsOpen?: unknown;
     categoryOrder?: unknown;
+    summary?: unknown;
+    summaryMeasure?: unknown;
   };
   const order = normaliseModuleListOrder(blob.order);
   const categoryOrder = normaliseModuleListOrder(
@@ -231,6 +263,10 @@ export function storedModuleListChoices(
       ? { groupsOpen: blob.groupsOpen }
       : {}),
     ...(categoryOrder !== null ? { categoryOrder } : {}),
+    ...(typeof blob.summary === "boolean" ? { summary: blob.summary } : {}),
+    ...(isModuleSummaryMeasure(blob.summaryMeasure)
+      ? { summaryMeasure: blob.summaryMeasure }
+      : {}),
   };
 }
 

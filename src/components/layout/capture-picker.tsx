@@ -1,5 +1,6 @@
 "use client";
 
+import { WORKOUTS_HREF } from "@/lib/links/hrefs";
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -317,6 +318,26 @@ interface CapturePickerProps {
    * day view), `YYYY-MM-DD`. Every form starts on it. Omitted, they start now.
    */
   defaultDate?: string;
+  /**
+   * The kind to open straight away, skipping the chooser: the tab bar's plus
+   * on a domain page opens that domain's form (`captureKindForPath`). A kind
+   * the record does not offer falls back to the chooser.
+   */
+  direct?: CaptureKind | null;
+}
+
+/**
+ * The domain pages whose own form the tab bar's plus opens directly (domain
+ * page template, rule 2). Every other page opens the chooser.
+ */
+const CAPTURE_KIND_FOR_PATH: Readonly<Record<string, CaptureKind>> = {
+  [WORKOUTS_HREF]: "workout",
+};
+
+export function captureKindForPath(
+  pathname: string | null | undefined,
+): CaptureKind | null {
+  return pathname ? (CAPTURE_KIND_FOR_PATH[pathname] ?? null) : null;
 }
 
 /**
@@ -337,6 +358,7 @@ export function CapturePicker({
   open,
   onOpenChange,
   defaultDate,
+  direct = null,
 }: CapturePickerProps) {
   const { t } = useTranslations();
   const capabilities = useRecordCapabilities();
@@ -360,7 +382,10 @@ export function CapturePicker({
   );
   // Re-derived on every render, never latched: the offer can shrink under a
   // sheet that is already open. See `admittedCaptureKind`.
-  const openKind = admittedCaptureKind(kind, offered);
+  // Opened from a domain page: that page's form, no chooser. Held while the
+  // picker is open, so it closes with the form.
+  const directKind = open ? admittedCaptureKind(direct, offered) : null;
+  const openKind = admittedCaptureKind(kind, offered) ?? directKind;
   const [footerEl, setFooterEl] = useState<HTMLDivElement | null>(null);
 
   function chooseKind(next: CaptureKind, type?: string) {
@@ -374,6 +399,7 @@ export function CapturePicker({
 
   function closeForm() {
     setKind(null);
+    if (directKind !== null) onOpenChange(false);
   }
 
   function handleFormOpenChange(next: boolean) {
@@ -405,7 +431,7 @@ export function CapturePicker({
     <>
       {/* The capture-kind chooser. */}
       <ResponsiveSheet
-        open={open}
+        open={open && directKind === null}
         onOpenChange={onOpenChange}
         title={t("nav.capture.title")}
         description={t("nav.capture.description")}

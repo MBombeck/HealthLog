@@ -114,7 +114,6 @@ export function LogInjectionSiteDialog({
       {allowed.length === 0 ? (
         <EmptyState
           variant="plain"
-          size="compact"
           title={t("medications.logInjectionSiteNoneAvailable")}
         />
       ) : (

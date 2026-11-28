@@ -2,8 +2,9 @@
  * `<ActivityCalendarCard>` draws what the server computed (SSR markup, like
  * the other component suites). The arithmetic is pinned in
  * `src/lib/activity/__tests__/calendar-math.test.ts`; this suite pins that
- * the card shows each day's level, the workouts, the summary against the
- * usual and the goals, and that a shared record gets no goal editor.
+ * the card shows each day's level, the workouts, and the period's figures
+ * with the change the server resolved, and that the goals editor shows
+ * progress.
  */
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -44,7 +45,11 @@ vi.mock("@/hooks/use-record-capabilities", async (importOriginal) => ({
 }));
 
 import { ActivityCalendarCard } from "../activity-calendar-card";
-import { parseGoalField } from "../activity-goals-sheet";
+import {
+  ActivityGoalsForm,
+  countActivityGoals,
+  parseGoalField,
+} from "../activity-goals-form";
 
 function calendar() {
   const today = "2026-10-21";
@@ -99,7 +104,7 @@ function calendar() {
 function render() {
   return renderToStaticMarkup(
     <I18nProvider initialLocale="en">
-      <ActivityCalendarCard />
+      <ActivityCalendarCard measure="steps" onMeasureChange={() => {}} />
     </I18nProvider>,
   );
 }
@@ -122,14 +127,32 @@ describe("ActivityCalendarCard", () => {
     expect(html).toContain("Far above your usual");
   });
 
-  it("summarises the period against the usual and lists the sports", () => {
-    state.data = calendar();
+  it("shows the period's figures with the change the server resolved", () => {
+    const data = calendar();
+    state.data = data;
     const html = render();
     expect(html).toContain('data-metric="steps"');
-    // A running month is compared through yesterday, not on today.
-    expect(html).toContain("Through yesterday");
-    expect(html).toContain("your usual by then");
-    expect(html).toContain("Running: 1");
+    expect(html).toContain('data-metric="workouts"');
+    // The card prints the server's `change`; it computes none of its own.
+    const change = data.summary.steps.change;
+    expect(change).not.toBeNull();
+    expect(html).toContain('data-slot="activity-calendar-change"');
+    // No comparison sentences, no sport chips, no week switch.
+    expect(html).not.toContain("Through yesterday");
+    expect(html).not.toContain("Running: 1");
+    expect(html).not.toContain("activity-calendar-period");
+  });
+
+  it("leaves the training load to the card below it", () => {
+    const data = calendar();
+    state.data = {
+      ...data,
+      available: { ...data.available, load: true },
+      summary: { ...data.summary, load: { value: 42, change: 0.1 } },
+    };
+    const html = render();
+    expect(html).toContain('data-metric="steps"');
+    expect(html).not.toContain('data-metric="load"');
   });
 
   it("marks today as in progress rather than rating it", () => {
@@ -139,29 +162,33 @@ describe("ActivityCalendarCard", () => {
     expect(html).toContain("Today, still in progress");
   });
 
-  it("shows goal progress and a week tick column", () => {
+  it("offers the measure as one menu only when there is more than one", () => {
     state.data = calendar();
     const html = render();
-    expect(html).toContain("Steps per month");
-    // Stable hooks for the end-to-end spec, independent of the wording.
-    expect(html).toContain(
-      'data-slot="activity-calendar-goal" data-goal-key="stepsPerMonth"',
-    );
-    expect(html).toMatch(
-      /data-slot="activity-calendar"[^>]*data-period="month"/,
-    );
-    expect(html).toContain(
-      'data-slot="activity-calendar-week-goal" data-met="true"',
-    );
-    expect(html).toContain('data-slot="activity-calendar-set-goals"');
+    // Steps and active minutes are available, so the measure menu shows.
+    expect(html).toContain('data-slot="activity-calendar-measure"');
+    expect(html).toContain('data-value="steps"');
   });
+});
 
-  it("offers no goal editor inside somebody else's record", () => {
-    state.data = calendar();
-    state.shared = true;
-    const html = render();
-    state.shared = false;
-    expect(html).not.toContain('data-slot="activity-calendar-set-goals"');
+describe("goals editor", () => {
+  it("counts the goals set and shows progress beside each", () => {
+    const data = calendar();
+    expect(countActivityGoals(data.goals)).toBe(2);
+    const html = renderToStaticMarkup(
+      <I18nProvider initialLocale="en">
+        <ActivityGoalsForm
+          formId="goals"
+          goals={data.goals}
+          progress={data.goalProgress}
+          onSaved={() => {}}
+        />
+      </I18nProvider>,
+    );
+    expect(html).toContain("Steps per month");
+    expect(html).toContain(
+      'data-slot="activity-goal-progress" data-progress-key="stepsPerMonth"',
+    );
   });
 });
 

@@ -21,6 +21,10 @@ vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({ user: userRef.value }),
 }));
 
+vi.mock("@/hooks/use-module-toggle", () => ({
+  useModuleToggle: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+
 import { I18nProvider } from "@/lib/i18n/context";
 import { LayoutModuleGate } from "../layout-module-gate";
 
@@ -51,7 +55,7 @@ describe("<LayoutModuleGate>", () => {
     expect(html).not.toContain('data-testid="section"');
     expect(html).toContain('data-slot="module-disabled-notice"');
     expect(html).toContain('data-module="mood"');
-    expect(html).toContain('data-slot="module-off-open-settings"');
+    expect(html).toContain('data-slot="module-off-turn-on"');
     expect(replace).not.toHaveBeenCalled();
   });
 });

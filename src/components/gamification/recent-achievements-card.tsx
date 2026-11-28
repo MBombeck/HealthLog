@@ -172,7 +172,6 @@ export function RecentAchievementsCard() {
         ) : recent.length === 0 ? (
           <EmptyState
             variant="plain"
-            size="compact"
             title={t("achievements.dashboardCard.empty")}
           />
         ) : (

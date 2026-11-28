@@ -164,25 +164,22 @@ describe("SettingsCardActions — one row, one shape", () => {
 });
 
 describe("PageHeader — the one page heading, including the shells", () => {
-  it("renders the explainer in the muted tier", () => {
-    const html = render(<PageHeader title="Settings" description="Yours." />);
-    expect(html).toMatch(/<p class="text-muted-foreground text-sm">Yours\./);
+  it("has no subtitle: the (i) carries what the page is", () => {
+    const html = render(<PageHeader title="Settings" info="Yours." />);
+    expect(html).toContain('data-hint="page-header-info"');
+    expect(html).not.toContain("Yours.");
   });
 
   it("renders a second copy as a heading role, never a second <h1>", () => {
-    const html = render(
-      <PageHeader headingAs="div" title="Settings" description="Yours." />,
-    );
+    const html = render(<PageHeader headingAs="div" title="Settings" />);
     expect(html).not.toContain("<h1");
     expect(html).toContain('role="heading"');
     expect(html).toContain('aria-level="1"');
   });
 
-  it("never truncates the explainer", () => {
-    const html = render(
-      <PageHeader title="Medications" description="Schedules and reminders." />,
-    );
-    expect(html).not.toContain("truncate");
+  it("keeps a record's meta line to one line", () => {
+    const html = render(<PageHeader title="Ramipril" meta="5 mg" />);
+    expect(html).toMatch(/data-slot="page-header-meta"[^>]*truncate/);
   });
 });
 

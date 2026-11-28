@@ -13,7 +13,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { SwitchRow } from "@/components/ui/switch-row";
-import { Badge } from "@/components/ui/badge";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import { queryKeys } from "@/lib/query-keys";
@@ -234,18 +233,6 @@ export interface ApiTokenInfo {
   createdAt: string;
   revoked: boolean;
   user: { id: string; username: string };
-}
-
-/** Shared green "configured" pill — the GlitchTip, Umami, and Web-Push
- * VAPID cards all surface the same state; one component keeps the tint
- * and copy in lockstep. */
-export function ConfiguredBadge() {
-  const { t } = useTranslations();
-  return (
-    <Badge className="border-success/30 bg-success/15 text-success">
-      {t("admin.configured")}
-    </Badge>
-  );
 }
 
 /** The meaning a status tile's value carries. */

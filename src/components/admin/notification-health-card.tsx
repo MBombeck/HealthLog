@@ -118,7 +118,6 @@ export function NotificationHealthCard() {
         {data && data.channels.length === 0 && (
           <EmptyState
             variant="plain"
-            size="compact"
             title={t("admin.notificationHealth.empty")}
           />
         )}

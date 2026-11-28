@@ -137,11 +137,7 @@ export function CycleHistoryChart({
       </CardHeader>
       <CardContent className="space-y-4">
         {!hasData ? (
-          <EmptyState
-            variant="plain"
-            size="compact"
-            title={t("cycle.history.none")}
-          />
+          <EmptyState variant="plain" title={t("cycle.history.none")} />
         ) : (
           <>
             {/* Stat chips — avg / variability / regularity classification. */}

@@ -386,7 +386,6 @@ export function SourcesSection() {
         ) : visibleMetrics.length === 0 ? (
           <EmptyState
             variant="plain"
-            size="compact"
             data-testid="sources-none-in-use"
             title={t("settings.sections.sources.noneInUse")}
           />
@@ -536,7 +535,6 @@ export function SourcesSection() {
                   {overriddenMetrics.length === 0 ? (
                     <EmptyState
                       variant="plain"
-                      size="compact"
                       title={t("settings.sections.sources.perMetricEmpty")}
                     />
                   ) : (

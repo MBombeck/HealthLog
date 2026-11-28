@@ -102,7 +102,6 @@ export function VisitsSection({ enabled = true }: { enabled?: boolean }) {
         <PageHeader
           titleId="visits-section-title"
           title={t("encounters.sectionTitle")}
-          description={t("encounters.sectionDescription")}
           actions={
             <>
               <Button asChild variant="outline" className="min-h-11">
@@ -143,7 +142,6 @@ export function VisitsSection({ enabled = true }: { enabled?: boolean }) {
         <EmptyState
           icon={<CalendarClock className="size-6" aria-hidden />}
           title={t("encounters.emptyTitle")}
-          description={t("encounters.emptyDescription")}
           action={addButton ?? undefined}
         />
       ) : (

@@ -203,7 +203,6 @@ export function BiomarkerManager() {
         <EmptyState
           icon={<FlaskConical className="size-6" />}
           title={t("labs.biomarker.emptyTitle")}
-          description={t("labs.biomarker.emptyDescription")}
           action={
             <Button onClick={openNew}>{t("labs.biomarker.defineFirst")}</Button>
           }
@@ -220,7 +219,7 @@ export function BiomarkerManager() {
 
           {hidden.length > 0 ? (
             <div className="space-y-2">
-              <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+              <p className="text-muted-foreground text-xs font-medium">
                 {t("labs.biomarker.hiddenSection")}
               </p>
               <ul className="space-y-2">{hidden.map(renderRow)}</ul>

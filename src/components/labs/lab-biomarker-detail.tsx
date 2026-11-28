@@ -18,7 +18,6 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { PageHeader } from "@/components/ui/page-header";
-import { InfoPopover } from "@/components/ui/info-popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InsightStatusCard } from "@/components/insights/insight-status-card";
 import { MetricStatStrip } from "@/components/insights/metric-stat-strip";
@@ -293,7 +292,7 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
       ? marker.context.trim()
       : t("labs.detail.genericDescription");
 
-  // v1.25.1 — the error state keeps the heading + description and adds a
+  // v1.25.1 — the error state keeps the heading and its (i) and adds a
   // retry, mirroring the insights `SubPageShell` recovery affordance rather than
   // collapsing to a bare line with no context and no way back.
   // A merged marker is on its way to its target (see above), not failed.
@@ -302,7 +301,7 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
       <div className="space-y-6">
         <PageHeader
           title={marker?.name ?? t("labs.detail.title")}
-          description={description}
+          info={description}
         />
         <QueryErrorCard
           error={markerError ? markerFailure : listFailure}
@@ -322,23 +321,18 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
         title={marker?.name ?? <Skeleton className="h-7 w-32" />}
         // What the marker is, and its unit and panel, one tap away: a title
         // and one line on the page (ui-standards §17).
-        titleAccessory={
+        info={
           marker ? (
-            <InfoPopover
-              triggerDataSlot="lab-biomarker-about"
-              content={
-                <>
-                  <span className="block">{description}</span>
-                  {marker.unit ? (
-                    <span className="text-muted-foreground mt-1 block">
-                      {labUnitLabel(marker.unit, t)}
-                      {marker.panel ? `, ${marker.panel}` : ""}
-                    </span>
-                  ) : null}
-                </>
-              }
-            />
-          ) : null
+            <>
+              <span className="block">{description}</span>
+              {marker.unit ? (
+                <span className="text-muted-foreground mt-1 block">
+                  {labUnitLabel(marker.unit, t)}
+                  {marker.panel ? `, ${marker.panel}` : ""}
+                </span>
+              ) : null}
+            </>
+          ) : undefined
         }
         actions={
           <>
@@ -405,7 +399,6 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
             <EmptyState
               icon={<FlaskConical className="size-6" />}
               title={t("labs.detail.emptyTitle")}
-              description={t("labs.detail.emptyDescription")}
               action={
                 canAddLab ? (
                   <Button onClick={() => setAddOpen(true)}>

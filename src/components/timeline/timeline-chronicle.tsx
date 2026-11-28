@@ -244,7 +244,7 @@ export function TimelineChronicle({
             onClick={() => setStandingOpen((v) => !v)}
             className="focus-visible:ring-ring/50 flex min-h-11 items-center justify-between rounded-md px-4 text-left outline-none focus-visible:ring-2"
           >
-            <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+            <span className="text-muted-foreground text-xs font-medium">
               {t("timeline.standing")}
             </span>
             <ChevronDown

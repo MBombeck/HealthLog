@@ -216,7 +216,6 @@ export function MicronutrientsCard() {
           <EmptyState
             icon={<Leaf className="size-6" />}
             title={t("nutrients.micronutrients.emptyTitle")}
-            size="compact"
           />
         ) : (
           <>
@@ -237,7 +236,7 @@ export function MicronutrientsCard() {
                 >
                   <h3
                     id={labelId}
-                    className="text-muted-foreground text-xs font-medium tracking-wide uppercase"
+                    className="text-muted-foreground text-xs font-medium"
                   >
                     {t(`nutrients.micronutrients.groups.${group}`)}
                   </h3>

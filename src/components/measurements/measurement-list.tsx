@@ -289,11 +289,6 @@ function MeasurementListEmpty({
             ? t("measurements.emptyFilteredTitle")
             : t("measurements.emptyTitle")
         }
-        description={
-          filtered
-            ? t("measurements.emptyFilteredDescription")
-            : t("measurements.emptyDescription")
-        }
         action={
           filtered ? (
             <Button variant="outline" onClick={onResetFilter}>

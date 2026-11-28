@@ -571,17 +571,11 @@ export function DocumentSourcePicker({
         ) : results.length === 0 ? (
           <EmptyState
             variant="plain"
-            size="compact"
             icon={<SearchX className="size-6" aria-hidden />}
             title={
               q || hasFilters
                 ? t("documents.sourcePicker.noMatch")
                 : t("documents.sourcePicker.empty", { name })
-            }
-            description={
-              q || hasFilters
-                ? t("documents.sourcePicker.noMatchHint")
-                : undefined
             }
           />
         ) : (

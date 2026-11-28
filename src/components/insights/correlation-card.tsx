@@ -193,13 +193,8 @@ export function CorrelationCard({ result }: CorrelationCardProps) {
         ) : (
           <EmptyState
             variant="plain"
-            size="compact"
             icon={<Activity className="size-5" />}
             title={t("insights.correlationRow.emptyTitle")}
-            description={t("insights.correlationRow.sourceChip", {
-              n: result.n,
-              window: t("insights.correlationRow.sourceWindowLast30"),
-            })}
           />
         )}
       </CardContent>

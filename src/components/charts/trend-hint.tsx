@@ -24,7 +24,7 @@ export function TrendHint({ count }: TrendHintProps) {
   const result = trendHintFor(count);
   if (result.kind === "hidden") return null;
 
-  const description =
+  const remaining =
     result.remaining === 1
       ? t("trendHints.remainingOne", { count: result.remaining })
       : t("trendHints.remainingMany", { count: result.remaining });
@@ -32,12 +32,11 @@ export function TrendHint({ count }: TrendHintProps) {
   return (
     <EmptyState
       variant="plain"
-      size="compact"
       icon={<TrendingUp className="size-4" />}
       title={
         <span className="text-muted-foreground">{t("trendHints.title")}</span>
       }
-      description={description}
+      meta={remaining}
     />
   );
 }

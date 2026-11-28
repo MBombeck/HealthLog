@@ -289,7 +289,6 @@ export function DayView({
         ) : isEmpty ? (
           <EmptyState
             variant="plain"
-            size="compact"
             title={t("day.empty")}
             data-slot="day-empty"
           />

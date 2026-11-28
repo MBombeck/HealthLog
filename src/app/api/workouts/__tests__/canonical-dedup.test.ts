@@ -286,6 +286,43 @@ describe("GET /api/workouts — canonical dedup", () => {
 
     expect(body.data.workouts).toHaveLength(2);
     expect(body.data.meta.droppedDuplicates).toBe(0);
+    // The first page names the sports and sources of the whole history.
+    expect(body.data.sports).toEqual([
+      { sportType: "RUNNING", count: 1 },
+      { sportType: "WALKING", count: 1 },
+    ]);
+    expect(body.data.sources).toEqual(["APPLE_HEALTH"]);
+  });
+
+  it("counts the sport facet over the whole history under a filter", async () => {
+    const run = makeRow(
+      "w-run",
+      "APPLE_HEALTH",
+      "2026-05-15T07:00:00Z",
+      "running",
+    );
+    const walk = makeRow(
+      "w-walk",
+      "WITHINGS",
+      "2026-05-14T07:00:00Z",
+      "walking",
+    );
+    type FindMany = typeof prisma.workout.findMany;
+    vi.mocked(prisma.workout.findMany).mockImplementation(((args: {
+      where: { sportType?: string };
+    }) =>
+      Promise.resolve(
+        args.where.sportType ? [run] : [run, walk],
+      )) as unknown as FindMany);
+
+    const body = await (await GET(makeRequest("?sportType=running"))).json();
+    expect(body.data.workouts).toHaveLength(1);
+    expect(body.data.sports).toEqual([
+      { sportType: "running", count: 1 },
+      { sportType: "walking", count: 1 },
+    ]);
+    const later = await (await GET(makeRequest("?offset=20"))).json();
+    expect(later.data.sports).toBeUndefined();
   });
 
   it("exposes iOS-contract field names on each workout row", async () => {
@@ -352,7 +389,10 @@ describe("GET /api/workouts — canonical dedup", () => {
 
     expect(first.status).toBe(200);
     expect(second.status).toBe(200);
-    expect(prisma.workout.findMany).toHaveBeenCalledTimes(1);
+    // One read for the filter, shared by both spellings, and one for the
+    // unfiltered history the first page's sport facet is counted over.
+    expect(prisma.workout.findMany).toHaveBeenCalledTimes(2);
+    expect(caches.workouts.stats().size).toBe(2);
     expect(prisma.workout.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {

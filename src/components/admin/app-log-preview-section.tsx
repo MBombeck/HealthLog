@@ -269,7 +269,6 @@ export function AppLogPreviewSection() {
         <EmptyState
           icon={<FileText className="size-6" />}
           title={t("admin.section.app-logs.empty")}
-          description={t("admin.section.app-logs.emptyDescription")}
         />
       ) : (
         // v1.4.27 — keep the table scroll container, but lift the

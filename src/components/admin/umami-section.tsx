@@ -11,13 +11,9 @@ import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { StatusChip } from "@/components/ui/status-chip";
 import { useTranslations } from "@/lib/i18n/context";
-import {
-  SettingsToggle,
-  useAdminSettings,
-  useUpdateSettings,
-  ConfiguredBadge,
-} from "./_shared";
+import { SettingsToggle, useAdminSettings, useUpdateSettings } from "./_shared";
 import { apiPost } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
 
@@ -80,7 +76,7 @@ export function UmamiSection() {
         icon={Activity}
         title={t("admin.umamiTitle")}
         description={t("admin.umamiDescription")}
-        status={configured ? <ConfiguredBadge /> : null}
+        status={configured ? <StatusChip tone="active" /> : null}
       />
 
       <div className="space-y-3">

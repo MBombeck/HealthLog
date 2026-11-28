@@ -29,6 +29,7 @@ import {
   MODULE_GROUP_BYS,
   MODULE_LIST_VIEWS,
   MODULE_SORT_DIRS,
+  MODULE_SUMMARY_MEASURES,
 } from "@/lib/settings/module-list-layout";
 import { moduleListLayoutPutSchema } from "@/lib/validations/settings-prefs";
 
@@ -64,6 +65,16 @@ const moduleListPrefsEntry = z
       .describe(
         'The person\'s order of the labs categories, as `categories[].key` values of `GET /api/labs/overview`. The server applies it there, so a client renders `categories` as given and never sorts them itself. Keys missing from the live data are ignored; a category missing from the list follows the listed ones in the default order, and "other" left at the end of the list stays last. Default empty (the default order). The other lists ignore it.',
       ),
+    summary: z
+      .boolean()
+      .describe(
+        "Whether the page shows its summary card (on the workouts page, the activity calendar). Default true. The lists without a summary ignore it.",
+      ),
+    summaryMeasure: z
+      .enum(MODULE_SUMMARY_MEASURES)
+      .describe(
+        'What the summary card shows: the activity calendar colours its days by steps, active minutes or training load. Default "steps"; a measure the account has no data for falls back to the first it has. Only the workouts page reads it.',
+      ),
     saved: z
       .boolean()
       .describe(
@@ -79,12 +90,13 @@ const moduleListLayoutSchema = z
       labs: moduleListPrefsEntry,
       illness: moduleListPrefsEntry,
       vorsorge: moduleListPrefsEntry,
+      workouts: moduleListPrefsEntry,
     }),
   })
   .meta({
     id: "ModuleListLayout",
     description:
-      "Per-user presentation of the labs, illness and checkups lists. Display-only; a client that does not render a list ignores it.",
+      "Per-user presentation of the labs, illness, checkups and workouts pages. Display-only; a client that does not render a list ignores it.",
   });
 
 // v1.16.11 — the one threshold read every dose-status consumer makes

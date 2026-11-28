@@ -346,14 +346,13 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
       {!isLoading && !isError && items.length === 0 && (
         <EmptyState
           variant="plain"
-          size="compact"
           title={t("medications.sideEffects.emptyState")}
         />
       )}
 
       {!isLoading && !isError && items.length > 0 && (
         <div className="space-y-2">
-          <p className="text-muted-foreground text-xs tracking-wide uppercase">
+          <p className="text-muted-foreground text-xs">
             {t("medications.sideEffects.recentTitle")}
           </p>
           <ul className="space-y-1.5">

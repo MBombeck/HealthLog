@@ -90,7 +90,6 @@ export function NutrientIntakeCard() {
       ) : rows.length === 0 ? (
         <EmptyState
           variant="plain"
-          size="compact"
           title={t("settings.sections.sources.nutrients.empty")}
         />
       ) : (

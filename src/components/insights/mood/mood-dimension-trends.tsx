@@ -130,11 +130,7 @@ export function MoodDimensionTrends({
 
   if (present.length === 0) {
     return (
-      <EmptyState
-        variant="plain"
-        size="compact"
-        title={t("insights.mood.dimensions.none")}
-      />
+      <EmptyState variant="plain" title={t("insights.mood.dimensions.none")} />
     );
   }
 

@@ -40,7 +40,6 @@ import {
   refetchInactiveDailyReads,
 } from "@/lib/query-keys";
 import { INSTRUMENTS, INSTRUMENT_ORDER } from "@/lib/mental-health/instruments";
-import { InfoPopover } from "@/components/ui/info-popover";
 import { PageHeader } from "@/components/ui/page-header";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
@@ -181,12 +180,7 @@ export function MentalWellbeing() {
               sentences above every visit (ui-standards §17). */}
           <PageHeader
             title={t("mentalHealth.pageTitle")}
-            titleAccessory={
-              <InfoPopover
-                triggerDataSlot="mental-health-privacy-note"
-                content={t("mentalHealth.privacyNote")}
-              />
-            }
+            info={t("mentalHealth.privacyNote")}
           />
 
           <section aria-label={t("mentalHealth.choosePrompt")}>

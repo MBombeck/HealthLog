@@ -58,7 +58,7 @@ export default function CustomMetricValuesPage({
   return (
     <SubPageShell
       title={t("customMetrics.detail.valuesTitle", { metric: metricName })}
-      description={t("customMetrics.detail.valuesDescription")}
+      info={t("customMetrics.detail.valuesDescription")}
       backLink={
         <BackLink
           href={`/custom-metrics/${id}`}

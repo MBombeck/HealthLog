@@ -139,7 +139,7 @@ export function HistoryRail({
       {!hideHeading && (
         <h3
           data-slot="coach-history-rail-heading"
-          className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium tracking-wide uppercase"
+          className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium"
         >
           <MessagesSquare
             className="text-muted-foreground size-3.5"
@@ -172,7 +172,6 @@ export function HistoryRail({
         ) : groups.length === 0 ? (
           <EmptyState
             variant="plain"
-            size="compact"
             title={t("insights.coach.historyEmpty")}
             className="px-2"
             data-slot="coach-history-empty"
@@ -188,7 +187,7 @@ export function HistoryRail({
             >
               {/* h3: one step under the panel's h2 title, and a sibling of the
                   list's own h3 label where that shows (heading order). */}
-              <h3 className="text-muted-foreground px-2 text-xs font-medium tracking-wide uppercase">
+              <h3 className="text-muted-foreground px-2 text-xs font-medium">
                 {t(group.labelKey)}
               </h3>
               <ul className="flex flex-col gap-0.5">

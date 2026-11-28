@@ -97,7 +97,7 @@ export function CredentialsForm({
       className="space-y-3"
       data-testid={`${provider}-credentials`}
     >
-      <h3 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+      <h3 className="text-muted-foreground text-xs font-medium">
         {t(`${i18nPrefix}Credentials`)}
       </h3>
       <div className="grid gap-3 sm:grid-cols-2">

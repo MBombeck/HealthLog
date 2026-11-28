@@ -15,6 +15,7 @@ import { useInsightsAnalytics } from "@/hooks/use-insights-analytics";
 import { useAnalyticsQuery } from "@/lib/queries/use-analytics-query";
 import { useTranslations } from "@/lib/i18n/context";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Hint } from "@/components/ui/hint";
 import { Button } from "@/components/ui/button";
 import type {
   RECOVERY_SUMMARY_TYPES,
@@ -278,24 +279,30 @@ export function RecoverySection() {
 
   if (emptyReason) {
     return (
-      <EmptyState
-        data-slot="recovery-empty"
-        data-empty-case={emptyReason}
-        icon={<Heart className="size-6" />}
-        title={t("insights.recovery.emptyTitle")}
-        description={t(EMPTY_COPY[emptyReason])}
-        action={
-          // Waiting for a first resilience level has nothing to open: the
-          // connection is fine, the level simply has not arrived.
-          emptyReason === "oura_no_resilience" ? undefined : (
-            <Button size="sm" variant="outline" asChild>
-              <Link href="/settings/integrations">
-                {t("insights.recovery.emptyAction")}
-              </Link>
-            </Button>
-          )
-        }
-      />
+      <div className="space-y-3">
+        <EmptyState
+          data-slot="recovery-empty"
+          data-empty-case={emptyReason}
+          icon={<Heart className="size-6" />}
+          title={t("insights.recovery.emptyTitle")}
+          action={
+            // Waiting for a first resilience level has nothing to open: the
+            // connection is fine, the level simply has not arrived.
+            emptyReason === "oura_no_resilience" ? undefined : (
+              <Button size="sm" variant="outline" asChild>
+                <Link href="/settings/integrations">
+                  {t("insights.recovery.emptyAction")}
+                </Link>
+              </Button>
+            )
+          }
+        />
+        {/* Which source would bring a score, or what Oura withheld: the
+          person cannot fix a connection they are not told about. */}
+        <Hint reason="operation" data-slot="recovery-empty-reason">
+          {t(EMPTY_COPY[emptyReason])}
+        </Hint>
+      </div>
     );
   }
 

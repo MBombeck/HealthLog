@@ -59,7 +59,7 @@ export function HealthChartHeader({
         {bucketCaption && (
           <span
             data-slot="chart-bucket-caption"
-            className="bg-muted/40 text-muted-foreground text-2xs hidden rounded-md px-1.5 py-0.5 font-medium tracking-wide uppercase sm:inline-flex"
+            className="bg-muted/40 text-muted-foreground text-2xs hidden rounded-md px-1.5 py-0.5 font-medium sm:inline-flex"
           >
             {t(bucketCaption)}
           </span>
@@ -69,7 +69,7 @@ export function HealthChartHeader({
             muted so it does not read as an error. */}
         {compareBaseline !== "none" && hasComparisonData && (
           <span
-            className="text-dose-accent bg-dose-accent/10 text-2xs hidden rounded-md border border-current/30 px-1.5 py-0.5 font-medium tracking-wide uppercase sm:inline-flex"
+            className="text-dose-accent bg-dose-accent/10 text-2xs hidden rounded-md border border-current/30 px-1.5 py-0.5 font-medium sm:inline-flex"
             data-slot="chart-compare-caption"
           >
             {t(
