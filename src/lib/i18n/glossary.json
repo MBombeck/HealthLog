@@ -1,6 +1,18 @@
 {
   "about": "Canonical product vocabulary: one term per concept per locale. `name` is the label form (nav entry, page title, section heading); `item` is the countable noun used in running text. Anchors are message keys that must carry the term (exact, or containing it). Forbidden lists the retired synonyms per locale; `allow` names the few message values that keep one for a stated reason. Display strings only: wire values, routes and enum ids never change with this file. A forbidden entry with `keys` applies only to message keys under that prefix. `decision` records why a concept carries the term it does. `spelling` lists retired spellings per locale. Guarded by src/__tests__/glossary-guard.test.ts. The term covers every form of the concept in display copy: singular, plural and verb phrases ('Medicijn toevoegen', 'Registrar glucemia'), not only the bare noun, so a missing retired synonym is no licence for a second word. A word for a different thing is not a synonym: es 'glucosa' for the analyte (mean glucose, GMI) stays. Every `item` is anchored at least once, or `itemUnanchored` says why it cannot be; every term occurs in its locale's bundle. `short` is the form for a one-line slot (tile, heading, chip, tab), shared with the iOS client; `shortKey` is the message key that carries it, or the full name in a locale without one. A short form is shorter than the name, names one thing, reuses no retired synonym, and reaches a surface only through `metricName` (src/lib/measurements/type-label-keys.ts).",
-  "locales": ["de", "en", "fr", "es", "it", "pl", "ko", "nl", "pt-BR", "ru"],
+  "locales": [
+    "de",
+    "en",
+    "fr",
+    "es",
+    "it",
+    "pl",
+    "ko",
+    "nl",
+    "pt-BR",
+    "ru",
+    "zh-CN"
+  ],
   "concepts": [
     {
       "id": "dashboard",
@@ -35,6 +47,9 @@
         },
         "ru": {
           "name": "Сводка"
+        },
+        "zh-CN": {
+          "name": "总览"
         }
       },
       "anchors": [
@@ -54,7 +69,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -101,6 +117,10 @@
         "ru": {
           "name": "Измерения",
           "item": "измерение"
+        },
+        "zh-CN": {
+          "name": "测量",
+          "item": "测量"
         }
       },
       "anchors": [
@@ -126,7 +146,9 @@
         }
       ],
       "forbidden": {
-        "de": ["Messung erfassen"],
+        "de": [
+          "Messung erfassen"
+        ],
         "en": [],
         "fr": [],
         "es": [],
@@ -135,7 +157,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -181,6 +204,10 @@
         "ru": {
           "name": "Лекарства",
           "item": "лекарство"
+        },
+        "zh-CN": {
+          "name": "用药",
+          "item": "用药"
         }
       },
       "anchors": [
@@ -225,7 +252,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       },
       "decision": "`name` is the label wherever the concept stands as a label (rail, page title, timeline lane, import kind); `item` is one medication, and the word for counting them. Korean: 복약 as the label, 약 in counts and running text (약 3개). Dutch: Medicatie for the area, medicijn for one medication, the word the copy already used for a single one."
     },
@@ -272,6 +300,10 @@
         "ru": {
           "name": "Дозы",
           "item": "доза"
+        },
+        "zh-CN": {
+          "item": "剂量",
+          "name": "剂量"
         }
       },
       "anchors": [
@@ -291,7 +323,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -337,6 +370,10 @@
         "ru": {
           "name": "Приём",
           "item": "приём"
+        },
+        "zh-CN": {
+          "item": "记录服药",
+          "name": "服药"
         }
       },
       "anchors": [
@@ -356,7 +393,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -394,6 +432,9 @@
         },
         "ru": {
           "name": "Принять"
+        },
+        "zh-CN": {
+          "name": "服用"
         }
       },
       "anchors": [
@@ -418,7 +459,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -455,6 +497,9 @@
         },
         "ru": {
           "name": "Пропустить"
+        },
+        "zh-CN": {
+          "name": "跳过"
         }
       },
       "anchors": [
@@ -474,7 +519,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -510,6 +556,9 @@
         },
         "ru": {
           "name": "Напомнить позже"
+        },
+        "zh-CN": {
+          "name": "稍后提醒我（{minutes} 分钟）"
         }
       },
       "anchors": [
@@ -529,7 +578,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -565,6 +615,9 @@
         },
         "ru": {
           "name": "Настроение"
+        },
+        "zh-CN": {
+          "name": "心情"
         }
       },
       "anchors": [
@@ -594,7 +647,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -630,6 +684,9 @@
         },
         "ru": {
           "name": "Психическое благополучие"
+        },
+        "zh-CN": {
+          "name": "心理健康"
         }
       },
       "anchors": [
@@ -654,7 +711,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -690,6 +748,9 @@
         },
         "ru": {
           "name": "Цикл"
+        },
+        "zh-CN": {
+          "name": "周期"
         }
       },
       "anchors": [
@@ -724,7 +785,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -762,6 +824,9 @@
         },
         "ru": {
           "name": "Профилактика"
+        },
+        "zh-CN": {
+          "name": "保健"
         }
       },
       "anchors": [
@@ -807,7 +872,10 @@
             "wholeWord": true
           }
         ],
-        "es": ["atención preventiva", "recordatorios preventivos"],
+        "es": [
+          "atención preventiva",
+          "recordatorios preventivos"
+        ],
         "it": [
           {
             "text": "Prevenzione",
@@ -817,8 +885,12 @@
           "promemoria di prevenzione"
         ],
         "pl": [],
-        "ko": ["예방 관리"],
-        "nl": ["preventieve zorg"],
+        "ko": [
+          "예방 관리"
+        ],
+        "nl": [
+          "preventieve zorg"
+        ],
         "pt-BR": [
           "cuidados preventivos",
           {
@@ -826,7 +898,8 @@
             "wholeWord": true
           }
         ],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -873,6 +946,10 @@
         "ru": {
           "name": "Напоминание об обследовании",
           "item": "обследование"
+        },
+        "zh-CN": {
+          "name": "体检提醒",
+          "item": "体检"
         }
       },
       "anchors": [
@@ -895,21 +972,34 @@
           "Check-up",
           "Erinnerung zum Messen"
         ],
-        "en": ["checkup", "measurement reminder"],
-        "fr": ["rappel de mesure", "rappels de mesure"],
+        "en": [
+          "checkup",
+          "measurement reminder"
+        ],
+        "fr": [
+          "rappel de mesure",
+          "rappels de mesure"
+        ],
         "es": [
           "recordatorio de medición",
           "recordatorios de medición",
           "chequeo"
         ],
-        "it": ["promemoria di misurazione", "promemoria misurazione"],
+        "it": [
+          "promemoria di misurazione",
+          "promemoria misurazione"
+        ],
         "pl": [
           "przypomnienie o pomiar",
           "przypomnienia o pomiar",
           "przypomnień o pomiar"
         ],
-        "ko": ["측정 알림"],
-        "nl": ["meetherinnering"],
+        "ko": [
+          "측정 알림"
+        ],
+        "nl": [
+          "meetherinnering"
+        ],
         "pt-BR": [
           "lembrete de medição",
           "lembretes de medição",
@@ -925,7 +1015,8 @@
           "напоминание о проверк",
           "напоминания о проверк",
           "напоминаний о проверк"
-        ]
+        ],
+        "zh-CN": []
       },
       "decision": "One reminder type, whoever set it up: a screening, a blood count or a routine the Coach suggests (weigh daily, the 7-day blood-pressure week) sit in the same Vorsorge list and push as Vorsorge-Erinnerung / Check-up reminder. 'Erinnerung zum Messen' and 'Mess-Erinnerung' are retired as names; a sentence may still say what to measure.",
       "itemUnanchored": "The item noun is declined in pl and ru in every message that holds it (o badaniu, об обследовании), so no key carries it verbatim in all locales; the name anchors carry the concept."
@@ -975,6 +1066,10 @@
         "ru": {
           "name": "Визиты",
           "item": "визит"
+        },
+        "zh-CN": {
+          "name": "就诊",
+          "item": "就诊"
         }
       },
       "anchors": [
@@ -1007,8 +1102,14 @@
             "caseSensitive": true
           }
         ],
-        "en": ["appointment"],
-        "fr": ["consultation", "visite médicale", "visites médicales"],
+        "en": [
+          "appointment"
+        ],
+        "fr": [
+          "consultation",
+          "visite médicale",
+          "visites médicales"
+        ],
         "es": [
           {
             "text": "visita",
@@ -1019,9 +1120,15 @@
             "wholeWord": true
           }
         ],
-        "it": ["appuntament"],
+        "it": [
+          "appuntament"
+        ],
         "pl": [],
-        "ko": ["진료 예약", "병원 방문", "예약된 방문"],
+        "ko": [
+          "진료 예약",
+          "병원 방문",
+          "예약된 방문"
+        ],
         "nl": [
           {
             "text": "afspraak",
@@ -1032,7 +1139,9 @@
             "wholeWord": true
           }
         ],
-        "pt-BR": ["compromisso"],
+        "pt-BR": [
+          "compromisso"
+        ],
         "ru": [
           "приём у врач",
           "приёма у врач",
@@ -1042,7 +1151,8 @@
           "записи на приём",
           "запись на приём",
           "записями на приём"
-        ]
+        ],
+        "zh-CN": []
       }
     },
     {
@@ -1089,6 +1199,10 @@
         "ru": {
           "name": "Курсы лечения",
           "item": "курс лечения"
+        },
+        "zh-CN": {
+          "name": "治疗序列",
+          "item": "新建治疗序列"
         }
       },
       "anchors": [
@@ -1104,16 +1218,26 @@
         }
       ],
       "forbidden": {
-        "de": ["Behandlungsreihe", "Behandlungskurs"],
-        "en": ["treatment course"],
+        "de": [
+          "Behandlungsreihe",
+          "Behandlungskurs"
+        ],
+        "en": [
+          "treatment course"
+        ],
         "fr": [],
         "es": [],
         "it": [],
         "pl": [],
-        "ko": ["치료 코스"],
+        "ko": [
+          "치료 코스"
+        ],
         "nl": [],
-        "pt-BR": ["curso de tratamento"],
-        "ru": []
+        "pt-BR": [
+          "curso de tratamento"
+        ],
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -1160,6 +1284,10 @@
         "ru": {
           "name": "Результаты анализов",
           "item": "результат анализа"
+        },
+        "zh-CN": {
+          "name": "化验结果",
+          "item": "删除这条化验结果？"
         }
       },
       "anchors": [
@@ -1247,8 +1375,12 @@
           "wyniku laboratoryjn",
           "wynikiem laboratoryjn"
         ],
-        "ko": ["검사 수치"],
-        "nl": ["labwaarde"],
+        "ko": [
+          "검사 수치"
+        ],
+        "nl": [
+          "labwaarde"
+        ],
         "pt-BR": [
           "valor laboratorial",
           "valores laboratoriais",
@@ -1260,7 +1392,8 @@
           "лабораторные показател",
           "лабораторных показател",
           "лабораторным показател"
-        ]
+        ],
+        "zh-CN": []
       }
     },
     {
@@ -1308,6 +1441,10 @@
         "ru": {
           "name": "Заболевания",
           "item": "эпизод"
+        },
+        "zh-CN": {
+          "name": "疾病",
+          "item": "编辑发作记录"
         }
       },
       "anchors": [
@@ -1459,7 +1596,8 @@
             "text": "дневник",
             "keys": "illness."
           }
-        ]
+        ],
+        "zh-CN": []
       }
     },
     {
@@ -1496,6 +1634,9 @@
         },
         "ru": {
           "name": "Ваша история заболеваний"
+        },
+        "zh-CN": {
+          "name": "你的疾病史"
         }
       },
       "anchors": [
@@ -1520,7 +1661,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -1566,6 +1708,10 @@
         "ru": {
           "name": "Симптомы",
           "item": "симптом"
+        },
+        "zh-CN": {
+          "item": "症状",
+          "name": "症状"
         }
       },
       "anchors": [
@@ -1585,7 +1731,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -1632,6 +1779,10 @@
         "ru": {
           "name": "Дневник приступов",
           "item": "приступ"
+        },
+        "zh-CN": {
+          "name": "癫痫日记",
+          "item": "发作"
         }
       },
       "anchors": [
@@ -1657,16 +1808,40 @@
         }
       ],
       "forbidden": {
-        "de": ["Anfallstagebuch", "Anfallsprotokoll"],
-        "en": ["seizure log", "seizure calendar"],
+        "de": [
+          "Anfallstagebuch",
+          "Anfallsprotokoll"
+        ],
+        "en": [
+          "seizure log",
+          "seizure calendar"
+        ],
         "fr": [],
         "es": [],
         "it": [],
-        "pl": ["dziennik napad", "kalendarz napad", "rejestr napad"],
-        "ko": ["발작 다이어리", "발작 캘린더"],
-        "nl": ["aanvallendagboek", "aanvalslogboek", "aanvalskalender"],
-        "pt-BR": ["registro de crises", "calendário de crises"],
-        "ru": ["журнал приступ", "календарь приступ"]
+        "pl": [
+          "dziennik napad",
+          "kalendarz napad",
+          "rejestr napad"
+        ],
+        "ko": [
+          "발작 다이어리",
+          "발작 캘린더"
+        ],
+        "nl": [
+          "aanvallendagboek",
+          "aanvalslogboek",
+          "aanvalskalender"
+        ],
+        "pt-BR": [
+          "registro de crises",
+          "calendário de crises"
+        ],
+        "ru": [
+          "журнал приступ",
+          "календарь приступ"
+        ],
+        "zh-CN": []
       }
     },
     {
@@ -1712,6 +1887,10 @@
         "ru": {
           "name": "Вакцинации",
           "item": "вакцинация"
+        },
+        "zh-CN": {
+          "name": "疫苗接种",
+          "item": "接种记录已保存"
         }
       },
       "anchors": [
@@ -1746,7 +1925,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -1792,6 +1972,10 @@
         "ru": {
           "name": "Документы",
           "item": "документ"
+        },
+        "zh-CN": {
+          "name": "文档",
+          "item": "未命名文档"
         }
       },
       "anchors": [
@@ -1826,7 +2010,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -1862,6 +2047,9 @@
         },
         "ru": {
           "name": "Хронология"
+        },
+        "zh-CN": {
+          "name": "时间线"
         }
       },
       "anchors": [
@@ -1886,7 +2074,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -1922,6 +2111,9 @@
         },
         "ru": {
           "name": "Аналитика"
+        },
+        "zh-CN": {
+          "name": "洞察"
         }
       },
       "anchors": [
@@ -1939,7 +2131,9 @@
       "forbidden": {
         "de": [],
         "en": [],
-        "fr": ["insight"],
+        "fr": [
+          "insight"
+        ],
         "es": [],
         "it": [],
         "pl": [
@@ -1964,7 +2158,8 @@
             "caseSensitive": true,
             "wholeWord": true
           }
-        ]
+        ],
+        "zh-CN": []
       }
     },
     {
@@ -2000,6 +2195,9 @@
         },
         "ru": {
           "name": "Тренер"
+        },
+        "zh-CN": {
+          "name": "教练"
         }
       },
       "anchors": [
@@ -2024,7 +2222,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -2060,6 +2259,9 @@
         },
         "ru": {
           "name": "Достижения"
+        },
+        "zh-CN": {
+          "name": "成就"
         }
       },
       "anchors": [
@@ -2089,7 +2291,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -2125,6 +2328,9 @@
         },
         "ru": {
           "name": "Уведомления по каналам"
+        },
+        "zh-CN": {
+          "name": "各渠道的通知"
         }
       },
       "anchors": [
@@ -2144,7 +2350,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -2180,6 +2387,9 @@
         },
         "ru": {
           "name": "Уведомления"
+        },
+        "zh-CN": {
+          "name": "通知"
         }
       },
       "anchors": [
@@ -2204,7 +2414,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -2241,6 +2452,9 @@
         },
         "ru": {
           "name": "Экстренная карта"
+        },
+        "zh-CN": {
+          "name": "急救卡"
         }
       },
       "anchors": [
@@ -2256,16 +2470,32 @@
         }
       ],
       "forbidden": {
-        "de": ["Notfallausweis", "Notfallpass"],
-        "en": ["emergency pass"],
+        "de": [
+          "Notfallausweis",
+          "Notfallpass"
+        ],
+        "en": [
+          "emergency pass"
+        ],
         "fr": [],
         "es": [],
         "it": [],
-        "pl": ["paszport ratunkow"],
-        "ko": ["응급카드", "비상 카드"],
-        "nl": ["noodpas"],
-        "pt-BR": ["ficha de emergência", "passe de emergência"],
-        "ru": []
+        "pl": [
+          "paszport ratunkow"
+        ],
+        "ko": [
+          "응급카드",
+          "비상 카드"
+        ],
+        "nl": [
+          "noodpas"
+        ],
+        "pt-BR": [
+          "ficha de emergência",
+          "passe de emergência"
+        ],
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -2301,6 +2531,9 @@
         },
         "ru": {
           "name": "Анамнез"
+        },
+        "zh-CN": {
+          "name": "病史"
         }
       },
       "anchors": [
@@ -2322,24 +2555,38 @@
       ],
       "forbidden": {
         "de": [],
-        "en": ["Anamnesis"],
-        "fr": ["Anamnèse"],
-        "es": ["Anamnesis"],
+        "en": [
+          "Anamnesis"
+        ],
+        "fr": [
+          "Anamnèse"
+        ],
+        "es": [
+          "Anamnesis"
+        ],
         "it": [],
-        "pl": ["anamnez", "wywiad zdrowotn"],
-        "ko": ["문진"],
+        "pl": [
+          "anamnez",
+          "wywiad zdrowotn"
+        ],
+        "ko": [
+          "문진"
+        ],
         "nl": [
           {
             "text": "anamnese",
             "wholeWord": true
           }
         ],
-        "pt-BR": ["Anamnese"],
+        "pt-BR": [
+          "Anamnese"
+        ],
         "ru": [
           "медицинский анамнез",
           "медицинского анамнез",
           "медицинском анамнез"
-        ]
+        ],
+        "zh-CN": []
       }
     },
     {
@@ -2375,6 +2622,9 @@
         },
         "ru": {
           "name": "Медицинская карта"
+        },
+        "zh-CN": {
+          "name": "健康档案"
         }
       },
       "anchors": [
@@ -2387,14 +2637,21 @@
       "forbidden": {
         "de": [],
         "en": [],
-        "fr": ["dossier médical"],
-        "es": ["historial médico"],
-        "it": ["cartella clinica"],
+        "fr": [
+          "dossier médical"
+        ],
+        "es": [
+          "historial médico"
+        ],
+        "it": [
+          "cartella clinica"
+        ],
         "pl": [],
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -2431,6 +2688,9 @@
         },
         "ru": {
           "name": "Отчёт для врача"
+        },
+        "zh-CN": {
+          "name": "医生报告"
         }
       },
       "anchors": [
@@ -2456,7 +2716,10 @@
         }
       ],
       "forbidden": {
-        "de": ["Gesundheitsbericht", "Arztreport"],
+        "de": [
+          "Gesundheitsbericht",
+          "Arztreport"
+        ],
         "en": [
           {
             "text": "health report",
@@ -2470,7 +2733,10 @@
           "compte rendu médical",
           "rapport personnel de santé"
         ],
-        "es": ["informe de salud", "informes de salud"],
+        "es": [
+          "informe de salud",
+          "informes de salud"
+        ],
         "it": [
           "rapporto sanitario",
           "rapporto personale di salute",
@@ -2489,14 +2755,21 @@
           "raporcie medyczn",
           "raport o zdrowiu"
         ],
-        "ko": ["진료 보고서", "건강 리포트", "건강 보고서"],
+        "ko": [
+          "진료 보고서",
+          "건강 리포트",
+          "건강 보고서"
+        ],
         "nl": [
           "gezondheidsrapport",
           "artsrapport",
           "doktersrapport",
           "medisch rapport"
         ],
-        "pt-BR": ["relatório de saúde", "relatório pessoal de saúde"],
+        "pt-BR": [
+          "relatório de saúde",
+          "relatório pessoal de saúde"
+        ],
         "ru": [
           "отчёт о здоровье",
           "отчет о здоровье",
@@ -2507,7 +2780,8 @@
           "медицинский отчет",
           "врачебный отчёт",
           "врачебный отчет"
-        ]
+        ],
+        "zh-CN": []
       }
     },
     {
@@ -2544,6 +2818,9 @@
         },
         "ru": {
           "name": "Отчёт для врача и экспорт"
+        },
+        "zh-CN": {
+          "name": "医生报告与导出"
         }
       },
       "anchors": [
@@ -2563,7 +2840,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -2601,6 +2879,9 @@
         },
         "ru": {
           "name": "Балл здоровья"
+        },
+        "zh-CN": {
+          "name": "健康评分"
         }
       },
       "anchors": [
@@ -2617,19 +2898,37 @@
       ],
       "shortKey": "measurements.shortTypeHealthScore",
       "forbidden": {
-        "de": ["Health Score", "Health-Score", "Gesundheits-Score"],
+        "de": [
+          "Health Score",
+          "Health-Score",
+          "Gesundheits-Score"
+        ],
         "en": [
           {
             "text": "Health Score",
             "caseSensitive": true
           }
         ],
-        "fr": ["score santé"],
+        "fr": [
+          "score santé"
+        ],
         "es": [],
-        "it": ["health score", "punteggio salute"],
-        "pl": ["Health Score", "Health-Score"],
-        "ko": ["건강점수", "헬스 스코어"],
-        "nl": ["Health Score", "gezondheids-score"],
+        "it": [
+          "health score",
+          "punteggio salute"
+        ],
+        "pl": [
+          "Health Score",
+          "Health-Score"
+        ],
+        "ko": [
+          "건강점수",
+          "헬스 스코어"
+        ],
+        "nl": [
+          "Health Score",
+          "gezondheids-score"
+        ],
         "pt-BR": [
           {
             "text": "Pontuação de Saúde",
@@ -2637,7 +2936,11 @@
           },
           "escore de saúde"
         ],
-        "ru": ["Health Score", "индекс здоровья"]
+        "ru": [
+          "Health Score",
+          "индекс здоровья"
+        ],
+        "zh-CN": []
       }
     },
     {
@@ -2674,6 +2977,9 @@
         },
         "ru": {
           "name": "АД"
+        },
+        "zh-CN": {
+          "name": "血压"
         }
       },
       "anchors": [
@@ -2693,7 +2999,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -2730,6 +3037,9 @@
         },
         "ru": {
           "name": "Гликемия"
+        },
+        "zh-CN": {
+          "name": "血糖"
         }
       },
       "anchors": [
@@ -2749,7 +3059,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -2786,6 +3097,9 @@
         },
         "ru": {
           "name": "Активность"
+        },
+        "zh-CN": {
+          "name": "活动"
         }
       },
       "anchors": [
@@ -2805,7 +3119,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -2842,6 +3157,9 @@
         },
         "ru": {
           "name": "Сон"
+        },
+        "zh-CN": {
+          "name": "睡眠"
         }
       },
       "anchors": [
@@ -2861,7 +3179,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -2898,6 +3217,9 @@
         },
         "ru": {
           "name": "Жировая масса"
+        },
+        "zh-CN": {
+          "name": "体脂"
         }
       },
       "anchors": [
@@ -2917,7 +3239,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -2954,6 +3277,9 @@
         },
         "ru": {
           "name": "Благополучие"
+        },
+        "zh-CN": {
+          "name": "身心状态"
         }
       },
       "anchors": [
@@ -2973,7 +3299,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -3010,6 +3337,9 @@
         },
         "ru": {
           "name": "Липиды"
+        },
+        "zh-CN": {
+          "name": "血脂"
         }
       },
       "anchors": [
@@ -3029,7 +3359,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -3066,6 +3397,9 @@
         },
         "ru": {
           "name": "Готовность"
+        },
+        "zh-CN": {
+          "name": "准备度"
         }
       },
       "anchors": [
@@ -3090,7 +3424,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -3127,6 +3462,9 @@
         },
         "ru": {
           "name": "Балл сна"
+        },
+        "zh-CN": {
+          "name": "睡眠评分"
         }
       },
       "anchors": [
@@ -3150,8 +3488,11 @@
         "pl": [],
         "ko": [],
         "nl": [],
-        "pt-BR": ["pontuação do sono"],
-        "ru": []
+        "pt-BR": [
+          "pontuação do sono"
+        ],
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -3188,6 +3529,9 @@
         },
         "ru": {
           "name": "Балл восстановления"
+        },
+        "zh-CN": {
+          "name": "恢复评分"
         }
       },
       "anchors": [
@@ -3217,7 +3561,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -3253,6 +3598,9 @@
         },
         "ru": {
           "name": "Push-ретранслятор"
+        },
+        "zh-CN": {
+          "name": "HealthLog 推送中继"
         }
       },
       "anchors": [
@@ -3263,16 +3611,21 @@
         }
       ],
       "forbidden": {
-        "de": ["Push-Relais"],
+        "de": [
+          "Push-Relais"
+        ],
         "en": [],
         "fr": [],
         "es": [],
         "it": [],
         "pl": [],
         "ko": [],
-        "nl": ["push-relay"],
+        "nl": [
+          "push-relay"
+        ],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -3308,6 +3661,9 @@
         },
         "ru": {
           "name": "Живые активности"
+        },
+        "zh-CN": {
+          "name": "这台服务器向某台设备发送了内容、何时发送，以及属于哪一类：提醒、静默同步，还是实时活动的结束"
         }
       },
       "anchors": [
@@ -3321,13 +3677,17 @@
         "de": [],
         "en": [],
         "fr": [],
-        "es": ["actividad en vivo", "actividades en vivo"],
+        "es": [
+          "actividad en vivo",
+          "actividades en vivo"
+        ],
         "it": [],
         "pl": [],
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -3374,6 +3734,10 @@
         "ru": {
           "name": "Ухаживающее лицо",
           "item": "ухаживающее лицо"
+        },
+        "zh-CN": {
+          "item": "监护人",
+          "name": "监护人"
         }
       },
       "anchors": [
@@ -3384,9 +3748,15 @@
         }
       ],
       "forbidden": {
-        "de": ["Vormund"],
+        "de": [
+          "Vormund"
+        ],
         "en": [],
-        "fr": ["tuteur", "tutrice", "tutelle"],
+        "fr": [
+          "tuteur",
+          "tutrice",
+          "tutelle"
+        ],
         "es": [
           {
             "text": "tutor",
@@ -3406,12 +3776,32 @@
           },
           "tutela"
         ],
-        "it": ["tutor", "tutel"],
-        "pl": ["opiekując", "opiekun prawn"],
-        "ko": ["후견인", "법정 대리인"],
-        "nl": ["voogd"],
-        "pt-BR": ["guardião", "guardiões", "guardiã", "tutor legal"],
-        "ru": ["опекун", "попечител"]
+        "it": [
+          "tutor",
+          "tutel"
+        ],
+        "pl": [
+          "opiekując",
+          "opiekun prawn"
+        ],
+        "ko": [
+          "후견인",
+          "법정 대리인"
+        ],
+        "nl": [
+          "voogd"
+        ],
+        "pt-BR": [
+          "guardião",
+          "guardiões",
+          "guardiã",
+          "tutor legal"
+        ],
+        "ru": [
+          "опекун",
+          "попечител"
+        ],
+        "zh-CN": []
       }
     },
     {
@@ -3448,6 +3838,9 @@
         },
         "ru": {
           "name": "Управляемый профиль"
+        },
+        "zh-CN": {
+          "name": "受管档案"
         }
       },
       "anchors": [
@@ -3458,10 +3851,20 @@
         }
       ],
       "forbidden": {
-        "de": ["betreutes Profil", "betreuten Profil", "Kinderprofil"],
-        "en": ["child profile", "dependent profile"],
+        "de": [
+          "betreutes Profil",
+          "betreuten Profil",
+          "Kinderprofil"
+        ],
+        "en": [
+          "child profile",
+          "dependent profile"
+        ],
         "fr": [],
-        "es": ["perfil administrado", "perfiles administrados"],
+        "es": [
+          "perfil administrado",
+          "perfiles administrados"
+        ],
         "it": [],
         "pl": [
           "zarządzany profil",
@@ -3469,10 +3872,22 @@
           "zarządzanym profil",
           "profil dziecka"
         ],
-        "ko": ["자녀 프로필"],
-        "nl": ["kindprofiel"],
-        "pt-BR": ["perfil infantil", "perfil de dependente"],
-        "ru": ["детский профиль", "профиль ребёнка", "профиль ребенка"]
+        "ko": [
+          "자녀 프로필"
+        ],
+        "nl": [
+          "kindprofiel"
+        ],
+        "pt-BR": [
+          "perfil infantil",
+          "perfil de dependente"
+        ],
+        "ru": [
+          "детский профиль",
+          "профиль ребёнка",
+          "профиль ребенка"
+        ],
+        "zh-CN": []
       }
     },
     {
@@ -3519,6 +3934,10 @@
         "ru": {
           "name": "Ссылка общего доступа",
           "item": "ссылка общего доступа"
+        },
+        "zh-CN": {
+          "item": "分享链接",
+          "name": "分享链接"
         }
       },
       "anchors": [
@@ -3529,15 +3948,25 @@
         }
       ],
       "forbidden": {
-        "de": ["Freigabe-Link"],
-        "en": ["clinician link", "doctor share link"],
-        "fr": ["lien clinicien", "liens cliniciens"],
+        "de": [
+          "Freigabe-Link"
+        ],
+        "en": [
+          "clinician link",
+          "doctor share link"
+        ],
+        "fr": [
+          "lien clinicien",
+          "liens cliniciens"
+        ],
         "es": [
           "enlace compartido",
           "enlaces compartidos",
           "enlaces para profesionales"
         ],
-        "it": ["link di condivisione con i medici"],
+        "it": [
+          "link di condivisione con i medici"
+        ],
         "pl": [
           "link do udostępni",
           "linki do udostępni",
@@ -3546,8 +3975,16 @@
           "linków dla lekarz",
           "udostępniania dla lekarz"
         ],
-        "ko": ["공유링크", "의료진 링크", "의료진용 링크"],
-        "nl": ["deel-link", "deellinks voor arts", "links voor zorgverlener"],
+        "ko": [
+          "공유링크",
+          "의료진 링크",
+          "의료진용 링크"
+        ],
+        "nl": [
+          "deel-link",
+          "deellinks voor arts",
+          "links voor zorgverlener"
+        ],
         "pt-BR": [
           "link para profissionais",
           "links para profissionais",
@@ -3559,7 +3996,8 @@
           "ссылок для врач",
           "ссылку для врач",
           "общего доступа для врач"
-        ]
+        ],
+        "zh-CN": []
       }
     },
     {
@@ -3595,6 +4033,9 @@
         },
         "ru": {
           "name": "Интеграции"
+        },
+        "zh-CN": {
+          "name": "集成"
         }
       },
       "anchors": [
@@ -3619,7 +4060,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -3665,6 +4107,10 @@
         "ru": {
           "name": "Источник данных",
           "item": "источник данных"
+        },
+        "zh-CN": {
+          "item": "数据来源",
+          "name": "数据来源"
         }
       },
       "anchors": [
@@ -3679,12 +4125,18 @@
         "en": [],
         "fr": [],
         "es": [],
-        "it": ["fonte dati", "fonti dati"],
+        "it": [
+          "fonte dati",
+          "fonti dati"
+        ],
         "pl": [],
-        "ko": ["데이터 원본"],
+        "ko": [
+          "데이터 원본"
+        ],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -3721,6 +4173,9 @@
         },
         "ru": {
           "name": "молчит"
+        },
+        "zh-CN": {
+          "name": "没有数据"
         }
       },
       "anchors": [
@@ -3746,7 +4201,9 @@
         }
       ],
       "forbidden": {
-        "de": ["still seit"],
+        "de": [
+          "still seit"
+        ],
         "en": [],
         "fr": [],
         "es": [],
@@ -3755,7 +4212,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -3798,6 +4256,9 @@
         },
         "ru": {
           "name": "ЧСС в покое"
+        },
+        "zh-CN": {
+          "name": "静息心率"
         }
       },
       "anchors": [
@@ -3844,7 +4305,9 @@
       ],
       "shortKey": "measurements.shortTypeRestingHeartRate",
       "forbidden": {
-        "de": ["Ruheherzfrequenz"],
+        "de": [
+          "Ruheherzfrequenz"
+        ],
         "en": [],
         "fr": [],
         "es": [],
@@ -3853,7 +4316,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -3890,6 +4354,9 @@
         },
         "ru": {
           "name": "Висцеральный жир"
+        },
+        "zh-CN": {
+          "name": "内脏脂肪"
         }
       },
       "anchors": [
@@ -3925,7 +4392,10 @@
         }
       ],
       "forbidden": {
-        "de": ["viszerales Fett", "viszeralen Fett"],
+        "de": [
+          "viszerales Fett",
+          "viszeralen Fett"
+        ],
         "en": [],
         "fr": [],
         "es": [],
@@ -3934,7 +4404,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -3974,6 +4445,9 @@
         "ru": {
           "name": "Глюкоза крови",
           "short": "Глюкоза"
+        },
+        "zh-CN": {
+          "name": "血糖"
         }
       },
       "anchors": [
@@ -4023,13 +4497,24 @@
         "de": [],
         "en": [],
         "fr": [],
-        "es": ["glucosa en sangre"],
+        "es": [
+          "glucosa en sangre"
+        ],
         "it": [],
-        "pl": ["glukoza we krwi", "glukozy we krwi", "poziom glukozy"],
+        "pl": [
+          "glukoza we krwi",
+          "glukozy we krwi",
+          "poziom glukozy"
+        ],
         "ko": [],
-        "nl": ["bloedsuiker"],
-        "pt-BR": ["glicose no sangue"],
-        "ru": []
+        "nl": [
+          "bloedsuiker"
+        ],
+        "pt-BR": [
+          "glicose no sangue"
+        ],
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -4066,6 +4551,9 @@
         },
         "ru": {
           "name": "Насыщение кислородом"
+        },
+        "zh-CN": {
+          "name": "血氧饱和度"
         }
       },
       "anchors": [
@@ -4123,9 +4611,13 @@
         "it": [],
         "pl": [],
         "ko": [],
-        "nl": ["zuurstofverzadiging", "bloedzuurstof"],
+        "nl": [
+          "zuurstofverzadiging",
+          "bloedzuurstof"
+        ],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -4162,6 +4654,9 @@
         },
         "ru": {
           "name": "уд/мин"
+        },
+        "zh-CN": {
+          "name": "bpm"
         }
       },
       "anchors": [
@@ -4193,11 +4688,14 @@
           }
         ],
         "it": [],
-        "pl": ["ud./min"],
+        "pl": [
+          "ud./min"
+        ],
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -4244,6 +4742,10 @@
         "ru": {
           "name": "Тренировки",
           "item": "тренировка"
+        },
+        "zh-CN": {
+          "name": "运动",
+          "item": "运动"
         }
       },
       "anchors": [
@@ -4279,16 +4781,21 @@
         }
       ],
       "forbidden": {
-        "de": ["Workout"],
+        "de": [
+          "Workout"
+        ],
         "en": [],
         "fr": [],
         "es": [],
         "it": [],
         "pl": [],
         "ko": [],
-        "nl": ["workout"],
+        "nl": [
+          "workout"
+        ],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -4325,6 +4832,9 @@
         },
         "ru": {
           "name": "Не сейчас"
+        },
+        "zh-CN": {
+          "name": "暂不"
         }
       },
       "anchors": [
@@ -4379,7 +4889,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -4416,6 +4927,9 @@
         },
         "ru": {
           "name": "Этажи"
+        },
+        "zh-CN": {
+          "name": "爬楼层数"
         }
       },
       "anchors": [
@@ -4446,16 +4960,24 @@
         }
       ],
       "forbidden": {
-        "de": ["Treppendaten", "Treppenwerte"],
+        "de": [
+          "Treppendaten",
+          "Treppenwerte"
+        ],
         "en": [],
         "fr": [],
         "es": [],
         "it": [],
         "pl": [],
         "ko": [],
-        "nl": ["trappen gelopen", "gelopen trappen", "trappen beklommen"],
+        "nl": [
+          "trappen gelopen",
+          "gelopen trappen",
+          "trappen beklommen"
+        ],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -4492,6 +5014,9 @@
         },
         "ru": {
           "name": "Прошлая ночь"
+        },
+        "zh-CN": {
+          "name": "昨晚"
         }
       },
       "anchors": [
@@ -4511,7 +5036,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -4548,6 +5074,9 @@
         },
         "ru": {
           "name": "не за сегодня"
+        },
+        "zh-CN": {
+          "name": "不是今天的"
         }
       },
       "anchors": [
@@ -4567,7 +5096,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -4604,6 +5134,9 @@
         },
         "ru": {
           "name": "Сегодня иначе"
+        },
+        "zh-CN": {
+          "name": "今天不同"
         }
       },
       "anchors": [
@@ -4623,7 +5156,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -4660,6 +5194,9 @@
         },
         "ru": {
           "name": "На сегодня"
+        },
+        "zh-CN": {
+          "name": "今天待办"
         }
       },
       "anchors": [
@@ -4679,7 +5216,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -4716,6 +5254,9 @@
         },
         "ru": {
           "name": "Состояние души"
+        },
+        "zh-CN": {
+          "name": "心境"
         }
       },
       "anchors": [
@@ -4744,7 +5285,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -4783,6 +5325,9 @@
         },
         "ru": {
           "name": "Общая вода в организме"
+        },
+        "zh-CN": {
+          "name": "总体水分"
         }
       },
       "anchors": [
@@ -4803,7 +5348,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -4841,6 +5387,10 @@
         },
         "ru": {
           "name": "Расстояние ходьбы + бега"
+        },
+        "zh-CN": {
+          "name": "步行与跑步距离",
+          "short": "步行跑步"
         }
       },
       "anchors": [
@@ -4861,7 +5411,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -4899,6 +5450,9 @@
         },
         "ru": {
           "name": "Температура кожи"
+        },
+        "zh-CN": {
+          "name": "皮肤温度"
         }
       },
       "anchors": [
@@ -4919,7 +5473,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -4960,6 +5515,10 @@
         },
         "ru": {
           "name": "Воздействие звука (окружение)"
+        },
+        "zh-CN": {
+          "name": "环境音量暴露",
+          "short": "环境噪音"
         }
       },
       "anchors": [
@@ -4980,7 +5539,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -5018,6 +5578,10 @@
         },
         "ru": {
           "name": "Воздействие звука (наушники)"
+        },
+        "zh-CN": {
+          "name": "耳机音量暴露",
+          "short": "耳机音量"
         }
       },
       "anchors": [
@@ -5038,7 +5602,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -5076,6 +5641,9 @@
         },
         "ru": {
           "name": "Время на дневном свете"
+        },
+        "zh-CN": {
+          "name": "日照时长"
         }
       },
       "anchors": [
@@ -5096,7 +5664,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -5136,6 +5705,10 @@
         },
         "ru": {
           "name": "Событие громкого прослушивания"
+        },
+        "zh-CN": {
+          "name": "高音量收听事件",
+          "short": "高音量提醒"
         }
       },
       "anchors": [
@@ -5156,7 +5729,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -5195,6 +5769,9 @@
         },
         "ru": {
           "name": "Частота дыхания"
+        },
+        "zh-CN": {
+          "name": "呼吸频率"
         }
       },
       "anchors": [
@@ -5215,7 +5792,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -5253,6 +5831,9 @@
         },
         "ru": {
           "name": "Тощая масса тела"
+        },
+        "zh-CN": {
+          "name": "瘦体重"
         }
       },
       "anchors": [
@@ -5273,7 +5854,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -5312,6 +5894,10 @@
         },
         "ru": {
           "name": "ЧСС при ходьбе (сред.)"
+        },
+        "zh-CN": {
+          "name": "步行心率（平均）",
+          "short": "步行心率"
         }
       },
       "anchors": [
@@ -5332,7 +5918,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -5373,6 +5960,10 @@
         },
         "ru": {
           "name": "Двойная опора при ходьбе"
+        },
+        "zh-CN": {
+          "name": "步行双支撑时间",
+          "short": "双支撑"
         }
       },
       "anchors": [
@@ -5393,7 +5984,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -5431,6 +6023,9 @@
         },
         "ru": {
           "name": "Скорость ходьбы"
+        },
+        "zh-CN": {
+          "name": "步行速度"
         }
       },
       "anchors": [
@@ -5451,7 +6046,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -5489,6 +6085,9 @@
         },
         "ru": {
           "name": "Кардиовосстановление"
+        },
+        "zh-CN": {
+          "name": "心肺恢复"
         }
       },
       "anchors": [
@@ -5509,7 +6108,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -5548,6 +6148,9 @@
         },
         "ru": {
           "name": "Температура запястья"
+        },
+        "zh-CN": {
+          "name": "手腕温度"
         }
       },
       "anchors": [
@@ -5568,7 +6171,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -5607,6 +6211,10 @@
         },
         "ru": {
           "name": "Дистанция шестиминутной ходьбы"
+        },
+        "zh-CN": {
+          "name": "六分钟步行距离",
+          "short": "六分钟步行"
         }
       },
       "anchors": [
@@ -5627,7 +6235,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -5665,6 +6274,10 @@
         },
         "ru": {
           "name": "Скорость подъёма по лестнице"
+        },
+        "zh-CN": {
+          "name": "上楼梯速度",
+          "short": "上楼速度"
         }
       },
       "anchors": [
@@ -5685,7 +6298,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -5726,6 +6340,10 @@
         },
         "ru": {
           "name": "Уведомление о нерегулярном ритме"
+        },
+        "zh-CN": {
+          "name": "心律不齐通知",
+          "short": "心律提醒"
         }
       },
       "anchors": [
@@ -5746,7 +6364,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -5786,6 +6405,10 @@
         },
         "ru": {
           "name": "Уведомление о высокой ЧСС"
+        },
+        "zh-CN": {
+          "name": "高心率事件通知",
+          "short": "高心率提醒"
         }
       },
       "anchors": [
@@ -5806,7 +6429,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -5846,6 +6470,10 @@
         },
         "ru": {
           "name": "Уведомление о низкой ЧСС"
+        },
+        "zh-CN": {
+          "name": "低心率事件通知",
+          "short": "低心率提醒"
         }
       },
       "anchors": [
@@ -5866,7 +6494,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -5905,6 +6534,10 @@
         },
         "ru": {
           "name": "Уведомление о гипертонии"
+        },
+        "zh-CN": {
+          "name": "高血压事件通知",
+          "short": "高血压提醒"
         }
       },
       "anchors": [
@@ -5925,7 +6558,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -5965,6 +6599,10 @@
         },
         "ru": {
           "name": "Уведомление о низкой кардиовыносливости"
+        },
+        "zh-CN": {
+          "name": "心肺功能偏低通知",
+          "short": "心肺提醒"
         }
       },
       "anchors": [
@@ -5985,7 +6623,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -6023,6 +6662,9 @@
         },
         "ru": {
           "name": "Введение инсулина"
+        },
+        "zh-CN": {
+          "name": "胰岛素输注"
         }
       },
       "anchors": [
@@ -6043,7 +6685,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -6082,6 +6725,10 @@
         },
         "ru": {
           "name": "Пиковая скорость выдоха"
+        },
+        "zh-CN": {
+          "name": "呼气峰流量",
+          "short": "呼气峰值"
         }
       },
       "anchors": [
@@ -6102,7 +6749,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -6142,6 +6790,10 @@
         },
         "ru": {
           "name": "Оповещение об устойчивости ходьбы"
+        },
+        "zh-CN": {
+          "name": "步行稳定性提醒",
+          "short": "稳定性提醒"
         }
       },
       "anchors": [
@@ -6162,7 +6814,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -6201,6 +6854,9 @@
         },
         "ru": {
           "name": "Нарушение дыхания"
+        },
+        "zh-CN": {
+          "name": "呼吸紊乱"
         }
       },
       "anchors": [
@@ -6221,7 +6877,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -6259,6 +6916,9 @@
         },
         "ru": {
           "name": "Потребность во сне"
+        },
+        "zh-CN": {
+          "name": "睡眠需求"
         }
       },
       "anchors": [
@@ -6279,7 +6939,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -6319,6 +6980,9 @@
         },
         "ru": {
           "name": "Средняя ЧСС"
+        },
+        "zh-CN": {
+          "name": "平均心率"
         }
       },
       "anchors": [
@@ -6339,7 +7003,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -6377,6 +7042,9 @@
         },
         "ru": {
           "name": "Максимальная ЧСС"
+        },
+        "zh-CN": {
+          "name": "最高心率"
         }
       },
       "anchors": [
@@ -6397,7 +7065,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -6438,6 +7107,9 @@
         },
         "ru": {
           "name": "Отклонение температуры тела"
+        },
+        "zh-CN": {
+          "name": "体温偏差"
         }
       },
       "anchors": [
@@ -6458,7 +7130,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -6496,6 +7169,9 @@
         },
         "ru": {
           "name": "Балл WHO-5"
+        },
+        "zh-CN": {
+          "name": "WHO-5 评分"
         }
       },
       "anchors": [
@@ -6516,7 +7192,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -6556,6 +7233,10 @@
         },
         "ru": {
           "name": "Минуты осознанности"
+        },
+        "zh-CN": {
+          "name": "正念分钟数",
+          "short": "正念分钟"
         }
       },
       "anchors": [
@@ -6576,7 +7257,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -6614,6 +7296,9 @@
         },
         "ru": {
           "name": "Оценка нагрузки тренировки"
+        },
+        "zh-CN": {
+          "name": "训练努力度"
         }
       },
       "anchors": [
@@ -6634,7 +7319,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -6675,6 +7361,10 @@
         },
         "ru": {
           "name": "Расчётная оценка нагрузки"
+        },
+        "zh-CN": {
+          "name": "估算训练努力度",
+          "short": "估算努力度"
         }
       },
       "anchors": [
@@ -6695,7 +7385,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -6733,6 +7424,9 @@
         },
         "ru": {
           "name": "Физическая нагрузка"
+        },
+        "zh-CN": {
+          "name": "体力付出"
         }
       },
       "anchors": [
@@ -6753,7 +7447,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -6791,6 +7486,9 @@
         },
         "ru": {
           "name": "Расстояние на велосипеде"
+        },
+        "zh-CN": {
+          "name": "骑行距离"
         }
       },
       "anchors": [
@@ -6811,7 +7509,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -6850,6 +7549,9 @@
         },
         "ru": {
           "name": "Время контакта с землёй"
+        },
+        "zh-CN": {
+          "name": "触地时间"
         }
       },
       "anchors": [
@@ -6870,7 +7572,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -6908,6 +7611,9 @@
         },
         "ru": {
           "name": "Вертикальные колебания"
+        },
+        "zh-CN": {
+          "name": "垂直振幅"
         }
       },
       "anchors": [
@@ -6928,7 +7634,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -6968,6 +7675,10 @@
         },
         "ru": {
           "name": "Длина шага при беге"
+        },
+        "zh-CN": {
+          "name": "跑步步幅",
+          "short": "步幅"
         }
       },
       "anchors": [
@@ -6988,7 +7699,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -7027,6 +7739,9 @@
         },
         "ru": {
           "name": "Влажность в помещении"
+        },
+        "zh-CN": {
+          "name": "室内湿度"
         }
       },
       "anchors": [
@@ -7047,7 +7762,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -7087,6 +7803,10 @@
         },
         "ru": {
           "name": "Острая тренировочная нагрузка"
+        },
+        "zh-CN": {
+          "name": "急性训练负荷",
+          "short": "急性负荷"
         }
       },
       "anchors": [
@@ -7107,7 +7827,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -7146,6 +7867,9 @@
         },
         "ru": {
           "name": "Окружность талии"
+        },
+        "zh-CN": {
+          "name": "腰围"
         }
       },
       "anchors": [
@@ -7166,7 +7890,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -7207,6 +7932,10 @@
         },
         "ru": {
           "name": "Отношение талии к росту"
+        },
+        "zh-CN": {
+          "name": "腰围身高比",
+          "short": "腰围身高"
         }
       },
       "anchors": [
@@ -7227,7 +7956,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -7263,6 +7993,9 @@
         },
         "ru": {
           "name": "Вес"
+        },
+        "zh-CN": {
+          "name": "体重"
         }
       },
       "anchors": [
@@ -7282,7 +8015,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -7325,6 +8059,9 @@
         },
         "ru": {
           "name": "АД"
+        },
+        "zh-CN": {
+          "name": "血压"
         }
       },
       "anchors": [
@@ -7350,7 +8087,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -7386,6 +8124,9 @@
         },
         "ru": {
           "name": "Сист."
+        },
+        "zh-CN": {
+          "name": "收缩"
         }
       },
       "anchors": [
@@ -7405,7 +8146,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -7441,6 +8183,9 @@
         },
         "ru": {
           "name": "Диаст."
+        },
+        "zh-CN": {
+          "name": "舒张"
         }
       },
       "anchors": [
@@ -7460,7 +8205,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -7496,6 +8242,9 @@
         },
         "ru": {
           "name": "Пульс"
+        },
+        "zh-CN": {
+          "name": "脉搏"
         }
       },
       "anchors": [
@@ -7515,7 +8264,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -7552,6 +8302,9 @@
         },
         "ru": {
           "name": "Процент жировой массы"
+        },
+        "zh-CN": {
+          "name": "体脂"
         }
       },
       "anchors": [
@@ -7571,7 +8324,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -7607,6 +8361,9 @@
         },
         "ru": {
           "name": "Сон"
+        },
+        "zh-CN": {
+          "name": "睡眠"
         }
       },
       "anchors": [
@@ -7626,7 +8383,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -7662,6 +8420,9 @@
         },
         "ru": {
           "name": "Шаги"
+        },
+        "zh-CN": {
+          "name": "步数"
         }
       },
       "anchors": [
@@ -7681,7 +8442,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -7717,6 +8479,9 @@
         },
         "ru": {
           "name": "Кетоны в крови"
+        },
+        "zh-CN": {
+          "name": "血酮"
         }
       },
       "anchors": [
@@ -7736,7 +8501,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -7772,6 +8538,9 @@
         },
         "ru": {
           "name": "Костная масса"
+        },
+        "zh-CN": {
+          "name": "骨量"
         }
       },
       "anchors": [
@@ -7791,7 +8560,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -7837,6 +8607,10 @@
         "ru": {
           "name": "Вариабельность сердечного ритма (SDNN)",
           "short": "HRV (SDNN)"
+        },
+        "zh-CN": {
+          "name": "心率变异性（SDNN）",
+          "short": "HRV（SDNN）"
         }
       },
       "anchors": [
@@ -7857,7 +8631,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -7893,6 +8668,9 @@
         },
         "ru": {
           "name": "Активная энергия"
+        },
+        "zh-CN": {
+          "name": "活动能量"
         }
       },
       "anchors": [
@@ -7912,7 +8690,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -7948,6 +8727,9 @@
         },
         "ru": {
           "name": "Энергия в покое"
+        },
+        "zh-CN": {
+          "name": "静息能量"
         }
       },
       "anchors": [
@@ -7967,7 +8749,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -8003,6 +8786,9 @@
         },
         "ru": {
           "name": "Расстояние гребли"
+        },
+        "zh-CN": {
+          "name": "划船距离"
         }
       },
       "anchors": [
@@ -8022,7 +8808,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -8058,6 +8845,9 @@
         },
         "ru": {
           "name": "Скорость гребли"
+        },
+        "zh-CN": {
+          "name": "划船速度"
         }
       },
       "anchors": [
@@ -8077,7 +8867,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -8113,6 +8904,9 @@
         },
         "ru": {
           "name": "Скорость бега"
+        },
+        "zh-CN": {
+          "name": "跑步速度"
         }
       },
       "anchors": [
@@ -8132,7 +8926,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -8168,6 +8963,9 @@
         },
         "ru": {
           "name": "Мощность бега"
+        },
+        "zh-CN": {
+          "name": "跑步功率"
         }
       },
       "anchors": [
@@ -8187,7 +8985,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -8224,6 +9023,9 @@
         },
         "ru": {
           "name": "VO₂ max"
+        },
+        "zh-CN": {
+          "name": "最大摄氧量"
         }
       },
       "anchors": [
@@ -8657,7 +9459,8 @@
             "text": "кардио-форм",
             "keys": "insights.coach.seed.cardioFitness"
           }
-        ]
+        ],
+        "zh-CN": []
       }
     },
     {
@@ -8693,6 +9496,9 @@
         },
         "ru": {
           "name": "Температура тела"
+        },
+        "zh-CN": {
+          "name": "体温"
         }
       },
       "anchors": [
@@ -8712,7 +9518,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -8749,6 +9556,9 @@
         },
         "ru": {
           "name": "Безжировая масса"
+        },
+        "zh-CN": {
+          "name": "去脂体重"
         }
       },
       "anchors": [
@@ -8768,7 +9578,10 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": ["обезжиренн"]
+        "ru": [
+          "обезжиренн"
+        ],
+        "zh-CN": []
       }
     },
     {
@@ -8804,6 +9617,9 @@
         },
         "ru": {
           "name": "Жировая масса"
+        },
+        "zh-CN": {
+          "name": "脂肪量"
         }
       },
       "anchors": [
@@ -8823,7 +9639,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -8859,6 +9676,9 @@
         },
         "ru": {
           "name": "Мышечная масса"
+        },
+        "zh-CN": {
+          "name": "肌肉量"
         }
       },
       "anchors": [
@@ -8878,7 +9698,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -8914,6 +9735,9 @@
         },
         "ru": {
           "name": "Скорость пульсовой волны"
+        },
+        "zh-CN": {
+          "name": "脉搏波传导速度"
         }
       },
       "anchors": [
@@ -8933,7 +9757,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -8969,6 +9794,9 @@
         },
         "ru": {
           "name": "Сосудистый возраст"
+        },
+        "zh-CN": {
+          "name": "血管年龄"
         }
       },
       "anchors": [
@@ -8988,7 +9816,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -9025,6 +9854,9 @@
         },
         "ru": {
           "name": "Устойчивость ходьбы"
+        },
+        "zh-CN": {
+          "name": "步行稳定性"
         }
       },
       "anchors": [
@@ -9044,7 +9876,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -9091,6 +9924,10 @@
         "ru": {
           "name": "Индекс массы тела",
           "short": "ИМТ"
+        },
+        "zh-CN": {
+          "name": "体质指数",
+          "short": "BMI"
         }
       },
       "anchors": [
@@ -9111,7 +9948,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -9147,6 +9985,9 @@
         },
         "ru": {
           "name": "Асимметрия ходьбы"
+        },
+        "zh-CN": {
+          "name": "步行不对称度"
         }
       },
       "anchors": [
@@ -9166,7 +10007,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -9202,6 +10044,9 @@
         },
         "ru": {
           "name": "Длина шага при ходьбе"
+        },
+        "zh-CN": {
+          "name": "步行步长"
         }
       },
       "anchors": [
@@ -9221,7 +10066,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -9257,6 +10103,9 @@
         },
         "ru": {
           "name": "Падения"
+        },
+        "zh-CN": {
+          "name": "跌倒次数"
         }
       },
       "anchors": [
@@ -9276,7 +10125,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -9312,6 +10162,9 @@
         },
         "ru": {
           "name": "Скорость спуска по лестнице"
+        },
+        "zh-CN": {
+          "name": "下楼梯速度"
         }
       },
       "anchors": [
@@ -9331,7 +10184,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -9368,6 +10222,9 @@
         },
         "ru": {
           "name": "Нарушения дыхания во сне"
+        },
+        "zh-CN": {
+          "name": "睡眠呼吸紊乱"
         }
       },
       "anchors": [
@@ -9378,7 +10235,9 @@
         }
       ],
       "forbidden": {
-        "de": ["Atemaussetzer"],
+        "de": [
+          "Atemaussetzer"
+        ],
         "en": [],
         "fr": [],
         "es": [],
@@ -9387,7 +10246,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -9423,6 +10283,9 @@
         },
         "ru": {
           "name": "Менопаузальный статус"
+        },
+        "zh-CN": {
+          "name": "绝经状态"
         }
       },
       "anchors": [
@@ -9442,7 +10305,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -9478,6 +10342,9 @@
         },
         "ru": {
           "name": "Кровотечение после менопаузы"
+        },
+        "zh-CN": {
+          "name": "绝经后出血"
         }
       },
       "anchors": [
@@ -9497,7 +10364,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -9533,6 +10401,9 @@
         },
         "ru": {
           "name": "Использование ингалятора"
+        },
+        "zh-CN": {
+          "name": "吸入剂使用"
         }
       },
       "anchors": [
@@ -9552,7 +10423,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -9588,6 +10460,9 @@
         },
         "ru": {
           "name": "ОФВ1"
+        },
+        "zh-CN": {
+          "name": "FEV1"
         }
       },
       "anchors": [
@@ -9607,7 +10482,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -9643,6 +10519,9 @@
         },
         "ru": {
           "name": "Форсированная жизненная ёмкость"
+        },
+        "zh-CN": {
+          "name": "用力肺活量"
         }
       },
       "anchors": [
@@ -9662,7 +10541,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -9698,6 +10578,9 @@
         },
         "ru": {
           "name": "Балл стресса"
+        },
+        "zh-CN": {
+          "name": "压力评分"
         }
       },
       "anchors": [
@@ -9728,7 +10611,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       },
       "decision": "One name on the measurement and the clinician view (de had Stress-Score and Stresswert); German writes the score as one word, as Schlafscore."
     },
@@ -9765,6 +10649,9 @@
         },
         "ru": {
           "name": "Балл напряжения"
+        },
+        "zh-CN": {
+          "name": "负荷评分"
         }
       },
       "anchors": [
@@ -9800,7 +10687,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       },
       "decision": "One name on the measurement and the clinician view, which had drifted apart in de and fr. German writes the score as one word, as Schlafscore and Erholungsscore. Spanish says diario: Puntuación de esfuerzo alone is the short form of Apple workout effort, a different value."
     },
@@ -9847,6 +10735,10 @@
         "ru": {
           "name": "Вариабельность сердечного ритма (RMSSD)",
           "short": "HRV (RMSSD)"
+        },
+        "zh-CN": {
+          "name": "心率变异性（RMSSD）",
+          "short": "HRV（RMSSD）"
         }
       },
       "anchors": [
@@ -9867,7 +10759,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -9903,6 +10796,9 @@
         },
         "ru": {
           "name": "Напряжение дня"
+        },
+        "zh-CN": {
+          "name": "日间负荷"
         }
       },
       "anchors": [
@@ -9922,7 +10818,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -9958,6 +10855,9 @@
         },
         "ru": {
           "name": "Напряжение тренировки"
+        },
+        "zh-CN": {
+          "name": "训练负荷"
         }
       },
       "anchors": [
@@ -9977,7 +10877,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -10013,6 +10914,9 @@
         },
         "ru": {
           "name": "Качество сна"
+        },
+        "zh-CN": {
+          "name": "睡眠表现"
         }
       },
       "anchors": [
@@ -10032,7 +10936,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -10068,6 +10973,9 @@
         },
         "ru": {
           "name": "Эффективность сна"
+        },
+        "zh-CN": {
+          "name": "睡眠效率"
         }
       },
       "anchors": [
@@ -10087,7 +10995,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -10123,6 +11032,9 @@
         },
         "ru": {
           "name": "Постоянство сна"
+        },
+        "zh-CN": {
+          "name": "睡眠一致性"
         }
       },
       "anchors": [
@@ -10142,7 +11054,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -10178,6 +11091,9 @@
         },
         "ru": {
           "name": "Расход энергии"
+        },
+        "zh-CN": {
+          "name": "能量消耗"
         }
       },
       "anchors": [
@@ -10197,7 +11113,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -10234,6 +11151,9 @@
         },
         "ru": {
           "name": "Прерывания сна"
+        },
+        "zh-CN": {
+          "name": "睡眠中断次数"
         }
       },
       "anchors": [
@@ -10273,7 +11193,8 @@
             "text": "нарушения сна",
             "keys": "measurements.typeSleepDisturbance"
           }
-        ]
+        ],
+        "zh-CN": []
       }
     },
     {
@@ -10309,6 +11230,9 @@
         },
         "ru": {
           "name": "Заряд ВНС"
+        },
+        "zh-CN": {
+          "name": "自主神经负荷"
         }
       },
       "anchors": [
@@ -10328,7 +11252,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -10364,6 +11289,9 @@
         },
         "ru": {
           "name": "Кардионагрузка"
+        },
+        "zh-CN": {
+          "name": "心肺负荷"
         }
       },
       "anchors": [
@@ -10383,7 +11311,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -10419,6 +11348,9 @@
         },
         "ru": {
           "name": "Устойчивость"
+        },
+        "zh-CN": {
+          "name": "韧性"
         }
       },
       "anchors": [
@@ -10438,7 +11370,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -10474,6 +11407,9 @@
         },
         "ru": {
           "name": "Балл PHQ-9"
+        },
+        "zh-CN": {
+          "name": "PHQ-9 评分"
         }
       },
       "anchors": [
@@ -10493,7 +11429,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -10529,6 +11466,9 @@
         },
         "ru": {
           "name": "Балл GAD-7"
+        },
+        "zh-CN": {
+          "name": "GAD-7 评分"
         }
       },
       "anchors": [
@@ -10548,7 +11488,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -10584,6 +11525,9 @@
         },
         "ru": {
           "name": "Сила хвата"
+        },
+        "zh-CN": {
+          "name": "握力"
         }
       },
       "anchors": [
@@ -10603,7 +11547,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -10639,6 +11584,9 @@
         },
         "ru": {
           "name": "Боль (0-10)"
+        },
+        "zh-CN": {
+          "name": "疼痛（0-10）"
         }
       },
       "anchors": [
@@ -10668,7 +11616,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -10715,6 +11664,10 @@
         "ru": {
           "name": "Sleep Condition Indicator (SCI)",
           "short": "Балл SCI"
+        },
+        "zh-CN": {
+          "name": "睡眠状况指标（SCI）",
+          "short": "SCI 评分"
         }
       },
       "anchors": [
@@ -10735,7 +11688,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -10771,6 +11725,9 @@
         },
         "ru": {
           "name": "Минуты упражнений"
+        },
+        "zh-CN": {
+          "name": "锻炼分钟数"
         }
       },
       "anchors": [
@@ -10790,7 +11747,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -10827,6 +11785,9 @@
         },
         "ru": {
           "name": "Минуты стояния"
+        },
+        "zh-CN": {
+          "name": "站立分钟数"
         }
       },
       "anchors": [
@@ -10846,7 +11807,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -10882,6 +11844,9 @@
         },
         "ru": {
           "name": "Часы стояния"
+        },
+        "zh-CN": {
+          "name": "站立小时数"
         }
       },
       "anchors": [
@@ -10901,7 +11866,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -10939,6 +11905,9 @@
         "ru": {
           "name": "Бремя фибрилляции предсердий",
           "short": "Бремя ФП"
+        },
+        "zh-CN": {
+          "name": "房颤负荷"
         }
       },
       "anchors": [
@@ -10951,7 +11920,9 @@
       "shortKey": "measurements.shortTypeAfibBurden",
       "forbidden": {
         "de": [],
-        "en": ["AFib history"],
+        "en": [
+          "AFib history"
+        ],
         "fr": [],
         "es": [],
         "it": [],
@@ -10959,7 +11930,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -10995,6 +11967,9 @@
         },
         "ru": {
           "name": "CO₂ в помещении"
+        },
+        "zh-CN": {
+          "name": "室内 CO₂"
         }
       },
       "anchors": [
@@ -11014,7 +11989,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -11050,6 +12026,9 @@
         },
         "ru": {
           "name": "Температура в помещении"
+        },
+        "zh-CN": {
+          "name": "室内温度"
         }
       },
       "anchors": [
@@ -11069,7 +12048,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -11105,6 +12085,9 @@
         },
         "ru": {
           "name": "Body Battery"
+        },
+        "zh-CN": {
+          "name": "身体电量"
         }
       },
       "anchors": [
@@ -11124,7 +12107,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -11160,6 +12144,9 @@
         },
         "ru": {
           "name": "Уровень стресса"
+        },
+        "zh-CN": {
+          "name": "压力水平"
         }
       },
       "anchors": [
@@ -11179,7 +12166,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -11215,6 +12203,9 @@
         },
         "ru": {
           "name": "Готовность к тренировке"
+        },
+        "zh-CN": {
+          "name": "训练准备度"
         }
       },
       "anchors": [
@@ -11234,7 +12225,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -11270,6 +12262,9 @@
         },
         "ru": {
           "name": "WHOOP Recovery"
+        },
+        "zh-CN": {
+          "name": "WHOOP 恢复度"
         }
       },
       "anchors": [
@@ -11289,7 +12284,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -11325,6 +12321,9 @@
         },
         "ru": {
           "name": "Oura Readiness"
+        },
+        "zh-CN": {
+          "name": "Oura 准备度"
         }
       },
       "anchors": [
@@ -11344,7 +12343,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -11380,6 +12380,9 @@
         },
         "ru": {
           "name": "Polar Nightly Recharge"
+        },
+        "zh-CN": {
+          "name": "Polar 夜间恢复"
         }
       },
       "anchors": [
@@ -11399,7 +12402,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -11435,6 +12439,9 @@
         },
         "ru": {
           "name": "Готовность (HealthLog)"
+        },
+        "zh-CN": {
+          "name": "准备度（HealthLog）"
         }
       },
       "anchors": [
@@ -11454,7 +12461,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -11490,6 +12498,9 @@
         },
         "ru": {
           "name": "Балл сна Oura"
+        },
+        "zh-CN": {
+          "name": "Oura 睡眠评分"
         }
       },
       "anchors": [
@@ -11509,7 +12520,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -11545,6 +12557,9 @@
         },
         "ru": {
           "name": "Балл сна Garmin"
+        },
+        "zh-CN": {
+          "name": "Garmin 睡眠评分"
         }
       },
       "anchors": [
@@ -11564,7 +12579,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -11600,6 +12616,9 @@
         },
         "ru": {
           "name": "Балл сна Withings"
+        },
+        "zh-CN": {
+          "name": "Withings 睡眠评分"
         }
       },
       "anchors": [
@@ -11619,7 +12638,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     }
   ],

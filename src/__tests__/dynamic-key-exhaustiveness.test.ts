@@ -166,7 +166,7 @@ describe("dynamic-key exhaustiveness (enum-derived)", () => {
     expect(LOCALES.length).toBeGreaterThanOrEqual(6);
   });
 
-  it("discovers all ten shipped locales", () => {
+  it("discovers all eleven shipped locales", () => {
     expect(LOCALES.map((l) => l.locale).sort()).toEqual([
       "de",
       "en",
@@ -178,6 +178,7 @@ describe("dynamic-key exhaustiveness (enum-derived)", () => {
       "pl",
       "pt-BR",
       "ru",
+      "zh-CN",
     ]);
   });
 
