@@ -239,11 +239,9 @@ export async function buildMedicationsList(
     // v1.39.1 (#1033) — intake tracking off: the stored rows are a record,
     // not a dose plan. Nothing is due and no runway derives from them.
     const liveSchedules = dueSchedules(m);
-    // v1.16.4 — an OPEN overdue slot (anchor passed, still inside its
-    // catch-up band, unresolved) surfaces FIRST with `nextDueOverdue:
-    // true`; only a closed or resolved band falls through to the future
-    // next-due. Keeps the card on the still-takeable dose instead of
-    // jumping ahead the minute the anchor passes.
+    // v1.16.4 — an OPEN passed slot (anchor passed, catch-up band open,
+    // unresolved) surfaces FIRST, else the future next-due. `nextDueOverdue`
+    // is the resolver's `isDoseOverdue` on it: past the on-time window.
     const display = computeDisplayDue({
       medication: {
         id: m.id,
@@ -271,8 +269,9 @@ export async function buildMedicationsList(
     // window here so GLP-1/take-all keep the server's prior scheduledFor
     // instead of rebinding it onto today's date. Other sibling windows remain
     // uncovered because the adjustment is only +1.
+    // A display slot before today is always an open one, due or overdue.
     const carriesPriorRollingOccurrence =
-      display?.overdue === true &&
+      display !== null &&
       display.at.getTime() < todayStartUtc.getTime() &&
       displaySchedule?.rollingIntervalDays !== null &&
       displaySchedule?.rollingIntervalDays !== undefined;

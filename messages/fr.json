@@ -5238,7 +5238,8 @@
       "statusInRange": "dans la plage",
       "statusBelow": "sous la plage",
       "statusAbove": "au-dessus de la plage",
-      "directionFlat": "aucun changement"
+      "directionFlat": "aucun changement",
+      "dismiss": "Masquer jusqu’au prochain bilan"
     },
     "navGripStrength": "Force de préhension",
     "navPainNrs": "Douleur",

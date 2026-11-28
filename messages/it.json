@@ -5238,7 +5238,8 @@
       "statusInRange": "nell'intervallo",
       "statusBelow": "sotto l'intervallo",
       "statusAbove": "sopra l'intervallo",
-      "directionFlat": "nessuna variazione"
+      "directionFlat": "nessuna variazione",
+      "dismiss": "Nascondi fino al prossimo referto"
     },
     "navGripStrength": "Forza di presa",
     "navPainNrs": "Dolore",

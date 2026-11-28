@@ -1,15 +1,18 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { FlaskConical } from "lucide-react";
+import { FlaskConical, X } from "lucide-react";
 
 import { useTranslations } from "@/lib/i18n/context";
 import { useAuth } from "@/hooks/use-auth";
+import { useDismissedHints } from "@/hooks/use-dismissed-hints";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { apiGet } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
 import { SectionHeading } from "@/components/ui/section-heading";
 import type { LabChange } from "@/lib/insights/labs-changes";
+import { hintId } from "@/lib/hints/dismissible-hints";
 import { InsightSectionCard } from "./insight-section-card";
 import { withLabUnit } from "@/lib/labs/dimensionless";
 import { useLabNumber } from "@/components/labs/use-lab-format";
@@ -22,6 +25,10 @@ import { useLabNumber } from "@/components/labs/use-lab-format";
  * the signed delta, and where the latest value sits against its reference band.
  * It un-mounts when there are fewer than two panels or no shared analyte
  * (`present === false`). Never a diagnosis — neutral framing only.
+ *
+ * Put away on the account per newest panel (`labs-changes.<latestDate>`,
+ * `useDismissedHints`): closed stays closed on every device until a newer
+ * panel arrives, which brings the card back.
  */
 
 interface LabsChangesResponse {
@@ -57,6 +64,7 @@ export function LabsChangesCard({
   const { t } = useTranslations();
   const { isAuthenticated } = useAuth();
   const labNumber = useLabNumber();
+  const hints = useDismissedHints();
 
   const { data } = useQuery({
     queryKey: queryKeys.insightsLabsChanges(),
@@ -65,7 +73,9 @@ export function LabsChangesCard({
     staleTime: 60_000,
   });
 
-  if (!data || data.present === false) return null;
+  if (!data || data.present === false || !data.latestDate) return null;
+  const panel = data.latestDate;
+  if (hints.isDismissed("labs-changes", panel)) return null;
 
   return (
     <section
@@ -77,6 +87,20 @@ export function LabsChangesCard({
         icon={FlaskConical}
         title={t("insights.labsChanges.sectionTitle")}
         subtitle={t("insights.labsChanges.subtitle")}
+        action={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => void hints.dismiss(hintId("labs-changes", panel))}
+            aria-label={t("insights.labsChanges.dismiss")}
+            title={t("insights.labsChanges.dismiss")}
+            data-slot="labs-changes-dismiss"
+            className="size-11 shrink-0 sm:size-9"
+          >
+            <X className="size-4" aria-hidden="true" />
+          </Button>
+        }
       />
       <InsightSectionCard slot="labs-changes-card" flush className="divide-y">
         {data.changes.map((c) => {

@@ -1064,7 +1064,7 @@ const showNavCountsResponse = z
 const dismissedHintsPatchRequest = dismissedHintsPatchSchema.meta({
   id: "DismissedHintsPatchRequest",
   description:
-    "Put one-time hints away (`dismiss`) or bring them back (`restore`). An id is a hint family (`timeline-readiness`, `ai-setup`, `ai-consent-request`, `correlation-seasonal`, `i18n-banner`, `getting-started`) or `family.member` (`i18n-banner.fr`, `getting-started.<row>`). Restoring a family restores its members too.",
+    "Put one-time hints away (`dismiss`) or bring them back (`restore`). An id is a hint family (`timeline-readiness`, `ai-setup`, `ai-consent-request`, `correlation-seasonal`, `i18n-banner`, `getting-started`, `labs-changes`) or `family.member` (`i18n-banner.fr`, `getting-started.<row>`, `labs-changes.<YYYY-MM-DD>` with the newest lab panel's day, so a new panel brings the hint back). Restoring a family restores its members too.",
 });
 
 const dismissedHintsResponse = z
