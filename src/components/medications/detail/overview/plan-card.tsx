@@ -6,6 +6,7 @@
  * opening the wizard.
  */
 
+import { effectiveGraceMinutes } from "@/lib/medications/scheduling/grace";
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Clock } from "lucide-react";
@@ -88,7 +89,7 @@ export function PlanCard({
           date: calendar(medication.startsOn),
         })
     : null;
-  const grace = medication.schedules[0]?.reminderGraceMinutes ?? 30;
+  const grace = effectiveGraceMinutes(medication.schedules[0] ?? {});
   const reminder =
     asNeeded || recordOnly
       ? null

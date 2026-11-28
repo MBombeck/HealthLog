@@ -70,14 +70,17 @@ export function usePauseToggle({
 }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
-  const [paused, setPaused] = useState(!active);
-  const [busy, setBusy] = useState(false);
+  // The stored `active` is the one source. The write in flight overrides it
+  // until the refreshed reads land, so the header menu and the settings
+  // switch (two callers of this hook) can never disagree for longer than
+  // that, and a pause made elsewhere shows here without a reload.
+  const [pending, setPending] = useState<boolean | null>(null);
+  const paused = pending ?? !active;
+  const busy = pending !== null;
 
   async function toggle(pauseNext: boolean) {
     if (busy) return;
-    setBusy(true);
-    const previous = paused;
-    setPaused(pauseNext);
+    setPending(pauseNext);
     try {
       await apiPut(`/api/medications/${medicationId}`, { active: !pauseNext });
       await invalidateMedicationReads(queryClient);
@@ -88,12 +91,11 @@ export function usePauseToggle({
       );
       onAfterAction?.();
     } catch (failure) {
-      setPaused(previous);
       showErrorToast(t("medications.detail.zone.pause.failed"), {
         cause: failure,
       });
     } finally {
-      setBusy(false);
+      setPending(null);
     }
   }
 

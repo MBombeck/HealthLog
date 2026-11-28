@@ -18,6 +18,7 @@
  * all-schedules scope when more than one schedule exists.
  */
 
+import { effectiveGraceMinutes } from "@/lib/medications/scheduling/grace";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -93,9 +94,8 @@ export function GraceRow({
   const { t } = useTranslations();
   const fmt = useFormatters();
   const queryClient = useQueryClient();
-  const firstGrace = schedules[0]?.reminderGraceMinutes;
-  const [graceValue, setGraceValue] = useState(
-    typeof firstGrace === "number" ? firstGrace : 30,
+  const [graceValue, setGraceValue] = useState(() =>
+    effectiveGraceMinutes(schedules[0] ?? {}),
   );
   const [graceBusy, setGraceBusy] = useState(false);
 
