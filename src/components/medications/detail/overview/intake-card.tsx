@@ -243,9 +243,13 @@ export function IntakeCard({
     <OverviewCard
       icon={CalendarCheck}
       title={t("medications.detail.overview.intake.title")}
-      chip={t("medications.detail.overview.daysChip", {
-        days: showRate ? windowDays : GRID_DAYS,
-      })}
+      // The sentence names its window when it has a rate or a count; the
+      // chip names the grid's otherwise, never both.
+      chip={
+        showRate || asNeeded
+          ? undefined
+          : t("medications.detail.overview.daysChip", { days: GRID_DAYS })
+      }
       sentence={sentence}
       slot="medication-overview-intake"
       actions={
@@ -266,6 +270,7 @@ export function IntakeCard({
             primary={
               onHistory ? (
                 <Button
+                  variant="outline"
                   className={PAIR_BUTTON}
                   onClick={onHistory}
                   data-slot="medication-overview-intake-history"

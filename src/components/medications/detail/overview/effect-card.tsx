@@ -6,13 +6,7 @@
  * measurement" / "Details".
  */
 
-import {
-  ArrowDown,
-  ArrowRight,
-  ArrowUp,
-  Minus,
-  TrendingUp,
-} from "lucide-react";
+import { ArrowRight, TrendingUp } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
@@ -46,13 +40,6 @@ export function EffectCard({
   const target =
     dto?.targets.find((candidate) => candidate.primary) ?? dto?.targets[0];
   const ba = target?.beforeAfter;
-  const direction = target?.result?.direction ?? null;
-  const DeltaIcon =
-    direction === "lower"
-      ? ArrowDown
-      : direction === "higher"
-        ? ArrowUp
-        : Minus;
   const series = target?.series ?? [];
 
   return (
@@ -83,6 +70,7 @@ export function EffectCard({
           primary={
             onDetails ? (
               <Button
+                variant="outline"
                 className={PAIR_BUTTON}
                 onClick={onDetails}
                 data-slot="medication-overview-effect-details"
@@ -126,10 +114,6 @@ export function EffectCard({
                   {target.unit}
                 </span>
               )}
-              <span className="text-foreground ml-auto inline-flex items-center gap-0.5 text-sm tabular-nums">
-                <DeltaIcon aria-hidden="true" className="size-4" />
-                {fmt.number(Math.abs(ba.delta.mean))}
-              </span>
             </p>
           )}
           {series.length > 1 && target && (

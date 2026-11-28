@@ -27,15 +27,8 @@ import {
   useTranslations,
 } from "@/lib/i18n/context";
 import type { DoseState } from "@/lib/medications/dose-state/resolve";
-import {
-  cardTakeSlot,
-  liveDoseState,
-  type TakeSlot,
-} from "@/lib/medications/dose-state/pill";
-import {
-  DOSE_ACTION_TERM,
-  isOpenDoseState,
-} from "@/lib/medications/dose-state/terms";
+import { cardTakeSlot, type TakeSlot } from "@/lib/medications/dose-state/pill";
+import { DOSE_ACTION_TERM } from "@/lib/medications/dose-state/terms";
 import { queryKeys } from "@/lib/query-keys";
 import { userDayKey } from "@/lib/tz/format";
 
@@ -110,17 +103,14 @@ function useTodaySentence({
   asNeeded,
   slots,
   extras,
-  liveOverdue,
 }: {
   medication: MedicationDetailSnapshot;
   recordOnly: boolean;
   asNeeded: boolean;
   slots: TodayDose[];
   extras: TodayDose[];
-  liveOverdue: boolean;
-}): string {
+}): string | null {
   const { t } = useTranslations();
-  const fmt = useFormatters();
   if (!medication.active) return t("medications.detail.uebersicht.pausedHint");
   if (recordOnly) return t("medications.detail.uebersicht.nextDoseNotTracked");
   if (asNeeded) {
@@ -130,20 +120,11 @@ function useTodaySentence({
         })
       : t("medications.detail.uebersicht.nextDoseAsNeeded");
   }
-  // The first dose of today that still waits for an answer.
-  const open = slots.find((dose) => isOpenDoseState(dose.state));
-  if (!open) {
-    return slots.length > 0
-      ? t("medications.detail.overview.today.nothingOpen")
-      : t("medications.detail.overview.today.noneToday");
-  }
-  const time = open.slotAt ? fmt.time(open.slotAt) : "";
-  if (open.state === "overdue" || liveOverdue) {
-    return t("medications.detail.overview.today.overdueAt", { time });
-  }
-  return open.state === "due"
-    ? t("medications.detail.overview.today.dueAt", { time })
-    : t("medications.detail.overview.today.nextAt", { time });
+  // With today's doses listed, each row already says its time and its
+  // state ("20:00 Due"), and the chip says how many are done: a sentence
+  // would read them back. It speaks only when there is no row to read.
+  if (slots.length > 0) return null;
+  return t("medications.detail.overview.today.noneToday");
 }
 
 export function TodayCard({
@@ -188,7 +169,6 @@ export function TodayCard({
     asNeeded,
     slots,
     extras,
-    liveOverdue: !!currentDose && liveDoseState(currentDose, now) === "overdue",
   });
   const nextDueAt = medication.nextDueAt ?? null;
   const showNext =
@@ -352,6 +332,7 @@ function TodayActions({
         primary={
           onHistory ? (
             <Button
+              variant="outline"
               className={PAIR_BUTTON}
               onClick={onHistory}
               data-slot="medication-overview-history"

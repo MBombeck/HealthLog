@@ -36,7 +36,8 @@ export function OverviewCard({
   icon: ComponentType<{ className?: string }>;
   title: string;
   chip?: ReactNode;
-  sentence: ReactNode;
+  /** At most one; none when the body already says it. */
+  sentence?: ReactNode;
   children?: ReactNode;
   actions?: ReactNode;
   slot: string;
@@ -52,9 +53,11 @@ export function OverviewCard({
         />
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-4">
-        <p className="text-foreground text-sm" data-slot={`${slot}-sentence`}>
-          {sentence}
-        </p>
+        {sentence ? (
+          <p className="text-foreground text-sm" data-slot={`${slot}-sentence`}>
+            {sentence}
+          </p>
+        ) : null}
         {children}
         {actions && <div className="mt-auto">{actions}</div>}
       </CardContent>

@@ -1,9 +1,8 @@
 "use client";
 
 /**
- * The overview's plan: how the medication is taken, in one table. Intake,
- * period, reminder, supply, the person's note and the leaflet, with "Edit"
- * opening the wizard.
+ * The overview's plan, in one table: period, reminder, supply, the person's note and the leaflet, with "Edit"
+ * opening the wizard. How it is taken is the header's line, not a row here.
  */
 
 import { effectiveGraceMinutes } from "@/lib/medications/scheduling/grace";
@@ -15,8 +14,6 @@ import { TileHeader } from "@/components/insights/tile-header";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { InlineAction } from "@/components/ui/inline-action";
 import { MedicationLeafletRow } from "@/components/medications/detail/medication-leaflet-section";
-import { useCadenceLine } from "@/components/medications/medication-detail-summary";
-import type { MedicationPayload } from "@/components/medications/wizard/wizard-payload";
 import type { MedicationDetailSnapshot } from "@/components/medications/detail/medication-detail-tabs";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { apiGet } from "@/lib/api/api-fetch";
@@ -28,32 +25,22 @@ import { queryKeys } from "@/lib/query-keys";
 
 /** One plan row: the name left, the value right, a rule between rows. */
 const PLAN_ROW =
-  "border-border/60 flex min-h-11 items-start justify-between gap-4 border-b py-2.5 text-sm last:border-b-0 md:[&:nth-last-child(2):nth-child(odd)]:border-b-0";
+  "border-border/60 flex min-h-11 items-center justify-between gap-4 border-b py-2.5 text-sm last:border-b-0 md:[&:nth-last-child(2):nth-child(odd)]:border-b-0";
 
 export function PlanCard({
   medication,
-  payload,
   recordOnly,
   asNeeded,
-  oneShot,
   onEdit,
 }: {
   medication: MedicationDetailSnapshot;
-  payload: MedicationPayload;
   recordOnly: boolean;
   asNeeded: boolean;
-  oneShot: boolean;
   onEdit?: () => void;
 }) {
   const { t, locale } = useTranslations();
   const dateFormatPref = useDateFormatPreference();
   const { canManageDomain } = useRecordCapabilities();
-  const cadence = useCadenceLine({
-    payload,
-    oneShot,
-    asNeeded,
-    startsOn: medication.startsOn,
-  });
   const id = medication.id;
 
   // The supply tab's read and cache cell; the row shows once items exist.
@@ -102,11 +89,6 @@ export function PlanCard({
           : t("medications.detail.uebersicht.reminderOff");
 
   const rows: { key: string; label: string; value: ReactNode }[] = [
-    {
-      key: "intake",
-      label: t("medications.detail.overview.intake.title"),
-      value: cadence,
-    },
     ...(period
       ? [
           {

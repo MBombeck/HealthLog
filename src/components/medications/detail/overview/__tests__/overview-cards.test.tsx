@@ -29,7 +29,6 @@ import { PlanCard } from "@/components/medications/detail/overview/plan-card";
 import type { OverviewCompliance } from "@/components/medications/detail/overview/anatomy";
 import type { LedgerRow } from "@/components/medications/dose-history-ledger-compute";
 import type { MedicationDetailSnapshot } from "@/components/medications/detail/medication-detail-tabs";
-import { snapshotToWizardPayload } from "@/components/medications/detail/snapshot-wizard-payload";
 
 function render(node: React.ReactNode) {
   return renderToStaticMarkup(
@@ -218,19 +217,16 @@ describe("plan card", () => {
     ],
   } as MedicationDetailSnapshot;
 
-  it("lists intake, period, reminder and the person's own note", () => {
+  it("lists period, reminder and the person's own note, not the cadence the header says", () => {
     const html = render(
       <PlanCard
         medication={medication}
-        payload={snapshotToWizardPayload(medication)}
         recordOnly={false}
         asNeeded={false}
-        oneShot={false}
         onEdit={() => {}}
       />,
     );
-    expect(html).toContain("medication-overview-plan-intake");
-    expect(html).toMatch(/8:00/);
+    expect(html).not.toContain("medication-overview-plan-intake");
     expect(html).toContain("since ");
     expect(html).toContain("on, 30 minutes");
     expect(html).toContain('data-slot="medication-overview-plan-edit"');
