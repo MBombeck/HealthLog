@@ -73,7 +73,7 @@ async function landing(): Promise<string> {
 
 function flow(
   onboarding: OnboardingStateDto,
-  extra: { serverSetupOpen?: boolean } = {},
+  extra: { serverSetupOpen?: boolean; accountCompleted?: boolean } = {},
 ) {
   return {
     userId: "u1",
@@ -81,6 +81,7 @@ function flow(
     state: onboarding,
     plan: null,
     serverSetupOpen: extra.serverSetupOpen ?? false,
+    accountCompleted: extra.accountCompleted ?? true,
   };
 }
 
@@ -123,6 +124,30 @@ describe("the setup front door", () => {
       ),
     );
     expect(await landing()).toBe("/");
+  });
+
+  it("sends an account nothing is owed by but still unstamped to its last screen, not into a loop with the dashboard", async () => {
+    // A flow begun before this one stopped past its sources screen: every
+    // step is settled, the account was never stamped, so the first-run
+    // redirect would bounce "/" straight back here.
+    loadMock.mockResolvedValue(
+      flow(
+        state(
+          {
+            who: "done",
+            areas: "done",
+            units: "done",
+            sources: "done",
+            reminders: "done",
+          },
+          { recordTarget: "me" },
+        ),
+        { accountCompleted: false },
+      ),
+    );
+    const href = await landing();
+    expect(href).not.toBe("/");
+    expect(href).toMatch(/^\/onboarding\/[a-z-]+$/);
   });
 
   it("asks a claimed profile's handover decision first", async () => {

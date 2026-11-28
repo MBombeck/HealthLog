@@ -38,8 +38,15 @@ export function ProfileScreen({
     if (working) return;
     setWorking(true);
     try {
+      // For "someone I look after" this screen is the confirm: the server
+      // derives the answers onto the new profile (or onto nobody, on
+      // "Later") once it is answered.
       const written = forSomeoneElse
-        ? await flow.confirmAnswers(state, managedRecordId)
+        ? await flow.record(
+            managedRecordId
+              ? { step: "confirm", managedRecordId }
+              : { step: "confirm" },
+          )
         : state;
       await flow.finish(written);
     } catch (err) {

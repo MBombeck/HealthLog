@@ -39,6 +39,19 @@ function setupTask<T extends readonly [string, ...string[]]>(ids: T) {
     deadline: isoDateTime()
       .nullable()
       .describe("The second-factor policy's date, while it applies."),
+    deadlineDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .nullable()
+      .describe(
+        "The deadline's calendar day (YYYY-MM-DD) in the profile's time zone: the day to show. Null without a deadline.",
+      ),
+    deadlineTimeZone: z
+      .string()
+      .nullable()
+      .describe(
+        "The IANA zone the deadline is read in (the profile's). Null without a deadline.",
+      ),
     count: z
       .object({ done: z.number().int(), total: z.number().int() })
       .nullable()
@@ -47,6 +60,11 @@ function setupTask<T extends readonly [string, ...string[]]>(ids: T) {
 }
 
 const personState = z.object({
+  firstRunOwed: z
+    .boolean()
+    .describe(
+      "The first run is still owed: the account is not stamped complete, the same gate as the web's first-run redirect. Show the setup flow exactly when this is true; it turns false when the last owed screen is answered (the server confirms on that write).",
+    ),
   status: z.enum(["pending", "done"]),
   currentStep: z
     .enum(PERSON_SCREEN_IDS)
@@ -73,7 +91,11 @@ const personState = z.object({
   cardShown: z
     .boolean()
     .describe("Whether the dashboard shows the setup card."),
-  cardDismissed: z.boolean(),
+  cardDismissed: z
+    .boolean()
+    .describe(
+      "The person hid the setup card (PATCH /api/setup). Only the card: the rows stay in Settings › Account › Setup. `cardShown` already accounts for it.",
+    ),
   tasks: z.array(setupTask(PERSON_TASK_IDS)),
 });
 
@@ -125,7 +147,7 @@ export const setupPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Onboarding"],
       summary: "Hide or show the setup card",
       description:
-        "`cardDismissed: true` hides the dashboard setup card for this account on every device; `false` shows it again. Settings › Account › Setup lists the same rows either way. Refused on a demo deploy (403 `setup.demo`). Rate-limited to 30 writes per 10 minutes. Cookie or wildcard Bearer.",
+        "`cardDismissed: true` hides the dashboard setup card for this account on every device; `false` clears the hide, and the card comes back only while `cardShown`'s other conditions hold (a flow started on 1.50, at least one row `todo` or `warning`, not a demo deploy); it touches no row and nothing else. Settings › Account › Setup lists the same rows either way. Refused on a demo deploy (403 `setup.demo`). Rate-limited to 30 writes per 10 minutes. Cookie or wildcard Bearer.",
       requestBody: {
         required: true,
         content: {

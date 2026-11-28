@@ -24,6 +24,8 @@ import { getPolarClientCredentials } from "@/lib/polar/credentials";
 import { getStravaClientCredentials } from "@/lib/strava/credentials";
 import { accountPushState } from "@/lib/push-relay/capability";
 import { readRecoveryKit } from "@/lib/recovery/kit";
+import { userDayKey } from "@/lib/tz/format";
+import { resolveStoredTimezone } from "@/lib/tz/resolver";
 import { loadOnboardingOffers } from "@/lib/onboarding/load-offers";
 import { activeGuardianWhere } from "@/lib/managed-profiles/guardian-where";
 import {
@@ -68,6 +70,8 @@ function task<Id extends string>(
     status,
     value: extra.value ?? null,
     deadline: extra.deadline ?? null,
+    deadlineDate: extra.deadlineDate ?? null,
+    deadlineTimeZone: extra.deadlineTimeZone ?? null,
     count: extra.count ?? null,
   };
 }
@@ -96,6 +100,8 @@ interface AccountRow {
   stravaAccessTokenEncrypted: string | null;
   garminApiKeyEncrypted: string | null;
   nightscoutUrlEncrypted: string | null;
+  onboardingCompletedAt: Date | null;
+  timezone: string | null;
 }
 
 const ACCOUNT_SELECT = {
@@ -115,6 +121,8 @@ const ACCOUNT_SELECT = {
   stravaAccessTokenEncrypted: true,
   garminApiKeyEncrypted: true,
   nightscoutUrlEncrypted: true,
+  onboardingCompletedAt: true,
+  timezone: true,
 } as const;
 
 async function secondFactorTask<Id extends "second-factor">(
@@ -136,8 +144,13 @@ async function secondFactorTask<Id extends "second-factor">(
     enrollment.state === "grace" && enrollment.dueAt
       ? new Date(enrollment.dueAt).toISOString()
       : null;
+  // Read in the profile's zone, so both clients show the same day.
+  const zone = deadline ? await resolveStoredTimezone(account.timezone) : null;
   return task("second-factor" as Id, deadlineStatus(deadline, now), {
     deadline,
+    deadlineDate:
+      deadline && zone ? userDayKey(new Date(deadline), zone) : null,
+    deadlineTimeZone: zone,
   });
 }
 
@@ -271,6 +284,7 @@ async function resolvePerson(
   return {
     aiOffered: offers.ai,
     person: {
+      firstRunOwed: account.onboardingCompletedAt === null,
       status: currentStep === null ? "done" : "pending",
       currentStep,
       segments: planOf(flow).map((segment) => ({

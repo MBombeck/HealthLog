@@ -2,10 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
-import {
-  useOnboardingAnswer,
-  useOnboardingComplete,
-} from "@/components/onboarding/use-onboarding-flow";
+import { useOnboardingAnswer } from "@/components/onboarding/use-onboarding-flow";
 import { screenHref } from "@/components/onboarding/screen-href";
 import { setTourReferrer } from "@/components/onboarding/tour-launcher";
 import { useAuth } from "@/hooks/use-auth";
@@ -16,7 +13,6 @@ import type { OnboardingStateDto } from "@/lib/onboarding/needs";
 import type { OnboardingAnswerInput } from "@/lib/validations/onboarding-needs";
 import {
   nextScreen,
-  questionsToPassBeforeConfirm,
   type FlowState,
   type OnboardingScreenId,
   type PersonSegmentId,
@@ -36,7 +32,6 @@ export function usePersonFlow(
   const router = useRouter();
   const { user } = useAuth();
   const answer = useOnboardingAnswer();
-  const complete = useOnboardingComplete();
 
   const withPlan = (written: OnboardingStateDto): FlowState => ({
     ...written,
@@ -46,32 +41,11 @@ export function usePersonFlow(
   /** Record one answer; returns the written state. */
   const record = (input: OnboardingAnswerInput) => answer.mutateAsync(input);
 
-  /**
-   * Confirm the answers: pass every question this flow does not ask, then
-   * complete, which derives the module map once (for the managed profile
-   * when one was created for "someone I look after") and ends the first-run
-   * redirect.
-   */
-  async function confirmAnswers(
-    written: OnboardingStateDto,
-    managedRecordId?: string,
-  ): Promise<OnboardingStateDto> {
-    let current = written;
-    for (const id of questionsToPassBeforeConfirm(withPlan(current))) {
-      current = await record({ step: id, status: "skipped" });
-    }
-    const result = await complete.mutateAsync(
-      managedRecordId ? { managedRecordId } : undefined,
-    );
-    current = result.onboarding ?? current;
-    if (stepPending(current, "first-result")) {
-      current = await record({ step: "first-result", status: "skipped" });
-    }
-    return current;
-  }
-
   /** The flow's last screen: settle the ledger and open the dashboard. */
   async function finish(written: OnboardingStateDto): Promise<void> {
+    // The server confirmed the flow when the last owed screen was answered
+    // (`PATCH /api/onboarding/answers`); the ledger's own end is all that is
+    // left to settle here.
     if (stepPending(written, "done")) await record({ step: "done" });
     // The module tour follows the first run straight away, not a day later.
     if (user?.id) setTourReferrer(user.id);
@@ -97,11 +71,10 @@ export function usePersonFlow(
 
   return {
     record,
-    confirmAnswers,
     finish,
     advance,
     fail,
-    pending: answer.isPending || complete.isPending,
+    pending: answer.isPending,
   };
 }
 

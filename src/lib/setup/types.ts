@@ -91,6 +91,13 @@ export interface SetupTask<Id extends string = string> {
   value: SetupTaskValue | null;
   /** ISO instant of a deadline (the second-factor policy), or null. */
   deadline: string | null;
+  /**
+   * The deadline's calendar day (`YYYY-MM-DD`) in the profile's time zone,
+   * the day to show; null without a deadline.
+   */
+  deadlineDate: string | null;
+  /** The IANA zone the deadline is read in (the profile's); null without one. */
+  deadlineTimeZone: string | null;
   /** "3 of 6"-style counts for a row that is a group, or null. */
   count: { done: number; total: number } | null;
 }
@@ -98,6 +105,12 @@ export interface SetupTask<Id extends string = string> {
 export type SetupScreenStatus = "pending" | "done" | "skipped";
 
 export interface PersonSetupState {
+  /**
+   * The first run is still owed: the account has not been stamped complete,
+   * which is the same gate the web's first-run redirect follows. A client
+   * shows its setup flow exactly when this is true.
+   */
+  firstRunOwed: boolean;
   /** `done` once every screen of the flow is answered or passed. */
   status: "pending" | "done";
   /** The screen the flow resumes on, or null when nothing is owed. */

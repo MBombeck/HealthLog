@@ -253,3 +253,132 @@ describe("the instance half", () => {
     expect((await getSetup()).status).toBe(401);
   });
 });
+
+describe("the app's flow, answered screen by screen over a token", () => {
+  it("confirms on the last owed screen, with nothing else to call", async () => {
+    // An iPad without Apple Health: sources passed, nothing connected.
+    const user = await makeUser("USER");
+    await useBearer(user.id, ["*"]);
+
+    const before = await state(await getSetup());
+    expect(before.person.firstRunOwed).toBe(true);
+
+    for (const body of [
+      { step: "who", recordTarget: "me" },
+      { step: "areas", areas: ["blood-pressure"] },
+      { step: "units", units: { unitPreference: "metric" } },
+      { step: "sources", status: "skipped" },
+    ]) {
+      expect((await answer(body)).status).toBe(200);
+    }
+    const mid = await state(await getSetup());
+    expect(mid.person.firstRunOwed).toBe(true);
+    expect(mid.person.currentStep).toBe("reminders");
+
+    expect(
+      (await answer({ step: "reminders", status: "skipped" })).status,
+    ).toBe(200);
+
+    const after = await state(await getSetup());
+    expect(after.person.firstRunOwed).toBe(false);
+    expect(after.person.status).toBe("done");
+    const account = await getPrismaClient().user.findUniqueOrThrow({
+      where: { id: user.id },
+      select: { onboardingCompletedAt: true, modulePreferencesJson: true },
+    });
+    expect(account.onboardingCompletedAt).not.toBeNull();
+    const record = await getPrismaClient().onboardingRecord.findUniqueOrThrow({
+      where: { userId: user.id },
+    });
+    expect(record.completedAt).not.toBeNull();
+    expect(record.modulesDerivedAt).not.toBeNull();
+    // The questions the flow never asked are passed, not answered "no".
+    const prefs = (account.modulePreferencesJson ?? {}) as Record<
+      string,
+      boolean
+    >;
+    expect(prefs.medications).not.toBe(false);
+    expect(prefs.doctorReport).not.toBe(false);
+  });
+
+  it("does not confirm while a screen is still owed", async () => {
+    const user = await makeUser("USER");
+    await useBearer(user.id, ["*"]);
+    await answer({ step: "who", recordTarget: "me" });
+    await answer({ step: "sources", status: "skipped" });
+    await answer({ step: "reminders", status: "skipped" });
+    const read = await state(await getSetup());
+    expect(read.person.firstRunOwed).toBe(true);
+    expect(read.person.currentStep).toBe("areas");
+  });
+
+  it("confirms someone else's flow without a profile, deriving onto nobody", async () => {
+    const user = await makeUser("USER");
+    await useBearer(user.id, ["*"]);
+    await answer({ step: "who", recordTarget: "someone-else" });
+    await answer({ step: "areas", areas: ["blood-pressure"] });
+    await answer({ step: "units", status: "skipped" });
+    expect((await state(await getSetup())).person.currentStep).toBe("profile");
+    expect((await answer({ step: "confirm" })).status).toBe(200);
+
+    const read = await state(await getSetup());
+    expect(read.person.firstRunOwed).toBe(false);
+    const own = await getPrismaClient().user.findUniqueOrThrow({
+      where: { id: user.id },
+      select: { modulePreferencesJson: true },
+    });
+    expect(own.modulePreferencesJson).toBeNull();
+    expect(
+      read.person.tasks.find((row) => row.id === "managed-profile")?.status,
+    ).toBe("todo");
+  });
+
+  it("refuses a profile the caller does not guard, and confirms nothing", async () => {
+    const user = await makeUser("USER");
+    const stranger = await makeUser("USER");
+    await useBearer(user.id, ["*"]);
+    await answer({ step: "who", recordTarget: "someone-else" });
+    await answer({ step: "areas", areas: ["blood-pressure"] });
+    await answer({ step: "units", status: "skipped" });
+    const res = await answer({ step: "confirm", managedRecordId: stranger.id });
+    expect(res.status).toBe(404);
+    expect((await state(await getSetup())).person.firstRunOwed).toBe(true);
+  });
+
+  it("merges answered sources, never replacing them", async () => {
+    const user = await makeUser("USER");
+    await useBearer(user.id, ["*"]);
+    await answer({ step: "who", recordTarget: "me" });
+    await answer({ step: "sources", sources: ["withings"] });
+    const res = await answer({ step: "sources", sources: ["apple-health"] });
+    const body = (await res.json()) as {
+      data: { onboarding: { needs: { sources: string[] } } };
+    };
+    expect([...body.data.onboarding.needs.sources].sort()).toEqual([
+      "apple-health",
+      "withings",
+    ]);
+  });
+});
+
+describe("a deadline, read in the profile's zone", () => {
+  it("carries the calendar day and the zone beside the instant", async () => {
+    const user = await makeUser("ADMIN");
+    await getPrismaClient().user.update({
+      where: { id: user.id },
+      data: { timezone: "Pacific/Auckland" },
+    });
+    await signIn(user.id);
+    const read = await state(await getSetup());
+    const row = read.person.tasks.find((t) => t.id === "second-factor");
+    expect(row?.deadline).not.toBeNull();
+    expect(row?.deadlineTimeZone).toBe("Pacific/Auckland");
+    const day = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Pacific/Auckland",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date(row!.deadline!));
+    expect(row?.deadlineDate).toBe(day);
+  });
+});

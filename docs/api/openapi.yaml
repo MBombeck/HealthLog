@@ -7641,9 +7641,11 @@ paths:
       tags:
         - Onboarding
       summary: Hide or show the setup card
-      description: "`cardDismissed: true` hides the dashboard setup card for this account on every device; `false` shows it
-        again. Settings › Account › Setup lists the same rows either way. Refused on a demo deploy (403 `setup.demo`).
-        Rate-limited to 30 writes per 10 minutes. Cookie or wildcard Bearer."
+      description: "`cardDismissed: true` hides the dashboard setup card for this account on every device; `false` clears the
+        hide, and the card comes back only while `cardShown`'s other conditions hold (a flow started on 1.50, at least
+        one row `todo` or `warning`, not a demo deploy); it touches no row and nothing else. Settings › Account › Setup
+        lists the same rows either way. Refused on a demo deploy (403 `setup.demo`). Rate-limited to 30 writes per 10
+        minutes. Cookie or wildcard Bearer."
       requestBody:
         required: true
         content:
@@ -24492,7 +24494,24 @@ paths:
 
 
         The `units` step is the one answer with a consequence outside this state: it writes the record's `glucoseUnit`
-        and `unitPreference`, which every display surface already reads, and records the answer beside them.
+        and `unitPreference`, which every display surface already reads, and records the answer beside them. Its fields,
+        all optional: `glucoseUnit` (`mg/dL` | `mmol/L`, nullable), `unitPreference` (`metric` | `imperial`, nullable),
+        `timezone` (an IANA zone) and `medicineRegistry`; an omitted field leaves the recorded answer alone, an explicit
+        `null` clears a unit.
+
+
+        `sources` is additive (1.50): the answered list is merged into the recorded one as a set and never replaces it,
+        so the web (the services it connected) and the app (Apple Health) each add their own and neither erases the
+        other's. Which device holds which permission is the app's business, not this record's.
+
+
+        The server confirms the flow itself (1.50). When a write leaves no screen of the pinned flow owed (`currentStep`
+        null on `GET /api/setup`) and the account is not stamped yet, the same request passes the questions this flow
+        does not show, stamps the account (`onboardingCompletedAt`, which ends the first-run redirect), derives the
+        module map once, and answers the state after that. A client only answers its screens; it never calls a separate
+        confirm. For "someone I look after" the `profile` screen is the `confirm` step: send `managedRecordId` with it
+        when a profile was created, so the answers land on that record (same checks and refusals as `POST
+        /api/onboarding/complete`: 404, 422), or send it without one, which confirms and derives onto nobody.
 
 
         Cookie or wildcard Bearer, and the CALLER's own record only: a request made while the session is acting on
@@ -24601,6 +24620,11 @@ paths:
         - Onboarding
       summary: Stamp onboarding as complete, and derive the module map
       description: >-
+        Since 1.50 the setup flow is confirmed by `PATCH /api/onboarding/answers` once its last owed screen is answered;
+        a client of the flow does not call this route. It stays for "finish later" (stamp the account without answers,
+        which ends the first-run redirect) and for callers that confirm explicitly.
+
+
         Marks onboarding finished and saves whatever profile fields came with it, then clears the proxy-readable pending
         cookie so the next navigation stops redirecting to `/onboarding`.
 
@@ -42171,6 +42195,10 @@ components:
             status:
               type: string
               const: done
+            managedRecordId:
+              type: string
+              minLength: 1
+              maxLength: 64
           required:
             - step
           additionalProperties: false
@@ -50200,11 +50228,14 @@ components:
             ask.later:<dismissKey> on other reminders; the admin rows (push_relay, server_setup) come only to a browser
             session. `setup.resolved-state`: GET /api/setup resolves where the person setup stands (status, currentStep,
             the pinned segments with their screens and statuses) and the setup rows (tasks: id, status todo | done |
-            declined | warning, value, deadline, count), with the card's shown and dismissed state; PATCH /api/setup
-            takes cardDismissed. Ids are closed lists; skip an unknown one. instance is null on a Bearer token.
-            `daily.scores-short-labels`: Each start-page score carries shortLabel, its short name for a tile from the
-            score registry, worded in the response language: GET /api/daily/morning scores.sleep and scores.readiness,
-            and GET /api/daily/digest score (the Health score). Render it as is; the web shows the same words."
+            declined | warning, value, deadline with deadlineDate and deadlineTimeZone in the profile zone, count),
+            firstRunOwed (the first-run gate), and the card's shown and dismissed state; PATCH /api/setup takes
+            cardDismissed. PATCH /api/onboarding/answers confirms the flow itself once nothing is owed (confirm takes
+            managedRecordId) and merges sources additively. Ids are closed lists; skip an unknown one. instance is null
+            on a Bearer token. `daily.scores-short-labels`: Each start-page score carries shortLabel, its short name for
+            a tile from the score registry, worded in the response language: GET /api/daily/morning scores.sleep and
+            scores.readiness, and GET /api/daily/digest score (the Health score). Render it as is; the web shows the
+            same words."
       required:
         - version
         - buildSha
@@ -65716,6 +65747,11 @@ components:
         person:
           type: object
           properties:
+            firstRunOwed:
+              type: boolean
+              description: "The first run is still owed: the account is not stamped complete, the same gate as the web's first-run
+                redirect. Show the setup flow exactly when this is true; it turns false when the last owed screen is
+                answered (the server confirms on that write)."
             status:
               type: string
               enum:
@@ -65786,6 +65822,8 @@ components:
               description: Whether the dashboard shows the setup card.
             cardDismissed:
               type: boolean
+              description: "The person hid the setup card (PATCH /api/setup). Only the card: the rows stay in Settings › Account ›
+                Setup. `cardShown` already accounts for it."
             tasks:
               type: array
               items:
@@ -65837,6 +65875,18 @@ components:
                         pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
                       - type: "null"
                     description: The second-factor policy's date, while it applies.
+                  deadlineDate:
+                    anyOf:
+                      - type: string
+                        pattern: ^\d{4}-\d{2}-\d{2}$
+                      - type: "null"
+                    description: "The deadline's calendar day (YYYY-MM-DD) in the profile's time zone: the day to show. Null without a
+                      deadline."
+                  deadlineTimeZone:
+                    description: The IANA zone the deadline is read in (the profile's). Null without a deadline.
+                    type:
+                      - string
+                      - "null"
                   count:
                     anyOf:
                       - type: object
@@ -65860,9 +65910,12 @@ components:
                   - status
                   - value
                   - deadline
+                  - deadlineDate
+                  - deadlineTimeZone
                   - count
                 additionalProperties: false
           required:
+            - firstRunOwed
             - status
             - currentStep
             - segments
@@ -65965,6 +66018,18 @@ components:
                             pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
                           - type: "null"
                         description: The second-factor policy's date, while it applies.
+                      deadlineDate:
+                        anyOf:
+                          - type: string
+                            pattern: ^\d{4}-\d{2}-\d{2}$
+                          - type: "null"
+                        description: "The deadline's calendar day (YYYY-MM-DD) in the profile's time zone: the day to show. Null without a
+                          deadline."
+                      deadlineTimeZone:
+                        description: The IANA zone the deadline is read in (the profile's). Null without a deadline.
+                        type:
+                          - string
+                          - "null"
                       count:
                         anyOf:
                           - type: object
@@ -65988,6 +66053,8 @@ components:
                       - status
                       - value
                       - deadline
+                      - deadlineDate
+                      - deadlineTimeZone
                       - count
                     additionalProperties: false
               required:

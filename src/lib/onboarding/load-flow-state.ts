@@ -30,6 +30,12 @@ export interface OnboardingFlowPageState {
   plan: PersonSegmentId[] | null;
   /** 1.49 — an admin whose server setup is still open (never on a demo). */
   serverSetupOpen: boolean;
+  /**
+   * The account's own completion stamp (`User.onboardingCompletedAt`), the
+   * one the first-run redirect follows. Distinct from the record's
+   * `state.completedAt`.
+   */
+  accountCompleted: boolean;
 }
 
 export const loadOnboardingFlowState = cache(
@@ -51,12 +57,13 @@ export const loadOnboardingFlowState = cache(
       userLocale: user.locale ?? null,
       state: toOnboardingStateDto(row, readHeldUnitPreferences(user), offers),
       // A demo deploy's one account is shared by every visitor: its flow is
-      // the "you" part only, nothing that connects or reminds (B-W9).
+      // the "you" part only, nothing that connects or reminds.
       plan:
         process.env.DEMO_MODE === "true"
           ? ["you"]
           : parsePinnedPlan(pinned?.planJson ?? null),
       serverSetupOpen,
+      accountCompleted: user.onboardingCompletedAt != null,
     };
   },
 );

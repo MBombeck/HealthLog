@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { hasPendingHandoverDecision } from "@/lib/managed-profiles/handover";
 import { loadOnboardingFlowState } from "@/lib/onboarding/load-flow-state";
-import { resumeScreen } from "@/lib/onboarding/wizard-steps";
+import { resumeScreen, screenOrder } from "@/lib/onboarding/wizard-steps";
 
 /**
  * The setup flow's front door (1.50). The proxy lands every account still
@@ -35,6 +35,14 @@ export default async function OnboardingRootPage(props?: {
 
   if (flow.serverSetupOpen) redirect("/onboarding/server");
 
-  const resume = resumeScreen({ ...flow.state, plan: flow.plan });
-  redirect(resume ? `/onboarding/${resume}` : "/");
+  const machine = { ...flow.state, plan: flow.plan };
+  const resume = resumeScreen(machine);
+  if (resume) redirect(`/onboarding/${resume}`);
+  // Nothing is open, but the account is not stamped: the dashboard would send
+  // it straight back here. Its last screen finishes the flow, which stamps.
+  if (!flow.accountCompleted) {
+    const last = screenOrder(machine).at(-1);
+    if (last) redirect(`/onboarding/${last}`);
+  }
+  redirect("/");
 }

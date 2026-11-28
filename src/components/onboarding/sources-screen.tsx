@@ -133,7 +133,7 @@ export function SourcesScreen({
           ? { step: "sources", status: "skipped" }
           : { step: "sources", sources },
       );
-      await flow.advance(await flow.confirmAnswers(written));
+      await flow.advance(written);
     } catch (err) {
       setWorking(false);
       flow.fail(err);
