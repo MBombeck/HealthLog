@@ -430,7 +430,7 @@ describe("POST /api/import/csv — contextless blood glucose", () => {
       externalId: "sensor-1",
       glucoseContext: null,
     });
-    expect(row.value).toBeCloseTo(5.3 * MGDL_PER_MMOL, 3);
+    expect(row.value).toBe(Math.round(5.3 * MGDL_PER_MMOL * 10) / 10);
     expect((row.measuredAt as Date).toISOString()).toBe(
       "2024-04-03T02:15:00.000Z",
     );

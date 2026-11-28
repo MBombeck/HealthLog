@@ -7,7 +7,8 @@
  * same table the visit's own sheet writes from the other end),
  * `delete` (tombstone, undo-able), `restore` (clear tombstone). A
  * partial failure never aborts the batch — each id reports `ok` or a short
- * machine reason. Every id is narrowed to the record; a foreign id reads as
+ * machine reason. Each action runs over the whole set in a bounded number of
+ * statements, whatever the batch size. Every id is narrowed to the record; a foreign id reads as
  * "notFound", exactly like the single-document routes.
  *
  * #1403 — the owner's, and a managed profile's guardian's (`"guardian"`),
@@ -21,12 +22,11 @@ import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
-import { restoreDocumentTombstone } from "@/lib/documents/tombstones";
+import { restoreDocumentTombstones } from "@/lib/documents/tombstones";
 import { linkTargets, unlinkTargets } from "@/lib/links";
 import { actingDomainVisibility } from "@/lib/sharing/acting-domains";
 import { annotate } from "@/lib/logging/context";
 import { requireModuleEnabled } from "@/lib/modules/gate";
-import { isP2002 } from "@/lib/prisma-errors";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import {
   documentBulkSchema,
@@ -109,121 +109,107 @@ export const POST = apiHandler(async (request: NextRequest) => {
     }
   }
 
-  // One record-scoped sweep resolves every id's current state; per-id work
-  // then never touches a row the record does not own.
+  // One record-scoped sweep resolves every id's current state; the action
+  // then runs over the set in a fixed number of statements, never one per id
+  // (a hundred single-row writes in sequence held a request for seconds under
+  // load). Every write stays narrowed to the record.
   const owned = await prisma.inboundDocument.findMany({
     where: { id: { in: uniqueIds }, userId: user.id },
     select: { id: true, deletedAt: true },
   });
   const byId = new Map(owned.map((d) => [d.id, d]));
+  const ownedIds = owned.map((d) => d.id);
+  const liveIds = owned.filter((d) => d.deletedAt === null).map((d) => d.id);
 
-  const results: DocumentBulkResultDto[] = [];
-  for (const id of uniqueIds) {
-    const row = byId.get(id);
-    if (!row) {
-      results.push({ id, ok: false, error: "notFound" });
-      continue;
+  // Ids the action applied to; every other owned id gets `failed[id]`, and an
+  // id the record does not own reads "notFound".
+  let applied: ReadonlySet<string>;
+  const failed = new Map<string, string>();
+
+  switch (action) {
+    case "setKind": {
+      // A tombstoned document is not recategorised: "notFound", like the PATCH.
+      const updated = await prisma.inboundDocument.updateManyAndReturn({
+        where: { id: { in: liveIds }, userId: user.id, deletedAt: null },
+        data: { kind: kind! },
+        select: { id: true },
+      });
+      applied = new Set(updated.map((d) => d.id));
+      break;
     }
-    try {
-      switch (action) {
-        case "setKind": {
-          if (row.deletedAt !== null) {
-            results.push({ id, ok: false, error: "notFound" });
-            continue;
-          }
-          await prisma.inboundDocument.update({
-            where: { id },
-            data: { kind: kind! },
-          });
-          break;
-        }
-        case "linkEpisode": {
-          if (row.deletedAt !== null) {
-            results.push({ id, ok: false, error: "notFound" });
-            continue;
-          }
-          await linkTargets(prisma, {
-            userId: user.id,
-            sourceKind: "document",
-            sourceId: id,
-            targetKind: "conditionEpisode",
-            targetIds: [episodeId!],
-          });
-          break;
-        }
-        case "unlinkEpisode": {
-          await unlinkTargets(prisma, {
-            userId: user.id,
-            sourceKind: "document",
-            sourceId: id,
-            targetKind: "conditionEpisode",
-            targetIds: [episodeId!],
-          });
-          break;
-        }
-        case "linkEncounter": {
-          if (row.deletedAt !== null) {
-            results.push({ id, ok: false, error: "notFound" });
-            continue;
-          }
-          await linkTargets(prisma, {
-            userId: user.id,
-            sourceKind: "document",
-            sourceId: id,
-            targetKind: "encounter",
-            targetIds: [encounterId!],
-          });
-          break;
-        }
-        case "unlinkEncounter": {
-          // No tombstone check, matching `unlinkEpisode`: clearing a filing on
-          // a document the account has since deleted must stay possible, or
-          // the filing is unreachable.
-          await unlinkTargets(prisma, {
-            userId: user.id,
-            sourceKind: "document",
-            sourceId: id,
-            targetKind: "encounter",
-            targetIds: [encounterId!],
-          });
-          break;
-        }
-        case "delete": {
-          if (row.deletedAt !== null) {
-            // Already tombstoned — deleting twice is a no-op success.
-            break;
-          }
-          await prisma.inboundDocument.update({
-            where: { id },
-            data: { deletedAt: new Date(), status: "DISCARDED" },
-          });
-          break;
-        }
-        case "restore": {
-          // The shared restore: the duplicate check, the status the staged
-          // facts imply, and the import-ledger cleanup. Already live is a
-          // no-op success.
-          const outcome = await restoreDocumentTombstone(user.id, id);
-          if (outcome.kind === "gone") {
-            results.push({ id, ok: false, error: "notFound" });
-            continue;
-          }
-          if (outcome.kind === "duplicate") {
-            results.push({ id, ok: false, error: "conflict" });
-            continue;
-          }
-          break;
-        }
+    case "linkEpisode":
+    case "linkEncounter": {
+      // Filed from the target's end: one call links every live document, and
+      // the service re-reads both ends scoped by the record. The link tables
+      // are the same from either end.
+      const targetKind =
+        action === "linkEpisode" ? "conditionEpisode" : "encounter";
+      const targetId = action === "linkEpisode" ? episodeId! : encounterId!;
+      const linked =
+        liveIds.length === 0
+          ? null
+          : await linkTargets(prisma, {
+              userId: user.id,
+              sourceKind: targetKind,
+              sourceId: targetId,
+              targetKind: "document",
+              targetIds: liveIds,
+            });
+      // The target was checked live above; losing it since links nothing.
+      const refused = new Set(
+        linked?.unknownSource ? liveIds : (linked?.unknownTargetIds ?? []),
+      );
+      applied = new Set(liveIds.filter((id) => !refused.has(id)));
+      break;
+    }
+    case "unlinkEpisode":
+    case "unlinkEncounter": {
+      // No tombstone check: clearing a filing on a document the account has
+      // since deleted must stay possible, or the filing is unreachable.
+      if (ownedIds.length > 0) {
+        await unlinkTargets(prisma, {
+          userId: user.id,
+          sourceKind:
+            action === "unlinkEpisode" ? "conditionEpisode" : "encounter",
+          sourceId: action === "unlinkEpisode" ? episodeId! : encounterId!,
+          targetKind: "document",
+          targetIds: ownedIds,
+        });
       }
-      results.push({ id, ok: true, error: null });
-    } catch (err) {
-      if (isP2002(err)) {
-        results.push({ id, ok: false, error: "conflict" });
-        continue;
+      applied = new Set(ownedIds);
+      break;
+    }
+    case "delete": {
+      // Already tombstoned is a no-op success, so every owned id succeeds:
+      // one the update skipped was tombstoned in between.
+      if (liveIds.length > 0) {
+        await prisma.inboundDocument.updateMany({
+          where: { id: { in: liveIds }, userId: user.id, deletedAt: null },
+          data: { deletedAt: new Date(), status: "DISCARDED" },
+        });
       }
-      throw err;
+      applied = new Set(ownedIds);
+      break;
+    }
+    case "restore": {
+      // The shared restore: the duplicate check, the status the staged facts
+      // imply, and the import-ledger cleanup. Already live is a no-op success.
+      const outcomes = await restoreDocumentTombstones(user.id, ownedIds);
+      const ok = new Set<string>();
+      for (const [id, outcome] of outcomes) {
+        if (outcome.kind === "restored" || outcome.kind === "live") ok.add(id);
+        else if (outcome.kind === "duplicate") failed.set(id, "conflict");
+      }
+      applied = ok;
+      break;
     }
   }
+
+  const results: DocumentBulkResultDto[] = uniqueIds.map((id) =>
+    byId.has(id) && applied.has(id)
+      ? { id, ok: true, error: null }
+      : { id, ok: false, error: failed.get(id) ?? "notFound" },
+  );
 
   const okCount = results.filter((r) => r.ok).length;
 
