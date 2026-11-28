@@ -141,6 +141,13 @@ const AI_REQUEST_SITES: Record<string, RequestSite> = {
     capability: "documentAi",
     gate: "components/documents/detail/use-document-detail-ai.ts",
   },
+  // 1.50 — the server setup's AI step tests the operator's key it just
+  // saved, before any capability can be on.
+  "components/onboarding/server/ai-step.tsx": {
+    capability: null,
+    gate: "components/onboarding/server/ai-step.tsx",
+    reason: "the server setup checks the key the admin just entered",
+  },
 };
 
 /** Requests to AI routes that no capability decides, with the reason. */
@@ -149,6 +156,8 @@ const UNGATED_BY_DESIGN: Record<string, string> = {
   // route answers the operator's master switch itself with a typed refusal.
   "components/settings/ai/runtime-actions-row.tsx:/api/ai/test":
     "the connection test is how a provider gets checked",
+  "components/onboarding/server/ai-step.tsx:/api/ai/test":
+    "the server setup checks the key the admin just entered",
 };
 
 function readsCapability(source: string, key: AiCapabilityKey): boolean {

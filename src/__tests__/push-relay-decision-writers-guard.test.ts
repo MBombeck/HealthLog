@@ -86,10 +86,14 @@ describe("push relay decision writers", () => {
     expect(question?.text).toMatch(/operatorDecision !== "undecided"/);
     expect(question?.text).toMatch(/canDecide !== true/);
     const hosts = withMatch(/<PushRelayQuestion\s*\/>/).sort();
-    expect(hosts).toEqual([
-      "src/app/admin/page.tsx",
-      "src/components/onboarding/server/server-setup-step.tsx",
-    ]);
+    expect(hosts).toEqual(["src/app/admin/page.tsx"]);
+    // 1.50 — the server setup's relay step asks inline, with the same
+    // confirmations, and only while the published decision is undecided.
+    const step = tree.find(
+      (f) => f.path === "src/components/onboarding/server/relay-step.tsx",
+    );
+    expect(step?.text).toMatch(/operatorDecision !== "undecided"/);
+    expect(step?.text).toMatch(/canDecide !== true/);
     // The dashboard asks it as one row of its ask card, through the same
     // answer hook the card above uses, and only when the server put the row
     // into the digest's asks (`buildAdminAsk`, which reads the decision).

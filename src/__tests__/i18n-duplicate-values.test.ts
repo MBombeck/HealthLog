@@ -45,10 +45,6 @@ const EXCEPTIONS: { match: RegExp; reason: string }[] = [
     reason: "each importer reports its own run, and one import runs at a time",
   },
   {
-    match: /^settings\.(?:measurements|workouts|documents)Token\.createFailed$/,
-    reason: "one token sheet is open at a time",
-  },
-  {
     match: /^settings\.(?:polar|oura)DisconnectDescription$/,
     reason: "the confirm dialog of the one provider being disconnected",
   },

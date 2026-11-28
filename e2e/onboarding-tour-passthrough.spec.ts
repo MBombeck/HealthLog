@@ -124,7 +124,11 @@ test.describe("v1.4.33 F2 — onboarding tour passes clicks through to the page"
 
   test("Hinzufügen dropdown opens with the tour mounted on the dashboard", async ({
     page,
-  }) => {
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name === "chromium-mobile",
+      "the phone header has no Hinzufügen; the bottom bar's plus adds there",
+    );
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await page.waitForLoadState("networkidle");
 
@@ -141,7 +145,6 @@ test.describe("v1.4.33 F2 — onboarding tour passes clicks through to the page"
     // so a naive "dim everything outside the spotlight rect" overlay
     // covers it. The fix makes the entire tour layer pointer-events:
     // none — every dim panel and the spotlight ring are visual only.
-    // One add button per shell carries the tour id; the other is hidden.
     const quickAddButton = page
       .locator('[data-tour-id="dashboard-quick-add"]')
       .filter({ visible: true });
@@ -197,14 +200,8 @@ test.describe("v1.4.33 F2 — onboarding tour passes clicks through to the page"
     await quickAddButton.click();
 
     await expect(quickAddButton).toHaveAttribute("aria-expanded", "true");
-    // The desktop rail opens a dropdown; the phone shell opens the capture
-    // sheet the bottom nav's plus opens. Either proves the click landed.
-    await expect(
-      page
-        .getByRole("menuitem")
-        .or(page.locator('[role="dialog"][data-state="open"]'))
-        .first(),
-    ).toBeVisible();
+    // The dropdown's items prove the click landed.
+    await expect(page.getByRole("menuitem").first()).toBeVisible();
 
     // The tour stays mounted — the click went to the underlying button,
     // not anything in the tour layer.

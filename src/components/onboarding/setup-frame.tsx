@@ -1,85 +1,100 @@
-import { cn } from "@/lib/utils";
+import type { ReactNode } from "react";
+import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
+
 import { Logo } from "@/components/ui/logo";
+import { Stepper, type StepperStep } from "@/components/ui/stepper";
+import { cn } from "@/lib/utils";
 
 /**
- * The frame both setup flows paint: the logo, the step counter, the step
- * track and the one `<main>`. The person flow (`OnboardingShell`) and the
- * server setup (1.49) hand it their own steps, already translated, so the two
- * cannot drift apart in layout.
+ * The focus page every setup step is painted in (1.50): one column, no app
+ * chrome, at every width.
+ *
+ *   top row   Back on the left, "Finish later" on the right; the first
+ *             screen of a flow shows the logo there instead
+ *   stepper   the shared `Stepper`, one segment per part of the flow
+ *   main      the step's heading, body and its action row
+ *
+ * The step's action row (`StepActions`) sits at the end of `main`: under the
+ * content on a wide screen, held at the bottom edge on a phone, where the
+ * thumb is. Both the person flow and the server setup use this frame, and so
+ * does the owner account screen on `/auth/register`, so a flow that starts
+ * anonymously and continues behind a session keeps one shape.
  */
+export interface SetupFrameStepper {
+  steps: ReadonlyArray<StepperStep>;
+  current: number;
+  fraction: number;
+  countLabel: string;
+}
+
 export function SetupFrame({
   screen,
   flow = "person",
-  counter,
-  stepsLabel,
-  steps,
+  stepper,
+  back,
+  later,
+  className,
   children,
 }: {
   screen: string;
   flow?: "person" | "server";
-  counter: string | null;
-  stepsLabel: string;
-  steps: ReadonlyArray<{ id: string; label: string }>;
-  children: React.ReactNode;
+  /** Null on a screen before the flow's steps (the server claim). */
+  stepper: SetupFrameStepper | null;
+  /** The previous screen; omitted on a flow's first screen. */
+  back?: { href: string; label: string };
+  /** The "Finish later" control, a client component; omitted where none. */
+  later?: ReactNode;
+  /** Outer overrides, for the one frame painted inside the auth layout. */
+  className?: string;
+  children: ReactNode;
 }) {
-  const currentIndex = steps.findIndex((step) => step.id === screen);
-
+  const showTopRow = Boolean(back || later);
   return (
     <div
       className={cn(
-        "mx-auto flex min-h-[100svh] w-full max-w-xl flex-col",
-        // Safe-area-respecting bottom padding for the iOS PWA — the home
-        // bar overlaps the primary action otherwise.
-        "px-4 pt-6 pb-[max(var(--safe-area-bottom),1rem)]",
+        "mx-auto flex w-full max-w-xl flex-1 flex-col px-4 pt-6 md:pt-16 md:pb-16",
+        className,
       )}
       data-slot="onboarding-shell"
       data-flow={flow}
       data-screen={screen}
     >
-      <header className="mb-6 flex items-center justify-between gap-3">
-        <Logo size={32} />
-        <p
-          className="text-muted-foreground text-sm font-medium"
-          aria-live="polite"
-          data-slot="onboarding-step-counter"
-        >
-          {counter}
-        </p>
+      <header className="mb-6 flex min-h-11 items-center justify-between gap-3">
+        {showTopRow ? (
+          <>
+            {back ? (
+              <Link
+                href={back.href}
+                data-slot="onboarding-back"
+                className="text-foreground hover:bg-accent focus-visible:ring-ring/50 -ml-2 inline-flex min-h-11 items-center gap-1 rounded-md px-2 text-sm font-medium focus-visible:ring-[3px] focus-visible:outline-none"
+              >
+                <ChevronLeft aria-hidden="true" className="size-4" />
+                {back.label}
+              </Link>
+            ) : (
+              <span aria-hidden="true" />
+            )}
+            {later ?? <span aria-hidden="true" />}
+          </>
+        ) : (
+          <Logo size={32} />
+        )}
       </header>
 
-      {/* A landmark of its own: every piece of page content sits inside one
-          (axe `region`), and the step list is the flow's navigation. A screen
-          without a count (welcome) has no place in the steps yet, so it shows
-          no band. */}
-      {counter !== null && (
-        <nav aria-label={stepsLabel} className="mb-8">
-          <ol
-            className="flex items-center gap-2"
-            data-slot="onboarding-step-list"
-          >
-            {steps.map((step, index) => {
-              const reached = currentIndex >= index;
-              return (
-                <li
-                  key={step.id}
-                  aria-current={step.id === screen ? "step" : undefined}
-                  data-reached={reached}
-                  className={cn(
-                    "h-1.5 flex-1 rounded-full transition-colors",
-                    reached ? "bg-primary" : "bg-progress-track",
-                  )}
-                >
-                  <span className="sr-only">{step.label}</span>
-                </li>
-              );
-            })}
-          </ol>
-        </nav>
-      )}
+      {stepper ? (
+        <Stepper
+          className="mb-8 md:mb-10"
+          steps={stepper.steps}
+          current={stepper.current}
+          fraction={stepper.fraction}
+          countLabel={stepper.countLabel}
+        />
+      ) : null}
 
       {/* The page's one `<main>`: the auth shell's onboarding branch renders
           no landmark of its own around this frame. */}
-      <main className="flex-1">{children}</main>
+      <main className="flex flex-1 flex-col">{children}</main>
     </div>
   );
 }

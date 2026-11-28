@@ -31,7 +31,10 @@ import { fileURLToPath } from "node:url";
  *
  * @type {Record<string, string>}
  */
-export const ALLOWED_ALL_SKIPPED = {};
+export const ALLOWED_ALL_SKIPPED = {
+  "first-run.spec.ts":
+    "claims a second, empty server (E2E_FRESH_BASE_URL, E2E_FRESH_DATABASE_URL, E2E_FRESH_SETUP_TOKEN); the e2e workflow starts none, so it runs only where one is configured",
+};
 
 /**
  * Walk a report's suites and tally each spec file's tests.

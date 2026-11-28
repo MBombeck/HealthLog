@@ -194,10 +194,10 @@ describe("the server setup for an admin", () => {
     const admin = await makeUser("ADMIN");
     await signIn(admin.id);
     expect(
-      (await patchStep({ step: "accounts", status: "pending" })).status,
+      (await patchStep({ step: "signups", status: "pending" })).status,
     ).toBe(422);
     expect(
-      (await patchStep({ step: "accounts", status: "done", extra: 1 })).status,
+      (await patchStep({ step: "signups", status: "done", extra: 1 })).status,
     ).toBe(422);
     expect((await patchStep({ step: "billing", status: "done" })).status).toBe(
       422,
@@ -235,7 +235,7 @@ describe("the server setup for an admin", () => {
     const state = await data<ServerSetupState>(await getState());
     expect(state.offered).toBe(false);
     expect(state.noticePending).toBe(false);
-    const res = await patchStep({ step: "accounts", status: "done" });
+    const res = await patchStep({ step: "signups", status: "done" });
     expect(res.status).toBe(409);
     const body = (await res.json()) as { meta?: { errorCode?: string } };
     expect(body.meta?.errorCode).toBe("admin.serverSetup.notOffered");
@@ -268,7 +268,7 @@ describe("who is refused", () => {
     ["GET server-setup", () => getState()],
     [
       "PATCH server-setup",
-      () => patchStep({ step: "accounts", status: "done" }),
+      () => patchStep({ step: "signups", status: "done" }),
     ],
     ["POST notice", () => dismissNotice()],
     ["GET setup-health", () => getHealth()],

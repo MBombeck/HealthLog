@@ -144,7 +144,7 @@ export default function InsightsNutrientsPage() {
               // the empty page names that route, so it opens it too.
               <Button asChild>
                 <Link
-                  href="/settings/api#measurements-token"
+                  href="/settings/api?new-token=1"
                   data-slot="nutrients-empty-token-link"
                 >
                   <KeyRound aria-hidden="true" />

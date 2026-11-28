@@ -94,7 +94,7 @@ export function NtfyCard({ isAuthenticated }: { isAuthenticated: boolean }) {
   });
 
   const statusTone = useChannelStatusTone(
-    "NTFY",
+    "ntfy",
     isAuthenticated,
     Boolean(settings && settings.enabled && Boolean(settings.topic)),
   );

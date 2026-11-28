@@ -1,16 +1,14 @@
 "use client";
 
 /**
- * Dashboard page header: title, the greeting line, the customize
- * shortcut, and the quick-add dropdown that opens the quick-entry
- * sheets. The greeting sits under the title on every dashboard mount —
- * the promoted Today hero renders separately above the tile strip and
- * carries its own read, so the header greeting is unconditional.
+ * Dashboard page header: the title, the customize shortcut and, on a wide
+ * screen, the quick-add dropdown that opens the quick-entry sheets. No line
+ * under the title: a greeting said nothing a person needs (UI standards
+ * §17), and on a phone the bottom bar's plus is the one way to add.
  *
  * Extracted from the dashboard page; the page owns the open-state the
  * dropdown items set via `onQuickEntry`.
  */
-import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Activity,
@@ -33,53 +31,12 @@ import {
 import { PageHeader } from "@/components/ui/page-header";
 import { useTranslations } from "@/lib/i18n/context";
 import { useAuth } from "@/hooks/use-auth";
-import { accountName } from "@/lib/account-name";
-import { useMounted } from "@/hooks/use-mounted";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
-import { hourInTz } from "@/lib/tz/format";
 import {
   CAPTURE_KIND_ORDER,
-  CapturePicker,
   visibleCaptureKinds,
 } from "@/components/layout/capture-picker";
 import type { QuickEntryDialog } from "@/components/dashboard/quick-entry-sheets";
-
-const FIRST_DAY_MS = 24 * 60 * 60 * 1000;
-
-/**
- * The greeting line, as an i18n key and its values.
- *
- * Until the account is known (the SSR pass and the hydration render) it is the
- * time-of-day greeting alone, so nothing claims "welcome back" before the
- * client knows it is true. An account in its first day (`createdAt` from
- * `/api/auth/me`) is welcomed, not welcomed back: the setup flow lands a new
- * account here minutes after it was created. Any other account, and one whose
- * server does not say when it was created, is welcomed back.
- */
-export function greetingLine(input: {
-  greeting: string;
-  known: boolean;
-  name: string | null;
-  createdAt: string | null | undefined;
-  /** The clock, for tests; the moment of the call otherwise. */
-  nowMs?: number;
-}): { key: string; values: Record<string, string> } {
-  const { greeting, name } = input;
-  const nowMs = input.nowMs ?? Date.now();
-  if (!input.known) {
-    return { key: "dashboard.greetingOnly", values: { greeting } };
-  }
-  const created = input.createdAt ? Date.parse(input.createdAt) : Number.NaN;
-  const isNew = Number.isFinite(created) && nowMs - created < FIRST_DAY_MS;
-  if (isNew) {
-    return name
-      ? { key: "dashboard.welcomeNewWithName", values: { name } }
-      : { key: "dashboard.welcomeNew", values: {} };
-  }
-  return name
-    ? { key: "dashboard.welcomeBackWithName", values: { greeting, name } }
-    : { key: "dashboard.welcomeBack", values: { greeting } };
-}
 
 export function DashboardHeader({
   onQuickEntry,
@@ -88,8 +45,6 @@ export function DashboardHeader({
 }) {
   const { t } = useTranslations();
   const { user } = useAuth();
-  const mounted = useMounted();
-  const [captureOpen, setCaptureOpen] = useState(false);
   // The quick-add offers four kinds, and each one is asked about its own
   // section: a reading under `measurements`, a dose under `medications`, a
   // mood entry under `mind`, a workout in one's own record only. The coarse `canAdd` this used to gate the whole
@@ -117,54 +72,9 @@ export function DashboardHeader({
   const canAddLifeEvent = offered.includes("lifeEvent");
   const canAddAnything = offered.length > 0;
 
-  // The pre-hero greeting derivation, kept hydration-safe: `user` comes
-  // from the auth query, which can resolve before this boundary
-  // hydrates — the text must match the name-less SSR output during
-  // hydration (React #418) and may only personalise from the first
-  // client re-render.
-  //
-  // The hour comes from the shared `hourInTz`, the same helper the
-  // insights hero greeting uses. Its predecessor fell back to the
-  // DEVICE clock whenever the runtime could not resolve the profile
-  // zone, so a zone this browser's ICU does not carry (a recently added
-  // one, an older engine) split the two greetings by hours while every
-  // other date on the page stayed on the profile zone.
-  const userTimezone = mounted ? user?.timezone : undefined;
-  const hour = useMemo(
-    () => (userTimezone ? hourInTz(new Date(), userTimezone) : null),
-    [userTimezone],
-  );
-  const timeGreeting =
-    hour == null
-      ? t("dashboard.greeting.day")
-      : hour >= 5 && hour < 12
-        ? t("dashboard.greeting.morning")
-        : hour >= 12 && hour < 18
-          ? t("dashboard.greeting.day")
-          : t("dashboard.greeting.evening");
-  const greeting = greetingLine({
-    greeting: timeGreeting,
-    known: mounted && user != null,
-    name: user ? accountName(user).trim() || null : null,
-    createdAt: user?.createdAt,
-  });
-  const welcomeText = t(greeting.key, greeting.values);
-
   return (
     <PageHeader
       title={t("dashboard.title")}
-      meta={
-        /* `min-h-5` reserves the greeting's line box from the SSR
-           pass on: the text personalises (name and welcome appended) on
-           the first client re-render after hydration, and the reserved
-           line keeps the header from collapsing/growing around that swap. */
-        <span
-          data-slot="dashboard-header-greeting"
-          className="block min-h-5 truncate"
-        >
-          {welcomeText}
-        </span>
-      }
       actions={
         <>
           {/* Customize shortcut to the dashboard-customization settings
@@ -190,26 +100,9 @@ export function DashboardHeader({
               </Link>
             </Button>
           )}
-          {/* On the phone shell the add button opens the same capture
-              picker sheet the bottom nav's plus opens: one way to add a
-              thing, not a dropdown here and a sheet one thumb below. */}
-          {canAddAnything && (
-            <Button
-              size="default"
-              className="shell-desktop:hidden min-h-11"
-              onClick={() => setCaptureOpen(true)}
-              aria-haspopup="dialog"
-              aria-expanded={captureOpen}
-              data-slot="dashboard-quick-add-capture"
-              data-tour-id="dashboard-quick-add"
-            >
-              <Plus className="h-4 w-4" />
-              {t("common.add")}
-            </Button>
-          )}
-          {canAddAnything && (
-            <CapturePicker open={captureOpen} onOpenChange={setCaptureOpen} />
-          )}
+          {/* Desktop only: on the phone shell the bottom bar's plus opens
+              the same capture picker, so the header carries no second
+              "Add" (it was a filled button right above the asks card). */}
           {canAddAnything && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

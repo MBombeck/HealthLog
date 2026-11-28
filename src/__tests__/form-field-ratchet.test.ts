@@ -64,15 +64,11 @@ const REASONS: Record<string, string> = {
   "components/medications/wizard/steps/step5-cadence.tsx": RADIO_CARD,
   "components/onboarding/choice-chip.tsx":
     "wraps a radio or checkbox chip; no choice primitive",
-  "components/onboarding/welcome-screen.tsx":
-    "names a checkbox with a sentence that holds a link; no checkbox-row primitive",
   "components/records/audit-c-panel.tsx":
     "wraps a radio and its answer; no radio-row primitive",
   "components/records/life-circumstances-fields.tsx": CHECKBOX_ROW,
   "components/settings/access/grant-invite-card.tsx":
     "wraps a radio or checkbox with its sentence; no primitive",
-  "components/settings/apple-health-mirror-token.tsx":
-    "a compact switch inside a token table cell, and a checkbox with its text",
   "components/settings/coach-nudge-card.tsx": STATUS_SWITCH,
   "components/settings/injection-sites-card.tsx": CHECKBOX_ROW,
   "components/settings/low-stock-card.tsx": STATUS_SWITCH,

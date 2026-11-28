@@ -30,6 +30,10 @@ import { auditLog } from "@/lib/auth/audit";
 import { prisma, toJson } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { afterIdentityFieldsChanged } from "@/lib/auth/identity-change";
+import {
+  confirmWhenNothingOwed,
+  refuseManagedRecord,
+} from "@/lib/onboarding/confirm";
 import { loadOnboardingOffers } from "@/lib/onboarding/load-offers";
 import { applyOnboardingAnswer } from "@/lib/onboarding/needs-apply";
 import { readHeldUnitPreferences } from "@/lib/onboarding/needs";
@@ -39,6 +43,7 @@ import {
   toOnboardingStateDto,
 } from "@/lib/onboarding/needs-store";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { computePlan, parsePinnedPlan } from "@/lib/onboarding/wizard-steps";
 import { onboardingAnswerSchema } from "@/lib/validations/onboarding-needs";
 
 export const dynamic = "force-dynamic";
@@ -74,9 +79,18 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
   if (!parsed.ok) return parsed.error;
   const answer = parsed.data;
 
+  // Checked BEFORE anything is written, as the completion route does: a
+  // refused record leaves the flow exactly where it was.
+  const managedRecordId =
+    answer.step === "confirm" ? (answer.managedRecordId ?? null) : null;
+  if (managedRecordId !== null) {
+    const refusal = await refuseManagedRecord(user.id, managedRecordId);
+    if (refusal) return refusal;
+  }
+
   const existing = await prisma.onboardingRecord.findUnique({
     where: { userId: user.id },
-    select: ONBOARDING_RECORD_SELECT,
+    select: { ...ONBOARDING_RECORD_SELECT, planJson: true },
   });
   const next = applyOnboardingAnswer(
     readOnboardingRecordState(existing),
@@ -116,6 +130,15 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     }
   }
 
+  // 1.50 — the answer to "who" pins the flow's segments, so the stepper's
+  // count holds for the rest of the flow. Not on a demo deploy, whose one
+  // account every visitor shares.
+  const offers = await loadOnboardingOffers(user.id);
+  const plan =
+    answer.step === "who" && process.env.DEMO_MODE !== "true"
+      ? computePlan(answer.recordTarget, offers.ai)
+      : null;
+
   const upsert = prisma.onboardingRecord.upsert({
     where: { userId: user.id },
     // Field-by-field, never a spread of the parsed body: the three columns are
@@ -126,6 +149,7 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
       needsJson: toJson(next.needs),
       stepsJson: toJson(next.steps),
       firstResultJson: next.firstResult ? toJson(next.firstResult) : undefined,
+      ...(plan ? { planJson: toJson(plan) } : {}),
     },
     update: {
       needsJson: toJson(next.needs),
@@ -133,6 +157,7 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
       ...(next.firstResult
         ? { firstResultJson: toJson(next.firstResult) }
         : {}),
+      ...(plan ? { planJson: toJson(plan) } : {}),
     },
     select: ONBOARDING_RECORD_SELECT,
   });
@@ -164,9 +189,59 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     unitPreference: unitData.unitPreference ?? user.unitPreference,
   });
 
-  // Both columns have a dedicated settings route that writes an audit row, and
-  // the trail should not depend on which surface the person changed them from.
-  // Same event names, so the activity panel groups them.
+  await auditRegionWrites(request, user, unitData, timezoneChanged);
+
+  annotate({
+    action: { name: "onboarding.needs.save" },
+    meta: {
+      step: answer.step,
+      status: answer.status === "skipped" ? "skipped" : "done",
+    },
+  });
+
+  // 1.50 — the last owed screen confirms the flow on the server: the
+  // questions this flow does not show are passed, the account is stamped and
+  // the module map derived, so no client orchestrates a separate confirm.
+  const confirmed = await confirmWhenNothingOwed({
+    userId: user.id,
+    accountStamped: user.onboardingCompletedAt != null,
+    held,
+    plan:
+      process.env.DEMO_MODE === "true"
+        ? ["you"]
+        : (plan ?? parsePinnedPlan(existing?.planJson ?? null)),
+    request,
+    managedRecordId,
+  });
+
+  return apiSuccess({
+    onboarding: confirmed ?? toOnboardingStateDto(written, held, offers),
+  });
+});
+
+/**
+ * The audit rows of the region and unit columns the answer wrote. Each column
+ * has a dedicated settings route that writes one, and the trail should not
+ * depend on which surface the person changed it from: same event names, so
+ * the activity panel groups them.
+ */
+async function auditRegionWrites(
+  request: NextRequest,
+  user: {
+    id: string;
+    glucoseUnit: string | null;
+    unitPreference: string | null;
+    timezone: string | null;
+    medicineRegistry: string | null;
+  },
+  unitData: {
+    glucoseUnit?: string;
+    unitPreference?: string;
+    timezone?: string;
+    medicineRegistry?: string;
+  },
+  timezoneChanged: boolean,
+): Promise<void> {
   if (unitData.glucoseUnit !== undefined) {
     await auditLog("user.glucose-unit.update", {
       userId: user.id,
@@ -215,20 +290,4 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
       },
     });
   }
-
-  annotate({
-    action: { name: "onboarding.needs.save" },
-    meta: {
-      step: answer.step,
-      status: answer.status === "skipped" ? "skipped" : "done",
-    },
-  });
-
-  return apiSuccess({
-    onboarding: toOnboardingStateDto(
-      written,
-      held,
-      await loadOnboardingOffers(user.id),
-    ),
-  });
-});
+}
