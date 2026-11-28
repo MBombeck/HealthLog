@@ -276,8 +276,13 @@ export const SETTINGS_CARDS: ReadonlyArray<SettingsCardEntry> = [
   },
   {
     section: "export",
-    anchor: "import-records-csv",
-    titleKey: "recordImport.title",
+    anchor: "import-labs-csv",
+    titleKey: "recordImport.row.labs",
+  },
+  {
+    section: "export",
+    anchor: "import-medications-csv",
+    titleKey: "recordImport.row.medications",
   },
   // ── Thresholds ──
   {

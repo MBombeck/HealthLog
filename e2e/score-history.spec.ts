@@ -116,9 +116,51 @@ async function mockDerived(page: Page) {
   });
 }
 
+/**
+ * One call on the browser's own session, sent with the page's own fetch.
+ *
+ * Every Playwright API context in the runner shares one keep-alive agent,
+ * which can hand out a socket the server already closed on its idle timeout;
+ * the call then dies with `read ECONNRESET` (the top card's layout reset did,
+ * in its afterEach). The page opens its own connection. A page that has not
+ * navigated yet has no origin to fetch against, so it first opens the public
+ * version endpoint.
+ */
+async function sessionCall(
+  page: Page,
+  method: "PUT" | "DELETE",
+  path: string,
+  body?: unknown,
+): Promise<number> {
+  if (!page.url().startsWith("http")) {
+    await page.goto("/api/version", { waitUntil: "domcontentloaded" });
+  }
+  return page.evaluate(
+    async ({ method, path, body }) => {
+      const res = await fetch(path, {
+        method,
+        headers:
+          body === undefined
+            ? undefined
+            : { "Content-Type": "application/json" },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+      return res.status;
+    },
+    { method, path, body },
+  );
+}
+
+async function resetLayout(page: Page) {
+  expect(await sessionCall(page, "DELETE", "/api/dashboard/widgets")).toBe(200);
+}
+
 async function resetRange(page: Page, chartKey: string) {
-  const res = await page.request.put("/api/dashboard/chart-overlay-prefs", {
-    data: {
+  const status = await sessionCall(
+    page,
+    "PUT",
+    "/api/dashboard/chart-overlay-prefs",
+    {
       chartKey,
       prefs: {
         showTrendIndicator: false,
@@ -128,8 +170,8 @@ async function resetRange(page: Page, chartKey: string) {
         rangePoints: 30,
       },
     },
-  });
-  expect(res.status()).toBe(200);
+  );
+  expect(status).toBe(200);
 }
 
 async function expectSharedTabs(page: Page, chart: string, pressed: string) {
@@ -320,11 +362,11 @@ const DIGEST: DailyDigest = {
 test.describe("the dashboard's top card", () => {
   test.afterEach(async ({ page }) => {
     // Leave the account's layout at its defaults for the next run.
-    await page.request.delete("/api/dashboard/widgets");
+    await resetLayout(page);
   });
 
   test("switches off and on from the layout settings", async ({ page }) => {
-    await page.request.delete("/api/dashboard/widgets");
+    await resetLayout(page);
     await page.route(/\/api\/daily\/digest(\?|$)/, (route) =>
       route.fulfill({
         status: 200,

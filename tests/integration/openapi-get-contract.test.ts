@@ -111,6 +111,8 @@ const NOT_CALLED: Record<string, string> = {
     "Reads tags from the operator's document archive; with none configured it answers the published 404.",
   "/api/documents/sources/{system}/search":
     "Searches the operator's document archive; with none configured it answers the published 404.",
+  "/api/health-connect/state":
+    "Answers only the token of a paired Android device, never the session this sweep calls with; `health-connect-sync.test.ts` calls it on a paired device and parses the answer against this schema.",
 };
 
 /** The least number of operations that must actually be called and parsed. */

@@ -65,9 +65,7 @@ describe("no bare <details> beside Disclosure", () => {
     "components/medications/intake-import-result.tsx": 1,
     "components/records/life-circumstances-manager.tsx": 1,
     "components/settings/import-panel/apple-health-import-card.tsx": 1,
-    "components/settings/import-panel/dose-history-columns.tsx": 1,
     "components/settings/import-panel/import-result-view.tsx": 1,
-    "components/settings/import-panel/record-file-import-card.tsx": 1,
   };
 
   const count = (source: string) =>

@@ -239,6 +239,8 @@ export async function loadConnectionFacts(
     "health-connect-remote": !!dbUser?.healthConnectRemoteSource?.enabled,
     // Apple Health is "connected" once the phone has delivered anything.
     "apple-health": false,
+    // Resolved from its paired devices below.
+    "health-connect-app": false,
   };
   const legacyLastSyncedAt: Partial<Record<ConnectionKey, Date | null>> = {
     withings: withingsConn?.lastSyncedAt ?? null,
@@ -246,29 +248,7 @@ export async function loadConnectionFacts(
     "google-health": googleHealthConn?.lastSyncedAt ?? null,
   };
 
-  // Newest data per connected source; Apple Health's data is what connects it.
-  const lastData = new Map<ConnectionKey, Date | null>();
-  await Promise.all(
-    [...wanted].map(async (key) => {
-      if (key === "apple-health") {
-        const measured = await newestMeasurementAt(userId, "APPLE_HEALTH");
-        lastData.set(key, measured);
-        return;
-      }
-      if (!connected[key]) return;
-      if (key === "dawarich") {
-        lastData.set(key, await newestDawarichDayAt(userId));
-        return;
-      }
-      const mSource = INTEGRATION_MEASUREMENT_SOURCE[key as IntegrationKey];
-      const wSource = INTEGRATION_WORKOUT_SOURCE[key as IntegrationKey];
-      const [m, w] = await Promise.all([
-        mSource ? newestMeasurementAt(userId, mSource) : null,
-        wSource ? newestWorkoutAt(userId, wSource) : null,
-      ]);
-      lastData.set(key, newestOf(m, w));
-    }),
-  );
+  const lastData = await newestDataPerKey(userId, wanted, connected);
 
   const out = new Map<ConnectionKey, ConnectionFacts>();
   const nowMs = now.getTime();
@@ -285,6 +265,10 @@ export async function loadConnectionFacts(
           now,
         }),
       );
+      continue;
+    }
+    if (key === "health-connect-app") {
+      out.set(key, await androidSyncFacts(userId, silence.get(key), now));
       continue;
     }
 
@@ -434,6 +418,98 @@ function appleHealthFacts(input: {
     }),
     silentSince: input.silentSince,
   };
+}
+
+/**
+ * The Android Health Connect sync, from its paired devices: connected while
+ * one exists, alive by the newest batch any of them delivered in the
+ * background (`healthIngestAt`), checked against the push cadence the iPhone
+ * is held to.
+ */
+async function androidSyncFacts(
+  userId: string,
+  silentSince: Date | null | undefined,
+  now: Date,
+): Promise<ConnectionFacts> {
+  const devices = await prisma.device.findMany({
+    where: { userId, platform: "android", apiTokenId: { not: null } },
+    select: { lastSeen: true, healthIngestAt: true },
+  });
+  const input = { silentSince: silentSince ?? null, now };
+  const connected = devices.length > 0;
+  const lastSeen = newestOf(...devices.map((d) => d.lastSeen));
+  const lastDataAt = newestOf(...devices.map((d) => d.healthIngestAt));
+  const syncHealth = resolveSyncVerdict({
+    configured: connected,
+    connected,
+    lastDataAt,
+    legacyLastSyncedAt: lastSeen,
+    cadence: PUSH_CADENCE,
+    now: input.now,
+  });
+  const common = {
+    syncHealth,
+    connected,
+    ledgerState: null,
+    lastSuccessAt: iso(lastSeen),
+    lastAttemptAt: iso(lastSeen),
+    failingSince: null,
+    failingLegs: [],
+    recentCalls: [],
+    lastDataAt: iso(lastDataAt),
+    silenceWindowMs: SOURCE_PROFILES["health-connect-app"].silenceWindowMs,
+    now: input.now.getTime(),
+  };
+  return {
+    key: "health-connect-app",
+    connected,
+    syncHealth,
+    lastDataAt,
+    ledgerAlerted: false,
+    healthWithoutSilence: resolveConnectionHealth({
+      ...common,
+      silentSince: null,
+    }),
+    health: resolveConnectionHealth({
+      ...common,
+      silentSince: iso(input.silentSince),
+    }),
+    silentSince: input.silentSince,
+  };
+}
+
+/**
+ * Newest data per connected source; Apple Health's data is what connects it,
+ * and the Android sync's comes from its devices' own stamps.
+ */
+async function newestDataPerKey(
+  userId: string,
+  wanted: ReadonlySet<ConnectionKey>,
+  connected: Record<ConnectionKey, boolean>,
+): Promise<Map<ConnectionKey, Date | null>> {
+  const lastData = new Map<ConnectionKey, Date | null>();
+  await Promise.all(
+    [...wanted].map(async (key) => {
+      if (key === "apple-health") {
+        const measured = await newestMeasurementAt(userId, "APPLE_HEALTH");
+        lastData.set(key, measured);
+        return;
+      }
+      if (key === "health-connect-app" || !connected[key]) return;
+      if (key === "dawarich") {
+        lastData.set(key, await newestDawarichDayAt(userId));
+        return;
+      }
+      const mSource = INTEGRATION_MEASUREMENT_SOURCE[key as IntegrationKey];
+      const wSource = INTEGRATION_WORKOUT_SOURCE[key as IntegrationKey];
+      const [m, w] = await Promise.all([
+        mSource ? newestMeasurementAt(userId, mSource) : null,
+        wSource ? newestWorkoutAt(userId, wSource) : null,
+      ]);
+      lastData.set(key, newestOf(m, w));
+    }),
+  );
+  return lastData;
 }
 
 /** The published health per connection key, for routes. */

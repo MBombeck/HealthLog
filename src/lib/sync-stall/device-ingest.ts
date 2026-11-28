@@ -70,3 +70,31 @@ export async function recordDeviceHealthIngest(
     SELECT "id", ${hour} FROM d
     ON CONFLICT DO NOTHING`;
 }
+
+/**
+ * The same stamp for an Android device running HealthLog Sync, named by its
+ * row rather than a header: the batch route resolves the device from the
+ * token it was paired with (`Device.apiTokenId`), so there is no header to
+ * trust. The route calls it for a `live` batch that carried data, never for
+ * the first import.
+ */
+export async function recordPairedDeviceIngest(
+  prisma: Pick<PrismaClient, "$executeRaw">,
+  input: { deviceId: string; at: Date },
+): Promise<void> {
+  const hour = hourBucket(input.at);
+  await prisma.$executeRaw`
+    WITH d AS (
+      UPDATE "devices"
+         SET "health_ingest_at" = ${input.at},
+             "health_quiet_since" = NULL,
+             "health_quiet_notified_at" = NULL,
+             "last_seen" = ${input.at}
+       WHERE "id" = ${input.deviceId}
+         AND "platform" = 'android'
+      RETURNING "id"
+    )
+    INSERT INTO "device_health_ingest_hours" ("device_id", "hour")
+    SELECT "id", ${hour} FROM d
+    ON CONFLICT DO NOTHING`;
+}

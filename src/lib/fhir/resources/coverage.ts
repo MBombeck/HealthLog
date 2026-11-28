@@ -5,6 +5,7 @@
 import type { DoctorReportData } from "@/lib/doctor-report-data";
 import type { FhirCoverage, FhirOrganization } from "@/lib/fhir/types";
 import {
+  COVERAGE_CLASS_SYSTEM,
   IKNR_SYSTEM,
   patientRef,
   type FhirPatientIdentity,
@@ -15,7 +16,7 @@ import {
  *
  * R4 marks `Coverage.payor` as `1..*`: a Coverage names who pays, and one that
  * cannot is not a Coverage. A record that carries only a member id (a bare
- * KVNR, no insurer name and no IKNR) therefore emits none — nothing is lost,
+ * insurance number, no insurer name and no IKNR) therefore emits none — nothing is lost,
  * because the member id already rides `Patient.identifier` and doubles as the
  * `subscriberId` when a real Coverage does go out.
  */
@@ -47,6 +48,14 @@ export function coverageResource(
   };
   if (identity.insuranceNumber) {
     coverage.subscriberId = identity.insuranceNumber;
+  }
+  if (identity.insuranceGroupNumber) {
+    coverage.class = [
+      {
+        type: { coding: [{ system: COVERAGE_CLASS_SYSTEM, code: "group" }] },
+        value: identity.insuranceGroupNumber,
+      },
+    ];
   }
   return coverage;
 }

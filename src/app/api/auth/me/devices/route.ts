@@ -66,7 +66,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
     // The legacy `token` column always carries the generic device
     // identifier — for v1.4.23 it doubles as the web-push channel
     // anchor when a VAPID subscription exists.
-    if (d.token) channels.push("web_push");
+    // An Android device paired for the Health Connect sync holds a
+    // namespaced install id there, never a push subscription.
+    if (d.token && d.platform !== "android") channels.push("web_push");
     if (d.apnsToken) channels.push("apns");
     return {
       id: d.id,
