@@ -1012,6 +1012,8 @@
       "fullName": null,
       "insurerName": null,
       "insuranceNumberEncrypted": null,
+      "insuranceNumberCountry": null,
+      "insuranceGroupNumber": null,
       "insurerIkNumber": null
     },
     "AppSettings": {

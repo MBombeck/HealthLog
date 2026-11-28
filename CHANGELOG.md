@@ -45,6 +45,7 @@
 
 - Each score on the start page carries its short name for the tile, `shortLabel`, worded in the reader's language from the score register: `scores.sleep` and `scores.readiness` on `GET /api/daily/morning` and `score` on `GET /api/daily/digest` ("Gesundheit", "Schlafscore", "Bereitschaft"). The web reads the same field, so both clients name the three rings alike. Announced as `daily.scores-short-labels`.
 - Every score payload carries the same short name, `shortLabel`, taken from the glossary's short form for the score in every language (de: Bereitschaft, Schlafscore, Gesundheit, Erholung, Stress, Belastung; en: Readiness, Sleep score, Health, Recovery, Stress, Strain): each entry of `GET /api/insights/derived` and its batch (null for a metric that is not a score), `GET /api/insights/score-history`, `healthScore` on `GET /api/analytics`, and `healthScore` and each `scoreRings` entry on `GET /api/dashboard/snapshot` (null on the dose ring). The Insights score row shows it as served. The English short name of the Health score is now "Health". Announced as `insights.scores-short-labels`.
+- The insurance number on the profile works outside Germany. Pick the country next to the number: an Austrian social insurance number, a Swiss AHV number, a Dutch BSN and a French NIR are checked by their check digit like the German KVNR, and every other country takes the number as written on the card, 3 to 30 letters, digits, spaces, hyphens or dots. In the US that is the member ID, with the plan's group number beside it. The doctor's report prints the number the way its country writes it (`1237 010180`, `756.9217.0769.85`), and the FHIR export files it under the country's own identifier system where one exists, otherwise as a member number. A number saved before keeps counting as German. The profile carries `insuranceNumberCountry` and `insuranceGroupNumber`; feature key `profile.insurance-number-country`. ([#1658](https://github.com/MBombeck/HealthLog/issues/1658))
 
 ### Changed
 
@@ -231,6 +232,7 @@
 
 ### Thanks
 
+- @mills1975 for asking for the Austrian social insurance number. ([#1658](https://github.com/MBombeck/HealthLog/issues/1658))
 - @Cnote43 for the radiation example: start and end, the single sessions, who ordered and who gave it, and the condition. ([#1113](https://github.com/MBombeck/HealthLog/discussions/1113))
 - @Gen-X-Jim for the report with the database counts that showed what the card was missing, and for asking for a day-total form. ([#1459](https://github.com/MBombeck/HealthLog/issues/1459))
 - @camiracode for counting the pairs that stayed after the 1.48.3 cleanup. ([#1414](https://github.com/MBombeck/HealthLog/issues/1414))

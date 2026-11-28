@@ -433,6 +433,7 @@
     "practiceLabel": "Praktijk",
     "insurer": "Zorgverzekeraar",
     "insuranceNumber": "Verzekeringsnr.",
+    "insuranceGroupNumber": "Groepsnr.",
     "summaryTitle": "Klinische samenvatting",
     "summaryReadings": "Vastgelegd over {days, plural, one {# dag} other {# dagen}}: {count, plural, one {# meting} other {# metingen}} van {params, plural, one {# parameter} other {# parameters}}.",
     "summaryTrend": "{label}: laatste {latest} {arrow}",
@@ -6887,7 +6888,13 @@
       "other": "Deze waarde is niet geaccepteerd. Controleer hem en probeer het opnieuw.",
       "reproofRequired": "Voer je huidige wachtwoord in om het e-mailadres te wijzigen.",
       "reproofFailed": "Dat wachtwoord is onjuist, dus het e-mailadres is niet gewijzigd.",
-      "secondFactorRequired": "Bevestig met je tweede factor of een passkey om het e-mailadres te wijzigen."
+      "secondFactorRequired": "Bevestig met je tweede factor of een passkey om het e-mailadres te wijzigen.",
+      "invalidKvnr": "Dat is geen geldig KVNR. Controleer de letter en de negen cijfers.",
+      "invalidSvnr": "Dat is geen geldig SVNR. Controleer de tien cijfers.",
+      "invalidAhv": "Dat is geen geldig AHV-nummer. Het heeft 13 cijfers en begint met 756.",
+      "invalidBsn": "Dat is geen geldig BSN. Controleer de negen cijfers.",
+      "invalidNir": "Dat is geen geldig NIR. Controleer de 13 tekens en de sleutel van twee cijfers.",
+      "invalidMemberId": "Gebruik 3 tot 30 letters, cijfers, spaties, streepjes of punten."
     },
     "avatar": {
       "title": "Profielfoto",
@@ -7700,8 +7707,17 @@
       "fullNamePlaceholder": "bijv. Jan Jansen",
       "insurer": "Zorgverzekeraar",
       "insurerPlaceholder": "bijv. AOK Bayern",
-      "insuranceNumber": "Verzekeringsnummer (KVNR)",
-      "insuranceNumberHint": "10 tekens: één letter + negen cijfers (bijv. A123456780)."
+      "insuranceNumber": "Verzekeringsnummer",
+      "insuranceCountry": "Land",
+      "numberLabel": {
+        "DE": "Verzekeringsnummer (KVNR)",
+        "AT": "Socialeverzekeringsnummer (SVNR)",
+        "CH": "AHV-nummer",
+        "NL": "Burgerservicenummer (BSN)",
+        "FR": "Socialezekerheidsnummer (NIR)",
+        "US": "Lidnummer"
+      },
+      "insuranceGroupNumber": "Groepsnummer"
     },
     "healthRecord": {
       "title": "Gezondheidsdossier exporteren",

@@ -397,6 +397,7 @@
     "practiceLabel": "Praxis",
     "insurer": "Krankenkasse",
     "insuranceNumber": "Versichertennr.",
+    "insuranceGroupNumber": "Gruppennr.",
     "summaryTitle": "Klinische Zusammenfassung",
     "summaryReadings": "Über {days, plural, one {# Tag} other {# Tage}} erfasst: {count, plural, one {# Messwert} other {# Messwerte}} über {params, plural, one {# Parameter} other {# Parameter}}.",
     "summaryTrend": "{label}: zuletzt {latest} {arrow}",
@@ -6887,7 +6888,13 @@
       "other": "Dieser Wert wurde nicht angenommen. Bitte prüfen und erneut versuchen.",
       "reproofRequired": "Gib dein aktuelles Passwort ein, um die E-Mail-Adresse zu ändern.",
       "reproofFailed": "Das Passwort stimmt nicht, die E-Mail-Adresse wurde nicht geändert.",
-      "secondFactorRequired": "Bestätige mit deinem zweiten Faktor oder einem Passkey, um die E-Mail-Adresse zu ändern."
+      "secondFactorRequired": "Bestätige mit deinem zweiten Faktor oder einem Passkey, um die E-Mail-Adresse zu ändern.",
+      "invalidKvnr": "Das ist keine gültige KVNR. Bitte den Buchstaben und die neun Ziffern prüfen.",
+      "invalidSvnr": "Das ist keine gültige SVNR. Bitte die zehn Ziffern prüfen.",
+      "invalidAhv": "Das ist keine gültige AHV-Nummer. Sie hat 13 Ziffern und beginnt mit 756.",
+      "invalidBsn": "Das ist keine gültige BSN. Bitte die neun Ziffern prüfen.",
+      "invalidNir": "Das ist keine gültige NIR. Bitte die 13 Zeichen und den zweistelligen Schlüssel prüfen.",
+      "invalidMemberId": "Erlaubt sind 3 bis 30 Buchstaben, Ziffern, Leerzeichen, Bindestriche oder Punkte."
     },
     "avatar": {
       "title": "Profilfoto",
@@ -7700,8 +7707,17 @@
       "fullNamePlaceholder": "z. B. Erika Mustermann",
       "insurer": "Krankenkasse",
       "insurerPlaceholder": "z. B. AOK Bayern",
-      "insuranceNumber": "Versichertennummer (KVNR)",
-      "insuranceNumberHint": "10 Zeichen: ein Buchstabe + neun Ziffern (z. B. A123456780)."
+      "insuranceNumber": "Versichertennummer",
+      "insuranceCountry": "Land",
+      "numberLabel": {
+        "DE": "Versichertennummer (KVNR)",
+        "AT": "Sozialversicherungsnummer (SVNR)",
+        "CH": "AHV-Nummer",
+        "NL": "Bürgerservicenummer (BSN)",
+        "FR": "Sozialversicherungsnummer (NIR)",
+        "US": "Mitglieds-ID"
+      },
+      "insuranceGroupNumber": "Gruppennummer"
     },
     "healthRecord": {
       "title": "Gesundheitsakte exportieren",
