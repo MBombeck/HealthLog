@@ -13,6 +13,7 @@
     "/achievements/page": 297,
     "/admin/[section]/page": 409,
     "/admin/page": 322,
+    "/admin/setup/page": 307,
     "/auth/claim/page": 303,
     "/auth/login/page": 296,
     "/auth/native-return/page": 289,

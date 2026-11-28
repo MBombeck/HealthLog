@@ -1,5 +1,5 @@
 /**
- * v1.39 — every setup screen, in every locale, with 30% longer strings.
+ * Every person setup screen (1.50), in every locale, with 30% longer strings.
  *
  * The design spec asks for 30–50% string headroom in every layout, and the
  * seven bundles are the floor, not the ceiling: a German label that fits
@@ -26,12 +26,11 @@ import { resetSetupFlow } from "./setup/setup-flow-fixture";
 import { expect, test } from "./setup/test";
 import {
   answer,
-  answerEverything,
+  answerYou,
   complete,
   expectScreen,
   SHELL,
   type SetupScreen,
-  passFollowUps,
 } from "./setup-flow-helpers";
 
 const LOCALES = [
@@ -54,15 +53,9 @@ const VIEWPORTS = [
 const SCREENS: Array<{ screen: SetupScreen; path: string }> = [
   { screen: "who", path: "/onboarding/who" },
   { screen: "areas", path: "/onboarding/areas" },
-  { screen: "medication", path: "/onboarding/medication" },
-  { screen: "sources", path: "/onboarding/sources" },
-  { screen: "visit", path: "/onboarding/visit" },
   { screen: "units", path: "/onboarding/units" },
-  { screen: "confirm", path: "/onboarding/confirm" },
+  { screen: "sources", path: "/onboarding/sources" },
   { screen: "reminders", path: "/onboarding/reminders" },
-  { screen: "ai", path: "/onboarding/ai" },
-  { screen: "first-result", path: "/onboarding/first-result" },
-  { screen: "done", path: "/onboarding/done" },
 ];
 
 /**
@@ -121,6 +114,11 @@ async function padAndMeasure(page: Page) {
         // accessible name, and a trigger that grew with its longest option
         // would move every neighbour. Not a layout that lost headroom.
         if (el.dataset.slot === "select-value") return false;
+        // The stepper's segment names truncate by design (ui/stepper.tsx):
+        // every segment is the same width whatever its name, and the full
+        // name is the segment's screen-reader text and the current step's
+        // heading.
+        if (el.closest('[data-slot="stepper"]')) return false;
         const overflowX = getComputedStyle(el).overflowX;
         return overflowX === "hidden" || overflowX === "clip";
       })
@@ -196,14 +194,10 @@ test.describe("setup flow — every locale at 30% longer strings", () => {
       test(`${locale} fits at ${vp.label}`, async ({ page, context }) => {
         test.setTimeout(180_000);
         await resetSetupFlow(E2E_SETUP_LOCALE.username);
-        await answerEverything(page);
-        await answer(page, {
-          step: "units",
-          units: { glucoseUnit: "mg/dL", unitPreference: "metric" },
-        });
+        await answerYou(page);
+        await answer(page, { step: "sources", status: "skipped" });
         await complete(page);
-        await passFollowUps(page);
-        await answer(page, { step: "first-result", status: "skipped" });
+        await answer(page, { step: "reminders", status: "skipped" });
 
         const baseURL =
           test.info().project.use.baseURL ?? "http://localhost:3000";
@@ -217,7 +211,18 @@ test.describe("setup flow — every locale at 30% longer strings", () => {
           await expectScreen(page, item.screen);
           await expect(page.locator("h1")).toBeVisible();
 
-          // No raw key before the padding touches the text.
+          // No raw key before the padding touches the text. The locale's
+          // catalog arrives as its own chunk, so a first paint under load can
+          // show keys for a moment; what counts is the settled screen.
+          await expect
+            .poll(
+              async () =>
+                (await page.locator(SHELL).innerText()).match(RAW_KEY)?.[0] ??
+                null,
+              { timeout: 10_000 },
+            )
+            .toBeNull()
+            .catch(() => undefined);
           const body = await page.locator(SHELL).innerText();
           const match = body.match(RAW_KEY);
           expect(

@@ -554,6 +554,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "seizures.type.limit",
       "seizures.type.notFound",
     ],
+    setup: ["setup.demo", "setup.invalid", "setup.rateLimited"],
     "share-link": [
       "share-link.document.decryptFailed",
       "share-link.document.notFound",

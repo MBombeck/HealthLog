@@ -12431,6 +12431,9 @@
         },
         "ru": {
           "name": "Выше цели"
+        },
+        "zh-CN": {
+          "name": "高于目标范围"
         }
       },
       "anchors": [
@@ -12450,7 +12453,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     },
     {
@@ -12487,6 +12491,9 @@
         },
         "ru": {
           "name": "Ниже цели"
+        },
+        "zh-CN": {
+          "name": "低于目标范围"
         }
       },
       "anchors": [
@@ -12506,7 +12513,8 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": []
+        "ru": [],
+        "zh-CN": []
       }
     }
   ],
@@ -12636,12 +12644,6 @@
       "key": "cycle.feed.forecastStyleHint.BAND",
       "text": "afspraak",
       "reason": "A calendar entry in the person's own calendar app, not a doctor's visit."
-    },
-    {
-      "locale": "es",
-      "key": "onboarding.flow.visit.body",
-      "text": "preparación",
-      "reason": "Preparing for a visit, not the readiness score."
     },
     {
       "locale": "es",

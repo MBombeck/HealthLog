@@ -278,6 +278,8 @@ describe("onboarding", () => {
       firstResult: null,
       modulesDerivedAt: null,
       completedAt: AT,
+      plan: ["you", "sources"],
+      cardDismissedAt: null,
       createdAt: AT,
     },
     nonEmpty: ["id"],
@@ -288,6 +290,8 @@ describe("onboarding", () => {
       firstResult: null,
       modulesDerivedAt: null,
       completedAt: null,
+      plan: null,
+      cardDismissedAt: null,
     },
   });
 });

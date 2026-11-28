@@ -1,68 +1,61 @@
+import { FinishLaterButton } from "@/components/onboarding/finish-later-button";
 import { SetupFrame } from "@/components/onboarding/setup-frame";
+import { screenHref } from "@/components/onboarding/screen-href";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
-import type { OnboardingStateDto } from "@/lib/onboarding/needs";
 import {
-  stepCounter,
-  stepTrack,
+  previousScreen,
+  stepperPosition,
+  type FlowState,
   type OnboardingScreenId,
 } from "@/lib/onboarding/wizard-steps";
 
 /**
- * v1.39 — the chrome around every setup screen.
+ * The chrome around every person setup screen (1.50): the focus frame with
+ * the stepper read off the flow's pinned segments, Back to the previous
+ * screen, and "Finish later" from the second screen on (the first one
+ * carries the disclaimer, which has to be answered before anything else).
  *
- * Logo, the "Step 2 of 6" counter, the step list, and the body slot. The
- * counter and the list are both read off the step machine, so the shell
- * shows exactly the screens THIS flow has — six questions for somebody who
- * ticked glucose, five for somebody who did not, a first-result screen only
- * when there is a task to offer.
- *
- * The step list is a real ordered list (design spec §Principles 6), each
- * entry with its name for a screen reader and `aria-current="step"` on the
- * one in view; the dots are the visual rendering of that list, not a
- * separate progress bar. The counter is `aria-live` so a step change is
- * announced without the heading having to carry the number.
- *
- * Server component: nothing here holds state. Each screen owns its own
- * action row (`StepActions`), because what "next" persists differs per
- * screen and the shell should not know.
+ * Server component: nothing here holds state. Each screen owns its action
+ * row (`StepActions`), because what "Continue" persists differs per screen.
  */
-interface OnboardingShellProps {
-  screen: OnboardingScreenId;
-  state: OnboardingStateDto;
-  userLocale: string | null;
-  children: React.ReactNode;
-}
-
 export async function OnboardingShell({
   screen,
   state,
   userLocale,
   children,
-}: OnboardingShellProps) {
+}: {
+  screen: OnboardingScreenId;
+  state: FlowState;
+  userLocale: string | null;
+  children: React.ReactNode;
+}) {
   const locale = await resolveServerLocale({ userLocale });
   const { t } = getServerTranslator(locale);
-
-  // Counter and bar from the same track, so they always agree.
-  const counter = stepCounter(state, screen);
-  const steps = stepTrack(state);
+  const position = stepperPosition(state, screen);
+  const previous = previousScreen(state, screen);
 
   return (
     <SetupFrame
       screen={screen}
-      counter={
-        counter
-          ? t("onboarding.shell.stepOf", {
-              current: counter.current,
-              total: counter.total,
-            })
-          : null
+      stepper={{
+        steps: position.segments.map((id) => ({
+          id,
+          label: t(`setup.person.segments.${id}`),
+        })),
+        current: position.current,
+        fraction: position.fraction,
+        countLabel: t("onboarding.shell.stepOf", {
+          current: position.current + 1,
+          total: position.segments.length,
+        }),
+      }}
+      back={
+        previous
+          ? { href: screenHref(previous), label: t("onboarding.shell.back") }
+          : undefined
       }
-      stepsLabel={t("onboarding.shell.stepsLabel")}
-      steps={steps.map((id) => ({
-        id,
-        label: t(`onboarding.steps.${id}`),
-      }))}
+      later={screen === "who" ? undefined : <FinishLaterButton flow="person" />}
     >
       {children}
     </SetupFrame>

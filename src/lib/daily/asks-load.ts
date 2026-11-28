@@ -28,7 +28,12 @@ import {
 async function readAdminAsk(userId: string): Promise<AdminAskKind | null> {
   const state = await readServerSetupState(userId);
   if (!state.offered || !state.noticePending) return null;
-  return state.completedAt === null ? "server_setup" : "push_relay";
+  if (state.completedAt === null) return "server_setup";
+  // 1.50 — "Not now" in the setup's relay step is an answer for the
+  // dashboard: the question stays on the admin start page and in Admin ›
+  // Setup, and does not come back here.
+  const relayStep = state.steps.find((step) => step.id === "relay");
+  return relayStep?.status === "skipped" ? null : "push_relay";
 }
 
 /**

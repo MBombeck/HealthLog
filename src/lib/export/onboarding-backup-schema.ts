@@ -31,6 +31,10 @@ export const onboardingRecordBackupSchema = z
     // re-apply the questionnaire over every module decision made since.
     modulesDerivedAt: isoDateTime.nullable().default(null),
     completedAt: isoDateTime.nullable().default(null),
+    // 1.50 — the pinned segments (read back through `parsePinnedPlan`) and
+    // the setup card's hide.
+    plan: z.array(z.string()).nullable().default(null),
+    cardDismissedAt: isoDateTime.nullable().default(null),
     createdAt: isoDateTime.optional(),
     updatedAt: isoDateTime.optional(),
   })

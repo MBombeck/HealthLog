@@ -5566,85 +5566,17 @@
       "back": "Terug",
       "skip": "Overslaan",
       "next": "Doorgaan",
-      "stepOf": "Stap {current} van {total}",
-      "stepsLabel": "Installatiestappen"
+      "stepOf": "Stap {current} van {total}"
     },
     "baseline": {
-      "title": "Iets over jou",
-      "body": "Vier optionele velden maken streefbereiken, BMI en herinneringen nauwkeuriger. Je kunt ze later allemaal aanpassen in Instellingen.",
       "displayNameLabel": "Weergavenaam",
       "displayNamePlaceholder": "Hoe moet HealthLog je aanspreken?",
-      "displayNameHint": "Wordt getoond in de begroeting op het dashboard en in rapporten.",
-      "heightLabel": "Lengte (cm)",
-      "heightLabelFtIn": "Lengte (ft, in)",
-      "genderLabel": "Geslacht",
-      "genderNone": "Zeg ik liever niet",
-      "genderMale": "Man",
-      "genderFemale": "Vrouw",
-      "genderOther": "Anders",
-      "dateOfBirthLabel": "Geboortedatum",
-      "dateOfBirthHint": "Wordt alleen gebruikt voor leeftijdsafhankelijke analyses."
-    },
-    "done": {
-      "title": "Je bent er klaar voor",
-      "body": "Welkom. Je dashboard staat klaar.",
-      "returnCta": "Dashboard openen",
-      "learning": "Sommige inzichten (glucose, slaapritme, bloeddruktrends, cyclus) worden in de eerste week of twee nauwkeuriger naarmate je gegevens zich opbouwen. Lege tegels betekenen nu alleen dat we je basiswaarden nog aan het leren kennen zijn.",
-      "connectCta": "Een apparaat koppelen",
-      "logCta": "Je eerste meting vastleggen",
-      "importCta": "Bestaande geschiedenis importeren",
-      "modulesCta": "Je modules kiezen",
-      "aiOptional": "AI is optioneel. Alles werkt ook zonder.",
-      "aiSetupCta": "AI instellen",
-      "relayOptional": "De iPhone-app kan meldingen van deze server krijgen via de optionele HealthLog-pushrelay, die uit blijft tot je hem aanzet.",
-      "relaySetupCta": "Instellingen pushrelay",
-      "serverSetup": "De inrichting van deze server staat nog open: registratie, meldingen, AI en privacy.",
-      "serverSetupCta": "Server inrichten"
-    },
-    "welcomeBack": {
-      "title": "Welkom terug",
-      "cta": "Dashboard openen"
+      "displayNameHint": "Wordt getoond in de begroeting op het dashboard en in rapporten."
     },
     "disclaimer": {
-      "acknowledge": "Ik begrijp het: HealthLog is een persoonlijk hulpmiddel om gegevens bij te houden, geen klinische beoordeling of diagnose. Als ik me zorgen maak, praat ik met mijn arts, niet met deze app.",
-      "learnMore": "Meer informatie"
-    },
-    "anamnesis": {
-      "title": "Over je gezondheid (optioneel)",
-      "subtitle": "Een beetje context, zodat HealthLog je waarden eerlijker kan interpreteren.",
-      "intro": "Deel zoveel of zo weinig als je wilt. Elk veld is optioneel en je kunt het altijd aanpassen in Instellingen.",
-      "conditionsLabel": "Chronische aandoeningen",
-      "conditionsPlaceholder": "bijv. hoge bloeddruk, diabetes type 2",
-      "conditionsHint": "Helpt HealthLog je metingen in context te plaatsen in plaats van het verwachte te markeren.",
-      "allergiesLabel": "Allergieën of intoleranties",
-      "allergiesPlaceholder": "bijv. penicilline, lactose",
-      "privacyNote": "Versleuteld opgeslagen en alleen gebruikt om je betere context te geven. We vragen hier niet naar je medicatie. Die kun je altijd toevoegen via de pagina Medicatie."
-    },
-    "steps": {
-      "who": "Voor wie dit dossier is",
-      "areas": "Wat je in de gaten wilt houden",
-      "medication": "Medicatie",
-      "sources": "Waar metingen vandaan komen",
-      "visit": "Doktersbezoek",
-      "units": "Regio en eenheden",
-      "confirm": "Bevestigen",
-      "first-result": "Eerste resultaat",
-      "done": "Klaar",
-      "reminders": "Herinneringen",
-      "ai": "Coach"
+      "acknowledge": "Ik begrijp het: HealthLog is een persoonlijk hulpmiddel om gegevens bij te houden, geen klinische beoordeling of diagnose. Als ik me zorgen maak, praat ik met mijn arts, niet met deze app."
     },
     "flow": {
-      "welcome": {
-        "title": "Welkom bij HealthLog",
-        "body": "Een paar korte vragen bepalen wat HealthLog je als eerste laat zien. Het duurt ongeveer twee minuten.",
-        "changeLater": "Niets is definitief: elke keuze kun je later wijzigen onder Instellingen.",
-        "setUp": "Instellen",
-        "skip": "Nu overslaan",
-        "againBody": "Je installatie is voltooid. Beantwoord de vragen opnieuw om te wijzigen wat HealthLog als eerste laat zien, of ga naar het dashboard.",
-        "setUpAgain": "Opnieuw instellen",
-        "serverSetup": "Jij beheert deze server. Zijn eigen inrichting is een aparte korte ronde, voor of na die van jou.",
-        "serverSetupCta": "Server inrichten"
-      },
       "who": {
         "title": "Voor wie is dit dossier?",
         "body": "De antwoorden die volgen gelden voor dit dossier.",
@@ -5660,7 +5592,6 @@
       },
       "areas": {
         "title": "Wat wil je in de gaten houden?",
-        "body": "Kies er zoveel als je wilt. Deze keuzes bepalen welke modules worden aangezet en wat het dashboard als eerste laat zien.",
         "options": {
           "blood-pressure": "Bloeddruk",
           "weight-body": "Gewicht en lichaam",
@@ -5673,18 +5604,7 @@
           "illness": "Ziektes en symptomen"
         }
       },
-      "medication": {
-        "title": "Neem je medicatie volgens een schema in?",
-        "body": "Een schema zet de medicatiemodule aan. Herinneringen stel je in wanneer je je eerste medicijn toevoegt.",
-        "options": {
-          "yes": "Ja",
-          "no": "Nee",
-          "sometimes": "Soms"
-        }
-      },
       "sources": {
-        "title": "Waar komen je metingen nu vandaan?",
-        "body": "Kies er zoveel als je wilt. Aan het eind wordt één koppeling aangeboden; geen enkele is verplicht.",
         "options": {
           "manual": "Ik voer ze zelf in",
           "apple-health": "Apple Health op mijn iPhone",
@@ -5697,152 +5617,21 @@
           "strava": "Strava",
           "nightscout": "Nightscout",
           "file": "Een bestand dat ik al heb"
-        },
-        "hints": {
-          "apple-health": "Gesynchroniseerd door de iOS-app, of geïmporteerd uit een export.",
-          "file": "Te importeren onder Instellingen zodra je hier klaar bent.",
-          "fitbit": "Wordt nu gekoppeld via Google Health."
-        }
-      },
-      "visit": {
-        "title": "Staat er een doktersbezoek op de planning?",
-        "body": "Een bezoek zet het artsenrapport aan en voegt de voorbereiding ervan toe aan je checklist.",
-        "options": {
-          "within-a-month": "Ja, binnen een maand",
-          "later": "Later",
-          "no": "Nee"
         }
       },
       "units": {
-        "title": "Je regio en eenheden",
-        "body": "Je dag en je herinneringstijden volgen de tijdzone. Waarden worden één keer opgeslagen en getoond in de eenheid die je kiest. Je kunt alles later wijzigen onder Instellingen.",
         "glucoseLegend": "Bloedglucose",
         "weightLegend": "Gewicht en lengte",
         "options": {
           "metric": "kg en cm",
           "imperial": "lb en ft/in"
-        },
-        "timezoneHint": "Overgenomen van dit account. Je dag, je grafieken en je herinneringen volgen deze.",
-        "registryLegend": "Geneesmiddelenregister voor bijsluiters"
-      },
-      "confirm": {
-        "title": "Dit zetten je antwoorden aan",
-        "body": "Eén blik, en HealthLog is ingesteld. Niets hier is definitief.",
-        "modulesTitle": "Modules",
-        "switchedOn": "Aangezet: {modules}.",
-        "nothingExtra": "Je antwoorden zetten geen extra module aan; de basismetingen zijn er altijd.",
-        "alwaysOn": "Altijd aan: {modules}, en de basismetingen (gewicht, bloeddruk, hartslag).",
-        "everythingElse": "Al het andere staat op één klik afstand onder",
-        "modulesLink": "Instellingen, Modules",
-        "switchesOff": "Uit de navigatie gehaald: {modules}. Je kunt ze allemaal weer aanzetten onder Instellingen, Modules.",
-        "glucoseUnit": "Bloedglucose",
-        "unitPreference": "Eenheden",
-        "language": "Taal",
-        "timezone": "Tijdzone",
-        "changeInSettings": "Wijzig dit onder Instellingen, Account",
-        "cta": "Bevestigen en doorgaan",
-        "managedTitle": "De persoon voor wie je zorgt",
-        "managedBody": "Dit dossier heeft geen eigen login; je beheert het vanuit je eigen account. Om het aan te maken is een tweede factor of een passkey op je account vereist.",
-        "managedCreate": "Profiel aanmaken en afronden",
-        "managedLater": "Je kunt het ook later aanmaken onder Instellingen, Gedeelde toegang.",
-        "finishWithoutProfile": "Afronden zonder profiel"
-      },
-      "first-result": {
-        "connect-source": {
-          "title": "{target} koppelen",
-          "body": "Eén koppeling, gekozen op basis van je antwoorden. Metingen komen daarna vanzelf binnen.",
-          "howTo": "De koppeling met {target} maak je op de pagina Koppelingen. Kom daarna hier terug; dit scherm merkt het zodra het klaar is.",
-          "cta": "{target} koppelen",
-          "checking": "Koppeling wordt gecontroleerd.",
-          "waiting": "Nog niet gekoppeld.",
-          "openSettings": "Instellingen > Koppelingen openen",
-          "noDate": "onbekend",
-          "throughGoogleHealth": "{source}-gegevens komen nu binnen via {target}: de klassieke {source}-koppeling is stopgezet. Koppel {target} met het Google-account waarmee je {source} is aangemeld, dan komen je metingen daarvandaan.",
-          "needsCredentials": {
-            "title": "Deze instantie heeft nog geen {target}-app geregistreerd.",
-            "detail": "Voer je eigen inloggegevens in onder Instellingen > Koppelingen, daarna kan de koppeling starten."
-          },
-          "state": {
-            "pending_first_sync": {
-              "title": "{target} is gekoppeld.",
-              "detail": "De eerste synchronisatie is bezig. Metingen verschijnen op het dashboard zodra ze binnenkomen."
-            },
-            "fresh": {
-              "title": "{target} is al gekoppeld.",
-              "detail": "Laatste meting {when}. Hier hoef je niets meer te doen."
-            },
-            "stale": {
-              "title": "{target} is gekoppeld, maar er komt op dit moment niets binnen.",
-              "detail": "Laatste meting {when}. De koppeling zelf werkt prima."
-            },
-            "stalled": {
-              "title": "{target} is gekoppeld, maar synchroniseert niet meer.",
-              "detail": "Laatste poging {when}. Controleer de koppeling onder Instellingen > Koppelingen."
-            },
-            "failing": {
-              "title": "{target} is gekoppeld, maar de synchronisatie mislukt steeds.",
-              "detail": "Sinds {when} is er niets binnengekomen. Controleer de koppeling onder Instellingen > Koppelingen."
-            },
-            "reauth_required": {
-              "title": "De koppeling met {target} moet worden vernieuwd.",
-              "detail": "Log nog één keer in en de metingen lopen weer door."
-            },
-            "parked": {
-              "title": "De koppeling met {target} is gepauzeerd.",
-              "detail": "Controleer de koppeling onder Instellingen > Koppelingen."
-            }
-          }
-        },
-        "add-medication": {
-          "title": "Je eerste medicijn toevoegen",
-          "body": "Naam, dosis en schema; de herinnering volgt het schema dat je instelt.",
-          "howTo": "Het medicijn voeg je in een paar korte stappen toe. Meer kun je later toevoegen op de pagina Medicatie.",
-          "cta": "Medicijn toevoegen",
-          "done": "{name} is toegevoegd.",
-          "doneUnnamed": "Je eerste medicijn is toegevoegd.",
-          "nextDose": "Volgende dosis: {when}.",
-          "reminders": "Herinneringen volgen het schema dat je instelt.",
-          "recordOnly": "Alleen ter registratie: geen herinneringen, er wordt niets verwacht.",
-          "asNeeded": "Zo nodig: geen herinneringen, leg een dosis vast wanneer je die inneemt."
-        },
-        "log-reading": {
-          "title": "Voer één meting in: {target}",
-          "body": "Eén meting zet de eerste waarde op je dashboard. Vanaf de vijfde verschijnt de trend vanzelf.",
-          "done": "Je eerste meting staat op de tegel.",
-          "doneElsewhere": "Je eerste invoer voor {target} is vastgelegd.",
-          "elsewhere": "{target} heeft een eigen pagina. Open die, maak de eerste invoer en kom dan terug om het als klaar te markeren.",
-          "open": "{target} openen",
-          "markDone": "Ik heb de invoer gedaan"
         }
       },
-      "done": {
-        "tourCta": "Korte rondleiding volgen",
-        "openRecord": "Dossier van {name} openen",
-        "createProfile": "Profiel aanmaken voor de persoon voor wie je zorgt"
-      },
       "reminders": {
-        "title": "Waar wil je herinneringen ontvangen?",
-        "body": "Zo kan deze server je bereiken. Stel er één in, meerdere of voorlopig geen.",
-        "app": "Gebruik je de iPhone-app? Die heeft eigen herinneringen, dus je kunt deze stap overslaan."
+        "title": "Waar wil je herinneringen ontvangen?"
       },
       "ai": {
-        "title": "De Coach gebruiken?",
-        "body": "De Coach beantwoordt vragen over je waarden met een AI-model.",
-        "whereServer": "Als je iets vraagt, gaan je vraag en de benodigde waarden via het account van deze server naar {providers}.",
-        "whereOwn": "Als je iets vraagt, gaan je vraag en de benodigde waarden naar de AI-dienst die je met je eigen sleutel hebt ingesteld.",
-        "whereLocal": "Als je iets vraagt, gaan je vraag en de benodigde waarden naar het model dat je zelf draait.",
-        "whereNone": "Er is nog geen AI-dienst voor je ingesteld, dus de Coach kan nog niet antwoorden.",
-        "setUp": "AI instellen",
-        "nothingUntilAsked": "Er wordt niets verstuurd voordat je iets vraagt.",
-        "options": {
-          "yes": "Ja, de Coach gebruiken",
-          "no": "Nee, uitschakelen"
-        },
-        "hints": {
-          "yes": "Je kunt hem op elk moment vragen stellen over je waarden.",
-          "no": "De Coach verdwijnt. Al het andere werkt zoals voorheen."
-        },
-        "later": "Je kunt dit altijd wijzigen onder Instellingen, AI."
+        "title": "De Coach gebruiken?"
       }
     }
   },
@@ -9797,71 +9586,12 @@
       "deliverySummary": "Bezorgdetails"
     },
     "serverSetup": {
-      "stepsLabel": "Stappen van de serverinrichting",
-      "finish": "Klaar",
-      "steps": {
-        "accounts": "Accounts",
-        "notifications": "Meldingen",
-        "ai": "AI",
-        "privacy": "Privacy",
-        "health": "Controle"
-      },
       "notice": {
         "title": "Deze server inrichten",
         "body": "Vijf korte stappen over aanmeldingen, meldingen, AI en privacy; elke stap kun je overslaan of later wijzigen.",
         "bodyShort": "Vijf korte stappen over aanmeldingen, meldingen, AI en privacy.",
         "open": "Inrichting starten",
         "dismiss": "Niet nu"
-      },
-      "accounts": {
-        "title": "Wie deze server kan gebruiken",
-        "body": "Bepaal of mensen zich zelf kunnen registreren en of elk account een tweede factor nodig heeft.",
-        "invites": "Met gesloten registratie komen mensen nog steeds binnen met een uitnodigingslink.",
-        "invitesLink": "Uitnodiging maken"
-      },
-      "notifications": {
-        "title": "Hoe meldingen de server verlaten",
-        "body": "Kies welke kanalen gebruikt mogen worden; de HealthLog-pushrelay blijft uit tot je hem aanzet."
-      },
-      "ai": {
-        "title": "Wat AI mag",
-        "body": "AI is optioneel. HealthLog werkt volledig zonder.",
-        "off": "Uit: er gaat niets naar een AI-dienst.",
-        "ownKey": "Eigen sleutels: de vragen van iemand en de benodigde waarden gaan naar de provider die die persoon heeft ingesteld.",
-        "serverKey": "Sleutel van deze server: vragen en waarden gaan naar de provider die je hier instelt, en iedereen wordt eerst om toestemming gevraagd.",
-        "local": "Lokaal model: alles blijft bij het model waar de persoon naar verwijst, in je eigen netwerk.",
-        "docs": "Zo werken de AI-providers"
-      },
-      "privacy": {
-        "title": "Wat de server verder verlaat",
-        "body": "Naast meldingen en AI kunnen drie dingen gegevens naar buiten sturen. Elk daarvan beslis jij.",
-        "geoTitle": "Aanmeldlocaties",
-        "geoDescription": "Hoe de plaats van een aanmelding uit het IP-adres wordt afgeleid.",
-        "geoBody": "Met gekoppelde GeoLite2-databases gebeurt het opzoeken op deze server. Zonder worden alle aanmeldadressen naar een onlinedienst gestuurd. IP_GEO_LOOKUP_DISABLED=1 zet het opzoeken uit.",
-        "geoDocs": "Lokale databases instellen",
-        "geoLoadError": "De instelling voor het opzoeken kon niet worden gelezen.",
-        "docs": "Wat HealthLog waarheen stuurt"
-      },
-      "health": {
-        "title": "Inrichting controleren",
-        "body": "Een alleen-lezen overzicht van hoe deze server is ingericht. Het blijft in de beheeromgeving onder Systeemstatus.",
-        "keys": "Je versleutelingssleutels zijn de enige manier om je gegevens in een back-up te lezen. Bewaar een kopie ergens anders dan op deze server."
-      },
-      "facts": {
-        "title": "Uit de omgeving van de server",
-        "description": "Ingesteld in de omgeving, niet hier. Wijzig het daar en herstart.",
-        "oidc": "Eenmalige aanmelding (OIDC)",
-        "oidcOn": "Ingesteld, naast wachtwoorden en passkeys",
-        "oidcOnly": "Ingesteld, de enige manier om aan te melden",
-        "oidcOff": "Niet ingesteld",
-        "oidcDocs": "Eenmalige aanmelding instellen",
-        "smtp": "E-mail (SMTP)",
-        "smtpOn": "Ingesteld",
-        "smtpMissing": "Niet ingesteld, ontbreekt: {names}",
-        "telegram": "Antwoorden in Telegram",
-        "telegramOn": "Webhookgeheim ingesteld",
-        "telegramOff": "Geen webhookgeheim, dus knoppen in Telegram-berichten reageren niet",
-        "channelsDocs": "Zo werken de kanalen"
       }
     },
     "setupHealth": {
@@ -16579,6 +16309,217 @@
       "needAfter": "Er zijn nog te weinig waarden sinds de start om te vergelijken.",
       "needStart": "Voeg een startdatum toe om voor en na te vergelijken.",
       "needData": "Er zijn nog te weinig waarden om te vergelijken."
+    }
+  },
+  "setup": {
+    "finishLater": "Later afmaken",
+    "backToSetup": "Terug naar de installatie",
+    "notNow": "Niet nu",
+    "later": "Later",
+    "done": "Klaar",
+    "yes": "Ja",
+    "no": "Nee",
+    "person": {
+      "segments": {
+        "you": "Jij",
+        "profile": "Profiel",
+        "sources": "Bronnen",
+        "reminders": "Herinneringen",
+        "ai": "AI"
+      },
+      "areas": {
+        "body": "Kies er zoveel als je wilt; ze bepalen welke modules aan staan."
+      },
+      "units": {
+        "title": "Regio en eenheden",
+        "body": "Dagen, tijden en eenheden in de hele app volgen deze instellingen.",
+        "name": "Weergavenaam",
+        "timezoneHint": "Overgenomen uit deze browser."
+      },
+      "profile": {
+        "title": "Profiel van de andere persoon aanmaken",
+        "body": "Een eigen dossier, dat je vanuit je eigen account beheert.",
+        "create": "Profiel aanmaken"
+      },
+      "sources": {
+        "title": "Koppel waar je metingen vandaan komen",
+        "body": "Elke koppeling houdt zichzelf daarna bij.",
+        "connect": "Koppelen",
+        "connected": "Gekoppeld",
+        "chooseFile": "Bestand kiezen",
+        "showCode": "Code tonen",
+        "hideCode": "Code verbergen",
+        "scan": "Scan met de iPhone-camera om de app te downloaden",
+        "signInWith": "Meld je daarna in de app aan bij {address}.",
+        "qrAlt": "QR-code voor de HealthLog-app in de App Store",
+        "adminMore": "Withings, Oura en andere diensten toevoegen",
+        "names": {
+          "withings": "Withings",
+          "oura": "Oura",
+          "whoop": "WHOOP",
+          "polar": "Polar",
+          "google-health": "Google Health",
+          "strava": "Strava"
+        },
+        "hints": {
+          "apple-health": "Via de iPhone-app",
+          "withings": "Weegschaal en bloeddrukmeter",
+          "oura": "Ring",
+          "whoop": "Band",
+          "polar": "Horloge en borstband",
+          "google-health": "Fitbit en Pixel Watch",
+          "strava": "Trainingen",
+          "file": "CSV of een Apple Health-export"
+        }
+      },
+      "reminders": {
+        "body": "Kies nu één manier; je kunt er later meer toevoegen.",
+        "app": "De iPhone-app",
+        "appRelay": "Via de HealthLog-pushrelay",
+        "appLocal": "De app herinnert je op de iPhone zelf",
+        "browser": "Deze browser",
+        "browserHint": "Vraagt om toestemming als je doorgaat",
+        "tokens": "Telegram en ntfy hebben een token nodig en wachten daarom op je installatielijst."
+      },
+      "ai": {
+        "whereServer": "Dan gaan je metingen via het account van deze server naar {providers}, voor analyses en voor je vragen.",
+        "whereOwn": "Dan gaan je metingen naar de AI-dienst die je met je eigen sleutel hebt ingesteld, voor analyses en voor je vragen.",
+        "whereLocal": "Dan gaan je metingen naar het model dat je zelf draait, voor analyses en voor je vragen."
+      }
+    },
+    "server": {
+      "segments": {
+        "account": "Account",
+        "signups": "Registratie",
+        "relay": "Meldingen",
+        "ai": "AI",
+        "recovery": "Herstelkit"
+      },
+      "claim": {
+        "body": "De server schrijft de installatiecode bij elke start naar zijn log, of het is de SETUP_TOKEN die in zijn omgeving is ingesteld.",
+        "accepted": "Installatiecode geaccepteerd. Nu maak je het beheerdersaccount aan.",
+        "sso": "Doorgaan met single sign-on"
+      },
+      "account": {
+        "body": "Dit account beheert de server en houdt een eigen dossier bij.",
+        "create": "Account aanmaken"
+      },
+      "factor": {
+        "title": "Tweede factor toevoegen",
+        "due": "Beheerdersaccounts hebben er een nodig vóór {date}.",
+        "body": "Zo blijft het account veilig, ook als iemand het wachtwoord kent.",
+        "passkey": "Passkey",
+        "passkeyHint": "Face ID, Touch ID, Windows Hello of een beveiligingssleutel",
+        "totp": "Authenticator-app",
+        "totpHint": "Een zescijferige code uit een app op je telefoon",
+        "password": "Je wachtwoord, ter bevestiging",
+        "addPasskey": "Passkey toevoegen",
+        "addTotp": "App instellen",
+        "scan": "Scan de code met de authenticator-app of voer hieronder de sleutel in.",
+        "code": "Code uit de app",
+        "confirm": "Bevestigen"
+      },
+      "signups": {
+        "title": "Wie mag een account aanmaken?",
+        "body": "Totdat je het wijzigt, alleen mensen die je uitnodigt.",
+        "invited": "Alleen uitgenodigde mensen",
+        "invitedHint": "Je stuurt iedereen een link",
+        "anyone": "Iedereen die deze server kan bereiken"
+      },
+      "relay": {
+        "yesHint": "Herinneringen, Live-activiteiten en Wallet-kaarten op de iPhone",
+        "noHint": "Herinneringen blijven op de iPhone zelf",
+        "unavailable": "Deze server verstuurt zijn pushmeldingen zonder de relay, dus hier valt niets te kiezen.",
+        "decidedOn": "Deze server gebruikt de relay. Je kunt dat wijzigen onder Beheer, Push en kanalen.",
+        "decidedOff": "Deze server gebruikt de relay niet. Je kunt dat wijzigen onder Beheer, Push en kanalen.",
+        "body": "Meldingen voor de app uit de App Store.",
+        "more": "Meer",
+        "detail": "End-to-end versleuteld: de relay ziet alleen wanneer er een wordt verstuurd."
+      },
+      "ai": {
+        "title": "Moet deze server AI aanbieden?",
+        "body": "Iedereen kan voor zichzelf alsnog nee zeggen.",
+        "off": "Uit",
+        "own": "Iedereen gebruikt een eigen sleutel",
+        "ownHint": "Toe te voegen onder Instellingen, AI",
+        "server": "Eén sleutel voor iedereen",
+        "serverHint": "Gefactureerd aan het account van deze server",
+        "provider": "Provider",
+        "key": "API-sleutel",
+        "test": "Testen",
+        "testOk": "Sleutel werkt",
+        "testFailed": "De provider gaf geen antwoord."
+      },
+      "recovery": {
+        "title": "Herstelkit bewaren",
+        "body": "Zonder deze sleutels kan een opnieuw geïnstalleerde server zijn gegevens niet openen.",
+        "guide": "Zo bewaar je de sleutels",
+        "kept": "Ik bewaar van elke sleutel een kopie ergens anders dan op deze server."
+      }
+    },
+    "card": {
+      "title": "Installatie afronden",
+      "progress": "{done} van {total} klaar",
+      "showDone": "{count, plural, one {Toon de afgeronde taak} other {Toon de # afgeronde taken}}",
+      "hideDone": "Afgeronde taken verbergen",
+      "hide": "Deze kaart verbergen"
+    },
+    "admin": {
+      "title": "Serverinstallatie",
+      "subtitle": "Elke beslissing toont haar waarde; elke rij opent de bijbehorende instelling.",
+      "cardTitle": "Eerste start",
+      "progress": "{done} van {total} beslist.",
+      "resume": "Serverinstallatie voortzetten",
+      "loadError": "De installatie kon niet worden geladen.",
+      "link": "Serverinstallatie"
+    },
+    "tasks": {
+      "requiredHere": "Verplicht op deze server",
+      "person": {
+        "resume": "Installatie voortzetten",
+        "medication": "Je eerste medicijn toevoegen",
+        "second-factor": "Tweede factor toevoegen",
+        "about-you": "Medische voorgeschiedenis",
+        "about-youSub": "Lengte, geboortedatum, geslacht",
+        "reading": "Je eerste meting vastleggen",
+        "source": "Een gegevensbron koppelen",
+        "second-channel": "Een tweede manier voor herinneringen",
+        "second-channelSub": "Telegram of ntfy",
+        "coach": "Coach",
+        "managed-profile": "Het profiel aanmaken dat je beheert"
+      },
+      "instance": {
+        "second-factor": "Tweede factor",
+        "signups": "Registratie",
+        "relay": "Pushrelay",
+        "ai": "AI",
+        "recovery": "Herstelkit",
+        "recoveryKeyAdded": "Sinds het bewaren is er een sleutel bijgekomen",
+        "email": "E-mail",
+        "sso": "Single sign-on",
+        "services": "Withings, Oura en andere diensten",
+        "backups": "Externe back-ups",
+        "error-reporting": "Foutrapporten"
+      }
+    },
+    "values": {
+      "on": "Aan",
+      "off": "Uit",
+      "passkey": "Passkey",
+      "authenticator": "Authenticator-app",
+      "invited": "Alleen uitgenodigden",
+      "anyone": "Iedereen",
+      "own-keys": "Eigen sleutels",
+      "server-key": "Eén sleutel voor iedereen",
+      "central-account": "Centraal account",
+      "saved": "Bewaard",
+      "key-added": "Open",
+      "add-key": "Je sleutel toevoegen",
+      "done": "Klaar",
+      "notSetUp": "Niet ingesteld",
+      "continue": "Doorgaan",
+      "count": "{done} van {total}",
+      "until": "Vóór {date}"
     }
   }
 }

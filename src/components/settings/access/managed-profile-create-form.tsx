@@ -83,6 +83,7 @@ import {
 export function ManagedProfileCreateForm({
   submitLabel,
   onCreated,
+  renderActions,
 }: {
   /** The button's label when the form sits somewhere other than the panel. */
   submitLabel?: string;
@@ -92,6 +93,14 @@ export function ManagedProfileCreateForm({
    * the sharing panel leaves it unset and shows the confirmation line.
    */
   onCreated?: (profile: ManagedProfileView) => void;
+  /**
+   * 1.50 — the setup flow paints its own action pair in place of the
+   * form's button, inside the form; its primary is a submit button.
+   */
+  renderActions?: (args: {
+    disabled: boolean;
+    pending: boolean;
+  }) => React.ReactNode;
 } = {}) {
   const { t, locale: actorLocale } = useTranslations();
   // Gated on a fresh second factor: the dialog collects it and the request
@@ -297,18 +306,22 @@ export function ManagedProfileCreateForm({
             {t("recordSharing.managed.created", { name: created })}
           </p>
         )}
-        <SettingsCardActions>
-          <Button
-            type="submit"
-            size="sm"
-            data-slot="managed-profile-create-submit"
-            disabled={create.isPending || blocked}
-          >
-            {create.isPending
-              ? t("recordSharing.managed.creating")
-              : (submitLabel ?? t("recordSharing.managed.create"))}
-          </Button>
-        </SettingsCardActions>
+        {renderActions ? (
+          renderActions({ disabled: blocked, pending: create.isPending })
+        ) : (
+          <SettingsCardActions>
+            <Button
+              type="submit"
+              size="sm"
+              data-slot="managed-profile-create-submit"
+              disabled={create.isPending || blocked}
+            >
+              {create.isPending
+                ? t("recordSharing.managed.creating")
+                : (submitLabel ?? t("recordSharing.managed.create"))}
+            </Button>
+          </SettingsCardActions>
+        )}
       </form>
     </>
   );

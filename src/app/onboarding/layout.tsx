@@ -12,5 +12,7 @@ export default function OnboardingLayout({
 }: {
   children: ReactNode;
 }) {
-  return <div className="bg-background min-h-[100svh] w-full">{children}</div>;
+  return (
+    <div className="bg-background flex w-full flex-1 flex-col">{children}</div>
+  );
 }

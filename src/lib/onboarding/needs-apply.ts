@@ -84,10 +84,17 @@ export function applyOnboardingAnswer(
         needs: { ...state.needs, medication: input.medication },
       };
     case "sources":
+      // Additive (1.50): the answer is merged into what is recorded, never
+      // replaces it. The web records the services it connected and the app
+      // records Apple Health, each from its own device, and neither may erase
+      // the other's.
       return {
         ...state,
         steps,
-        needs: { ...state.needs, sources: unique(input.sources) },
+        needs: {
+          ...state.needs,
+          sources: unique([...state.needs.sources, ...input.sources]),
+        },
       };
     case "visit":
       return { ...state, steps, needs: { ...state.needs, visit: input.visit } };
