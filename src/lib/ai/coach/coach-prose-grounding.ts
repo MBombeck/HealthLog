@@ -639,14 +639,8 @@ const MONTHS = [
   "января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря",
 ].join("|");
 
-/**
- * Languages whose replies write "." as the decimal point and "," between
- * thousands. Every other language but ru writes them the other way round.
- */
-function writesDecimalPoint(locale: Locale): boolean {
-  return locale === "en" || locale === "zh-CN";
-}
-
+/** Replies that write "." as the decimal point and "," between thousands. */
+const DECIMAL_POINT: ReadonlySet<Locale> = new Set(["en", "zh-CN"]);
 /** Parse a raw number token honouring the reply language's separators. */
 function parseLocaleNumber(raw: string, locale: Locale): number | null {
   let normalised: string;
@@ -654,12 +648,11 @@ function parseLocaleNumber(raw: string, locale: Locale): number | null {
     // RU: a space (usually a no-break one) groups thousands, "," is the
     // decimal point.
     normalised = raw.replace(/[\s\u00A0]/g, "").replace(/,/g, ".");
-  } else if (writesDecimalPoint(locale)) {
+  } else if (DECIMAL_POINT.has(locale)) {
     // EN and zh-CN: "," groups thousands, "." is the decimal point.
     normalised = raw.replace(/,/g, "");
   } else {
-    // DE / fr / es / it / pl / nl / pt-BR: "." groups thousands, "," is the decimal
-    // point.
+    // The others: "." groups thousands, "," is the decimal point.
     normalised = raw.replace(/\./g, "").replace(/,/g, ".");
   }
   const value = Number.parseFloat(normalised);
@@ -684,7 +677,7 @@ function tokenizeMagnitudes(prose: string, locale: Locale): ProseMagnitude[] {
     return true;
   };
 
-  const numFrag = writesDecimalPoint(locale)
+  const numFrag = DECIMAL_POINT.has(locale)
     ? String.raw`[+-]?\d{1,3}(?:,\d{3})+(?:\.\d+)?|[+-]?\d+(?:\.\d+)?`
     : locale === "ru"
       ? // ru groups thousands with a space (usually a no-break one) and

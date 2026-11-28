@@ -1,6 +1,3 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
 import { jsPDF } from "jspdf";
 
 import { readSource } from "@/__tests__/helpers/source-files";
@@ -59,10 +56,9 @@ describe("doctor-report fonts", () => {
   // Every character a report's own text can draw must have a glyph in the
   // font that report is drawn in; jsPDF has no fallback, a missing glyph is
   // a box. Emoji in a bundle never reach the report's fonts and are skipped.
-  it.each(locales)("draws every %s report string", (locale) => {
-    const bundle = JSON.parse(
-      readFileSync(join(process.cwd(), "messages", `${locale}.json`), "utf8"),
-    ) as { doctorReport: unknown };
+  it.each(locales)("draws every %s report string", async (locale) => {
+    const bundle = (await import(`../../../../messages/${locale}.json`))
+      .default as { doctorReport: unknown };
     const text = JSON.stringify(bundle.doctorReport);
     const script: ReportScript = reportScript(locale, {});
     const doc = new jsPDF();

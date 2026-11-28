@@ -4,7 +4,7 @@
  * locale the generator does not write is a 404 and a page of raw keys.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -23,6 +23,7 @@ describe("i18n boot catalogs", () => {
   it.each(locales)("writes %s", (locale) => {
     const file = join(out, `${locale}.js`);
     expect(existsSync(file)).toBe(true);
-    expect(readFileSync(file, "utf8")).toContain(`"locale":"${locale}"`);
+    // A whole catalog, not an empty shell: every bundle is far above this.
+    expect(statSync(file).size).toBeGreaterThan(100_000);
   });
 });
