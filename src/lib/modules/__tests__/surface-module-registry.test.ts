@@ -83,6 +83,7 @@ import {
   surfaceModulesOfKind,
   type SurfaceKind,
 } from "@/lib/modules/surface";
+import { STALL_SOURCES } from "@/lib/sync-stall/quiet";
 
 const SRC = join(process.cwd(), "src");
 
@@ -188,6 +189,13 @@ describe("every surface id names a surface that exists", () => {
   it("checklist: an optional row of the getting-started checklist", () => {
     const ids = new Set<string>(CHECKLIST_EXTRA_IDS);
     for (const id of localIds("checklist")) expect(ids.has(id), id).toBe(true);
+  });
+
+  it("stall-source: a source the SYNC_STALLED rule watches", () => {
+    const keys = new Set<string>(STALL_SOURCES);
+    for (const id of localIds("stall-source")) {
+      expect(keys.has(id), id).toBe(true);
+    }
   });
 
   it("search: a source the record search reads", () => {

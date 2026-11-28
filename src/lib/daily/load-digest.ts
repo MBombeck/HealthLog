@@ -624,7 +624,9 @@ export async function loadDailyDigest(
       select: { integration: true, state: true, lastSuccessAt: true },
       orderBy: { integration: "asc" },
     }),
-    loadQuietSources(user.id, now).catch(() => []),
+    gated.modulesRead
+      .then((m) => loadQuietSources(user.id, now, m))
+      .catch(() => []),
     prisma.measurementReminder.findMany({
       // A booked visit's one-shot reminder rides this same engine with
       // `origin: ENCOUNTER`. It is not a checkup and must not appear on a

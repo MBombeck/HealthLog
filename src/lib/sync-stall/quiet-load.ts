@@ -14,6 +14,7 @@ import {
   type ConnectionKey,
 } from "@/lib/integrations/connection-health";
 import { loadConnectionFacts } from "@/lib/integrations/connection-health-load";
+import type { SurfaceModuleMap } from "@/lib/modules/surface";
 import { daysBetweenDateKeys, userDayKey } from "@/lib/tz/format";
 
 import {
@@ -28,41 +29,53 @@ import {
 export async function loadQuietSources(
   userId: string,
   now: Date = new Date(),
+  /** The account's modules, so a source whose only module is off drops. */
+  modules?: SurfaceModuleMap,
 ): Promise<QuietSource[]> {
   // One statement for both stamps: the digest reads this on every request,
   // and its statement budget (`query-budget-hot-routes.test.ts`) counts it.
   const rows = await prisma.$queryRaw<
     Array<{
       integration: string | null;
+      platform: string | null;
       ingestAt: Date | null;
       quietSince: Date | null;
     }>
   >`
-    SELECT integration, NULL::timestamp AS "ingestAt", NULL::timestamp AS "quietSince"
+    SELECT integration, NULL::text AS platform, NULL::timestamp AS "ingestAt", NULL::timestamp AS "quietSince"
       FROM integration_watches
      WHERE user_id = ${userId}
        AND silent_since IS NOT NULL
        AND integration = ANY(${[...STALL_SOURCES]}::text[])
     UNION ALL
-    SELECT NULL, health_ingest_at, health_quiet_since
+    SELECT NULL, platform, health_ingest_at, health_quiet_since
       FROM devices
      WHERE user_id = ${userId}
-       AND platform = 'ios'
+       AND platform IN ('ios', 'android')
        AND health_ingest_at IS NOT NULL`;
   const stamped = rows.flatMap((r) =>
     r.integration === null ? [] : [r.integration as ConnectionKey],
   );
-  const iphones = rows
-    .filter((r) => r.integration === null)
-    .map((r) => ({
-      healthIngestAt: r.ingestAt,
-      healthQuietSince: r.quietSince,
-    }));
+  const phones = (platform: string) =>
+    rows
+      .filter((r) => r.integration === null && r.platform === platform)
+      .map((r) => ({
+        healthIngestAt: r.ingestAt,
+        healthQuietSince: r.quietSince,
+      }));
+  const iphones = phones("ios");
+  const androids = phones("android");
   const facts =
     stamped.length > 0
       ? [...(await loadConnectionFacts(userId, stamped, now)).values()]
       : [];
-  return resolveQuietSources({ connections: facts, iphones, now });
+  return resolveQuietSources({
+    connections: facts,
+    iphones,
+    androids,
+    now,
+    modules,
+  });
 }
 
 /** The quiet sources worded for the Today rail, the push's own wording. */

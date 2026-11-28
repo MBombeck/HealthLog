@@ -43,17 +43,24 @@ import {
 } from "@/lib/integrations/connection-health";
 import { annotate } from "@/lib/logging/context";
 import { logCaught } from "@/lib/logging/signal";
+import { resolveModuleMap } from "@/lib/modules/gate";
+import { surfaceModule } from "@/lib/modules/surface";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
 import { claimNotificationEvent } from "@/lib/notifications/reminder-dedup";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 
-import { runDeviceStallPass } from "./devices";
+import {
+  STALL_PLATFORMS,
+  runDeviceStallPass,
+  stallSourceForPlatform,
+} from "./devices";
 import {
   STALL_SOURCES,
   iphoneDelivers,
   quietSinceDate,
   quietSinceWording,
+  stallSourceWanted,
   stallTapUrl,
 } from "./quiet";
 
@@ -80,6 +87,8 @@ interface Stall {
   /** The device or the watch row. */
   id: string;
   userId: string;
+  /** A device's platform; its siblings are the devices of the same one. */
+  platform?: string;
   source: ConnectionKey;
   since: Date;
 }
@@ -153,20 +162,25 @@ async function untoldStalls(prisma: PrismaClient): Promise<Stall[]> {
   const [devices, watches] = await Promise.all([
     prisma.device.findMany({
       where: {
-        platform: "ios",
+        platform: { in: [...STALL_PLATFORMS] },
         healthQuietSince: { not: null },
         healthQuietNotifiedAt: null,
         ...OWNED_BY_ACTIVE_ACCOUNT,
       },
-      select: { id: true, userId: true, healthQuietSince: true },
+      select: {
+        id: true,
+        userId: true,
+        platform: true,
+        healthQuietSince: true,
+      },
     }),
     prisma.integrationWatch.findMany({
       where: {
         silentSince: { not: null },
         ownerNotifiedAt: null,
-        // An iPhone is told per device above, never as the account's
-        // Apple Health connection.
-        integration: { not: "apple-health" },
+        // A phone is told per device above, never as the account's Apple
+        // Health or Health Connect connection.
+        integration: { notIn: ["apple-health", "health-connect-app"] },
         ...OWNED_BY_ACTIVE_ACCOUNT,
       },
       select: { id: true, userId: true, integration: true, silentSince: true },
@@ -178,7 +192,8 @@ async function untoldStalls(prisma: PrismaClient): Promise<Stall[]> {
       kind: "device",
       id: d.id,
       userId: d.userId,
-      source: "apple-health",
+      platform: d.platform,
+      source: stallSourceForPlatform(d.platform),
       since: d.healthQuietSince!,
     });
   }
@@ -233,7 +248,7 @@ async function siblingDelivers(
   const siblings = await prisma.device.findMany({
     where: {
       userId: stall.userId,
-      platform: "ios",
+      platform: stall.platform ?? "ios",
       id: { not: stall.id },
       healthIngestAt: { not: null },
     },
@@ -300,6 +315,15 @@ async function noticeUser(
       continue;
     }
     open.push(stall);
+  }
+  // A source whose only module is off is not told about, as the ask and the
+  // Today line leave it out; the stamp stays unclaimed, so switching the
+  // module back on lets the notice through.
+  if (open.some((stall) => surfaceModule(`stall-source:${stall.source}`))) {
+    const modules = await resolveModuleMap(user.id);
+    for (let i = open.length - 1; i >= 0; i--) {
+      if (!stallSourceWanted(open[i].source, modules)) open.splice(i, 1);
+    }
   }
   if (open.length === 0 || !inNoticeWindow(now, tz)) {
     return { result: "quiet", settled };
