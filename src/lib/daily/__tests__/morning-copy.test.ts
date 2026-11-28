@@ -104,7 +104,7 @@ const BLOCKED: Record<Locale, string[]> = {
     "всё хорошо",
     "тревог",
   ],
-"zh-CN": ["应该", "必须", "警告", "注意"],
+  "zh-CN": ["应该", "必须", "警告", "注意"],
 };
 
 const NOW = new Date("2026-11-26T07:30:00Z");
@@ -318,7 +318,7 @@ const REACHED: Record<Locale, RegExp> = {
   pl: /osiągnęł/,
   "pt-BR": /\bchegou a\b/,
   ru: /достигал/,
-// The buffer sentence says a reading 达到 ("reached") its value.
+  // The buffer sentence says a reading 达到 ("reached") its value.
   "zh-CN": /达到/,
 };
 

@@ -205,9 +205,9 @@ describe("dose vocabulary is the term table's, in every locale", () => {
         ? includesFold
         : hasWordStartingWith;
       const offenders = [
-        ...TAKEN_KEYS.filter(
-          (key) => !carries(value(locale, key), taken),
-        ).map((key) => `${key} lacks "${taken}…": ${value(locale, key)}`),
+        ...TAKEN_KEYS.filter((key) => !carries(value(locale, key), taken)).map(
+          (key) => `${key} lacks "${taken}…": ${value(locale, key)}`,
+        ),
         ...SKIPPED_KEYS.filter(
           (key) => !carries(value(locale, key), skipped),
         ).map((key) => `${key} lacks "${skipped}…": ${value(locale, key)}`),

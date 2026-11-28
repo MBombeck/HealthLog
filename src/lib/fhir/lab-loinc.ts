@@ -69,7 +69,10 @@ export function normaliseLabKey(s: string): string {
   // Han ideographs join the kept ranges for the same reason Hangul did:
   // stripping to [a-z0-9] reduced every Chinese analyte name to the empty
   // string, so none of them reached the index either.
-  return stripDiacritics(s.toLowerCase()).replace(/[^a-z0-9а-яё가-힣\u4e00-\u9fff]/g, "");
+  return stripDiacritics(s.toLowerCase()).replace(
+    /[^a-z0-9а-яё가-힣\u4e00-\u9fff]/g,
+    "",
+  );
 }
 
 /**

@@ -51,11 +51,7 @@ const ZH_MED_NOUN =
  * characters are required before the stem so an everyday word that happens to
  * end in one of these syllables is not read as a drug.
  */
-const ZH_INN_STEM =
-  `[${HAN}]{2,}(?:普利|胍|洛尔|沙坦|他汀|地平|拉唑|沙班|格列汀|格列净|格列酮|肽|西林|霉素)`;
-
-/** Things a number may be a dose of only when a medication noun is beside it. */
-const ZH_DIETARY = "(?:钠|盐|食盐|水|饮水|咖啡因|热量|碳水|蛋白质|脂肪|糖|纤维|钾|钙)";
+const ZH_INN_STEM = `[${HAN}]{2,}(?:普利|胍|洛尔|沙坦|他汀|地平|拉唑|沙班|格列汀|格列净|格列酮|肽|西林|霉素)`;
 
 /** Dose-change verbs. Shared by the class, the `dose` shapes and `changeStem`. */
 const ZH_CHANGE =
@@ -74,8 +70,7 @@ const ZH_QUAL_NUM = "(?:\\d{1,3}(?:\\.\\d+)?\\s*(?:%|％|级|分))";
 const ZH_RISK_NOUN =
   "(?:风险|危险性|风险评分|风险等级|心血管风险|发病风险|卒中风险|心梗风险|心脏病风险|糖尿病风险)";
 
-const ZH_HORIZON =
-  "(?:10\\s*年|十年|5\\s*年|五年|未来\\s*\\d+\\s*年)";
+const ZH_HORIZON = "(?:10\\s*年|十年|5\\s*年|五年|未来\\s*\\d+\\s*年)";
 
 const ZH_RISK_BAND = "(?:低危|中危|高危|极高危)\\s*(?:组|级别|区间)?";
 
@@ -159,9 +154,7 @@ export const bank: LocaleBank = {
       "i",
     ),
     // Half a dosage form, with no target to compare against: "服用半片".
-    new RegExp(
-      `(?:服用?|吃|注射)\\s*(?:半|一)?\\s*(?:${ZH_COUNT})`,
-    ),
+    new RegExp(`(?:服用?|吃|注射)\\s*(?:半|一)?\\s*(?:${ZH_COUNT})`),
     // A target dose the model states as advice, with a change verb closing it.
     new RegExp(
       `[\\d.,]+\\s*${ZH_DOSE_UNIT}${UNIT_END}[^。？！]{0,20}?(?:${ZH_CHANGE}|${ZH_CLOSE})`,

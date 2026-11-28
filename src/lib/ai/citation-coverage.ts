@@ -230,9 +230,12 @@ const NORMATIVE_MATCHERS: Record<Locale, RegExp> = Object.fromEntries(
     const alternation = bank
       .map((kw) => kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
       .join("|");
-    return [locale, NO_WORD_BOUNDARY_LOCALES.has(locale)
-      ? new RegExp(`(?:${alternation})`, "u")
-      : new RegExp(`(?<![\\p{L}\\p{N}])(?:${alternation})`, "u")];
+    return [
+      locale,
+      NO_WORD_BOUNDARY_LOCALES.has(locale)
+        ? new RegExp(`(?:${alternation})`, "u")
+        : new RegExp(`(?<![\\p{L}\\p{N}])(?:${alternation})`, "u"),
+    ];
   }),
 ) as Record<Locale, RegExp>;
 

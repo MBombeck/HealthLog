@@ -94,7 +94,7 @@ describe("CoachReadStrip — the latest reading's day", () => {
       pl: "1 października",
       "pt-BR": "1 de outubro",
       ru: "1 октября",
-    "zh-CN": "10月1日",
+      "zh-CN": "10月1日",
     };
     for (const [locale, date] of Object.entries(expected) as Array<
       [Locale, string]

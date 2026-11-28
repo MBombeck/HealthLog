@@ -256,7 +256,7 @@ describe("normative-claim detection across the shipped locales", () => {
     ko: "수축기 혈압은 목표인 130 mmHg 아래로 유지해야 해요.",
     "pt-BR": "Sua sistólica deveria ficar abaixo da meta de 130 mmHg.",
     ru: "Ваше систолическое должно оставаться ниже целевого уровня 130 мм рт. ст.",
-  "zh-CN": "你的收缩压应当保持在 130 mmHg 的目标值以下。",
+    "zh-CN": "你的收缩压应当保持在 130 mmHg 的目标值以下。",
   };
 
   /**
@@ -276,7 +276,7 @@ describe("normative-claim detection across the shipped locales", () => {
     "pt-BR":
       "Sua média de 7 dias está 4 mmHg mais alta que a sua mediana de 90 dias.",
     ru: "Среднее за 7 дней — 128 мм рт. ст., медиана за 90 дней — 124.",
-  "zh-CN": "你的 7 天平均值比 90 天中位数高 4 mmHg。",
+    "zh-CN": "你的 7 天平均值比 90 天中位数高 4 mmHg。",
   };
 
   it.each(locales)("carries a non-empty keyword bank for %s", (locale) => {

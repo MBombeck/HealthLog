@@ -37,7 +37,7 @@ const NAMES: Record<Locale, readonly string[]> = {
   "pt-BR": ["Ramipril 5 mg", "Anlodipino", "Eliquis"],
   ko: ["라미프릴", "암로디핀", "엘리퀴스"],
   ru: ["Рамиприл 5 мг", "Амлодипин", "Эликвис"],
-"zh-CN": ["雷米普利 5 mg", "氨氯地平", "艾多沙班"],
+  "zh-CN": ["雷米普利 5 mg", "氨氯地平", "艾多沙班"],
 };
 
 const VIOLATIONS: Record<Locale, readonly string[]> = {
@@ -138,11 +138,7 @@ const VIOLATIONS: Record<Locale, readonly string[]> = {
     "Подумайте о том, чтобы на неделю отменить рамиприл.",
     "Примите половину таблетки амлодипина.",
   ],
-"zh-CN": [
-  "再吃一片雷米普利。",
-  "停用氨氯地平。",
-  "把艾多沙班加到 10 mg。",
-],
+  "zh-CN": ["再吃一片雷米普利。", "停用氨氯地平。", "把艾多沙班加到 10 mg。"],
 };
 
 const CLEAN: Record<Locale, readonly string[]> = {
@@ -262,11 +258,11 @@ const CLEAN: Record<Locale, readonly string[]> = {
     "Я бы посоветовал сначала спросить врача, прежде чем отменять рамиприл.",
     "Пожалуйста, не принимайте лишний рамиприл вдогонку.",
   ],
-"zh-CN": [
-  "你的雷米普利记录显示每次都已服用。",
-  "不要漏服你的雷米普利。",
-  "艾多沙班的药盒还剩三片。",
-],
+  "zh-CN": [
+    "你的雷米普利记录显示每次都已服用。",
+    "不要漏服你的雷米普利。",
+    "艾多沙班的药盒还剩三片。",
+  ],
 };
 
 describe("screenModelOutput — a named medication in the dose-change class", () => {
