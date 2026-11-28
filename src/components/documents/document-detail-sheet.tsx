@@ -25,7 +25,7 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 
 import { DocumentReadingConsentPrompt } from "@/components/ai/document-reading-consent-prompt";
-import { ActionMenu } from "@/components/ui/action-pair";
+import { ActionMenu } from "@/components/ui/action-menu";
 import { ConfirmDialog } from "@/components/ui/confirm-button";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
