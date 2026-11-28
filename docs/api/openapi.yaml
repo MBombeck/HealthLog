@@ -15846,6 +15846,7 @@ paths:
               - nl
               - pt-BR
               - ru
+              - zh-CN
           description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
@@ -15886,6 +15887,7 @@ paths:
               - nl
               - pt-BR
               - ru
+              - zh-CN
           description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
@@ -15926,6 +15928,7 @@ paths:
               - nl
               - pt-BR
               - ru
+              - zh-CN
           description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
@@ -15966,6 +15969,7 @@ paths:
               - nl
               - pt-BR
               - ru
+              - zh-CN
           description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
@@ -16006,6 +16010,7 @@ paths:
               - nl
               - pt-BR
               - ru
+              - zh-CN
           description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
@@ -16047,6 +16052,7 @@ paths:
               - nl
               - pt-BR
               - ru
+              - zh-CN
           description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
@@ -16154,6 +16160,7 @@ paths:
               - nl
               - pt-BR
               - ru
+              - zh-CN
           description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
@@ -16207,6 +16214,7 @@ paths:
               - nl
               - pt-BR
               - ru
+              - zh-CN
           description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
@@ -33100,6 +33108,7 @@ components:
             - nl
             - pt-BR
             - ru
+            - zh-CN
         practiceName:
           type: string
           maxLength: 120
@@ -33842,6 +33851,7 @@ components:
                 - nl
                 - pt-BR
                 - ru
+                - zh-CN
             - type: "null"
         timezone:
           type: string
@@ -36199,6 +36209,7 @@ components:
             - nl
             - pt-BR
             - ru
+            - zh-CN
         today:
           description: "Optional override of the reference date used to resolve relative phrases (\"tomorrow\", \"next Monday\").
             Format: `YYYY-MM-DD`. Defaults to the account's own day in its time zone."
@@ -37294,6 +37305,7 @@ components:
             - nl
             - pt-BR
             - ru
+            - zh-CN
           description: One of the interface locales this build ships.
       required:
         - locale
@@ -37337,6 +37349,7 @@ components:
             - nl
             - pt-BR
             - ru
+            - zh-CN
         scope:
           type: object
           properties:
@@ -37509,6 +37522,7 @@ components:
             - nl
             - pt-BR
             - ru
+            - zh-CN
         attachmentIds:
           minItems: 1
           maxItems: 5
@@ -42281,6 +42295,7 @@ components:
             - nl
             - pt-BR
             - ru
+            - zh-CN
       required:
         - message
     InboundFactEditRequest:
@@ -44718,6 +44733,7 @@ components:
             - nl
             - pt-BR
             - ru
+            - zh-CN
         timezone:
           type: string
           minLength: 1
@@ -44775,6 +44791,7 @@ components:
             - nl
             - pt-BR
             - ru
+            - zh-CN
         timezone:
           type: string
           minLength: 1
@@ -45002,6 +45019,7 @@ components:
                 - nl
                 - pt-BR
                 - ru
+                - zh-CN
             - type: "null"
         timezone:
           type: string
@@ -75014,6 +75032,7 @@ components:
                 - nl
                 - pt-BR
                 - ru
+                - zh-CN
           required:
             - locale
           additionalProperties: false
@@ -107450,6 +107469,7 @@ components:
                 - nl
                 - pt-BR
                 - ru
+                - zh-CN
             - type: "null"
         timezone:
           type: string

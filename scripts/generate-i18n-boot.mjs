@@ -26,9 +26,15 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, "..");
-const outDir = join(repoRoot, "public", "i18n");
+// An optional argument writes elsewhere, for the test that runs this script.
+const outDir = process.argv[2] ?? join(repoRoot, "public", "i18n");
 
-const LOCALES = ["de", "en", "fr", "es", "it", "pl", "ko", "nl", "pt-BR", "ru"];
+// Every shipped locale, read from the inlang project, which a test holds equal
+// to `locales` in `src/lib/i18n/config.ts`. A list kept here by hand missed a
+// new locale once, and the layout then loaded a catalog that did not exist.
+const LOCALES = JSON.parse(
+  readFileSync(join(repoRoot, "project.inlang", "settings.json"), "utf8"),
+).locales;
 
 mkdirSync(outDir, { recursive: true });
 

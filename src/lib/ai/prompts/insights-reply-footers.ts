@@ -19,4 +19,6 @@ export const INSIGHTS_LOCALE_REPLY_FOOTER_FALLBACK: Record<
   ru: '\n\nREPLY LANGUAGE — THIS OVERRIDES THE LANGUAGE RULE ABOVE. The "Respond in English" instruction earlier in this prompt does NOT apply to this request: write EVERY user-facing string in Russian (русский язык), with natural Russian medical vocabulary and the standard Russian lab terminology, addressing the user with «вы». Never answer in English. The severity / sourceWindow / sourceMetric / topic enum values still stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.',
   "pt-BR":
     "\n\nREPLY LANGUAGE: render all user-facing strings in Brazilian Portuguese (pt-BR, never European Portuguese), addressing the user as você throughout. Use natural Brazilian health vocabulary. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
+  "zh-CN":
+    "\n\nREPLY LANGUAGE: render all user-facing strings in Simplified Chinese (zh-CN), addressing the user as 你 throughout. Use natural mainland Chinese health vocabulary, never Traditional Chinese or English. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
 };

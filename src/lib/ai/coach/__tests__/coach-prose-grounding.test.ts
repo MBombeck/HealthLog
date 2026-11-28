@@ -45,6 +45,18 @@ describe("findUnverifiedCoachNumbers", () => {
     expect(findUnverifiedCoachNumbers(prose, payloads)).toEqual([]);
   });
 
+  it("reads a Chinese reply's decimal point as one", () => {
+    // Chinese writes 5.4, not 5,4: read the German way, the figure became 54
+    // and a correct reading was flagged as invented.
+    expect(
+      findUnverifiedCoachNumbers(
+        "你最近的空腹血糖是 5.4 mmol/L。",
+        [{ metric: "glucose", latest: 5.4 }],
+        "zh-CN",
+      ),
+    ).toEqual([]);
+  });
+
   it("grounds a 30-day systolic average against the real tool section that carries it", () => {
     // Mirrors the integration fixture: the model narrates the pre-computed
     // 30-day systolic average (130) that the bp tool section actually returned.
@@ -662,6 +674,7 @@ describe("population-norm banks, one per locale", () => {
     ko: "건강한 성인은 7~9시간 자요.",
     "pt-BR": "A maioria dos adultos precisa de 7 a 9 horas de sono.",
     ru: "Здоровые взрослые обычно спят от 7 до 9 часов.",
+    "zh-CN": "健康成年人通常每晚睡 7 到 9 小时。",
   };
 
   it.each(locales)("%s reads its reference sentence as a norm", (locale) => {
