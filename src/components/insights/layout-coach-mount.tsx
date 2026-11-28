@@ -12,8 +12,7 @@ import { useAiCapability } from "@/hooks/use-ai-capability";
  * every cold /insights mount. The drawer renders nothing until the
  * user opens it, but the legacy direct import still ran every
  * `useState` initialiser + the Sheet portal scaffolding inside the
- * mother-page render window. Per
- * `.planning/research/v15-insights-blocking-bug.md` fix 4.
+ * mother-page render window.
  */
 const CoachDrawer = dynamic(
   () =>

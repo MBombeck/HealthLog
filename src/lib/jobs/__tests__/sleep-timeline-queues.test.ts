@@ -7,7 +7,7 @@
  * dead-queue class (a queue declared but never registered, which silently
  * never drains).
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { INTEGRATION_BACKFILL_ADMISSION_QUEUE } from "@/lib/jobs/integration-backfill-admission";
 import {
@@ -20,6 +20,11 @@ import {
   SLEEP_TIMELINE_BACKFILL_CONCURRENCY,
   SLEEP_TIMELINE_BACKFILL_QUEUE,
 } from "@/lib/jobs/sleep-timeline-backfill-queue";
+
+vi.mock(
+  "@/lib/jobs/integration-backfill-claim",
+  () => import("@/__tests__/helpers/backfill-claim-passthrough"),
+);
 
 describe("sleep-timeline backfill registration", () => {
   it("declares the queue in the integration-sync group", () => {

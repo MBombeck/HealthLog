@@ -134,7 +134,7 @@
     "components/measurement-reminders/vorsorge-section.tsx :: VorsorgeSection": 332,
     "components/measurements/measurement-form.tsx :: MeasurementForm": 466,
     "components/medications/detail/efficacy/efficacy-chart.tsx :: EfficacyChart": 361,
-    "components/medications/detail/medication-detail-tabs.tsx :: MedicationDetailTabs": 632,
+    "components/medications/detail/medication-detail-tabs.tsx :: MedicationDetailTabs": 540,
     "components/medications/dose-strength-curve.tsx :: DoseStrengthCurve": 266,
     "components/medications/glp1-medication-card.tsx :: Glp1MedicationCard": 333,
     "components/medications/injection-site-picker.tsx :: InjectionSitePicker": 287,

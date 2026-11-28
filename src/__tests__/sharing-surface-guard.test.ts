@@ -9,8 +9,7 @@
  * declaration: this route serves the caller's own account and keeps working
  * while the caller is acting as someone else. Which routes may say any of the
  * three is the single most security-sensitive list in the product, and it is a
- * judgement — argued in `.planning/2026-08-01-delegable-classification.md`, not
- * derived from anything a machine can check.
+ * judgement, not derived from anything a machine can check.
  *
  * v1.37.0 added the section column and the two newer literals. The column is
  * the one thing here a guard can do the least about, and the file says so at
@@ -1272,7 +1271,7 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
   },
   "app/api/medications/categories/route.ts": {
     domain: "medications",
-    why: "The record's own medication category vocabulary, read and added to from the wizard. The labels and the per-category counts are scoped to the resolved id; renaming and deleting live in the owner-only `[key]` sibling.",
+    why: "The record's own medication category vocabulary, read and added to from the wizard. The labels and the per-category counts are scoped to the resolved id; renaming and deleting live in the `[key]` sibling, the owner's and a managed profile's guardian's.",
   },
   "app/api/medications/[id]/route.ts": {
     domain: "medications",
@@ -2114,7 +2113,7 @@ const DELEGABLE_MANAGE_ROUTES: Record<string, ManageEntry> = {
   "app/api/medications/[id]/route.ts": {
     domain: "medications",
     conditions: ["C4", "C7"],
-    why: "Replacing a medication and its schedule. C4, and C7 because the previous cadence and the tombstoned pending slots are the only unrecoverable part. The DELETE beside it stays refused.",
+    why: "Replacing a medication and its schedule. C4, and C7 because the previous cadence and the tombstoned pending slots are the only unrecoverable part. The DELETE beside it follows the owner rule (`requireAuth`).",
   },
   "app/api/medications/[id]/courses/end/route.ts": {
     domain: "medications",
@@ -2674,6 +2673,10 @@ const ACTOR_ROUTES: Record<string, string> = {
  * The dismissed hints and the navigation counts join the actor list: both are
  * read on `/api/auth/me` from the caller's own row, so both are written
  * there. 358 -> 360.
+ *
+ * #1615 reached the managed profile's guardian through the owner rule
+ * (`requireAuth`), so the medication DELETE and the custom category and
+ * symptom edits join no list here.
  */
 const FROZEN_ENTRY_COUNT = 360;
 

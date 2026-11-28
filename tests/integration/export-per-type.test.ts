@@ -1,6 +1,6 @@
 /**
  * Integration regression guard for the per-type export endpoints
- * (v1.4.16 phase B7):
+ * (v1.4.16):
  *
  *   GET /api/export/measurements
  *   GET /api/export/medications
@@ -139,6 +139,44 @@ describe("GET /api/export/measurements", () => {
       ),
     );
     expect(audits.length).toBe(1);
+  });
+
+  it("takes both ends of a date range as whole days in the account's zone", async () => {
+    const prisma = getPrismaClient();
+    const me = await seedUserSession("carol");
+    await prisma.user.update({
+      where: { id: me.id },
+      data: { timezone: "Europe/Berlin" },
+    });
+    await prisma.measurement.createMany({
+      data: [
+        // 00:30 Berlin on the first day: inside, though 22:30 UTC the day before.
+        { value: 71, measuredAt: new Date("2024-04-30T22:30:00.000Z") },
+        // 21:30 Berlin on the last day: inside.
+        { value: 72, measuredAt: new Date("2024-05-11T19:30:00.000Z") },
+        // 00:30 Berlin the day after: outside.
+        { value: 73, measuredAt: new Date("2024-05-11T22:30:00.000Z") },
+      ].map((r) => ({
+        ...r,
+        userId: me.id,
+        type: "WEIGHT" as const,
+        unit: "kg",
+        source: "MANUAL" as const,
+      })),
+    });
+
+    const { GET } = await import("@/app/api/export/measurements/route");
+    const res = await GET(
+      new Request(
+        "http://localhost/api/export/measurements?since=2024-05-01&until=2024-05-11",
+        { method: "GET" },
+      ) as Parameters<typeof GET>[0],
+    );
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    expect(body).toContain("WEIGHT,71,kg");
+    expect(body).toContain("WEIGHT,72,kg");
+    expect(body).not.toContain("WEIGHT,73,kg");
   });
 });
 

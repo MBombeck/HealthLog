@@ -31,7 +31,7 @@ import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { prisma } from "@/lib/db";
-import { defaultLocale, locales, type Locale } from "@/lib/i18n/config";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { annotate } from "@/lib/logging/context";
 import { resolveModuleMap } from "@/lib/modules/gate";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -46,10 +46,6 @@ const SEARCH_RATE_LIMIT = 20;
 const SEARCH_RATE_WINDOW_MS = 60_000;
 /** The body is a query of at most 100 characters and a number. */
 const SEARCH_BODY_MAX_BYTES = 2048;
-
-function displayLocale(value: string | null | undefined): Locale {
-  return locales.includes(value as Locale) ? (value as Locale) : defaultLocale;
-}
 
 export const POST = apiHandler(async (request: NextRequest) => {
   // A POST that only reads: the query rides the body to stay out of URLs, and
@@ -95,7 +91,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
       limit: parsed.data.limit,
       modules,
       domainVisible,
-      displayLocale: displayLocale(actor.locale),
+      displayLocale: await resolveServerLocale({
+        request,
+        userLocale: actor.locale ?? null,
+      }),
       timezone,
       signal: AbortSignal.any([request.signal, slot.signal]),
     });

@@ -3,13 +3,13 @@
   "body": {
     "data": {
       "greeting": {
-        "salutation": "Hi, Sam",
+        "salutation": "Hallo, Sam",
         "date": "anchor+0d+12:00:00"
       },
       "streak": {
         "currentDays": 120,
         "longest": 120,
-        "label": "days in a row"
+        "label": "Tage in Folge"
       },
       "compliance": {
         "scheduledToday": 2,
@@ -371,7 +371,7 @@
         "name": "dashboard.summary"
       },
       "meta": {
-        "cache.analytics.key_hash": 3272136333,
+        "cache.analytics.key_hash": 3148907570,
         "cache.analytics.outcome": "hit",
         "metrics_emitted": 10,
         "metrics_gated": 0

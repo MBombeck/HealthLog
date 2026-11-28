@@ -36,8 +36,7 @@
  * Response (always 200): processed / inserted / duplicates / skipped /
  * entries[] mirroring the measurements + workouts batch envelope.
  *
- * Locked contract — see `.planning/v15-ios-handoff/06-ios-responsibilities.md`
- * §"Cumulative metrics" sibling section for the SyncMode rationale.
+ * Locked contract with the iOS client.
  */
 import { auditLog } from "@/lib/auth/audit";
 import { NextRequest } from "next/server";

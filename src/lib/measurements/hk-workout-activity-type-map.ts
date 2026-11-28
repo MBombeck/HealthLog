@@ -16,8 +16,7 @@
  * Source: Apple's `HealthKit/HKWorkoutActivityType.h` header (iOS 18
  * SDK) cross-checked against the activity strings observed in
  * open-source Apple Health export corpora — `apple-health-grafana`,
- * `healthkit-to-sqlite`, `apple-health-parser`. Locked per
- * `.planning/research/v1434-r-1-xml-import.md` §7.
+ * `healthkit-to-sqlite`, `apple-health-parser`.
  */
 import type { WorkoutSportType } from "@/lib/validations/workout";
 import { ownValue } from "@/lib/own-key";

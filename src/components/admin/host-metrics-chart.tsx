@@ -2,7 +2,7 @@
 
 /**
  * `<HostMetricsChart>` — last-2h host-load chart that sits above the
- * `/admin/system-status` facts grid (v1.4.16 phase B3).
+ * `/admin/system-status` facts grid (v1.4.16).
  *
  * Three lines on a shared time axis:
  *   - load1 (yellow)            os.loadavg() 1-minute average

@@ -10,8 +10,7 @@
  * eviction costs the next reader one cache miss (cheap, the row's
  * already paginated and the snapshot LRU sits behind), but an
  * under-eviction surfaces stale data which is the directive's failure
- * mode. The full per-write → per-cache fan-out is documented in the
- * blueprint §6 (`.planning/research/v1434-r-cache-aggregation.md`).
+ * mode.
  *
  * The helpers are intentionally synchronous — they do `Map.delete()`
  * over a bounded entry set, which is cheap enough to run inline before

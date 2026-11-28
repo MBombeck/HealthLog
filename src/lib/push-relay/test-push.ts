@@ -10,7 +10,7 @@
  */
 import { prisma } from "@/lib/db";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
-import { isLocale } from "@/lib/i18n/config";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { fromBase64Url } from "@/lib/push-relay/encoding";
 import { sealForDevice } from "@/lib/push-relay/envelope";
 import { collapseIdFor } from "@/lib/push-relay/sender-keys";
@@ -51,8 +51,10 @@ export async function sendRelayTestPush(userId: string): Promise<{
   if (relayDevices.length === 0 || !ctx.keys) {
     return { outcome: "no_device", results: [] };
   }
+  // The admin's own manual canary, sent during their request: its text is in
+  // the request's language when the account stores none.
   const { t } = getServerTranslator(
-    isLocale(user?.locale) ? user.locale : "en",
+    await resolveServerLocale({ userLocale: user?.locale ?? null }),
   );
   const items = [];
   for (const device of relayDevices) {

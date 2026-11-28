@@ -16,8 +16,6 @@
  * observed `(type, day, source hash)` combinations; every record without source
  * metadata shares one bounded bucket, and raw source/device labels are never
  * retained.
- *
- * Locks per `.planning/research/v1434-r-1-xml-import.md` §6.
  */
 
 import type { WorkoutRouteReference } from "@/lib/apple-health/route-import";

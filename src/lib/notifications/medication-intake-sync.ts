@@ -75,7 +75,7 @@
  */
 import { pendingDeletionOf } from "@/lib/account-deletion/pending";
 import { prisma } from "@/lib/db";
-import { deleteDeviceRows } from "@/lib/devices/delete-devices";
+import { forgetGoneRegistrations } from "@/lib/notifications/gone-registrations";
 import type { Prisma } from "@/generated/prisma/client";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import { activeGuardianWhere } from "@/lib/managed-profiles/guardian-where";
@@ -630,11 +630,7 @@ async function fanOutIntakeSyncApns(args: {
   await forgetEndedActivities(spentActivityIds, spentLiveActivityDeviceIds);
 
   // Reap devices APNs reported as permanently dead on the silent send.
-  if (deadDeviceIds.length > 0) {
-    await deleteDeviceRows({ id: { in: deadDeviceIds } }).catch(() => {
-      /* best-effort cleanup */
-    });
-  }
+  await forgetGoneRegistrations("device", deadDeviceIds);
 
   const activitiesEnded =
     spentActivityIds.length + spentLiveActivityDeviceIds.length;
