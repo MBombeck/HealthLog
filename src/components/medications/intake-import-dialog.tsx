@@ -26,7 +26,7 @@ import {
   type IntakeImportResultState,
 } from "@/components/medications/intake-import-result";
 
-import { ActionMenu } from "@/components/ui/action-pair";
+import { ActionMenu } from "@/components/ui/action-menu";
 import { Button } from "@/components/ui/button";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";

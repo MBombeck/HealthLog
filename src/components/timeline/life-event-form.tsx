@@ -16,7 +16,8 @@ import { Loader2, Lock, Plus, Trash2, X } from "lucide-react";
 
 import { FieldError } from "@/components/forms/field-error";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
-import { ActionMenu, ActionPair } from "@/components/ui/action-pair";
+import { ActionMenu } from "@/components/ui/action-menu";
+import { ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { ConfirmDialog } from "@/components/ui/confirm-button";
