@@ -1846,7 +1846,8 @@
           "dismissed": false
         },
         "compositionNotice": null,
-        "restMode": null
+        "restMode": null,
+        "shortLabel": "Health"
       },
       "sleepStages": null,
       "sleepSourceDiscrepancy": null,
