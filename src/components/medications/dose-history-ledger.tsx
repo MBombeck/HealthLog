@@ -173,7 +173,6 @@ export function DoseHistoryLedger({
       {data && !isLoading && groups.length === 0 && (
         <EmptyState
           variant="plain"
-          size="compact"
           title={t("medications.detail.verlauf.empty")}
         />
       )}

@@ -418,7 +418,7 @@ export function HealthScoreCard({
       <div className="flex items-center justify-between gap-2">
         <p
           data-slot="health-score-card-label"
-          className="text-muted-foreground text-xs font-semibold tracking-[0.18em] uppercase"
+          className="text-muted-foreground text-xs font-semibold"
         >
           {t("insights.healthScore.label")}
         </p>

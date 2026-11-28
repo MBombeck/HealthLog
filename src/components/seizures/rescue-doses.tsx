@@ -65,11 +65,7 @@ export function RescueDoses({
         {t("seizures.rescue.title")}
       </h3>
       {event.rescueDoses.length === 0 ? (
-        <EmptyState
-          variant="plain"
-          size="compact"
-          title={t("seizures.rescue.none")}
-        />
+        <EmptyState variant="plain" title={t("seizures.rescue.none")} />
       ) : (
         <ul className="space-y-3">
           {event.rescueDoses.map((d) => (

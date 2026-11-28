@@ -145,10 +145,7 @@ export default function NotificationsPage() {
   if (authLoading || isLoading) {
     return (
       <div className="space-y-6">
-        <PageHeader
-          title={t("notifications.title")}
-          description={t("notifications.subtitle")}
-        />
+        <PageHeader title={t("notifications.title")} />
         {/* Skeleton mirrors the event-row matrix so the auth-resolving frame
             reserves layout instead of flashing a lone spinner. */}
         <div
@@ -175,10 +172,8 @@ export default function NotificationsPage() {
   if (!isAuthenticated) {
     return (
       <div className="space-y-6">
-        <PageHeader
-          title={t("notifications.title")}
-          description={t("notifications.loginRequired")}
-        />
+        <PageHeader title={t("notifications.title")} />
+        <EmptyState variant="plain" title={t("notifications.loginRequired")} />
       </div>
     );
   }
@@ -190,10 +185,7 @@ export default function NotificationsPage() {
   if (isError) {
     return (
       <div className="space-y-6">
-        <PageHeader
-          title={t("notifications.title")}
-          description={t("notifications.subtitle")}
-        />
+        <PageHeader title={t("notifications.title")} />
         <QueryErrorCard
           error={error}
           description={t("notifications.loadError")}
@@ -213,7 +205,6 @@ export default function NotificationsPage() {
     <div className="space-y-6">
       <PageHeader
         title={t("notifications.title")}
-        description={t("notifications.subtitle")}
         actions={headerActions}
         stackActionsOnPhone
       />
@@ -223,13 +214,13 @@ export default function NotificationsPage() {
         <table className="w-full">
           <thead>
             <tr className="border-border border-b">
-              <th className="text-muted-foreground px-4 py-3 text-left text-xs font-medium tracking-wider uppercase">
+              <th className="text-muted-foreground px-4 py-3 text-left text-xs font-medium">
                 {t("notifications.eventColumn")}
               </th>
               {activeChannels.map((ch) => (
                 <th
                   key={ch.id}
-                  className="px-4 py-3 text-center text-xs font-medium tracking-wider uppercase"
+                  className="px-4 py-3 text-center text-xs font-medium"
                 >
                   {/* Disabled state reads through the note + the disabled
                       switches below — never through sub-AA opacity dimming
@@ -372,7 +363,6 @@ function NoChannelPage({
     <div className="space-y-6">
       <PageHeader
         title={t("notifications.title")}
-        description={t("notifications.subtitle")}
         actions={headerActions}
         stackActionsOnPhone
       />

@@ -21,6 +21,10 @@ vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({ user: userRef.value, isAuthenticated: true }),
 }));
 
+vi.mock("@/hooks/use-module-toggle", () => ({
+  useModuleToggle: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+
 import { I18nProvider } from "@/lib/i18n/context";
 import { ModulePageGate, moduleOwningPath } from "../module-page-gate";
 
@@ -85,7 +89,7 @@ describe("<ModulePageGate>", () => {
     expect(html).toContain('data-slot="module-disabled-notice"');
     expect(html).toContain('data-module="mood"');
     expect(html).toContain('data-module-access="disabled"');
-    expect(html).toContain('data-slot="module-off-open-settings"');
+    expect(html).toContain('data-slot="module-off-turn-on"');
   });
 
   it("offers no Settings link when the operator switched the module off", () => {
@@ -94,7 +98,7 @@ describe("<ModulePageGate>", () => {
       moduleAccess: { sleep: "unavailable" },
     });
     expect(html).toContain('data-module-access="unavailable"');
-    expect(html).not.toContain("module-off-open-settings");
+    expect(html).not.toContain("module-off-turn-on");
   });
 
   it("covers a sub-page no nav entry names (medications)", () => {

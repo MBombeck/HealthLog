@@ -57,7 +57,7 @@ describe("<GlitchtipSection> delivery badge", () => {
   it("does not call a parseable DSN configured until something has left the host", () => {
     const html = render(BASE);
     expect(html).toContain("Unproven");
-    expect(html).not.toContain(">Configured<");
+    expect(html).not.toContain('data-slot="status-chip"');
     expect(html).toContain("no report has left this host yet");
   });
 
@@ -74,7 +74,7 @@ describe("<GlitchtipSection> delivery badge", () => {
       glitchtipReportsDelivering: true,
       glitchtipEverDelivered: true,
     });
-    expect(html).toContain(">Configured<");
+    expect(html).toContain('data-tone="active"');
     expect(html).toContain("glitchtip.example.com");
     expect(html).not.toContain('data-slot="glitchtip-delivery"');
   });

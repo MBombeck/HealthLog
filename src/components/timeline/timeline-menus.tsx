@@ -192,7 +192,7 @@ export function ValueSeriesMenu({
                 data-slot="timeline-values-lab-group"
               >
                 {namedGroups && (
-                  <DropdownMenuLabel className="text-muted-foreground pt-2 pb-1 text-xs font-medium tracking-wide uppercase">
+                  <DropdownMenuLabel className="text-muted-foreground pt-2 pb-1 text-xs font-medium">
                     {group.panel ?? t("timeline.labs.otherPanel")}
                   </DropdownMenuLabel>
                 )}

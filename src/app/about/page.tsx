@@ -112,7 +112,7 @@ export default async function AboutPage() {
         className="mx-auto max-w-3xl space-y-10 px-4 py-8 md:px-6 md:py-12"
       >
         <div className="space-y-3">
-          <p className="text-muted-foreground text-xs tracking-wider uppercase">
+          <p className="text-muted-foreground text-xs">
             {t("aboutPage.eyebrow")}
           </p>
           <h1 className="text-3xl font-bold tracking-tight md:text-4xl">

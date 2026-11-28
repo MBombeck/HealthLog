@@ -95,13 +95,15 @@ describe("BackupsSection — empty state", () => {
     const html = render();
     expect(html).toContain('role="status"');
     expect(html).toContain('aria-live="polite"');
-    expect(html).toContain("border-dashed");
+    expect(html).toContain('data-slot="empty-state-title"');
   });
 
-  it("includes the localized title and description", () => {
+  it("says it with the localized title alone", () => {
     const html = render();
     expect(html).toContain("No backups yet");
-    expect(html).toContain("Backups run automatically every Sunday at 03:00");
+    expect(html).not.toContain(
+      "Backups run automatically every Sunday at 03:00",
+    );
   });
 
   it("exposes the Backup-now CTA inside the empty card", () => {

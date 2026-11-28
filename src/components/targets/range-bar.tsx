@@ -248,7 +248,7 @@ export function RangeBar({
       </div>
       <div
         className={`text-muted-foreground relative ${
-          compact ? "h-3 text-[10px]" : "h-4 text-xs"
+          compact ? "text-2xs h-3" : "h-4 text-xs"
         }`}
       >
         <span

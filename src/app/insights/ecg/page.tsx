@@ -49,7 +49,7 @@ export default function InsightsEcgPage() {
     return (
       <SubPageShell
         title={t("insights.ecg.sectionTitle")}
-        description={t("insights.subPage.ecgDescription")}
+        info={t("insights.subPage.ecgDescription")}
       >
         <QueryErrorCard error={error} onRetry={() => refetch()} />
       </SubPageShell>
@@ -65,12 +65,11 @@ export default function InsightsEcgPage() {
     return (
       <SubPageShell
         title={t("insights.ecg.sectionTitle")}
-        description={t("insights.subPage.ecgDescription")}
+        info={t("insights.subPage.ecgDescription")}
       >
         <MetricEmptyState
           icon={<Activity className="size-6" />}
           title={t("insights.ecg.emptyTitle")}
-          description={t("insights.ecg.emptyDescription")}
           cta={
             <Button size="sm" asChild>
               <Link href="/settings/integrations">
@@ -87,7 +86,7 @@ export default function InsightsEcgPage() {
   return (
     <SubPageShell
       title={t("insights.ecg.sectionTitle")}
-      description={t("insights.subPage.ecgDescription")}
+      info={t("insights.subPage.ecgDescription")}
     >
       <EcgSection enabled={isAuthenticated} hideHeading />
     </SubPageShell>

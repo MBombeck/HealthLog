@@ -133,7 +133,7 @@ export function GuidedQuestionBubble({
             <>
               <p
                 data-slot="coach-guided-progress"
-                className="text-primary mb-1 flex items-center gap-2 text-xs font-semibold tracking-wider uppercase"
+                className="text-primary mb-1 flex items-center gap-2 text-xs font-semibold"
               >
                 {t("insights.coach.guided.progress", {
                   current: progress.current,

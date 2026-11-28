@@ -375,7 +375,7 @@ export function PaletteBody({ isMobile }: { isMobile: boolean }) {
               >
                 <div
                   id={headingId}
-                  className="text-muted-foreground px-3 pt-3 pb-1 text-xs font-medium tracking-wide uppercase"
+                  className="text-muted-foreground px-3 pt-3 pb-1 text-xs font-medium"
                 >
                   {t(`palette.groups.${section.group}`)}
                 </div>
@@ -550,7 +550,7 @@ function RecordSection({
     >
       <div
         id={headingId}
-        className="text-muted-foreground px-3 pt-3 pb-1 text-xs font-medium tracking-wide uppercase"
+        className="text-muted-foreground px-3 pt-3 pb-1 text-xs font-medium"
       >
         {t("palette.groups.records")}
       </div>

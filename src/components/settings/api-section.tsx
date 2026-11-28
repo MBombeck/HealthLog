@@ -534,7 +534,6 @@ function ApiTokensCard() {
               {activeTokens.length === 0 ? (
                 <EmptyState
                   className="md:hidden"
-                  size="compact"
                   data-testid="settings-api-tokens-active-empty"
                   title={t("settings.noActiveTokens")}
                 />

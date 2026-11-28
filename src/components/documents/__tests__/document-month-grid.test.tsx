@@ -88,7 +88,8 @@ describe("<DocumentMonthHeading>", () => {
         <DocumentMonthHeading label="March 2026" />
       </I18nProvider>,
     );
-    expect(html).toMatch(/^<h2 [^>]*uppercase[^>]*>March 2026<\/h2>$/);
+    expect(html).toMatch(/^<h2 [^>]*text-xs[^>]*>March 2026<\/h2>$/);
+    expect(html).not.toContain("uppercase");
   });
 });
 

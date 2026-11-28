@@ -149,7 +149,6 @@ export default function MeasurementsPage() {
             {t("measurements.title")}
           </span>
         }
-        description={t("measurements.subtitle")}
         // v1.36.x — entering a reading is one of the verbs a WRITE grant
         // admits, so this is the header action a delegate keeps. A read-only
         // delegate loses it entirely rather than meeting a disabled one.

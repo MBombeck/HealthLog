@@ -119,7 +119,6 @@ export function EmergencyCardPage() {
     <div className="space-y-6">
       <PageHeader
         title={t("emergencyCard.page.title")}
-        description={t("emergencyCard.page.description")}
         // The way back is named after the page it opens: the card is filled
         // from Medical history.
         backLink={{

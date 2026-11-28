@@ -104,7 +104,6 @@ export function VaccinationsView() {
             {t("vaccinations.title")}
           </span>
         }
-        description={t("vaccinations.subtitle")}
         // The empty state carries the add action while the Impfpass is
         // empty; the header offers it once there is a list to add to.
         actions={
@@ -156,7 +155,6 @@ export function VaccinationsView() {
         <EmptyState
           icon={<Syringe className="size-6" />}
           title={t("vaccinations.empty.title")}
-          description={t("vaccinations.empty.description")}
           action={
             canAddDose ? (
               <Button

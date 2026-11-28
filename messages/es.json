@@ -72,7 +72,9 @@
     "status": {
       "active": "Activo",
       "error": "Error",
-      "off": "Apagado"
+      "off": "Apagado",
+      "running": "En curso",
+      "done": "Hecho"
     }
   },
   "apiErrors": {
@@ -891,7 +893,6 @@
     "dragHandle": "Arrastra para reordenar",
     "dragHandleHint": "Arrastra el manejador para reordenar este widget. También puedes usar los botones de flecha Arriba y Abajo, o enfocar el manejador y pulsar Espacio más las flechas.",
     "emptyTitle": "Tu panel está vacío",
-    "emptyDescription": "Registra tu primera medición o estado de ánimo. Las tarjetas y gráficas aparecerán automáticamente en cuanto haya datos.",
     "emptyAddMeasurement": "Registrar la primera medición",
     "staleHint": "Último valor hace {count} d",
     "staleHintWeeksOne": "Último valor hace 1 semana",
@@ -957,7 +958,6 @@
   },
   "measurements": {
     "title": "Mediciones",
-    "subtitle": "Registra lecturas y consulta el historial completo.",
     "addMeasurement": "Añadir",
     "editMeasurement": "Editar medición",
     "type": "Tipo",
@@ -1053,7 +1053,6 @@
     "emptyTitle": "Aún no hay mediciones",
     "emptyDescription": "Registra peso, tensión arterial, pulso u otros valores para detectar tendencias.",
     "emptyFilteredTitle": "Ninguna medición coincide con el filtro",
-    "emptyFilteredDescription": "Elige otro tipo o quita el filtro para ver todas las mediciones.",
     "emptyAddFirst": "Registrar la primera medición",
     "emptyResetFilter": "Mostrar todos los tipos",
     "comment": "Comentario",
@@ -1243,7 +1242,6 @@
   },
   "mood": {
     "title": "Estado de ánimo",
-    "subtitle": "Cómo te sentiste, día a día.",
     "mentalWellbeingLink": "Hacer un cuestionario de bienestar mental",
     "addEntry": "Añadir",
     "editEntry": "Editar entrada",
@@ -1267,9 +1265,7 @@
     "allMoods": "Todos los estados",
     "entryCount": "{count, plural, one {# entrada} other {# entradas}}",
     "emptyTitle": "Aún no hay entradas de estado de ánimo",
-    "emptyDescription": "Registra cómo te sientes hoy para descubrir patrones con el tiempo.",
     "emptyFilteredTitle": "Ninguna entrada coincide con el filtro",
-    "emptyFilteredDescription": "Elige otro nivel o quita el filtro para ver todas las entradas.",
     "emptyAddFirst": "Registrar primer estado",
     "emptyResetFilter": "Mostrar todos los estados",
     "actions": "Acciones",
@@ -1586,7 +1582,6 @@
   },
   "medications": {
     "title": "Medicamentos",
-    "subtitle": "Tu medicación, sus horarios y cada toma.",
     "loginRequired": "Inicia sesión para gestionar medicamentos.",
     "addMedication": "Añadir",
     "firstMedication": "Añadir el primer medicamento",
@@ -1604,7 +1599,6 @@
       "failedToast": "No se registró ninguna toma. Inténtalo de nuevo"
     },
     "emptyTitle": "Aún no hay medicamentos",
-    "emptyDescription": "Crea medicamentos, dosis y franjas horarias para registrar el cumplimiento.",
     "loadFailed": "No se han podido cargar los medicamentos",
     "retryLoad": "Reintentar",
     "inactive": "En pausa",
@@ -2135,7 +2129,6 @@
     "intakeSourceVia": "vía {origin}",
     "intakeRecordedAutomatically": "Registrada automáticamente",
     "intakeHistoryEmptyTitle": "Aún no hay tomas",
-    "intakeHistoryEmptyDescription": "En cuanto registres una toma, aparecerá aquí con la hora y la fuente.",
     "intakeHistoryEmptyAction": "Registrar toma",
     "intakeHistoryColTaken": "Tomada",
     "intakeHistoryColScheduled": "Programada",
@@ -2396,7 +2389,6 @@
           "USED_UP": "Agotado"
         },
         "empty": "No hay existencias registradas.",
-        "emptyHelper": "Registra un envase o recipiente para hacer seguimiento de las existencias restantes y la autonomía.",
         "emptyCta": "Registrar un envase",
         "addButton": "Registrar",
         "lowStockLinkOn": "Aviso de reserva baja: por debajo de {days, plural, one {# día} other {# días}}",
@@ -2824,7 +2816,6 @@
       "clearSearch": "Borrar búsqueda",
       "treatmentPeriod": "Periodo de tratamiento",
       "noMatchesTitle": "No se encontraron medicamentos",
-      "noMatchesDescription": "Intenta cambiar los términos de búsqueda o los filtros.",
       "countOne": "{count} medicamento",
       "countFew": "{count} medicamentos",
       "countOther": "{count} medicamentos"
@@ -3128,7 +3119,6 @@
     "noAnalysisYet": "Aún no hay valoración.",
     "assessmentPreparing": "Preparando tu valoración…",
     "emptyTitle": "Aún no hay datos suficientes",
-    "emptyDescription": "Los insights aparecen en cuanto registres algunas mediciones. Empieza por peso o tensión arterial.",
     "emptyAddMeasurement": "Registrar medición",
     "editMode": {
       "done": "Listo",
@@ -3150,11 +3140,9 @@
       "saveSuccess": "Resumen guardado",
       "saveError": "No se pudo guardar tu resumen",
       "resetSuccess": "Resumen restablecido a los valores predeterminados",
-      "emptyTitle": "Todas las tarjetas están ocultas",
-      "emptyDescription": "Has ocultado todas las secciones. Abre Personalizar para volver a mostrarlas."
+      "emptyTitle": "Todas las tarjetas están ocultas"
     },
     "bmiEmptyTitle": "Añade tu altura para calcular el IMC",
-    "bmiEmptyDescription": "El IMC necesita tu altura. Guárdala en Ajustes > Cuenta.",
     "bmiEmptyAction": "Abrir ajustes de cuenta",
     "loadError": "No se han podido cargar los análisis",
     "heroRegenerating": "Generando",
@@ -3274,7 +3262,6 @@
       "keyFindingsTitle": "Hallazgos clave",
       "signalsTitle": "Señales del día",
       "emptyTitle": "Aún no hay resumen",
-      "emptyDescription": "Genera el resumen de hoy para tener una vista rápida de tus tendencias.",
       "emptyAction": "Generar resumen",
       "loadingLabel": "Preparando el resumen",
       "refreshFailedHint": "No se pudo actualizar el briefing: se muestra el anterior.",
@@ -5154,10 +5141,10 @@
       "subtitle": "Puntuaciones nocturnas de tu wearable"
     },
     "recovery": {
+      "empty": "Esta página se llena con los valores de recuperación, esfuerzo y carga de WHOOP o Polar y con el nivel de resiliencia de Oura.",
       "title": "Recuperación",
       "description": "Cómo se ha recuperado tu cuerpo: las señales de recuperación, esfuerzo y carga que tu wearable registra durante la noche.",
       "emptyTitle": "Aún no hay datos de recuperación",
-      "empty": "Esta página se llena con los valores de recuperación, esfuerzo y carga de WHOOP o Polar y con el nivel de resiliencia de Oura.",
       "emptyOuraPermission": "El nivel de resiliencia de Oura necesita el permiso de datos de estrés, así que vuelve a conectar Oura una vez en Integraciones y permítelo.",
       "emptyOuraNoResilience": "Oura está conectado y su nivel de resiliencia aparecerá aquí en cuanto Oura proporcione uno.",
       "emptyAction": "Abrir integraciones",
@@ -5322,7 +5309,6 @@
         "cta": "Ver registros"
       },
       "emptyTitle": "Aún no hay registros de ECG",
-      "emptyDescription": "Los registros de ECG se sincronizan desde un dispositivo de una derivación compatible. En cuanto tu dispositivo suba un registro, aparecerá aquí.",
       "emptyCta": "Conectar un dispositivo"
     },
     "intradayPulse": {
@@ -5360,7 +5346,6 @@
       "coachPrefill": "Todavía no he añadido medicamentos: ¿qué debería saber antes de empezar a seguir aquí la adherencia?"
     },
     "scoreHistory": {
-      "healthDescription": "Tu puntuación de salud día a día, tal como se mostró cada día.",
       "emptyDescription": "Todavía no hay ninguna puntuación registrada en este periodo.",
       "usualRange": "Sombreado: tu rango habitual, de {lo} a {hi}.",
       "seam": "La línea se interrumpe donde cambió lo que cuenta para la puntuación."
@@ -5377,7 +5362,6 @@
       "notEnough": "Muy pocas mediciones",
       "hourRange": "{start}–{end}",
       "emptyTitle": "No hay mediciones completas en este periodo",
-      "emptyDescription": "Aquí aparecen las mediciones con valor sistólico y diastólico.",
       "error": "No se pudieron cargar los promedios por momento del día.",
       "chartTitle": {
         "morning": "Tensión arterial por la mañana",
@@ -5880,9 +5864,9 @@
     }
   },
   "trendHints": {
-    "title": "Primera tendencia tras 5 mediciones",
+    "remainingMany": "{count, plural, one {Falta # medición} other {Faltan # mediciones}} para la tendencia.",
     "remainingOne": "Falta 1 medición para la tendencia.",
-    "remainingMany": "{count, plural, one {Falta # medición} other {Faltan # mediciones}} para la tendencia."
+    "title": "Primera tendencia tras 5 mediciones"
   },
   "settings": {
     "oauthCallbackPreflightItem": "{provider}: la dirección de retorno {configuredOrigin} no coincide con la dirección de esta aplicación {currentOrigin}.",
@@ -8403,7 +8387,6 @@
   },
   "admin": {
     "title": "Administration",
-    "subtitle": "Estado del sistema, usuarios y ajustes",
     "settingsSaveError": "No se pudieron guardar los ajustes",
     "systemStatus": "Estado del sistema",
     "systemStatusDescription": "Estado de ejecución de esta instancia: base de datos, worker y contadores.",
@@ -8434,8 +8417,6 @@
       "byokHint": "La clave propia del usuario (BYOK, inicio de sesión de ChatGPT o proveedor local) siempre tiene prioridad; la clave del servidor es el último paso de la cadena de proveedores.",
       "consentHint": "Las solicitudes con la clave del servidor requieren el consentimiento de IA activo del usuario; sin un recibo de consentimiento no se envía nada.",
       "baseUrlHint": "La URL base determina la API: se reconoce una URL de Anthropic como https://api.anthropic.com/v1, cualquier otro host se llama a través de la API compatible con OpenAI.",
-      "statusConfigured": "Configurada",
-      "statusNotConfigured": "Sin configurar",
       "keyLabel": "Clave de API",
       "keyPlaceholder": "sk-...",
       "keyPlaceholderSet": "Guardada ({preview}). Introduce una clave nueva para reemplazarla",
@@ -8635,7 +8616,6 @@
       "qrAlt": "Código QR del enlace de invitación",
       "loadError": "No se pudieron cargar las invitaciones.",
       "emptyTitle": "Todavía no hay invitaciones",
-      "emptyDescription": "Crea un enlace de invitación para admitir a alguien con el registro cerrado.",
       "colStatus": "Estado",
       "colCreated": "Creada",
       "colExpires": "Caduca",
@@ -8695,14 +8675,11 @@
     "tokenCreated": "Creado",
     "tokenNeverUsed": "Nunca",
     "tokensEmptyTitle": "Aún no hay tokens de API",
-    "tokensEmptyDescription": "Los tokens se emiten cuando un cliente nativo inicia sesión o desde Ajustes > Cuenta.",
     "loginOverviewDescription": "Eventos de inicio de sesión y autenticación de todas las cuentas, filtrables y exportables como CSV.",
     "loginOverviewFilterLabel": "Filtrar eventos",
     "allAuthEvents": "Todos los eventos de autenticación",
     "failedOnly": "Solo fallidos",
-    "loginEmptyDescription": "Aquí aparecerán los inicios de sesión, los cierres de sesión y los cambios de passkey.",
     "loginEmptyFailedTitle": "Sin intentos de inicio de sesión fallidos",
-    "loginEmptyFailedDescription": "Ese es el estado seguro. Cambia a todos los eventos para ver los inicios de sesión correctos.",
     "loginEmptyResetFilter": "Mostrar todos los eventos",
     "showingEntries": "Mostrando {count} de {total} entradas de autenticación",
     "status": "Estado",
@@ -8796,32 +8773,25 @@
     },
     "section": {
       "system-status": {
-        "title": "Estado del sistema",
-        "subtitle": "Estado del worker, la base de datos y las integraciones de un vistazo."
+        "title": "Estado del sistema"
       },
       "general": {
-        "title": "General",
-        "subtitle": "Registro, idioma predeterminado y otros interruptores de toda la aplicación."
+        "title": "General"
       },
       "services": {
-        "title": "Push y canales",
-        "subtitle": "Canales de notificación, claves de Web Push, relé push y entregas de todo el servidor."
+        "title": "Push y canales"
       },
       "integrations": {
-        "title": "Supervisión",
-        "subtitle": "Configurar Umami, GlitchTip y los informes de errores."
+        "title": "Supervisión"
       },
       "coach": {
-        "title": "Coach",
-        "subtitle": "Superficies del asistente, clave del servidor y calidad del feedback."
+        "title": "Coach"
       },
       "reminders": {
-        "title": "Recordatorios",
-        "subtitle": "Ajusta los umbrales de los recordatorios de medicación y ejecuta una comprobación manual."
+        "title": "Recordatorios"
       },
       "users": {
         "title": "Usuarios",
-        "subtitle": "Gestiona las cuentas de usuario, los roles y las sesiones activas.",
         "filter": {
           "all": "Todo",
           "admin": "Administradores",
@@ -8835,7 +8805,6 @@
         "forceLogoutFailed": "No se pudo forzar el cierre de sesión",
         "cannotLogoutSelf": "No puedes forzar tu propio cierre de sesión",
         "emptyTitle": "No hay usuarios en esta vista",
-        "emptyDescription": "No hay usuarios que coincidan con el filtro actual.",
         "emptyResetFilter": "Mostrar todos los usuarios",
         "deletionPending": "Eliminación el {date}",
         "deletionPendingNoDate": "Eliminación pendiente",
@@ -8856,16 +8825,13 @@
         "deleteUserFailed": "No se pudo eliminar la cuenta"
       },
       "invites": {
-        "title": "Invitaciones",
-        "subtitle": "Crear, seguir y revocar enlaces de invitación."
+        "title": "Invitaciones"
       },
       "api-tokens": {
-        "title": "API y tokens",
-        "subtitle": "Tokens bearer activos emitidos a clientes nativos e integraciones."
+        "title": "API y tokens"
       },
       "login-overview": {
-        "title": "Resumen de inicios de sesión",
-        "subtitle": "Registro de auditoría de eventos de autenticación y de administración."
+        "title": "Resumen de inicios de sesión"
       },
       "auditLog": {
         "filterActor": "Actor (ID de usuario o nombre de usuario)",
@@ -8898,7 +8864,6 @@
       },
       "app-logs": {
         "title": "Registros de la app",
-        "subtitle": "Muestra los wide-events estructurados más recientes emitidos por este proceso.",
         "processNote": "Solo se muestran los registros del proceso de la app; los registros del proceso del worker van a Loki cuando esa integración está configurada.",
         "filterTraceId": "ID de traza",
         "filterAction": "La acción contiene…",
@@ -9153,20 +9118,16 @@
         "restoreSkippedSeizureIntakeReference": "Dosis de rescate de una crisis vinculada a una toma que no está en el archivo (se conserva sin el vínculo)"
       },
       "danger-zone": {
-        "title": "Zona de peligro",
-        "subtitle": "Operaciones destructivas en todo el sistema."
+        "title": "Zona de peligro"
       },
       "about": {
-        "title": "Acerca de",
-        "subtitle": "Versión, licencia y estado de actualizaciones."
+        "title": "Acerca de"
       },
       "module-availability": {
-        "title": "Módulos",
-        "subtitle": "Activa o desactiva módulos para todas las cuentas de este servidor."
+        "title": "Módulos"
       },
       "encryption": {
         "title": "Cifrado",
-        "subtitle": "Cobertura de cifrado y estado de rotación de claves para los datos en reposo.",
         "loadError": "No se pudo cargar el estado de cifrado.",
         "coverageTitle": "Cobertura",
         "coverageDescription": "Cuántas filas cifradas hay bajo cada id de clave.",
@@ -9852,7 +9813,6 @@
   },
   "achievements": {
     "title": "Logros",
-    "subtitle": "Consigue logros registrando tu salud y tomando tu medicación a tiempo.",
     "loginRequired": "Inicia sesión para ver los logros.",
     "points": "Puntos",
     "unlocked": "Desbloqueado",
@@ -10144,7 +10104,6 @@
   "notifications": {
     "title": "Notificaciones por canal",
     "eventColumn": "Evento",
-    "subtitle": "Elige qué notificaciones recibes y por qué canal.",
     "loadError": "No se han podido cargar los ajustes de notificación.",
     "noChannels": "Configura primero un canal de notificación en Ajustes > Integraciones.",
     "goToSettings": "Ir a los ajustes del canal",
@@ -10742,7 +10701,6 @@
     },
     "disclaimer": "Estas predicciones son estimaciones descriptivas a partir de tus datos registrados, no un método anticonceptivo ni un consejo médico. Nunca indican que sea seguro tener relaciones sin protección. Para anticoncepción o cualquier decisión médica, consulta a un profesional sanitario.",
     "title": "Ciclo",
-    "subtitle": "Registra tu periodo y síntomas, y mira qué viene después.",
     "tabs": {
       "calendar": "Calendario",
       "predictions": "Predicciones",
@@ -11138,7 +11096,6 @@
   },
   "measurementReminders": {
     "sectionTitle": "Revisiones",
-    "sectionDescription": "Recordatorios de qué medir o revisar, cuándo y dónde.",
     "markDone": "Hecho",
     "delete": "Eliminar",
     "deleteConfirmTitle": "¿Eliminar recordatorio?",
@@ -11276,13 +11233,11 @@
   },
   "labs": {
     "title": "Resultados de laboratorio",
-    "subtitle": "Tus análisis de sangre y biomarcadores.",
     "addResult": "Añadir valor",
     "addDescription": "Registra un biomarcador a partir de un informe de laboratorio.",
     "addFirst": "Añade tu primer resultado",
     "importAction": "Importar desde Apple Health o CSV",
     "emptyTitle": "Aún no hay resultados",
-    "emptyDescription": "Registra analíticas como HbA1c, LDL o ferritina para seguirlas a lo largo del tiempo y compartirlas con tu médico.",
     "referenceLabel": "Referencia",
     "readingsCount": "{count, plural, one {# medición} other {# mediciones}}",
     "deleteConfirmTitle": "¿Eliminar resultado de laboratorio?",
@@ -11354,7 +11309,6 @@
     "restoreError": "No se pudo restaurar la medición",
     "detail": {
       "emptyTitle": "Aún no hay mediciones",
-      "emptyDescription": "Añade un valor para seguir este biomarcador con el tiempo.",
       "title": "Biomarcador",
       "genericDescription": "Un biomarcador de laboratorio que sigues. Añade lecturas para ver su evolución frente al rango de referencia.",
       "valuesTitle": "{marker}: todas las lecturas",
@@ -11394,7 +11348,6 @@
       "deleteConfirmTitle": "¿Eliminar biomarcador?",
       "deleteConfirmDescription": "El biomarcador y todos sus valores registrados se eliminan de forma permanente. Esta acción no se puede deshacer.",
       "emptyTitle": "Aún no hay biomarcadores",
-      "emptyDescription": "Define marcadores como LDL o HbA1c para registrar valores.",
       "loadError": "No se pudieron cargar los biomarcadores",
       "noRange": "Sin rango de referencia",
       "form": {
@@ -11703,8 +11656,7 @@
       "markerCountOne": "{count} biomarcador",
       "markerCountFew": "{count} biomarcadores",
       "markerCountOther": "{count} biomarcadores",
-      "noMatchesTitle": "No se encontraron biomarcadores",
-      "noMatchesDescription": "Intenta cambiar los términos de búsqueda o los filtros."
+      "noMatchesTitle": "No se encontraron biomarcadores"
     },
     "source": {
       "OCR": "Informe escaneado",
@@ -11799,22 +11751,18 @@
   },
   "moduleOff": {
     "disabled": {
-      "description": "{module} está desactivado en este registro, así que sus páginas quedan ocultas. Vuelve a activarlo para recuperarlas.",
       "title": "{module} está desactivado"
     },
     "notGranted": {
-      "description": "{module} queda fuera de las secciones que se han compartido contigo. Lo que abarca un registro compartido lo decide la persona propietaria.",
       "title": "No forma parte del acceso compartido"
     },
     "unavailable": {
-      "description": "El operador ha desactivado {module} para todas las cuentas de este servidor. Ningún ajuste tuyo puede recuperarlo.",
       "title": "No disponible en este servidor"
     },
-    "openModules": "Abrir Ajustes, Módulos"
+    "turnOn": "Activar"
   },
   "vaccinations": {
     "title": "Vacunas",
-    "subtitle": "Tu registro de vacunación, dosis a dosis.",
     "listLoadError": "No se pudieron cargar las vacunas.",
     "series": {
       "booster": "Refuerzo",
@@ -11976,7 +11924,6 @@
   },
   "illness": {
     "title": "Enfermedad",
-    "subtitle": "Un registro retrospectivo de tus episodios de enfermedad y dolencias.",
     "settings": {
       "viewDescription": "Elige si los episodios se muestran como tarjetas o como lista compacta.",
       "orderDescription": "Arrastra tus episodios al orden en que quieres verlos."
@@ -12680,7 +12627,6 @@
       "editTitle": "Editar alergia",
       "formDescription": "La sustancia se guarda como texto; la reacción y la nota se cifran.",
       "emptyTitle": "No hay alergias registradas",
-      "emptyDescription": "Añade sustancias a las que reaccionas y sus reacciones.",
       "loadError": "No se han podido cargar tus alergias.",
       "deletedToast": "Alergia eliminada",
       "deleteError": "No se ha podido eliminar la alergia.",
@@ -12742,7 +12688,6 @@
       "editTitle": "Editar antecedente familiar",
       "formDescription": "El parentesco y la enfermedad se guardan como texto; la nota se cifra.",
       "emptyTitle": "No hay antecedentes familiares",
-      "emptyDescription": "Añade enfermedades que aparecen en tu familia.",
       "loadError": "No se han podido cargar tus antecedentes familiares.",
       "deletedToast": "Entrada eliminada",
       "deleteError": "No se ha podido eliminar la entrada.",
@@ -13100,7 +13045,6 @@
   },
   "documents": {
     "title": "Documentos",
-    "subtitle": "Cada carta, informe y escaneo en un solo lugar con búsqueda, cifrado en reposo.",
     "pageUpload": "Subir",
     "ownerOnlyUpload": "Solo el titular del historial puede añadir documentos.",
     "kind": {
@@ -13180,7 +13124,6 @@
       "description": "Guarda cartas médicas, resultados de laboratorio, imágenes, recetas y certificados de vacunación. Se guardan cifrados y puedes buscarlos por tipo, afección y año.",
       "action": "Subir un primer documento",
       "noMatchesTitle": "No hay documentos coincidentes",
-      "noMatchesDescription": "Nada coincide con la búsqueda y los filtros actuales.",
       "titleRecord": "El archivo de documentos de {name} está vacío"
     },
     "detail": {
@@ -13440,8 +13383,7 @@
       },
       "pickMore": "Elegir más",
       "finishedHint": "Busca de nuevo o cambia un filtro para elegir más documentos.",
-      "maxReached": "Puedes importar como máximo {max, plural, one {# documento} other {# documentos}} a la vez.",
-      "noMatchHint": "Prueba con parte del nombre o quita la etiqueta y las fechas."
+      "maxReached": "Puedes importar como máximo {max, plural, one {# documento} other {# documentos}} a la vez."
     },
     "customize": "Personalizar vista",
     "layout": {
@@ -13465,7 +13407,6 @@
       "entryLabel": "Eliminados recientemente ({count})",
       "loadError": "No se pudo cargar Eliminados recientemente.",
       "emptyTitle": "No hay nada en Eliminados recientemente",
-      "emptyDescription": "Lo que eliminas espera aquí {days, plural, one {# día} other {# días}} antes de eliminarse definitivamente.",
       "count": "Documentos eliminados ({count})",
       "restoreAll": "Restaurar todo",
       "restore": "Restaurar",
@@ -13574,9 +13515,7 @@
     },
     "detail": {
       "title": "Métrica personalizada",
-      "genericDescription": "Una medición que registras. Añade valores para seguirla con el tiempo.",
       "emptyTitle": "Aún sin valores",
-      "emptyDescription": "Añade tu primer valor para empezar a representar esta métrica.",
       "valuesTitle": "{metric}: todos los valores",
       "valuesDescription": "Todos los valores registrados de esta métrica.",
       "backToMetric": "Volver a {metric}"
@@ -14169,7 +14108,6 @@
       "title": "Quién puede abrir mi historial",
       "description": "El acceso finalizado sigue en la lista, para que siempre veas quién lo tuvo y cuándo.",
       "emptyTitle": "Nadie más puede abrir tu historial",
-      "emptyDescription": "Invita a alguien arriba si quieres que pueda leerlo.",
       "loadError": "No se pudo cargar la lista.",
       "revoke": "Finalizar acceso",
       "withdrawInvite": "Retirar",
@@ -14183,7 +14121,6 @@
       "title": "Historiales que puedo abrir",
       "description": "Una invitación no te da nada hasta que la aceptas.",
       "emptyTitle": "Nadie ha compartido un historial contigo",
-      "emptyDescription": "Cuando alguien te invite, la invitación aparecerá aquí.",
       "loadError": "No se pudo cargar la lista.",
       "accept": "Aceptar",
       "accepting": "Aceptando…",
@@ -14201,7 +14138,6 @@
       "description": "Cada vez que otra persona abrió tu historial.",
       "retention": "Esto abarca {days, plural, =1 {el último día} other {los últimos # días}}. Las entradas más antiguas se eliminan.",
       "emptyTitle": "Nadie ha abierto tu historial",
-      "emptyDescription": "Las aperturas de otras personas aparecen aquí, una línea por persona y día.",
       "loadError": "No se pudo cargar la actividad.",
       "opened": "{name} abrió tu historial {count}×",
       "acted": "{name} hizo un cambio en tu historial",
@@ -14212,7 +14148,6 @@
       "hint": "Quién hizo qué en este perfil: los cambios de cada persona responsable, incluidos los tuyos.",
       "action": "Mostrar actividad",
       "emptyTitle": "Aún no hay nada registrado",
-      "emptyDescription": "Los cambios que hace una persona responsable en este perfil aparecen aquí, y las aperturas en una línea por persona responsable y día.",
       "you": "Tú",
       "opened": "{name} abrió el perfil {count}×",
       "acted": "{name} hizo un cambio en el perfil",
@@ -14596,11 +14531,9 @@
     },
     "bodySiteWithSide": "{site} ({side})",
     "sectionTitle": "Citas",
-    "sectionDescription": "Citas pasadas y reservadas en un solo sitio.",
     "add": "Cita",
     "loadError": "No se pudieron cargar las citas.",
     "emptyTitle": "Todavía no hay ninguna cita",
-    "emptyDescription": "Basta con una fecha. Todo lo demás es opcional.",
     "upcomingHeading": "Próximas",
     "pastHeading": "Pasadas",
     "createTitle": "Registrar una cita",
@@ -14658,6 +14591,7 @@
       "nextVisit": "Próxima cita: {what} el {when}"
     },
     "procedures": {
+      "emptyDescription": "Registra una cita del tipo Procedimiento o cirugía, o cambia una cita existente a ese tipo.",
       "title": "Procedimientos y cirugías",
       "description": "Todos los procedimientos y cirugías que has tenido, del más reciente al más antiguo.",
       "add": "Procedimiento",
@@ -14667,7 +14601,6 @@
       "allSites": "Todas",
       "count": "{shown} de {total}",
       "emptyTitle": "Aún no hay ningún procedimiento registrado",
-      "emptyDescription": "Registra una cita del tipo Procedimiento o cirugía, o cambia una cita existente a ese tipo.",
       "noMatchTitle": "Nada coincide con este filtro",
       "clearFilter": "Quitar filtro",
       "loadError": "No se pudieron cargar los procedimientos."
@@ -14698,9 +14631,7 @@
     "searchPlaceholder": "Buscar nombre, consulta o especialidad",
     "loadError": "No se pudo cargar la agenda.",
     "emptyTitle": "Todavía no hay entradas",
-    "emptyDescription": "Añade una consulta para poder elegirla al registrar una cita.",
     "noMatchTitle": "Sin coincidencias",
-    "noMatchDescription": "Ninguna entrada coincide con esta búsqueda.",
     "createTitle": "Añadir una entrada",
     "editTitle": "Editar la entrada",
     "formDescription": "Solo el nombre es obligatorio.",
@@ -14767,11 +14698,11 @@
     }
   },
   "bodySites": {
+    "emptyDescription": "Añade una zona del cuerpo a un procedimiento o a una enfermedad y aparecerá aquí.",
     "title": "Zonas del cuerpo",
     "description": "Procedimientos y enfermedades según la zona del cuerpo.",
     "loadError": "No se pudieron cargar las zonas del cuerpo.",
     "emptyTitle": "Aún no hay ninguna zona del cuerpo registrada",
-    "emptyDescription": "Añade una zona del cuerpo a un procedimiento o a una enfermedad y aparecerá aquí.",
     "sitesLabel": "Zonas del cuerpo",
     "sidesLabel": "Lado",
     "allSides": "Todos los lados",
@@ -15086,7 +15017,6 @@
   },
   "timeline": {
     "title": "Cronología",
-    "subtitle": "Qué pasó y cuándo, junto a tus valores.",
     "standing": "Permanente",
     "startUnknown": "inicio desconocido",
     "zoom": {
@@ -15901,7 +15831,6 @@
       "seizureDaysValue": "en {count, plural, one {# día} other {# días}}"
     },
     "title": "Diario de crisis",
-    "subtitle": "Las crisis tal como se observaron, con el tipo, la duración y la medicación de rescate administrada.",
     "loadError": "No se pudo cargar el diario de crisis.",
     "saveError": "No se pudo guardar. Inténtalo de nuevo.",
     "untyped": "Sin tipo",
@@ -16091,7 +16020,6 @@
     "types": {
       "title": "Tipos de crisis",
       "emptyTitle": "Aún no hay tipos de crisis",
-      "emptyDescription": "Configura una vez los tipos de crisis de la persona, idealmente con el equipo médico.",
       "newTitle": "Añadir un tipo de crisis",
       "editTitle": "Editar tipo de crisis",
       "description": "La clasificación la eliges tú o el equipo médico; HealthLog no clasifica.",

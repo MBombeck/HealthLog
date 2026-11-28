@@ -68,6 +68,9 @@ function ListGroup({
   if (!hasRows && !empty) return null;
   return (
     <ul
+      // `data-list-group` stays when a call site names the group its own
+      // `data-slot`: it is the measure point of `e2e/row-geometry.spec.ts`.
+      data-list-group=""
       data-slot="list-group"
       data-empty={hasRows ? undefined : "true"}
       className={cn(
@@ -185,7 +188,13 @@ function ListItem({
   const Chevron = expanded === undefined ? ChevronRight : ChevronDown;
   return (
     <li data-slot="list-item" className={className} {...props}>
+      {/* Measure points for `e2e/row-geometry.spec.ts`: the row box (its
+          type is whether it carries a meta line), the icon, the text column,
+          the trailing value and the glyph. Every row of a group must line
+          up on them. */}
       <div
+        data-slot="list-item-row"
+        data-row-type={meta ? "meta" : "single"}
         className={cn(
           "relative flex min-h-14 items-center gap-2.5 px-4 py-2",
           interactive &&
@@ -198,9 +207,14 @@ function ListItem({
           </div>
         ) : null}
         {icon ? (
-          <div className="relative z-10 flex shrink-0 items-center">{icon}</div>
+          <div
+            data-slot="list-item-icon"
+            className="relative z-10 flex shrink-0 items-center"
+          >
+            {icon}
+          </div>
         ) : null}
-        <div className="min-w-0 flex-1">
+        <div data-slot="list-item-text" className="min-w-0 flex-1">
           {titleNode}
           {meta ? (
             <div
@@ -222,6 +236,7 @@ function ListItem({
         {interactive && chevron && !trailing ? (
           <Chevron
             aria-hidden
+            data-slot="list-item-glyph"
             className={cn(
               // Tucked against the value: the row's gap is for content.
               "text-muted-foreground -ml-1 size-4 shrink-0 transition-transform",

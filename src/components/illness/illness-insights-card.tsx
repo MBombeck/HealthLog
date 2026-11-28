@@ -65,11 +65,7 @@ export function IllnessInsightsCard({
             onRetry={() => void counts.refetch()}
           />
         ) : !hasEpisodes ? (
-          <EmptyState
-            variant="plain"
-            size="compact"
-            title={t("illness.insights.none")}
-          />
+          <EmptyState variant="plain" title={t("illness.insights.none")} />
         ) : (
           <div className="space-y-4 text-sm">
             <p className="text-foreground">

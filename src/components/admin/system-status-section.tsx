@@ -93,7 +93,6 @@ export function FailingJobsCard({
       {failingJobs.queues.length === 0 ? (
         <EmptyState
           variant="plain"
-          size="compact"
           title={t("admin.failingJobs.none", {
             hours: failingJobs.windowHours,
           })}

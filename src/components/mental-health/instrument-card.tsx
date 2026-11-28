@@ -173,7 +173,6 @@ export function InstrumentCard({
       ) : (
         <EmptyState
           variant="plain"
-          size="compact"
           className="px-4 md:px-6"
           title={t("mentalHealth.noResultYet")}
         />

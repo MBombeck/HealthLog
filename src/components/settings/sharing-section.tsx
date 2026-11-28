@@ -176,7 +176,6 @@ function ShareLinksCard() {
             <div className="space-y-2">
               {activeLinks.length === 0 ? (
                 <EmptyState
-                  size="compact"
                   data-testid="share-active-empty"
                   title={t("settings.sharing.noActive")}
                 />

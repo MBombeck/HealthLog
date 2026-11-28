@@ -283,11 +283,7 @@ export function PasskeyListSection({
 
       <div className="space-y-4">
         {!passkeys || passkeys.length === 0 ? (
-          <EmptyState
-            variant="plain"
-            size="compact"
-            title={t("settings.noPasskeys")}
-          />
+          <EmptyState variant="plain" title={t("settings.noPasskeys")} />
         ) : (
           <ul className="space-y-2" data-testid="passkeys-list">
             {passkeys.map((pk) => (

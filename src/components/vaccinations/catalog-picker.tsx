@@ -160,7 +160,7 @@ export function CatalogPicker({
             <div className="mt-2 max-h-56 space-y-1 overflow-y-auto overscroll-contain">
               {customMatches.length > 0 ? (
                 <>
-                  <p className="text-muted-foreground px-2 pt-1 text-xs font-medium tracking-wide uppercase">
+                  <p className="text-muted-foreground px-2 pt-1 text-xs font-medium">
                     {t("vaccinations.custom.title")}
                   </p>
                   {customMatches.map((custom) => (
@@ -190,7 +190,7 @@ export function CatalogPicker({
                     </button>
                   ))}
                   {matches.length > 0 ? (
-                    <p className="text-muted-foreground px-2 pt-2 text-xs font-medium tracking-wide uppercase">
+                    <p className="text-muted-foreground px-2 pt-2 text-xs font-medium">
                       {t("vaccinations.custom.catalogGroup")}
                     </p>
                   ) : null}

@@ -72,7 +72,9 @@
     "status": {
       "active": "Aktiv",
       "error": "Fehler",
-      "off": "Aus"
+      "off": "Aus",
+      "running": "Läuft",
+      "done": "Fertig"
     }
   },
   "apiErrors": {
@@ -891,7 +893,6 @@
     "dragHandle": "Zum Verschieben ziehen",
     "dragHandleHint": "Pfeiltasten Hoch/Runter, oder Leertaste plus Pfeiltasten am fokussierten Griff.",
     "emptyTitle": "Dein Dashboard ist leer",
-    "emptyDescription": "Erfasse den ersten Messwert oder Stimmungseintrag. Kacheln und Charts erscheinen automatisch, sobald Daten vorhanden sind.",
     "emptyAddMeasurement": "Ersten Messwert erfassen",
     "staleHint": "Letzter Wert vor {count} T.",
     "staleHintWeeksOne": "Letzter Wert vor 1 Woche",
@@ -957,7 +958,6 @@
   },
   "measurements": {
     "title": "Messungen",
-    "subtitle": "Werte erfassen und die vollständige Historie einsehen.",
     "addMeasurement": "Hinzufügen",
     "editMeasurement": "Messwert bearbeiten",
     "type": "Typ",
@@ -1053,7 +1053,6 @@
     "emptyTitle": "Noch keine Messwerte",
     "emptyDescription": "Erfasse Gewicht, Blutdruck, Puls oder andere Werte, um Trends zu erkennen.",
     "emptyFilteredTitle": "Kein Messwert passt zum Filter",
-    "emptyFilteredDescription": "Wähle einen anderen Typ oder lösche den Filter, um alle Messwerte zu sehen.",
     "emptyAddFirst": "Ersten Messwert erfassen",
     "emptyResetFilter": "Alle Typen anzeigen",
     "comment": "Kommentar",
@@ -1243,7 +1242,6 @@
   },
   "mood": {
     "title": "Stimmung",
-    "subtitle": "Wie es dir ging, Tag für Tag.",
     "mentalWellbeingLink": "Check-in zum seelischen Wohlbefinden machen",
     "addEntry": "Hinzufügen",
     "editEntry": "Eintrag bearbeiten",
@@ -1267,9 +1265,7 @@
     "allMoods": "Alle Stimmungen",
     "entryCount": "{count, plural, one {# Eintrag} other {# Einträge}}",
     "emptyTitle": "Noch keine Stimmungseinträge",
-    "emptyDescription": "Erfasse, wie du dich heute fühlst, um Muster über die Zeit zu erkennen.",
     "emptyFilteredTitle": "Kein Eintrag passt zum Filter",
-    "emptyFilteredDescription": "Wähle eine andere Stimmungsstufe oder lösche den Filter, um alle Einträge zu sehen.",
     "emptyAddFirst": "Erste Stimmung erfassen",
     "emptyResetFilter": "Alle Stimmungen anzeigen",
     "actions": "Aktionen",
@@ -1586,7 +1582,6 @@
   },
   "medications": {
     "title": "Medikamente",
-    "subtitle": "Deine Medikamente, ihre Zeitpläne und jede Einnahme.",
     "loginRequired": "Bitte anmelden, um Medikamente zu verwalten.",
     "addMedication": "Hinzufügen",
     "firstMedication": "Erstes Medikament hinzufügen",
@@ -1604,7 +1599,6 @@
       "failedToast": "Keine Einnahme erfasst. Bitte erneut versuchen"
     },
     "emptyTitle": "Noch keine Medikamente",
-    "emptyDescription": "Lege Medikamente, Dosierungen und Einnahmefenster an, um die Therapietreue zu erfassen.",
     "loadFailed": "Medikamente konnten nicht geladen werden",
     "retryLoad": "Erneut laden",
     "inactive": "Pausiert",
@@ -2135,7 +2129,6 @@
     "intakeSourceVia": "über {origin}",
     "intakeRecordedAutomatically": "Automatisch erfasst",
     "intakeHistoryEmptyTitle": "Noch keine Einnahmen erfasst",
-    "intakeHistoryEmptyDescription": "Trage eine Einnahme auf der Tagesübersicht ein, um den Verlauf aufzubauen.",
     "intakeHistoryEmptyAction": "Zur Tagesübersicht",
     "intakeHistoryColTaken": "Genommen",
     "intakeHistoryColScheduled": "Geplant",
@@ -2396,7 +2389,6 @@
           "USED_UP": "Aufgebraucht"
         },
         "empty": "Kein Bestand erfasst.",
-        "emptyHelper": "Erfasse eine Packung oder einen Behälter, um den verbleibenden Vorrat und die Reichweite zu verfolgen.",
         "emptyCta": "Packung erfassen",
         "addButton": "Erfassen",
         "lowStockLinkOn": "Benachrichtigung bei niedrigem Bestand: unter {days, plural, one {# Tag} other {# Tagen}}",
@@ -2824,7 +2816,6 @@
       "clearSearch": "Suche leeren",
       "treatmentPeriod": "Behandlungszeitraum",
       "noMatchesTitle": "Keine passenden Medikamente",
-      "noMatchesDescription": "Passe deinen Suchbegriff oder die Filter an.",
       "countOne": "{count} Medikament",
       "countFew": "{count} Medikamente",
       "countOther": "{count} Medikamente"
@@ -3126,7 +3117,6 @@
       }
     },
     "emptyTitle": "Noch nicht genug Daten",
-    "emptyDescription": "Insights erscheinen, sobald du ein paar Messwerte erfasst hast. Beginne mit Gewicht oder Blutdruck.",
     "emptyAddMeasurement": "Messwert erfassen",
     "editMode": {
       "done": "Fertig",
@@ -3148,11 +3138,9 @@
       "saveSuccess": "Übersicht gespeichert",
       "saveError": "Übersicht konnte nicht gespeichert werden",
       "resetSuccess": "Übersicht auf Standard zurückgesetzt",
-      "emptyTitle": "Alle Karten ausgeblendet",
-      "emptyDescription": "Du hast alle Bereiche ausgeblendet. Öffne „Anpassen“, um Karten wieder einzublenden."
+      "emptyTitle": "Alle Karten ausgeblendet"
     },
     "bmiEmptyTitle": "Größe hinzufügen für BMI",
-    "bmiEmptyDescription": "Für den BMI wird deine Körpergröße benötigt. Hinterlege sie unter Einstellungen > Account.",
     "bmiEmptyAction": "Account-Einstellungen öffnen",
     "noAnalysisYet": "Noch keine Einschätzung vorhanden.",
     "assessmentPreparing": "Einschätzung wird vorbereitet…",
@@ -3274,7 +3262,6 @@
       "keyFindingsTitle": "Wichtige Befunde",
       "signalsTitle": "Signale des Tages",
       "emptyTitle": "Noch kein Briefing",
-      "emptyDescription": "Erstelle das heutige Briefing, um eine Zusammenfassung deiner Trends zu bekommen.",
       "emptyAction": "Briefing erstellen",
       "loadingLabel": "Briefing wird zusammengestellt",
       "refreshFailedHint": "Briefing konnte nicht aktualisiert werden. Es wird das letzte angezeigt.",
@@ -5154,10 +5141,10 @@
       "subtitle": "Nächtliche Werte deines Wearables"
     },
     "recovery": {
+      "empty": "Diese Seite füllt sich mit den Erholungs-, Belastungs- und Trainingslastwerten von WHOOP oder Polar und mit Ouras Resilienz-Stufe.",
       "title": "Erholung",
       "description": "Wie gut sich dein Körper erholt hat: die Erholungs-, Belastungs- und Load-Signale, die dein Wearable über Nacht aufzeichnet.",
       "emptyTitle": "Noch keine Erholungsdaten",
-      "empty": "Diese Seite füllt sich mit den Erholungs-, Belastungs- und Trainingslastwerten von WHOOP oder Polar und mit Ouras Resilienz-Stufe.",
       "emptyOuraPermission": "Ouras Resilienz-Stufe braucht die Berechtigung für Stressdaten, also verbinde Oura einmal neu unter Integrationen und erlaube sie.",
       "emptyOuraNoResilience": "Oura ist verbunden, und seine Resilienz-Stufe erscheint hier, sobald Oura eine liefert.",
       "emptyAction": "Integrationen öffnen",
@@ -5322,7 +5309,6 @@
         "cta": "Aufzeichnungen ansehen"
       },
       "emptyTitle": "Noch keine EKG-Aufzeichnungen",
-      "emptyDescription": "EKG-Aufzeichnungen werden von einem kompatiblen Einkanal-Gerät synchronisiert. Sobald dein Gerät eine Aufzeichnung überträgt, erscheint sie hier.",
       "emptyCta": "Gerät verbinden"
     },
     "intradayPulse": {
@@ -5360,7 +5346,6 @@
       "coachPrefill": "Ich habe noch keine Medikamente angelegt. Was sollte ich wissen, bevor ich hier anfange, meine Therapietreue zu verfolgen?"
     },
     "scoreHistory": {
-      "healthDescription": "Dein Gesundheitsscore Tag für Tag, so wie er an jedem Tag angezeigt wurde.",
       "emptyDescription": "In diesem Zeitraum wurde noch kein Score erfasst.",
       "usualRange": "Schattiert: dein üblicher Bereich, {lo} bis {hi}.",
       "seam": "Die Linie bricht dort ab, wo sich geändert hat, was in den Score einfließt."
@@ -5377,7 +5362,6 @@
       "notEnough": "Zu wenige Messungen",
       "hourRange": "{start} bis {end} Uhr",
       "emptyTitle": "Keine vollständigen Messungen in diesem Zeitraum",
-      "emptyDescription": "Hier erscheinen Messungen mit systolischem und diastolischem Wert.",
       "error": "Die Werte nach Tageszeit konnten nicht geladen werden.",
       "chartTitle": {
         "morning": "Blutdruck morgens",
@@ -5880,9 +5864,9 @@
     }
   },
   "trendHints": {
-    "title": "Erster Trend nach 5 Messungen",
+    "remainingMany": "Noch {count, plural, one {# Messung} other {# Messungen}} bis zum Trend.",
     "remainingOne": "Noch 1 Messung bis zum Trend.",
-    "remainingMany": "Noch {count, plural, one {# Messung} other {# Messungen}} bis zum Trend."
+    "title": "Erster Trend nach 5 Messungen"
   },
   "settings": {
     "oauthCallbackPreflightItem": "{provider}: Die Callback-Adresse {configuredOrigin} unterscheidet sich von der App-Adresse {currentOrigin}.",
@@ -8403,7 +8387,6 @@
   },
   "admin": {
     "title": "Administration",
-    "subtitle": "Systemstatus, Nutzer und Einstellungen",
     "settingsSaveError": "Einstellungen konnten nicht gespeichert werden",
     "systemStatus": "Systemstatus",
     "systemStatusDescription": "Laufzeitdaten der Instanz: Datenbank, Worker und Bestandszähler.",
@@ -8434,8 +8417,6 @@
       "byokHint": "Der eigene Schlüssel (BYOK, ChatGPT-Login oder lokaler Provider) hat immer Vorrang. Der Server-Schlüssel ist die letzte Stufe der Provider-Kette.",
       "consentHint": "Anfragen über den Server-Schlüssel erfordern die aktive KI-Einwilligung der Person; ohne Einwilligungsbeleg wird nichts gesendet.",
       "baseUrlHint": "Die Basis-URL bestimmt die API: eine Anthropic-URL wie https://api.anthropic.com/v1 wird erkannt, jeder andere Host wird über die OpenAI-kompatible API angesprochen.",
-      "statusConfigured": "Eingerichtet",
-      "statusNotConfigured": "Nicht eingerichtet",
       "keyLabel": "API-Schlüssel",
       "keyPlaceholder": "sk-...",
       "keyPlaceholderSet": "Hinterlegt ({preview}). Neuen Schlüssel eingeben, um ihn zu ersetzen",
@@ -8635,7 +8616,6 @@
       "qrAlt": "QR-Code des Einladungslinks",
       "loadError": "Einladungen konnten nicht geladen werden.",
       "emptyTitle": "Noch keine Einladungen",
-      "emptyDescription": "Erstelle einen Einladungslink, um jemanden trotz geschlossener Registrierung aufzunehmen.",
       "colStatus": "Status",
       "colCreated": "Erstellt",
       "colExpires": "Läuft ab",
@@ -8695,14 +8675,11 @@
     "tokenCreated": "Erstellt",
     "tokenNeverUsed": "Nie",
     "tokensEmptyTitle": "Noch keine API-Tokens",
-    "tokensEmptyDescription": "Tokens werden bei der Anmeldung nativer Clients oder über Einstellungen > Account ausgestellt.",
     "loginOverviewDescription": "Anmelde- und Auth-Ereignisse aller Konten, filterbar und als CSV exportierbar.",
     "loginOverviewFilterLabel": "Ereignisse filtern",
     "allAuthEvents": "Alle Auth-Ereignisse",
     "failedOnly": "Nur fehlgeschlagene",
-    "loginEmptyDescription": "Anmeldungen, Abmeldungen und Passkey-Änderungen erscheinen hier.",
     "loginEmptyFailedTitle": "Keine fehlgeschlagenen Anmeldungen",
-    "loginEmptyFailedDescription": "Das ist der sichere Zustand. Wechsle zu „Alle Auth-Ereignisse“, um erfolgreiche Anmeldungen zu sehen.",
     "loginEmptyResetFilter": "Alle Ereignisse anzeigen",
     "showingEntries": "Zeigt {count} von {total} Auth-Einträgen",
     "status": "Status",
@@ -8796,32 +8773,25 @@
     },
     "section": {
       "system-status": {
-        "title": "Systemstatus",
-        "subtitle": "Worker, Datenbank und Integrationen im Überblick."
+        "title": "Systemstatus"
       },
       "general": {
-        "title": "Allgemein",
-        "subtitle": "Registrierung, Standardsprache und weitere globale Schalter."
+        "title": "Allgemein"
       },
       "services": {
-        "title": "Push und Kanäle",
-        "subtitle": "Benachrichtigungskanäle, Web-Push-Schlüssel, Push-Relay und Zustellung für den Server."
+        "title": "Push und Kanäle"
       },
       "integrations": {
-        "title": "Monitoring",
-        "subtitle": "Umami, GlitchTip und Fehlerberichte einrichten."
+        "title": "Monitoring"
       },
       "coach": {
-        "title": "Coach",
-        "subtitle": "Assistenz-Oberflächen, Server-Schlüssel und Feedback-Qualität an einem Ort."
+        "title": "Coach"
       },
       "reminders": {
-        "title": "Erinnerungen",
-        "subtitle": "Schwellwerte für Medikamentenerinnerungen anpassen."
+        "title": "Erinnerungen"
       },
       "users": {
         "title": "Nutzer",
-        "subtitle": "Konten, Rollen und aktive Sitzungen verwalten.",
         "filter": {
           "all": "Alle",
           "admin": "Admins",
@@ -8835,7 +8805,6 @@
         "forceLogoutFailed": "Abmeldung fehlgeschlagen",
         "cannotLogoutSelf": "Eigene Sitzungen können nicht beendet werden",
         "emptyTitle": "Keine Nutzer in dieser Ansicht",
-        "emptyDescription": "Es gibt keine Nutzer, die zum aktuellen Filter passen.",
         "emptyResetFilter": "Alle Nutzer anzeigen",
         "deletionPending": "Löschung am {date}",
         "deletionPendingNoDate": "Löschung vorgemerkt",
@@ -8856,16 +8825,13 @@
         "deleteUserFailed": "Das Konto konnte nicht gelöscht werden"
       },
       "invites": {
-        "title": "Einladungen",
-        "subtitle": "Einladungslinks erstellen, nachverfolgen und widerrufen."
+        "title": "Einladungen"
       },
       "api-tokens": {
-        "title": "API & Tokens",
-        "subtitle": "Aktive Bearer-Tokens für native Clients und Integrationen."
+        "title": "API & Tokens"
       },
       "login-overview": {
-        "title": "Login-Übersicht",
-        "subtitle": "Audit-Spur für Authentifizierungs- und Admin-Ereignisse."
+        "title": "Login-Übersicht"
       },
       "auditLog": {
         "filterActor": "Akteur (Nutzer-ID oder -Name)",
@@ -8898,7 +8864,6 @@
       },
       "app-logs": {
         "title": "App-Logs",
-        "subtitle": "Letzte strukturierte Wide-Events dieses Prozesses anzeigen.",
         "processNote": "Es werden nur App-Prozess-Logs angezeigt; Worker-Logs landen in Loki, sofern die Integration konfiguriert ist.",
         "filterTraceId": "Trace-ID",
         "filterAction": "Aktion enthält…",
@@ -9153,20 +9118,16 @@
         "restoreSkippedSeizureIntakeReference": "Notfalldosis eines Anfalls verweist auf eine Einnahme, die nicht in der Datei enthalten ist (ohne Verknüpfung übernommen)"
       },
       "danger-zone": {
-        "title": "Gefahrenzone",
-        "subtitle": "Destruktive systemweite Operationen."
+        "title": "Gefahrenzone"
       },
       "about": {
-        "title": "Über",
-        "subtitle": "Version, Lizenz und Update-Status."
+        "title": "Über"
       },
       "module-availability": {
-        "title": "Module",
-        "subtitle": "Module für jedes Konto auf diesem Server aktivieren oder deaktivieren."
+        "title": "Module"
       },
       "encryption": {
         "title": "Verschlüsselung",
-        "subtitle": "Verschlüsselungsabdeckung und Schlüsselrotations-Status für ruhende Daten.",
         "loadError": "Verschlüsselungsstatus konnte nicht geladen werden.",
         "coverageTitle": "Abdeckung",
         "coverageDescription": "Wie viele verschlüsselte Zeilen unter welcher Schlüssel-ID liegen.",
@@ -9852,7 +9813,6 @@
   },
   "achievements": {
     "title": "Erfolge",
-    "subtitle": "Sammle Erfolge, indem du regelmäßig misst und deine Medikamente nimmst.",
     "loginRequired": "Bitte anmelden, um Erfolge zu sehen.",
     "points": "Punkte",
     "unlocked": "Freigeschaltet",
@@ -10144,7 +10104,6 @@
   "notifications": {
     "title": "Benachrichtigungen je Kanal",
     "eventColumn": "Ereignis",
-    "subtitle": "Wähle aus, welche Benachrichtigungen du über welchen Kanal erhalten möchtest.",
     "loadError": "Benachrichtigungseinstellungen konnten nicht geladen werden.",
     "noChannels": "Konfiguriere zuerst einen Benachrichtigungskanal unter Einstellungen > Integrationen.",
     "goToSettings": "Zu den Kanal-Einstellungen",
@@ -10742,7 +10701,6 @@
     },
     "disclaimer": "Diese Vorhersagen sind beschreibende Schätzungen aus deinen erfassten Daten, keine Verhütungsmethode und keine medizinische Beratung. Sie zeigen nie an, dass ungeschützter Geschlechtsverkehr sicher ist. Wende dich für Verhütung oder medizinische Entscheidungen an eine medizinische Fachperson.",
     "title": "Zyklus",
-    "subtitle": "Erfasse deine Periode und Symptome und sieh, was als Nächstes kommt.",
     "tabs": {
       "calendar": "Kalender",
       "predictions": "Prognosen",
@@ -11138,7 +11096,6 @@
   },
   "measurementReminders": {
     "sectionTitle": "Vorsorge",
-    "sectionDescription": "Erinnerungen, was wann und wo zu messen oder zu prüfen ist.",
     "markDone": "Erledigt",
     "delete": "Löschen",
     "deleteConfirmTitle": "Erinnerung löschen?",
@@ -11276,13 +11233,11 @@
   },
   "labs": {
     "title": "Laborwerte",
-    "subtitle": "Deine Blutwerte und Biomarker.",
     "addResult": "Wert hinzufügen",
     "addDescription": "Erfasse einen Biomarker aus deinem Laborbefund.",
     "addFirst": "Ersten Wert erfassen",
     "importAction": "Aus Apple Health oder CSV importieren",
     "emptyTitle": "Noch keine Laborwerte",
-    "emptyDescription": "Erfasse Blutwerte wie HbA1c, LDL oder Ferritin, um sie über die Zeit zu verfolgen und mit deiner Ärztin oder deinem Arzt zu teilen.",
     "referenceLabel": "Referenz",
     "readingsCount": "{count, plural, one {# Messung} other {# Messungen}}",
     "deleteConfirmTitle": "Laborwert löschen?",
@@ -11354,7 +11309,6 @@
     "restoreError": "Wert konnte nicht wiederhergestellt werden",
     "detail": {
       "emptyTitle": "Noch keine Werte",
-      "emptyDescription": "Füge einen Wert hinzu, um diesen Biomarker über die Zeit zu verfolgen.",
       "title": "Biomarker",
       "genericDescription": "Ein Laborwert, den du verfolgst. Erfasse Messwerte, um den Verlauf gegenüber dem Referenzbereich zu sehen.",
       "valuesTitle": "{marker}: alle Werte",
@@ -11394,7 +11348,6 @@
       "deleteConfirmTitle": "Biomarker löschen?",
       "deleteConfirmDescription": "Der Biomarker und alle erfassten Werte werden dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden.",
       "emptyTitle": "Noch keine Biomarker",
-      "emptyDescription": "Lege Marker wie LDL oder HbA1c an, um Werte zu erfassen.",
       "loadError": "Biomarker konnten nicht geladen werden",
       "noRange": "Kein Referenzbereich",
       "form": {
@@ -11703,8 +11656,7 @@
       "markerCountOne": "{count} Biomarker",
       "markerCountFew": "{count} Biomarker",
       "markerCountOther": "{count} Biomarker",
-      "noMatchesTitle": "Keine passenden Biomarker",
-      "noMatchesDescription": "Passe deinen Suchbegriff oder die Filter an."
+      "noMatchesTitle": "Keine passenden Biomarker"
     },
     "source": {
       "OCR": "Gescannter Befund",
@@ -11799,22 +11751,18 @@
   },
   "moduleOff": {
     "disabled": {
-      "description": "{module} ist für diese Akte ausgeschaltet, deshalb bleiben die Seiten verborgen. Schalte das Modul wieder ein, um sie zurückzuholen.",
       "title": "{module} ist ausgeschaltet"
     },
     "notGranted": {
-      "description": "{module} liegt außerhalb der Bereiche, die mit dir geteilt wurden. Was ein geteilter Zugriff umfasst, legt die Person fest, der die Akte gehört.",
       "title": "Gehört nicht zum geteilten Zugriff"
     },
     "unavailable": {
-      "description": "Der Betreiber hat {module} für alle Konten auf diesem Server ausgeschaltet. Keine eigene Einstellung holt es zurück.",
       "title": "Auf diesem Server nicht verfügbar"
     },
-    "openModules": "Einstellungen, Module öffnen"
+    "turnOn": "Einschalten"
   },
   "vaccinations": {
     "title": "Impfungen",
-    "subtitle": "Dein Impfpass, Dosis für Dosis.",
     "listLoadError": "Impfungen konnten nicht geladen werden.",
     "series": {
       "booster": "Auffrischung",
@@ -11976,7 +11924,6 @@
   },
   "illness": {
     "title": "Krankheit",
-    "subtitle": "Ein rückblickendes Protokoll deiner Krankheits- und Beschwerde-Episoden.",
     "settings": {
       "viewDescription": "Wähle, ob Episoden als Karten oder als kompakte Liste erscheinen.",
       "orderDescription": "Ziehe deine Episoden in die gewünschte Reihenfolge."
@@ -12680,7 +12627,6 @@
       "editTitle": "Allergie bearbeiten",
       "formDescription": "Der Stoff wird im Klartext gespeichert; Reaktion und Notiz werden verschlüsselt.",
       "emptyTitle": "Keine Allergien erfasst",
-      "emptyDescription": "Erfasse Stoffe, auf die du reagierst, und die Reaktionen.",
       "loadError": "Deine Allergien konnten nicht geladen werden.",
       "deletedToast": "Allergie gelöscht",
       "deleteError": "Die Allergie konnte nicht gelöscht werden.",
@@ -12742,7 +12688,6 @@
       "editTitle": "Familienanamnese bearbeiten",
       "formDescription": "Verwandtschaft und Erkrankung werden im Klartext gespeichert; die Notiz wird verschlüsselt.",
       "emptyTitle": "Keine Familienanamnese erfasst",
-      "emptyDescription": "Erfasse Erkrankungen, die in deiner Familie vorkommen.",
       "loadError": "Deine Familienanamnese konnte nicht geladen werden.",
       "deletedToast": "Eintrag gelöscht",
       "deleteError": "Der Eintrag konnte nicht gelöscht werden.",
@@ -13100,7 +13045,6 @@
   },
   "documents": {
     "title": "Dokumente",
-    "subtitle": "Jeder Brief, Befund und Scan an einem durchsuchbaren Ort, verschlüsselt gespeichert.",
     "pageUpload": "Hochladen",
     "ownerOnlyUpload": "Dokumente kann nur die Inhaberin oder der Inhaber der Akte hinzufügen.",
     "kind": {
@@ -13180,7 +13124,6 @@
       "description": "Bewahre Arztbriefe, Laborbefunde, Bildgebung, Rezepte und Impfnachweise auf. Sie werden verschlüsselt gespeichert und sind nach Typ, Erkrankung und Jahr durchsuchbar.",
       "action": "Erstes Dokument hochladen",
       "noMatchesTitle": "Keine passenden Dokumente",
-      "noMatchesDescription": "Nichts entspricht der aktuellen Suche und den Filtern.",
       "titleRecord": "Der Dokumenten-Tresor von {name} ist leer"
     },
     "detail": {
@@ -13440,8 +13383,7 @@
       },
       "pickMore": "Weitere auswählen",
       "finishedHint": "Suche erneut oder ändere einen Filter, um weitere Dokumente auszuwählen.",
-      "maxReached": "Du kannst höchstens {max, plural, one {# Dokument} other {# Dokumente}} auf einmal importieren.",
-      "noMatchHint": "Versuche einen Teil des Namens oder setze Tag und Datum zurück."
+      "maxReached": "Du kannst höchstens {max, plural, one {# Dokument} other {# Dokumente}} auf einmal importieren."
     },
     "customize": "Darstellung anpassen",
     "layout": {
@@ -13465,7 +13407,6 @@
       "entryLabel": "Zuletzt gelöscht ({count})",
       "loadError": "Zuletzt gelöscht konnte nicht geladen werden.",
       "emptyTitle": "Nichts unter Zuletzt gelöscht",
-      "emptyDescription": "Was du löschst, wartet hier {days, plural, one {# Tag} other {# Tage}}, bevor es endgültig entfernt wird.",
       "count": "Gelöschte Dokumente ({count})",
       "restoreAll": "Alle wiederherstellen",
       "restore": "Wiederherstellen",
@@ -13574,9 +13515,7 @@
     },
     "detail": {
       "title": "Eigene Metrik",
-      "genericDescription": "Ein Messwert, den du verfolgst. Erfasse Werte, um ihn über die Zeit zu beobachten.",
       "emptyTitle": "Noch keine Werte",
-      "emptyDescription": "Erfasse deinen ersten Wert, um diese Metrik darzustellen.",
       "valuesTitle": "{metric}: alle Werte",
       "valuesDescription": "Alle erfassten Werte dieser Metrik.",
       "backToMetric": "Zurück zu {metric}"
@@ -14169,7 +14108,6 @@
       "title": "Wer meine Akte öffnen kann",
       "description": "Beendeter Zugriff bleibt in der Liste, damit du immer siehst, wer ihn hatte und wann.",
       "emptyTitle": "Niemand sonst kann deine Akte öffnen",
-      "emptyDescription": "Lade oben jemanden ein, wenn diese Person sie lesen können soll.",
       "loadError": "Die Liste konnte nicht geladen werden.",
       "revoke": "Zugriff beenden",
       "withdrawInvite": "Zurückziehen",
@@ -14183,7 +14121,6 @@
       "title": "Akten, die ich öffnen kann",
       "description": "Eine Einladung gibt dir nichts, bevor du sie annimmst.",
       "emptyTitle": "Niemand hat eine Akte mit dir geteilt",
-      "emptyDescription": "Wenn dich jemand einlädt, erscheint die Einladung hier.",
       "loadError": "Die Liste konnte nicht geladen werden.",
       "accept": "Annehmen",
       "accepting": "Wird angenommen…",
@@ -14201,7 +14138,6 @@
       "description": "Jedes Mal, wenn jemand anderes deine Akte geöffnet hat.",
       "retention": "Das umfasst {days, plural, =1 {den letzten Tag} other {die letzten # Tage}}. Ältere Einträge werden gelöscht.",
       "emptyTitle": "Niemand hat deine Akte geöffnet",
-      "emptyDescription": "Zugriffe von anderen erscheinen hier, eine Zeile pro Person und Tag.",
       "loadError": "Die Aktivität konnte nicht geladen werden.",
       "opened": "{name} hat deine Akte {count}× geöffnet",
       "acted": "{name} hat etwas in deiner Akte geändert",
@@ -14212,7 +14148,6 @@
       "hint": "Wer in diesem Profil was getan hat: die Änderungen jeder betreuenden Person, deine eingeschlossen.",
       "action": "Aktivität zeigen",
       "emptyTitle": "Noch nichts festgehalten",
-      "emptyDescription": "Änderungen einer betreuenden Person in diesem Profil erscheinen hier, Öffnungen als eine Zeile je betreuender Person und Tag.",
       "you": "Du",
       "opened": "{name} hat das Profil {count}× geöffnet",
       "acted": "{name} hat im Profil etwas geändert",
@@ -14596,11 +14531,9 @@
     },
     "bodySiteWithSide": "{site} ({side})",
     "sectionTitle": "Termine",
-    "sectionDescription": "Erledigte und gebuchte Termine an einem Ort.",
     "add": "Termin",
     "loadError": "Termine konnten nicht geladen werden.",
     "emptyTitle": "Noch kein Termin erfasst",
-    "emptyDescription": "Ein Datum genügt. Alles andere ist freiwillig.",
     "upcomingHeading": "Anstehend",
     "pastHeading": "Vergangen",
     "createTitle": "Termin erfassen",
@@ -14658,6 +14591,7 @@
       "nextVisit": "Nächster Termin: {what} am {when}"
     },
     "procedures": {
+      "emptyDescription": "Erfasse einen Termin der Art Eingriff oder Operation, oder stelle einen vorhandenen Termin darauf um.",
       "title": "Eingriffe und Operationen",
       "description": "Alle Eingriffe und Operationen, die du hattest, die neuesten zuerst.",
       "add": "Eingriff",
@@ -14667,7 +14601,6 @@
       "allSites": "Alle",
       "count": "{shown} von {total}",
       "emptyTitle": "Noch kein Eingriff erfasst",
-      "emptyDescription": "Erfasse einen Termin der Art Eingriff oder Operation, oder stelle einen vorhandenen Termin darauf um.",
       "noMatchTitle": "Nichts passt zu diesem Filter",
       "clearFilter": "Filter zurücksetzen",
       "loadError": "Die Eingriffe konnten nicht geladen werden."
@@ -14698,9 +14631,7 @@
     "searchPlaceholder": "Name, Praxis oder Fach suchen",
     "loadError": "Adressbuch konnte nicht geladen werden.",
     "emptyTitle": "Noch kein Eintrag",
-    "emptyDescription": "Lege eine Praxis an, damit du sie beim Termin auswählen kannst.",
     "noMatchTitle": "Kein Treffer",
-    "noMatchDescription": "Zu dieser Suche gibt es keinen Eintrag.",
     "createTitle": "Eintrag anlegen",
     "editTitle": "Eintrag bearbeiten",
     "formDescription": "Nur der Name ist Pflicht.",
@@ -14767,11 +14698,11 @@
     }
   },
   "bodySites": {
+    "emptyDescription": "Gib bei einem Eingriff oder einer Erkrankung eine Körperstelle an, dann erscheint sie hier.",
     "title": "Körperstellen",
     "description": "Eingriffe und Erkrankungen nach der Stelle am Körper.",
     "loadError": "Die Körperstellen konnten nicht geladen werden.",
     "emptyTitle": "Noch keine Körperstelle erfasst",
-    "emptyDescription": "Gib bei einem Eingriff oder einer Erkrankung eine Körperstelle an, dann erscheint sie hier.",
     "sitesLabel": "Körperstellen",
     "sidesLabel": "Seite",
     "allSides": "Alle Seiten",
@@ -15086,7 +15017,6 @@
   },
   "timeline": {
     "title": "Zeitleiste",
-    "subtitle": "Was wann war, neben deinen Werten.",
     "standing": "Dauerhaft",
     "startUnknown": "Beginn unbekannt",
     "zoom": {
@@ -15901,7 +15831,6 @@
       "seizureDaysValue": "an {count, plural, one {# Tag} other {# Tagen}}"
     },
     "title": "Anfallskalender",
-    "subtitle": "Anfälle so, wie sie beobachtet wurden, mit Anfallsart, Dauer und gegebener Notfallmedikation.",
     "loadError": "Der Anfallskalender konnte nicht geladen werden.",
     "saveError": "Das konnte nicht gespeichert werden. Bitte erneut versuchen.",
     "untyped": "Keine Anfallsart",
@@ -16091,7 +16020,6 @@
     "types": {
       "title": "Anfallsarten",
       "emptyTitle": "Noch keine Anfallsarten",
-      "emptyDescription": "Lege die Anfallsarten der Person einmal an, am besten zusammen mit dem Behandlungsteam.",
       "newTitle": "Anfallsart hinzufügen",
       "editTitle": "Anfallsart bearbeiten",
       "description": "Die Klassifikation wählst du oder das Behandlungsteam; HealthLog klassifiziert nicht.",

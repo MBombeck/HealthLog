@@ -177,7 +177,6 @@ export function CycleView() {
     <div className="space-y-6">
       <PageHeader
         title={<span data-tour-id="cycle-hero">{t("cycle.title")}</span>}
-        description={t("cycle.subtitle")}
         actions={
           // One action. The settings glyph that used to sit beside it was a
           // second door to the tab directly below, and no other page in the

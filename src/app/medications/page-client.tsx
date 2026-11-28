@@ -413,10 +413,8 @@ export default function MedicationsPageClient() {
   if (!isAuthenticated) {
     return (
       <div className="space-y-6">
-        <PageHeader
-          title={t("medications.title")}
-          description={t("medications.loginRequired")}
-        />
+        <PageHeader title={t("medications.title")} />
+        <EmptyState variant="plain" title={t("medications.loginRequired")} />
       </div>
     );
   }
@@ -465,7 +463,6 @@ export default function MedicationsPageClient() {
         title={
           <span data-tour-id="medications-hero">{t("medications.title")}</span>
         }
-        description={t("medications.subtitle")}
         actions={
           <>
             {/* #316 — only while TWO or more doses are due (one is the
@@ -595,7 +592,6 @@ export default function MedicationsPageClient() {
         <EmptyState
           icon={<Pill className="size-6" />}
           title={t("medications.emptyTitle")}
-          description={t("medications.emptyDescription")}
           action={
             canAddMedication ? (
               <Button size="sm" onClick={openCreate}>
@@ -609,7 +605,6 @@ export default function MedicationsPageClient() {
         <EmptyState
           icon={<Search className="size-6" />}
           title={t("medications.filter.noMatchesTitle")}
-          description={t("medications.filter.noMatchesDescription")}
           action={
             <Button variant="outline" size="sm" onClick={resetAllFilters}>
               {t("dataList.resetFilters")}

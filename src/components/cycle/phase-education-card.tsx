@@ -130,7 +130,7 @@ export function PhaseEducationCard({
             className="text-foreground h-4 w-4 shrink-0"
             aria-hidden="true"
           />
-          <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+          <span className="text-muted-foreground text-xs font-medium">
             {t("cycle.phaseEducation.title")}
           </span>
         </div>

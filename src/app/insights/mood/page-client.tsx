@@ -124,13 +124,12 @@ export default function InsightsMoodPageClient() {
       <SubPageShell
         disclaimer="notCause"
         title={t("insights.moodSectionTitle")}
-        description={t("insights.subPage.stimmungDescription")}
+        info={t("insights.subPage.stimmungDescription")}
         explainerMetric="mood"
       >
         <MetricEmptyState
           icon={<Smile className="size-6" />}
           title={t("insights.emptyState.mood.title")}
-          description={t("insights.emptyState.mood.description")}
           cta={
             <Button size="sm" asChild>
               <Link href="/mood">{t("insights.emptyState.mood.cta")}</Link>
@@ -146,7 +145,7 @@ export default function InsightsMoodPageClient() {
     <SubPageShell
       disclaimer="notCause"
       title={t("insights.moodSectionTitle")}
-      description={t("insights.subPage.stimmungDescription")}
+      info={t("insights.subPage.stimmungDescription")}
       explainerMetric="mood"
       coachLaunch
       headerAction={

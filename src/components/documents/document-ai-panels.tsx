@@ -238,11 +238,7 @@ export function AssistSuggestionReview({
           ) : null}
         </div>
       ) : (
-        <EmptyState
-          variant="plain"
-          size="compact"
-          title={t("documents.assist.empty")}
-        />
+        <EmptyState variant="plain" title={t("documents.assist.empty")} />
       )}
     </div>
   );

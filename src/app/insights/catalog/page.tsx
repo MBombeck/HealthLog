@@ -329,10 +329,7 @@ export default function MetricCatalogPage() {
   }
 
   return (
-    <SubPageShell
-      title={t("metricCatalog.title")}
-      description={t("metricCatalog.description")}
-    >
+    <SubPageShell title={t("metricCatalog.title")}>
       <div className="space-y-6">
         {CATALOG_GROUP_ORDER.map((group) => {
           const entries = (grouped.get(group) ?? []).filter(isEntryVisible);

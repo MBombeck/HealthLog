@@ -1,8 +1,13 @@
 "use client";
 
 /**
- * Settings navigation below `md`: one button naming where the person is, and a
- * bottom sheet listing every section under its group.
+ * Settings navigation below `md`: the page title is the switcher. The H1
+ * names where the person is and opens a bottom sheet listing every section
+ * under its group.
+ *
+ * The phone used to stack the title, then a full-width button naming the same
+ * section again, then the page's first heading: the page's name two or three
+ * times before any setting. The title and the switcher are now one control.
  *
  * The phone used to carry every section as a chip in one horizontal strip,
  * more than twenty of them, so most of Settings sat off screen and the groups
@@ -18,6 +23,7 @@ import { ChevronsUpDown } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/ui/page-header";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { useTranslations } from "@/lib/i18n/context";
 
@@ -31,14 +37,24 @@ export interface SettingsNavEntry {
 export function SettingsMobileNav({
   entries,
   activeSlug,
+  heading,
 }: {
   entries: readonly SettingsNavEntry[];
   activeSlug: string;
+  /**
+   * The page title the switcher stands in for. Without it (a test that
+   * mounts the nav alone) the switcher names the active section.
+   */
+  heading?: {
+    title: string;
+    titleId: string;
+    topSlot?: React.ReactNode;
+    actions?: React.ReactNode;
+  };
 }) {
   const { t } = useTranslations();
   const [open, setOpen] = React.useState(false);
   const active = entries.find((entry) => entry.slug === activeSlug);
-  const ActiveIcon = active?.icon;
 
   // Group the flat, pre-ordered list for rendering; the order of first
   // appearance is the group order.
@@ -54,38 +70,32 @@ export function SettingsMobileNav({
       aria-label={t("settings.shell.sectionsNav")}
       className="mb-4 md:hidden"
     >
-      <button
-        type="button"
-        data-slot="settings-mobile-nav-trigger"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        onClick={() => setOpen(true)}
-        className="border-border bg-card hover:bg-accent focus-visible:ring-ring/50 flex min-h-11 w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
-      >
-        {ActiveIcon ? (
-          <ActiveIcon
-            className="text-muted-foreground size-4 shrink-0"
-            aria-hidden="true"
-          />
-        ) : null}
-        <span className="min-w-0 flex-1">
-          {active ? (
-            <span className="text-muted-foreground block text-xs">
-              {active.groupLabel}
+      <PageHeader
+        headingAs="div"
+        titleId={heading?.titleId}
+        topSlot={heading?.topSlot}
+        actions={heading?.actions}
+        title={
+          <button
+            type="button"
+            data-slot="settings-mobile-nav-trigger"
+            aria-haspopup="dialog"
+            aria-expanded={open}
+            onClick={() => setOpen(true)}
+            className="focus-visible:ring-ring/50 -mx-1 inline-flex max-w-full items-center gap-1.5 rounded-md px-1 text-left focus-visible:ring-2 focus-visible:outline-none"
+          >
+            <span className="min-w-0 truncate">
+              {heading?.title ??
+                active?.title ??
+                t("settings.shell.allSections")}
             </span>
-          ) : null}
-          <span className="block truncate text-sm font-medium">
-            {active?.title ?? t("settings.shell.allSections")}
-          </span>
-        </span>
-        <span className="text-muted-foreground shrink-0 text-xs">
-          {t("settings.shell.allSections")}
-        </span>
-        <ChevronsUpDown
-          className="text-muted-foreground size-4 shrink-0"
-          aria-hidden="true"
-        />
-      </button>
+            <ChevronsUpDown
+              className="text-muted-foreground size-5 shrink-0"
+              aria-hidden="true"
+            />
+          </button>
+        }
+      />
 
       <ResponsiveSheet
         open={open}

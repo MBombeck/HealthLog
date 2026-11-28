@@ -228,11 +228,7 @@ export function HostMetricsChart() {
             </span>
           }
         />
-        <EmptyState
-          variant="plain"
-          size="compact"
-          title={t("admin.hostMetrics.empty")}
-        />
+        <EmptyState variant="plain" title={t("admin.hostMetrics.empty")} />
       </SettingsCard>
     );
   }

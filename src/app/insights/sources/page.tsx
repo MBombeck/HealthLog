@@ -34,7 +34,7 @@ export default function InsightsSourcesPage() {
   return (
     <SubPageShell
       title={t("sourceProvenance.title")}
-      description={t("sourceProvenance.description")}
+      info={t("sourceProvenance.description")}
     >
       <Suspense fallback={null}>
         <SourcesPageBody />

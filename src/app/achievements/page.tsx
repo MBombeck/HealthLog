@@ -306,10 +306,8 @@ export default function AchievementsPage() {
   if (!isAuthenticated) {
     return (
       <div className="space-y-6">
-        <PageHeader
-          title={t("achievements.title")}
-          description={t("achievements.loginRequired")}
-        />
+        <PageHeader title={t("achievements.title")} />
+        <EmptyState variant="plain" title={t("achievements.loginRequired")} />
       </div>
     );
   }
@@ -320,10 +318,7 @@ export default function AchievementsPage() {
   if (isError) {
     return (
       <div className="space-y-6">
-        <PageHeader
-          title={t("achievements.title")}
-          description={t("achievements.subtitle")}
-        />
+        <PageHeader title={t("achievements.title")} />
         <QueryErrorCard error={error} onRetry={() => refetch()} />
       </div>
     );
@@ -345,7 +340,6 @@ export default function AchievementsPage() {
             {t("achievements.title")}
           </span>
         }
-        description={t("achievements.subtitle")}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

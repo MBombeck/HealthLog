@@ -187,7 +187,7 @@ export function ChartOverlayControlsBody({
 
   return (
     <>
-      <DropdownMenuLabel className="text-xs font-medium tracking-wide uppercase">
+      <DropdownMenuLabel className="text-xs font-medium">
         {t("chart.overlay.controls.title")}
       </DropdownMenuLabel>
       <DropdownMenuSeparator />

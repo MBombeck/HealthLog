@@ -442,20 +442,14 @@ export function SettingsShell({
         }
       : null);
 
-  // The shell paints the heading twice — above the mobile chip strip and
-  // inside the desktop grid row — so only the desktop copy may be a real
-  // `<h1>`. Both go through `PageHeader`: the block used to be hand-rolled
-  // here and in `admin-shell.tsx`, which is how Settings and Admin ended up
-  // a step off every module page (and off each other).
-  const headingBlock = (mobile = false) =>
+  // The desktop heading. On a phone the title is the section switcher
+  // (`SettingsMobileNav`, a `role="heading"` copy), so only this one is a
+  // real `<h1>`. Both go through `PageHeader`, as Admin's do.
+  const headingBlock = () =>
     resolvedHeading ? (
       <PageHeader
-        headingAs={mobile ? "div" : "h1"}
-        titleId={
-          mobile
-            ? `${resolvedHeading.headingId}-mobile`
-            : resolvedHeading.headingId
-        }
+        headingAs="h1"
+        titleId={resolvedHeading.headingId}
         title={resolvedHeading.title}
         topSlot={resolvedHeading.topSlot}
         actions={resolvedHeading.headingAccessory}
@@ -473,18 +467,23 @@ export function SettingsShell({
       data-active-record-id={activeRecord?.accountId}
       data-record-kind={activeRecord?.recordKind}
     >
-      {/* v1.18.6.1 — on mobile the heading sits above the chip strip; on
-          desktop it is rendered inside the grid (row 1 / content column) so
-          it does not paint twice. */}
-      {resolvedHeading ? (
-        <div className="mb-4 md:hidden">{headingBlock(true)}</div>
-      ) : null}
-
       <SettingsAnchorForward />
-      {/* Below `md`: one button naming the current section, opening the
-          grouped section sheet. Hidden on md+, where the sidebar shows. */}
+      {/* Below `md` the page title is the section switcher: one heading that
+          names the section and opens the grouped section sheet, instead of a
+          title, a button with the same name and a heading under it. Hidden on
+          md+, where the sidebar shows and the title is the desktop H1. */}
       <SettingsMobileNav
         activeSlug={activeSlug}
+        heading={
+          resolvedHeading
+            ? {
+                title: resolvedHeading.title,
+                titleId: `${resolvedHeading.headingId}-mobile`,
+                topSlot: resolvedHeading.topSlot,
+                actions: resolvedHeading.headingAccessory,
+              }
+            : undefined
+        }
         entries={visibleSections.map((section) => ({
           slug: section.slug,
           title: t(section.titleKey),

@@ -65,25 +65,22 @@ const EXPLAINER_METRIC: Partial<Record<AnatomyMetricId, string>> = {
   STRAIN_SCORE: "strain",
 };
 
-/** Localised page header per metric (title + one-line description). */
-const HEADER_KEYS: Partial<
-  Record<AnatomyMetricId, { title: string; description: string }>
-> = {
+/**
+ * Localised page title per metric. No sentence under it: the method is in the
+ * score card ("How the score is made"), once.
+ */
+const HEADER_KEYS: Partial<Record<AnatomyMetricId, { title: string }>> = {
   SLEEP_SCORE: {
     title: "insights.derived.composite.SLEEP_SCORE.title",
-    description: "insights.derived.composite.SLEEP_SCORE.description",
   },
   READINESS: {
     title: "insights.derived.composite.READINESS.title",
-    description: "insights.derived.composite.READINESS.description",
   },
   STRESS_SCORE: {
     title: "insights.derived.scores.stress",
-    description: "insights.derived.composite.STRESS_SCORE.description",
   },
   STRAIN_SCORE: {
     title: "insights.derived.scores.strain",
-    description: "insights.derived.composite.STRAIN_SCORE.description",
   },
 };
 
@@ -112,7 +109,6 @@ function AnatomyPage({ metric }: { metric: AnatomyMetricId }) {
   return (
     <SubPageShell
       title={t(header.title)}
-      description={t(header.description)}
       explainerMetric={EXPLAINER_METRIC[metric]}
       backLink={<ScoresBackLink slot="composite-score-back" />}
       coachLaunch
@@ -140,7 +136,6 @@ function HealthScorePage() {
   return (
     <SubPageShell
       title={label}
-      description={t("insights.scoreHistory.healthDescription")}
       backLink={<ScoresBackLink slot="health-score-back" />}
     >
       <div data-slot="health-score-page" className="space-y-3">

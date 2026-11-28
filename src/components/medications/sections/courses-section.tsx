@@ -272,11 +272,7 @@ export function CoursesRow({
       </div>
 
       {courses.length === 0 ? (
-        <EmptyState
-          variant="plain"
-          size="compact"
-          title={t("medications.course.none")}
-        />
+        <EmptyState variant="plain" title={t("medications.course.none")} />
       ) : (
         <ul className="space-y-2">
           {courses.map((course, index) => (

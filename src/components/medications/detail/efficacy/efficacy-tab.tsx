@@ -307,7 +307,6 @@ function TargetCard({
         ) : (
           <EmptyState
             variant="plain"
-            size="compact"
             title={t("medications.efficacy.noSeries")}
           />
         )}

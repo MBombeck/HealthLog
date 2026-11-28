@@ -59,11 +59,11 @@ export interface SubPageShellProps {
   /** Optional accent badge (status, dataset coverage, …). */
   badge?: ReactNode;
   /**
-   * Optional short paragraph beneath the title, mirroring the Apple-Health
-   * convention of a one-line scaffold on every metric page. The mother
-   * page does not pass it; sub-pages use it to anchor the surface.
+   * What the page is, behind the (i) beside the title, for a page without a
+   * metric definition (`explainerMetric`). There is no sentence under the
+   * title: the page opens on its title and its numbers.
    */
-  description?: string;
+  info?: string;
   /**
    * v1.8.0 — when set, the metric's static "What is X?" definition
    * renders as a muted caption directly beneath the heading. The value
@@ -246,7 +246,7 @@ export function SubPageShell({
   title,
   backLink,
   badge,
-  description,
+  info,
   explainerMetric,
   explainerParams,
   focusOnMount = false,
@@ -370,19 +370,27 @@ export function SubPageShell({
             focusable
             className="[&_[data-slot=page-header-row]]:min-h-10"
             titleAccessory={
-              explainerMetric || diversityNudge || badge ? (
+              explainerMetric || info || diversityNudge || badge ? (
                 <span className="inline-flex items-center gap-1">
                   {/* The definition sits behind the (i): the page opens on
                     its title alone. */}
-                  {explainerMetric ? (
+                  {explainerMetric || info ? (
                     <InfoPopover
                       align="start"
-                      triggerDataSlot="metric-explainer-trigger"
+                      triggerDataSlot={
+                        explainerMetric
+                          ? "metric-explainer-trigger"
+                          : "sub-page-info"
+                      }
                       bodyDataSlot="metric-explainer"
-                      content={t(
-                        `insights.subPage.explainer.${explainerMetric}Body`,
-                        explainerParams,
-                      )}
+                      content={
+                        explainerMetric
+                          ? t(
+                              `insights.subPage.explainer.${explainerMetric}Body`,
+                              explainerParams,
+                            )
+                          : info
+                      }
                     />
                   ) : null}
                   {/* v1.8.6 — the diversity nudge rides the heading as a
@@ -452,22 +460,10 @@ export function SubPageShell({
                     </Button>
                   ) : null}
                   <TargetAdjustButton />
-                  {/* v1.18.6 — the per-metric Coach launch icon is
-                    gone. With the Coach FAB anchored bottom-right on every
-                    authenticated page, a second Coach affordance in each
-                    metric header was redundant. The `coachLaunch` prop is
-                    still accepted (every metric page passes it) but no longer
-                    paints a control — the FAB is the single Coach entry. */}
-                  {/* v1.16.8 — the v1.16.4 customise cog is gone: the sticky
-                    tab strip above already carries the same control on every
-                    insights surface, so the header copy was a duplicate. */}
                 </div>
               </>
             }
           />
-          {description && !explainerMetric ? (
-            <p className="text-foreground text-sm">{description}</p>
-          ) : null}
         </header>
         {/* The stat strip leads the spine, directly above the chart, and
           self-gates without data. Its numbers follow the chart's active range

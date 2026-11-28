@@ -137,7 +137,6 @@ export function SourceProvenanceView({
           ) : day.data.sources.length === 0 ? (
             <EmptyState
               variant="plain"
-              size="compact"
               title={t("sourceProvenance.dayEmpty")}
               data-slot="provenance-day-empty"
             />
@@ -249,7 +248,6 @@ export function SourceProvenanceView({
           ) : compare.data.sources.length < 2 ? (
             <EmptyState
               variant="plain"
-              size="compact"
               title={t("sourceProvenance.compareNeedsTwo")}
               data-slot="provenance-compare-empty"
             />

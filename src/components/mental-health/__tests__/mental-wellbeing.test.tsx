@@ -70,8 +70,8 @@ describe("landing chrome (v1.25.5 — disclaimer + heading removed)", () => {
     // The title survives as an sr-only h1 for the document outline.
     expect(html).toContain(mh.pageTitle);
     expect(html).toContain("sr-only");
-    // …and the lead description still introduces the screeners.
-    expect(html).toContain(mh.pageDescription);
+    // …and what the screeners are sits behind the title's (i).
+    expect(html).toContain('data-hint="page-header-info"');
   });
 });
 

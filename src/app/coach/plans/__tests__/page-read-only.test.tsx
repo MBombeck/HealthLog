@@ -83,7 +83,8 @@ describe("/coach/plans", () => {
     expect(html).not.toContain('data-slot="coach-plan-accept"');
     expect(html).not.toContain('data-slot="coach-plan-met"');
     expect(html).not.toContain('data-slot="coach-plan-abandon"');
-    expect(html).toContain("you can still read and delete your plans");
+    // Why the lifecycle controls are missing sits behind the title's (i).
+    expect(html).toContain('data-hint="page-header-info"');
   });
 
   it("offers the lifecycle controls with the Coach available", () => {

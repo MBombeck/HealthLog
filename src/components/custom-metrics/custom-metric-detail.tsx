@@ -170,16 +170,16 @@ export function CustomMetricDetail({
       showErrorToast(t("customMetrics.deleteError"), { cause: failure }),
   });
 
-  const description = metric?.description?.trim()
-    ? metric.description.trim()
-    : t("customMetrics.detail.genericDescription");
+  // The person's own description of the metric is record data, so it is
+  // the header's meta line; there is no generic sentence in its place.
+  const description = metric?.description?.trim() || undefined;
 
   if (metricError || listError) {
     return (
       <div className="space-y-6">
         <PageHeader
           title={metric?.name ?? t("customMetrics.detail.title")}
-          description={description}
+          meta={description}
         />
         <QueryErrorCard
           error={metricError ? metricFailure : listFailure}
@@ -197,7 +197,7 @@ export function CustomMetricDetail({
     <div className="space-y-6">
       <PageHeader
         title={metric?.name ?? <Skeleton className="h-7 w-32" />}
-        description={description}
+        meta={description}
         actions={
           <>
             {/* Controls, left → right: Delete · Edit · Show-all-values · Add. */}
@@ -272,7 +272,6 @@ export function CustomMetricDetail({
             <EmptyState
               icon={<Gauge className="size-6" />}
               title={t("customMetrics.detail.emptyTitle")}
-              description={t("customMetrics.detail.emptyDescription")}
               action={
                 <Button onClick={() => setAddOpen(true)}>
                   {t("customMetrics.addValue")}

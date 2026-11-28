@@ -147,7 +147,7 @@ export function AuditCPanel({
 
       {data.history.length > 0 ? (
         <div className="space-y-1">
-          <h4 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+          <h4 className="text-muted-foreground text-xs font-medium">
             {t("records.life.auditC.history")}
           </h4>
           <ul className="divide-border divide-y text-sm">

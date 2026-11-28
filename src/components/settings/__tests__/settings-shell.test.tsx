@@ -569,7 +569,9 @@ describe("<SettingsShell>", () => {
     expect(nav).not.toBeNull();
     expect(nav![0]).toContain('data-slot="settings-mobile-nav-trigger"');
     expect(nav![0]).toContain("Security");
-    expect(nav![0]).toContain("Account");
+    // The switcher is the page title: one heading, the section's name once.
+    expect(nav![0]).toContain('role="heading"');
+    expect(nav![0].match(/>Security</g)).toHaveLength(1);
     expect(nav![0]).not.toContain("overflow-x-auto");
     expect(nav![0]).not.toContain('href="/settings/');
   });

@@ -172,7 +172,7 @@ export function MentalWellbeing() {
               (the title was previously sr-only; the description stays). */}
           <PageHeader
             title={t("mentalHealth.pageTitle")}
-            description={t("mentalHealth.pageDescription")}
+            info={t("mentalHealth.pageDescription")}
           />
 
           {/* What happens to the answers. The Modules hub used to carry this

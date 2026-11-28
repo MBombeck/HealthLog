@@ -337,7 +337,6 @@ export function UserManagementSection() {
             <EmptyState
               icon={<Users className="size-6" />}
               title={t("admin.section.users.emptyTitle")}
-              description={t("admin.section.users.emptyDescription")}
               action={
                 filter !== "all" ? (
                   <Button

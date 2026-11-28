@@ -139,9 +139,7 @@ export function BpTimeOfDayCard({
         ) : data && data.readingCount === 0 ? (
           <EmptyState
             variant="plain"
-            size="compact"
             title={t("insights.bpTimeOfDay.emptyTitle")}
-            description={t("insights.bpTimeOfDay.emptyDescription")}
           />
         ) : data ? (
           <ValueRow

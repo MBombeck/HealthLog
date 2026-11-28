@@ -3,19 +3,31 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Reusable empty-state for lists, tiles, and chart panels that have no
- * data yet. Always pair an icon, a one-sentence explanation, and a
- * single primary action. Mounts inside the same container the loaded
- * UI uses so the layout does not shift on first data.
+ * The one empty state: a title and, when there is something to do, the
+ * action that does it. One row, the height of the rows it stands in for.
  *
- * Pattern (per `docs/ui-guidelines.md` §4.2):
+ * It used to say the same thing three times: a page subtitle explained the
+ * page, the empty title said there was nothing, and a sentence under it
+ * explained the page again, often beside a button with the same words. The
+ * title names what is missing ("No vaccination recorded yet"), the action is
+ * the next step, and nothing else is written. A reason that has to stand
+ * (a safety or a consent line) belongs to the surface around it as a `Hint`,
+ * not to the empty state.
  *
  *   <EmptyState
- *     icon={<Plus className="size-6" />}
- *     title={t("empty.measurements.title")}
- *     description={t("empty.measurements.description")}
- *     action={<Button>{t("empty.measurements.add")}</Button>}
+ *     icon={<Syringe className="size-4" />}
+ *     title={t("vaccinations.emptyTitle")}
+ *     action={<Button size="sm">{t("vaccinations.add")}</Button>}
  *   />
+ *
+ * `meta` is the row's one meta line, for a value that is still being learned:
+ * how far it has come ("5 of 20 paired days", "3 more readings"). A number
+ * and its unit, never a sentence that explains the page.
+ *
+ * `"card"` (default) puts the row in a card of its own, for a page or a
+ * section that has nothing yet. `"plain"` renders the bare row, inside a card
+ * or a chart panel that already has its frame. Inside a `ListGroup`, use its
+ * `empty` row instead: an add row is the empty state of a list.
  */
 export interface EmptyStateProps extends Omit<
   React.HTMLAttributes<HTMLDivElement>,
@@ -23,108 +35,68 @@ export interface EmptyStateProps extends Omit<
 > {
   icon?: React.ReactNode;
   title: React.ReactNode;
-  description?: React.ReactNode;
+  /** One meta line: the progress of a value still being learned. */
+  meta?: React.ReactNode;
   action?: React.ReactNode;
-  /**
-   * `"card"` (default) wraps the empty-state in a bordered surface so
-   * it sits visually inside a list/tile.
-   * `"plain"` renders inline without the wrapper — for use inside
-   * chart panels that already have their own card.
-   */
   variant?: "card" | "plain";
-  /**
-   * Compact density for use inside tiles or table-row empty rows.
-   */
-  size?: "default" | "compact";
 }
 
 function EmptyState({
   icon,
   title,
-  description,
+  meta,
   action,
   variant = "card",
-  size = "default",
   className,
   ...props
 }: EmptyStateProps) {
-  const inner = (
+  return (
     <div
+      data-slot="empty-state"
+      data-variant={variant}
+      role="status"
+      aria-live="polite"
       className={cn(
-        "flex flex-col items-center justify-center text-center",
-        size === "compact" ? "gap-2 py-4" : "gap-3 py-8",
-        // The card variant paints a border, so its content insets from it:
-        // a full-width phone CTA otherwise ran edge to edge into the frame.
-        variant === "card" && "px-4",
+        "flex min-h-14 w-full flex-wrap items-center gap-x-3 gap-y-2 py-2",
+        variant === "card"
+          ? "bg-card text-card-foreground rounded-xl border px-4 shadow-sm"
+          : "px-0",
+        className,
       )}
+      {...props}
     >
       {icon ? (
-        <div
+        <span
           aria-hidden="true"
-          className={cn(
-            "text-muted-foreground bg-muted/60 flex items-center justify-center rounded-full",
-            size === "compact" ? "size-8 p-1.5" : "size-12 p-2.5",
-          )}
+          data-slot="empty-state-icon"
+          className="bg-muted text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-lg [&_svg]:size-4"
         >
           {icon}
-        </div>
+        </span>
       ) : null}
-      <div className="space-y-1">
-        <p
-          className={cn(
-            "font-medium",
-            size === "compact" ? "text-sm" : "text-base",
-          )}
-        >
+      <div className="min-w-0 flex-1">
+        <p data-slot="empty-state-title" className="text-sm font-medium">
           {title}
         </p>
-        {description ? (
-          <p className="text-muted-foreground max-w-xs text-sm">
-            {description}
+        {meta ? (
+          <p
+            data-slot="empty-state-meta"
+            className="text-muted-foreground text-xs"
+          >
+            {meta}
           </p>
         ) : null}
       </div>
       {action ? (
         <div
-          // One shape for every empty state's action: centred under the
-          // copy at its own width, never stretched edge to edge, and on the
-          // 44 px tap floor (back to the compact 36 px under a mouse). A
-          // per-call-site "lg" variant used to stretch some CTAs full width
-          // on a phone and leave others compact, side by side in the app.
-          className="mt-1 [&>a]:min-h-11 pointer-fine:[&>a]:min-h-9 [&>button]:min-h-11 pointer-fine:[&>button]:min-h-9"
+          data-slot="empty-state-action"
+          // 44 px under a finger, 36 px under a mouse, whatever the call
+          // site's button size.
+          className="flex shrink-0 items-center gap-2 [&>a]:min-h-11 pointer-fine:[&>a]:min-h-9 [&>button]:min-h-11 pointer-fine:[&>button]:min-h-9"
         >
           {action}
         </div>
       ) : null}
-    </div>
-  );
-
-  if (variant === "plain") {
-    return (
-      <div
-        data-slot="empty-state"
-        role="status"
-        aria-live="polite"
-        className={cn("w-full", className)}
-        {...props}
-      >
-        {inner}
-      </div>
-    );
-  }
-
-  return (
-    <div
-      data-slot="empty-state"
-      role="status"
-      aria-live="polite"
-      className={cn(
-        "border-border bg-card rounded-xl border border-dashed",
-        className,
-      )}
-      {...props}
-    >
-      {inner}
     </div>
   );
 }

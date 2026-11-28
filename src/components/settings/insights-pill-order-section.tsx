@@ -278,7 +278,6 @@ export function InsightsPillOrderSection({ id }: { id?: string }) {
       ) : tilesByGroup.length === 0 ? (
         <EmptyState
           variant="plain"
-          size="compact"
           data-slot="insights-pill-order-empty"
           title={t("insights.pillOrder.empty")}
         />
@@ -290,7 +289,7 @@ export function InsightsPillOrderSection({ id }: { id?: string }) {
               data-slot="insights-pill-order-group"
               data-group={group}
             >
-              <p className="text-muted-foreground px-1 py-1 text-xs font-semibold tracking-wide uppercase">
+              <p className="text-muted-foreground px-1 py-1 text-xs font-semibold">
                 {t(MANAGER_GROUP_HEADER_KEYS[group])}
               </p>
               <DndContext

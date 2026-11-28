@@ -171,7 +171,6 @@ export function ApiTokenOverviewSection() {
           <EmptyState
             icon={<Key className="size-6" />}
             title={t("admin.tokensEmptyTitle")}
-            description={t("admin.tokensEmptyDescription")}
           />
         ) : (
           <>

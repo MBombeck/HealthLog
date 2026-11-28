@@ -217,7 +217,6 @@ export function SleepNightCard({ enabled }: { enabled: boolean }) {
         ) : !session ? (
           <EmptyState
             variant="plain"
-            size="compact"
             data-slot="sleep-hypnogram-empty"
             title={t("insights.sleep.hypnogram.empty")}
           />

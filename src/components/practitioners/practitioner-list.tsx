@@ -137,7 +137,6 @@ export function PractitionerList({ enabled = true }: { enabled?: boolean }) {
     <section className="space-y-4">
       <PageHeader
         title={t("practitioners.title")}
-        description={t("practitioners.description")}
         backLink={{ href: VISITS, label: t("encounters.sectionTitle") }}
         actions={addButton}
       />
@@ -177,11 +176,6 @@ export function PractitionerList({ enabled = true }: { enabled?: boolean }) {
             debounced
               ? "practitioners.noMatchTitle"
               : "practitioners.emptyTitle",
-          )}
-          description={t(
-            debounced
-              ? "practitioners.noMatchDescription"
-              : "practitioners.emptyDescription",
           )}
           action={debounced ? undefined : (addButton ?? undefined)}
         />

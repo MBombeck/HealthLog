@@ -117,13 +117,13 @@ export function ApiEndpointsCard() {
                 <code className="font-mono break-all">{endpoint.path}</code>
               </div>
               <div>
-                <p className="text-muted-foreground text-xs tracking-wide uppercase">
+                <p className="text-muted-foreground text-xs">
                   {t("settings.apiEndpointAuth")}
                 </p>
                 <code className="font-mono break-all">{endpoint.auth}</code>
               </div>
               <div>
-                <p className="text-muted-foreground text-xs tracking-wide uppercase">
+                <p className="text-muted-foreground text-xs">
                   {t("settings.apiEndpointExample")}
                 </p>
                 <code className="block font-mono break-all">

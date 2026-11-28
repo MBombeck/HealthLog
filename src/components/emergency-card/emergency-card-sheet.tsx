@@ -53,7 +53,7 @@ export function EmergencyCardSheet({
       <dl className="divide-border divide-y">
         {rows.map((row) => (
           <div key={row.key} className="py-3" data-field={row.key}>
-            <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+            <dt className="text-muted-foreground text-xs font-medium">
               {row.label}
             </dt>
             {row.lines.map((line, i) => {

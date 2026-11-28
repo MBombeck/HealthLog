@@ -93,7 +93,7 @@ export default function InsightsWorkoutsPageClient() {
   return (
     <SubPageShell
       title={t("insights.workouts.title")}
-      description={t("insights.workouts.description")}
+      info={t("insights.workouts.description")}
       explainerMetric="workouts"
       coachLaunch
       headerAction={
@@ -134,7 +134,6 @@ export default function InsightsWorkoutsPageClient() {
         <MetricEmptyState
           icon={<Activity className="size-6" />}
           title={t("insights.workouts.emptyState.title")}
-          description={t("insights.workouts.emptyState.description")}
           cta={
             showLog ? (
               <Button size="sm" type="button" onClick={() => setLogOpen(true)}>
@@ -199,7 +198,6 @@ export default function InsightsWorkoutsPageClient() {
           ) : (
             <EmptyState
               variant="plain"
-              size="compact"
               title={t("insights.workouts.filterEmpty")}
               className="px-4 md:px-6"
               data-slot="workout-list-filter-empty"

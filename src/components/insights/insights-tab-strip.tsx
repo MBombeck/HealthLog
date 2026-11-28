@@ -925,7 +925,7 @@ function InsightsTabStripImpl({
                   data-slot="insights-tab-strip-group-popover"
                   className="w-56 p-2 text-sm"
                 >
-                  <p className="text-muted-foreground px-2 py-1 text-xs font-semibold tracking-wide uppercase">
+                  <p className="text-muted-foreground px-2 py-1 text-xs font-semibold">
                     {t(tab.headerKey)}
                   </p>
                   <ul className="space-y-1" role="list">

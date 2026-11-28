@@ -131,7 +131,6 @@ export function FamilyHistoryManager() {
         <EmptyState
           icon={<Users className="size-6" />}
           title={t("records.family.emptyTitle")}
-          description={t("records.family.emptyDescription")}
           action={
             <Button onClick={openNew}>{t("records.family.addFirst")}</Button>
           }

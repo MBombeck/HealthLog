@@ -330,7 +330,7 @@ function EpisodeGroup({
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           aria-controls={gridId}
-          className="text-muted-foreground hover:text-foreground -mx-1 flex w-fit items-center gap-1.5 rounded-md px-1 py-0.5 text-xs font-medium tracking-wide uppercase transition-colors"
+          className="text-muted-foreground hover:text-foreground -mx-1 flex w-fit items-center gap-1.5 rounded-md px-1 py-0.5 text-xs font-medium transition-colors"
         >
           <ChevronDown
             className={cn(
@@ -349,9 +349,7 @@ function EpisodeGroup({
 
   return (
     <section className="space-y-3">
-      <h2 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-        {title}
-      </h2>
+      <h2 className="text-muted-foreground text-xs font-medium">{title}</h2>
       {grid}
     </section>
   );
@@ -409,7 +407,6 @@ export function IllnessView() {
     <div className="space-y-6">
       <PageHeader
         title={<span data-tour-id="illness-hero">{t("illness.title")}</span>}
-        description={t("illness.subtitle")}
         actions={
           <>
             {/* v1.18.6 — wrench left of the primary Add, linking to the
@@ -508,7 +505,6 @@ export function IllnessView() {
           <EmptyState
             icon={<Stethoscope className="size-6" />}
             title={t("illness.empty.title")}
-            description={t("illness.empty.body")}
             action={
               canAddEpisode ? (
                 <Button onClick={() => setNewOpen(true)}>

@@ -957,7 +957,7 @@ describe("pillar detail formatting", () => {
     // only once opened — so the panel shows the row, and the value itself is
     // asserted through the same pure formatter the popover is fed.
     expect(html).toContain('data-pillar="GLYCAEMIA" data-status="ok"');
-    expect(html).toContain('data-slot="info-popover-trigger"');
+    expect(html).toContain('data-hint="info-popover"');
     expect(
       pillarObservedText(FASTING_GLUCOSE, {
         t: translator(),

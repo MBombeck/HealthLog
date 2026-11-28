@@ -77,8 +77,7 @@ import { useDayValueFormat } from "./use-day-value-format";
  */
 
 /** Section label, ui-standards.md §5. */
-export const DAY_SECTION_LABEL =
-  "text-muted-foreground text-xs font-medium tracking-wide uppercase";
+export const DAY_SECTION_LABEL = "text-muted-foreground text-xs font-medium";
 
 /* ─── Focus ───────────────────────────────────────────────────────────── */
 

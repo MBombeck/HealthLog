@@ -10,9 +10,10 @@ import { cn } from "@/lib/utils";
  * several screens fills its own segment part-way (`fraction`); the number of
  * segments never changes under the person's finger.
  *
- * Phones: the current step's name on the left and "Step n of N" on the right,
- * above the segments. From `md` the names sit under their segments and the
- * count stays at the top right.
+ * Phones: the current step's name above the segments. From `md` the names
+ * sit under their segments. "Step n of N" is the band's accessible name and
+ * is not painted: the segments already show where the person is, and the
+ * count beside them said it a second time.
  *
  * Two colours only: primary for what is done, the track token for what is
  * not. The current step is marked by its label weight, the count and
@@ -34,7 +35,7 @@ export interface StepperProps {
   current: number;
   /** How far the current step is filled, 0 to 1. Defaults to 1. */
   fraction?: number;
-  /** "Step n of N", already translated; also the band's accessible name. */
+  /** "Step n of N", already translated: the band's accessible name. */
   countLabel: string;
   /** Highest index a tap may jump to. Defaults to `current`. */
   reachableUntil?: number;
@@ -68,20 +69,13 @@ export function Stepper({
     >
       {/* The caption repeats what the band's name and `aria-current` already
           say, so it is hidden from assistive technology. */}
-      <div className="flex items-baseline gap-3" aria-hidden="true">
-        <p
-          className="text-foreground min-w-0 flex-1 truncate text-sm font-medium md:invisible"
-          data-slot="stepper-current-label"
-        >
-          {currentStep?.label}
-        </p>
-        <p
-          className="text-muted-foreground shrink-0 text-xs tabular-nums"
-          data-slot="stepper-count"
-        >
-          {countLabel}
-        </p>
-      </div>
+      <p
+        aria-hidden="true"
+        className="text-foreground min-w-0 truncate text-sm font-medium md:hidden"
+        data-slot="stepper-current-label"
+      >
+        {currentStep?.label}
+      </p>
       <ol
         className="grid gap-1 md:gap-2"
         style={{

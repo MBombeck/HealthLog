@@ -160,7 +160,8 @@ describe("<LabBiomarkerDetail>", () => {
   it("renders the rich catalog description for a catalogued marker", () => {
     // "LDL Cholesterol" resolves to the `ldl` catalog slug (case-insensitive),
     // so the page shows the per-biomarker explainer, not the generic fallback.
-    expect(html).toContain("low-density lipoprotein");
+    // The explainer is the (i) beside the title; its body opens on tap.
+    expect(html).toContain('data-hint="page-header-info"');
     expect(html).not.toContain(
       "A lab biomarker you track. Add readings to follow",
     );

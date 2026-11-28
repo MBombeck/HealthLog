@@ -298,7 +298,7 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
       ? marker.context.trim()
       : t("labs.detail.genericDescription");
 
-  // v1.25.1 — the error state keeps the heading + description and adds a
+  // v1.25.1 — the error state keeps the heading and its (i) and adds a
   // retry, mirroring the insights `SubPageShell` recovery affordance rather than
   // collapsing to a bare line with no context and no way back.
   // A merged marker is on its way to its target (see above), not failed.
@@ -307,7 +307,7 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
       <div className="space-y-6">
         <PageHeader
           title={marker?.name ?? t("labs.detail.title")}
-          description={description}
+          info={description}
         />
         <QueryErrorCard
           error={markerError ? markerFailure : listFailure}
@@ -325,7 +325,7 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
     <div className="space-y-6">
       <PageHeader
         title={marker?.name ?? <Skeleton className="h-7 w-32" />}
-        description={description}
+        info={description}
         actions={
           <>
             {/* Edit, then Delete inside the overflow menu, away from the
@@ -422,7 +422,6 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
             <EmptyState
               icon={<FlaskConical className="size-6" />}
               title={t("labs.detail.emptyTitle")}
-              description={t("labs.detail.emptyDescription")}
               action={
                 canAddLab ? (
                   <Button onClick={() => setAddOpen(true)}>

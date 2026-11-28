@@ -111,16 +111,12 @@ export function AiQualitySection() {
           onRetry={() => void query.refetch()}
         />
       ) : !hasData ? (
-        <EmptyState
-          variant="plain"
-          size="compact"
-          title={t("admin.aiQuality.empty")}
-        />
+        <EmptyState variant="plain" title={t("admin.aiQuality.empty")} />
       ) : (
         <div className="relative overflow-x-auto">
           <table className="w-full text-sm" data-slot="ai-quality-table">
             <thead>
-              <tr className="text-muted-foreground border-border border-b text-left text-xs tracking-wider uppercase">
+              <tr className="text-muted-foreground border-border border-b text-left text-xs">
                 <th className="py-2 pr-3 font-medium">
                   {t("admin.aiQuality.colSeverity")}
                 </th>

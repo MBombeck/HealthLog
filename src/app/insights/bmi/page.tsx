@@ -82,13 +82,12 @@ export default function InsightsBmiPage() {
     return (
       <SubPageShell
         title={t("insights.bmiSectionTitle")}
-        description={t("insights.subPage.bmiDescription")}
+        info={t("insights.subPage.bmiDescription")}
         explainerMetric="bmi"
       >
         <MetricEmptyState
           icon={<Ruler className="size-6" />}
           title={t("insights.emptyState.bmi.title")}
-          description={t("insights.emptyState.bmi.description")}
           cta={
             <Button size="sm" asChild>
               <Link href="/measurements?add=WEIGHT">
@@ -106,13 +105,12 @@ export default function InsightsBmiPage() {
     return (
       <SubPageShell
         title={t("insights.bmiSectionTitle")}
-        description={t("insights.subPage.bmiDescription")}
+        info={t("insights.subPage.bmiDescription")}
         explainerMetric="bmi"
       >
         <EmptyState
           icon={<Ruler className="size-6" />}
           title={t("insights.bmiEmptyTitle")}
-          description={t("insights.bmiEmptyDescription")}
           action={
             <Button size="sm" asChild>
               <Link href="/settings/account">
@@ -129,7 +127,7 @@ export default function InsightsBmiPage() {
   return (
     <SubPageShell
       title={t("insights.bmiSectionTitle")}
-      description={t("insights.subPage.bmiDescription")}
+      info={t("insights.subPage.bmiDescription")}
       explainerMetric="bmi"
       coachLaunch
     >

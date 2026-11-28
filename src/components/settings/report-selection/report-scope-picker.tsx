@@ -168,7 +168,7 @@ export function ReportScopePicker({
       {sensitiveGroup ? (
         <div data-testid={`report-sensitive-tier-${surface}`}>
           <Separator className="my-4" />
-          <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
+          <p className="text-muted-foreground mb-2 text-xs font-medium">
             {t(sensitiveGroup.labelKey)}
           </p>
           <p className="text-muted-foreground mb-2 text-xs">

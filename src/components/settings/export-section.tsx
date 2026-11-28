@@ -149,7 +149,7 @@ function ExportCardShell({
         icon={Icon}
         title={title}
         status={
-          <span className="border-border text-muted-foreground rounded-full border px-2 py-0.5 text-xs font-medium tracking-wide uppercase">
+          <span className="border-border text-muted-foreground rounded-full border px-2 py-0.5 text-xs font-medium">
             {format}
           </span>
         }

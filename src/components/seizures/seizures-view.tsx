@@ -90,10 +90,7 @@ export function SeizuresView() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={t("seizures.title")}
-        description={t("seizures.subtitle")}
-      />
+      <PageHeader title={t("seizures.title")} />
       <p className="text-foreground text-sm">{t("seizures.safety.header")}</p>
 
       {diary.isLoading ? (
@@ -202,11 +199,7 @@ function SeizureList({
       </CardHeader>
       <CardContent className="space-y-3">
         {events.length === 0 ? (
-          <EmptyState
-            variant="plain"
-            size="compact"
-            title={t("seizures.list.empty")}
-          />
+          <EmptyState variant="plain" title={t("seizures.list.empty")} />
         ) : (
           <ul className="divide-border divide-y">
             {listed.map((event) => {
@@ -331,7 +324,6 @@ function SeizureTypeList({
           <EmptyState
             icon={<BrainCircuit className="size-6" />}
             title={t("seizures.types.emptyTitle")}
-            description={t("seizures.types.emptyDescription")}
           />
         ) : (
           <ul className="divide-border divide-y">

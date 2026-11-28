@@ -192,11 +192,7 @@ export function InsightStatusCard({
           <TileHeader icon={nodeIcon(icon)} title={title} />
         </CardHeader>
         <CardContent>
-          <EmptyState
-            variant="plain"
-            size="compact"
-            title={t("insights.noAnalysisYet")}
-          />
+          <EmptyState variant="plain" title={t("insights.noAnalysisYet")} />
         </CardContent>
       </Card>
     );

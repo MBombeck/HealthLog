@@ -56,7 +56,7 @@ export function SettingsGroup({
         className={cn("bg-card rounded-lg border px-4 py-1", className)}
         {...(dataSlot ? { "data-slot": dataSlot } : {})}
       >
-        <p className="text-muted-foreground border-border/60 border-b py-2.5 text-xs font-medium tracking-wide uppercase">
+        <p className="text-muted-foreground border-border/60 border-b py-2.5 text-xs font-medium">
           {label}
         </p>
         <div className="divide-border/60 divide-y">{children}</div>
@@ -74,7 +74,7 @@ export function SettingsGroup({
         data-slot="settings-group-trigger"
         className="group focus-visible:ring-ring/50 border-border/60 flex w-full items-center gap-2 border-b py-2.5 text-left focus-visible:ring-2 focus-visible:outline-none"
       >
-        <span className="text-muted-foreground flex-1 text-xs font-medium tracking-wide uppercase">
+        <span className="text-muted-foreground flex-1 text-xs font-medium">
           {label}
         </span>
         <ChevronDown

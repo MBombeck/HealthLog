@@ -1,23 +1,27 @@
 import type { ReactNode, Ref } from "react";
 
 import { BackLink } from "@/components/ui/back-link";
+import { InfoPopover } from "@/components/ui/info-popover";
 import { cn } from "@/lib/utils";
 
 /**
  * The one canonical page header. Every module surface renders its title
  * through this so the header vocabulary reads identically app-wide: the H1
- * is always `text-2xl font-bold tracking-tight`, the explainer under it is
- * always `text-muted-foreground text-sm` (heading in foreground, one-line
- * explainer in muted — the app-wide convention the design standards pin for
- * `CardDescription`, `PageHeader`, and `SettingsCardHeader` alike), and no
- * icon sits beside the H1. An optional back-link rides above the title, and
- * an `actions` slot holds the page's primary buttons to the right of the
- * title block.
+ * is always `text-2xl font-bold tracking-tight` and no icon sits beside it.
+ * An optional back-link rides above the title, and an `actions` slot holds
+ * the page's primary buttons to the right of the title block.
  *
- * The explainer never truncates. A page that clipped it mid-word to hold one
- * line on a phone was trading a readable sentence for a fixed height; the
- * fixed height now comes from every header being built the same way, and a
- * sentence too long for one line is a text problem, fixed in the string.
+ * There is no subtitle. About eighty pages carried a sentence under the
+ * title, and almost every one said the title again in sentence form ("Your
+ * medications, their schedules and every dose"). What a page has to explain
+ * and the surface works without goes behind `info`, the (i) beside the
+ * title; what it must say (safety, consent) belongs to the card it concerns,
+ * not to the page head.
+ *
+ * `meta` is the one meta line of a detail page (pattern B): a fact of the
+ * record such as a dose or a shared link's label, never copy that describes
+ * the page. `page-header-no-subtitle.test.ts` refuses a translated string in
+ * it.
  *
  * `headingAs="div"` renders the title as `role="heading" aria-level={1}`
  * instead of an `<h1>`. The Settings and Admin shells paint their heading
@@ -46,7 +50,8 @@ const HEADING_CLASS =
 export function PageHeader({
   title,
   titleId,
-  description,
+  info,
+  meta,
   headingAs = "h1",
   backLink,
   topSlot,
@@ -59,14 +64,17 @@ export function PageHeader({
 }: {
   title: ReactNode;
   titleId?: string;
-  description?: ReactNode;
+  /** The (i) beside the title: what the page is, for those who ask. */
+  info?: ReactNode;
+  /** One meta line of record data under the title (pattern B only). */
+  meta?: ReactNode;
   headingAs?: "h1" | "div";
   backLink?: { href: string; label: string; dataSlot?: string };
   /** Optional block above the title (e.g. a hub back-link the shell owns). */
   topSlot?: ReactNode;
   actions?: ReactNode;
   /**
-   * Below `sm`, move the actions onto their own row under the description.
+   * Below `sm`, move the actions onto their own row under the title.
    * For text-labelled actions (two outline links, say): beside the title they
    * left the H1 a column narrower than its own word. Icon actions fit beside
    * the title and leave this off.
@@ -99,20 +107,31 @@ export function PageHeader({
         {title}
       </h1>
     );
-  const titleBlock = titleAccessory ? (
+  const accessory =
+    info || titleAccessory ? (
+      <>
+        {info ? (
+          <InfoPopover
+            content={info}
+            align="start"
+            triggerDataSlot="page-header-info"
+          />
+        ) : null}
+        {titleAccessory}
+      </>
+    ) : null;
+  const titleBlock = accessory ? (
     <div className="flex min-w-0 flex-wrap items-center gap-2">
       {heading}
-      {titleAccessory}
+      {accessory}
     </div>
   ) : (
     heading
   );
 
-  // Title, description and actions share one grid. On a phone the
-  // description spans the full row under the title + actions: a header with
-  // three or four icon actions otherwise left the sentence a ~130 px column
-  // that wrapped five or six times. From `sm` up the actions span both rows,
-  // so the description sits beside them exactly as before.
+  // Title, meta line and actions share one grid. On a phone the meta line
+  // spans the full row under the title + actions; from `sm` up the actions
+  // span both rows, so the meta line sits beside them.
   return (
     <div className={cn("space-y-1.5", className)}>
       {backLink ? <BackLink {...backLink} /> : null}
@@ -130,7 +149,7 @@ export function PageHeader({
           <div
             className={cn(
               "col-start-2 row-start-1 flex shrink-0 items-center gap-2",
-              description && "sm:row-span-2",
+              meta && "sm:row-span-2",
               stackActionsOnPhone &&
                 "max-sm:col-span-full max-sm:col-start-1 max-sm:row-start-3 max-sm:flex-wrap",
             )}
@@ -138,14 +157,15 @@ export function PageHeader({
             {actions}
           </div>
         ) : null}
-        {description ? (
+        {meta ? (
           <p
+            data-slot="page-header-meta"
             className={cn(
-              "text-muted-foreground text-sm",
+              "text-muted-foreground truncate text-sm",
               actions && "col-span-full sm:col-span-1",
             )}
           >
-            {description}
+            {meta}
           </p>
         ) : null}
       </div>

@@ -241,11 +241,7 @@ export function EmergencySection({
           {t("clinicianView.sectionUnavailable")}
         </p>
       ) : rows.length === 0 ? (
-        <EmptyState
-          variant="plain"
-          size="compact"
-          title={t("clinicianView.sectionEmpty")}
-        />
+        <EmptyState variant="plain" title={t("clinicianView.sectionEmpty")} />
       ) : (
         rows.map((row) => (
           <StatRow

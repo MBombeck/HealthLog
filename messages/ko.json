@@ -72,7 +72,9 @@
     "status": {
       "active": "사용 중",
       "error": "오류",
-      "off": "꺼짐"
+      "off": "꺼짐",
+      "running": "진행 중",
+      "done": "완료"
     }
   },
   "apiErrors": {
@@ -891,7 +893,6 @@
     "dragHandle": "끌어서 순서 변경",
     "dragHandleHint": "핸들을 끌어 이 위젯의 순서를 바꿔요. 위·아래 화살표 버튼을 쓰거나, 핸들에 포커스를 두고 스페이스와 화살표 키를 눌러도 돼요.",
     "emptyTitle": "대시보드가 비어 있어요",
-    "emptyDescription": "첫 측정이나 기분 기록을 남겨 보세요. 데이터가 쌓이면 타일과 차트가 자동으로 나타나요.",
     "emptyAddMeasurement": "첫 측정 추가",
     "staleHint": "마지막 측정값 {count}일 전",
     "staleHintWeeksOne": "마지막 측정값 1주 전",
@@ -957,7 +958,6 @@
   },
   "measurements": {
     "title": "측정",
-    "subtitle": "측정값을 기록하고 전체 기록을 살펴봐요.",
     "addMeasurement": "추가",
     "editMeasurement": "측정 편집",
     "type": "유형",
@@ -1053,7 +1053,6 @@
     "emptyTitle": "아직 측정이 없어요",
     "emptyDescription": "체중, 혈압, 맥박 같은 수치를 기록하면 추이를 볼 수 있어요.",
     "emptyFilteredTitle": "이 필터에 맞는 측정이 없어요",
-    "emptyFilteredDescription": "다른 유형을 골라 보거나 필터를 지우면 전체 측정을 볼 수 있어요.",
     "emptyAddFirst": "첫 측정 추가",
     "emptyResetFilter": "모든 유형 보기",
     "comment": "코멘트",
@@ -1243,7 +1242,6 @@
   },
   "mood": {
     "title": "기분",
-    "subtitle": "하루하루 어떤 기분이었는지 보여줘요.",
     "mentalWellbeingLink": "정신 건강 체크인 하기",
     "addEntry": "추가",
     "editEntry": "기록 편집",
@@ -1267,9 +1265,7 @@
     "allMoods": "모든 기분",
     "entryCount": "{count, plural, other {#개}} 기록",
     "emptyTitle": "아직 기분 기록이 없어요",
-    "emptyDescription": "오늘 기분을 기록하면 시간이 지나며 패턴이 보여요.",
     "emptyFilteredTitle": "이 필터에 맞는 기분 기록이 없어요",
-    "emptyFilteredDescription": "다른 기분 단계를 고르거나 필터를 지워서 모든 기록을 보세요.",
     "emptyAddFirst": "첫 기분 기록하기",
     "emptyResetFilter": "모든 기분 보기",
     "actions": "작업",
@@ -1586,7 +1582,6 @@
   },
   "medications": {
     "title": "복약",
-    "subtitle": "내 약과 복용 일정, 모든 복용 기록이에요.",
     "loginRequired": "복약을 관리하려면 로그인해 주세요.",
     "addMedication": "추가",
     "firstMedication": "첫 약 추가",
@@ -1604,7 +1599,6 @@
       "failedToast": "복용을 기록하지 못했어요. 다시 시도해 주세요"
     },
     "emptyTitle": "아직 등록한 약이 없어요",
-    "emptyDescription": "약과 복용량, 알림 시간을 추가하면 복약 순응도를 확인할 수 있어요.",
     "loadFailed": "약을 불러오지 못했어요",
     "retryLoad": "다시 시도",
     "inactive": "일시중지",
@@ -2135,7 +2129,6 @@
     "intakeSourceVia": "{origin} 경유",
     "intakeRecordedAutomatically": "자동으로 기록됨",
     "intakeHistoryEmptyTitle": "아직 복용 기록이 없어요",
-    "intakeHistoryEmptyDescription": "일일 복용 페이지에서 용량을 기록하면 이력이 쌓여요.",
     "intakeHistoryEmptyAction": "일일 복용 열기",
     "intakeHistoryColTaken": "복용함",
     "intakeHistoryColScheduled": "예정",
@@ -2396,7 +2389,6 @@
           "USED_UP": "다 씀"
         },
         "empty": "등록된 재고가 없어요.",
-        "emptyHelper": "포장이나 용기를 등록하면 남은 재고와 소진 예상일을 볼 수 있어요.",
         "emptyCta": "포장 등록",
         "addButton": "등록",
         "lowStockLinkOn": "재고 부족 알림: {days, plural, other {#일}} 미만",
@@ -2824,7 +2816,6 @@
       "clearSearch": "검색어 지우기",
       "treatmentPeriod": "치료 기간",
       "noMatchesTitle": "일치하는 약물 없음",
-      "noMatchesDescription": "검색어 또는 필터를 조정해 보세요.",
       "countOne": "{count}개 약물",
       "countFew": "{count}개 약물",
       "countOther": "{count}개 약물"
@@ -3128,7 +3119,6 @@
     "noAnalysisYet": "아직 평가가 없어요.",
     "assessmentPreparing": "평가를 준비하고 있어요…",
     "emptyTitle": "아직 데이터가 부족해요",
-    "emptyDescription": "측정을 몇 번 기록하면 인사이트가 켜져요. 체중이나 혈압부터 시작해 보세요.",
     "emptyAddMeasurement": "측정 추가",
     "editMode": {
       "done": "완료",
@@ -3150,11 +3140,9 @@
       "saveSuccess": "개요 배치를 저장했어요",
       "saveError": "개요 배치를 저장하지 못했어요",
       "resetSuccess": "개요를 기본값으로 되돌렸어요",
-      "emptyTitle": "모든 카드가 숨겨져 있어요",
-      "emptyDescription": "모든 섹션을 숨겼어요. 맞춤 설정을 열어 카드를 다시 꺼내 보세요."
+      "emptyTitle": "모든 카드가 숨겨져 있어요"
     },
     "bmiEmptyTitle": "BMI를 보려면 키를 입력해 주세요",
-    "bmiEmptyDescription": "BMI에는 키가 필요해요. 설정 > 계정에서 추가해 주세요.",
     "bmiEmptyAction": "계정 설정 열기",
     "loadError": "인사이트를 불러오지 못했어요",
     "heroRegenerating": "다시 생성 중",
@@ -3274,7 +3262,6 @@
       "keyFindingsTitle": "핵심 발견",
       "signalsTitle": "오늘의 신호",
       "emptyTitle": "아직 브리핑이 없어요",
-      "emptyDescription": "오늘 브리핑을 만들면 추이를 이야기로 읽어 줘요.",
       "emptyAction": "브리핑 생성",
       "loadingLabel": "오늘 브리핑을 정리하는 중",
       "refreshFailedHint": "브리핑을 새로 고치지 못해서 마지막 브리핑을 보여 줘요.",
@@ -5154,10 +5141,10 @@
       "subtitle": "웨어러블이 매일 밤 매긴 점수"
     },
     "recovery": {
+      "empty": "이 페이지에는 WHOOP 또는 Polar의 회복, 부하, 훈련 부하 값과 Oura의 회복탄력성 수준이 표시돼요.",
       "title": "회복",
       "description": "몸이 얼마나 회복했는지: 웨어러블이 밤사이 기록한 회복·부하 신호예요.",
       "emptyTitle": "아직 회복 데이터가 없어요",
-      "empty": "이 페이지에는 WHOOP 또는 Polar의 회복, 부하, 훈련 부하 값과 Oura의 회복탄력성 수준이 표시돼요.",
       "emptyOuraPermission": "Oura의 회복탄력성 수준에는 스트레스 데이터 권한이 필요하니, 연동에서 Oura를 한 번 다시 연결하고 허용해 주세요.",
       "emptyOuraNoResilience": "Oura가 연결되어 있으며, Oura가 회복탄력성 수준을 제공하는 즉시 여기에 표시돼요.",
       "emptyAction": "통합 열기",
@@ -5322,7 +5309,6 @@
         "cta": "기록 보기"
       },
       "emptyTitle": "아직 심전도 기록이 없어요",
-      "emptyDescription": "심전도 기록은 호환되는 단일 리드 기기에서 동기화돼요. 기기가 기록을 올리면 여기에 표시돼요.",
       "emptyCta": "기기 연결"
     },
     "intradayPulse": {
@@ -5360,7 +5346,6 @@
       "coachPrefill": "아직 약을 추가하지 않았어요. 여기서 복약 순응도를 기록하기 전에 무엇을 알아야 하나요?"
     },
     "scoreHistory": {
-      "healthDescription": "날마다 표시된 그대로의 건강 점수입니다.",
       "emptyDescription": "이 기간에는 아직 기록된 점수가 없습니다.",
       "usualRange": "음영: 평소 범위 {lo}에서 {hi}까지.",
       "seam": "점수에 반영되는 항목이 바뀐 지점에서 선이 끊깁니다."
@@ -5377,7 +5362,6 @@
       "notEnough": "측정 횟수 부족",
       "hourRange": "{start}–{end}",
       "emptyTitle": "이 기간에 완전한 측정이 없습니다",
-      "emptyDescription": "수축기와 이완기 값이 모두 있는 측정이 여기에 표시됩니다.",
       "error": "시간대별 평균을 불러오지 못했습니다.",
       "chartTitle": {
         "morning": "아침 혈압",
@@ -5880,9 +5864,9 @@
     }
   },
   "trendHints": {
-    "title": "측정값 5개부터 첫 추이",
+    "remainingMany": "{count, plural, other {#개만}} 더 기록하면 돼요.",
     "remainingOne": "1개만 더 기록하면 돼요.",
-    "remainingMany": "{count, plural, other {#개만}} 더 기록하면 돼요."
+    "title": "측정값 5개부터 첫 추이"
   },
   "settings": {
     "oauthCallbackPreflightItem": "{provider}: 콜백 주소 {configuredOrigin}이(가) 이 앱 주소 {currentOrigin}과(와) 다릅니다.",
@@ -8403,7 +8387,6 @@
   },
   "admin": {
     "title": "관리자",
-    "subtitle": "시스템 상태, 사용자, 설정",
     "settingsSaveError": "설정을 저장하지 못했어요",
     "systemStatus": "시스템 상태",
     "systemStatusDescription": "이 인스턴스의 실행 상태: 데이터베이스, 워커, 기록 수.",
@@ -8434,8 +8417,6 @@
       "byokHint": "사용자 본인 키(BYOK, ChatGPT 로그인, 로컬 제공자)가 항상 우선해요. 서버 키는 제공자 체인의 마지막 단계예요.",
       "consentHint": "서버 키로 나가는 요청에는 사용자의 유효한 AI 동의가 필요해요. 동의 기록이 없으면 아무것도 전송하지 않아요.",
       "baseUrlHint": "기본 URL이 API를 결정합니다. https://api.anthropic.com/v1 같은 Anthropic 주소는 인식되며, 그 밖의 호스트는 OpenAI 호환 API로 호출됩니다.",
-      "statusConfigured": "설정됨",
-      "statusNotConfigured": "설정 안 됨",
       "keyLabel": "API 키",
       "keyPlaceholder": "sk-...",
       "keyPlaceholderSet": "저장됨 ({preview}): 바꾸려면 새 키를 입력하세요",
@@ -8610,7 +8591,6 @@
       "qrAlt": "초대 링크 QR 코드",
       "loadError": "초대 목록을 불러오지 못했어요.",
       "emptyTitle": "아직 초대가 없어요",
-      "emptyDescription": "회원가입이 닫혀 있어도 가입시키려면 초대 링크를 만드세요.",
       "colStatus": "상태",
       "colCreated": "생성",
       "colExpires": "만료",
@@ -8670,14 +8650,11 @@
     "tokenCreated": "생성",
     "tokenNeverUsed": "없음",
     "tokensEmptyTitle": "아직 API 토큰이 없어요",
-    "tokensEmptyDescription": "네이티브 클라이언트가 로그인할 때나 설정 > 계정에서 토큰이 발급돼요.",
     "loginOverviewDescription": "모든 계정의 로그인·인증 이벤트예요. 필터링하고 CSV로 내보낼 수 있어요.",
     "loginOverviewFilterLabel": "이벤트 필터",
     "allAuthEvents": "전체 인증 이벤트",
     "failedOnly": "실패만",
-    "loginEmptyDescription": "로그인, 로그아웃, 패스키 변경이 여기에 표시돼요.",
     "loginEmptyFailedTitle": "실패한 로그인 시도가 없어요",
-    "loginEmptyFailedDescription": "안전한 상태예요. 성공한 로그인을 보려면 전체 이벤트로 바꾸세요.",
     "loginEmptyResetFilter": "전체 이벤트 보기",
     "showingEntries": "인증 기록 {total}개 중 {count}개 표시 중",
     "status": "상태",
@@ -8771,32 +8748,25 @@
     },
     "section": {
       "system-status": {
-        "title": "시스템 상태",
-        "subtitle": "워커, 데이터베이스, 연동 상태를 한눈에 봐요."
+        "title": "시스템 상태"
       },
       "general": {
-        "title": "일반",
-        "subtitle": "회원가입, 기본 언어 등 앱 전체 설정이에요."
+        "title": "일반"
       },
       "services": {
-        "title": "푸시와 채널",
-        "subtitle": "서버 전체의 알림 채널, Web Push 키, 푸시 릴레이, 전송 상태."
+        "title": "푸시와 채널"
       },
       "integrations": {
-        "title": "모니터링",
-        "subtitle": "Umami, GlitchTip, 버그 보고를 설정합니다."
+        "title": "모니터링"
       },
       "coach": {
-        "title": "코치",
-        "subtitle": "어시스턴트 노출 위치, 서버 키, 피드백 품질을 한곳에서 관리해요."
+        "title": "코치"
       },
       "reminders": {
-        "title": "알림",
-        "subtitle": "복약 알림 기준선을 조정하고 수동으로 점검해요."
+        "title": "알림"
       },
       "users": {
         "title": "사용자",
-        "subtitle": "사용자 계정, 역할, 활성 세션을 관리해요.",
         "filter": {
           "all": "전체",
           "admin": "관리자",
@@ -8810,7 +8780,6 @@
         "forceLogoutFailed": "강제 로그아웃하지 못했어요",
         "cannotLogoutSelf": "자기 자신은 강제 로그아웃할 수 없어요",
         "emptyTitle": "이 화면에 사용자가 없어요",
-        "emptyDescription": "현재 필터에 맞는 사용자가 없어요.",
         "emptyResetFilter": "전체 사용자 보기",
         "deletionPending": "{date} 삭제 예정",
         "deletionPendingNoDate": "삭제 예정",
@@ -8831,16 +8800,13 @@
         "deleteUserFailed": "계정을 삭제하지 못했어요"
       },
       "invites": {
-        "title": "초대",
-        "subtitle": "회원가입 초대 링크를 발급하고 추적하고 폐기해요."
+        "title": "초대"
       },
       "api-tokens": {
-        "title": "API와 토큰",
-        "subtitle": "네이티브 클라이언트와 연동에 발급된 활성 bearer 토큰이에요."
+        "title": "API와 토큰"
       },
       "login-overview": {
-        "title": "로그인 개요",
-        "subtitle": "인증과 관리자 이벤트의 감사 기록이에요."
+        "title": "로그인 개요"
       },
       "auditLog": {
         "filterActor": "행위자 (사용자 id 또는 아이디)",
@@ -8873,7 +8839,6 @@
       },
       "app-logs": {
         "title": "앱 로그",
-        "subtitle": "이 프로세스가 남긴 최근 구조화 wide-event를 실시간으로 봐요.",
         "processNote": "앱 프로세스 로그만 보여주며, 워커 프로세스 로그는 Loki 연동을 설정하면 그쪽으로 가요.",
         "filterTraceId": "추적 ID",
         "filterAction": "동작 포함…",
@@ -9128,20 +9093,16 @@
         "restoreSkippedSeizureIntakeReference": "파일에 없는 복용 기록에 연결된 발작 응급약 투여 (연결 없이 보존)"
       },
       "danger-zone": {
-        "title": "위험 구역",
-        "subtitle": "시스템 전체에 영향을 주는 파괴적 작업이에요."
+        "title": "위험 구역"
       },
       "about": {
-        "title": "정보",
-        "subtitle": "버전, 라이선스, 업데이트 상태예요."
+        "title": "정보"
       },
       "module-availability": {
-        "title": "모듈",
-        "subtitle": "이 서버의 모든 계정에 대해 모듈을 켜거나 꺼요."
+        "title": "모듈"
       },
       "encryption": {
         "title": "암호화",
-        "subtitle": "저장 데이터의 암호화 적용 범위와 키 교체 상태예요.",
         "loadError": "암호화 상태를 불러오지 못했어요.",
         "coverageTitle": "적용 범위",
         "coverageDescription": "키 id별로 암호화된 행이 얼마나 있는지 보여줘요.",
@@ -9852,7 +9813,6 @@
   },
   "achievements": {
     "title": "업적",
-    "subtitle": "건강을 기록하고 약을 제때 복용하면 업적을 얻어요.",
     "loginRequired": "업적을 보려면 로그인해 주세요.",
     "points": "포인트",
     "unlocked": "달성",
@@ -10144,7 +10104,6 @@
   "notifications": {
     "title": "채널별 알림",
     "eventColumn": "이벤트",
-    "subtitle": "어떤 알림을 어떤 채널로 받을지 선택하세요.",
     "loadError": "알림 설정을 불러오지 못했어요.",
     "noChannels": "설정 > 연동에서 알림 채널을 먼저 설정해 주세요.",
     "goToSettings": "채널 설정으로 이동",
@@ -10742,7 +10701,6 @@
     },
     "disclaimer": "이 예측은 기록한 데이터로 추정한 설명일 뿐, 피임 방법도 의학적 조언도 아니에요. 피임 없는 성관계가 안전하다는 뜻은 절대 아니에요. 피임이나 의학적 결정은 의료 전문가와 상의해 주세요.",
     "title": "생리 주기",
-    "subtitle": "생리와 증상을 기록하고, 다음에 무엇이 올지 확인해 보세요.",
     "tabs": {
       "calendar": "캘린더",
       "predictions": "예측",
@@ -11138,7 +11096,6 @@
   },
   "measurementReminders": {
     "sectionTitle": "건강검진",
-    "sectionDescription": "무엇을 언제 어디서 측정하거나 확인할지 알려 주는 알림이에요.",
     "markDone": "완료",
     "delete": "삭제",
     "deleteConfirmTitle": "알림을 삭제할까요?",
@@ -11276,13 +11233,11 @@
   },
   "labs": {
     "title": "검사 결과",
-    "subtitle": "혈액검사와 바이오마커 측정값이에요.",
     "addResult": "값 추가",
     "addDescription": "검사 결과지의 바이오마커 측정값을 기록해요.",
     "addFirst": "첫 결과 추가",
     "importAction": "Apple Health 또는 CSV에서 가져오기",
     "emptyTitle": "아직 검사 결과가 없어요",
-    "emptyDescription": "HbA1c, LDL, 페리틴 같은 혈액검사 수치를 기록하면 추이를 보고 의사와 공유할 수 있어요.",
     "referenceLabel": "참고 범위",
     "readingsCount": "측정값 {count, plural, other {#개}}",
     "deleteConfirmTitle": "검사 결과를 삭제할까요?",
@@ -11354,7 +11309,6 @@
     "restoreError": "측정값을 되돌리지 못했어요",
     "detail": {
       "emptyTitle": "아직 측정값이 없어요",
-      "emptyDescription": "값을 추가하면 이 바이오마커의 추이를 볼 수 있어요.",
       "title": "바이오마커",
       "genericDescription": "기록 중인 검사 바이오마커예요. 측정값을 추가하면 참고 범위와 비교한 추이를 볼 수 있어요.",
       "valuesTitle": "{marker}: 전체 측정값",
@@ -11394,7 +11348,6 @@
       "deleteConfirmTitle": "바이오마커를 삭제할까요?",
       "deleteConfirmDescription": "바이오마커와 기록된 값이 모두 영구 삭제돼요. 되돌릴 수 없어요.",
       "emptyTitle": "아직 바이오마커가 없어요",
-      "emptyDescription": "LDL이나 HbA1c 같은 마커를 정의하면 값을 기록할 수 있어요.",
       "loadError": "바이오마커를 불러오지 못했어요",
       "noRange": "참고 범위 없음",
       "form": {
@@ -11703,8 +11656,7 @@
       "markerCountOne": "바이오마커 {count}개",
       "markerCountFew": "바이오마커 {count}개",
       "markerCountOther": "바이오마커 {count}개",
-      "noMatchesTitle": "일치하는 바이오마커 없음",
-      "noMatchesDescription": "검색어 또는 필터를 조정해 보세요."
+      "noMatchesTitle": "일치하는 바이오마커 없음"
     },
     "source": {
       "OCR": "스캔한 결과지",
@@ -11799,22 +11751,18 @@
   },
   "moduleOff": {
     "disabled": {
-      "description": "이 기록에서 {module} 모듈이 꺼져 있어서 관련 페이지가 보이지 않아요. 다시 켜면 돌아와요.",
       "title": "{module} 모듈이 꺼져 있어요"
     },
     "notGranted": {
-      "description": "{module} 모듈은 공유된 영역 밖에 있어요. 공유된 기록이 어디까지 포함되는지는 기록의 주인이 정해요.",
       "title": "공유 범위에 없는 항목"
     },
     "unavailable": {
-      "description": "운영자가 이 서버의 모든 계정에서 {module} 모듈을 껐어요. 개인 설정으로는 되돌릴 수 없어요.",
       "title": "이 서버에서는 사용할 수 없어요"
     },
-    "openModules": "설정, 모듈 열기"
+    "turnOn": "켜기"
   },
   "vaccinations": {
     "title": "예방접종",
-    "subtitle": "접종 한 건씩 남기는 예방접종 기록이에요.",
     "listLoadError": "예방접종 기록을 불러오지 못했어요.",
     "series": {
       "booster": "추가 접종",
@@ -11976,7 +11924,6 @@
   },
   "illness": {
     "title": "아픈 날",
-    "subtitle": "아픈 기간과 컨디션 변화를 돌아보는 기록이에요.",
     "settings": {
       "viewDescription": "아픈 기간을 카드로 볼지 간단한 목록으로 볼지 선택하세요.",
       "orderDescription": "아픈 기간을 원하는 순서대로 끌어서 옮기세요."
@@ -12680,7 +12627,6 @@
       "editTitle": "알레르기 편집",
       "formDescription": "물질명은 평문으로 저장되고, 반응과 메모는 암호화돼요.",
       "emptyTitle": "기록된 알레르기가 없어요",
-      "emptyDescription": "반응이 나타나는 물질과 반응 내용을 추가해 주세요.",
       "loadError": "알레르기를 불러오지 못했어요.",
       "deletedToast": "알레르기를 삭제했어요",
       "deleteError": "알레르기를 삭제하지 못했어요.",
@@ -12742,7 +12688,6 @@
       "editTitle": "가족력 편집",
       "formDescription": "관계와 질환은 평문으로 저장되고, 메모는 암호화돼요.",
       "emptyTitle": "기록된 가족력이 없어요",
-      "emptyDescription": "가족에게 있는 질환을 추가해 주세요.",
       "loadError": "가족력을 불러오지 못했어요.",
       "deletedToast": "기록을 삭제했어요",
       "deleteError": "기록을 삭제하지 못했어요.",
@@ -13100,7 +13045,6 @@
   },
   "documents": {
     "title": "문서",
-    "subtitle": "모든 소견서, 리포트, 영상을 한곳에서 검색해요. 저장할 때 암호화돼요.",
     "pageUpload": "업로드",
     "ownerOnlyUpload": "문서는 기록 소유자만 추가할 수 있습니다.",
     "kind": {
@@ -13180,7 +13124,6 @@
       "description": "의사 소견서, 검사 리포트, 영상, 처방전, 예방접종 기록을 암호화해 보관하고 종류, 질환, 연도별로 검색해요.",
       "action": "첫 문서 올리기",
       "noMatchesTitle": "일치하는 문서 없음",
-      "noMatchesDescription": "현재 검색·필터에 맞는 문서가 없어요.",
       "titleRecord": "{name}님의 문서 보관함이 비어 있어요"
     },
     "detail": {
@@ -13440,8 +13383,7 @@
       },
       "pickMore": "더 고르기",
       "finishedHint": "다시 검색하거나 필터를 바꿔 문서를 더 고르세요.",
-      "maxReached": "한 번에 최대 {max, plural, other {#개}} 문서를 가져올 수 있습니다.",
-      "noMatchHint": "이름의 일부로 검색하거나 태그와 날짜를 지워 보세요."
+      "maxReached": "한 번에 최대 {max, plural, other {#개}} 문서를 가져올 수 있습니다."
     },
     "customize": "보기 사용자 지정",
     "layout": {
@@ -13465,7 +13407,6 @@
       "entryLabel": "최근 삭제됨 ({count})",
       "loadError": "최근 삭제됨을 불러오지 못했어요.",
       "emptyTitle": "최근 삭제됨이 비어 있어요",
-      "emptyDescription": "삭제한 문서는 완전히 삭제되기 전까지 {days, plural, other {#일}} 동안 여기서 기다려요.",
       "count": "삭제한 문서 ({count})",
       "restoreAll": "모두 복구",
       "restore": "복구",
@@ -13574,9 +13515,7 @@
     },
     "detail": {
       "title": "사용자 지표",
-      "genericDescription": "직접 기록하는 측정이에요. 값을 추가하면 시간에 따른 변화를 볼 수 있어요.",
       "emptyTitle": "아직 값이 없어요",
-      "emptyDescription": "첫 값을 추가하면 이 지표를 차트로 볼 수 있어요.",
       "valuesTitle": "{metric}: 전체 값",
       "valuesDescription": "이 지표에 기록된 모든 값이에요.",
       "backToMetric": "돌아가기: {metric}"
@@ -14169,7 +14108,6 @@
       "title": "내 기록을 열 수 있는 사람",
       "description": "끝난 권한도 목록에 남아서, 누가 언제 가지고 있었는지 언제든 볼 수 있어요.",
       "emptyTitle": "내 기록을 열 수 있는 사람이 없어요",
-      "emptyDescription": "누군가 읽을 수 있게 하려면 위에서 초대하세요.",
       "loadError": "목록을 불러오지 못했어요.",
       "revoke": "권한 종료",
       "withdrawInvite": "철회",
@@ -14183,7 +14121,6 @@
       "title": "내가 열 수 있는 기록",
       "description": "초대는 수락하기 전까지 아무 권한도 주지 않아요.",
       "emptyTitle": "나에게 기록을 공유한 사람이 없어요",
-      "emptyDescription": "누군가 초대하면 여기에 초대가 나타나요.",
       "loadError": "목록을 불러오지 못했어요.",
       "accept": "수락",
       "accepting": "수락하는 중…",
@@ -14201,7 +14138,6 @@
       "description": "다른 사람이 내 기록을 연 모든 순간이에요.",
       "retention": "최근 {days, plural, other {#일치예요}}. 더 오래된 항목은 삭제돼요.",
       "emptyTitle": "내 기록을 연 사람이 없어요",
-      "emptyDescription": "나 말고 다른 사람이 연 내역이 여기 나와요. 하루에 사람마다 한 줄씩이에요.",
       "loadError": "활동 내역을 불러오지 못했어요.",
       "opened": "{name} 님이 내 기록을 {count}번 열었어요",
       "acted": "{name} 님이 내 기록을 수정했어요",
@@ -14212,7 +14148,6 @@
       "hint": "이 프로필에서 누가 무엇을 했는지 보여줘요. 나를 포함한 모든 보호자의 변경이 나와요.",
       "action": "활동 보기",
       "emptyTitle": "아직 기록된 것이 없어요",
-      "emptyDescription": "보호자가 이 프로필에서 바꾼 내용이 여기에 나오고, 열람은 보호자별 하루 한 줄로 나와요.",
       "you": "나",
       "opened": "{name}님이 프로필을 {count}번 열었어요",
       "acted": "{name}님이 프로필에서 무언가를 바꿨어요",
@@ -14596,11 +14531,9 @@
     },
     "bodySiteWithSide": "{site} ({side})",
     "sectionTitle": "진료",
-    "sectionDescription": "지난 진료와 예정된 진료를 한곳에서 봐요.",
     "add": "진료",
     "loadError": "진료 기록을 불러오지 못했어요.",
     "emptyTitle": "아직 기록한 진료가 없어요",
-    "emptyDescription": "날짜만 있으면 충분해요. 나머지는 모두 선택이에요.",
     "upcomingHeading": "예정",
     "pastHeading": "지난 기록",
     "createTitle": "진료 기록하기",
@@ -14658,6 +14591,7 @@
       "nextVisit": "다음 진료: {what} ({when})"
     },
     "procedures": {
+      "emptyDescription": "종류를 '시술 또는 수술'로 진료를 기록하거나, 기존 진료의 종류를 바꾸세요.",
       "title": "시술 및 수술",
       "description": "지금까지 받은 모든 시술과 수술을 최신순으로 보여 줍니다.",
       "add": "시술",
@@ -14667,7 +14601,6 @@
       "allSites": "전체",
       "count": "{total}개 중 {shown}개",
       "emptyTitle": "아직 기록된 시술이 없습니다",
-      "emptyDescription": "종류를 '시술 또는 수술'로 진료를 기록하거나, 기존 진료의 종류를 바꾸세요.",
       "noMatchTitle": "이 필터에 맞는 항목이 없습니다",
       "clearFilter": "필터 지우기",
       "loadError": "시술 목록을 불러올 수 없습니다."
@@ -14698,9 +14631,7 @@
     "searchPlaceholder": "이름, 병원, 진료과 검색",
     "loadError": "주소록을 불러오지 못했어요.",
     "emptyTitle": "아직 항목이 없어요",
-    "emptyDescription": "병원을 추가해 두면 진료를 기록할 때 골라 쓸 수 있어요.",
     "noMatchTitle": "결과 없음",
-    "noMatchDescription": "이 검색어와 맞는 항목이 없어요.",
     "createTitle": "항목 추가",
     "editTitle": "항목 편집",
     "formDescription": "이름만 필수예요.",
@@ -14767,11 +14698,11 @@
     }
   },
   "bodySites": {
+    "emptyDescription": "시술이나 질환에 신체 부위를 입력하면 여기에 표시됩니다.",
     "title": "신체 부위",
     "description": "시술과 질환을 신체 부위별로 봅니다.",
     "loadError": "신체 부위를 불러오지 못했습니다.",
     "emptyTitle": "아직 기록된 신체 부위가 없습니다",
-    "emptyDescription": "시술이나 질환에 신체 부위를 입력하면 여기에 표시됩니다.",
     "sitesLabel": "신체 부위",
     "sidesLabel": "방향",
     "allSides": "전체",
@@ -15086,7 +15017,6 @@
   },
   "timeline": {
     "title": "타임라인",
-    "subtitle": "언제 무엇이 있었는지, 내 수치와 나란히.",
     "standing": "지속",
     "startUnknown": "시작일 미상",
     "zoom": {
@@ -15901,7 +15831,6 @@
       "seizureDaysValue": "{count, plural, other {#일에}} 걸쳐"
     },
     "title": "발작 일지",
-    "subtitle": "관찰한 그대로의 발작을 유형, 지속 시간, 투여한 응급약과 함께 기록해요.",
     "loadError": "발작 일지를 불러오지 못했어요.",
     "saveError": "저장하지 못했어요. 다시 시도해 주세요.",
     "untyped": "유형 없음",
@@ -16091,7 +16020,6 @@
     "types": {
       "title": "발작 유형",
       "emptyTitle": "아직 발작 유형이 없어요",
-      "emptyDescription": "이 사람의 발작 유형을 한 번 설정해 두세요. 가능하면 의료진과 함께 정하는 게 좋아요.",
       "newTitle": "발작 유형 추가",
       "editTitle": "발작 유형 수정",
       "description": "분류는 본인이나 의료진이 정해요. HealthLog는 분류하지 않아요.",

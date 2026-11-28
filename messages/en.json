@@ -72,7 +72,9 @@
     "status": {
       "active": "Active",
       "error": "Error",
-      "off": "Off"
+      "off": "Off",
+      "running": "Running",
+      "done": "Done"
     }
   },
   "apiErrors": {
@@ -891,7 +893,6 @@
     "dragHandle": "Drag to reorder",
     "dragHandleHint": "Drag the handle to reorder this widget. You can also use the Up and Down arrow buttons, or focus the handle and press Space and the arrow keys.",
     "emptyTitle": "Your dashboard is empty",
-    "emptyDescription": "Log your first measurement or mood entry. Tiles and charts appear automatically as data lands.",
     "emptyAddMeasurement": "Add your first measurement",
     "staleHint": "Last reading {count} d ago",
     "staleHintWeeksOne": "Last reading 1 week ago",
@@ -957,7 +958,6 @@
   },
   "measurements": {
     "title": "Measurements",
-    "subtitle": "Log readings and browse the full history.",
     "addMeasurement": "Add",
     "editMeasurement": "Edit measurement",
     "type": "Type",
@@ -1053,7 +1053,6 @@
     "emptyTitle": "No measurements yet",
     "emptyDescription": "Log your weight, blood pressure, pulse, or other vitals to start tracking trends.",
     "emptyFilteredTitle": "No measurements match this filter",
-    "emptyFilteredDescription": "Try a different type or clear the filter to see all measurements.",
     "emptyAddFirst": "Add your first measurement",
     "emptyResetFilter": "Show all types",
     "comment": "Comment",
@@ -1243,7 +1242,6 @@
   },
   "mood": {
     "title": "Mood",
-    "subtitle": "How you felt, day by day.",
     "mentalWellbeingLink": "Take a mental-wellbeing check-in",
     "addEntry": "Add",
     "editEntry": "Edit entry",
@@ -1267,9 +1265,7 @@
     "allMoods": "All moods",
     "entryCount": "{count, plural, one {# entry} other {# entries}}",
     "emptyTitle": "No mood entries yet",
-    "emptyDescription": "Log how you feel today to spot patterns over time.",
     "emptyFilteredTitle": "No mood entries match this filter",
-    "emptyFilteredDescription": "Try a different mood level or clear the filter to see all entries.",
     "emptyAddFirst": "Log your first mood",
     "emptyResetFilter": "Show all moods",
     "actions": "Actions",
@@ -1586,7 +1582,6 @@
   },
   "medications": {
     "title": "Medications",
-    "subtitle": "Your medications, their schedules and every dose taken.",
     "loginRequired": "Please sign in to manage medications.",
     "addMedication": "Add",
     "firstMedication": "Add first medication",
@@ -1604,7 +1599,6 @@
       "failedToast": "No intake recorded. Please try again"
     },
     "emptyTitle": "No medications yet",
-    "emptyDescription": "Add medications, doses and their times to track adherence.",
     "loadFailed": "Could not load medications",
     "retryLoad": "Retry",
     "inactive": "Paused",
@@ -2135,7 +2129,6 @@
     "intakeSourceVia": "via {origin}",
     "intakeRecordedAutomatically": "Recorded automatically",
     "intakeHistoryEmptyTitle": "No intakes recorded yet",
-    "intakeHistoryEmptyDescription": "Log a dose on the daily intake page to start building the history.",
     "intakeHistoryEmptyAction": "Open daily intake",
     "intakeHistoryColTaken": "Taken",
     "intakeHistoryColScheduled": "Scheduled",
@@ -2396,7 +2389,6 @@
           "USED_UP": "Used up"
         },
         "empty": "No supply recorded.",
-        "emptyHelper": "Register a pack or container to track remaining supply and runway.",
         "emptyCta": "Register a pack",
         "addButton": "Register",
         "lowStockLinkOn": "Low-stock notification: below {days, plural, one {# day} other {# days}}",
@@ -2824,7 +2816,6 @@
       "clearSearch": "Clear search",
       "treatmentPeriod": "Treatment period",
       "noMatchesTitle": "No matching medications",
-      "noMatchesDescription": "Try adjusting your search query or filters.",
       "countOne": "{count} medication",
       "countFew": "{count} medications",
       "countOther": "{count} medications"
@@ -3128,7 +3119,6 @@
     "noAnalysisYet": "No assessment yet.",
     "assessmentPreparing": "Preparing your assessment…",
     "emptyTitle": "Not enough data yet",
-    "emptyDescription": "Insights light up once you've logged a handful of measurements. Start with weight or blood pressure.",
     "emptyAddMeasurement": "Add a measurement",
     "editMode": {
       "done": "Done",
@@ -3150,11 +3140,9 @@
       "saveSuccess": "Overview layout saved",
       "saveError": "Could not save your overview layout",
       "resetSuccess": "Overview reset to defaults",
-      "emptyTitle": "Every card is hidden",
-      "emptyDescription": "You've hidden every section. Open customize to bring cards back."
+      "emptyTitle": "Every card is hidden"
     },
     "bmiEmptyTitle": "Set your height to see BMI",
-    "bmiEmptyDescription": "BMI needs your height. Add it under Settings > Account.",
     "bmiEmptyAction": "Open account settings",
     "loadError": "Failed to load insights",
     "heroRegenerating": "Regenerating",
@@ -3274,7 +3262,6 @@
       "keyFindingsTitle": "Key findings",
       "signalsTitle": "Signals of the day",
       "emptyTitle": "No briefing yet",
-      "emptyDescription": "Generate today's briefing to get a narrative read of your trends.",
       "emptyAction": "Generate briefing",
       "loadingLabel": "Synthesizing today's briefing",
       "refreshFailedHint": "Couldn't refresh the briefing. Showing the last one.",
@@ -5154,10 +5141,10 @@
       "subtitle": "Nightly scores from your wearable"
     },
     "recovery": {
+      "empty": "This page fills with the recharge, strain and load readings from WHOOP or Polar and with Oura's resilience level.",
       "title": "Recovery",
       "description": "How well your body has bounced back: the recovery, strain and load signals your wearable records overnight.",
       "emptyTitle": "No recovery data yet",
-      "empty": "This page fills with the recharge, strain and load readings from WHOOP or Polar and with Oura's resilience level.",
       "emptyOuraPermission": "Oura's resilience level needs the stress permission, so reconnect Oura once under Integrations and allow it.",
       "emptyOuraNoResilience": "Oura is connected, and its resilience level appears here as soon as Oura provides one.",
       "emptyAction": "Open integrations",
@@ -5322,7 +5309,6 @@
         "cta": "View recordings"
       },
       "emptyTitle": "No ECG recordings yet",
-      "emptyDescription": "ECG recordings sync from a compatible single-lead device. Once your device uploads a recording, it appears here.",
       "emptyCta": "Connect a device"
     },
     "intradayPulse": {
@@ -5360,7 +5346,6 @@
       "coachPrefill": "I haven’t added any medications yet. What should I know before I start tracking medication compliance here?"
     },
     "scoreHistory": {
-      "healthDescription": "Your Health score day by day, as it was shown on each day.",
       "emptyDescription": "No score was recorded in this range yet.",
       "usualRange": "Shaded: your usual range, {lo} to {hi}.",
       "seam": "The line breaks where what counts toward the score changed."
@@ -5377,7 +5362,6 @@
       "notEnough": "Too few readings",
       "hourRange": "{start}–{end}",
       "emptyTitle": "No complete readings in this range",
-      "emptyDescription": "Readings with both a systolic and a diastolic value show up here.",
       "error": "The time-of-day averages could not be loaded.",
       "chartTitle": {
         "morning": "Blood pressure in the morning",
@@ -5880,9 +5864,9 @@
     }
   },
   "trendHints": {
-    "title": "First trend after 5 readings",
+    "remainingMany": "{count, plural, one {# more reading to go.} other {# more readings to go.}}",
     "remainingOne": "1 more reading to go.",
-    "remainingMany": "{count, plural, one {# more reading to go.} other {# more readings to go.}}"
+    "title": "First trend after 5 readings"
   },
   "settings": {
     "oauthCallbackPreflightItem": "{provider}: callback address {configuredOrigin} differs from this app address {currentOrigin}.",
@@ -8403,7 +8387,6 @@
   },
   "admin": {
     "title": "Administration",
-    "subtitle": "System status, users, and settings",
     "settingsSaveError": "Failed to save settings",
     "systemStatus": "System status",
     "systemStatusDescription": "Runtime state of this instance: database, worker, and record counts.",
@@ -8434,8 +8417,6 @@
       "byokHint": "A user's own key (BYOK, ChatGPT login or local provider) always takes precedence; the server key is the last step in the provider chain.",
       "consentHint": "Requests over the server key require the user's active AI consent; without a consent receipt nothing is sent.",
       "baseUrlHint": "The base URL selects the API: an Anthropic URL such as https://api.anthropic.com/v1 is understood, any other host is called on the OpenAI-compatible API.",
-      "statusConfigured": "Configured",
-      "statusNotConfigured": "Not configured",
       "keyLabel": "API key",
       "keyPlaceholder": "sk-...",
       "keyPlaceholderSet": "Stored ({preview}). Enter a new key to replace it",
@@ -8635,7 +8616,6 @@
       "qrAlt": "QR code for the invite link",
       "loadError": "Could not load the invites.",
       "emptyTitle": "No invites yet",
-      "emptyDescription": "Create an invite link to admit someone while registration is closed.",
       "colStatus": "Status",
       "colCreated": "Created",
       "colExpires": "Expires",
@@ -8695,14 +8675,11 @@
     "tokenCreated": "Created",
     "tokenNeverUsed": "Never",
     "tokensEmptyTitle": "No API tokens yet",
-    "tokensEmptyDescription": "Tokens are issued when a native client signs in or via Settings > Account.",
     "loginOverviewDescription": "Sign-in and auth events across all accounts, filterable and exportable as CSV.",
     "loginOverviewFilterLabel": "Filter events",
     "allAuthEvents": "All auth events",
     "failedOnly": "Failed only",
-    "loginEmptyDescription": "Sign-ins, sign-outs, and passkey changes will show up here.",
     "loginEmptyFailedTitle": "No failed sign-in attempts",
-    "loginEmptyFailedDescription": "That's the safe state. Switch to all events to see successful sign-ins.",
     "loginEmptyResetFilter": "Show all events",
     "showingEntries": "Showing {count} of {total} auth entries",
     "status": "Status",
@@ -8796,32 +8773,25 @@
     },
     "section": {
       "system-status": {
-        "title": "System status",
-        "subtitle": "Worker, database, and integration health at a glance."
+        "title": "System status"
       },
       "general": {
-        "title": "General",
-        "subtitle": "Registration, default language, and other app-wide toggles."
+        "title": "General"
       },
       "services": {
-        "title": "Push and channels",
-        "subtitle": "Notification channels, Web Push keys, the push relay and delivery health for the whole server."
+        "title": "Push and channels"
       },
       "integrations": {
-        "title": "Monitoring",
-        "subtitle": "Configure Umami, GlitchTip and bug reports."
+        "title": "Monitoring"
       },
       "coach": {
-        "title": "Coach",
-        "subtitle": "Assistant surfaces, the server key, and feedback quality in one place."
+        "title": "Coach"
       },
       "reminders": {
-        "title": "Reminders",
-        "subtitle": "Tune medication reminder thresholds and run a manual check."
+        "title": "Reminders"
       },
       "users": {
         "title": "Users",
-        "subtitle": "Manage user accounts, roles, and active sessions.",
         "filter": {
           "all": "All",
           "admin": "Admins",
@@ -8835,7 +8805,6 @@
         "forceLogoutFailed": "Failed to force logout",
         "cannotLogoutSelf": "Cannot force-logout yourself",
         "emptyTitle": "No users in this view",
-        "emptyDescription": "There are no users matching the current filter.",
         "emptyResetFilter": "Show all users",
         "deletionPending": "Deletion on {date}",
         "deletionPendingNoDate": "Deletion pending",
@@ -8856,16 +8825,13 @@
         "deleteUserFailed": "Could not delete the account"
       },
       "invites": {
-        "title": "Invites",
-        "subtitle": "Mint, track, and revoke registration invite links."
+        "title": "Invites"
       },
       "api-tokens": {
-        "title": "API & tokens",
-        "subtitle": "Active bearer tokens issued to native clients and integrations."
+        "title": "API & tokens"
       },
       "login-overview": {
-        "title": "Login overview",
-        "subtitle": "Audit trail of authentication and admin events."
+        "title": "Login overview"
       },
       "auditLog": {
         "filterActor": "Actor (user id or username)",
@@ -8898,7 +8864,6 @@
       },
       "app-logs": {
         "title": "App logs",
-        "subtitle": "Tail the most recent structured wide-events emitted by this process.",
         "processNote": "Showing app-process logs only; worker-process logs go to Loki when that integration is configured.",
         "filterTraceId": "Trace ID",
         "filterAction": "Action contains…",
@@ -9153,20 +9118,16 @@
         "restoreSkippedSeizureIntakeReference": "Seizure rescue dose linked to a medication intake the file does not contain (kept without the link)"
       },
       "danger-zone": {
-        "title": "Danger zone",
-        "subtitle": "Destructive system-wide operations."
+        "title": "Danger zone"
       },
       "about": {
-        "title": "About",
-        "subtitle": "Version, license, and update status."
+        "title": "About"
       },
       "module-availability": {
-        "title": "Modules",
-        "subtitle": "Turn modules on or off for every account on this server."
+        "title": "Modules"
       },
       "encryption": {
         "title": "Encryption",
-        "subtitle": "Encryption coverage and key-rotation status for data at rest.",
         "loadError": "Failed to load encryption status.",
         "coverageTitle": "Coverage",
         "coverageDescription": "How many encrypted rows sit under each key id.",
@@ -9852,7 +9813,6 @@
   },
   "achievements": {
     "title": "Achievements",
-    "subtitle": "Earn achievements by tracking your health and taking your medications on time.",
     "loginRequired": "Please sign in to view achievements.",
     "points": "Points",
     "unlocked": "Unlocked",
@@ -10144,7 +10104,6 @@
   "notifications": {
     "title": "Notifications per channel",
     "eventColumn": "Event",
-    "subtitle": "Choose which notifications you want to receive through which channel.",
     "loadError": "Notification preferences could not be loaded.",
     "noChannels": "Configure a notification channel in Settings > Integrations first.",
     "goToSettings": "Go to channel settings",
@@ -10742,7 +10701,6 @@
     },
     "disclaimer": "These predictions are descriptive estimates from your logged data, not a contraceptive method and not medical advice. They never indicate that it is safe to have unprotected sex. For contraception or any medical decision, consult a healthcare professional.",
     "title": "Cycle",
-    "subtitle": "Log your period and symptoms, see what comes next.",
     "tabs": {
       "calendar": "Calendar",
       "predictions": "Predictions",
@@ -11138,7 +11096,6 @@
   },
   "measurementReminders": {
     "sectionTitle": "Care",
-    "sectionDescription": "Reminders for what to measure or check, when, and where.",
     "markDone": "Done",
     "delete": "Delete",
     "deleteConfirmTitle": "Delete reminder?",
@@ -11276,13 +11233,11 @@
   },
   "labs": {
     "title": "Lab results",
-    "subtitle": "Your blood work and biomarker readings.",
     "addResult": "Add value",
     "addDescription": "Record a biomarker reading from a lab report.",
     "addFirst": "Add your first result",
     "importAction": "Import from Apple Health or CSV",
     "emptyTitle": "No lab results yet",
-    "emptyDescription": "Record bloodwork like HbA1c, LDL or ferritin to track it over time and share it with your doctor.",
     "referenceLabel": "Reference",
     "readingsCount": "{count, plural, one {# reading} other {# readings}}",
     "deleteConfirmTitle": "Delete lab result?",
@@ -11354,7 +11309,6 @@
     "restoreError": "Could not restore the reading",
     "detail": {
       "emptyTitle": "No readings yet",
-      "emptyDescription": "Add a value to start tracking this biomarker over time.",
       "title": "Biomarker",
       "genericDescription": "A lab biomarker you track. Add readings to follow how it trends against its reference range.",
       "valuesTitle": "{marker}: all readings",
@@ -11394,7 +11348,6 @@
       "deleteConfirmTitle": "Delete biomarker?",
       "deleteConfirmDescription": "The biomarker and all of its recorded values are permanently deleted. This cannot be undone.",
       "emptyTitle": "No biomarkers yet",
-      "emptyDescription": "Define markers like LDL or HbA1c to record values against them.",
       "loadError": "Could not load biomarkers",
       "noRange": "No reference range",
       "form": {
@@ -11703,8 +11656,7 @@
       "markerCountOne": "{count} biomarker",
       "markerCountFew": "{count} biomarkers",
       "markerCountOther": "{count} biomarkers",
-      "noMatchesTitle": "No matching biomarkers",
-      "noMatchesDescription": "Try adjusting your search query or filters."
+      "noMatchesTitle": "No matching biomarkers"
     },
     "source": {
       "OCR": "Scanned report",
@@ -11799,22 +11751,18 @@
   },
   "moduleOff": {
     "disabled": {
-      "description": "{module} is off for this record, so its pages stay hidden. Turn it back on to bring them back.",
       "title": "{module} is switched off"
     },
     "notGranted": {
-      "description": "{module} sits outside the sections shared with you. What a shared record covers is decided by the person who owns it.",
       "title": "Not part of the shared access"
     },
     "unavailable": {
-      "description": "The operator switched {module} off for every account on this server. No setting of your own can bring it back.",
       "title": "Not available on this server"
     },
-    "openModules": "Open Settings, Modules"
+    "turnOn": "Turn on"
   },
   "vaccinations": {
     "title": "Vaccinations",
-    "subtitle": "Your immunization record, dose by dose.",
     "listLoadError": "Vaccinations could not be loaded.",
     "series": {
       "booster": "Booster",
@@ -11976,7 +11924,6 @@
   },
   "illness": {
     "title": "Illness",
-    "subtitle": "A retrospective log of your illness and condition episodes.",
     "settings": {
       "viewDescription": "Choose whether episodes show as cards or as a compact list.",
       "orderDescription": "Drag your episodes into the order you want to see them in."
@@ -12680,7 +12627,6 @@
       "editTitle": "Edit allergy",
       "formDescription": "The substance is stored as plain text; the reaction and note are encrypted.",
       "emptyTitle": "No allergies recorded",
-      "emptyDescription": "Add substances you react to and their reactions.",
       "loadError": "Couldn't load your allergies.",
       "deletedToast": "Allergy deleted",
       "deleteError": "Couldn't delete the allergy.",
@@ -12742,7 +12688,6 @@
       "editTitle": "Edit family history",
       "formDescription": "The relationship and condition are stored as plain text; the note is encrypted.",
       "emptyTitle": "No family history recorded",
-      "emptyDescription": "Add conditions that run in your family.",
       "loadError": "Couldn't load your family history.",
       "deletedToast": "Entry deleted",
       "deleteError": "Couldn't delete the entry.",
@@ -13100,7 +13045,6 @@
   },
   "documents": {
     "title": "Documents",
-    "subtitle": "Every letter, report and scan in one searchable place, encrypted at rest.",
     "pageUpload": "Upload",
     "ownerOnlyUpload": "Documents can only be added by the record owner.",
     "kind": {
@@ -13180,7 +13124,6 @@
       "description": "Store doctor letters, lab reports, imaging, prescriptions and vaccination records. They are encrypted and searchable by type, condition and year.",
       "action": "Upload a first document",
       "noMatchesTitle": "No matching documents",
-      "noMatchesDescription": "Nothing matches the current search and filters.",
       "titleRecord": "{name}'s document vault is empty"
     },
     "detail": {
@@ -13440,8 +13383,7 @@
       },
       "pickMore": "Pick more",
       "finishedHint": "Search again or change a filter to pick more documents.",
-      "maxReached": "You can import up to {max, plural, one {# document} other {# documents}} at a time.",
-      "noMatchHint": "Try part of the name, or clear the tag and dates."
+      "maxReached": "You can import up to {max, plural, one {# document} other {# documents}} at a time."
     },
     "customize": "Customize view",
     "layout": {
@@ -13465,7 +13407,6 @@
       "entryLabel": "Recently deleted ({count})",
       "loadError": "Couldn't load Recently deleted.",
       "emptyTitle": "Nothing in Recently deleted",
-      "emptyDescription": "Documents you delete wait here for {days, plural, one {# day} other {# days}} before they are removed for good.",
       "count": "Deleted documents ({count})",
       "restoreAll": "Restore all",
       "restore": "Restore",
@@ -13574,9 +13515,7 @@
     },
     "detail": {
       "title": "Custom metric",
-      "genericDescription": "A measurement you track. Add values to follow it over time.",
       "emptyTitle": "No values yet",
-      "emptyDescription": "Add your first value to start charting this metric.",
       "valuesTitle": "{metric}: all values",
       "valuesDescription": "Every logged value for this metric.",
       "backToMetric": "Back to {metric}"
@@ -14169,7 +14108,6 @@
       "title": "Who can open my record",
       "description": "Ended access stays listed, so you can always see who had it and when.",
       "emptyTitle": "Nobody else can open your record",
-      "emptyDescription": "Invite someone above if you want them to be able to read it.",
       "loadError": "The list could not be loaded.",
       "revoke": "End access",
       "withdrawInvite": "Withdraw",
@@ -14183,7 +14121,6 @@
       "title": "Records I can open",
       "description": "An invitation gives you nothing until you accept it.",
       "emptyTitle": "Nobody has shared a record with you",
-      "emptyDescription": "When someone invites you, the invitation appears here.",
       "loadError": "The list could not be loaded.",
       "accept": "Accept",
       "accepting": "Accepting…",
@@ -14201,7 +14138,6 @@
       "description": "Every time someone else opened your record.",
       "retention": "This covers the last {days, plural, one {# day} other {# days}}. Older entries are deleted.",
       "emptyTitle": "Nobody has opened your record",
-      "emptyDescription": "Openings by anyone other than you appear here, one line per person per day.",
       "loadError": "The activity could not be loaded.",
       "opened": "{name} opened your record {count}×",
       "acted": "{name} made a change in your record",
@@ -14212,7 +14148,6 @@
       "hint": "Who did what in this profile: every guardian's changes, yours included.",
       "action": "Show activity",
       "emptyTitle": "Nothing recorded yet",
-      "emptyDescription": "Changes a guardian makes in this profile appear here, and openings one line per guardian per day.",
       "you": "You",
       "opened": "{name} opened the profile {count}×",
       "acted": "{name} made a change in the profile",
@@ -14596,11 +14531,9 @@
     },
     "bodySiteWithSide": "{site} ({side})",
     "sectionTitle": "Visits",
-    "sectionDescription": "Past and booked visits in one place.",
     "add": "Visit",
     "loadError": "Visits could not be loaded.",
     "emptyTitle": "No visit recorded yet",
-    "emptyDescription": "A date is enough. Everything else is optional.",
     "upcomingHeading": "Upcoming",
     "pastHeading": "Past",
     "createTitle": "Record a visit",
@@ -14658,6 +14591,7 @@
       "nextVisit": "Next visit: {what} on {when}"
     },
     "procedures": {
+      "emptyDescription": "Record a visit of the kind Procedure or surgery, or switch an existing visit to it.",
       "title": "Procedures and surgeries",
       "description": "Every procedure and surgery you have had, newest first.",
       "add": "Procedure",
@@ -14667,7 +14601,6 @@
       "allSites": "All",
       "count": "{shown} of {total}",
       "emptyTitle": "No procedure recorded yet",
-      "emptyDescription": "Record a visit of the kind Procedure or surgery, or switch an existing visit to it.",
       "noMatchTitle": "Nothing matches this filter",
       "clearFilter": "Clear filter",
       "loadError": "Procedures could not be loaded."
@@ -14698,9 +14631,7 @@
     "searchPlaceholder": "Search name, practice or specialty",
     "loadError": "The address book could not be loaded.",
     "emptyTitle": "No entry yet",
-    "emptyDescription": "Add a practice so you can pick it when you record a visit.",
     "noMatchTitle": "No match",
-    "noMatchDescription": "No entry matches this search.",
     "createTitle": "Add an entry",
     "editTitle": "Edit entry",
     "formDescription": "Only the name is required.",
@@ -14767,11 +14698,11 @@
     }
   },
   "bodySites": {
+    "emptyDescription": "Add a body site to a procedure or a condition and it appears here.",
     "title": "Body sites",
     "description": "Procedures and conditions by where on the body they are.",
     "loadError": "Body sites could not be loaded.",
     "emptyTitle": "No body site recorded yet",
-    "emptyDescription": "Add a body site to a procedure or a condition and it appears here.",
     "sitesLabel": "Body sites",
     "sidesLabel": "Side",
     "allSides": "All sides",
@@ -15086,7 +15017,6 @@
   },
   "timeline": {
     "title": "Timeline",
-    "subtitle": "What happened when, beside your values.",
     "standing": "Ongoing",
     "startUnknown": "start unknown",
     "zoom": {
@@ -15901,7 +15831,6 @@
       "seizureDaysValue": "on {count, plural, one {# day} other {# days}}"
     },
     "title": "Seizure diary",
-    "subtitle": "Seizures as they were seen, with the type, the duration and the rescue medication given.",
     "loadError": "The seizure diary could not be loaded.",
     "saveError": "That could not be saved. Please try again.",
     "untyped": "No type",
@@ -16091,7 +16020,6 @@
     "types": {
       "title": "Seizure types",
       "emptyTitle": "No seizure types yet",
-      "emptyDescription": "Set up the person's seizure types once, ideally with the care team.",
       "newTitle": "Add a seizure type",
       "editTitle": "Edit seizure type",
       "description": "The classification is chosen by you or the care team; HealthLog does not classify.",
