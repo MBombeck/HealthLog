@@ -19,6 +19,22 @@
  *     (code only; comments are stripped). The web spelling is a constant
  *     there too, so the web-only modules that name the page carry no literal.
  *
+ * And a link to a visit is built by `visit-links.ts` too. Visits are the
+ * second tab of `/care`; the bare path opens the first, the preventive-care
+ * list, which never lists an appointment. Four surfaces (the dashboard's
+ * next-appointment line, the Today rail item, the Today overview fact and
+ * the appointment's push) linked an appointment to the bare path, each
+ * spelled by hand, so a tap landed on the list it is not on. Over all of
+ * `src`, components included:
+ *
+ *  3. The visit and tab query forms (`/care?visit=`, `/care?view=`, the same
+ *     under `/checkups`, and either built on `CARE_WIRE_PATH` or
+ *     `CARE_WEB_PATH`) appear only in the builder.
+ *  4. The bare `/care` or `/checkups` literal appears only where the target
+ *     IS the checkups list, counted per file. A new occurrence fails until
+ *     someone decides whether it names a checkup (add it to
+ *     `BARE_CHECKUPS`, with the reason) or a visit (use the builder).
+ *
  * Not matched, stated rather than hidden: a path assembled from parts
  * (`"/check" + "ups"`). `/api/care/...` and `"nav:/care"` are other things
  * and do not start with the page's slash.
@@ -98,6 +114,60 @@ describe("wire paths for the care page", () => {
   });
 });
 
+/**
+ * Where a bare `/care` is right, and how often: each names the
+ * preventive-care list itself, or lists routes rather than linking one.
+ */
+const BARE_CHECKUPS: Record<string, { count: number; why: string }> = {
+  "components/layout/nav-model.ts": { count: 1, why: "the page's nav entry" },
+  "hooks/use-nav-counts.ts": {
+    count: 1,
+    why: "the key of the checkups count in the navigation, not a link",
+  },
+  "components/layout/context-links.tsx": {
+    count: 1,
+    why: "the key of the checkups page's own context-link row, not a link",
+  },
+  "components/measurement-reminders/vorsorge-section.tsx": {
+    count: 1,
+    why: "the checkups page mounting its own context-link row",
+  },
+  "components/measurement-reminders/vorsorge-dashboard-card.tsx": {
+    count: 1,
+    why: "the checkups card's empty state opens the checkups",
+  },
+  "components/illness/illness-episode-detail.tsx": {
+    count: 2,
+    why: "the body-site view (`?site=`); the bare fallback never renders",
+  },
+};
+
+const QUERY_FORM =
+  /(?:\/(?:care|checkups)|\$\{CARE_(?:WIRE|WEB)_PATH\})\?(visit|view)=/;
+// The bare page, or the page with a query the builder does not own.
+const BARE = /["'`]\/(?:care|checkups)(?:["'`]|\?(?!visit=|view=))/g;
+
+/** Query-form files and bare-literal counts per file, over stripped code. */
+function scan(files: readonly { path: string; code: string }[]) {
+  const queryForms: string[] = [];
+  const bare: Record<string, number> = {};
+  for (const { path, code } of files) {
+    for (const line of code.split("\n")) {
+      if (QUERY_FORM.test(line)) queryForms.push(path);
+      const hits = line.match(BARE)?.length ?? 0;
+      if (hits > 0) bare[path] = (bare[path] ?? 0) + hits;
+    }
+  }
+  return { queryForms: [...new Set(queryForms)].sort(), bare };
+}
+
+const ALL = walkSourceFiles(SRC, { floor: 2500 })
+  .filter((p) => !p.includes("__tests__/") && !p.startsWith("generated/"))
+  .map((path) => ({
+    path,
+    code: stripComments(readSourceText(join(SRC, path)), path),
+  }));
+
 /** A path literal for the page: the bare page, a query, a hash or a subpath. */
 const PAGE_LITERAL = /["'`]\/(?:checkups|care)(?=["'`?#/]|\$\{)/;
 
@@ -109,17 +179,9 @@ function literalHits(files: readonly { path: string; code: string }[]) {
 }
 
 describe("server code spells the page only in visit-links.ts", () => {
-  const files = walkSourceFiles(SRC, { floor: 2500 })
-    .filter(
-      (p) =>
-        (p.startsWith("lib/") || p.startsWith("app/api/")) &&
-        !p.includes("__tests__/") &&
-        /\.tsx?$/.test(p),
-    )
-    .map((path) => ({
-      path,
-      code: stripComments(readSourceText(join(SRC, path)), path),
-    }));
+  const files = ALL.filter(
+    ({ path }) => path.startsWith("lib/") || path.startsWith("app/api/"),
+  );
 
   it("walks the server tree", () => {
     expect(files.length).toBeGreaterThan(1000);
@@ -151,5 +213,57 @@ describe("server code spells the page only in visit-links.ts", () => {
     ]) {
       expect(probe(miss), miss).toEqual([]);
     }
+  });
+});
+
+describe("links to a visit go through the visit-links builder", () => {
+  it("walks the tree", () => {
+    expect(ALL.length).toBeGreaterThan(2000);
+  });
+
+  it("spells the visit and tab paths only in the builder", () => {
+    // The builder itself must match, or the matcher proves nothing.
+    expect(
+      scan(ALL).queryForms,
+      "Build a link to a visit with visitPath() / visitsPath() / VISITS_PATH from src/lib/encounters/visit-links.ts.",
+    ).toEqual([HOME]);
+  });
+
+  it("links the bare checkups page only where the target is the checkups", () => {
+    const { bare } = scan(ALL);
+    delete bare[HOME];
+    const expected = Object.fromEntries(
+      Object.entries(BARE_CHECKUPS).map(([path, { count }]) => [path, count]),
+    );
+    expect(
+      bare,
+      "A new bare `/care`: if it leads to a visit, use the visit-links builder; if it really is the checkups list, add it to BARE_CHECKUPS with the reason.",
+    ).toEqual(expected);
+  });
+
+  it("skips comments and keeps code", () => {
+    const probe = (path: string, source: string) => ({
+      path,
+      code: stripComments(source, path),
+    });
+    const { queryForms, bare } = scan([
+      probe(
+        "a.tsx",
+        [
+          "/**",
+          " * `/care?visit=<id>` in a docblock",
+          " */",
+          '// "/care" in a line comment',
+          '{/* a JSX comment naming "/care"',
+          '    over two lines "/care" */}',
+          'const url = "https://example.test/x"; const bad = "/care";',
+        ].join("\n"),
+      ),
+      probe("b.ts", "const p = `/care?visit=${id}`;"),
+      probe("c.ts", "const q = `/care?${params}`;"),
+      probe("d.ts", "const r = `${CARE_WIRE_PATH}?view=visits`;"),
+    ]);
+    expect(queryForms).toEqual(["b.ts", "d.ts"]);
+    expect(bare).toEqual({ "a.tsx": 1, "c.ts": 1 });
   });
 });

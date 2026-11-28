@@ -107,8 +107,8 @@ export function resolveWhenGrammar(
 
   if (ISO_DATE_RE.test(when)) {
     // Anchor at 09:00 UTC on the named day — a deterministic, timezone-stable
-    // fire moment for the daily sweep (push delivery + per-tz receptivity land
-    // in a later wave; this is in-app surfacing only).
+    // fire moment for the daily sweep (push delivery + per-tz receptivity are
+    // not wired here; this is in-app surfacing only).
     const dueAt = new Date(`${when}T09:00:00.000Z`);
     if (Number.isNaN(dueAt.getTime())) return null;
     return { triggerKind: "date", dueAt, contextCue: null };

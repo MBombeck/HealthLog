@@ -192,9 +192,8 @@ export const APPLE_HEALTH_SLEEP_STAGE_MAP: Record<number, SleepStage> = {
  * releases pre-multiplied those two identifiers by ×100 before
  * upload (a footgun the audit team flagged); the iOS client is on
  * track to drop the pre-multiplication so every HK percent flows
- * through the same canonical server-side scaling path. The coord
- * note in `.planning/ios-coord/` documents the one-release shim and
- * the migration window.
+ * through the same canonical server-side scaling path. The shim is
+ * meant to last one release.
  *
  * ── Convention split — percent vs raw SI ───────────────────────────
  *
@@ -383,9 +382,8 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
   // ── Activity (cumulative) ───────────────────────────────────
   HKQuantityTypeIdentifierStepCount: {
     hkIdentifier: "HKQuantityTypeIdentifierStepCount",
-    // Reuses existing enum value (the W1 research recommended this
-    // over a parallel STEP_COUNT value to avoid analytics-side
-    // duplication; see `.planning/phase-W1-v1423-research.md`).
+    // Reuses the existing enum value rather than a parallel
+    // STEP_COUNT value, to avoid analytics-side duplication.
     measurementType: "ACTIVITY_STEPS",
     hkUnit: "count",
     unitFixedReason: UNIT_FIXED_DIMENSIONLESS_COUNT,
@@ -1138,8 +1136,7 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
  * stay on `AVG`.
  *
  * Used by `src/app/api/measurements/route.ts` when picking the SQL
- * aggregator. Mirrors the canonical list documented in
- * `.planning/research/v15-r-a-step-aggregation.md` §6.
+ * aggregator.
  */
 export const CUMULATIVE_HK_TYPES: ReadonlySet<MeasurementType> =
   new Set<MeasurementType>([
@@ -1243,10 +1240,8 @@ export const HIGH_FREQUENCY_MEAN_TYPES: ReadonlySet<MeasurementType> =
  * collide on the deterministic `"stats:..."` key for idempotent
  * UPSERTs.
  *
- * Locked contract — see
- * `.planning/v15-ios-handoff/08-locked-contracts.md` §13 and
- * `.planning/v15-ios-handoff/06-ios-responsibilities.md` Domain 1
- * "Cumulative metrics: daily aggregation on iOS".
+ * Locked contract with the iOS client, which aggregates cumulative
+ * metrics daily before upload.
  *
  * The helper accepts the date string as-is: iOS generates it from
  * the user's IANA timezone via `DateFormatter` with the
@@ -1264,8 +1259,7 @@ export function dailyStatsExternalId(
 
 /**
  * v1.30.7 (iOS #34) — go-forward aggregated heart-rate wire contract.
- * Supersedes the v1.19.0 HOURLY shape (which no client ever adopted) —
- * see `.planning/research/2026-07-18-hr-aggregation-contract.md`.
+ * Supersedes the v1.19.0 HOURLY shape (which no client ever adopted).
  *
  * iOS uploads ONE PULSE row per 10-MINUTE heart-rate bucket instead of
  * one row per raw HealthKit sample (~500–16k rows/user/day → ~144). The

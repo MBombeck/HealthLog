@@ -6,7 +6,7 @@ import {
 
 import { unstable_rethrow } from "next/navigation";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
-import { resolveJobLocale } from "@/lib/i18n/job-locale";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { getUnswitchedSession } from "@/lib/auth/acting-carrier";
 import { buildMoodDailySeries } from "@/lib/analytics/mood-series";
 import {
@@ -94,8 +94,10 @@ export default async function InsightsMoodPage() {
           ),
         ]);
         const queryClient = new QueryClient();
+        // The same resolution `/api/mood/insights` makes, so the prefetched
+        // labels are the ones the client would have fetched.
         const translator = getServerTranslator(
-          await resolveJobLocale(user.locale),
+          await resolveServerLocale({ userLocale: user.locale ?? null }),
         );
         if (aggregates) {
           queryClient.setQueryData(

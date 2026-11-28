@@ -1,7 +1,9 @@
 /**
- * Only a dead token drops a Wallet registration. A refusal that is about the
+ * Only a dead token drops a Wallet registration, and only through the
+ * breaker (`forgetGoneRegistrations`). A refusal that is about the
  * certificate, the topic, the payload or the provider (the relay's and the
- * local sender's `rejected`) keeps every registration owed and is reported.
+ * local sender's `rejected`) keeps every registration owed and is reported,
+ * and so does a stored token that does not decrypt.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -13,6 +15,7 @@ const db = vi.hoisted(() => ({
 const notify = vi.hoisted(() => vi.fn());
 const local = vi.hoisted(() => vi.fn());
 const mode = vi.hoisted(() => ({ current: { kind: "relay" } as unknown }));
+const forget = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -26,7 +29,15 @@ vi.mock("@/lib/db", () => ({
 vi.mock("@/lib/app-settings", () => ({
   isApiGloballyEnabled: async () => true,
 }));
-vi.mock("@/lib/crypto", () => ({ decrypt: (v: string) => v }));
+vi.mock("@/lib/crypto", () => ({
+  decrypt: (v: string) => {
+    if (v === "sealed-under-a-lost-key") throw new Error("unknown key id");
+    return v;
+  },
+}));
+vi.mock("@/lib/notifications/gone-registrations", () => ({
+  forgetGoneRegistrations: forget,
+}));
 vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: async () => ({ allowed: true, resetAt: 0 }),
 }));
@@ -69,6 +80,7 @@ const answers = new Map([
 
 beforeEach(() => {
   vi.clearAllMocks();
+  forget.mockResolvedValue(true);
 });
 
 describe.each([
@@ -96,10 +108,9 @@ describe.each([
       now,
     });
 
-    expect(db.deleteMany).toHaveBeenCalledTimes(1);
-    expect(db.deleteMany).toHaveBeenCalledWith({
-      where: { id: { in: ["b"] } },
-    });
+    expect(db.deleteMany).not.toHaveBeenCalled();
+    expect(forget).toHaveBeenCalledTimes(1);
+    expect(forget).toHaveBeenCalledWith("walletPass", ["b"]);
     expect(db.updateMany).toHaveBeenCalledWith({
       where: { id: { in: ["a"] } },
       data: { lastPushAt: now },
@@ -120,6 +131,51 @@ describe.each([
     });
 
     expect(db.deleteMany).not.toHaveBeenCalled();
+    expect(forget).not.toHaveBeenCalled();
     expect(outcome).toMatchObject({ dropped: 0, rejected: 4 });
+  });
+
+  it("drops nothing when the breaker holds a mass verdict", async () => {
+    mode.current = signingMode;
+    db.findUnique.mockResolvedValue(pass(signer));
+    const all = new Map(["a", "b", "c", "d"].map((r) => [r, "unregistered"]));
+    notify.mockResolvedValue(all);
+    local.mockResolvedValue(all);
+    forget.mockResolvedValue(false);
+
+    const outcome = await pushOwedWalletUpdates("p1", {
+      throttle: false,
+      now,
+    });
+
+    expect(forget).toHaveBeenCalledWith("walletPass", ["a", "b", "c", "d"]);
+    expect(db.deleteMany).not.toHaveBeenCalled();
+    expect(outcome).toMatchObject({ dropped: 0 });
+  });
+
+  it("keeps a registration whose token does not decrypt, and counts it", async () => {
+    mode.current = signingMode;
+    const p = pass(signer);
+    p.registrations[1].pushTokenEncrypted = "sealed-under-a-lost-key";
+    p.registrations[2].pushTokenEncrypted = "not-a-token";
+    db.findUnique.mockResolvedValue(p);
+    const sent = new Map([
+      ["a", "accepted"],
+      ["d", "accepted"],
+    ]);
+    notify.mockResolvedValue(sent);
+    local.mockResolvedValue(sent);
+
+    const outcome = await pushOwedWalletUpdates("p1", {
+      throttle: false,
+      now,
+    });
+
+    // Neither is sent, neither is deleted, both stay owed.
+    const items = (signer === "RELAY" ? notify : local).mock.calls[0].at(-1);
+    expect(items.map((i: { ref: string }) => i.ref)).toEqual(["a", "d"]);
+    expect(forget).not.toHaveBeenCalled();
+    expect(db.deleteMany).not.toHaveBeenCalled();
+    expect(outcome).toMatchObject({ accepted: 2, dropped: 0, unreadable: 2 });
   });
 });

@@ -13,6 +13,11 @@ name: Migration immutability
 # under .github/workflows/, scripts/, prisma/migrations/ or docs/ of a file
 # the base still has fails unless the pull request body names it on a
 # `Removes:` line. `edited` re-runs the check when the body changes.
+#
+# Commit messages and the pull request body carry no tooling attribution:
+# no generator line, no session trailer, no co-author trailer for a coding
+# tool. The local commit-msg hook (lefthook.yml) refuses the same, but a
+# fork's commits never ran it.
 on:
   pull_request:
     branches: [main, "release/**"]
@@ -86,3 +91,27 @@ jobs:
           printf '%s\n' "$PR_BODY" > "$body_file"
           echo "Checking ${PR_BASE}...${PR_HEAD}"
           node scripts/release-policy.mjs deletions --base "$PR_BASE" --head "$PR_HEAD" --body-file "$body_file"
+
+  attribution:
+    name: No tooling attribution
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Refuse tooling attribution in commits and body
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          set -euo pipefail
+          body_file="$RUNNER_TEMP/pull-request-body.md"
+          printf '%s\n' "$PR_BODY" > "$body_file"
+          echo "Checking ${PR_BASE}..${PR_HEAD}"
+          node scripts/release-policy.mjs attribution --base "$PR_BASE" --head "$PR_HEAD" --body-file "$body_file"

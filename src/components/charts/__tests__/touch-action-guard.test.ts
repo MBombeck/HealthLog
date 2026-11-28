@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * Phase A5 / B-mobile finding (CRITICAL #1): Recharts wraps every
+ * Mobile audit finding: Recharts wraps every
  * chart in a `<ResponsiveContainer>` whose default
  * `touch-action: auto` makes the browser wait for the chart's JS
  * touchmove handler before starting page scroll. On slow devices that

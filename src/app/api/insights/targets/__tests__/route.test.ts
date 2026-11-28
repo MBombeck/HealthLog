@@ -1,8 +1,7 @@
 /**
  * v1.4.40 — `/api/insights/targets` mood-rollup tier swap.
  *
- * Audit Critical Finding #2 (`.planning/round-v1439-arch-qa-infra-db.md`)
- * flagged the unbounded `prisma.moodEntry.findMany({ where: { userId } })`
+ * An architecture audit flagged the unbounded `prisma.moodEntry.findMany({ where: { userId } })`
  * at the bottom of the route as one of the six unbounded mood walks
  * that paint the Insights surface 12 s cold on a power-user account.
  * This file pins:

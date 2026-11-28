@@ -38,6 +38,7 @@ function installFetchMock(pages: Array<{ status: number; body: unknown }>) {
     i += 1;
     return {
       status: page.status,
+      headers: new Headers(),
       json: async () => page.body,
     };
   });

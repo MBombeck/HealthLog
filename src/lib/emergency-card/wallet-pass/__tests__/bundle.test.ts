@@ -17,13 +17,10 @@ import {
   passManifest,
 } from "../bundle";
 import { buildPassContent } from "../content";
-import {
-  escapeStringsLiteral,
-  parsePassStrings,
-  serialisePassStrings,
-} from "../strings";
+import { escapeStringsLiteral, serialisePassStrings } from "../strings";
 
 import { NONCE, SAMPLE_INPUT } from "./fixture";
+import { parsePassStrings } from "./pass-strings-reader";
 
 const SIGNATURE = new Uint8Array([0x30, 0x03, 0x02, 0x01, 0x01]);
 

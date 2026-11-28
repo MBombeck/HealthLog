@@ -17,9 +17,8 @@
  *     entries: [{ index, status, id? }, ...]
  *   }
  *
- * Locked contract — see `.planning/v15-ios-handoff/06-ios-responsibilities.md`
- * §"Cumulative metrics" sibling section for the SyncMode rationale,
- * and `08-locked-contracts.md` §2 for the batch envelope shape.
+ * Locked contract with the iOS client; the batch envelope mirrors the
+ * measurements + workouts batch routes.
  *
  * The route authenticates, meters, caps and parses; the per-entry writes live
  * in `src/lib/mood/bulk-ingest.ts`.

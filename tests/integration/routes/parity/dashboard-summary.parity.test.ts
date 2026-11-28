@@ -4,8 +4,8 @@
  *
  * One record carries every block the summary shapes (`record-fixture.ts`):
  * the walk reads it cold, warm, with modules off (gated after the cache),
- * in another language (served from the cache that still holds the first
- * greeting), for a delegate who may manage the record and one who may only
+ * in another language (a cache cell of its own, so the greeting follows the
+ * language), for a delegate who may manage the record and one who may only
  * read it, without credentials, and for an account with no data. The
  * fire-and-forget rollup refresh is recorded instead of run.
  *
@@ -184,12 +184,12 @@ describe("GET /api/dashboard/summary parity", { shuffle: false }, () => {
     }
   });
 
-  it("04 another language, served from the cache", async () => {
+  it("04 another language, in a cache cell of its own", async () => {
     await prisma.user.update({
       where: { id: OWNER_ID },
       data: { locale: "de" },
     });
-    await step("04-de-cached");
+    await step("04-de");
   });
 
   it("05 a delegate who may manage, and one who may only read", async () => {

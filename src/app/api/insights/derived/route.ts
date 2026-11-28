@@ -15,9 +15,9 @@
  * rollup tier (Tier-1, no narrative) — no provider call, no cache table;
  * since v1.42 the in-process derived cache, as the batch route uses.
  *
- * Wave 1 implements `VITALS_BASELINE` end-to-end; other registered ids
- * return a `not_implemented` insufficient until their compute lands in a
- * later wave (never a 500, never a fabricated value).
+ * `VITALS_BASELINE` is implemented end-to-end; other registered ids
+ * return a `not_implemented` insufficient until their compute lands
+ * (never a 500, never a fabricated value).
  */
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
@@ -35,6 +35,8 @@ import { resolveDerivedAssessment } from "@/lib/insights/derived/derived-assessm
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { aiCapabilityToServe } from "@/lib/ai/capabilities/gate";
 import { readDerivedSingle } from "@/lib/insights/derived/single-read";
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+import { scoreShortLabelOrNull } from "@/lib/scores/registry";
 
 export const dynamic = "force-dynamic";
 
@@ -175,6 +177,13 @@ export const GET = apiHandler(async (request: NextRequest) => {
     aiAvailable: ai.available,
   });
 
+  // The score's short name for a tile, from the glossary through the score
+  // registry; null for a metric that is not a HealthLog score.
+  const shortLabel = scoreShortLabelOrNull(
+    metric,
+    getServerTranslator(resolvedLocale).t,
+  );
+
   // Flatten the discriminated union for the wire: `metric` tags it,
   // `value`/`reason` are nullable so iOS decodes one stable shape.
   return apiSuccess({
@@ -187,5 +196,6 @@ export const GET = apiHandler(async (request: NextRequest) => {
     reason: derived.status === "insufficient" ? derived.reason : null,
     assessment,
     ai,
+    shortLabel,
   });
 });

@@ -789,4 +789,3 @@ export {
   COVERAGE_PENDING,
   RAW_SQL_TABLES,
 } from "./backup-auth-models";
-export { DERIVED_MODELS } from "./backup-derived-models";

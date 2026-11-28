@@ -18,7 +18,7 @@
  *     (`iphoneDelivers`): another phone that still uploads means the data is
  *     arriving.
  *
- * `src/__tests__/source-silence-one-rule-guard.test.ts` holds every surface
+ * `src/__tests__/one-home-guard.test.ts` holds every surface
  * that shows a quiet source to this module, and every reader of the stamps
  * to a list.
  *

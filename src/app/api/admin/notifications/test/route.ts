@@ -23,7 +23,7 @@ import type {
   ChannelType,
   NotificationPayload,
 } from "@/lib/notifications/types";
-import { defaultLocale, isLocale, type Locale } from "@/lib/i18n/config";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 
 export const dynamic = "force-dynamic";
@@ -136,8 +136,8 @@ export const POST = apiHandler(async () => {
     });
   }
 
-  // v1.4.27 — resolve the admin's persisted locale so the test
-  // notification arrives in their preferred language. The test route
+  // The test notification arrives in the admin's language: the stored one,
+  // else the request's (`resolveServerLocale`). The test route
   // talks to the senders directly (not the dispatcher) because it
   // needs per-channel success / error feedback for the UI, so we
   // compose the payload locally rather than via
@@ -146,10 +146,9 @@ export const POST = apiHandler(async () => {
     where: { id: user.id },
     select: { locale: true },
   });
-  const adminLocale: Locale = isLocale(adminLocaleRow?.locale)
-    ? adminLocaleRow.locale
-    : defaultLocale;
-  const t = getServerTranslator(adminLocale).t;
+  const t = getServerTranslator(
+    await resolveServerLocale({ userLocale: adminLocaleRow?.locale ?? null }),
+  ).t;
 
   const payload: NotificationPayload = {
     eventType: "SYSTEM_ALERT",

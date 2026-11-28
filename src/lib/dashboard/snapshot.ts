@@ -164,8 +164,8 @@ import { translateOrNull } from "@/lib/i18n/translate-code";
  * (`MetricKind.swift:30-122`); the snapshot's `metricStates` block is
  * keyed by them so a cold-launch first-paint seeds every tile without
  * a per-metric round-trip. Most map to the lowercase / camel form of
- * the enum, but a handful are non-obvious and locked verbatim in
- * `.planning/ios-coord/v1.7.0-ios-convergence-locks.md` §4b:
+ * the enum, but a handful are non-obvious and locked verbatim with the
+ * iOS client:
  *
  *   - SpO₂ → `oxygenSaturation`
  *   - body water → `totalBodyWater`
@@ -345,6 +345,8 @@ export interface DashboardLayoutCatalogueEntry {
  */
 export interface DashboardSnapshotHealthScore {
   score: number;
+  /** 1.50: the short name for a tile, set per read (`applyScoreShortLabels`). */
+  shortLabel?: string;
   /** The worse of the number's band and the worst pillar's (shipped apps). */
   band: ScoreBand;
   /** 1.50: the number's own band; the web draws this. Old caches lack it. */

@@ -1,7 +1,7 @@
 /**
  * System-prompt builder for the AI Coach.
  *
- * v1.4.22 — Wave 3 rewrite. The Coach now sits alongside the user
+ * v1.4.22 rewrite. The Coach now sits alongside the user
  * (warm, curious, conservative) instead of restating numbers like a
  * database cursor. Prose comes first; load-bearing numbers move into a
  * `---KEYVALUES---` sentinel block that the route strips out of the

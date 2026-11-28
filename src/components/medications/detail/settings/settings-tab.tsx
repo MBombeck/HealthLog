@@ -299,14 +299,19 @@ export function MedicationSettingsTab({
         {(ownRecord || runsSchedule) && (
           <PeriodGroup
             medication={medication}
-            ownRecord={ownRecord}
+            manageLifecycle={ownRecord || runsSchedule}
             onOpenSheet={setSheet}
           />
         )}
 
-        {ownRecord && (
+        {/* #1615: a managed profile's guardian pauses, ends and deletes a
+            medication there, whose routes admit them; export, import and
+            the per-medication tokens resolve the caller and stay the
+            owner's. */}
+        {(ownRecord || runsSchedule) && (
           <DataAndDeleteGroups
             medication={medication}
+            showData={ownRecord}
             offerComposition={nutrientsOn && !showComposition}
             onOpenSheet={setSheet}
             onOpenImport={() => setImportOpen(true)}
@@ -508,11 +513,14 @@ function scheduleSnapshotsOf(schedules: MedicationDetailSnapshot["schedules"]) {
 /** The owner's data and delete groups. */
 function DataAndDeleteGroups({
   medication,
+  showData,
   offerComposition,
   onOpenSheet,
   onOpenImport,
 }: {
   medication: MedicationDetailSnapshot;
+  /** Export, import, API access and codes: the owner's only. */
+  showData: boolean;
   offerComposition: boolean;
   onOpenSheet: (sheet: SettingsSheet) => void;
   onOpenImport: () => void;
@@ -522,42 +530,44 @@ function DataAndDeleteGroups({
   return (
     <>
       {/* DATA */}
-      <Group
-        icon={Database}
-        title={t("medications.detail.erweitert.group.data")}
-        slot="medication-settings-data"
-      >
-        <OpenRow
-          label={t("medications.detail.settingsTab.rows.export")}
-          value="CSV"
-          onOpen={() => onOpenSheet("export")}
-          slot="medication-settings-export"
-        />
-        <OpenRow
-          label={t("medications.detail.settingsTab.rows.import")}
-          value="JSON"
-          onOpen={onOpenImport}
-          slot="medication-settings-import"
-        />
-        <OpenRow
-          label={t("medications.detail.settingsTab.rows.api")}
-          onOpen={() => onOpenSheet("api")}
-          slot="api-group-external-api"
-        />
-        <OpenRow
-          label={t("medications.detail.settingsTab.rows.codes")}
-          value={[medication.atcCode, medication.rxNormCode]
-            .filter(Boolean)
-            .join(", ")}
-          onOpen={() => onOpenSheet("codes")}
-          slot="medication-settings-codes"
-        />
-        {offerComposition && (
-          <InlineRow slot="medication-settings-composition">
-            <CompositionRow medicationId={medication.id} ownRecord />
-          </InlineRow>
-        )}
-      </Group>
+      {showData && (
+        <Group
+          icon={Database}
+          title={t("medications.detail.erweitert.group.data")}
+          slot="medication-settings-data"
+        >
+          <OpenRow
+            label={t("medications.detail.settingsTab.rows.export")}
+            value="CSV"
+            onOpen={() => onOpenSheet("export")}
+            slot="medication-settings-export"
+          />
+          <OpenRow
+            label={t("medications.detail.settingsTab.rows.import")}
+            value="JSON"
+            onOpen={onOpenImport}
+            slot="medication-settings-import"
+          />
+          <OpenRow
+            label={t("medications.detail.settingsTab.rows.api")}
+            onOpen={() => onOpenSheet("api")}
+            slot="api-group-external-api"
+          />
+          <OpenRow
+            label={t("medications.detail.settingsTab.rows.codes")}
+            value={[medication.atcCode, medication.rxNormCode]
+              .filter(Boolean)
+              .join(", ")}
+            onOpen={() => onOpenSheet("codes")}
+            slot="medication-settings-codes"
+          />
+          {offerComposition && (
+            <InlineRow slot="medication-settings-composition">
+              <CompositionRow medicationId={medication.id} ownRecord />
+            </InlineRow>
+          )}
+        </Group>
+      )}
 
       {/* DELETE */}
       <Group
@@ -581,11 +591,12 @@ function DataAndDeleteGroups({
 /** Pause, end, the courses and the plan history. */
 function PeriodGroup({
   medication,
-  ownRecord,
+  manageLifecycle,
   onOpenSheet,
 }: {
   medication: MedicationDetailSnapshot;
-  ownRecord: boolean;
+  /** Pause and end: the owner's, and a managed profile's guardian's. */
+  manageLifecycle: boolean;
   onOpenSheet: (sheet: SettingsSheet) => void;
 }) {
   const { t } = useTranslations();
@@ -596,7 +607,7 @@ function PeriodGroup({
       title={t("medications.detail.settingsTab.groups.period")}
       slot="medication-settings-period"
     >
-      {ownRecord && (
+      {manageLifecycle && (
         <li data-slot="medication-settings-lifecycle">
           <LifecycleManageBody medication={medication} compact />
         </li>

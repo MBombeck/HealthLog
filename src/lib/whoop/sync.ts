@@ -6,6 +6,7 @@
  * the static leaf graph and the full per-user sequencing policy.
  */
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
+import { noteBackfillFailure } from "@/lib/integrations/page-walk";
 import { getEvent } from "@/lib/logging/context";
 import {
   isReauthRequired,
@@ -66,6 +67,7 @@ export async function syncUserWhoop(
             imported += await fn(userId, opts);
           } catch (err) {
             anyFailed = true;
+            noteBackfillFailure(err);
             // WH-4: a write-path throw (`MeasurementReconciliationError` out of
             // `upsertWhoopMeasurements`) reaches no ledger otherwise — a
             // stale-green pill during a persistent write failure. Fetch
