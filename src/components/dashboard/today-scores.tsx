@@ -16,7 +16,11 @@
  * Nothing is decided here. The Health score is the digest's, the sleep and
  * readiness tiles the morning's (`DailyMorning.scores`), worded and resolved
  * on the server. A value that is not fresh shows no number: the ring keeps
- * its bare track, and the line says when the last value was. A score the
+ * its bare track, and its accessible name says when the last value was.
+ *
+ * `line` is still resolved: it feeds the rings' accessible names, and the
+ * morning payload's `line` is read by the iOS client too, so the server
+ * keeps serving it; this row only stops painting it. A score the
  * record does not produce has no tile.
  */
 import Link from "next/link";
