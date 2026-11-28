@@ -31,6 +31,7 @@
  * only per-field lengths — because it is free-form health prose.
  */
 import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import {
   apiError,
   apiSuccess,
@@ -120,7 +121,7 @@ export const GET = apiHandler(async () => {
       ? storedQuestions
       : buildFallbackQuestions(
           filterSelfContextForAi(ctx, aiIncludedSections),
-          user.locale,
+          await resolveServerLocale({ userLocale: user.locale ?? null }),
           aiIncludedSections,
         );
 
@@ -390,7 +391,7 @@ export const PUT = apiHandler(async (req: Request) => {
     const derived = await deriveClarifyingQuestions(
       user.id,
       aiContext,
-      user.locale,
+      await resolveServerLocale({ userLocale: user.locale ?? null }),
       aiIncludedSections,
       { aiAvailable: ai.available },
     );

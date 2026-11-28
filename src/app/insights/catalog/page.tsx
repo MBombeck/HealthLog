@@ -115,7 +115,7 @@ function StatusBadge({ present }: { present: boolean }) {
  * trailing action-sized block) so the group cards don't reflow when
  * the real status lands. Never renders the "Not tracked yet" copy or
  * a CTA — an in-flight probe is not the same thing as a confirmed
- * absence (M1, `.planning/audits/2026-07-18-qa-ui.md`).
+ * absence.
  */
 function CatalogRowSkeleton() {
   return (
@@ -267,7 +267,7 @@ export default function MetricCatalogPage() {
 
   const grouped = catalogEntriesByGroup();
 
-  // M1 fix (`.planning/audits/2026-07-18-qa-ui.md`) — every probe backing
+  // Every probe backing
   // `availability` is async; while one is in flight `hasMetricData()` reads
   // an undefined summary and would report "absent". Each row waits on the
   // ONE probe that decides it, and a failed probe marks only its own rows

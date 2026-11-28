@@ -478,7 +478,7 @@ async function reportToGlitchtip(
   // Skip expected errors from bot scanners (malformed JSON bodies)
   if (err instanceof SyntaxError) return;
 
-  // Audit H-B7 / phase P2: strip the query string before forwarding to
+  // Audit H-B7: strip the query string before forwarding to
   // GlitchTip. Withings legacy callbacks ship `?secret=…` (see C-3) and
   // OAuth callbacks ship `?code=…&state=…`; if any of those error we
   // don't want their secrets in someone's incident UI.

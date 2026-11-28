@@ -8,6 +8,7 @@
 //   node scripts/release-policy.mjs pr --base <rev> --head <rev> --source <branch>
 //   node scripts/release-policy.mjs migrations --base <rev> --head <rev>
 //   node scripts/release-policy.mjs deletions --base <rev> --head <rev> [--body-file <file>]
+//   node scripts/release-policy.mjs attribution --base <rev> --head <rev> [--body-file <file>]
 //
 // `check` runs in the release-policy job of docker-publish.yml. It exits 1 on
 // a hard error and writes `off_schedule=true|false` to the GitHub output. An
@@ -548,11 +549,57 @@ export function parseNow(value) {
   return date;
 }
 
+/**
+ * Coding tools that sign their work, by the names they sign with. A
+ * co-author trailer naming one is refused even under a GitHub noreply
+ * address, which some of them commit from.
+ */
+const TOOL_NAMES =
+  /\b(claude|anthropic|openai|chatgpt|gpt-?\d|copilot|cursor|codex|gemini|devin|aider|windsurf|codeium|tabnine|cody)\b/i;
+const GENERATOR_LINE = /^[^\p{L}\p{N}]*Generated (with|by)\s/iu;
+const SESSION_TRAILER = /^[A-Za-z]+-Session:/i;
+const CO_AUTHOR = /^Co-authored-by:/i;
+const NOREPLY_ADDRESS = /<[^<>\s]+@users\.noreply\.github\.com>\s*$/i;
+const TOOL_SIGN_OFF = new RegExp(
+  `\\b(generated|drafted|written|created|made|authored)\\s+(with|by|using|in)\\s+(the\\s+)?${TOOL_NAMES.source}`,
+  "i",
+);
+
+/**
+ * The lines of a commit message or pull request body that credit a coding
+ * tool: a generator line, a `<Word>-Session:` trailer, a sign-off such as
+ * "drafted with <tool>", or a co-author trailer that is not a contributor
+ * under a GitHub noreply address or that names a tool. The local
+ * `commit-msg` hook in lefthook.yml refuses the same; CI runs this for the
+ * commits a fork brings in, which never ran the hook.
+ *
+ * @param {string} text
+ * @returns {string[]}
+ */
+export function attributionLines(text) {
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => {
+      if (CO_AUTHOR.test(line)) {
+        return !NOREPLY_ADDRESS.test(line) || TOOL_NAMES.test(line);
+      }
+      return (
+        GENERATOR_LINE.test(line) ||
+        SESSION_TRAILER.test(line) ||
+        TOOL_SIGN_OFF.test(line)
+      );
+    });
+}
+
 function git(args, cwd) {
   return execFileSync("git", args, {
     cwd,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
+    // A release pull request carries a month of commit messages, well past
+    // the 1 MiB default.
+    maxBuffer: 256 * 1024 * 1024,
   });
 }
 
@@ -765,7 +812,47 @@ export function main(
     return 0;
   }
 
-  error("Usage: release-policy.mjs <check|next|pr|migrations|deletions> ...");
+  if (command === "attribution") {
+    if (!flags.base || !flags.head) {
+      error(
+        "Usage: release-policy.mjs attribution --base <rev> --head <rev> [--body-file <file>]",
+      );
+      return 2;
+    }
+    let found = 0;
+    // Every commit the head brings, merges included: a merge text carries
+    // whatever its author wrote.
+    const history = git(
+      ["log", "--format=%H%x00%B%x1e", `${flags.base}..${flags.head}`],
+      cwd,
+    );
+    for (const record of history.split("\x1e")) {
+      const [sha, message] = record.replace(/^\n/, "").split("\0");
+      if (!sha || message === undefined) continue;
+      for (const line of attributionLines(message)) {
+        found += 1;
+        error(
+          `::error::Commit ${sha.slice(0, 9)} credits a coding tool: "${line}". Commits carry no tooling attribution; reword the commit (or squash the pull request with a clean message).`,
+        );
+      }
+    }
+    if (flags["body-file"]) {
+      const body = readFileSync(resolve(cwd, flags["body-file"]), "utf8");
+      for (const line of attributionLines(body)) {
+        found += 1;
+        error(
+          `::error::The pull request body credits a coding tool: "${line}". Edit the body; the check runs again.`,
+        );
+      }
+    }
+    if (found > 0) return 1;
+    log("Attribution: none.");
+    return 0;
+  }
+
+  error(
+    "Usage: release-policy.mjs <check|next|pr|migrations|deletions|attribution> ...",
+  );
   return 2;
 }
 

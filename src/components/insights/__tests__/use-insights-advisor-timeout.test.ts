@@ -3,8 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 /**
  * v1.4.31 — the advisor fetch must short-circuit after 8 s so a
  * cache-miss path (server still waiting on the provider chain) does
- * not pin the mother-page main thread. Per
- * `.planning/research/v15-insights-blocking-bug.md` fix 1.
+ * not pin the mother-page main thread.
  *
  * The hook exposes `fetchAdvisor` only as a private function. We
  * exercise the timeout indirectly by stubbing `fetch` so it

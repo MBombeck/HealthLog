@@ -21,14 +21,13 @@ import { apiSuccess, apiError } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
 import { sendApnsTestPush } from "@/lib/push-relay/apns-channel";
-import { defaultLocale, isLocale, type Locale } from "@/lib/i18n/config";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 export const POST = apiHandler(async (request: NextRequest) => {
-  void request;
   const { user } = await requireSelfAuth();
   annotate({ action: { name: "notifications.apns.test" } });
 
@@ -43,10 +42,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
     where: { id: user.id },
     select: { locale: true },
   });
-  const locale: Locale = isLocale(localeRow?.locale)
-    ? localeRow.locale
-    : defaultLocale;
-  const t = getServerTranslator(locale).t;
+  const t = getServerTranslator(
+    await resolveServerLocale({
+      request,
+      userLocale: localeRow?.locale ?? null,
+    }),
+  ).t;
 
   // Send as MEDICATION_REMINDER so the dispatcher's time-sensitive /
   // priority-10 branch fires. Otherwise the test runs at the default

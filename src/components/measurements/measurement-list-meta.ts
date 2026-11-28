@@ -11,8 +11,8 @@
  *
  * Lead-architect note: this is the first step toward a single
  * `metrics.json` manifest the entire ecosystem derives from. Today this
- * module covers list-UI; phase P5 will subsume it into a cross-repo
- * manifest.
+ * module covers list-UI; a later cross-repo manifest is meant to
+ * subsume it.
  */
 import {
   Scale,

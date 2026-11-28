@@ -682,8 +682,7 @@ function InsightsTabStripImpl({
   // strip is wrapped in `React.memo` (see export below); the memo
   // here keeps the inner `<Link>` references stable so React's
   // reconciliation short-circuits when neither pathname nor
-  // availability changed. Per
-  // `.planning/research/v15-insights-blocking-bug.md` fix 2.
+  // availability changed.
   //
   // v1.15.14 — the saved-layout visibility set + order map join the
   // deps so the strip re-derives when the user toggles a sub-page in
@@ -1066,7 +1065,6 @@ function InsightsTabStripImpl({
  * same window the iOS touch handler is sitting in. The memo, paired
  * with the `useMemo` on `availability` in the shell, collapses that
  * cascade so the strip only re-renders when the operator-visible
- * pill set actually changed. Per
- * `.planning/research/v15-insights-blocking-bug.md` fix 2.
+ * pill set actually changed.
  */
 export const InsightsTabStrip = memo(InsightsTabStripImpl);

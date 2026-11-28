@@ -76,7 +76,7 @@ export interface SendMessageResult {
   messageId?: number;
   /**
    * Bot-API `description` field on failure. Surfaced so the dispatcher
-   * (v1.4.15 Phase B3) can classify "chat not found" / "blocked by the
+   * (v1.4.15) can classify "chat not found" / "blocked by the
    * user" as hard rejects vs a generic 5xx as a soft reject.
    */
   errorDescription?: string;

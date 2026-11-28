@@ -2,8 +2,7 @@
  * v1.4.39 — integration coverage for the rollup-tier read swap
  * in `/api/mood/analytics`.
  *
- * Pins the parity contract the audit at
- * `.planning/round-v1438-perf-analysis.md` §2.3 calls for: the
+ * Pins the parity contract the rollup swap needs: the
  * response shape stays byte-identical when the rollup tier is warm,
  * and falls back to the legacy live walk once when a legacy account
  * has mood entries but no rollup rows yet.
