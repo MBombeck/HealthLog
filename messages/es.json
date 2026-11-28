@@ -5877,9 +5877,7 @@
       },
       "integrations": {
         "title": "Integraciones",
-        "connectionsHeading": "Conexiones",
-        "channelsHeading": "Canales de entrega",
-        "matrixLink": "Notificaciones por canal"
+        "channelsHeading": "Canales de entrega"
       },
       "notifications": {
         "title": "Notificaciones",
@@ -7384,9 +7382,7 @@
       "description": "Configurado en esta cuenta pero sin tarjeta de ajustes propia."
     },
     "healthConnectFolder": {
-      "name": "Health Connect desde una carpeta",
-      "description": "Se recoge de tu carpeta WebDAV o Nextcloud cada seis horas. Se configura y se cambia en Importar.",
-      "manage": "Abrir los ajustes de la carpeta"
+      "name": "Health Connect desde una carpeta"
     },
     "healthConnectApp": {
       "connect": "Conectar dispositivo Android",
@@ -7396,39 +7392,25 @@
       "qrAlt": "Código QR para HealthLog Sync",
       "preview": "HealthLog Sync para Android, vista previa",
       "disconnectTitle": "¿Desconectar {device}?",
-      "disconnectBody": "El teléfono deja de sincronizar hasta que lo vuelvas a vincular."
+      "disconnectBody": "El teléfono deja de sincronizar hasta que lo vuelvas a vincular.",
+      "name": "HealthLog Sync"
     },
     "withingsViewData": "Ver tus mediciones",
     "whoopViewData": "Ver tu recuperación",
     "googleHealthViewData": "Ver tus pasos",
-    "apiTokens": "Tokens de API",
     "measurementsToken": {
-      "title": "Tokens de mediciones",
-      "description": "Crea un token para que una báscula, un reloj, una app de nutrición o tu domótica añadan mediciones, valores de tus métricas personalizadas y totales diarios de nutrientes.",
-      "scopeNote": "Solo puede añadir mediciones a tu propio historial, valores a las métricas personalizadas que ya creaste y totales diarios de nutrientes mientras el módulo de nutrientes esté activado; no puede leer, cambiar ni borrar nada. Las mediciones y los totales de nutrientes se marcan como externos. El ID de una métrica personalizada es la parte que sigue a /custom-metrics/ en la dirección de su página.",
-      "nutrientsLink": "Ver ingesta de nutrientes",
-      "createFailed": "No se pudo crear el token. Inténtalo de nuevo.",
       "namePlaceholder": "Nombre, p. ej. Home Assistant",
       "appleHealth": {
         "label": "Escribir mediciones en Apple Health",
         "createHint": "La app HealthLog de tu iPhone añadirá entonces las mediciones de este token a Apple Health.",
-        "toggleAria": "Escribir las mediciones de {name} en Apple Health",
         "updateFailed": "No se pudo cambiar el ajuste de Apple Health. Inténtalo de nuevo.",
         "unattributed": "Las mediciones enviadas antes de que existiera este ajuste no se pueden asociar a ningún token, así que quedan fuera de Apple Health."
       }
     },
     "workoutsToken": {
-      "title": "Tokens de entrenamientos",
-      "description": "Crea un token para que un puente de tu reloj o un script de sincronización añadan tus entrenamientos.",
-      "scopeNote": "Solo puede añadir entrenamientos nuevos a tu propio historial. No puede leer tus datos, ni modificar o borrar nada, ni crear otro token. Los entrenamientos que añade se marcan como procedentes de un dispositivo externo, y si tu teléfono registró la misma sesión, ves la copia del teléfono.",
-      "createFailed": "No se pudo crear el token. Inténtalo de nuevo.",
       "namePlaceholder": "Nombre, p. ej. Garmin"
     },
     "documentsToken": {
-      "title": "Tokens de documentos",
-      "description": "Crea un token para que Paperless-ngx, Papra o el script de importación añadan documentos a tu archivo.",
-      "scopeNote": "Solo puede añadir documentos nuevos a tu propio archivo. No puede listar, abrir, descargar, modificar ni borrar nada, ni crear otro token. Lo único que recibe es si un archivo se guardó, no cómo lo archivaste.",
-      "createFailed": "No se pudo crear el token. Inténtalo de nuevo.",
       "namePlaceholder": "Nombre, p. ej. Paperless-ngx"
     },
     "tokenCreated": "Token creado. ¡Cópialo ahora! No se mostrará de nuevo.",
@@ -7446,17 +7428,11 @@
     "revokedTokensTitle": "Tokens revocados ({count})",
     "tokenTableName": "Nombre",
     "tokenTablePermissions": "Permisos",
-    "tokenTableStatus": "Estado",
     "tokenTableCreated": "Creado",
     "tokenTableLastUsed": "Último uso",
     "tokenTableActions": "Acciones",
     "noActiveTokens": "No hay tokens activos.",
     "tokenNeverUsed": "Nunca",
-    "apiEndpointsTitle": "Endpoints de API",
-    "apiEndpointMethod": "Método",
-    "apiEndpointPath": "Ruta",
-    "apiEndpointAuth": "Autenticación",
-    "apiEndpointExample": "Ejemplo de cuerpo",
     "dangerZone": "Eliminar todos los datos",
     "dangerZoneDescription": "Borra todo tu historial de salud y todas las conexiones de integración.",
     "dangerZoneConfirm": "¿Eliminar todos los datos?",
@@ -8281,7 +8257,115 @@
     },
     "passkeyRenameFailed": "No se pudo cambiar el nombre de la clave de acceso.",
     "passkeyRemoveFailed": "No se pudo quitar la clave de acceso.",
-    "apiEndpointsShow": "Mostrar endpoints"
+    "integrationList": {
+      "channels": "Canales de entrega",
+      "sources": "Fuentes de datos",
+      "addTitle": "Añadir",
+      "allAdded": "Todo lo que ofrece este servidor está configurado.",
+      "noSources": "Aún no hay fuentes de datos",
+      "noChannels": "Aún no hay canales de entrega",
+      "ownCredentials": "Requiere tus propias credenciales de app",
+      "syncNow": "Sincronizar ahora",
+      "lastAt": "Última vez: {when}",
+      "never": "Todavía no",
+      "apns": "App de iPhone",
+      "facts": {
+        "status": "Estado",
+        "reason": "Motivo",
+        "lastSync": "Última sincronización",
+        "lastDelivery": "Última entrega",
+        "brings": "Aporta",
+        "delivers": "Entrega a",
+        "lastFailure": "Último fallo",
+        "lastFailureWith": "{when}, {reason}",
+        "setup": "Configuración"
+      },
+      "reason": {
+        "dataArriving": "Llegan datos",
+        "firstSyncPending": "Primera sincronización pendiente",
+        "planLimited": "El plan no incluye todo",
+        "permissionLimited": "Faltan algunos permisos",
+        "providerErrors": "El proveedor no responde bien",
+        "syncStalled": "La sincronización se detuvo",
+        "noNewData": "Sin datos nuevos",
+        "unexpectedSilence": "Sin datos desde hace tiempo",
+        "reauthRequired": "Inicio de sesión caducado",
+        "pausedAfterErrors": "En pausa tras errores",
+        "notConnected": "No conectado",
+        "paused": "En pausa",
+        "switchedOff": "Desactivado",
+        "autoDisabled": "Desactivado tras un rechazo",
+        "sendingPaused": "Envío en pausa",
+        "deliveryFailing": "Falló la última entrega"
+      },
+      "brings": {
+        "appleHealth": "Todo lo de Salud, mediante la app de iPhone",
+        "withings": "Peso, tensión arterial, sueño",
+        "whoop": "Recuperación, sueño, esfuerzo",
+        "googleHealth": "Fitbit y Pixel Watch",
+        "garmin": "Sueño, VFC, estrés, actividad",
+        "oura": "Disposición, sueño, VFC",
+        "polar": "Recuperación, sueño, entrenamiento",
+        "strava": "Actividades como entrenamientos",
+        "nightscout": "Glucosa continua",
+        "dawarich": "Lugares y rutas como contexto",
+        "healthConnectFolder": "Exportación de Health Connect desde WebDAV o Nextcloud",
+        "documentSources": "Documentos de Paperless-ngx o Papra",
+        "telegram": "Un chat de Telegram mediante tu bot",
+        "ntfy": "Un tema de ntfy",
+        "webPush": "Este navegador",
+        "webhook": "JSON a una dirección propia",
+        "email": "Recordatorios por correo",
+        "apns": "Notificaciones en el iPhone",
+        "healthConnectApp": "Health Connect, con la app de Android"
+      }
+    },
+    "tokenList": {
+      "title": "Tokens",
+      "newToken": "Nuevo token",
+      "empty": "Aún no hay tokens",
+      "caption": "Tus tokens",
+      "scopeColumn": "Acceso",
+      "more": "Más",
+      "scopeMoreLabel": "Qué permite este acceso",
+      "mirrorMoreLabel": "Qué significa escribir en Apple Salud",
+      "revoked": "Revocado",
+      "hideRevoked": "Ocultar revocados",
+      "menuLabel": "Acciones para {name}",
+      "copied": "Copiado",
+      "scope": {
+        "all": "Acceso total",
+        "measurements": "Valores medidos",
+        "workouts": "Entrenamientos",
+        "documents": "Documentos",
+        "medication": "Medicamento",
+        "mcpRead": "MCP, lectura",
+        "mcpWrite": "MCP, escritura",
+        "fhir": "FHIR",
+        "profile": "Perfil"
+      },
+      "scopeInfo": {
+        "measurements": "Añade valores medidos, valores de métricas propias y totales diarios de nutrientes a tu historial. No puede leer, cambiar ni borrar nada.",
+        "workouts": "Añade entrenamientos nuevos a tu historial. No puede leer, cambiar ni borrar nada.",
+        "documents": "Añade documentos nuevos a tu archivo. No puede listar, abrir, cambiar ni borrar nada."
+      },
+      "create": {
+        "failed": "No se pudo crear el token. Inténtalo de nuevo.",
+        "createdTitle": "Token creado",
+        "done": "Listo",
+        "shownOnce": "El token solo se muestra ahora.",
+        "expiry": "Válido durante",
+        "expiryYear": "1 año",
+        "expiryDays": "{days, plural, one {# día} other {# días}}"
+      },
+      "api": {
+        "title": "API",
+        "address": "Dirección",
+        "copyAddress": "Copiar dirección de la API",
+        "endpoints": "Endpoints",
+        "openReference": "Abrir referencia"
+      }
+    }
   },
   "admin": {
     "title": "Administration",
@@ -16023,10 +16107,10 @@
       "fieldsLabel": "Lo que muestra el enlace",
       "expiryLabel": "El enlace termina",
       "expiry": {
-        "none": "Nunca, hasta revocarlo",
         "30": "En 30 días",
         "365": "En un año",
-        "730": "En dos años"
+        "730": "En dos años",
+        "none": "Nunca, hasta revocarlo"
       },
       "create": "Crear el enlace",
       "qrAlt": "Código QR del enlace a la tarjeta de emergencia",

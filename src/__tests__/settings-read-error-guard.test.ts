@@ -45,7 +45,6 @@ const KNOWN_GAPS = new Set([
   "components/settings/environment-section.tsx",
   "components/settings/environment-travel-suggestions.tsx",
   "components/settings/injection-sites-card.tsx",
-  "components/settings/integrations/notification-channels-panel.tsx",
   "components/settings/integrations/shared.tsx",
   "components/settings/low-stock-card.tsx",
   "components/settings/medications-section.tsx",

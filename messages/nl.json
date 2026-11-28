@@ -5877,9 +5877,7 @@
       },
       "integrations": {
         "title": "Koppelingen",
-        "connectionsHeading": "Verbindingen",
-        "channelsHeading": "Bezorgkanalen",
-        "matrixLink": "Meldingen per kanaal"
+        "channelsHeading": "Bezorgkanalen"
       },
       "notifications": {
         "title": "Meldingen",
@@ -7384,9 +7382,7 @@
       "description": "Ingesteld op dit account zonder eigen instellingenkaart."
     },
     "healthConnectFolder": {
-      "name": "Health Connect uit een map",
-      "description": "Wordt elke zes uur uit je WebDAV- of Nextcloud-map opgehaald. Instellen en wijzigen doe je onder Importeren.",
-      "manage": "Mapinstellingen openen"
+      "name": "Health Connect uit een map"
     },
     "healthConnectApp": {
       "connect": "Android-apparaat koppelen",
@@ -7396,39 +7392,25 @@
       "qrAlt": "QR-code voor HealthLog Sync",
       "preview": "HealthLog Sync voor Android, preview",
       "disconnectTitle": "{device} ontkoppelen?",
-      "disconnectBody": "De telefoon synchroniseert niet meer tot je hem opnieuw koppelt."
+      "disconnectBody": "De telefoon synchroniseert niet meer tot je hem opnieuw koppelt.",
+      "name": "HealthLog Sync"
     },
     "withingsViewData": "Je metingen bekijken",
     "whoopViewData": "Je herstel bekijken",
     "googleHealthViewData": "Je stappen bekijken",
-    "apiTokens": "API-tokens",
     "measurementsToken": {
-      "title": "Metingtokens",
-      "description": "Maak een token aan zodat een weegschaal, een horlogekoppeling, een voedingsapp of je domotica metingen, waarden voor je eigen metingen en dagtotalen van voedingsstoffen kan toevoegen.",
-      "scopeNote": "Het kan alleen metingen aan je eigen dossier toevoegen, waarden aan eigen metingen die je al hebt aangemaakt, en dagtotalen van voedingsstoffen zolang de module voedingsstoffen aan staat; lezen, wijzigen of verwijderen kan het niet. Metingen en voedingstotalen worden als extern gemarkeerd. De ID van een eigen meting is het deel na /custom-metrics/ in het adres van de pagina ervan.",
-      "nutrientsLink": "Inname van voedingsstoffen bekijken",
-      "createFailed": "Het token kon niet worden aangemaakt. Probeer het opnieuw.",
       "namePlaceholder": "Naam, bijv. Home Assistant",
       "appleHealth": {
         "label": "Metingen naar Apple Health schrijven",
         "createHint": "De HealthLog-app op je iPhone zet de metingen van dit token dan in Apple Health.",
-        "toggleAria": "Metingen van {name} naar Apple Health schrijven",
         "updateFailed": "De Apple Health-instelling kon niet worden gewijzigd. Probeer het opnieuw.",
         "unattributed": "Metingen die zijn verstuurd voordat deze instelling bestond, kunnen niet aan een token worden gekoppeld en blijven daarom buiten Apple Health."
       }
     },
     "workoutsToken": {
-      "title": "Trainingstokens",
-      "description": "Maak een token aan zodat een horlogekoppeling of een synchronisatiescript je trainingen kan toevoegen.",
-      "scopeNote": "Het kan alleen nieuwe trainingen aan je eigen dossier toevoegen. Het kan je gegevens niet lezen, niets wijzigen of verwijderen en geen ander token aanmaken. Trainingen die het toevoegt, worden gemarkeerd als afkomstig van een extern apparaat, en als je telefoon dezelfde sessie heeft vastgelegd, zie je de versie van je telefoon.",
-      "createFailed": "Het token kon niet worden aangemaakt. Probeer het opnieuw.",
       "namePlaceholder": "Naam, bijv. Garmin"
     },
     "documentsToken": {
-      "title": "Documenttokens",
-      "description": "Maak een token aan zodat Paperless-ngx, Papra of het importscript documenten aan je kluis kan toevoegen.",
-      "scopeNote": "Het kan alleen nieuwe documenten aan je eigen kluis toevoegen. Het kan niets weergeven, openen, downloaden, wijzigen of verwijderen en kan geen ander token aanmaken. Het krijgt alleen terug of een bestand is opgeslagen, niet hoe je het hebt gearchiveerd.",
-      "createFailed": "Het token kon niet worden aangemaakt. Probeer het opnieuw.",
       "namePlaceholder": "Naam, bijv. Paperless-ngx"
     },
     "tokenCreated": "Token aangemaakt. Kopieer het nu! Het wordt niet opnieuw getoond.",
@@ -7446,17 +7428,11 @@
     "revokedTokensTitle": "Ingetrokken tokens ({count})",
     "tokenTableName": "Naam",
     "tokenTablePermissions": "Rechten",
-    "tokenTableStatus": "Status",
     "tokenTableCreated": "Aangemaakt",
     "tokenTableLastUsed": "Laatst gebruikt",
     "tokenTableActions": "Acties",
     "noActiveTokens": "Geen actieve tokens.",
     "tokenNeverUsed": "Nooit",
-    "apiEndpointsTitle": "API-endpoints",
-    "apiEndpointMethod": "Methode",
-    "apiEndpointPath": "Pad",
-    "apiEndpointAuth": "Authenticatie",
-    "apiEndpointExample": "Voorbeeld van de body",
     "dangerZone": "Alle gegevens verwijderen",
     "dangerZoneDescription": "Wist je volledige gezondheidsdossier en alle koppelingen.",
     "dangerZoneConfirm": "Alle gegevens verwijderen?",
@@ -8281,7 +8257,115 @@
     },
     "passkeyRenameFailed": "De naam van de passkey kon niet worden gewijzigd.",
     "passkeyRemoveFailed": "De passkey kon niet worden verwijderd.",
-    "apiEndpointsShow": "Endpoints tonen"
+    "integrationList": {
+      "channels": "Bezorgkanalen",
+      "sources": "Gegevensbronnen",
+      "addTitle": "Toevoegen",
+      "allAdded": "Alles wat deze server aanbiedt, is ingesteld.",
+      "noSources": "Nog geen gegevensbron",
+      "noChannels": "Nog geen bezorgkanaal",
+      "ownCredentials": "Eigen app-gegevens nodig",
+      "syncNow": "Nu synchroniseren",
+      "lastAt": "Laatst {when}",
+      "never": "Nog niet",
+      "apns": "iPhone-app",
+      "facts": {
+        "status": "Status",
+        "reason": "Reden",
+        "lastSync": "Laatste synchronisatie",
+        "lastDelivery": "Laatste bezorging",
+        "brings": "Levert",
+        "delivers": "Bezorgt naar",
+        "lastFailure": "Laatste fout",
+        "lastFailureWith": "{when}, {reason}",
+        "setup": "Instellen"
+      },
+      "reason": {
+        "dataArriving": "Gegevens komen binnen",
+        "firstSyncPending": "Eerste synchronisatie volgt",
+        "planLimited": "Abonnement levert niet alles",
+        "permissionLimited": "Sommige toestemmingen ontbreken",
+        "providerErrors": "Aanbieder reageert onbetrouwbaar",
+        "syncStalled": "Synchronisatie hapert",
+        "noNewData": "Geen nieuwe gegevens",
+        "unexpectedSilence": "Al een tijd geen gegevens",
+        "reauthRequired": "Aanmelding verlopen",
+        "pausedAfterErrors": "Gepauzeerd na fouten",
+        "notConnected": "Niet verbonden",
+        "paused": "Gepauzeerd",
+        "switchedOff": "Uitgeschakeld",
+        "autoDisabled": "Uitgeschakeld na weigering",
+        "sendingPaused": "Verzenden gepauzeerd",
+        "deliveryFailing": "Laatste bezorging mislukt"
+      },
+      "brings": {
+        "appleHealth": "Alles uit Gezondheid, via de iPhone-app",
+        "withings": "Gewicht, bloeddruk, slaap",
+        "whoop": "Herstel, slaap, belasting",
+        "googleHealth": "Fitbit en Pixel Watch",
+        "garmin": "Slaap, HRV, stress, activiteit",
+        "oura": "Paraatheid, slaap, HRV",
+        "polar": "Herstel, slaap, training",
+        "strava": "Activiteiten als trainingen",
+        "nightscout": "Continue glucose",
+        "dawarich": "Plaatsen en routes als context",
+        "healthConnectFolder": "Health Connect-export uit WebDAV of Nextcloud",
+        "documentSources": "Documenten uit Paperless-ngx of Papra",
+        "telegram": "Een Telegram-chat via je bot",
+        "ntfy": "Een ntfy-onderwerp",
+        "webPush": "Deze browser",
+        "webhook": "JSON naar een eigen adres",
+        "email": "Herinneringen per e-mail",
+        "apns": "Meldingen op de iPhone",
+        "healthConnectApp": "Health Connect, via de Android-app"
+      }
+    },
+    "tokenList": {
+      "title": "Tokens",
+      "newToken": "Nieuw token",
+      "empty": "Nog geen token",
+      "caption": "Je tokens",
+      "scopeColumn": "Toegang",
+      "more": "Meer",
+      "scopeMoreLabel": "Wat deze toegang toestaat",
+      "mirrorMoreLabel": "Wat schrijven naar Apple Gezondheid betekent",
+      "revoked": "Ingetrokken",
+      "hideRevoked": "Ingetrokken verbergen",
+      "menuLabel": "Acties voor {name}",
+      "copied": "Gekopieerd",
+      "scope": {
+        "all": "Volledige toegang",
+        "measurements": "Meetwaarden",
+        "workouts": "Trainingen",
+        "documents": "Documenten",
+        "medication": "Medicijn",
+        "mcpRead": "MCP, lezen",
+        "mcpWrite": "MCP, schrijven",
+        "fhir": "FHIR",
+        "profile": "Profiel"
+      },
+      "scopeInfo": {
+        "measurements": "Voegt meetwaarden, waarden van eigen metrieken en dagtotalen van voedingsstoffen toe aan je dossier. Het kan niets lezen, wijzigen of verwijderen.",
+        "workouts": "Voegt nieuwe trainingen toe aan je dossier. Het kan niets lezen, wijzigen of verwijderen.",
+        "documents": "Voegt nieuwe documenten toe aan je kluis. Het kan niets tonen, openen, wijzigen of verwijderen."
+      },
+      "create": {
+        "failed": "Het token kon niet worden aangemaakt. Probeer het opnieuw.",
+        "createdTitle": "Token aangemaakt",
+        "done": "Klaar",
+        "shownOnce": "Het token wordt alleen nu getoond.",
+        "expiry": "Geldig voor",
+        "expiryYear": "1 jaar",
+        "expiryDays": "{days, plural, one {# dag} other {# dagen}}"
+      },
+      "api": {
+        "title": "API",
+        "address": "Adres",
+        "copyAddress": "API-adres kopiëren",
+        "endpoints": "Endpoints",
+        "openReference": "Referentie openen"
+      }
+    }
   },
   "admin": {
     "title": "Beheer",
@@ -16023,10 +16107,10 @@
       "fieldsLabel": "Wat de link toont",
       "expiryLabel": "Link verloopt",
       "expiry": {
-        "none": "Nooit, tot intrekking",
         "30": "Over 30 dagen",
         "365": "Over een jaar",
-        "730": "Over twee jaar"
+        "730": "Over twee jaar",
+        "none": "Nooit, tot intrekking"
       },
       "create": "Link maken",
       "qrAlt": "QR-code voor de link naar de noodkaart",

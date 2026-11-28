@@ -26739,6 +26739,27 @@ paths:
         "422": *a68
         "429": *a69
         "502": *a70
+  /api/integrations/overview:
+    get:
+      tags:
+        - Integrations
+      summary: Read one status row per integration
+      description: "The rows of the integrations list: every data source and delivery channel with whether it is set up, the
+        one status word (`active`, `error`, `off`), its reason code and when it last worked, plus whether the server can
+        offer it. Sources take their status from the shared connection health (`ok` and `limited` are active, `degraded`
+        and `action_required` an error), channels from the dispatcher's reliability fields. Pure read. Auth via cookie
+        or Bearer."
+      responses:
+        "200":
+          description: All rows, sources first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IntegrationOverviewResponse"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
   /api/integrations/status:
     get:
       tags:
@@ -50738,6 +50759,7 @@ components:
               - medication.side-effect-headache
               - medication.low-stock-trigger
               - insights.score-origin
+              - integrations.overview
               - medication.efficacy-result
               - account.dismissed-hints
               - daily.asks
@@ -50887,48 +50909,52 @@ components:
             composite carries weights (one { id, weight } per counted pillar, summing to 1) and each snapshot
             healthScore.pillars row its weight (null when it did not count); every scored pillar carries its own band
             (green | yellow | red), resolved on the server: value.band on the score report's pillars (/api/analytics)
-            and band on each snapshot healthScore.pillars row (null when it did not count).
-            `medication.efficacy-result`: GET /api/medications/{id}/efficacy carries targets[].result: { direction
-            (lower | higher | unchanged | null), text }, the before/after comparison in one sentence in the reader's
-            language. `account.dismissed-hints`: GET /api/auth/me carries dismissedHints, the ids of the one-time hints
-            the account has closed (a family such as timeline-readiness, or family.member such as i18n-banner.fr); PATCH
-            /api/auth/me/dismissed-hints with dismiss and/or restore changes it and answers the stored list. Restoring a
-            family restores its members. Show a hint only while neither its id nor its family is listed. `daily.asks`:
-            GET /api/daily/digest carries asks: every row the start page asks today, often none (kind, tier safety |
-            decision | due, itemKey, title, body, subject, exactly two actions with the primary first, learnMore),
-            ranked on the server, never capped or folded; render as delivered, no card when empty. Later is
-            dose.snooze:<medicationId> on a dose and ask.later:<dismissKey> on other reminders; the admin rows
-            (push_relay, server_setup) come only to a browser session. `setup.resolved-state`: GET /api/setup resolves
-            where the person setup stands (status, currentStep, the pinned segments with their screens and statuses) and
-            the setup rows (tasks: id, status todo | done | declined | warning, value, deadline with deadlineDate and
-            deadlineTimeZone in the profile zone, count), firstRunOwed (the first-run gate), and the card's shown and
-            dismissed state; PATCH /api/setup takes cardDismissed. PATCH /api/onboarding/answers confirms the flow
-            itself once nothing is owed (confirm takes managedRecordId) and merges sources additively. Ids are closed
-            lists; skip an unknown one. instance is null on a Bearer token. `daily.scores-short-labels`: Each start-page
-            score carries shortLabel, its short name for a tile from the score registry, worded in the response
-            language: GET /api/daily/morning scores.sleep and scores.readiness, and GET /api/daily/digest score (the
-            Health score). Render it as is; the web shows the same words. `insights.scores-short-labels`: Every score
-            payload carries shortLabel, the score's short name for a tile from the glossary's short form through the
-            score registry, worded in the response language: GET /api/insights/derived and each GET
-            /api/insights/derived/batch entry (null for a metric that is no HealthLog score), GET
-            /api/insights/score-history, healthScore on GET /api/analytics, and on GET /api/dashboard/snapshot
-            healthScore and each scoreRings entry (null on MED_COMPLIANCE). Render it as given, never a short name of
-            the client's own. `profile.insurance-number-country`: The profile (GET/PATCH /api/user/profile, PUT
-            /api/auth/profile, GET /api/auth/me) carries insuranceNumberCountry (ISO 3166-1 alpha-2; a number stored
-            without one is DE) and insuranceGroupNumber (US only, else null); GET /api/user/profile also carries
-            insuranceNumberDisplay, the number in its country's form. insuranceNumber is checked under its country: DE
-            KVNR, AT SVNR, CH AHV number, NL BSN and FR NIR by check digit, every other country 3 to 30 letters, digits,
-            spaces, hyphens or dots as entered. A refused value comes back in rejectedFields with code invalid_kvnr,
-            invalid_svnr, invalid_ahv, invalid_bsn, invalid_nir or invalid_member_id; a country change the stored number
-            would fail is refused on insuranceNumberCountry. The FHIR Patient identifier uses the country's national
-            system where one is verified, else type MB with no system, and a US group number rides Coverage.class
-            (group). `dashboard.tile-comparison-bands`: GET /api/dashboard/snapshot carries tiles.comparison: per ranged
-            tile (weight, bp, pulse when it shows the resting heart rate) avg7 and avg30 as { band: good | fair | low |
-            null, side: above | below | null }, placed in targetBands by the same rule as tiles.attention (bp is the
-            side further from its band), and line, the deviation line in the response language, non-null only while
-            tiles.attention[id] is range (the side of the latest value). Colour the comparison lines and show the line
-            as served. `health-connect.sync`: The Android Health Connect sync: POST /api/health-connect/pairing mints a
-            one-time code (QR healthlog-sync://pair?server=…&code=…), POST /api/health-connect/pair exchanges it for a
+            and band on each snapshot healthScore.pillars row (null when it did not count). `integrations.overview`: GET
+            /api/integrations/overview returns one row per data source and delivery channel: key, group (source |
+            channel), setUp, status (active | error | off, null when not set up), reason (a connection-health reason, or
+            not_connected | paused | switched_off | auto_disabled | sending_paused | delivery_failing), lastAt, offered
+            and setupNote (own_credentials | null). Render status as it comes. `medication.efficacy-result`: GET
+            /api/medications/{id}/efficacy carries targets[].result: { direction (lower | higher | unchanged | null),
+            text }, the before/after comparison in one sentence in the reader's language. `account.dismissed-hints`: GET
+            /api/auth/me carries dismissedHints, the ids of the one-time hints the account has closed (a family such as
+            timeline-readiness, or family.member such as i18n-banner.fr); PATCH /api/auth/me/dismissed-hints with
+            dismiss and/or restore changes it and answers the stored list. Restoring a family restores its members. Show
+            a hint only while neither its id nor its family is listed. `daily.asks`: GET /api/daily/digest carries asks:
+            every row the start page asks today, often none (kind, tier safety | decision | due, itemKey, title, body,
+            subject, exactly two actions with the primary first, learnMore), ranked on the server, never capped or
+            folded; render as delivered, no card when empty. Later is dose.snooze:<medicationId> on a dose and
+            ask.later:<dismissKey> on other reminders; the admin rows (push_relay, server_setup) come only to a browser
+            session. `setup.resolved-state`: GET /api/setup resolves where the person setup stands (status, currentStep,
+            the pinned segments with their screens and statuses) and the setup rows (tasks: id, status todo | done |
+            declined | warning, value, deadline with deadlineDate and deadlineTimeZone in the profile zone, count),
+            firstRunOwed (the first-run gate), and the card's shown and dismissed state; PATCH /api/setup takes
+            cardDismissed. PATCH /api/onboarding/answers confirms the flow itself once nothing is owed (confirm takes
+            managedRecordId) and merges sources additively. Ids are closed lists; skip an unknown one. instance is null
+            on a Bearer token. `daily.scores-short-labels`: Each start-page score carries shortLabel, its short name for
+            a tile from the score registry, worded in the response language: GET /api/daily/morning scores.sleep and
+            scores.readiness, and GET /api/daily/digest score (the Health score). Render it as is; the web shows the
+            same words. `insights.scores-short-labels`: Every score payload carries shortLabel, the score's short name
+            for a tile from the glossary's short form through the score registry, worded in the response language: GET
+            /api/insights/derived and each GET /api/insights/derived/batch entry (null for a metric that is no HealthLog
+            score), GET /api/insights/score-history, healthScore on GET /api/analytics, and on GET
+            /api/dashboard/snapshot healthScore and each scoreRings entry (null on MED_COMPLIANCE). Render it as given,
+            never a short name of the client's own. `profile.insurance-number-country`: The profile (GET/PATCH
+            /api/user/profile, PUT /api/auth/profile, GET /api/auth/me) carries insuranceNumberCountry (ISO 3166-1
+            alpha-2; a number stored without one is DE) and insuranceGroupNumber (US only, else null); GET
+            /api/user/profile also carries insuranceNumberDisplay, the number in its country's form. insuranceNumber is
+            checked under its country: DE KVNR, AT SVNR, CH AHV number, NL BSN and FR NIR by check digit, every other
+            country 3 to 30 letters, digits, spaces, hyphens or dots as entered. A refused value comes back in
+            rejectedFields with code invalid_kvnr, invalid_svnr, invalid_ahv, invalid_bsn, invalid_nir or
+            invalid_member_id; a country change the stored number would fail is refused on insuranceNumberCountry. The
+            FHIR Patient identifier uses the country's national system where one is verified, else type MB with no
+            system, and a US group number rides Coverage.class (group). `dashboard.tile-comparison-bands`: GET
+            /api/dashboard/snapshot carries tiles.comparison: per ranged tile (weight, bp, pulse when it shows the
+            resting heart rate) avg7 and avg30 as { band: good | fair | low | null, side: above | below | null }, placed
+            in targetBands by the same rule as tiles.attention (bp is the side further from its band), and line, the
+            deviation line in the response language, non-null only while tiles.attention[id] is range (the side of the
+            latest value). Colour the comparison lines and show the line as served. `health-connect.sync`: The Android
+            Health Connect sync: POST /api/health-connect/pairing mints a one-time code (QR
+            healthlog-sync://pair?server=…&code=…), POST /api/health-connect/pair exchanges it for a
             health-connect:write token bound to a Device, GET /api/health-connect/state answers the wanted types and
             limits, and POST /api/health-connect/batch takes records, aggregates and deletes with one result per item.
             Early preview."
@@ -102610,6 +102636,145 @@ components:
       required:
         - data
         - error
+      additionalProperties: false
+    IntegrationOverviewResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/IntegrationOverview"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    IntegrationOverview:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/IntegrationOverviewItem"
+          description: Every source, then every channel, always, in display order.
+        fitbitRemovalNotice:
+          type: boolean
+          description: "The same flag as on `GET /api/integrations/status`: the account held a Fitbit connection when the
+            integration was removed and has not dismissed the note. The list page reads it here, so it needs no second
+            read of the connection facts."
+      required:
+        - items
+        - fitbitRemovalNotice
+      additionalProperties: false
+    IntegrationOverviewItem:
+      type: object
+      properties:
+        key:
+          type: string
+          enum:
+            - apple-health
+            - health-connect-app
+            - withings
+            - whoop
+            - google-health
+            - garmin
+            - oura
+            - polar
+            - strava
+            - nightscout
+            - dawarich
+            - health-connect-remote
+            - document-sources
+            - telegram
+            - ntfy
+            - web-push
+            - webhook
+            - email
+            - apns
+          description: Which integration the row describes. `document-sources` is the Paperless-ngx / Papra connection set; `apns`
+            is the iPhone app's push channel, set up by the app.
+        group:
+          type: string
+          enum:
+            - source
+            - channel
+          description: Data source (data comes in) or delivery channel (reminders go out).
+        setUp:
+          type: boolean
+          description: "Something is stored for it: a connection, the person's own app credentials, a set-up folder, or a channel
+            row. The settings list shows exactly the rows where this is true."
+        status:
+          anyOf:
+            - type: string
+              enum:
+                - active
+                - error
+                - off
+            - type: "null"
+          description: "The one status word, decided here: `active` (working), `error` (set up, but nothing arrives or goes out)
+            or `off` (set up and switched off, or not connected). Null exactly when `setUp` is false. Render it as it
+            comes; never derive it from other fields."
+        reason:
+          anyOf:
+            - type: string
+              enum:
+                - data_arriving
+                - first_sync_pending
+                - plan_limited
+                - permission_limited
+                - provider_errors
+                - sync_stalled
+                - no_new_data
+                - unexpected_silence
+                - reauth_required
+                - paused_after_errors
+                - not_connected
+                - paused
+                - switched_off
+                - auto_disabled
+                - sending_paused
+                - delivery_failing
+            - type: "null"
+          description: "Why the row reads as it does. For a connected source it is the connection-health reason (see
+            `ConnectionHealth.reason`). The own codes: `not_connected` (credentials or a folder stored, no connection),
+            `paused` (the person switched it off), `switched_off` (a channel the person turned off), `auto_disabled`
+            (the dispatcher turned a channel off after a hard refusal), `sending_paused` (a channel waiting out a
+            cooldown), `delivery_failing` (a channel whose latest send failed). Null for an active channel and for a row
+            not set up."
+        lastAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+          description: "When it last worked: the last successful sync for a source, the last delivered message for a channel."
+        offered:
+          type: boolean
+          description: "The server can offer it to this account: the operator switch for Telegram, ntfy and Web Push, a mail
+            transport for email, the environment module for Dawarich, the operator's origin list and the documents
+            module for document sources. Always false for `apns`. A row neither set up nor offered is not shown."
+        setupNote:
+          anyOf:
+            - type: string
+              enum:
+                - own_credentials
+            - type: "null"
+          description: "`own_credentials`: no usable app credentials resolve on this server, so connecting first needs the
+            person's own client id and secret. Null otherwise."
+      required:
+        - key
+        - group
+        - setUp
+        - status
+        - reason
+        - lastAt
+        - offered
+        - setupNote
       additionalProperties: false
     IntegrationStatusEnvelopeResponse:
       type: object

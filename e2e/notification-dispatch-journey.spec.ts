@@ -70,7 +70,9 @@ import { startSmtpStub, type SmtpStub } from "./setup/smtp-stub";
 import { expect, test } from "./setup/test";
 
 /** The panel has finished its read and the channel cards are mounted. */
-const CHANNELS_PANEL = '[data-slot="notification-channels-panel"]';
+/** A channel's sheet on Settings → Integrations, where its card now lives. */
+const SHEET = (key: "email" | "ntfy") =>
+  `[data-slot="integration-sheet"][data-integration="${key}"]`;
 
 /** Where the account's email notifications are addressed. */
 const EMAIL_RECIPIENT = "notification-journey@healthlog.test";
@@ -227,25 +229,24 @@ async function attemptCount(page: Page): Promise<number> {
  * disabled until its read has landed and does the copy in that same render,
  * so an enabled switch is the signal that the seed is in the input.
  */
-async function openChannels(page: Page): Promise<void> {
-  const seeded = ["/api/settings/email", "/api/settings/ntfy"].map((endpoint) =>
-    page.waitForResponse(
-      (res) =>
-        new URL(res.url()).pathname === endpoint &&
-        res.request().method() === "GET",
-    ),
+async function openChannel(page: Page, key: "email" | "ntfy"): Promise<void> {
+  const seeded = page.waitForResponse(
+    (res) =>
+      new URL(res.url()).pathname === `/api/settings/${key}` &&
+      res.request().method() === "GET",
   );
-  await page.goto("/settings/integrations", { waitUntil: "domcontentloaded" });
-  await expect(page.locator(CHANNELS_PANEL)).toBeVisible({ timeout: 30_000 });
-  await Promise.all(seeded);
-  await expect(page.locator("#email-toggle")).toBeEnabled();
-  await expect(page.locator("#ntfy-toggle")).toBeEnabled();
+  await page.goto(`/settings/integrations?integration=${key}`, {
+    waitUntil: "domcontentloaded",
+  });
+  await expect(page.locator(SHEET(key))).toBeVisible({ timeout: 30_000 });
+  await seeded;
+  await expect(page.locator(`#${key}-toggle`)).toBeEnabled();
 }
 
 /**
  * Type into a channel card's field and confirm the field kept it. The
  * confirmation is the second half of the seed race described on
- * `openChannels`: the read has landed, so nothing is left to overwrite it.
+ * `openChannel`: the read has landed, so nothing is left to overwrite it.
  */
 async function fillField(
   page: Page,
@@ -299,10 +300,10 @@ async function toggleCard(
  * ntfy saved and left off. Everything here happens on the settings surface.
  */
 async function configureChannels(page: Page): Promise<void> {
-  await openChannels(page);
+  await openChannel(page, "email");
 
   await fillField(page, "#email-recipient", EMAIL_RECIPIENT);
-  expect(await saveCard(page, "#email", "/api/settings/email")).toBe(200);
+  expect(await saveCard(page, SHEET("email"), "/api/settings/email")).toBe(200);
   expect(await toggleCard(page, "#email-toggle", "/api/settings/email")).toBe(
     200,
   );
@@ -311,9 +312,11 @@ async function configureChannels(page: Page): Promise<void> {
     "checked",
   );
 
+  // Leaves the ntfy sheet open.
+  await openChannel(page, "ntfy");
   await fillField(page, "#ntfy-server", NTFY_SERVER);
   await fillField(page, "#ntfy-topic", NTFY_TOPIC);
-  expect(await saveCard(page, "#ntfy", "/api/settings/ntfy")).toBe(200);
+  expect(await saveCard(page, SHEET("ntfy"), "/api/settings/ntfy")).toBe(200);
   await expect(page.locator("#ntfy-toggle")).toHaveAttribute(
     "data-state",
     "unchecked",
@@ -535,16 +538,19 @@ test.describe("notification preferences drive the dispatch decision", () => {
     // surface, before any request is made.
     await expect(
       page.locator(
-        '#ntfy [data-slot="settings-card-actions"] button[type=button]',
+        `${SHEET("ntfy")} [data-slot="settings-card-actions"] button[type=button]`,
       ),
     ).toBeDisabled();
+    await openChannel(page, "email");
 
     const before = await attemptCount(page);
     const probe = page.waitForResponse(
       (res) => new URL(res.url()).pathname === "/api/settings/email/test",
     );
     await page
-      .locator('#email [data-slot="settings-card-actions"] button[type=button]')
+      .locator(
+        `${SHEET("email")} [data-slot="settings-card-actions"] button[type=button]`,
+      )
       .click();
     expect((await probe).status(), "the probe reached the transport").toBe(200);
 
@@ -687,7 +693,7 @@ test.describe("notification preferences drive the dispatch decision", () => {
     const before = await attemptCount(page);
     await fillField(page, "#ntfy-server", PRIVATE_NTFY_SERVER);
     expect(
-      await saveCard(page, "#ntfy", "/api/settings/ntfy"),
+      await saveCard(page, SHEET("ntfy"), "/api/settings/ntfy"),
       "the save refused the private host",
     ).toBe(422);
 

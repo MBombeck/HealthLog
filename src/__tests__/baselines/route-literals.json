@@ -1,7 +1,7 @@
 {
   "$comment": "Route literals for a page src/lib/links/hrefs.ts owns, per file under src outside the registry and tests. Maintained by src/__tests__/route-literal-guard.test.ts.",
-  "count": 134,
-  "total": 271,
+  "count": 133,
+  "total": 270,
   "entries": {
     "app/coach/page-client.tsx": 1,
     "app/custom-metrics/[id]/page.tsx": 1,
@@ -92,7 +92,6 @@
     "components/providers.tsx": 2,
     "components/records/profile-summary.tsx": 1,
     "components/settings/ai/ai-job-failures-card.tsx": 1,
-    "components/settings/api-section.tsx": 1,
     "components/settings/import-panel/apple-health-auxiliary-lines.tsx": 1,
     "components/settings/integrations/garmin-card.tsx": 1,
     "components/settings/integrations/nightscout-card.tsx": 1,

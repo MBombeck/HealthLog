@@ -1,6 +1,9 @@
+"use client";
+
 import * as React from "react";
 
 import { Card } from "@/components/ui/card";
+import { useSheetCardMode } from "@/components/settings/sheet-surface";
 import { cn } from "@/lib/utils";
 
 /**
@@ -55,6 +58,19 @@ export function SettingsCard<E extends React.ElementType = typeof Card>({
   flush = false,
   ...props
 }: SettingsCardProps<E>) {
+  // Inside an integration sheet the sheet is the frame: the card keeps its
+  // content and drops its own border and padding.
+  const sheetMode = useSheetCardMode();
+  if (sheetMode) {
+    return (
+      <div
+        data-slot="card"
+        data-surface="sheet"
+        className={cn("flex flex-col gap-4", className)}
+        {...(props as React.ComponentProps<"div">)}
+      />
+    );
+  }
   if (as) {
     const Component = as as React.ElementType;
     return (

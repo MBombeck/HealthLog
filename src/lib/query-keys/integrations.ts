@@ -64,6 +64,9 @@ export const integrationKeys = {
   dawarichPlaces: (query: string) => ["dawarich", "places", query] as const,
 
   integrationsStatus: () => ["integrations", "status"] as const,
+  // The list rows. Nested under the status key so every invalidation of the
+  // envelope (a connect, a sync, a disconnect) refreshes the list as well.
+  integrationsOverview: () => ["integrations", "status", "overview"] as const,
   // Apple Health live-sync freshness comes from the existing HealthKit config
   // endpoint. It is intentionally separate from the OAuth integration ledger:
   // a received-data timestamp proves ingest activity, not a web connection.
