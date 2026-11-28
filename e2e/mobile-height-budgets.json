@@ -14,7 +14,7 @@
       "target": 2500
     },
     "/admin/system-status": {
-      "budget": 3800,
+      "budget": 3900,
       "target": 2200
     },
     "/settings/layout/dashboard": {
