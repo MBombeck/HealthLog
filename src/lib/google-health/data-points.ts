@@ -369,7 +369,7 @@ export async function forEachDataPointPage(
       const resumeRefused = (status: number) =>
         resumeFrom !== undefined && firstOfWalk && status === 400;
       const requestToken = pageToken ?? undefined;
-      const { status, json, verdict, apiErrorDetail } =
+      const { status, json, verdict, apiErrorDetail, retryAfterMs } =
         await googleHealthDataRequest<GoogleHealthDataPointPage>(
           accessToken,
           `${verb}(page=${pageCount})`,
@@ -413,6 +413,7 @@ export async function forEachDataPointPage(
           httpStatus: verdict.httpStatus,
           reason: verdict.reason,
           upstreamError: apiErrorDetail,
+          retryAfterMs,
         });
       }
 
