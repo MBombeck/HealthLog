@@ -208,7 +208,10 @@ import { admittedQuickEntry } from "@/components/dashboard/quick-entry-sheets";
 import { TodayAsks } from "@/components/dashboard/today-asks";
 import { VorsorgeDashboardCard } from "@/components/measurement-reminders/vorsorge-dashboard-card";
 import { EpisodeLinksCard } from "@/components/illness/episode-links-card";
-import { LedgerRowItem } from "@/components/medications/dose-history/ledger-row-item";
+import {
+  LedgerDoseActions,
+  LedgerDoseRow,
+} from "@/components/medications/dose-history/ledger-row-item";
 import { VaccinationsView } from "@/components/vaccinations/vaccinations-view";
 import { VisitsSection } from "@/components/encounters/visits-section";
 import type { EncounterDTO } from "@/lib/encounters/dto";
@@ -658,52 +661,56 @@ describe("the capture picker's kinds", () => {
 /* -------------------------------------------------------------------------- */
 
 describe("marking a dose from the dose history", () => {
+  const row = {
+    kind: "slot" as const,
+    at: "2026-08-04T07:00:00.000Z",
+    timeOfDay: "07:00",
+    status: "upcoming" as const,
+    intake: null,
+  };
+  const dose = { row, title: "Tue, 4 Aug, 07:00", onOpenDay: () => {} };
   const node = (
-    <ul>
-      <LedgerRowItem
-        row={{
-          kind: "slot",
-          at: "2026-08-04T07:00:00.000Z",
-          timeOfDay: "07:00",
-          status: "upcoming",
-          intake: null,
-        }}
+    <div>
+      <LedgerDoseRow dose={dose} onOpen={() => {}} />
+      <LedgerDoseActions
+        dose={dose}
         marking={null}
-        isToday
-        onMark={() => {}}
-        onToggleSkipped={() => {}}
-        onEdit={() => {}}
-        onDelete={() => {}}
-        onPin={() => {}}
-        onUnpin={() => {}}
+        onDone={() => {}}
+        handlers={{
+          onMark: () => {},
+          onToggleSkipped: () => {},
+          onEdit: () => {},
+          onDelete: () => {},
+          onPin: () => {},
+          onUnpin: () => {},
+        }}
       />
-    </ul>
+    </div>
   );
 
-  it("offers the owner take beside the kebab that holds the rest", () => {
+  it("offers the owner take, skip and opening the day in the dose's sheet", () => {
     const html = render(OWN_RECORD, node);
     expect(html).toContain('data-slot="ledger-mark-taken"');
-    expect(html).toContain('data-slot="ledger-row-menu"');
+    expect(html).toContain('data-slot="ledger-mark-skipped"');
+    expect(html).toContain('data-slot="ledger-open-day"');
   });
 
-  it("offers a write delegate BOTH markings, and no row menu", () => {
-    // Taken and skipped are one admitted verb, not two — the medication card
-    // has always offered the pair. This surface offered a delegate only the
-    // first, because skip lives in the kebab and the kebab also holds edit,
-    // re-attribute and delete, which are the owner's. So skip gets its own
-    // control here rather than the menu opening up.
+  it("offers a write delegate BOTH markings, and nothing the owner keeps", () => {
+    // Taken and skipped are one admitted verb, not two: the medication card
+    // has always offered the pair. Opening the day, editing, re-attributing
+    // and deleting stay the owner's.
     const html = render(WRITABLE, node);
     expect(html).toContain('data-slot="ledger-mark-taken"');
     expect(html).toContain('data-slot="ledger-mark-skipped"');
-    expect(html).not.toContain('data-slot="ledger-row-menu"');
+    expect(html).not.toContain('data-slot="ledger-open-day"');
   });
 
   it("offers a read-only delegate neither", () => {
     const html = render(READ_ONLY, node);
     expect(html).not.toContain('data-slot="ledger-mark-taken"');
     expect(html).not.toContain('data-slot="ledger-mark-skipped"');
-    expect(html).not.toContain('data-slot="ledger-row-menu"');
-    // The row itself stays — reading the history is a read.
+    expect(html).not.toContain('data-slot="ledger-dose-actions"');
+    // The row itself stays: reading the history is a read.
     expect(html).toContain('data-slot="ledger-row"');
   });
 });

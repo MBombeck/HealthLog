@@ -18,6 +18,7 @@
  * all-schedules scope when more than one schedule exists.
  */
 
+import { effectiveGraceMinutes } from "@/lib/medications/scheduling/grace";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -83,16 +84,18 @@ export function graceOptions(current: number): number[] {
 export function GraceRow({
   medicationId,
   schedules,
+  compact = false,
 }: {
   medicationId: string;
   schedules: GraceScheduleSnapshot[];
+  /** One line: the name left, the choice right, no helper. */
+  compact?: boolean;
 }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
   const queryClient = useQueryClient();
-  const firstGrace = schedules[0]?.reminderGraceMinutes;
-  const [graceValue, setGraceValue] = useState(
-    typeof firstGrace === "number" ? firstGrace : 30,
+  const [graceValue, setGraceValue] = useState(() =>
+    effectiveGraceMinutes(schedules[0] ?? {}),
   );
   const [graceBusy, setGraceBusy] = useState(false);
 
@@ -159,6 +162,50 @@ export function GraceRow({
     }
   }
 
+  const select = (
+    <Select
+      value={String(graceValue)}
+      onValueChange={(v) => void saveGrace(Number(v))}
+      disabled={graceBusy}
+    >
+      <SelectTrigger
+        id="medication-detail-grace-input"
+        className={
+          compact
+            ? "min-h-11 w-36 shrink-0 sm:min-h-9"
+            : "min-h-11 w-40 sm:min-h-9"
+        }
+        aria-busy={graceBusy || undefined}
+      >
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((minutes) => (
+          <SelectItem key={minutes} value={String(minutes)}>
+            {fmt.integer(minutes)} {t("medications.detail.settings.grace.unit")}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+
+  if (compact) {
+    return (
+      <div
+        className="flex items-center justify-between gap-3"
+        data-slot="medication-detail-grace-row"
+      >
+        <Label
+          htmlFor="medication-detail-grace-input"
+          className="text-foreground text-sm font-medium"
+        >
+          {t("medications.detail.settings.grace.label")}
+        </Label>
+        {select}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2" data-slot="medication-detail-grace-row">
       <Label
@@ -175,27 +222,7 @@ export function GraceRow({
           {t("medications.detail.settings.grace.appliesToAllNote")}
         </p>
       )}
-      <Select
-        value={String(graceValue)}
-        onValueChange={(v) => void saveGrace(Number(v))}
-        disabled={graceBusy}
-      >
-        <SelectTrigger
-          id="medication-detail-grace-input"
-          className="min-h-11 w-40 sm:min-h-9"
-          aria-busy={graceBusy || undefined}
-        >
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((minutes) => (
-            <SelectItem key={minutes} value={String(minutes)}>
-              {fmt.integer(minutes)}{" "}
-              {t("medications.detail.settings.grace.unit")}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {select}
     </div>
   );
 }
