@@ -49987,6 +49987,7 @@ components:
               - medication.side-effect-headache
               - medication.low-stock-trigger
               - insights.score-origin
+              - medication.efficacy-result
               - account.dismissed-hints
               - daily.asks
               - daily.scores-short-labels
@@ -50129,19 +50130,21 @@ components:
             composite carries weights (one { id, weight } per counted pillar, summing to 1) and each snapshot
             healthScore.pillars row its weight (null when it did not count); every scored pillar carries its own band
             (green | yellow | red), resolved on the server: value.band on the score report's pillars (/api/analytics)
-            and band on each snapshot healthScore.pillars row (null when it did not count). `account.dismissed-hints`:
-            GET /api/auth/me carries dismissedHints, the ids of the one-time hints the account has closed (a family such
-            as timeline-readiness, or family.member such as i18n-banner.fr); PATCH /api/auth/me/dismissed-hints with
-            dismiss and/or restore changes it and answers the stored list. Restoring a family restores its members. Show
-            a hint only while neither its id nor its family is listed. `daily.asks`: GET /api/daily/digest carries asks:
-            every row the start page asks today, often none (kind, tier safety | decision | due, itemKey, title, body,
-            subject, exactly two actions with the primary first, learnMore), ranked on the server, never capped or
-            folded; render as delivered, no card when empty. Later is dose.snooze:<medicationId> on a dose and
-            ask.later:<dismissKey> on other reminders; the admin rows (push_relay, server_setup) come only to a browser
-            session. `daily.scores-short-labels`: Each start-page score carries shortLabel, its short name for a tile
-            from the score registry, worded in the response language: GET /api/daily/morning scores.sleep and
-            scores.readiness, and GET /api/daily/digest score (the Health score). Render it as is; the web shows the
-            same words."
+            and band on each snapshot healthScore.pillars row (null when it did not count).
+            `medication.efficacy-result`: GET /api/medications/{id}/efficacy carries targets[].result: { direction
+            (lower | higher | unchanged | null), text }, the before/after comparison in one sentence in the reader's
+            language. `account.dismissed-hints`: GET /api/auth/me carries dismissedHints, the ids of the one-time hints
+            the account has closed (a family such as timeline-readiness, or family.member such as i18n-banner.fr); PATCH
+            /api/auth/me/dismissed-hints with dismiss and/or restore changes it and answers the stored list. Restoring a
+            family restores its members. Show a hint only while neither its id nor its family is listed. `daily.asks`:
+            GET /api/daily/digest carries asks: every row the start page asks today, often none (kind, tier safety |
+            decision | due, itemKey, title, body, subject, exactly two actions with the primary first, learnMore),
+            ranked on the server, never capped or folded; render as delivered, no card when empty. Later is
+            dose.snooze:<medicationId> on a dose and ask.later:<dismissKey> on other reminders; the admin rows
+            (push_relay, server_setup) come only to a browser session. `daily.scores-short-labels`: Each start-page
+            score carries shortLabel, its short name for a tile from the score registry, worded in the response
+            language: GET /api/daily/morning scores.sleep and scores.readiness, and GET /api/daily/digest score (the
+            Health score). Render it as is; the web shows the same words."
       required:
         - version
         - buildSha
