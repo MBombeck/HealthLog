@@ -49,7 +49,18 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
   DropdownMenuItem: ({ children }: { children: ReactNode }) => <>{children}</>,
 }));
 
-import { MedicationLeafletSection } from "@/components/medications/detail/medication-leaflet-section";
+// The "More" popover only mounts its content when open; render it flat too.
+vi.mock("@/components/ui/popover", () => ({
+  Popover: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  PopoverTrigger: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
+  PopoverContent: ({ children }: { children: ReactNode }) => (
+    <div data-slot="medication-leaflet-more-content">{children}</div>
+  ),
+}));
+
+import { MedicationLeafletRow } from "@/components/medications/detail/medication-leaflet-section";
 import { MedicationCardMenu } from "@/components/medications/medication-card-menu";
 
 const SAVED =
@@ -74,7 +85,7 @@ beforeEach(() => {
   state.canManage = true;
 });
 
-describe("MedicationLeafletSection", () => {
+describe("MedicationLeafletRow", () => {
   const medication = {
     id: "med-1",
     name: "Ramipril",
@@ -85,7 +96,7 @@ describe("MedicationLeafletSection", () => {
   it("opens the server-built registry search in a new tab", () => {
     const search = buildLeafletSearch("AU", medication);
     const html = render(
-      <MedicationLeafletSection
+      <MedicationLeafletRow
         medication={{ ...medication, leafletSearch: search }}
       />,
     );
@@ -103,13 +114,13 @@ describe("MedicationLeafletSection", () => {
 
   it("builds no search of its own when the read carried none", () => {
     // The account has a registry; the server is still the one builder.
-    const html = render(<MedicationLeafletSection medication={medication} />);
+    const html = render(<MedicationLeafletRow medication={medication} />);
     expect(html).not.toContain("medication-leaflet-find-link");
   });
 
   it("asks the person to search on a registry that takes nothing from the address", () => {
     const html = render(
-      <MedicationLeafletSection
+      <MedicationLeafletRow
         medication={{
           ...medication,
           leafletSearch: buildLeafletSearch("DE", medication),
@@ -126,7 +137,7 @@ describe("MedicationLeafletSection", () => {
 
   it("offers the registry choice in place when none is chosen", () => {
     const html = render(
-      <MedicationLeafletSection
+      <MedicationLeafletRow
         medication={{ ...medication, leafletSearch: null }}
       />,
     );
@@ -139,7 +150,7 @@ describe("MedicationLeafletSection", () => {
 
   it("shows the saved leaflet as an external link only", () => {
     const html = render(
-      <MedicationLeafletSection
+      <MedicationLeafletRow
         medication={{ ...medication, leafletUrl: SAVED, leafletSearch: null }}
       />,
     );
@@ -156,7 +167,7 @@ describe("MedicationLeafletSection", () => {
   it("keeps the saved link readable but not editable without manage access", () => {
     state.canManage = false;
     const html = render(
-      <MedicationLeafletSection
+      <MedicationLeafletRow
         medication={{ ...medication, leafletUrl: SAVED, leafletSearch: null }}
       />,
     );

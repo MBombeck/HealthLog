@@ -50654,6 +50654,7 @@ components:
               - medication.low-stock-trigger
               - insights.score-origin
               - integrations.overview
+              - medication.efficacy-result
               - account.dismissed-hints
               - daily.asks
               - daily.scores-short-labels
@@ -50804,7 +50805,9 @@ components:
             /api/integrations/overview returns one row per data source and delivery channel: key, group (source |
             channel), setUp, status (active | error | off, null when not set up), reason (a connection-health reason, or
             not_connected | paused | switched_off | auto_disabled | sending_paused | delivery_failing), lastAt, offered
-            and setupNote (own_credentials | null). Render status as it comes. `account.dismissed-hints`: GET
+            and setupNote (own_credentials | null). Render status as it comes. `medication.efficacy-result`: GET
+            /api/medications/{id}/efficacy carries targets[].result: { direction (lower | higher | unchanged | null),
+            text }, the before/after comparison in one sentence in the reader's language. `account.dismissed-hints`: GET
             /api/auth/me carries dismissedHints, the ids of the one-time hints the account has closed (a family such as
             timeline-readiness, or family.member such as i18n-banner.fr); PATCH /api/auth/me/dismissed-hints with
             dismiss and/or restore changes it and answers the stored list. Restoring a family restores its members. Show
@@ -70799,6 +70802,29 @@ components:
                       - confounders
                     additionalProperties: false
                   - type: "null"
+              result:
+                type: object
+                properties:
+                  direction:
+                    anyOf:
+                      - type: string
+                        enum:
+                          - lower
+                          - higher
+                          - unchanged
+                      - type: "null"
+                    description: The before/after comparison's direction; null while either side lacks the readings for a comparison. A
+                      change under 2 % of the before-mean reads `unchanged`.
+                  text:
+                    type: string
+                    description: The comparison in one sentence, worded in the reader's language; when `direction` is null it says which
+                      side is short of readings. Clients show it verbatim.
+                required:
+                  - direction
+                  - text
+                additionalProperties: false
+                description: "v1.50 — the result sentence the effect view leads with. Descriptive only: no verdict on whether the
+                  medication works."
             required:
               - kind
               - key
@@ -70810,6 +70836,7 @@ components:
               - beforeAfter
               - levelShift
               - segmented
+              - result
             additionalProperties: false
         adherence:
           type: array

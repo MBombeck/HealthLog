@@ -29,9 +29,12 @@ const SWITCH_ID = "medication-detail-auto-mark-taken-switch";
 export function AutoMarkTakenBody({
   medicationId,
   autoMarkTaken,
+  compact = false,
 }: {
   medicationId: string;
   autoMarkTaken: boolean;
+  /** One line: the name and the switch, no helper. */
+  compact?: boolean;
 }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
@@ -67,7 +70,7 @@ export function AutoMarkTakenBody({
   return (
     <SwitchRow
       label={t("medications.autoMarkTaken.label")}
-      description={t("medications.autoMarkTaken.helper")}
+      description={compact ? undefined : t("medications.autoMarkTaken.helper")}
       id={SWITCH_ID}
       checked={localOn}
       disabled={submitting}
