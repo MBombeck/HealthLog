@@ -4,8 +4,11 @@
  * The route's schema has already bounded each row (plausible range, entry
  * instant). With an external id a row is inserted or, when the key is taken,
  * updated in place, so a re-import of the same export is idempotent; without
- * one it is a first-write-wins create with a NULL external id, which does
- * duplicate on re-import.
+ * one it is a first-write-wins create with a NULL external id. The natural
+ * key `(userId, type, measuredAt, source=IMPORT, sleepStage)` (NULLS NOT
+ * DISTINCT) turns a second pass of the same file into skips, and a row the
+ * account already holds from another source, same type, instant, value and
+ * stage, is skipped too: the file is the account's own export coming back.
  */
 import { prisma } from "@/lib/db";
 import type { MeasurementType } from "@/generated/prisma/client";
@@ -50,6 +53,55 @@ function readingColumns(
   };
 }
 
+/** Instants per lookup: well under Postgres's bind-parameter cap. */
+const LOOKUP_CHUNK = 1_000;
+
+function readingKey(r: {
+  type: string;
+  measuredAt: Date;
+  value: number;
+  sleepStage?: string | null;
+}): string {
+  return `${r.type}|${r.measuredAt.getTime()}|${r.value}|${r.sleepStage ?? ""}`;
+}
+
+/**
+ * The readings the account already holds under another source that a row
+ * without an external id would repeat. Importing an account's own export
+ * back into it wrote every manual and synced reading a second time, as an
+ * IMPORT copy beside the original, because the natural key includes the
+ * source.
+ */
+async function heldElsewhere(
+  userId: string,
+  rows: JsonImportMeasurement[],
+): Promise<Set<string>> {
+  const held = new Set<string>();
+  const byType = new Map<string, Date[]>();
+  for (const m of rows) {
+    if (m.externalId !== undefined) continue;
+    const list = byType.get(m.type) ?? [];
+    list.push(m.measuredAt);
+    byType.set(m.type, list);
+  }
+  for (const [type, instants] of byType) {
+    for (let i = 0; i < instants.length; i += LOOKUP_CHUNK) {
+      const found = await prisma.measurement.findMany({
+        where: {
+          userId,
+          type: type as MeasurementType,
+          source: { not: "IMPORT" },
+          deletedAt: null,
+          measuredAt: { in: instants.slice(i, i + LOOKUP_CHUNK) },
+        },
+        select: { type: true, measuredAt: true, value: true, sleepStage: true },
+      });
+      for (const row of found) held.add(readingKey(row));
+    }
+  }
+  return held;
+}
+
 export interface ImportedMeasurements {
   /**
    * Each `(type, measuredAt)` written, so the persistent rollup tier is
@@ -86,7 +138,12 @@ export async function importJsonMeasurements(
       ),
     ),
   ]);
+  const held = await heldElsewhere(userId, rows);
   for (const m of rows) {
+    if (m.externalId === undefined && held.has(readingKey(m))) {
+      tally.stats.skipped++;
+      continue;
+    }
     // The `(userId, type, source, externalId)` upsert key is only
     // idempotent while the id is STABLE; an id that rotates between
     // exports re-imports as a fresh row every time. Skipped per entry,
