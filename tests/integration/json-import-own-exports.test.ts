@@ -344,14 +344,38 @@ describe("the JSON import takes the app's own files back", () => {
       auth: await makeSession(user),
     });
     expect(again.status).toBe(200);
-    // The mood entries carry their instant, so the second pass finds them;
-    // the readings carry no source id in a portable file and are written
-    // again, as the import has always documented for a file without one.
+    // The mood entries carry their instant, so the second pass finds them.
+    // The readings carry no source id in a portable file; they are found by
+    // what they are (type, instant, value, stage), so a second pass, or a
+    // retry after a failed one, writes none of them again.
     expect(again.data.moodEntries).toBe(0);
+    expect(again.data.measurements).toBe(0);
     const second = await fullBackupOf(userId);
     expect(
       second.moodEntries.map(comparable).sort(byInstant("loggedAt")),
     ).toEqual(first.moodEntries.map(comparable).sort(byInstant("loggedAt")));
+    expect(second.measurements).toHaveLength(first.measurements.length);
+  });
+
+  it("writes none of an account's own readings back into it", async () => {
+    const original = await fullBackupOf(ownerId);
+    const before = await prisma.measurement.count({
+      where: { userId: ownerId },
+    });
+    const owner = await prisma.user.findUniqueOrThrow({
+      where: { id: ownerId },
+    });
+    const res = await callRoute<ImportStats>(importJson, {
+      method: "POST",
+      route: "/api/import",
+      body: original,
+      auth: await makeSession(owner),
+    });
+    expect(res.status).toBe(200);
+    expect(res.data.measurements).toBe(0);
+    expect(await prisma.measurement.count({ where: { userId: ownerId } })).toBe(
+      before,
+    );
   });
 });
 
