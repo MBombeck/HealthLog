@@ -23,13 +23,16 @@ import { MEASUREMENT_TYPE_LABEL_KEYS } from "@/lib/measurements/type-label-keys"
 import { queryKeys } from "@/lib/query-keys";
 import type { MeasurementType } from "@/generated/prisma/client";
 import { ListGroup, ListItem } from "@/components/ui/list-row";
-import { HEALTH_CONNECT_FOLDER_HREF } from "@/components/settings/integrations/health-connect-folder-card";
 import {
   ImportDetails,
   ImportPickerRow,
   ImportSource,
   useFinishedJobMeta,
 } from "./import-card-shell";
+
+/** The folder source's sheet on the integrations page. */
+const HEALTH_CONNECT_FOLDER_HREF =
+  "/settings/integrations#health-connect-remote";
 
 const TERMINAL_STATES: readonly string[] = ["done", "failed"];
 

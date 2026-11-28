@@ -59,6 +59,20 @@ describe("silenceStands", () => {
 });
 
 describe("resolveQuietSources", () => {
+  it("leaves out a source whose only module is off", () => {
+    const nightscout = oura({ key: "nightscout" });
+    const read = (modules?: { glucose: boolean }) =>
+      resolveQuietSources({
+        connections: [nightscout, oura()],
+        iphones: [],
+        now: NOW,
+        modules,
+      }).map((q) => q.source);
+    expect(read({ glucose: false })).toEqual(["oura"]);
+    expect(read({ glucose: true })).toEqual(["oura", "nightscout"]);
+    expect(read()).toEqual(["oura", "nightscout"]);
+  });
+
   it("names a stamped connection whose silence still stands", () => {
     expect(
       resolveQuietSources({ connections: [oura()], iphones: [], now: NOW }),

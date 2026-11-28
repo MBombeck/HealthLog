@@ -14,6 +14,8 @@ import {
   type ConnectionKey,
 } from "@/lib/integrations/connection-health";
 import { loadConnectionFacts } from "@/lib/integrations/connection-health-load";
+import type { SurfaceModuleMap } from "@/lib/modules/surface";
+import { daysBetweenDateKeys, userDayKey } from "@/lib/tz/format";
 
 import {
   STALL_SOURCES,
@@ -27,6 +29,8 @@ import {
 export async function loadQuietSources(
   userId: string,
   now: Date = new Date(),
+  /** The account's modules, so a source whose only module is off drops. */
+  modules?: SurfaceModuleMap,
 ): Promise<QuietSource[]> {
   // One statement for both stamps: the digest reads this on every request,
   // and its statement budget (`query-budget-hot-routes.test.ts`) counts it.
@@ -65,7 +69,13 @@ export async function loadQuietSources(
     stamped.length > 0
       ? [...(await loadConnectionFacts(userId, stamped, now)).values()]
       : [];
-  return resolveQuietSources({ connections: facts, iphones, androids, now });
+  return resolveQuietSources({
+    connections: facts,
+    iphones,
+    androids,
+    now,
+    modules,
+  });
 }
 
 /** The quiet sources worded for the Today rail, the push's own wording. */
@@ -80,6 +90,10 @@ export function wordQuietSources(
     provider: CONNECTION_LABELS[q.source],
     sinceYesterday: quietSinceWording(q.since, now, tz) === "yesterday",
     date: quietSinceDate(q.since, tz, locale),
+    days: Math.max(
+      1,
+      daysBetweenDateKeys(userDayKey(q.since, tz), userDayKey(now, tz)) || 1,
+    ),
     href: stallTapUrl(q.source),
   }));
 }

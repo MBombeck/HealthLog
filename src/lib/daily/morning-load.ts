@@ -577,7 +577,7 @@ export async function loadDailyMorning(
       m.sleep !== false ? readLastNight(user.id, tz, todayKey, now) : null,
     ),
     readFloor(user.id, now, units.glucoseUnit),
-    loadQuietSources(user.id, now).catch(() => []),
+    modulesRead.then((m) => loadQuietSources(user.id, now, m)).catch(() => []),
     prisma.encounter
       .findFirst({
         where: {

@@ -208,13 +208,11 @@ export function BottomNav() {
           {primaryLeft.map(renderPrimary)}
 
           {/* Center capture action — a labeled button (NOT a link) that
-              opens the capture picker. Elevated as a Floating-Action-
-              Button: it sits larger than the flanking tabs (h-14 = 56px,
-              well above the 44px tap-target floor), lifts above the bar
-              with a negative top margin, and carries a filled-primary
-              collar (a `bg-card` ring that punches it out of the bar) plus
-              a stronger shadow so it reads as the bar's primary CTA rather
-              than a fifth flush tab. */}
+              opens the capture picker, and the phone's only "add" (the tour
+              anchors there). A Floating-Action-Button: larger than the tabs
+              (h-14, above the 44px floor), lifted by a negative margin, a
+              `bg-card` collar ring and a stronger shadow, so it reads as the
+              bar's primary CTA rather than a fifth flush tab. */}
           {/* v1.36.x — a read-only delegate has nothing to capture: every
               surface behind the picker is refused for them, so the bar's
               primary CTA goes rather than opening onto an empty sheet. At
@@ -228,6 +226,7 @@ export function BottomNav() {
                 aria-expanded={captureOpen}
                 onClick={() => setCaptureOpen(true)}
                 data-testid="bottom-nav-capture"
+                data-tour-id="dashboard-quick-add"
                 className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring/70 ring-card -mt-5 flex h-14 w-14 items-center justify-center rounded-full shadow-lg ring-4 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
               >
                 <Plus className="h-7 w-7" />

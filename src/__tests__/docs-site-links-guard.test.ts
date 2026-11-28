@@ -50,6 +50,7 @@ const DOCS_SITE_PAGES: readonly string[] = [
   "guides/reminder-channels/#web-push-vapid",
   "guides/reverse-proxy/",
   "guides/sign-in-and-security/",
+  "reference/api-endpoints/",
   "reference/environment-variables/",
   "self-hosting/geolite2/",
 ];

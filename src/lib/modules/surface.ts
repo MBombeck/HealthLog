@@ -58,6 +58,10 @@ import { ownValue } from "@/lib/own-key";
  *    `SearchSourceKey`. A source whose owner is off is not read at all.
  *  - `checklist`: an optional row of the getting-started checklist's "More"
  *    group (1.49), by its `ChecklistExtraId`.
+ *  - `stall-source`: a source the SYNC_STALLED rule watches, by its
+ *    connection key. A source whose data reaches one module only goes
+ *    unmentioned while that module is off: the ask, the Today line and the
+ *    push all leave it out.
  */
 export const SURFACE_KINDS = [
   "nav",
@@ -77,6 +81,7 @@ export const SURFACE_KINDS = [
   "timeline-lane",
   "search",
   "checklist",
+  "stall-source",
 ] as const;
 
 export type SurfaceKind = (typeof SURFACE_KINDS)[number];
@@ -312,6 +317,11 @@ const STATIC_SURFACE_MODULE = {
   // The emergency card, the care feed, sharing, imports and the iPhone app
   // belong to no module; the report schedule is the doctor report's.
   "checklist:reportSchedule": "doctorReport",
+
+  // ── Quiet sources (1.50) ──
+  // Nightscout brings glucose and nothing else; every other source feeds a
+  // core domain or several modules, so none of them has an owner here.
+  "stall-source:nightscout": "glucose",
 } as const satisfies Record<string, ModuleKey>;
 
 /** A surface id the map declares literally. */

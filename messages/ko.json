@@ -805,13 +805,6 @@
   },
   "dashboard": {
     "title": "대시보드",
-    "greeting": {
-      "morning": "좋은 아침이에요",
-      "day": "안녕하세요",
-      "evening": "좋은 저녁이에요"
-    },
-    "welcomeBack": "{greeting}, 다시 오셨네요.",
-    "welcomeBackWithName": "{greeting}, {name}님, 다시 오셨네요.",
     "greetingSalutation": "안녕하세요, {name}님",
     "streakLabel": "일 연속",
     "weight": "체중",
@@ -948,9 +941,6 @@
       "body": "이 서버가 사용하는 키의 사본이 없으면 다시 설치한 뒤 데이터를 복구할 수 없습니다. 몇 분이면 됩니다.",
       "action": "키트 열기"
     },
-    "greetingOnly": "{greeting}.",
-    "welcomeNew": "환영합니다.",
-    "welcomeNewWithName": "{name}님, 환영합니다.",
     "quickAddSeizure": "발작 기록",
     "morning": {
       "heroItemsTitle": "오늘 할 일",
@@ -5877,9 +5867,7 @@
       },
       "integrations": {
         "title": "연동",
-        "connectionsHeading": "연결",
-        "channelsHeading": "전송 채널",
-        "matrixLink": "채널별 알림"
+        "channelsHeading": "전송 채널"
       },
       "notifications": {
         "title": "알림",
@@ -7384,9 +7372,7 @@
       "description": "이 계정에 설정돼 있지만 전용 설정 카드는 없어요."
     },
     "healthConnectFolder": {
-      "name": "폴더에서 Health Connect 가져오기",
-      "description": "6시간마다 WebDAV 또는 Nextcloud 폴더에서 가져와요. 설정과 변경은 불러오기에서 해요.",
-      "manage": "폴더 설정 열기"
+      "name": "폴더에서 Health Connect 가져오기"
     },
     "healthConnectApp": {
       "connect": "Android 기기 연결",
@@ -7396,39 +7382,25 @@
       "qrAlt": "HealthLog Sync용 QR 코드",
       "preview": "Android용 HealthLog Sync, 미리 보기",
       "disconnectTitle": "{device} 연결을 해제할까요?",
-      "disconnectBody": "다시 연결할 때까지 휴대폰이 동기화하지 않습니다."
+      "disconnectBody": "다시 연결할 때까지 휴대폰이 동기화하지 않습니다.",
+      "name": "HealthLog Sync"
     },
     "withingsViewData": "측정값 보기",
     "whoopViewData": "회복도 보기",
     "googleHealthViewData": "걸음 수 보기",
-    "apiTokens": "API 토큰",
     "measurementsToken": {
-      "title": "측정 토큰",
-      "description": "체중계나 시계, 식단 기록 앱, 홈 오토메이션이 측정값, 사용자 지표 값, 하루 영양소 합계를 기록할 수 있도록 토큰을 만들어요.",
-      "scopeNote": "본인 기록에 측정값을, 이미 만든 사용자 지표에 값을, 영양소 모듈이 켜져 있는 동안 하루 영양소 합계를 추가하는 것만 할 수 있어요. 무엇도 읽거나 고치거나 지울 수 없어요. 측정값과 영양소 합계는 외부에서 온 것으로 표시돼요. 사용자 지표의 ID는 지표 페이지 주소에서 /custom-metrics/ 뒤에 오는 부분이에요.",
-      "nutrientsLink": "영양소 섭취 보기",
-      "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요.",
       "namePlaceholder": "이름 (예: Home Assistant)",
       "appleHealth": {
         "label": "측정값을 Apple Health에 기록",
         "createHint": "그러면 iPhone의 HealthLog 앱이 이 토큰의 측정값을 Apple Health에 추가해요.",
-        "toggleAria": "{name}의 측정값을 Apple Health에 기록",
         "updateFailed": "Apple Health 설정을 바꾸지 못했어요. 다시 시도해 주세요.",
         "unattributed": "이 설정이 생기기 전에 보낸 측정값은 토큰과 연결할 수 없어서 Apple Health에 기록되지 않아요."
       }
     },
     "workoutsToken": {
-      "title": "운동 토큰",
-      "description": "시계 연동 브리지나 동기화 스크립트가 운동 기록을 추가할 수 있도록 토큰을 만들어요.",
-      "scopeNote": "본인 기록에 새 운동을 추가하는 것만 할 수 있어요. 데이터를 읽거나, 무언가를 고치거나 지우거나, 다른 토큰을 만들 수는 없어요. 이 토큰으로 추가된 운동은 외부 기기에서 온 것으로 표시되고, 휴대폰이 같은 운동을 기록했다면 휴대폰의 기록이 보여요.",
-      "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요.",
       "namePlaceholder": "이름 (예: Garmin)"
     },
     "documentsToken": {
-      "title": "문서 토큰",
-      "description": "Paperless-ngx, Papra 또는 가져오기 스크립트가 문서함에 문서를 추가할 수 있도록 토큰을 만들어요.",
-      "scopeNote": "본인 문서함에 새 문서를 추가하는 것만 할 수 있어요. 목록을 보거나, 열거나, 내려받거나, 고치거나 지울 수 없고, 다른 토큰을 만들 수도 없어요. 파일이 저장됐는지만 알 수 있고, 어떻게 정리했는지는 알 수 없어요.",
-      "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요.",
       "namePlaceholder": "이름 (예: Paperless-ngx)"
     },
     "tokenCreated": "토큰을 만들었어요. 지금 복사하세요! 다시 보여주지 않아요.",
@@ -7446,17 +7418,11 @@
     "revokedTokensTitle": "폐기된 토큰 ({count})",
     "tokenTableName": "이름",
     "tokenTablePermissions": "권한",
-    "tokenTableStatus": "상태",
     "tokenTableCreated": "생성일",
     "tokenTableLastUsed": "마지막 사용",
     "tokenTableActions": "작업",
     "noActiveTokens": "사용 중인 토큰이 없어요.",
     "tokenNeverUsed": "없음",
-    "apiEndpointsTitle": "API 엔드포인트",
-    "apiEndpointMethod": "메서드",
-    "apiEndpointPath": "경로",
-    "apiEndpointAuth": "인증",
-    "apiEndpointExample": "본문 예시",
     "dangerZone": "모든 데이터 삭제",
     "dangerZoneDescription": "건강 기록 전체와 모든 연동 연결을 지워요.",
     "dangerZoneConfirm": "모든 데이터를 삭제할까요?",
@@ -8281,7 +8247,115 @@
     },
     "passkeyRenameFailed": "패스키 이름을 변경하지 못했어요.",
     "passkeyRemoveFailed": "패스키를 삭제하지 못했어요.",
-    "apiEndpointsShow": "엔드포인트 보기"
+    "integrationList": {
+      "channels": "전송 채널",
+      "sources": "데이터 소스",
+      "addTitle": "추가",
+      "allAdded": "이 서버가 제공하는 항목이 모두 설정되었습니다.",
+      "noSources": "아직 데이터 소스가 없습니다",
+      "noChannels": "아직 전달 채널이 없습니다",
+      "ownCredentials": "자체 앱 자격 증명 필요",
+      "syncNow": "지금 동기화",
+      "lastAt": "최근: {when}",
+      "never": "아직 없음",
+      "apns": "iPhone 앱",
+      "facts": {
+        "status": "상태",
+        "reason": "이유",
+        "lastSync": "마지막 동기화",
+        "lastDelivery": "마지막 전달",
+        "brings": "가져오는 데이터",
+        "delivers": "전달 대상",
+        "lastFailure": "마지막 실패",
+        "lastFailureWith": "{when}, {reason}",
+        "setup": "설정"
+      },
+      "reason": {
+        "dataArriving": "데이터 수신 중",
+        "firstSyncPending": "첫 동기화 대기 중",
+        "planLimited": "요금제에 일부 데이터 없음",
+        "permissionLimited": "일부 권한 없음",
+        "providerErrors": "제공업체 응답 불안정",
+        "syncStalled": "동기화 중단됨",
+        "noNewData": "새 데이터 없음",
+        "unexpectedSilence": "한동안 데이터 없음",
+        "reauthRequired": "로그인 만료",
+        "pausedAfterErrors": "오류 후 일시 중지됨",
+        "notConnected": "연결되지 않음",
+        "paused": "일시 중지됨",
+        "switchedOff": "꺼짐",
+        "autoDisabled": "거부 후 꺼짐",
+        "sendingPaused": "전송 일시 중지됨",
+        "deliveryFailing": "마지막 전달 실패"
+      },
+      "brings": {
+        "appleHealth": "iPhone 앱을 통해 건강 앱의 모든 데이터",
+        "withings": "체중, 혈압, 수면",
+        "whoop": "회복, 수면, 스트레인",
+        "googleHealth": "Fitbit 및 Pixel Watch",
+        "garmin": "수면, HRV, 스트레스, 활동",
+        "oura": "준비도, 수면, HRV",
+        "polar": "회복, 수면, 운동",
+        "strava": "활동을 운동으로",
+        "nightscout": "연속 혈당",
+        "dawarich": "맥락을 위한 장소와 경로",
+        "healthConnectFolder": "WebDAV 또는 Nextcloud의 Health Connect 내보내기",
+        "documentSources": "Paperless-ngx 또는 Papra의 문서",
+        "telegram": "내 봇을 통한 Telegram 채팅",
+        "ntfy": "ntfy 토픽",
+        "webPush": "이 브라우저",
+        "webhook": "내 주소로 보내는 JSON",
+        "email": "이메일 알림",
+        "apns": "iPhone 알림",
+        "healthConnectApp": "Android 앱을 통한 Health Connect"
+      }
+    },
+    "tokenList": {
+      "title": "토큰",
+      "newToken": "새 토큰",
+      "empty": "아직 토큰이 없습니다",
+      "caption": "내 토큰",
+      "scopeColumn": "접근",
+      "more": "더 보기",
+      "scopeMoreLabel": "이 접근으로 할 수 있는 일",
+      "mirrorMoreLabel": "Apple 건강에 기록한다는 의미",
+      "revoked": "취소됨",
+      "hideRevoked": "취소된 토큰 숨기기",
+      "menuLabel": "{name} 작업",
+      "copied": "복사됨",
+      "scope": {
+        "all": "전체 접근",
+        "measurements": "측정값",
+        "workouts": "운동",
+        "documents": "문서",
+        "medication": "약",
+        "mcpRead": "MCP, 읽기",
+        "mcpWrite": "MCP, 쓰기",
+        "fhir": "FHIR",
+        "profile": "프로필"
+      },
+      "scopeInfo": {
+        "measurements": "측정값, 사용자 지표 값, 일일 영양소 합계를 기록에 추가합니다. 읽기, 변경, 삭제는 할 수 없습니다.",
+        "workouts": "새 운동을 기록에 추가합니다. 읽기, 변경, 삭제는 할 수 없습니다.",
+        "documents": "새 문서를 보관함에 추가합니다. 목록 보기, 열기, 변경, 삭제는 할 수 없습니다."
+      },
+      "create": {
+        "failed": "토큰을 만들지 못했습니다. 다시 시도하세요.",
+        "createdTitle": "토큰 생성됨",
+        "done": "완료",
+        "shownOnce": "토큰은 지금만 표시됩니다.",
+        "expiry": "유효 기간",
+        "expiryYear": "1년",
+        "expiryDays": "{days, plural, other {#일}}"
+      },
+      "api": {
+        "title": "API",
+        "address": "주소",
+        "copyAddress": "API 주소 복사",
+        "endpoints": "엔드포인트",
+        "openReference": "참조 열기"
+      }
+    }
   },
   "admin": {
     "title": "관리자",
@@ -9504,8 +9578,6 @@
       },
       "question": {
         "title": "HealthLog 푸시 릴레이를 사용할까요?",
-        "askTitle": "푸시 릴레이로 알림을 받을까요?",
-        "askBody": "내용은 암호화된 채로 유지됩니다.",
         "body": "App Store 앱을 위한 종단간 암호화 알림으로, 릴레이는 알림이 언제 보내지는지만 봅니다.",
         "yes": "예",
         "no": "아니요",
@@ -9589,7 +9661,6 @@
       "notice": {
         "title": "이 서버 설정하기",
         "body": "가입, 알림, AI, 개인정보에 관한 짧은 다섯 단계이며, 어느 단계든 건너뛰거나 나중에 바꿀 수 있습니다.",
-        "bodyShort": "가입, 알림, AI, 개인정보에 관한 짧은 다섯 단계입니다.",
         "open": "설정 시작",
         "dismiss": "나중에"
       }
@@ -13549,7 +13620,6 @@
       },
       "syncIssue": {
         "title": "동기화 확인이 필요해요",
-        "askTitle": "동기화 중단",
         "body": "{integration} 동기화가 멈췄어요. 데이터를 최신으로 유지하려면 다시 연결해 주세요."
       },
       "sourceQuiet": {
@@ -13603,7 +13673,6 @@
       "logDose": "복용",
       "later": "나중에",
       "answer": "답하기",
-      "learnMore": "더 보기",
       "open": "열기",
       "setUp": "설정",
       "reconnectShort": "다시 연결",
@@ -13617,6 +13686,27 @@
       "viewEcg": "기록 보기",
       "viewSteps": "걸음 수 보기",
       "openSource": "열기"
+    },
+    "ask": {
+      "medication": "약",
+      "overdue": "{time}부터 지남",
+      "overdueNow": "시간 지남",
+      "due": "{time} 복용 예정",
+      "dueNow": "지금 복용",
+      "checkupDue": "건강검진 시기",
+      "visitToday": "오늘 진료",
+      "visitTomorrow": "내일 진료",
+      "signedOut": "연결 끊김",
+      "quietDaysOne": "{count}일째 조용",
+      "quietDaysFew": "{count}일째 조용",
+      "quietDaysOther": "{count}일째 조용",
+      "quiet": "데이터 없음",
+      "planFallback": "내 계획",
+      "planReview": "점검할 때예요",
+      "setupTitle": "이 서버",
+      "setupMeta": "설정 안 됨",
+      "relayTitle": "푸시 릴레이?",
+      "relayMeta": "암호화됨"
     },
     "today": {
       "deltaShort": "기준값 대비 {delta}",
@@ -16023,10 +16113,10 @@
       "fieldsLabel": "링크에 표시할 항목",
       "expiryLabel": "링크 만료",
       "expiry": {
-        "none": "철회할 때까지 유지",
         "30": "30일 후",
         "365": "1년 후",
-        "730": "2년 후"
+        "730": "2년 후",
+        "none": "철회할 때까지 유지"
       },
       "create": "링크 만들기",
       "qrAlt": "응급 카드 링크 QR 코드",

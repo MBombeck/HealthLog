@@ -43,6 +43,8 @@ import {
 } from "@/lib/integrations/connection-health";
 import { annotate } from "@/lib/logging/context";
 import { logCaught } from "@/lib/logging/signal";
+import { resolveModuleMap } from "@/lib/modules/gate";
+import { surfaceModule } from "@/lib/modules/surface";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
 import { claimNotificationEvent } from "@/lib/notifications/reminder-dedup";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
@@ -58,6 +60,7 @@ import {
   iphoneDelivers,
   quietSinceDate,
   quietSinceWording,
+  stallSourceWanted,
   stallTapUrl,
 } from "./quiet";
 
@@ -312,6 +315,15 @@ async function noticeUser(
       continue;
     }
     open.push(stall);
+  }
+  // A source whose only module is off is not told about, as the ask and the
+  // Today line leave it out; the stamp stays unclaimed, so switching the
+  // module back on lets the notice through.
+  if (open.some((stall) => surfaceModule(`stall-source:${stall.source}`))) {
+    const modules = await resolveModuleMap(user.id);
+    for (let i = open.length - 1; i >= 0; i--) {
+      if (!stallSourceWanted(open[i].source, modules)) open.splice(i, 1);
+    }
   }
   if (open.length === 0 || !inNoticeWindow(now, tz)) {
     return { result: "quiet", settled };

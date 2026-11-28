@@ -20,6 +20,11 @@ export interface DailyDigestQuietSource {
   sinceYesterday: boolean;
   /** The last delivery's short local date ("Nov 19"). */
   date: string;
+  /**
+   * Local days from the last delivery to today, at least 1: the ask's state
+   * line counts them.
+   */
+  days: number;
   /** The source's own card on the integrations page. */
   href: string;
 }

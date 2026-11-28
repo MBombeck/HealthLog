@@ -33,6 +33,7 @@ import {
   type ConnectionKey,
 } from "@/lib/integrations/connection-health";
 import { SOURCE_PROFILES } from "@/lib/integrations/watchdog-classify";
+import { isSurfaceVisible, type SurfaceModuleMap } from "@/lib/modules/surface";
 import { shiftDateKey, userDayKey } from "@/lib/tz/format";
 
 import { silenceStands } from "./cadence";
@@ -132,6 +133,14 @@ function iphonesQuietSince(
   return latest;
 }
 
+/** Whether a source's silence is worth a word under the account's modules. */
+export function stallSourceWanted(
+  source: ConnectionKey,
+  modules: SurfaceModuleMap | null | undefined,
+): boolean {
+  return isSurfaceVisible(`stall-source:${source}`, modules);
+}
+
 /** The quiet sources of one account, in `STALL_SOURCES` order. */
 export function resolveQuietSources(input: {
   connections: readonly QuietConnectionFacts[];
@@ -139,6 +148,11 @@ export function resolveQuietSources(input: {
   /** The Android devices running HealthLog Sync, the same rule as iPhones. */
   androids?: readonly QuietIphoneFacts[];
   now: Date;
+  /**
+   * The account's modules: a source whose only module is off is not quiet
+   * for anybody (`stall-source:<key>` in `src/lib/modules/surface.ts`).
+   */
+  modules?: SurfaceModuleMap;
 }): QuietSource[] {
   const since = new Map<ConnectionKey, Date>();
   const mark = (key: ConnectionKey, at: Date) => {
@@ -152,7 +166,9 @@ export function resolveQuietSources(input: {
   if (iphones) mark("apple-health", iphones);
   const androids = iphonesQuietSince(input.androids ?? [], input.now);
   if (androids) mark("health-connect-app", androids);
-  return STALL_SOURCES.filter((key) => since.has(key)).map((source) => ({
+  return STALL_SOURCES.filter(
+    (key) => since.has(key) && stallSourceWanted(key, input.modules),
+  ).map((source) => ({
     source,
     since: since.get(source)!,
   }));

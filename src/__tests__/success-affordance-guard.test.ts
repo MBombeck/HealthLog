@@ -383,14 +383,6 @@ const PINNED_AFFORDANCES: Record<
   "src/components/settings/ai/openai-provider-form.tsx": { "text-success": 1 },
   "src/components/settings/ai/response-timeout-card.tsx": { "text-success": 1 },
   "src/components/settings/ai/runtime-actions-row.tsx": { "text-success": 2 },
-  // The two added by the measurement-ingest mint card are the one-shot
-  // token panel and its copy tick, both rendered only once a token actually
-  // exists; the toast fires only after the clipboard write resolves. Same
-  // shape as the MCP connector card two files over.
-  "src/components/settings/api-section.tsx": {
-    "text-success": 4,
-    "toast.success": 1,
-  },
   // The delete-with-undo toast, the same one the conversation list and the
   // history rail raise for the same delete.
   "src/components/settings/coach-conversations-memory-card.tsx": {
@@ -405,7 +397,7 @@ const PINNED_AFFORDANCES: Record<
   "src/components/settings/insights-pill-order-section.tsx": {
     "toast.success": 1,
   },
-  "src/components/settings/integrations/connections-panel.tsx": {
+  "src/components/settings/integrations/oauth-return.ts": {
     "toast.success": 2,
   },
   // The saved-credentials confirmation line.
@@ -423,7 +415,7 @@ const PINNED_AFFORDANCES: Record<
     "text-success": 1,
   },
   // "Copied" beside the diagnostics copy button.
-  "src/components/settings/integrations/integration-card.tsx": {
+  "src/components/settings/integrations/integration-card-parts.tsx": {
     "text-success": 1,
   },
   "src/components/settings/integrations/nightscout-card.tsx": {

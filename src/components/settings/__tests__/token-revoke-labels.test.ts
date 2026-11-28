@@ -28,20 +28,22 @@ function read(rel: string): string {
 
 /**
  * Every confirm the source spells: an `<AlertDialogAction …>…</AlertDialogAction>`
- * block, or a `<ConfirmButton … />` whose `confirmLabel` is the action label.
+ * block, or a `<ConfirmButton … />` / `<ConfirmDialog … />` whose
+ * `confirmLabel` is the action label.
  */
 function actions(source: string): string[] {
   return [
     ...source.matchAll(/<AlertDialogAction\b[\s\S]*?<\/AlertDialogAction>/g),
     ...source.matchAll(/<ConfirmButton\b[\s\S]*?\/>/g),
+    ...source.matchAll(/<ConfirmDialog\b[\s\S]*?\/>/g),
   ].map((m) => m[0]);
 }
 
 describe("token revoke labels", () => {
   for (const rel of FILES) {
     it(`${rel}: the revoke confirm says "Revoke token"`, () => {
-      const revokes = actions(read(rel)).filter((a) =>
-        a.includes("handleRevoke(tok.id)"),
+      const revokes = actions(read(rel)).filter(
+        (a) => a.includes("handleRevoke(tok.id)") || a.includes("revoke()"),
       );
       expect(revokes.length).toBeGreaterThan(0);
       for (const action of revokes) {

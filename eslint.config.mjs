@@ -208,9 +208,6 @@ const eslintConfig = defineConfig([
             // A secondary control in a row named by the dose time; the
             // switch's caption is not the row's name.
             "src/components/medications/scheduling/dose-window-editor.tsx": 1,
-            // A compact switch inside a token table cell, under the token's
-            // name; the cell is not a row of its own.
-            "src/components/settings/apple-health-mirror-token.tsx": 1,
           },
         },
       ],

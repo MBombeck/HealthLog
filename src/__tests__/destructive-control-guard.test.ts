@@ -156,7 +156,7 @@ const REGISTRY: DestructiveEntry[] = [
     file: "components/settings/api-section.tsx",
     destroys: "an API token — revoked, and the secret is never shown again",
     recovery: "permanent",
-    confirm: ["ConfirmButton"],
+    confirm: ["ConfirmDialog"],
   },
   {
     file: "components/settings/mcp-section.tsx",
@@ -794,13 +794,14 @@ const REGISTRY: DestructiveEntry[] = [
 
   // ── Integrations ────────────────────────────────────────────────────────
   // Every connection renders the shared integration card, whose three-dot
-  // menu raises the confirmation for the destructive entry; the controllers
-  // below only hold the request.
+  // menu (`integration-card-parts.tsx`, shared with the sheet) raises the
+  // confirmation for the destructive entry; the controllers below only hold
+  // the request.
   {
     file: "components/settings/integrations/oauth-integration-card.tsx",
     destroys:
       "the stored Withings, WHOOP, Fitbit, Google Health, Polar, Oura or Strava grant — reconnecting means authorising again",
-    triggers: ["components/settings/integrations/integration-card.tsx"],
+    triggers: ["components/settings/integrations/integration-card-parts.tsx"],
     recovery: "permanent",
     confirm: ["ConfirmDialog"],
   },
@@ -808,7 +809,7 @@ const REGISTRY: DestructiveEntry[] = [
     file: "components/settings/managed-integration-status.tsx",
     destroys:
       "a managed profile's stored Withings, WHOOP, Google Health, Polar, Oura or Strava grant, disconnected by its guardian — reconnecting means authorising again",
-    triggers: ["components/settings/integrations/integration-card.tsx"],
+    triggers: ["components/settings/integrations/integration-card-parts.tsx"],
     recovery: "permanent",
     confirm: ["ConfirmDialog"],
   },
@@ -816,7 +817,7 @@ const REGISTRY: DestructiveEntry[] = [
     file: "components/settings/integrations/nightscout-card.tsx",
     destroys:
       "the stored Nightscout address and token — reconnecting means typing them again",
-    triggers: ["components/settings/integrations/integration-card.tsx"],
+    triggers: ["components/settings/integrations/integration-card-parts.tsx"],
     recovery: "permanent",
     confirm: ["ConfirmDialog"],
   },
@@ -824,7 +825,7 @@ const REGISTRY: DestructiveEntry[] = [
     file: "components/settings/integrations/garmin-card.tsx",
     destroys:
       "the stored Garmin Personal API key — reconnecting means pasting a key again, and a key Garmin showed only once may mean creating a new one",
-    triggers: ["components/settings/integrations/integration-card.tsx"],
+    triggers: ["components/settings/integrations/integration-card-parts.tsx"],
     recovery: "permanent",
     confirm: ["ConfirmDialog"],
   },
@@ -832,7 +833,7 @@ const REGISTRY: DestructiveEntry[] = [
     file: "components/settings/integrations/dawarich-card.tsx",
     destroys:
       "the stored Dawarich address, key and home settings, and with the second entry every stored movement day — reconnecting means typing them again; deleted days come back only as far as the instance still holds them",
-    triggers: ["components/settings/integrations/integration-card.tsx"],
+    triggers: ["components/settings/integrations/integration-card-parts.tsx"],
     recovery: "permanent",
     confirm: ["ConfirmDialog"],
   },

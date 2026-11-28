@@ -624,7 +624,9 @@ export async function loadDailyDigest(
       select: { integration: true, state: true, lastSuccessAt: true },
       orderBy: { integration: "asc" },
     }),
-    loadQuietSources(user.id, now).catch(() => []),
+    gated.modulesRead
+      .then((m) => loadQuietSources(user.id, now, m))
+      .catch(() => []),
     prisma.measurementReminder.findMany({
       // A booked visit's one-shot reminder rides this same engine with
       // `origin: ENCOUNTER`. It is not a checkup and must not appear on a
@@ -934,8 +936,7 @@ export async function loadDailyDigest(
         snapshot.layout.enabledHeroItemKinds ??
         PRIORITY_ITEM_KINDS,
       score,
-      // Already resolved for today by the snapshot read (`briefing-today.ts`
-      // via `applyBriefingForToday`), as every surface serves it.
+      // Resolved for today by the snapshot read (`applyBriefingForToday`).
       briefing: snapshot.briefing,
       medsToday: snapshot.medsToday,
       // #176 — the briefing is served only in the reader's language or
@@ -947,6 +948,7 @@ export async function loadDailyDigest(
       reactionLanguage,
       firstName: firstNameFromDisplayName(user.displayName),
       nextDoseTimeLabel: nextOpensAt ? localTime(new Date(nextOpensAt)) : null,
+      localTime,
       lastNight,
       syncIssues,
       quietSources: wordQuietSources(quietRows, now, user.timezone, locale),

@@ -64,9 +64,8 @@ async function readHeader(page: Page): Promise<HeaderGeometry | null> {
 }
 
 /**
- * Read the header until two reads a frame apart agree. The greeting swaps to
- * the personalised line after hydration; measuring mid-swap would compare a
- * frame nobody keeps.
+ * Read the header until two reads a frame apart agree: measuring while the
+ * fonts or the account still settle would compare a frame nobody keeps.
  */
 async function settledHeader(page: Page): Promise<HeaderGeometry> {
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
@@ -129,9 +128,6 @@ test.describe("header height in every locale", () => {
         await expect(page.locator('[data-slot="top-bar"]')).toBeVisible();
         await expect(
           page.locator('main [data-slot="page-header-row"]'),
-        ).toBeVisible();
-        await expect(
-          page.locator('[data-slot="dashboard-header-greeting"]'),
         ).toBeVisible();
         await expect
           .poll(() => page.evaluate(() => window.innerWidth))
