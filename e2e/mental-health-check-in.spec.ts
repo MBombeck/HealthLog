@@ -67,6 +67,15 @@ async function expectNoSeriousViolations(page: Page, label: string) {
   expect(blocking, `axe on ${label}`).toEqual([]);
 }
 
+/** The row opens the instrument's sheet; Start sits in its footer. */
+async function startInstrument(page: Page, id: string) {
+  await page
+    .locator(`[data-slot="instrument-row"][data-instrument="${id}"]`)
+    .locator('[data-slot="list-item-action"]')
+    .click();
+  await page.locator('[data-slot="instrument-detail-start"]').click();
+}
+
 test.describe("mental-health check-in, every instrument", () => {
   test.use({ storageState: STORAGE_STATE_PATH });
 
@@ -74,10 +83,7 @@ test.describe("mental-health check-in, every instrument", () => {
     test(`${c.id}: steps, review, result`, async ({ page }) => {
       test.setTimeout(90_000);
       await page.goto("/mental-wellbeing");
-      const card = page.locator(
-        `[data-slot="instrument-card"][data-instrument="${c.id}"]`,
-      );
-      await card.locator('[data-slot="instrument-card-start"]').click();
+      await startInstrument(page, c.id);
 
       const wizard = page.locator(
         `[data-slot="mental-health-check-in"][data-instrument="${c.id}"]`,
@@ -254,10 +260,7 @@ test.describe("mental-health check-in, in the reader's language", () => {
       await expect(page.locator("html")).toHaveAttribute("lang", locale);
 
       for (const c of CASES) {
-        await page
-          .locator(`[data-slot="instrument-card"][data-instrument="${c.id}"]`)
-          .locator('[data-slot="instrument-card-start"]')
-          .click();
+        await startInstrument(page, c.id);
         const wizard = page.locator(
           `[data-slot="mental-health-check-in"][data-instrument="${c.id}"]`,
         );
@@ -287,10 +290,7 @@ test.describe("mental-health check-in, in the reader's language", () => {
 
       // An unvalidated translation answered as shown: the result says so.
       const sci = caseOf("SCI");
-      await page
-        .locator('[data-slot="instrument-card"][data-instrument="SCI"]')
-        .locator('[data-slot="instrument-card-start"]')
-        .click();
+      await startInstrument(page, "SCI");
       const result = await answerAll(page, sci, 2);
       await expect(
         result.locator('[data-slot="result-wording-note"]'),
@@ -304,10 +304,7 @@ test.describe("mental-health check-in, in the reader's language", () => {
   }) => {
     test.setTimeout(90_000);
     await openInLocale(page, "nl");
-    await page
-      .locator('[data-slot="instrument-card"][data-instrument="SCI"]')
-      .locator('[data-slot="instrument-card-start"]')
-      .click();
+    await startInstrument(page, "SCI");
     const wizard = page.locator(
       '[data-slot="mental-health-check-in"][data-instrument="SCI"]',
     );
@@ -343,10 +340,7 @@ test.describe("mental-health check-in, in the reader's language", () => {
   }) => {
     test.setTimeout(90_000);
     await openInLocale(page, "pt-BR");
-    await page
-      .locator('[data-slot="instrument-card"][data-instrument="PHQ9"]')
-      .locator('[data-slot="instrument-card-start"]')
-      .click();
+    await startInstrument(page, "PHQ9");
     const phq = caseOf("PHQ9");
     // Position 2 is "Vários dias" (value 1) on every item, item 9 included.
     const result = await answerAll(page, phq, 2);
@@ -460,10 +454,7 @@ test.describe("WHO-5 check-in, word for word", () => {
       test.setTimeout(90_000);
       await openInLocale(page, locale);
       await expect(page.locator("html")).toHaveAttribute("lang", locale);
-      await page
-        .locator('[data-slot="instrument-card"][data-instrument="WHO5"]')
-        .locator('[data-slot="instrument-card-start"]')
-        .click();
+      await startInstrument(page, "WHO5");
 
       const wizard = page.locator(
         '[data-slot="mental-health-check-in"][data-instrument="WHO5"]',

@@ -9884,7 +9884,6 @@
   },
   "achievements": {
     "title": "Traguardi",
-    "subtitle": "Ottieni traguardi monitorando la tua salute e assumendo i farmaci in orario.",
     "loginRequired": "Accedi per vedere i traguardi.",
     "points": "Punti",
     "unlocked": "Sbloccato",
@@ -9892,7 +9891,6 @@
     "allCompleted": "Tutti i traguardi sbloccati!",
     "completed": "Completato",
     "goalReached": "Obiettivo raggiunto",
-    "remainingUnlocks": "Ancora {count} da sbloccare",
     "noneUnlockedYet": "Nessun obiettivo ancora sbloccato.",
     "pointsValue": "{points, plural, one {# punto} other {# punti}}",
     "metricCount": "{count}",
@@ -10146,9 +10144,7 @@
         "description": "Dati del sonno registrati per 7 giorni consecutivi."
       }
     },
-    "nextProgressLabel": "Progressi verso lo sblocco",
     "completedOn": "Completato il {date}",
-    "locked": "Bloccato",
     "criterionHint": "{current} / {target}",
     "progressPercent": "{percent}%",
     "categories": {
@@ -10176,7 +10172,6 @@
   "notifications": {
     "title": "Notifiche per canale",
     "eventColumn": "Evento",
-    "subtitle": "Scegli quali notifiche ricevere e su quale canale.",
     "loadError": "Impossibile caricare le impostazioni di notifica.",
     "noChannels": "Configura prima un canale di notifica in Impostazioni > Integrazioni.",
     "goToSettings": "Vai alle impostazioni del canale",
@@ -10774,7 +10769,6 @@
     },
     "disclaimer": "Queste previsioni sono stime descrittive basate sui tuoi dati registrati, non un metodo contraccettivo né un parere medico. Non indicano mai che sia sicuro avere rapporti non protetti. Per la contraccezione o qualsiasi decisione medica, consulta un professionista sanitario.",
     "title": "Ciclo",
-    "subtitle": "Registra il ciclo e i sintomi e scopri cosa arriva dopo.",
     "tabs": {
       "calendar": "Calendario",
       "predictions": "Previsioni",
@@ -12008,7 +12002,6 @@
   },
   "illness": {
     "title": "Malattia",
-    "subtitle": "Un registro retrospettivo dei tuoi episodi di malattia e disturbi.",
     "settings": {
       "viewDescription": "Scegli se gli episodi appaiono come schede o come elenco compatto.",
       "orderDescription": "Trascina i tuoi episodi nell'ordine in cui vuoi vederli."
@@ -12462,9 +12455,7 @@
   },
   "mentalHealth": {
     "pageTitle": "Benessere mentale",
-    "pageDescription": "Quattro autovalutazioni validate e facoltative: conta l’andamento, non il singolo punteggio.",
     "attributionLabel": "Fonte",
-    "attributionShow": "Fonte e licenza di {instrument}",
     "choosePrompt": "Scegli un check-in",
     "start": "Inizia",
     "back": "Indietro",
@@ -12477,12 +12468,6 @@
       "gad7": "GAD-7 (preoccupazione)",
       "who5": "WHO-5 (benessere)",
       "sci": "SCI (sonno)"
-    },
-    "instrumentSub": {
-      "phq9": "Screening della depressione, 9 domande",
-      "gad7": "Screening dell'ansia, 7 domande",
-      "who5": "Test sul benessere, 5 domande",
-      "sci": "Test sul sonno, 8 domande"
     },
     "functionalOptionalHint": "Facoltativo: puoi inviare anche senza rispondere a questa domanda.",
     "result": {
@@ -12521,7 +12506,6 @@
       "title": "La tua cronologia",
       "empty": "Ancora nessun check-in. Il tuo andamento apparirà qui dopo che ne avrai completato uno.",
       "flaggedBadge": "Supporto mostrato",
-      "chartTitle": "Andamento del punteggio",
       "totalLabel": "Punteggio",
       "bandLabel": "Categoria",
       "answersToggle": "Risposte",
@@ -13216,15 +13200,11 @@
       "titleRecord": "L'archivio documenti di {name} è vuoto"
     },
     "detail": {
-      "title": "Dettagli del documento",
       "summary": {
         "title": "Riepilogo",
         "pending": "Il riepilogo è in preparazione.",
-        "none": "Non è ancora stato generato alcun riepilogo per questo documento.",
         "withheld": "Un riepilogo è stato generato ma non ha superato il controllo di sicurezza, quindi non viene mostrato. Puoi riprovare o leggere il documento stesso.",
-        "unavailable": "Non è stato possibile generare un riepilogo per questo documento.",
-        "generate": "Genera riepilogo",
-        "generating": "Generazione…"
+        "unavailable": "Non è stato possibile generare un riepilogo per questo documento."
       },
       "index": {
         "outcome": {
@@ -13249,7 +13229,6 @@
       "titlePlaceholder": "Aggiungi un titolo",
       "kindLabel": "Tipo",
       "dateLabel": "Data del documento",
-      "previewUnavailable": "Nessuna anteprima integrata per questo tipo di file",
       "uploadedMeta": "Aggiunto il {date}, {size}",
       "importedFrom": "Importato da {system}",
       "importedFromWithId": "Importato da {system}, ID {id}",
@@ -13259,8 +13238,7 @@
       "share": "Condividi",
       "labValuesLink": "Vedi {count, plural, one {# risultato di laboratorio} other {# risultati di laboratorio}}",
       "saved": "Modifiche salvate",
-      "saving": "Salvataggio…",
-      "previewNotOnDevice": "Questo browser non può mostrare i PDF nella pagina"
+      "saving": "Salvataggio…"
     },
     "dropOverlay": {
       "title": "Rilascia i file per caricarli",
@@ -16252,7 +16230,7 @@
       "missBody": "Il link potrebbe essere stato revocato o essere scaduto. La persona a cui appartiene la tessera può crearne uno nuovo.",
       "title": "Link QR",
       "loadError": "Impossibile caricare lo stato del link.",
-      "disclosure": "Chi scansiona il codice vede le voci selezionate, senza accedere. Puoi dare una scadenza al link e revocarlo in qualsiasi momento; ogni apertura viene registrata per te.",
+      "disclosure": "Chi scansiona il codice vede le voci selezionate, senza accedere.",
       "fieldsLabel": "Cosa mostra il link",
       "expiryLabel": "Scadenza del link",
       "expiry": {
@@ -16274,17 +16252,17 @@
       "revoke": "Revoca il link",
       "revokeTitle": "Revocare il link della tessera di emergenza?",
       "revokeBody": "Le tessere stampate con questo codice smetteranno di funzionare. Puoi creare un nuovo link e ristampare la tessera.",
-      "error": "Impossibile modificare il link. Riprova."
+      "error": "Impossibile modificare il link. Riprova.",
+      "disclosureMore": "Puoi dare una scadenza al link e revocarlo in qualsiasi momento; ogni apertura viene registrata per te."
     },
     "page": {
       "title": "Tessera di emergenza",
-      "description": "I tuoi dati di emergenza per quando sei fuori casa.",
       "loadError": "Impossibile caricare la tessera di emergenza.",
       "offlineHint": "L'app non funziona offline di proposito. Salva una copia sul telefono per avere la tessera senza connessione; mostra il contenuto del giorno in cui l'hai salvata.",
       "downloadError": "Il download non è riuscito. Riprova.",
-      "saveOffline": "Salva copia offline",
-      "wallet": "Tessera per il portafoglio (PDF)",
-      "walletWithQr": "Tessera con codice QR (PDF)",
+      "saveOffline": "Copia offline",
+      "wallet": "Tessera in PDF",
+      "walletWithQr": "PDF con codice QR",
       "preview": "La tua tessera"
     },
     "name": "Nome",
@@ -16386,7 +16364,8 @@
         "title": "La tua tessera di emergenza è pronta",
         "body": "Aggiungila ad Apple Wallet su questo iPhone."
       }
-    }
+    },
+    "fieldsCount": "{count} di {total}"
   },
   "treatmentSeries": {
     "heading": "Cicli di trattamento",

@@ -9884,7 +9884,6 @@
   },
   "achievements": {
     "title": "Erfolge",
-    "subtitle": "Sammle Erfolge, indem du regelmäßig misst und deine Medikamente nimmst.",
     "loginRequired": "Bitte anmelden, um Erfolge zu sehen.",
     "points": "Punkte",
     "unlocked": "Freigeschaltet",
@@ -9892,7 +9891,6 @@
     "allCompleted": "Alle Erfolge freigeschaltet!",
     "completed": "Abgeschlossen",
     "goalReached": "Ziel erreicht",
-    "remainingUnlocks": "Noch {count} freischaltbar",
     "noneUnlockedYet": "Noch keine Erfolge freigeschaltet.",
     "pointsValue": "{points, plural, one {# Punkt} other {# Punkte}}",
     "metricCount": "{count}",
@@ -10146,9 +10144,7 @@
         "description": "An 7 Tagen in Folge Schlafdaten erfasst."
       }
     },
-    "nextProgressLabel": "Fortschritt bis Freischaltung",
     "completedOn": "Abgeschlossen am {date}",
-    "locked": "Gesperrt",
     "criterionHint": "{current} / {target}",
     "progressPercent": "{percent}%",
     "categories": {
@@ -10176,7 +10172,6 @@
   "notifications": {
     "title": "Benachrichtigungen je Kanal",
     "eventColumn": "Ereignis",
-    "subtitle": "Wähle aus, welche Benachrichtigungen du über welchen Kanal erhalten möchtest.",
     "loadError": "Benachrichtigungseinstellungen konnten nicht geladen werden.",
     "noChannels": "Konfiguriere zuerst einen Benachrichtigungskanal unter Einstellungen > Integrationen.",
     "goToSettings": "Zu den Kanal-Einstellungen",
@@ -10774,7 +10769,6 @@
     },
     "disclaimer": "Diese Vorhersagen sind beschreibende Schätzungen aus deinen erfassten Daten, keine Verhütungsmethode und keine medizinische Beratung. Sie zeigen nie an, dass ungeschützter Geschlechtsverkehr sicher ist. Wende dich für Verhütung oder medizinische Entscheidungen an eine medizinische Fachperson.",
     "title": "Zyklus",
-    "subtitle": "Erfasse deine Periode und Symptome und sieh, was als Nächstes kommt.",
     "tabs": {
       "calendar": "Kalender",
       "predictions": "Prognosen",
@@ -12008,7 +12002,6 @@
   },
   "illness": {
     "title": "Krankheit",
-    "subtitle": "Ein rückblickendes Protokoll deiner Krankheits- und Beschwerde-Episoden.",
     "settings": {
       "viewDescription": "Wähle, ob Episoden als Karten oder als kompakte Liste erscheinen.",
       "orderDescription": "Ziehe deine Episoden in die gewünschte Reihenfolge."
@@ -12462,9 +12455,7 @@
   },
   "mentalHealth": {
     "pageTitle": "Seelisches Wohlbefinden",
-    "pageDescription": "Vier validierte, freiwillige Selbsttests. Aussagekräftig ist der Verlauf, nicht ein einzelner Wert.",
     "attributionLabel": "Quelle",
-    "attributionShow": "Quelle und Lizenz für {instrument}",
     "choosePrompt": "Check-in auswählen",
     "start": "Starten",
     "back": "Zurück",
@@ -12477,12 +12468,6 @@
       "gad7": "GAD-7 (Sorgen)",
       "who5": "WHO-5 (Wohlbefinden)",
       "sci": "SCI (Schlaf)"
-    },
-    "instrumentSub": {
-      "phq9": "Depressions-Screening, 9 Fragen",
-      "gad7": "Angst-Screening, 7 Fragen",
-      "who5": "Wohlbefindens-Check, 5 Fragen",
-      "sci": "Schlaf-Check, 8 Fragen"
     },
     "functionalOptionalHint": "Optional: Du kannst auch ohne Antwort auf diese Frage absenden.",
     "result": {
@@ -12521,7 +12506,6 @@
       "title": "Dein Verlauf",
       "empty": "Noch keine Check-ins. Dein Verlauf erscheint hier, sobald du einen abgeschlossen hast.",
       "flaggedBadge": "Hilfe angezeigt",
-      "chartTitle": "Punkteverlauf",
       "totalLabel": "Punkte",
       "bandLabel": "Einstufung",
       "answersToggle": "Antworten",
@@ -13216,15 +13200,11 @@
       "titleRecord": "Der Dokumenten-Tresor von {name} ist leer"
     },
     "detail": {
-      "title": "Dokumentdetails",
       "summary": {
         "title": "Zusammenfassung",
         "pending": "Die Zusammenfassung wird erstellt.",
-        "none": "Für dieses Dokument wurde noch keine Zusammenfassung erstellt.",
         "withheld": "Eine Zusammenfassung wurde erstellt, hat die Sicherheitsprüfung aber nicht bestanden und wird deshalb nicht angezeigt. Du kannst es erneut versuchen oder das Dokument selbst lesen.",
-        "unavailable": "Für dieses Dokument konnte keine Zusammenfassung erstellt werden.",
-        "generate": "Zusammenfassung erstellen",
-        "generating": "Wird erstellt…"
+        "unavailable": "Für dieses Dokument konnte keine Zusammenfassung erstellt werden."
       },
       "index": {
         "outcome": {
@@ -13249,7 +13229,6 @@
       "titlePlaceholder": "Titel hinzufügen",
       "kindLabel": "Typ",
       "dateLabel": "Dokumentdatum",
-      "previewUnavailable": "Keine Inline-Vorschau für diesen Dateityp",
       "uploadedMeta": "Hinzugefügt am {date}, {size}",
       "importedFrom": "Importiert aus {system}",
       "importedFromWithId": "Importiert aus {system}, ID {id}",
@@ -13259,8 +13238,7 @@
       "share": "Teilen",
       "labValuesLink": "{count, plural, one {# Laborwert} other {# Laborwerte}} ansehen",
       "saved": "Änderungen gespeichert",
-      "saving": "Wird gespeichert…",
-      "previewNotOnDevice": "Dieser Browser kann PDFs nicht in der Seite anzeigen"
+      "saving": "Wird gespeichert…"
     },
     "dropOverlay": {
       "title": "Zum Hochladen ablegen",
@@ -16252,7 +16230,7 @@
       "missBody": "Der Link wurde vielleicht widerrufen oder ist abgelaufen. Die Person, der die Karte gehört, kann einen neuen erstellen.",
       "title": "QR-Link",
       "loadError": "Der Status des Links konnte nicht geladen werden.",
-      "disclosure": "Wer den Code scannt, sieht die angehakten Punkte, ohne Anmeldung. Du kannst dem Link ein Ende geben und ihn jederzeit widerrufen; jedes Öffnen wird für dich festgehalten.",
+      "disclosure": "Wer den Code scannt, sieht die angehakten Punkte, ohne Anmeldung.",
       "fieldsLabel": "Was der Link zeigt",
       "expiryLabel": "Link endet",
       "expiry": {
@@ -16274,17 +16252,17 @@
       "revoke": "Link widerrufen",
       "revokeTitle": "Link zur Notfallkarte widerrufen?",
       "revokeBody": "Gedruckte Karten mit diesem Code funktionieren dann nicht mehr. Du kannst einen neuen Link erstellen und die Karte neu drucken.",
-      "error": "Der Link konnte nicht geändert werden. Versuch es noch einmal."
+      "error": "Der Link konnte nicht geändert werden. Versuch es noch einmal.",
+      "disclosureMore": "Du kannst dem Link ein Ende geben und ihn jederzeit widerrufen; jedes Öffnen wird für dich festgehalten."
     },
     "page": {
       "title": "Notfallkarte",
-      "description": "Deine Notfalldaten für unterwegs.",
       "loadError": "Die Notfallkarte konnte nicht geladen werden.",
       "offlineHint": "Die App funktioniert absichtlich nicht offline. Speichere eine Kopie auf dem Handy, um die Karte ohne Verbindung dabeizuhaben; sie zeigt den Stand vom Tag des Speicherns.",
       "downloadError": "Der Download hat nicht geklappt. Versuch es noch einmal.",
-      "saveOffline": "Offline-Kopie speichern",
-      "wallet": "Karte für die Brieftasche (PDF)",
-      "walletWithQr": "Brieftaschenkarte mit QR-Code (PDF)",
+      "saveOffline": "Offline-Kopie",
+      "wallet": "Karte als PDF",
+      "walletWithQr": "PDF mit QR-Code",
       "preview": "Deine Karte"
     },
     "name": "Name",
@@ -16386,7 +16364,8 @@
         "title": "Deine Notfallkarte ist bereit",
         "body": "Füge sie auf diesem iPhone zu Apple Wallet hinzu."
       }
-    }
+    },
+    "fieldsCount": "{count} von {total}"
   },
   "treatmentSeries": {
     "heading": "Behandlungsserien",
