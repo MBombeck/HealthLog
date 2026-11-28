@@ -20,6 +20,7 @@ describe("Coach accent is ink", () => {
   );
 
   it("walks the component tree", () => {
+    expect(files.length).toBeGreaterThan(800);
     expect(files.some((f) => f.endsWith("layout-coach-fab.tsx"))).toBe(true);
   });
 
