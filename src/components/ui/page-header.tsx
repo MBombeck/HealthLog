@@ -1,9 +1,31 @@
 import type { ReactNode, Ref } from "react";
+import dynamic from "next/dynamic";
+import { Info } from "lucide-react";
 
 import { BackLink } from "@/components/ui/back-link";
-import { InfoPopover } from "@/components/ui/info-popover";
 import { cn } from "@/lib/utils";
 
+/**
+ * The (i) loads with the first page that has one: most headers carry none,
+ * and the popover would otherwise ride along in every page's first load.
+ * Until it arrives, the same glyph holds its place, so the title does not
+ * move when it does.
+ */
+const InfoPopover = dynamic(
+  () => import("@/components/ui/info-popover").then((m) => m.InfoPopover),
+  {
+    loading: () => (
+      <span
+        aria-hidden="true"
+        data-slot="hint"
+        data-hint="page-header-info"
+        className="text-muted-foreground -mx-2 -my-3 inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center"
+      >
+        <Info className="h-3.5 w-3.5" />
+      </span>
+    ),
+  },
+);
 /**
  * The one canonical page header. Every module surface renders its title
  * through this so the header vocabulary reads identically app-wide: the H1
