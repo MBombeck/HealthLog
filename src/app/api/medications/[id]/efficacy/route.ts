@@ -50,9 +50,12 @@ export const GET = apiHandler(
     }
 
     // Metric labels are catalog keys until here: words in the reader's language.
-    const { t } = getServerTranslator(
-      await resolveServerLocale({ userLocale: actor.locale ?? null }),
+    const locale = await resolveServerLocale({
+      userLocale: actor.locale ?? null,
+    });
+    const { t } = getServerTranslator(locale);
+    return apiSuccess(
+      localiseEfficacyLabels(dto, (key, params) => t(key, params), locale),
     );
-    return apiSuccess(localiseEfficacyLabels(dto, (key) => t(key)));
   },
 );
