@@ -1,5 +1,5 @@
 {
-  "about": "Repeats that no-repeated-text.spec.ts still finds, per route, each owned by the package removing it (necessity audit section 2). The list only shrinks: a repeat that is gone fails the run until its line is deleted; a new one fails because it is not here. Measured on the e2e-mobile-routes record.",
+  "about": "Repeats that no-repeated-text.spec.ts still finds, per route, waiting for the change that removes it. The list only shrinks: a repeat that is gone fails the run until its line is deleted; a new one fails because it is not here. Measured on the e2e-mobile-routes record.",
   "routes": {
     "/achievements": ["Record your first taken medication event."],
     "/admin": ["No off-host bucket is set up."],

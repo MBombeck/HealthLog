@@ -4,7 +4,7 @@ import { MOBILE_ROUTES_STORAGE_STATE_PATH } from "./setup/global-setup";
 import heights from "./mobile-height-budgets.json";
 
 /**
- * Rows line up (design system 2, section 3.5a).
+ * Rows line up.
  *
  * At 390 and 1440 px, on every route of the height budgets, every
  * `ListGroup` row is measured against its group's frame:

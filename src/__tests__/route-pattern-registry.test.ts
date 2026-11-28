@@ -1,8 +1,8 @@
 /**
  * Every route is in the pattern registry, and the registry agrees with the
- * budget files (design system 2, G1).
+ * budget files.
  *
- * Nothing used to connect a `page.tsx` to a pattern, an owner or a budget,
+ * Nothing used to connect a `page.tsx` to a pattern or a budget,
  * so a new or forgotten route fell out of the coverage map unnoticed. The
  * map is `fixtures/route-patterns.ts`; this guard holds it to the tree.
  *
@@ -11,10 +11,9 @@
  *   `/settings/[section]` and `/admin/[section]` replaced by one route per
  *   section slug.
  * - A route without an entry fails, an entry without a route fails, and so
- *   do an unknown pattern or owner.
- * - A numeric budget must equal the budget file's number; a route missing
- *   from a budget file must carry a reason string instead, and a route the
- *   file measures must carry the number, not a reason.
+ *   does an unknown pattern.
+ * - A route missing from a budget file must carry the reason, and a route
+ *   the file measures must carry none: the number lives in the file only.
  */
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -26,7 +25,6 @@ import { ADMIN_SECTION_SLUGS } from "@/components/admin/section-slugs";
 import { SETTINGS_SECTION_SLUGS } from "@/lib/settings/section-slugs";
 
 import {
-  OWNERS,
   PATTERNS,
   ROUTE_PATTERNS,
   type RouteEntry,
@@ -59,7 +57,7 @@ function diskRoutes(): string[] {
 }
 
 const TEXT = textBudgets.pages as Record<string, number>;
-const HEIGHT = heightBudgets.pages as Record<string, { budget: number }>;
+const HEIGHT = heightBudgets.pages as Record<string, unknown>;
 
 /** `/settings/layout/dashboard` is an instance of `/settings/layout/[module]`. */
 function instanceOf(route: string, dynamicRoutes: string[]): boolean {
@@ -103,38 +101,33 @@ describe("route pattern registry", () => {
     ).toEqual([]);
   });
 
-  it("uses only known patterns and owners", () => {
+  it("uses only known patterns", () => {
     const patterns = new Set<string>(PATTERNS);
-    const owners = new Set<string>(OWNERS);
     expect(
       entries
-        .filter(([, e]) => !patterns.has(e.pattern) || !owners.has(e.owner))
-        .map(([r, e]) => `${r}: ${e.pattern} / ${e.owner}`),
+        .filter(([, e]) => !patterns.has(e.pattern))
+        .map(([r, e]) => `${r}: ${e.pattern}`),
     ).toEqual([]);
   });
 
-  it("carries the text budget of e2e/text-budgets.json, or a reason", () => {
+  it("gives a reason for a route text-budgets.json does not count", () => {
     const wrong = entries.flatMap(([r, { textBudget }]) => {
       if (r in TEXT)
-        return textBudget === TEXT[r]
+        return textBudget === undefined
           ? []
-          : [`${r}: ${textBudget} ≠ ${TEXT[r]}`];
-      return typeof textBudget === "string" && textBudget.length > 0
-        ? []
-        : [`${r}: ${textBudget} but not in text-budgets.json`];
+          : [`${r}: counted, the reason "${textBudget}" is stale`];
+      return textBudget ? [] : [`${r}: not counted and no reason`];
     });
     expect(wrong).toEqual([]);
   });
 
-  it("carries the height budget of e2e/mobile-height-budgets.json, or a reason", () => {
+  it("gives a reason for a route mobile-height-budgets.json does not measure", () => {
     const wrong = entries.flatMap(([r, { heightBudget }]) => {
       if (r in HEIGHT)
-        return heightBudget === HEIGHT[r].budget
+        return heightBudget === undefined
           ? []
-          : [`${r}: ${heightBudget} ≠ ${HEIGHT[r].budget}`];
-      return typeof heightBudget === "string" && heightBudget.length > 0
-        ? []
-        : [`${r}: ${heightBudget} but not in mobile-height-budgets.json`];
+          : [`${r}: measured, the reason "${heightBudget}" is stale`];
+      return heightBudget ? [] : [`${r}: not measured and no reason`];
     });
     expect(wrong).toEqual([]);
   });

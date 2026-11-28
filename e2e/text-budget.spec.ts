@@ -70,7 +70,7 @@ test.describe("text budgets on a phone", () => {
 });
 
 /**
- * Explainers per route (necessity audit W1): how many pieces of explanatory
+ * Explainers per route: how many pieces of explanatory
  * text a reader meets, against `explainers` in `text-budgets.json`.
  *
  * An explainer is a visible `[data-slot="hint"]` (the (i) beside a title or

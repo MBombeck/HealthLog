@@ -1,5 +1,5 @@
 /**
- * A page has a title and no subtitle (necessity audit K1).
+ * A page has a title and no subtitle.
  *
  * `PageHeader` and `SubPageShell` no longer take a `description`, so the
  * type checker refuses a subtitle. What it cannot refuse is the same

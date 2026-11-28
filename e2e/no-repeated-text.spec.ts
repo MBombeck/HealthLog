@@ -7,7 +7,7 @@ import { readPageText } from "./utils/page-text";
 import { findRepeats } from "./utils/repeated-text";
 
 /**
- * Nothing twice on a page (design system 2, principle 1; necessity audit W2).
+ * Nothing twice on a page.
  *
  * On every route of the height budgets, on the same seeded record: no visible
  * text block of three words or more stands twice in `<main>`, and no section
@@ -15,7 +15,7 @@ import { findRepeats } from "./utils/repeated-text";
  * readings may look alike); the rest of the page is not.
  *
  * `no-repeated-text-known.json` lists the repeats that remain, per route,
- * each owned by a package that is removing it. It only shrinks: a listed
+ * each waiting for the change that removes it. It only shrinks: a listed
  * repeat that is gone fails the run until its line is deleted, and a new one
  * fails because it is not listed.
  *
