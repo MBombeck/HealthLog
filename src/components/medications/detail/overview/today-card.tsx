@@ -115,7 +115,8 @@ function useTodaySentence({
       ? t("medications.detail.overview.today.asNeededTaken", {
           count: extras.length,
         })
-      : t("medications.detail.uebersicht.nextDoseAsNeeded");
+      : // The header already says "as needed, no fixed plan".
+        null;
   }
   // With today's doses listed, each row already says its time and its
   // state ("20:00 Due"), and the chip says how many are done: a sentence
@@ -132,7 +133,6 @@ export function TodayCard({
   compliance,
   todayDoses,
   onBackfill,
-  onHistory,
 }: {
   medication: MedicationDetailSnapshot;
   recordOnly: boolean;
@@ -141,7 +141,6 @@ export function TodayCard({
   compliance: OverviewCompliance | null | undefined;
   todayDoses: TodayDose[];
   onBackfill: () => void;
-  onHistory?: () => void;
 }) {
   const { t } = useTranslations();
   const tz = useDisplayTimezone();
@@ -205,7 +204,6 @@ export function TodayCard({
           canAct={canAct}
           takeSlot={cardTakeSlot(currentDose, medication.nextDueAt, now)}
           onBackfill={onBackfill}
-          onHistory={onHistory}
         />
       }
     >
@@ -300,7 +298,6 @@ function TodayActions({
   canAct,
   takeSlot,
   onBackfill,
-  onHistory,
 }: {
   medication: MedicationDetailSnapshot;
   recordOnly: boolean;
@@ -308,7 +305,6 @@ function TodayActions({
   canAct: boolean;
   takeSlot: TakeSlot | null;
   onBackfill: () => void;
-  onHistory?: () => void;
 }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
@@ -331,23 +327,9 @@ function TodayActions({
       {t("medications.detail.verlauf.backfill")}
     </Button>
   );
-  if (!canAct) {
-    return (
-      <ActionPair pairClassName="w-full">
-        {backfill}
-        {onHistory ? (
-          <Button
-            variant="outline"
-
-            onClick={onHistory}
-            data-slot="medication-overview-history"
-          >
-            {t("medications.detail.tabs.verlauf")}
-          </Button>
-        ) : null}
-      </ActionPair>
-    );
-  }
+  // Nothing to take now (paused, ended, not started): the Intake card
+  // below carries Log past dose and History, so this card ends without a pair.
+  if (!canAct) return null;
 
   const extra = takeSlot?.binding === "extra";
   return (

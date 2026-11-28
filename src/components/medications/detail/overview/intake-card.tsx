@@ -293,6 +293,8 @@ export function IntakeCard({
           rows={gridRowsOf(byDay, days, asNeeded, fmt.wallTime)}
           days={days}
           legend={legend}
+          // One tone, counted by the sentence already: no visible legend.
+          showLegend={!asNeeded}
         />
       )}
     </OverviewCard>
@@ -304,10 +306,12 @@ function DoseGrid({
   rows,
   days,
   legend,
+  showLegend,
 }: {
   rows: GridRowData[];
   days: string[];
   legend: { tone: CellTone; text: string }[];
+  showLegend: boolean;
 }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
@@ -352,20 +356,22 @@ function DoseGrid({
           </span>
         ))}
       </div>
-      <ul
-        className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs"
-        aria-hidden="true"
-        data-slot="medication-overview-legend"
-      >
-        {legend.map((item) => (
-          <li key={item.tone} className="flex items-center gap-1.5">
-            <span
-              className={cn("size-2.5 rounded-xs", CELL_CLASS[item.tone])}
-            />
-            {item.text}
-          </li>
-        ))}
-      </ul>
+      {showLegend && (
+        <ul
+          className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs"
+          aria-hidden="true"
+          data-slot="medication-overview-legend"
+        >
+          {legend.map((item) => (
+            <li key={item.tone} className="flex items-center gap-1.5">
+              <span
+                className={cn("size-2.5 rounded-xs", CELL_CLASS[item.tone])}
+              />
+              {item.text}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

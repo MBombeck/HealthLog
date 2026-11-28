@@ -512,7 +512,6 @@ export function MedicationDetailTabs({
               compliance={compliance}
               todayDoses={todayDoses}
               onBackfill={() => setAddOpen(true)}
-              onHistory={jumpTo("history")}
             />
             <IntakeCard
               asNeeded={asNeeded}
@@ -521,7 +520,10 @@ export function MedicationDetailTabs({
               byDay={ledger.byDay}
               todayKey={todayKey}
               loading={ledger.isLoading}
-              onBackfill={canRecord ? () => setAddOpen(true) : undefined}
+              // As needed, Today carries Log past dose beside Take.
+              onBackfill={
+                canRecord && !asNeeded ? () => setAddOpen(true) : undefined
+              }
               onHistory={jumpTo("history")}
             />
             {threeCards && (
