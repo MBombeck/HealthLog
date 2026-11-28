@@ -102111,10 +102111,10 @@ components:
                 type: string
                 description: "Stable action token. Beside the rail's tokens: `dose.snooze:<medicationId>` (the medication's own snooze,
                   `POST /api/medications/intake` with status `snoozed`), `relay.yes` / `relay.no` (the relay question),
-                  `admin.notice.later` (sets the admin notice aside), `admin.setup.open` (with `href`),
-                  `ask.later:<dismissKey>` (sets the ask aside until the next local day: `POST
-                  /api/daily/digest/dismiss` with that key, `ask-later:<YYYY-MM-DD>:<itemKey>`). Labels are the short
-                  verbs under `daily.action.*`. A consent row (`push_relay`) carries exactly No and Yes, never a later."
+                  `admin.setup.open` (with `href`), `ask.later:<dismissKey>` (sets the ask aside until the next local
+                  day: `POST /api/daily/digest/dismiss` with that key, `ask-later:<YYYY-MM-DD>:<itemKey>`). Labels are
+                  the short verbs under `daily.action.*`. A consent row (`push_relay`) carries exactly No and Yes, never
+                  a later."
               href:
                 description: Deep-link when navigational.
                 type: string

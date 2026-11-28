@@ -63,7 +63,7 @@ import {
 import { voidExpiredWalletPasses } from "@/lib/emergency-card/wallet-pass/void";
 import { createWalletPass } from "@/lib/emergency-card/wallet-pass/store";
 import { resolveOrigin } from "@/lib/http/origin";
-import { coerceLocale } from "@/lib/i18n/config";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { withIdempotency } from "@/lib/idempotency";
 import { annotate } from "@/lib/logging/context";
 import { isP2002 } from "@/lib/prisma-errors";
@@ -174,7 +174,9 @@ export const POST = apiHandler(
     const { contentHash } = await buildWalletPassFiles({
       userId: user.id,
       fields,
-      locale: coerceLocale(actor.locale),
+      // The one request-locale rule: the reader's language cookie, then the
+      // stored choice, then the operator's default.
+      locale: await resolveServerLocale({ request, userLocale: actor.locale }),
       timezone: user.timezone || DEFAULT_TIMEZONE,
       signer: signerIdentityFor(readiness.signer, readiness.passTypeIdentifier),
       passTypeIdentifier: readiness.passTypeIdentifier,

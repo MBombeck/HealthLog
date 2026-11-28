@@ -2493,6 +2493,10 @@ const ACTOR_ROUTES: Record<string, string> = {
     "The way back out. Every other route refuses under a switch, so if this one did too a browser could enter a record and never leave it. It reads and writes exactly one row — the caller's own session — renders nothing of the owner's, and grants nothing: the account it stamps is validated against a live grant first, and the stamp is re-checked on every request after.",
   "app/api/auth/me/route.ts":
     "The app shell reads it on every boot, including while a switch is on: the switcher, the banner naming whose record is open, and the route back out all bind this payload. Every field it returns is the caller's own — their preferences, their modules, their identity — and the one field about the switch says only which records they may open and which they are inside. It reads no row of the owner's, and its `accountAccess` block grants nothing: the resolver re-checks the grant on every delegated request regardless of what this payload said a moment ago.",
+  "app/api/auth/me/dismissed-hints/route.ts":
+    "The one-time hints the person has put away. `/api/auth/me` publishes the list from the caller's own row, so the write lands on the same row: written to the record's, a guardian's closed hint would come back on reload and the profile's list would hold choices nobody reads. It reads and writes the caller's row only and reveals nothing of the owner's.",
+  "app/api/auth/me/show-nav-counts/route.ts":
+    "Whether the person's navigation shows its counts. Read on `/api/auth/me` from the caller's own row, so written there too; under a switch it changes the guardian's chrome, not a setting of the record.",
   "app/api/auth/me/locale/route.ts":
     "The UI language belongs to the person reading the screen, never to the record on it. Under a record scope this would transplant a delegate's choice onto the owner's row and send the owner's cron mail in a language they may not read. It has to keep working rather than merely refuse safely: the switcher's mount-time backfill fires on every page load, including the shared dashboard.",
   "app/api/settings/module-list-layout/route.ts":
@@ -2666,8 +2670,12 @@ const ACTOR_ROUTES: Record<string, string> = {
  *
  * The context marks on metric charts (`insights/context`) join the record
  * list. 354 -> 355.
+ *
+ * The dismissed hints and the navigation counts join the actor list: both are
+ * read on `/api/auth/me` from the caller's own row, so both are written
+ * there. 358 -> 360.
  */
-const FROZEN_ENTRY_COUNT = 358;
+const FROZEN_ENTRY_COUNT = 360;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —
