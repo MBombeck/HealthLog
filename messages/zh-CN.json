@@ -5566,85 +5566,17 @@
       "back": "上一步",
       "skip": "跳过",
       "next": "继续",
-      "stepOf": "第 {current} 步，共 {total} 步",
-      "stepsLabel": "设置步骤"
+      "stepOf": "第 {current} 步，共 {total} 步"
     },
     "baseline": {
-      "title": "关于你的一点信息",
-      "body": "四个可选字段可让目标区间、BMI 与提醒更准确。之后可以在“设置”中随时调整其中任何一项。",
       "displayNameLabel": "显示名称",
       "displayNamePlaceholder": "HealthLog 该如何称呼你？",
-      "displayNameHint": "显示在面板问候语与报告中。",
-      "heightLabel": "身高（cm）",
-      "heightLabelFtIn": "身高（ft, in）",
-      "genderLabel": "性别",
-      "genderNone": "不愿透露",
-      "genderMale": "男",
-      "genderFemale": "女",
-      "genderOther": "其他",
-      "dateOfBirthLabel": "出生日期",
-      "dateOfBirthHint": "仅用于需要年龄的分析。"
-    },
-    "done": {
-      "title": "全部设置完成",
-      "body": "欢迎加入。你的面板已就绪。",
-      "returnCta": "打开面板",
-      "learning": "部分洞察（血糖、睡眠节律、血压趋势、周期）会随着数据积累，在最初一两周内变得更准。现在空白的卡片只表示我们仍在了解你的基线。",
-      "connectCta": "连接设备",
-      "logCta": "记录你的第一条测量",
-      "importCta": "导入已有历史",
-      "modulesCta": "选择你的模块",
-      "aiOptional": "AI 是可选的。这里的全部功能都能在没有它的情况下工作。",
-      "aiSetupCta": "设置 AI",
-      "relayOptional": "iPhone 应用可以通过可选的 HealthLog 推送中继从这台服务器接收通知；在你开启之前它保持关闭。",
-      "relaySetupCta": "推送中继设置",
-      "serverSetup": "这台服务器自身的设置仍未完成：注册、通知、AI 与隐私。",
-      "serverSetupCta": "设置服务器"
-    },
-    "welcomeBack": {
-      "title": "欢迎回来",
-      "cta": "打开面板"
+      "displayNameHint": "显示在面板问候语与报告中。"
     },
     "disclaimer": {
-      "acknowledge": "我明白：HealthLog 是一个私人追踪工具，不是临床评估或诊断。如果我感到担心，我会去咨询医生，而不是这个应用。",
-      "learnMore": "了解更多"
-    },
-    "anamnesis": {
-      "title": "关于你的健康（可选）",
-      "subtitle": "一点背景，让 HealthLog 更公平地解读你的数字。",
-      "intro": "你想分享多少都可以。每个字段都是可选的，随时可以在“设置”中修改。",
-      "conditionsLabel": "持续中的疾病",
-      "conditionsPlaceholder": "例如：高血压、2 型糖尿病",
-      "conditionsHint": "帮助 HealthLog 把读数放在背景中理解，而不是把预期内的情况当成异常。",
-      "allergiesLabel": "过敏或不耐受",
-      "allergiesPlaceholder": "例如：青霉素、乳糖",
-      "privacyNote": "加密存储，仅用于提供更好的背景。我们不会在这里询问你的用药；随时可以在“用药”页面添加。"
-    },
-    "steps": {
-      "who": "这份记录给谁",
-      "areas": "要留意什么",
-      "medication": "用药",
-      "sources": "读数来源",
-      "visit": "就诊",
-      "units": "地区与单位",
-      "confirm": "确认",
-      "first-result": "第一份结果",
-      "done": "完成",
-      "reminders": "提醒",
-      "ai": "教练"
+      "acknowledge": "我明白：HealthLog 是一个私人追踪工具，不是临床评估或诊断。如果我感到担心，我会去咨询医生，而不是这个应用。"
     },
     "flow": {
-      "welcome": {
-        "title": "欢迎使用 HealthLog",
-        "body": "几个简短的问题会决定 HealthLog 首先向你展示什么。大约需要两分钟。",
-        "changeLater": "没有什么是不可更改的：每个选择之后都可以在“设置”中修改。",
-        "setUp": "开始设置",
-        "skip": "暂时跳过",
-        "againBody": "你的设置已完成。再次回答问题即可更改 HealthLog 首先展示的内容，或直接进入面板。",
-        "setUpAgain": "重新设置",
-        "serverSetup": "你在运行这台服务器。它自身的设置是另一段简短流程，可以在你的设置之前或之后进行。",
-        "serverSetupCta": "设置服务器"
-      },
       "who": {
         "title": "这份记录是给谁的？",
         "body": "接下来的回答适用于这份记录。",
@@ -5660,7 +5592,6 @@
       },
       "areas": {
         "title": "你想留意哪些方面？",
-        "body": "可以任意多选。这些会决定开启哪些模块，以及面板首先显示什么。",
         "options": {
           "blood-pressure": "血压",
           "weight-body": "体重与身体",
@@ -5673,18 +5604,7 @@
           "illness": "疾病与症状"
         }
       },
-      "medication": {
-        "title": "你需要按方案服药吗？",
-        "body": "设定方案会开启用药模块。添加第一种药物时即可设置提醒。",
-        "options": {
-          "yes": "是",
-          "no": "否",
-          "sometimes": "有时"
-        }
-      },
       "sources": {
-        "title": "目前你的读数是怎样来的？",
-        "body": "可以任意多选。最后会提供一个连接方式；都不是必需的。",
         "options": {
           "manual": "我手动输入",
           "apple-health": "我 iPhone 上的 Apple Health",
@@ -5697,152 +5617,21 @@
           "strava": "Strava",
           "nightscout": "Nightscout",
           "file": "我已经有的文件"
-        },
-        "hints": {
-          "apple-health": "由 iOS 应用同步，或从导出文件导入。",
-          "file": "完成这里的设置后，在“设置”中导入。",
-          "fitbit": "现在通过 Google Health 连接。"
-        }
-      },
-      "visit": {
-        "title": "近期有就诊安排吗？",
-        "body": "设置就诊会开启医生报告，并在你的清单中加入“为就诊做准备”。",
-        "options": {
-          "within-a-month": "有，一个月内",
-          "later": "之后",
-          "no": "没有"
         }
       },
       "units": {
-        "title": "你所在的地区与单位",
-        "body": "你的一天与提醒时间遵循时区。读数只存储一次，并按你选择的单位显示。这些之后都可以在“设置”中修改。",
         "glucoseLegend": "血糖",
         "weightLegend": "体重与身高",
         "options": {
           "metric": "kg 与 cm",
           "imperial": "lb 与 ft/in"
-        },
-        "timezoneHint": "由该账户自动填入。你的一天、图表与提醒都遵循它。",
-        "registryLegend": "用于药品说明书的药品登记机构"
-      },
-      "confirm": {
-        "title": "以下是你的回答所开启的内容",
-        "body": "看一眼，HealthLog 就设置好了。这里的内容都不是最终定论。",
-        "modulesTitle": "模块",
-        "switchedOn": "已开启：{modules}。",
-        "nothingExtra": "你的回答没有开启额外模块；核心读数始终存在。",
-        "alwaysOn": "始终开启：{modules}，以及核心读数（体重、血压、脉搏）。",
-        "everythingElse": "其余内容都只差一次点击，位于",
-        "modulesLink": "“设置 > 模块”",
-        "switchesOff": "已移出导航：{modules}。你可以在“设置 > 模块”中把其中任何一个重新开启。",
-        "glucoseUnit": "血糖",
-        "unitPreference": "单位",
-        "language": "语言",
-        "timezone": "时区",
-        "changeInSettings": "在“设置 > 账户”中修改这些",
-        "cta": "确认并继续",
-        "managedTitle": "你照护的人",
-        "managedBody": "对方的记录没有自己的登录方式；你从自己的账户照护它。创建它需要你的账户已启用第二因素或通行密钥。",
-        "managedCreate": "创建档案并完成",
-        "managedLater": "你也可以稍后在“设置 > 共享访问”中创建。",
-        "finishWithoutProfile": "不创建档案，直接完成"
-      },
-      "first-result": {
-        "connect-source": {
-          "title": "连接 {target}",
-          "body": "一个连接，由你的回答选出。之后读数会自动到达。",
-          "howTo": "与 {target} 的连接在“集成”页面完成。完成后回到这里；此页面会自动察觉。",
-          "cta": "连接 {target}",
-          "checking": "正在检查连接。",
-          "waiting": "尚未连接。",
-          "openSettings": "打开“设置 > 集成”",
-          "noDate": "未知",
-          "throughGoogleHealth": "{source} 的数据现在经 {target} 传来：原有的 {source} 连接已停用。请用你登录 {source} 的 Google 账户连接 {target}，读数就会从那里到达。",
-          "needsCredentials": {
-            "title": "此实例还没有 {target} 应用的信息。",
-            "detail": "请在“设置 > 集成”中填入你自己的凭据，然后即可开始连接。"
-          },
-          "state": {
-            "pending_first_sync": {
-              "title": "{target} 已连接。",
-              "detail": "首次同步正在进行。读数到达后会出现在面板上。"
-            },
-            "fresh": {
-              "title": "{target} 已经连接。",
-              "detail": "上次读数 {when}。这里没有其他要做的。"
-            },
-            "stale": {
-              "title": "{target} 已连接，但目前没有数据到达。",
-              "detail": "上次读数 {when}。连接本身没有问题。"
-            },
-            "stalled": {
-              "title": "{target} 已连接，但已停止同步。",
-              "detail": "上次尝试 {when}。请在“设置 > 集成”中检查连接。"
-            },
-            "failing": {
-              "title": "{target} 已连接，但同步持续失败。",
-              "detail": "自 {when} 起没有任何数据。请在“设置 > 集成”中检查连接。"
-            },
-            "reauth_required": {
-              "title": "与 {target} 的连接需要续期。",
-              "detail": "再登录一次，读数就会继续。"
-            },
-            "parked": {
-              "title": "与 {target} 的连接已暂停。",
-              "detail": "请在“设置 > 集成”中检查连接。"
-            }
-          }
-        },
-        "add-medication": {
-          "title": "添加你的第一种药物",
-          "body": "名称、剂量与方案；提醒会遵循你设定的方案。",
-          "howTo": "添加药物只需几个简短步骤。之后可以在用药页面添加更多。",
-          "cta": "添加药物",
-          "done": "已添加 {name}。",
-          "doneUnnamed": "你的第一种药物已添加。",
-          "nextDose": "下次服药：{when}。",
-          "reminders": "提醒会遵循你设定的方案。",
-          "recordOnly": "仅作为记录保留：没有提醒，也不会到期。",
-          "asNeeded": "按需使用：没有提醒，服用时记录一次。"
-        },
-        "log-reading": {
-          "title": "录入一条读数：{target}",
-          "body": "一条读数就会把第一个值放到面板上。从第五条起，趋势会自动绘出。",
-          "done": "你的第一条读数已出现在它的卡片上。",
-          "doneElsewhere": "你对 {target} 的第一条录入已记录。",
-          "elsewhere": "{target} 有自己的页面。请打开它完成首次录入，然后回来标记为已完成。",
-          "open": "打开 {target}",
-          "markDone": "我已经录入了"
         }
       },
-      "done": {
-        "tourCta": "参加简短导览",
-        "openRecord": "打开 {name} 的记录",
-        "createProfile": "为你照护的人创建档案"
-      },
       "reminders": {
-        "title": "提醒应该送达哪里？",
-        "body": "这些是这台服务器联系你的方式。现在可以设置一个、多个或不设置。",
-        "app": "使用 iPhone 应用？它自带提醒，因此可以跳过这一步。"
+        "title": "提醒应该送达哪里？"
       },
       "ai": {
-        "title": "使用教练？",
-        "body": "教练借助 AI 模型回答关于你读数的问题。",
-        "whereServer": "当你提问时，你的问题及所需的读数会经本服务器的账户发送给 {providers}。",
-        "whereOwn": "当你提问时，你的问题及所需的读数会发送给你用自己密钥设置的 AI 服务。",
-        "whereLocal": "当你提问时，你的问题及所需的读数会发送给你自行运行的模型。",
-        "whereNone": "还没有为你设置 AI 服务，因此教练没有可作答的依据。",
-        "setUp": "设置 AI",
-        "nothingUntilAsked": "在你提问之前不会发送任何内容。",
-        "options": {
-          "yes": "是，使用教练",
-          "no": "不，关闭它"
-        },
-        "hints": {
-          "yes": "你随时可以就自己的读数向它提问。",
-          "no": "教练将不再出现。其他一切照旧。"
-        },
-        "later": "你随时可以在“设置 > AI”中更改。"
+        "title": "使用教练？"
       }
     }
   },
@@ -9797,71 +9586,12 @@
       "deliverySummary": "投递详情"
     },
     "serverSetup": {
-      "stepsLabel": "服务器设置步骤",
-      "finish": "完成",
-      "steps": {
-        "accounts": "账户",
-        "notifications": "通知",
-        "ai": "AI",
-        "privacy": "隐私",
-        "health": "设置检查"
-      },
       "notice": {
         "title": "设置这台服务器",
         "body": "五个简短步骤：注册、通知、AI 与隐私；任何一步之后都可以跳过或更改。",
         "bodyShort": "五个简短步骤：注册、通知、AI 与隐私。",
         "open": "开始设置",
         "dismiss": "暂不"
-      },
-      "accounts": {
-        "title": "谁可以使用这台服务器",
-        "body": "决定人们能否自行注册，以及每个账户是否需要第二因素。",
-        "invites": "关闭注册后，人们仍可通过邀请链接加入。",
-        "invitesLink": "创建邀请"
-      },
-      "notifications": {
-        "title": "通知如何离开服务器",
-        "body": "选择人们可以使用哪些渠道；在你开启之前，HealthLog 推送中继保持关闭。"
-      },
-      "ai": {
-        "title": "AI 可以做什么",
-        "body": "AI 是可选的。HealthLog 完全可以在没有它的情况下工作。",
-        "off": "关闭：不会把任何内容发送给任何 AI 服务。",
-        "ownKey": "人们自己的密钥：个人的问题与所需的读数会发送给该人自己配置的提供商。",
-        "serverKey": "本服务器的密钥：问题与读数会发送给你在此设置的提供商，并且会先征得每个人的同意。",
-        "local": "本地模型：所有内容都留在该人指定的模型上，位于你自己的网络中。",
-        "docs": "AI 提供商如何工作"
-      },
-      "privacy": {
-        "title": "还有什么会离开服务器",
-        "body": "除通知与 AI 之外，还有三件事可能把数据发送到别处。每一件都由你决定。",
-        "geoTitle": "登录位置",
-        "geoDescription": "如何从 IP 地址推断登录地点。",
-        "geoBody": "挂载 GeoLite2 数据库时，查询在本服务器上完成。未挂载时，每个登录地址都会被发送到在线服务。IP_GEO_LOOKUP_DISABLED=1 可关闭该查询。",
-        "geoDocs": "设置本地数据库",
-        "geoLoadError": "无法读取该查询设置。",
-        "docs": "HealthLog 会把什么发送到哪里"
-      },
-      "health": {
-        "title": "检查设置",
-        "body": "对本服务器配置方式的只读检查。它保留在“管理 > 系统状态”下。",
-        "keys": "你的加密密钥是读取备份中数据的唯一途径。请在本服务器之外保留一份副本。"
-      },
-      "facts": {
-        "title": "来自服务器的环境",
-        "description": "在环境中设置，而不是在此处。请在那边修改并重启。",
-        "oidc": "单点登录（OIDC）",
-        "oidcOn": "已配置，与密码和通行密钥并存",
-        "oidcOnly": "已配置，是唯一的登录方式",
-        "oidcOff": "未配置",
-        "oidcDocs": "设置单点登录",
-        "smtp": "邮件（SMTP）",
-        "smtpOn": "已配置",
-        "smtpMissing": "未配置，缺少：{names}",
-        "telegram": "Telegram 回复",
-        "telegramOn": "已设置 Webhook 密钥",
-        "telegramOff": "没有 Webhook 密钥，因此 Telegram 消息中的按钮不会响应",
-        "channelsDocs": "渠道如何工作"
       }
     },
     "setupHealth": {
@@ -16579,6 +16309,217 @@
       "needAfter": "开始后的读数还不足以进行比较。",
       "needStart": "添加开始日期，即可比较前后变化。",
       "needData": "读数还不足以进行比较。"
+    }
+  },
+  "setup": {
+    "finishLater": "稍后完成",
+    "backToSetup": "返回设置",
+    "notNow": "暂不",
+    "later": "稍后",
+    "done": "完成",
+    "yes": "是",
+    "no": "否",
+    "person": {
+      "segments": {
+        "you": "你",
+        "profile": "档案",
+        "sources": "数据来源",
+        "reminders": "提醒",
+        "ai": "AI"
+      },
+      "areas": {
+        "body": "可多选；它们决定开启哪些模块。"
+      },
+      "units": {
+        "title": "地区和单位",
+        "body": "整个应用中的日期、时间和单位都以此为准。",
+        "name": "显示名称",
+        "timezoneHint": "取自此浏览器。"
+      },
+      "profile": {
+        "title": "为对方创建档案",
+        "body": "一份独立的记录，由你从自己的账户中照管。",
+        "create": "创建档案"
+      },
+      "sources": {
+        "title": "连接你的测量数据来源",
+        "body": "每个连接此后都会自动保持更新。",
+        "connect": "连接",
+        "connected": "已连接",
+        "chooseFile": "选择文件",
+        "showCode": "显示二维码",
+        "hideCode": "隐藏二维码",
+        "scan": "用 iPhone 相机扫描以获取应用",
+        "signInWith": "然后在应用中登录 {address}。",
+        "qrAlt": "App Store 中 HealthLog 应用的二维码",
+        "adminMore": "添加 Withings、Oura 等服务",
+        "names": {
+          "withings": "Withings",
+          "oura": "Oura",
+          "whoop": "WHOOP",
+          "polar": "Polar",
+          "google-health": "Google Health",
+          "strava": "Strava"
+        },
+        "hints": {
+          "apple-health": "通过 iPhone 应用",
+          "withings": "体重秤和血压计",
+          "oura": "戒指",
+          "whoop": "手环",
+          "polar": "手表和胸带",
+          "google-health": "Fitbit 和 Pixel Watch",
+          "strava": "训练",
+          "file": "CSV 或 Apple 健康导出文件"
+        }
+      },
+      "reminders": {
+        "body": "现在选一种方式；之后还可以添加更多。",
+        "app": "iPhone 应用",
+        "appRelay": "通过 HealthLog 推送中继",
+        "appLocal": "由应用在 iPhone 上直接提醒",
+        "browser": "此浏览器",
+        "browserHint": "继续时会请求权限",
+        "tokens": "Telegram 和 ntfy 需要令牌，因此留在你的设置清单上。"
+      },
+      "ai": {
+        "whereServer": "之后你的测量数据会通过此服务器的账户发送给 {providers}，用于分析和回答你的问题。",
+        "whereOwn": "之后你的测量数据会发送到你用自己的密钥设置的 AI 服务，用于分析和回答你的问题。",
+        "whereLocal": "之后你的测量数据会发送到你自己运行的模型，用于分析和回答你的问题。"
+      }
+    },
+    "server": {
+      "segments": {
+        "account": "账户",
+        "signups": "注册",
+        "relay": "通知",
+        "ai": "AI",
+        "recovery": "恢复套件"
+      },
+      "claim": {
+        "body": "服务器每次启动时都会把设置码写入日志，也可以是其环境中设置的 SETUP_TOKEN。",
+        "accepted": "设置码已接受。接下来创建管理员账户。",
+        "sso": "使用单点登录继续"
+      },
+      "account": {
+        "body": "此账户管理服务器，并有自己的一份记录。",
+        "create": "创建账户"
+      },
+      "factor": {
+        "title": "添加第二验证因素",
+        "due": "管理员账户需在 {date} 前设置。",
+        "body": "即使有人知道了密码，它也能保护账户安全。",
+        "passkey": "通行密钥",
+        "passkeyHint": "Face ID、Touch ID、Windows Hello 或安全密钥",
+        "totp": "身份验证器应用",
+        "totpHint": "手机应用中的六位数验证码",
+        "password": "输入密码以确认",
+        "addPasskey": "添加通行密钥",
+        "addTotp": "设置应用",
+        "scan": "用身份验证器应用扫描二维码，或在下方输入密钥。",
+        "code": "应用中的验证码",
+        "confirm": "确认"
+      },
+      "signups": {
+        "title": "谁可以创建账户？",
+        "body": "在你更改之前，只有你邀请的人可以。",
+        "invited": "仅限受邀者",
+        "invitedHint": "你给每个人发送一个链接",
+        "anyone": "任何能访问此服务器的人"
+      },
+      "relay": {
+        "yesHint": "iPhone 上的提醒、实时活动和钱包卡片",
+        "noHint": "提醒只留在 iPhone 本机",
+        "unavailable": "此服务器不经中继发送推送，因此这里无需决定。",
+        "decidedOn": "此服务器使用中继。可在“管理 › 推送和渠道”中更改。",
+        "decidedOff": "此服务器不使用中继。可在“管理 › 推送和渠道”中更改。",
+        "body": "为 App Store 中的应用发送通知。",
+        "more": "更多",
+        "detail": "端到端加密：中继只知道何时发送了一条通知。"
+      },
+      "ai": {
+        "title": "此服务器是否提供 AI？",
+        "body": "每个人仍可为自己选择拒绝。",
+        "off": "关闭",
+        "own": "每人使用自己的密钥",
+        "ownHint": "在“设置 › AI”中添加",
+        "server": "所有人共用一个密钥",
+        "serverHint": "费用记在此服务器的账户上",
+        "provider": "提供商",
+        "key": "API 密钥",
+        "test": "测试",
+        "testOk": "密钥可用",
+        "testFailed": "提供商没有响应。"
+      },
+      "recovery": {
+        "title": "保存恢复套件",
+        "body": "没有这些密钥，重新安装的服务器无法打开其数据。",
+        "guide": "如何保管密钥",
+        "kept": "我已把每个密钥的副本保存在此服务器以外的地方。"
+      }
+    },
+    "card": {
+      "title": "完成设置",
+      "progress": "已完成 {done}/{total}",
+      "showDone": "{count, plural, other {显示 # 项已完成}}",
+      "hideDone": "隐藏已完成项",
+      "hide": "隐藏此卡片"
+    },
+    "admin": {
+      "title": "服务器设置",
+      "subtitle": "每项决定都显示其值；每一行都会打开对应设置。",
+      "cardTitle": "首次启动",
+      "progress": "已决定 {done}/{total}。",
+      "resume": "继续服务器设置",
+      "loadError": "无法加载设置。",
+      "link": "服务器设置"
+    },
+    "tasks": {
+      "requiredHere": "此服务器要求",
+      "person": {
+        "resume": "继续设置",
+        "medication": "添加第一种药物",
+        "second-factor": "添加第二验证因素",
+        "about-you": "病史",
+        "about-youSub": "身高、出生日期、性别",
+        "reading": "记录第一次测量",
+        "source": "连接数据来源",
+        "second-channel": "第二种提醒方式",
+        "second-channelSub": "Telegram 或 ntfy",
+        "coach": "教练",
+        "managed-profile": "创建你照管的档案"
+      },
+      "instance": {
+        "second-factor": "第二验证因素",
+        "signups": "注册",
+        "relay": "推送中继",
+        "ai": "AI",
+        "recovery": "恢复套件",
+        "recoveryKeyAdded": "保存后又添加了一个密钥",
+        "email": "电子邮件",
+        "sso": "单点登录",
+        "services": "Withings、Oura 等服务",
+        "backups": "外部备份",
+        "error-reporting": "错误报告"
+      }
+    },
+    "values": {
+      "on": "开",
+      "off": "关",
+      "passkey": "通行密钥",
+      "authenticator": "身份验证器应用",
+      "invited": "仅限受邀者",
+      "anyone": "任何人",
+      "own-keys": "各自的密钥",
+      "server-key": "所有人共用一个密钥",
+      "central-account": "中央账户",
+      "saved": "已保存",
+      "key-added": "待处理",
+      "add-key": "添加你的密钥",
+      "done": "完成",
+      "notSetUp": "未设置",
+      "continue": "继续",
+      "count": "{done}/{total}",
+      "until": "{date} 前"
     }
   }
 }
