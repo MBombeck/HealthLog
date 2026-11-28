@@ -5238,7 +5238,8 @@
       "statusInRange": "binnen het bereik",
       "statusBelow": "onder het bereik",
       "statusAbove": "boven het bereik",
-      "directionFlat": "geen verandering"
+      "directionFlat": "geen verandering",
+      "dismiss": "Verbergen tot het volgende panel"
     },
     "navGripStrength": "Knijpkracht",
     "navPainNrs": "Pijn",

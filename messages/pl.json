@@ -5238,7 +5238,8 @@
       "statusInRange": "w normie",
       "statusBelow": "poniżej zakresu",
       "statusAbove": "powyżej zakresu",
-      "directionFlat": "bez zmian"
+      "directionFlat": "bez zmian",
+      "dismiss": "Ukryj do następnego badania"
     },
     "navGripStrength": "Siła chwytu",
     "navPainNrs": "Ból",

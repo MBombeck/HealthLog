@@ -24,6 +24,10 @@ import {
 } from "@/lib/medications/scheduling/recurrence";
 import { buildBandsForMedication } from "@/lib/medications/scheduling/band-minter";
 import { predatesMedication } from "@/lib/medications/scheduling/live-era";
+import {
+  doseInstantsOfBand,
+  isDoseOverdue,
+} from "@/lib/medications/dose-state/resolve";
 import { DOSE_WINDOW_DEFAULTS } from "@/lib/medications/scheduling/dose-window-defaults";
 import {
   ADHOC_RESOLVE_EPSILON_MS,
@@ -205,10 +209,11 @@ export interface DisplayDue {
    */
   availableFrom?: Date;
   /**
-   * True when `at` is an OPEN overdue slot: its anchor has passed but `now`
-   * is still inside the slot's catch-up band (`anchor < now ≤ overdueEnd`)
-   * and the user has not acted on it. The card renders this slot as
-   * "overdue — still takeable" instead of jumping to the next future slot.
+   * True when `at` is an open slot the dose resolver calls `overdue`
+   * (`isDoseOverdue`): past its on-time window, before its miss cutoff,
+   * nothing recorded on it. A slot whose anchor has passed but whose
+   * on-time window is still open stays the surfaced slot with `overdue:
+   * false`, the same `due` the today rows and `currentDose` report.
    */
   overdue: boolean;
 }
@@ -236,16 +241,20 @@ export interface ComputeDisplayDueInput {
  * `computeNextDueAt` walks strictly forward from `now`, so the moment a
  * slot's anchor passed the card jumped to the NEXT slot — even while the
  * dose was still takeable inside its catch-up band. This wrapper first
- * searches the current era for an open overdue slot (band model:
+ * searches the current era for an open passed slot (band model:
  * `anchor < now ≤ overdueEnd`, no taken / skipped / auto-missed row on the
- * anchor) and surfaces it with `overdue: true`; only when every passed
- * band is closed or resolved does it fall through to the future next-due.
+ * anchor) and surfaces it; only when every passed band is closed or
+ * resolved does it fall through to the future next-due. Whether the
+ * surfaced slot is overdue is the dose resolver's answer on its band.
  */
 export function computeDisplayDue(
   input: ComputeDisplayDueInput,
 ): DisplayDue | null {
-  const open = findOpenOverdueSlot(input);
-  if (open) return { ...open, overdue: true };
+  const open = findOpenPassedSlot(input);
+  if (open) {
+    const { instants, ...slot } = open;
+    return { ...slot, overdue: isDoseOverdue(instants, input.now) };
+  }
   const next = computeNextDueCandidate(input);
   if (!next) return null;
   // A rolling occurrence whose actionable band has closed remains the same
@@ -261,9 +270,12 @@ export function computeDisplayDue(
   };
 }
 
-function findOpenOverdueSlot(
-  input: ComputeDisplayDueInput,
-): { at: Date; availableFrom: Date; scheduleId: string } | null {
+function findOpenPassedSlot(input: ComputeDisplayDueInput): {
+  at: Date;
+  availableFrom: Date;
+  scheduleId: string;
+  instants: ReturnType<typeof doseInstantsOfBand>;
+} | null {
   const { medication, schedules, now, userTz, lastIntakeAt } = input;
   if (schedules.length === 0) return null;
 
@@ -280,6 +292,7 @@ function findOpenOverdueSlot(
     at: Date;
     availableFrom: Date;
     scheduleId: string;
+    instants: ReturnType<typeof doseInstantsOfBand>;
   } | null = null;
   for (const schedule of schedules) {
     const canonical = buildCanonicalSchedule(schedule);
@@ -344,6 +357,7 @@ function findOpenOverdueSlot(
           at: band.at,
           availableFrom: band.earlyStart,
           scheduleId: schedule.id,
+          instants: doseInstantsOfBand(band),
         };
       }
     }

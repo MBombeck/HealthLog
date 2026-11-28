@@ -5238,7 +5238,8 @@
       "statusInRange": "범위 내",
       "statusBelow": "범위 아래",
       "statusAbove": "범위 위",
-      "directionFlat": "변화 없음"
+      "directionFlat": "변화 없음",
+      "dismiss": "다음 검사까지 숨기기"
     },
     "navGripStrength": "악력",
     "navPainNrs": "통증",
