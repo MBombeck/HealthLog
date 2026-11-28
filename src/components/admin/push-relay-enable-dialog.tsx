@@ -43,7 +43,7 @@ const REASON_LABEL = new Map<
 export const INVITE_REASONS = new Set(["invite_required", "invite_rejected"]);
 
 /** The relay's one-time invite code: 24 base64url characters. */
-const INVITE_PATTERN = /^[A-Za-z0-9_-]{24}$/;
+export const INVITE_PATTERN = /^[A-Za-z0-9_-]{24}$/;
 
 /**
  * The refusal of a registration the switch left unfinished, when the admin
@@ -60,13 +60,13 @@ export function relayRefusalLabel(status: {
 }
 
 /** Stands in for a link inside a translated sentence until it is split. */
-const LINK = "\u2063link\u2063";
+export const LINK = "\u2063link\u2063";
 
 /**
  * One confirmation of the enable dialog: a checkbox and its sentence, with
  * the document the sentence is about linked inside it.
  */
-function ConfirmationRow({
+export function ConfirmationRow({
   id,
   checked,
   onCheckedChange,

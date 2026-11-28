@@ -1,7 +1,7 @@
 {
   "$comment": "Route literals for a page src/lib/links/hrefs.ts owns, per file under src outside the registry and tests. Maintained by src/__tests__/route-literal-guard.test.ts.",
-  "count": 135,
-  "total": 275,
+  "count": 133,
+  "total": 270,
   "entries": {
     "app/coach/page-client.tsx": 1,
     "app/custom-metrics/[id]/page.tsx": 1,
@@ -88,7 +88,6 @@
     "components/medications/sections/destructive-zone-section.tsx": 1,
     "components/medications/wizard/medication-wizard-dialog.tsx": 1,
     "components/mood/mood-context-fields.tsx": 8,
-    "components/onboarding/done-screen.tsx": 1,
     "components/provenance/source-provenance-link.tsx": 1,
     "components/providers.tsx": 2,
     "components/records/profile-summary.tsx": 1,
@@ -128,7 +127,6 @@
     "lib/navigation/shared-record.ts": 12,
     "lib/notifications/tap-target.ts": 10,
     "lib/onboarding/checklist.ts": 2,
-    "lib/onboarding/first-result-config.ts": 4,
     "lib/onboarding/tour-state.ts": 7,
     "lib/openapi/routes/coach.ts": 1,
     "lib/openapi/routes/nutrients.ts": 1,

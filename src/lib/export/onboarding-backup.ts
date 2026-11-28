@@ -20,6 +20,7 @@
  * canonical disaster-recovery payload carries the row id and its timestamps so
  * the row comes back as itself.
  */
+import { parsePinnedPlan } from "@/lib/onboarding/wizard-steps";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 
 import {
@@ -57,6 +58,10 @@ export interface OnboardingBackupEntry {
    */
   modulesDerivedAt: string | null;
   completedAt: string | null;
+  /** 1.50 — the segments pinned when the flow started, or null. */
+  plan: string[] | null;
+  /** 1.50 — when the dashboard setup card was hidden, or null. */
+  cardDismissedAt: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -100,6 +105,8 @@ export async function buildOnboardingBackupSection(
       firstResult: parseOnboardingFirstResult(row.firstResultJson),
       modulesDerivedAt: row.modulesDerivedAt?.toISOString() ?? null,
       completedAt: row.completedAt?.toISOString() ?? null,
+      plan: parsePinnedPlan(row.planJson),
+      cardDismissedAt: row.cardDismissedAt?.toISOString() ?? null,
     },
   };
 }
@@ -134,6 +141,8 @@ export interface OnboardingRestoreEntry {
   firstResult: unknown;
   modulesDerivedAt: string | null;
   completedAt: string | null;
+  plan?: unknown;
+  cardDismissedAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -190,6 +199,16 @@ export async function restoreOnboardingData(
           ? new Date(entry.modulesDerivedAt)
           : null,
         completedAt: entry.completedAt ? new Date(entry.completedAt) : null,
+        ...(parsePinnedPlan(entry.plan)
+          ? {
+              planJson: parsePinnedPlan(
+                entry.plan,
+              ) as unknown as Prisma.InputJsonValue,
+            }
+          : {}),
+        cardDismissedAt: entry.cardDismissedAt
+          ? new Date(entry.cardDismissedAt)
+          : null,
         ...(entry.createdAt ? { createdAt: new Date(entry.createdAt) } : {}),
         ...(entry.updatedAt ? { updatedAt: new Date(entry.updatedAt) } : {}),
       },

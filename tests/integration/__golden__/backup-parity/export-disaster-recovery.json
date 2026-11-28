@@ -1584,8 +1584,8 @@
     ],
     "onboardingRecord": {
       "id": "<id:67>",
-      "createdAt": "2026-05-06T23:07:00.000Z",
-      "updatedAt": "2026-05-06T23:08:00.000Z",
+      "createdAt": "2026-05-06T23:09:00.000Z",
+      "updatedAt": "2026-05-06T23:10:00.000Z",
       "needs": {
         "recordTarget": "me",
         "areas": [
@@ -1656,7 +1656,13 @@
         "completedAt": "2026-07-01T08:30:00.000Z"
       },
       "modulesDerivedAt": "2026-07-01T08:00:00.000Z",
-      "completedAt": "2026-07-01T08:00:00.000Z"
+      "completedAt": "2026-07-01T08:00:00.000Z",
+      "plan": [
+        "you",
+        "sources",
+        "reminders"
+      ],
+      "cardDismissedAt": "2026-06-30T12:34:56.789Z"
     },
     "practitioners": [
       {
@@ -4662,8 +4668,14 @@
       },
       "modulesDerivedAt": "2026-07-01T08:00:00.000Z",
       "completedAt": "2026-07-01T08:00:00.000Z",
-      "createdAt": "2026-05-06T23:07:00.000Z",
-      "updatedAt": "2026-05-06T23:08:00.000Z"
+      "plan": [
+        "you",
+        "sources",
+        "reminders"
+      ],
+      "cardDismissedAt": "2026-06-30T12:34:56.789Z",
+      "createdAt": "2026-05-06T23:09:00.000Z",
+      "updatedAt": "2026-05-06T23:10:00.000Z"
     },
     "practitioners": [
       {

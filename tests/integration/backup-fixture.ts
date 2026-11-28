@@ -892,6 +892,8 @@ export async function seedEveryTwoEndedModel(
         { id: "areas", status: "done" },
         { id: "sources", status: "skipped" },
       ],
+      // 1.50 — the segments pinned on the answer to "who".
+      planJson: ["you", "sources", "reminders"],
       firstResultJson: {
         task: "connect-source",
         target: "withings",

@@ -133,6 +133,10 @@ const LEGIT_IDENTICAL = new Set<string>([
   "settings.googleHealth",
   // The Android app's own name.
   "settings.healthConnectApp.name",
+  // 1.50 — the setup's source row and Admin › Setup row name a product and a
+  // protocol that keep their English names.
+  "setup.person.sources.names.google-health",
+  "setup.tasks.instance.sso",
   // Garmin's own names: the Body Battery score and the Personal API product,
   // which Garmin Connect shows under the same English name in every locale.
   "measurements.typeBodyBattery",

@@ -64,8 +64,6 @@ const REASONS: Record<string, string> = {
   "components/medications/wizard/steps/step5-cadence.tsx": RADIO_CARD,
   "components/onboarding/choice-chip.tsx":
     "wraps a radio or checkbox chip; no choice primitive",
-  "components/onboarding/welcome-screen.tsx":
-    "names a checkbox with a sentence that holds a link; no checkbox-row primitive",
   "components/records/audit-c-panel.tsx":
     "wraps a radio and its answer; no radio-row primitive",
   "components/records/life-circumstances-fields.tsx": CHECKBOX_ROW,

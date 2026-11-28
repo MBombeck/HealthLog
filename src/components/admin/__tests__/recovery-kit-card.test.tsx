@@ -108,9 +108,13 @@ function render(
   node: React.ReactNode,
   kit: RecoveryKit | null,
   locale: "en" | "de" = "en",
+  recoveryStep: { status: string; at?: string } = { status: "pending" },
 ): string {
   const client = new QueryClient();
   if (kit) client.setQueryData(queryKeys.adminRecoveryKit(), kit);
+  client.setQueryData(queryKeys.adminServerSetup(), {
+    steps: [{ id: "recovery", ...recoveryStep }],
+  });
   return renderToStaticMarkup(
     <QueryClientProvider client={client}>
       <I18nProvider initialLocale={locale}>{node}</I18nProvider>
@@ -161,6 +165,29 @@ describe("RecoveryKitBanner", () => {
     expect(render(<RecoveryKitBanner isAdmin />, DUE)).toContain(
       'data-testid="recovery-kit-banner"',
     );
+  });
+
+  it("waits a week after Later in the setup, for a kit never confirmed", () => {
+    const later = { status: "skipped", at: new Date().toISOString() };
+    const neverConfirmed = { ...DUE, confirmedAt: null };
+    expect(
+      render(<RecoveryKitBanner isAdmin />, neverConfirmed, "en", later),
+    ).toBe("");
+    const lastMonth = {
+      status: "skipped",
+      at: new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString(),
+    };
+    expect(
+      render(<RecoveryKitBanner isAdmin />, neverConfirmed, "en", lastMonth),
+    ).toContain('data-testid="recovery-kit-banner"');
+  });
+
+  it("shows at once when a key changed after a confirmation, Later or not", () => {
+    const later = { status: "skipped", at: new Date().toISOString() };
+    const keyChanged = { ...DUE, confirmedAt: "2026-11-01T09:00:00.000Z" };
+    expect(
+      render(<RecoveryKitBanner isAdmin />, keyChanged, "en", later),
+    ).toContain('data-testid="recovery-kit-banner"');
   });
 
   it("renders nothing for a non-admin, or once the kit is confirmed", () => {

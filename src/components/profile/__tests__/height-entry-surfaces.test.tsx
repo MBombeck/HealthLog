@@ -63,7 +63,6 @@ vi.mock("@/hooks/use-auth", () => ({
 }));
 
 import { I18nProvider } from "@/lib/i18n/context";
-import { BaselineForm } from "@/components/onboarding/baseline-form";
 import { AccountSection } from "@/components/settings/account-section";
 
 function renderUnder(
@@ -81,17 +80,6 @@ function renderUnder(
 }
 
 const SURFACES = [
-  {
-    name: "onboarding baseline step",
-    node: (
-      <BaselineForm
-        initial={{ heightCm: null, dateOfBirth: null, gender: null }}
-        onConfirmed={async () => {}}
-      />
-    ),
-    firstInputId: "ob-baseline-height",
-    metricLabel: "Height (cm)",
-  },
   {
     name: "Settings profile card",
     node: <AccountSection />,
