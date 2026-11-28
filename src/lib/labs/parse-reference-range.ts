@@ -122,7 +122,7 @@ export const RANGE_PROSE: Record<Locale, RangeProse> = {
   // word lists stay words.
   "zh-CN": {
     twoSided: ["至", "到"],
-    upper: ["小于", "低于", "不超过", "不超过", "以下", "最多"],
+    upper: ["小于", "低于", "不超过", "以下", "最多"],
     lower: ["大于", "高于", "不低于", "以上", "至少", "最少"],
     filler: ["参考范围", "参考值", "参考", "正常范围", "范围"],
   },
