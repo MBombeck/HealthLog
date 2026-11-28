@@ -32,6 +32,8 @@ import { readSource, readSourceFolder } from "./helpers/source-files";
 /** Never in a document, whatever else changes. */
 const MUST_BE_WITHHELD = [
   "insuranceNumber",
+  "insuranceNumberCountry",
+  "insuranceGroupNumber",
   "insurerIkNumber",
   "insurerName",
   "fullName",

@@ -13,6 +13,7 @@ import type { DoctorReportData } from "@/lib/doctor-report-data";
 import { renderDoctorReportPdfBytes } from "@/lib/doctor-report-pdf-core";
 import { buildFhirDocumentBundle } from "@/lib/fhir/build-bundle";
 import type { FhirRecordInputs } from "@/lib/fhir/build-bundle";
+import type { FhirPatientIdentity } from "@/lib/fhir/resources/common";
 import type { Locale } from "@/lib/i18n/config";
 import type {
   DateFormatPreference,
@@ -21,8 +22,11 @@ import type {
 
 export interface ArtefactInputs {
   data: DoctorReportData;
-  /** Decrypted KVNR, or null when the insurance leaf was not selected. */
-  insuranceNumber: string | null;
+  /**
+   * The decrypted insurance identity; every field null when the insurance
+   * leaf was not selected.
+   */
+  insurance: FhirPatientIdentity;
   records: FhirRecordInputs;
   germanAtc: boolean;
   includeCharts: boolean;
@@ -37,7 +41,7 @@ export interface ArtefactInputs {
 export function buildBundleJson(input: ArtefactInputs): string {
   const bundle = buildFhirDocumentBundle(
     input.data,
-    { insuranceNumber: input.insuranceNumber },
+    input.insurance,
     undefined,
     { germanAtc: input.germanAtc },
     input.records,
@@ -53,7 +57,9 @@ export function buildPdfBytes(input: ArtefactInputs): Uint8Array {
     userTz: input.userTz,
     timeFormat: input.timeFormat,
     dateFormat: input.dateFormat,
-    insuranceNumber: input.insuranceNumber,
+    insuranceNumber: input.insurance.insuranceNumber,
+    insuranceNumberCountry: input.insurance.insuranceNumberCountry,
+    insuranceGroupNumber: input.insurance.insuranceGroupNumber,
     includeCharts: input.includeCharts,
   });
 }
@@ -65,7 +71,7 @@ export function buildPackageZip(
 ): Uint8Array {
   const bundle = buildFhirDocumentBundle(
     input.data,
-    { insuranceNumber: input.insuranceNumber },
+    input.insurance,
     undefined,
     { germanAtc: input.germanAtc },
     input.records,

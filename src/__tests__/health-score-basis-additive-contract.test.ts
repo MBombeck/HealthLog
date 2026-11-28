@@ -25,11 +25,22 @@
  * drift, so building it here checks the same artifact without parsing
  * two megabytes of YAML.
  *
+ * The same carriers hold the two bands, each with one meaning. `band` keeps
+ * what every shipped app was built against: the worse of the number's band
+ * and the worst counted pillar's band, which those apps colour the ring
+ * from and explain with "X set the colour of this score". `numberBand` is
+ * the band of the number alone, the rule every other HealthLog score
+ * follows; the web and newer apps draw it and name the pillar beside it.
+ * It is additive for the same cache reason, so it is declared on every
+ * carrier and required by none.
+ *
  * ## Mutation check
  *
  * Drop `.optional()` from any of the three registry declarations and the
  * matching `required` assertion goes red. Delete a declaration entirely
- * and the presence assertion goes red first.
+ * and the presence assertion goes red first. The same holds for
+ * `numberBand`. The engine side (`band` red, `numberBand` green for a green
+ * number over a red pillar) is pinned in `composite.test.ts`.
  */
 import { describe, expect, it } from "vitest";
 
@@ -138,6 +149,21 @@ describe("the score basis is published, and published as optional", () => {
 
     for (const carrier of carriers) {
       expect(carrier.required ?? []).not.toContain("scoreBasis");
+    }
+  });
+
+  it("declares band and numberBand on every carrier, band required, numberBand optional", () => {
+    const composites = objectsCarryingScoreBasis(schemas).filter(
+      (carrier) => carrier.properties?.scoreBasis?.$ref === BASIS_REF,
+    );
+    expect(composites.length).toBeGreaterThanOrEqual(3);
+    for (const carrier of composites) {
+      expect(carrier.properties).toHaveProperty("band");
+      expect(carrier.properties).toHaveProperty("numberBand");
+      expect(carrier.required ?? []).toContain("band");
+      expect(carrier.required ?? []).not.toContain("numberBand");
+      expect(carrier.properties?.band?.description).toMatch(/worst/i);
+      expect(carrier.properties?.numberBand?.description).toMatch(/number/i);
     }
   });
 

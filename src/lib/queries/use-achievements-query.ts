@@ -25,9 +25,8 @@ import type {
  *
  * TanStack treats the divergent key as a fresh cache cell, so the
  * dashboard fired two network calls instead of one on every cold
- * mount — once for the card, once for the notifier. The
- * `round-v1434-prod-slowness-investigation.md` HAR catches the
- * duplicate landing inside the same ~3 s pool-starvation tail.
+ * mount — once for the card, once for the notifier. A production HAR
+ * caught the duplicate landing inside the same ~3 s pool-starvation tail.
  *
  * This hook mirrors the v1.4.33 `use-analytics-query.ts` shape:
  *   - centralises the queryKey via `queryKeys.gamificationAchievements()`,

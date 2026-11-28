@@ -34,7 +34,10 @@ import { parseJsonBody } from "@/lib/api/body";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { prisma, toJson } from "@/lib/db";
-import { decrypt } from "@/lib/crypto";
+import {
+  INSURANCE_IDENTITY_SELECT,
+  readInsuranceIdentity,
+} from "@/lib/profile/insurance-identity";
 import { toAllergyDTO, toFamilyHistoryEntryDTO } from "@/lib/records/dto";
 import {
   collectDoctorReportData,
@@ -51,8 +54,8 @@ import {
   type ArtefactInputs,
 } from "@/lib/export/health-record-artefacts";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
-import { parseLocaleFromAcceptLanguage } from "@/lib/format-locale";
-import { locales, type Locale } from "@/lib/i18n/config";
+import type { Locale } from "@/lib/i18n/config";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 
 /**
@@ -151,19 +154,14 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const practiceName = sanitisePracticeName(input.practiceName);
   const includeCharts = input.includeCharts ?? true;
 
-  // Locale, most-specific first: the explicit selection wins, then the in-app
-  // cookie (what the user actually chose in the UI), and only then the
-  // browser's Accept-Language header — the weakest signal.
-  const cookieValue = request.cookies.get("healthlog-locale")?.value;
-  const cookieLocale = (locales as readonly string[]).includes(
-    cookieValue ?? "",
-  )
-    ? (cookieValue as Locale)
-    : null;
-  const locale: Locale =
-    input.locale ??
-    cookieLocale ??
-    parseLocaleFromAcceptLanguage(request.headers.get("accept-language") ?? "");
+  // The report's language: the explicit selection wins, then the request's
+  // language as every other route resolves it (`resolveServerLocale`), with
+  // the reader's stored language in it.
+  const locale: Locale = await resolveServerLocale({
+    request,
+    userLocale: actor.locale ?? null,
+    override: input.locale ?? null,
+  });
 
   const germanAtc =
     input.germanAtc ??
@@ -174,7 +172,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     prisma.user.findUnique({
       where: { id: user.id },
       select: {
-        insuranceNumberEncrypted: true,
+        ...INSURANCE_IDENTITY_SELECT,
         timeFormat: true,
         // Issue #922 — the exported PDF is spelled the way the person
         // who exported it reads dates, not the locale default.
@@ -205,18 +203,13 @@ export const POST = apiHandler(async (request: NextRequest) => {
     familyHistory: familyHistoryRows.map(toFamilyHistoryEntryDTO),
   };
 
-  // The KVNR is encrypted at rest and is its own leaf. It is neither read nor
+  // The insurance number is encrypted at rest and is its own leaf. It is neither read nor
   // decrypted unless the insurance leaf was chosen. The decrypt is fail-soft:
   // a key-rotation gap on one row omits the value rather than 500-ing the
   // export.
-  let insuranceNumber: string | null = null;
-  if (selection.has("INSURANCE") && userRow?.insuranceNumberEncrypted) {
-    try {
-      insuranceNumber = decrypt(userRow.insuranceNumberEncrypted);
-    } catch {
-      insuranceNumber = null;
-    }
-  }
+  const insurance = readInsuranceIdentity(
+    selection.has("INSURANCE") ? userRow : null,
+  );
 
   // eslint-disable-next-line healthlog/no-utc-day-key -- UTC by design: file name stamp, not a day shown or compared
   const stamp = new Date().toISOString().slice(0, 10);
@@ -224,7 +217,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const artefact: ArtefactInputs = {
     data,
-    insuranceNumber,
+    insurance,
     records: fhirRecords,
     germanAtc,
     includeCharts,

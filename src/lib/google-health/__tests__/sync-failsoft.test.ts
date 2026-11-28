@@ -109,6 +109,7 @@ import {
 } from "../sync-core";
 import { syncUserGoogleHealth } from "../sync";
 import { GoogleHealthApiError } from "../response-classifier";
+import { withPageWalkLedger } from "@/lib/integrations/page-walk";
 
 /** A connection whose access token is inside the 5-min refresh buffer. */
 const EXPIRED_CONNECTION = {
@@ -181,6 +182,29 @@ describe("handleCollectionFetchError — fail-soft grouping", () => {
     expect(recordSyncFailureMock).toHaveBeenCalledWith(
       expect.objectContaining({ kind: "transient" }),
     );
+  });
+});
+
+describe("handleCollectionFetchError — the backfill's retry rule", () => {
+  it("notes the first failed collection's error, never a soft-skipped 403", async () => {
+    const forbidden = new GoogleHealthApiError({
+      verb: "fetchSteps",
+      classification: "reauth_required",
+      httpStatus: 403,
+      reason: "HTTP 403",
+    });
+    const outage = new GoogleHealthApiError({
+      verb: "fetchDistance",
+      classification: "transient",
+      httpStatus: 503,
+      reason: "HTTP 503",
+    });
+    const { failure } = await withPageWalkLedger(async () => {
+      await handleCollectionFetchError("fetchSteps", "user-1", forbidden);
+      await handleCollectionFetchError("fetchDistance", "user-1", outage);
+      await handleCollectionFetchError("fetchFloors", "user-1", new Error("x"));
+    });
+    expect(failure).toBe(outage);
   });
 });
 

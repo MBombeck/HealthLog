@@ -44,7 +44,7 @@
  */
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
-import { deleteDeviceRows } from "@/lib/devices/delete-devices";
+import { forgetGoneRegistrations } from "@/lib/notifications/gone-registrations";
 import { getEvent } from "@/lib/logging/context";
 import { relayConfig, type RelayConfig } from "@/lib/push-relay/config";
 import { relayRefusal } from "@/lib/push-relay/relay-state";
@@ -780,5 +780,5 @@ async function releaseUnregistered(
     });
     return;
   }
-  await deleteDeviceRows({ id: deviceId });
+  await forgetGoneRegistrations("device", [deviceId]);
 }

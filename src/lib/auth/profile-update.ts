@@ -13,6 +13,19 @@ import { dateOfBirthForStorage } from "@/lib/tz/date-only";
 import { isValidTimezone } from "@/lib/tz/format";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { encrypt } from "@/lib/crypto";
+import {
+  INSURANCE_IDENTITY_SELECT,
+  readInsuranceIdentity,
+  type InsuranceIdentity,
+} from "@/lib/profile/insurance-identity";
+import {
+  countryHasGroupNumber,
+  insuranceNumberRejectionCode,
+  isValidGenericInsuranceId,
+  isValidInsuranceNumber,
+  normaliseInsuranceNumber,
+  resolveInsuranceNumberCountry,
+} from "@/lib/validations/insurance-number";
 import { afterIdentityFieldsChanged } from "@/lib/auth/identity-change";
 import { sanitiseZodIssues, type SanitisedZodIssue } from "@/lib/api-response";
 import { checkProfileEmailRateLimit } from "@/lib/rate-limit";
@@ -153,6 +166,9 @@ export interface ApplyProfileResult {
     insurerName: string | null;
     insurerIkNumber: string | null;
     hasInsuranceNumber: boolean;
+    /** Resolved as {@link readInsuranceIdentity} reads it. */
+    insuranceNumberCountry: string | null;
+    insuranceGroupNumber: string | null;
   };
   /**
    * Present only when the caller sent at least one invalid field
@@ -229,6 +245,144 @@ async function emailInUse(
 }
 
 /**
+ * Every touched field failed, so there is nothing to salvage. Names the field
+ * that blocked it so the person fixes one thing instead of re-entering
+ * everything.
+ */
+function nothingSaved(rejectedFields: SanitisedZodIssue[]): ApplyProfileError {
+  const first = rejectedFields[0];
+  return {
+    ok: false,
+    status: 422,
+    message: first
+      ? `Nothing was saved. Fix the "${first.path}" field and try again.`
+      : "Nothing was saved. The submitted profile data was invalid.",
+    errorCode: "profile.update.nothingSaved",
+    issues: rejectedFields,
+  };
+}
+
+/**
+ * The column writes for the insurance fields `applyInsuranceRule` let
+ * through: the number sealed, the country and the group number as they are.
+ */
+function insuranceUpdates(
+  data: Partial<ExtendedProfileInput>,
+): Record<string, unknown> {
+  const updates: Record<string, unknown> = {};
+  if (data.insuranceNumber !== undefined) {
+    updates.insuranceNumberEncrypted = data.insuranceNumber
+      ? encrypt(data.insuranceNumber)
+      : null;
+  }
+  if (data.insuranceNumberCountry !== undefined) {
+    updates.insuranceNumberCountry = data.insuranceNumberCountry ?? null;
+  }
+  if (data.insuranceGroupNumber !== undefined) {
+    updates.insuranceGroupNumber = data.insuranceGroupNumber ?? null;
+  }
+  return updates;
+}
+
+function pickInsurance(identity: InsuranceIdentity) {
+  return {
+    insuranceNumberCountry: identity.insuranceNumberCountry,
+    insuranceGroupNumber: identity.insuranceGroupNumber,
+  };
+}
+
+/**
+ * The insurance number's country rule, applied once the number, its country
+ * and the group number of this request are known beside the stored ones.
+ *
+ * The number is checked under the country it will follow: the one sent, else
+ * the stored one, else DE. It is stored normalised for that country. A
+ * country change sent without a number re-checks the stored number, and a
+ * change it would leave invalid is refused, so a stored number never follows
+ * a country whose rule it fails. The group number is kept only while the
+ * country is US; any other country clears it.
+ */
+async function applyInsuranceRule(
+  userId: string,
+  data: Partial<ExtendedProfileInput>,
+): Promise<{
+  data: Partial<ExtendedProfileInput>;
+  rejected: SanitisedZodIssue[];
+}> {
+  const touched =
+    data.insuranceNumber !== undefined ||
+    data.insuranceNumberCountry !== undefined ||
+    data.insuranceGroupNumber !== undefined;
+  if (!touched) return { data, rejected: [] };
+
+  const stored = readInsuranceIdentity(
+    await prisma.user.findUnique({
+      where: { id: userId },
+      select: INSURANCE_IDENTITY_SELECT,
+    }),
+  );
+  const country = resolveInsuranceNumberCountry(
+    data.insuranceNumberCountry !== undefined
+      ? data.insuranceNumberCountry
+      : stored.insuranceNumberCountry,
+  );
+  const next = { ...data };
+  const rejected: SanitisedZodIssue[] = [];
+  const refuse = (path: "insuranceNumber" | "insuranceNumberCountry") => {
+    rejected.push({
+      path,
+      code: insuranceNumberRejectionCode(country),
+      message: "The insurance number does not fit the country's rule.",
+    });
+  };
+
+  if (typeof next.insuranceNumber === "string") {
+    const normalised = normaliseInsuranceNumber(next.insuranceNumber, country);
+    if (isValidInsuranceNumber(normalised, country)) {
+      next.insuranceNumber = normalised;
+    } else {
+      delete next.insuranceNumber;
+      refuse("insuranceNumber");
+      // The country belongs to the number it was sent with.
+      delete next.insuranceNumberCountry;
+    }
+  } else if (
+    next.insuranceNumber === undefined &&
+    next.insuranceNumberCountry !== undefined &&
+    stored.insuranceNumber &&
+    !isValidInsuranceNumber(stored.insuranceNumber, country)
+  ) {
+    delete next.insuranceNumberCountry;
+    refuse("insuranceNumberCountry");
+  }
+
+  const keptCountry = resolveInsuranceNumberCountry(
+    next.insuranceNumberCountry !== undefined
+      ? next.insuranceNumberCountry
+      : stored.insuranceNumberCountry,
+  );
+  if (!countryHasGroupNumber(keptCountry)) {
+    if (
+      next.insuranceGroupNumber !== undefined ||
+      next.insuranceNumberCountry !== undefined
+    ) {
+      next.insuranceGroupNumber = null;
+    }
+  } else if (
+    typeof next.insuranceGroupNumber === "string" &&
+    !isValidGenericInsuranceId(next.insuranceGroupNumber)
+  ) {
+    delete next.insuranceGroupNumber;
+    rejected.push({
+      path: "insuranceGroupNumber",
+      code: "invalid_member_id",
+      message: "The group number does not fit the generic rule.",
+    });
+  }
+  return { data: next, rejected };
+}
+
+/**
  * Validate and persist profile updates for `userId`. Returns either an
  * `ApplyProfileResult` on success or `ApplyProfileError` with a status
  * code so callers can shape the wire response themselves.
@@ -239,7 +393,9 @@ async function emailInUse(
  * back to `splitValidProfileFields` to salvage whatever validated. If
  * NOTHING in the payload validates, nothing is written — an honest
  * all-or-nothing rejection naming the field that blocked it, rather
- * than a raw validator string.
+ * than a raw validator string. The one pair that depends on each other,
+ * the insurance number and its country, is checked after the split by
+ * `applyInsuranceRule`, which refuses only that pair.
  */
 export async function applyProfileUpdate(
   userId: string,
@@ -280,21 +436,7 @@ export async function applyProfileUpdate(
     data = split.valid;
     rejectedFields = split.issues;
 
-    if (Object.keys(data).length === 0) {
-      // Every touched field failed — there is nothing to salvage.
-      // Name the field that blocked it so the person fixes one thing
-      // instead of re-entering everything.
-      const first = rejectedFields[0];
-      return {
-        ok: false,
-        status: 422,
-        message: first
-          ? `Nothing was saved. Fix the "${first.path}" field and try again.`
-          : "Nothing was saved. The submitted profile data was invalid.",
-        errorCode: "profile.update.nothingSaved",
-        issues: rejectedFields,
-      };
-    }
+    if (Object.keys(data).length === 0) return nothingSaved(rejectedFields);
   }
 
   // Ahead of the conflict check below, deliberately: that check answers 409
@@ -306,6 +448,13 @@ export async function applyProfileUpdate(
     data = Object.fromEntries(
       Object.entries(data).filter(([key]) => writable.includes(key)),
     ) as Partial<ExtendedProfileInput>;
+  }
+
+  const insurance = await applyInsuranceRule(userId, data);
+  data = insurance.data;
+  rejectedFields = [...rejectedFields, ...insurance.rejected];
+  if (insurance.rejected.length > 0 && Object.keys(data).length === 0) {
+    return nothingSaved(rejectedFields);
   }
 
   const normalizedEmail = data.email ? data.email.trim().toLowerCase() : null;
@@ -474,7 +623,7 @@ export async function applyProfileUpdate(
     updates.moodReminderEnabled = data.moodReminderEnabled;
   }
   // v1.7.0 — patient-identity fields. Plaintext for fullName/insurerName;
-  // KVNR is encrypted at rest. An empty string collapses to null so the
+  // the insurance number is encrypted at rest. An empty string collapses to null so the
   // export cover + FHIR Patient omit the line entirely.
   if (data.fullName !== undefined) {
     updates.fullName =
@@ -491,12 +640,7 @@ export async function applyProfileUpdate(
   if (data.insurerIkNumber !== undefined) {
     updates.insurerIkNumber = data.insurerIkNumber ?? null;
   }
-  if (data.insuranceNumber !== undefined) {
-    updates.insuranceNumberEncrypted =
-      data.insuranceNumber === null || data.insuranceNumber === ""
-        ? null
-        : encrypt(data.insuranceNumber);
-  }
+  Object.assign(updates, insuranceUpdates(data));
 
   // v1.4.18 — capture the prior locale so we can emit a separate
   // `settings.locale.update` audit row when the locale actually
@@ -581,6 +725,7 @@ export async function applyProfileUpdate(
       insurerName: updatedUser.insurerName,
       insurerIkNumber: updatedUser.insurerIkNumber,
       hasInsuranceNumber: updatedUser.insuranceNumberEncrypted != null,
+      ...pickInsurance(readInsuranceIdentity(updatedUser)),
     },
     ...(rejectedFields.length > 0 ? { rejectedFields } : {}),
   };

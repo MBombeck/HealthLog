@@ -54,7 +54,7 @@ export interface PayloadForCoverage {
  *
  * The check is observational only — a normative rec without a
  * referenceId is logged as a warning, never raised as a parse
- * failure. v1.4.16 phase B5c flips it to required for severity
+ * failure. A follow-up was planned to make it required for severity
  * >= "important".
  *
  * ## Why the keyword bank has six arms

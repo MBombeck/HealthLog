@@ -31,13 +31,15 @@ type RouteParams = { params: Promise<{ key: string }> };
 /** `PATCH /api/cycle/symptoms/custom/:key` — rename / recolour / (de)activate. */
 export const PATCH = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireAuth();
+    // The owner rule: the owner, or a managed profile's guardian (#1615). An
+    // adult's delegate stays refused. The rate bucket is the actor's.
+    const { user, actor } = await requireAuth();
 
     const gate = await requireCycleEnabled(user.id, user.gender);
     if (!gate.enabled) return gate.response;
 
     const rl = await checkRateLimit(
-      `cycle:symptom:custom:${user.id}`,
+      `cycle:symptom:custom:${actor.id}`,
       30,
       60_000,
     );
@@ -122,13 +124,15 @@ export const PATCH = apiHandler(
  */
 export const DELETE = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireAuth();
+    // The owner rule: the owner, or a managed profile's guardian (#1615). An
+    // adult's delegate stays refused. The rate bucket is the actor's.
+    const { user, actor } = await requireAuth();
 
     const gate = await requireCycleEnabled(user.id, user.gender);
     if (!gate.enabled) return gate.response;
 
     const rl = await checkRateLimit(
-      `cycle:symptom:custom:${user.id}`,
+      `cycle:symptom:custom:${actor.id}`,
       30,
       60_000,
     );

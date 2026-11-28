@@ -354,6 +354,49 @@ describe("scheduled Health Connect fetch", () => {
   });
 });
 
+describe("reading a paused folder now", () => {
+  it("resumes the folder on the shared ledger as well as on the source", async () => {
+    await save({
+      folderUrl: `${origin}/dav`,
+      username: "me",
+      password: ACCEPTED_PASSWORD,
+      enabled: false,
+    });
+    const ledger = async () =>
+      (
+        await getPrismaClient().integrationStatus.findUnique({
+          where: {
+            userId_integration: {
+              userId,
+              integration: "health-connect-remote",
+            },
+          },
+        })
+      )?.state;
+    expect(await ledger()).toBe("disconnected");
+
+    const { POST } =
+      await import("@/app/api/import/health-connect-remote/fetch/route");
+    const res = await (
+      POST as unknown as (r: NextRequest) => Promise<Response>
+    )(
+      new NextRequest(
+        "http://localhost/api/import/health-connect-remote/fetch",
+        { method: "POST" },
+      ),
+    );
+    expect(res.status).toBe(202);
+    const source =
+      await getPrismaClient().healthConnectRemoteSource.findUniqueOrThrow({
+        where: { userId },
+      });
+    // "Fetch now" puts the folder back on its schedule; the ledger said
+    // "disconnected" for a source that was fetching again.
+    expect(source.enabled).toBe(true);
+    expect(await ledger()).toBe("connected");
+  });
+});
+
 describe("where the stored password may go", () => {
   const PASSWORD = ["app", "pass"].join("-");
 

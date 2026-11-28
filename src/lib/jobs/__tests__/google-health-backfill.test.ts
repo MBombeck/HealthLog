@@ -141,6 +141,9 @@ import { GOOGLE_HEALTH_COLLECTION_KEYS } from "@/lib/google-health/collection-ke
 import { forEachDataPointPage } from "@/lib/google-health/data-points";
 import { runWithGoogleHealthClientOutcome } from "@/lib/google-health/budget";
 import { GOOGLE_HEALTH_DATA_TYPES } from "@/lib/google-health/mappers";
+import { GoogleHealthApiError } from "@/lib/google-health/response-classifier";
+import { noteBackfillFailure } from "@/lib/integrations/page-walk";
+import { classifyBackfillFailure } from "@/lib/jobs/integration-backfill-retry";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -288,6 +291,28 @@ describe("runGoogleHealthBackfillForUser — slices", () => {
       /incomplete/,
     );
     expect(bossSend).not.toHaveBeenCalled();
+  });
+
+  it("throws a stuck slice with the collection's error as the cause, so the drain can retry an outage", async () => {
+    const outage = new GoogleHealthApiError({
+      verb: "dataPoints",
+      classification: "transient",
+      httpStatus: 503,
+      reason: "server error",
+    });
+    syncUserGoogleHealthMock.mockImplementation(async () => {
+      noteBackfillFailure(outage);
+      return { imported: 0, failed: true };
+    });
+
+    const err = await runGoogleHealthBackfillForUser("u1").catch(
+      (e: unknown) => e,
+    );
+    expect((err as Error).cause).toBe(outage);
+    expect(classifyBackfillFailure(err)).toMatchObject({
+      kind: "transient",
+      httpStatus: 503,
+    });
   });
 
   it("throws rather than drop the work when the next slice cannot be queued", async () => {

@@ -165,7 +165,7 @@ export function SourcesRail({ className, activeScopeLabel }: SourcesRailProps) {
           under the picker states what the Coach reads at this setting, with
           the numbers the server readers use. */}
       <div data-slot="coach-sources-window" className="flex flex-col gap-1">
-        <Label htmlFor="coach-sources-window-select" noColon>
+        <Label htmlFor="coach-sources-window-select">
           {t("insights.coach.lookback.label")}
         </Label>
         <Select

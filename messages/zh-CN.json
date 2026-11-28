@@ -72,7 +72,8 @@
     "status": {
       "active": "启用中",
       "error": "错误",
-      "off": "关闭"
+      "off": "关闭",
+      "running": "运行中"
     }
   },
   "apiErrors": {
@@ -432,6 +433,7 @@
     "practiceLabel": "诊所",
     "insurer": "医疗保险机构",
     "insuranceNumber": "保险号",
+    "insuranceGroupNumber": "团体号",
     "summaryTitle": "临床摘要",
     "summaryReadings": "记录于 {days, plural, other {# 天}}内：{params, plural, other {# 项参数}}共计 {count, plural, other {# 条测量}}。",
     "summaryTrend": "{label}：最新 {latest} {arrow}",
@@ -1036,7 +1038,6 @@
     "pulseLabel": "脉搏（bpm）",
     "valueWithUnit": "数值（{unit}）",
     "timestamp": "时间",
-    "timestampBackdateHint": "调整日期和时间可以补记过去的读数。",
     "notesPlaceholder": "例如：餐后",
     "formReset": "重置表单",
     "saveError": "保存出错",
@@ -1164,9 +1165,8 @@
     "sourceGarmin": "Garmin",
     "valueOutOfRange": "请输入 {min} 到 {max} {unit} 之间的数值。",
     "valueOutOfRangeNoUnit": "请输入 {min} 到 {max} 之间的数值。",
-    "lastValue": "上次 {value}，{when}",
     "lastValueDeviates": "与你上次的读数差别较大，确认无误吗？",
-    "saveAndNext": "保存并继续",
+    "saveAndNext": "下一个值",
     "typeRecoveryScoreWhoop": "WHOOP 恢复度",
     "typeRecoveryScoreOura": "Oura 准备度",
     "typeRecoveryScorePolar": "Polar 夜间恢复",
@@ -1182,7 +1182,12 @@
     "shortTypeTimeInDaylight": "日照时长",
     "shortTypeAudioExposureEvent": "高音量提醒",
     "shortTypeRespiratoryRate": "呼吸频率",
-    "shortTypeHealthScore": "健康评分",
+    "shortTypeHealthScore": "健康",
+    "shortTypeReadiness": "准备度",
+    "shortTypeSleepScore": "睡眠评分",
+    "shortTypeRecoveryScore": "恢复",
+    "shortTypeStressScore": "压力",
+    "shortTypeStrainScore": "负荷",
     "shortTypeRestingHeartRate": "静息心率",
     "shortTypeBloodPressure": "血压",
     "shortTypeBloodGlucose": "血糖",
@@ -2919,31 +2924,6 @@
     "colorRed": "红色：",
     "mood": "心情",
     "moodScore": "心情分数",
-    "heatmapOnTime": "准时",
-    "heatmapLate": "迟服",
-    "heatmapVeryLate": "很迟",
-    "legendOnTime": "准时",
-    "legendLate": "迟服",
-    "legendVeryLate": "很迟",
-    "legendMissed": "漏服",
-    "emptyStateTitle": "添加更多测量即可看到趋势",
-    "emptyStateDescription": "至少记录 3 条才能解锁趋势线。",
-    "needMoreDistinctDaysTitle": "需要更多不同的日期",
-    "needMoreDistinctDaysDescription": "在更多日期记录即可解锁趋势线。",
-    "noDataInRangeTitle": "此范围内没有数据",
-    "noDataInRangeDescription": "所选范围内没有测量。请切换范围或记录新的测量。",
-    "errorTitle": "无法加载数据",
-    "loadErrorTitle": "无法加载图表",
-    "loadErrorReload": "重新加载",
-    "sparseDataCaption": "再多几天就能补全趋势。",
-    "tooltipHourlyMean": "{metric}（各小时的平均）",
-    "personalBaseline": "你的正常水平",
-    "deltaVsBaseline": "{delta}，对比你的正常水平",
-    "deltaUnchanged": "与你的正常水平一致",
-    "deltaVsTarget": "{delta}，对比目标",
-    "rangeBand": "区间",
-    "medicationsEmptyAction": "添加药物",
-    "rangeLabel": "时间范围",
     "weekdays": {
       "mon": "周一",
       "wed": "周三",
@@ -2964,6 +2944,24 @@
       "nov": "11 月",
       "dec": "12 月"
     },
+    "heatmapOnTime": "准时",
+    "heatmapLate": "迟服",
+    "heatmapVeryLate": "很迟",
+    "legendOnTime": "准时",
+    "legendLate": "迟服",
+    "legendVeryLate": "很迟",
+    "legendMissed": "漏服",
+    "emptyStateTitle": "添加更多测量即可看到趋势",
+    "emptyStateDescription": "至少记录 3 条才能解锁趋势线。",
+    "needMoreDistinctDaysTitle": "需要更多不同的日期",
+    "needMoreDistinctDaysDescription": "在更多日期记录即可解锁趋势线。",
+    "noDataInRangeTitle": "此范围内没有数据",
+    "noDataInRangeDescription": "所选范围内没有测量。请切换范围或记录新的测量。",
+    "errorTitle": "无法加载数据",
+    "loadErrorTitle": "无法加载图表",
+    "loadErrorReload": "重新加载",
+    "sparseDataCaption": "再多几天就能补全趋势。",
+    "tooltipHourlyMean": "{metric}（各小时的平均）",
     "dataTable": {
       "toggle": "数据点（{count}）",
       "columnDate": "日期",
@@ -2975,6 +2973,10 @@
       "captionMonth": "{metric} 每月一行，取该月各天的平均值，与图表绘制的是同一批数据点。",
       "hourlyMeanNote": "{metric} 取每天的平均值，每个小时各计一次，因此一次运动不会盖过当天其余时间。"
     },
+    "personalBaseline": "你的正常水平",
+    "deltaVsBaseline": "{delta}，对比你的正常水平",
+    "deltaUnchanged": "与你的正常水平一致",
+    "deltaVsTarget": "{delta}，对比目标",
     "weekdaysFull": {
       "mon": "星期一",
       "tue": "星期二",
@@ -2984,6 +2986,7 @@
       "sat": "星期六",
       "sun": "星期日"
     },
+    "rangeBand": "区间",
     "a11y": {
       "summary": "{metric}图表。范围 {min} 至 {max}，最新 {latest}，趋势{trend}。",
       "noData": "{metric}图表。没有可用数据。",
@@ -2996,7 +2999,9 @@
       "moodHeatmapEmpty": "心情热力图，尚未记录任何一天。",
       "complianceHeatmap": "服药依从性热力图，{start} 至 {end}，{days} 个有效日。",
       "complianceHeatmapEmpty": "服药依从性热力图，还没有有效日。"
-    }
+    },
+    "medicationsEmptyAction": "添加药物",
+    "rangeLabel": "时间范围"
   },
   "chart": {
     "overlay": {
@@ -6223,7 +6228,6 @@
       },
       "export": {
         "title": "导出与导入",
-        "otherOptionsHeading": "其他导出方式",
         "downloadFailed": "无法下载该导出文件，请重试。",
         "actions": {
           "download": "下载"
@@ -6234,14 +6238,17 @@
         },
         "cards": {
           "measurementsCsv": {
-            "title": "测量"
+            "title": "测量（CSV）",
+            "description": "选择日期范围"
           },
           "medicationsCsv": {
-            "title": "用药",
-            "includeIntake": "包含服药历史"
+            "title": "用药（CSV）",
+            "includeIntake": "包含服药历史",
+            "description": "可包含每次服药"
           },
           "moodCsv": {
-            "title": "心情"
+            "title": "心情（CSV）",
+            "description": "选择日期范围"
           },
           "fullBackup": {
             "title": "完整备份",
@@ -6250,20 +6257,22 @@
             "passphrasePlaceholder": "口令（至少 12 个字符）",
             "passphraseHelp": "用 Argon2id 派生归档密钥，并以 AES-256-GCM 封装。请以 .hlx 扩展名保存文件。",
             "noRecoveryWarning": "无法找回。一旦丢失该口令，归档就打不开。请存放在安全的地方。",
-            "detail": "你记录的一份可移植副本，供你保存与阅读：数值为纯 JSON，文档仅含元数据。"
+            "detail": "你记录的一份可移植副本，供你保存与阅读：数值为纯 JSON，文档仅含元数据。",
+            "description": "全部数据，可选加密"
+          },
+          "doctorReport": {
+            "title": "医生报告",
+            "description": "PDF、FHIR 或 ZIP"
           }
         },
         "import": {
           "heading": "导入",
-          "description": "上传的文件会在导入结束后立即从服务器删除，重复导入同一文件不会重复添加。",
+          "description": "服务器会在导入后删除每个文件，同一文件导入两次也不会重复添加。",
           "charCount": "{used} / {max, plural, other {# 个字符}}",
           "appleHealth": {
             "title": "Apple Health",
             "description": "iPhone 上“健康”应用导出的 export.zip。",
-            "dropLabel": "把 export.zip 拖到这里",
-            "dropHint": "或点击选择文件",
             "fileInputLabel": "选择 Apple Health 的 export.zip 文件",
-            "choose": "选择文件",
             "idempotencyNote": "大型归档会在后台处理。",
             "uploading": "正在上传……",
             "uploadFailed": "上传失败，请重试。",
@@ -6326,16 +6335,15 @@
             "skipBreakdownMore": "另有 {count, plural, other {# 种类型}}",
             "cycleSummary": "{samples, plural, other {# 个周期样本}}已合并为 {days, plural, other {# 天记录}}。",
             "cycleModuleOff": "{count, plural, other {# 个周期样本被跳过}}，因为此账户的周期追踪已关闭。",
-            "cycleDaysFailed": "{count, plural, other {# 个周期日无法写入}}：{reason}"
+            "cycleDaysFailed": "{count, plural, other {# 个周期日无法写入}}：{reason}",
+            "fileHint": "export.zip，最大 1.5 GB"
           },
           "json": {
-            "title": "测量与心情（JSON）",
+            "title": "JSON 文件",
             "description": "以 JSON 导入测量与心情记录。",
-            "pasteLabel": "粘贴 JSON",
             "fileInputLabel": "选择要导入的 JSON 文件",
             "schemaHint": "两个数组：measurements 与 moodEntries。",
             "docsLink": "查看结构与示例。",
-            "uploadFile": "选择文件",
             "downloadExample": "下载示例",
             "import": "导入",
             "invalidJson": "这不是有效的 JSON，请检查语法后重试。",
@@ -6349,16 +6357,18 @@
             "keptLabels": "此账户已有使用这些键的标签或分组（名称不同），因此保留了原有的：{keys}",
             "resultNothing": "没有导入任何内容。{skipped, plural, other {全部 # 条}}被跳过。",
             "resultEmpty": "该文件不含任何测量或心情记录。",
-            "limitsHint": "每个列表最多 {mb} MB、最多 {rows, plural, other {# 条}}。"
+            "limitsHint": "每个列表最多 {mb} MB、最多 {rows, plural, other {# 条}}。",
+            "rowMeta": "测量与心情",
+            "fileMeta": ".json，最大 {mb} MB",
+            "partial": "导入中途停止了。可以放心再次导入，不会重复添加。",
+            "partialCounts": "已保存：{measurements, plural, other {# 条测量}}和{moods, plural, other {# 条心情记录}}。"
           },
           "csv": {
             "title": "CSV 文件",
             "description": "来自表格软件或仪表导出的测量。",
-            "pasteLabel": "粘贴 CSV",
             "fileInputLabel": "选择要导入的 CSV 文件",
             "schemaHint": "列：type、value、unit、measuredAt（含时区偏移），以及可选的 glucoseContext、notes、externalId。",
             "docsLink": "查看列结构与示例。",
-            "uploadFile": "选择文件",
             "downloadExample": "下载示例",
             "preview": "预览",
             "import": "导入",
@@ -6394,14 +6404,15 @@
             "reasonUnstableExternalId": "外部 ID 在多次导出之间不稳定",
             "reasonDuplicate": "已导入过",
             "reasonUnknown": "已跳过",
-            "detail": "每行一条读数。"
+            "detail": "每行一条读数。",
+            "rowMeta": "来自电子表格的测量",
+            "fileMeta": ".csv，最大 16 MB",
+            "guideMeta": "type、value、unit、带时区偏移的 measuredAt"
           },
           "doseHistory": {
             "title": "用药剂量历史",
             "description": "来自其他用药追踪应用的剂量历史。",
-            "pasteLabel": "粘贴导出内容",
             "fileInputLabel": "选择剂量历史导出文件",
-            "uploadFile": "选择文件",
             "preview": "预览",
             "import": "导入",
             "empty": "请先粘贴导出内容或选择文件。",
@@ -6450,12 +6461,13 @@
               "jsonNoIntakeTime": "JSON 导出记录的是应服时间而非实际服用时间，而计划时间不会被当作服用时间写入。请改为导出 CSV，它同时包含两者。",
               "tooManyRows": "该文件的行数超过一次导入的上限。请拆分后分批导入。"
             },
-            "detail": "一个文件涵盖其中所有的药物。"
+            "detail": "一个文件涵盖其中所有的药物。",
+            "rowMeta": "来自其他应用",
+            "fileMeta": ".csv 或 .json，最大 16 MB"
           },
           "healthConnect": {
-            "title": "Health Connect 导出",
+            "title": "Health Connect",
             "description": "Health Connect 在 Android 上写出的 ZIP。",
-            "choose": "选择文件",
             "uploading": "正在上传……",
             "uploadFailed": "上传失败，请重试。",
             "tooLarge": "该文件超过本服务器接受的大小。",
@@ -6474,8 +6486,6 @@
               "cloud": "Health Connect 只会把导出文件保存到云存储应用（例如 Google Drive、Dropbox 或 Nextcloud），从不会存到手机本身。",
               "upload": "从该云端把 ZIP 文件下载到本设备，然后在此上传。"
             },
-            "dropLabel": "把 Health Connect 的 ZIP 拖到这里",
-            "dropHint": "或点击选择。最大 1 GB。",
             "fileInputLabel": "Health Connect 导出 ZIP 文件",
             "privacyNote": "来自你已直接连接的来源（例如 Withings）的记录会被略过，以免数据重复。",
             "rateLimited": "短时间内上传次数过多，请等一分钟再试。",
@@ -6493,22 +6503,19 @@
               "tooLarge": "该导出文件超过本服务器接受的大小。",
               "stagingMissing": "上传的文件已不在服务器上，请重新上传。",
               "interrupted": "导入被服务器重启中断，请重新上传该文件。"
-            }
+            },
+            "folderRow": "从文件夹自动导入",
+            "folderMeta": "WebDAV 或 Nextcloud，在“集成”中设置",
+            "fileHint": "ZIP，最大 1 GB"
           },
           "fit": {
             "title": "活动文件（FIT）",
             "description": "来自手表或码表的运动记录。",
-            "choose": "选择文件",
             "uploading": "正在上传……",
             "uploadFailed": "上传失败，请重试。",
-            "tooLarge": "该文件超过 10 MB。",
-            "rateLimited": "短时间内上传次数过多，请等一分钟再试。",
-            "busy": "你的账户已有一个导入在进行中，请等它结束。",
             "failed": "导入失败，请重试。",
             "doneSummary": "活动文件已导入。",
             "doneNothing": "导入已完成，但没有可新增的内容。",
-            "dropLabel": "把活动文件拖到这里",
-            "dropHint": "或点击选择：.fit、.fit.gz 或 .zip 文件，最大 10 MB。",
             "fileInputLabel": "活动文件",
             "privacyNote": "仅在“运动路线”开启时才保留 GPS 轨迹。",
             "steps": {
@@ -6540,16 +6547,34 @@
               "noSession": "文件中没有可读取的运动。",
               "stagingMissing": "上传的文件已不在服务器上，请重新上传。",
               "interrupted": "导入被服务器重启中断，请重新上传该文件。"
-            }
+            },
+            "batch": {
+              "waiting": "等待中",
+              "imported": "已导入",
+              "duplicate": "已导入过",
+              "progress": "{total} 个中的 {done} 个",
+              "capped": "只导入前 100 个文件。",
+              "reason": {
+                "tooLarge": "超过 10 MB",
+                "unsupported": "不是 FIT 文件",
+                "damaged": "文件已损坏",
+                "notActivity": "不是活动文件",
+                "noWorkout": "未找到运动记录",
+                "busy": "另一个导入正在运行",
+                "retry": "失败，请重试"
+              }
+            },
+            "fileHint": ".fit、.fit.gz 或 .zip，每个最大 10 MB"
           },
           "recordFile": {
             "gadgetbridge": {
-              "title": "Gadgetbridge 数据库",
+              "title": "Gadgetbridge",
               "description": "Gadgetbridge 在 Android 上导出的数据库。",
               "steps": {
                 "export": "在 Gadgetbridge 中打开“设置”，进入“数据管理”，然后选择“导出数据库”。",
                 "upload": "在此上传名为 Gadgetbridge 的文件。最大 512 MB。"
-              }
+              },
+              "fileHint": "数据库，最大 512 MB"
             },
             "fhirBundle": {
               "title": "患者记录（FHIR）",
@@ -6557,9 +6582,9 @@
               "steps": {
                 "export": "在你的患者门户中，把记录导出为 FHIR R4（JSON）。",
                 "upload": "在此上传该 .json 文件。最大 32 MB。"
-              }
+              },
+              "fileHint": ".json，最大 32 MB"
             },
-            "choose": "选择文件",
             "uploading": "正在上传……",
             "running": "正在后台导入……",
             "doneSummary": "文件已导入。",
@@ -6624,8 +6649,18 @@
             "remove": "移除文件夹",
             "removeTitle": "移除该文件夹？",
             "removeBody": "HealthLog 将停止从该文件夹获取并忘记密码。已导入的内容会保留。"
-          }
-        }
+          },
+          "row": {
+            "done": "{date}，{count, plural, other {# 条}}",
+            "failed": "{date}，未导入"
+          },
+          "pasteOr": "或粘贴",
+          "guideTitle": "示例与列",
+          "pickerFile": "文件",
+          "pickerFiles": "文件",
+          "pickerChoose": "选择"
+        },
+        "exportHeading": "导出"
       },
       "about": {
         "title": "关于此应用"
@@ -6675,7 +6710,7 @@
         }
       },
       "health-record": {
-        "title": "医生报告与导出"
+        "title": "医生报告"
       },
       "coach": {
         "title": "教练"
@@ -6853,7 +6888,13 @@
       "other": "该值未被接受，请核对后重试。",
       "reproofRequired": "修改邮箱地址需要输入当前密码。",
       "reproofFailed": "密码不正确，邮箱地址未更改。",
-      "secondFactorRequired": "修改邮箱地址需要用第二因素或通行密钥确认。"
+      "secondFactorRequired": "修改邮箱地址需要用第二因素或通行密钥确认。",
+      "invalidKvnr": "这不是有效的 KVNR。请核对字母和九位数字。",
+      "invalidSvnr": "这不是有效的 SVNR。请核对这十位数字。",
+      "invalidAhv": "这不是有效的 AHV 号码。它有 13 位数字，以 756 开头。",
+      "invalidBsn": "这不是有效的 BSN。请核对这九位数字。",
+      "invalidNir": "这不是有效的 NIR。请核对这 13 个字符和两位校验码。",
+      "invalidMemberId": "请使用 3 到 30 个字母、数字、空格、连字符或点。"
     },
     "avatar": {
       "title": "头像",
@@ -7527,6 +7568,16 @@
       "description": "每六小时从你的 WebDAV 或 Nextcloud 文件夹获取。请在“导入”中设置与更改。",
       "manage": "打开文件夹设置"
     },
+    "healthConnectApp": {
+      "connect": "连接 Android 设备",
+      "disconnect": "断开连接",
+      "newCode": "新代码",
+      "validUntil": "有效期至 {time}",
+      "qrAlt": "HealthLog Sync 的二维码",
+      "preview": "HealthLog Sync for Android，预览版",
+      "disconnectTitle": "断开 {device} 的连接？",
+      "disconnectBody": "在你重新配对之前，这部手机将停止同步。"
+    },
     "withingsViewData": "查看你的测量",
     "whoopViewData": "查看你的恢复度",
     "googleHealthViewData": "查看你的步数",
@@ -7666,8 +7717,17 @@
       "fullNamePlaceholder": "例如：张三",
       "insurer": "医保机构",
       "insurerPlaceholder": "例如：某某市医保",
-      "insuranceNumber": "保险号（KVNR）",
-      "insuranceNumberHint": "10 个字符：1 个字母加 9 位数字（例如 A123456780）。"
+      "insuranceNumber": "保险号",
+      "insuranceCountry": "国家",
+      "numberLabel": {
+        "DE": "保险号（KVNR）",
+        "AT": "社会保险号（SVNR）",
+        "CH": "AHV 号码",
+        "NL": "公民服务号（BSN）",
+        "FR": "社会保障号（NIR）",
+        "US": "会员 ID"
+      },
+      "insuranceGroupNumber": "团体号"
     },
     "healthRecord": {
       "title": "导出健康记录",
@@ -9854,7 +9914,6 @@
   },
   "achievements": {
     "title": "成就",
-    "subtitle": "通过追踪健康并按时服药来获得成就。",
     "loginRequired": "请登录以查看成就。",
     "points": "积分",
     "unlocked": "已解锁",
@@ -9862,7 +9921,6 @@
     "allCompleted": "所有成就已解锁！",
     "completed": "已完成",
     "goalReached": "目标达成",
-    "remainingUnlocks": "还有 {count} 个可解锁",
     "noneUnlockedYet": "还没有解锁任何成就。",
     "pointsValue": "{points, plural, other {# 分}}",
     "metricCount": "{count}",
@@ -9870,32 +9928,6 @@
     "metricDaysFew": "{count} 天",
     "metricDaysOther": "{count} 天",
     "metricPercent": "{count}%",
-    "nextProgressLabel": "解锁进度",
-    "completedOn": "完成于 {date}",
-    "locked": "未解锁",
-    "criterionHint": "{current} / {target}",
-    "progressPercent": "{percent}%",
-    "categories": {
-      "medication": "用药",
-      "vitals": "生命体征",
-      "mood": "心情",
-      "security": "账户与安全",
-      "engagement": "参与度",
-      "hidden": "隐藏"
-    },
-    "hiddenCard": {
-      "title": "隐藏成就",
-      "description": "继续追踪，说不定就会遇到它。",
-      "ariaLabel": "隐藏的未解锁成就"
-    },
-    "hiddenUnlockToast": {
-      "title": "已解锁一个隐藏成就"
-    },
-    "dashboardCard": {
-      "title": "最近解锁",
-      "viewAll": "查看全部",
-      "empty": "还没有成就。继续记录以解锁第一个。"
-    },
     "badges": {
       "intakeTotal1": {
         "title": "第一次服药",
@@ -10141,12 +10173,35 @@
         "title": "睡眠记录 7 天",
         "description": "连续 7 天有睡眠数据。"
       }
+    },
+    "completedOn": "完成于 {date}",
+    "criterionHint": "{current} / {target}",
+    "progressPercent": "{percent}%",
+    "categories": {
+      "medication": "用药",
+      "vitals": "生命体征",
+      "mood": "心情",
+      "security": "账户与安全",
+      "engagement": "参与度",
+      "hidden": "隐藏"
+    },
+    "hiddenCard": {
+      "title": "隐藏成就",
+      "description": "继续追踪，说不定就会遇到它。",
+      "ariaLabel": "隐藏的未解锁成就"
+    },
+    "hiddenUnlockToast": {
+      "title": "已解锁一个隐藏成就"
+    },
+    "dashboardCard": {
+      "title": "最近解锁",
+      "viewAll": "查看全部",
+      "empty": "还没有成就。继续记录以解锁第一个。"
     }
   },
   "notifications": {
     "title": "各渠道的通知",
     "eventColumn": "事件",
-    "subtitle": "选择你想通过哪个渠道接收哪些通知。",
     "loadError": "无法加载通知偏好。",
     "noChannels": "请先在“设置 > 集成”中配置一个通知渠道。",
     "goToSettings": "前往渠道设置",
@@ -10380,9 +10435,53 @@
   "targets": {
     "bmi": "BMI",
     "average30d": "30 天平均：",
+    "consistency": {
+      "ariaLabel": "最近 7 天，每天的范围状态",
+      "daysInRange": "{total} 天中有 {count} 天在范围内",
+      "daysLogged": "{total} 天中记录了 {count} 天",
+      "dotInRange": "在范围内",
+      "dotNearRange": "接近范围",
+      "dotOutOfRange": "超出范围",
+      "dotNotLogged": "未记录",
+      "relativeDay": {
+        "today": "今天",
+        "yesterday": "昨天",
+        "twoDaysAgo": "2 天前",
+        "threeDaysAgo": "3 天前",
+        "fourDaysAgo": "4 天前",
+        "fiveDaysAgo": "5 天前",
+        "sixDaysAgo": "6 天前"
+      }
+    },
+    "edit": {
+      "title": "编辑目标区间：{metric}",
+      "description": "调整用于图表、洞察与医生报告的范围带。数值单位为 {unit}。",
+      "derivedHint": "此卡片由其他指标推导而来。请改为编辑其底层目标（例如血压或体重）。",
+      "minLabel": "下限",
+      "maxLabel": "上限",
+      "systolicMin": "收缩压下限",
+      "systolicMax": "收缩压上限",
+      "diastolicMin": "舒张压下限",
+      "diastolicMax": "舒张压上限",
+      "boundsHint": "允许范围：{min}–{max} {unit}",
+      "resetToDefault": "恢复默认",
+      "resetTitle": "重置此目标？",
+      "resetBody": "区间将恢复为默认值。你设定的数值不会保存在其他地方，无法找回。",
+      "resetBodyBp": "收缩压与舒张压区间都将恢复为默认值。你设定的数值不会保存在其他地方，无法找回。",
+      "resetConfirm": "重置目标",
+      "saveSuccess": "目标区间已更新",
+      "saveError": "无法保存目标区间",
+      "resetSuccess": "目标区间已恢复默认",
+      "validationOrder": "下限必须小于上限。",
+      "validationBounds": "请输入下方允许范围内的数值。"
+    },
     "currentValue": "当前：{value} {unit}",
     "targetRangeValue": "目标：{min}–{max} {unit}",
     "sourceLabel": "来源：{source}",
+    "sourceNames": {
+      "moodEntries": "心情记录",
+      "sevenDays": "7 天"
+    },
     "inTarget": "在目标区间内",
     "aboveTarget": "高于目标 {delta} {unit}",
     "belowTarget": "低于目标 {delta} {unit}",
@@ -10436,50 +10535,6 @@
       "veryStable": "非常稳定",
       "stable": "稳定",
       "fluctuating": "波动"
-    },
-    "sourceNames": {
-      "moodEntries": "心情记录",
-      "sevenDays": "7 天"
-    },
-    "edit": {
-      "title": "编辑目标区间：{metric}",
-      "description": "调整用于图表、洞察与医生报告的范围带。数值单位为 {unit}。",
-      "derivedHint": "此卡片由其他指标推导而来。请改为编辑其底层目标（例如血压或体重）。",
-      "minLabel": "下限",
-      "maxLabel": "上限",
-      "systolicMin": "收缩压下限",
-      "systolicMax": "收缩压上限",
-      "diastolicMin": "舒张压下限",
-      "diastolicMax": "舒张压上限",
-      "boundsHint": "允许范围：{min}–{max} {unit}",
-      "resetToDefault": "恢复默认",
-      "resetTitle": "重置此目标？",
-      "resetBody": "区间将恢复为默认值。你设定的数值不会保存在其他地方，无法找回。",
-      "resetBodyBp": "收缩压与舒张压区间都将恢复为默认值。你设定的数值不会保存在其他地方，无法找回。",
-      "resetConfirm": "重置目标",
-      "saveSuccess": "目标区间已更新",
-      "saveError": "无法保存目标区间",
-      "resetSuccess": "目标区间已恢复默认",
-      "validationOrder": "下限必须小于上限。",
-      "validationBounds": "请输入下方允许范围内的数值。"
-    },
-    "consistency": {
-      "ariaLabel": "最近 7 天，每天的范围状态",
-      "daysInRange": "{total} 天中有 {count} 天在范围内",
-      "daysLogged": "{total} 天中记录了 {count} 天",
-      "dotInRange": "在范围内",
-      "dotNearRange": "接近范围",
-      "dotOutOfRange": "超出范围",
-      "dotNotLogged": "未记录",
-      "relativeDay": {
-        "today": "今天",
-        "yesterday": "昨天",
-        "twoDaysAgo": "2 天前",
-        "threeDaysAgo": "3 天前",
-        "fourDaysAgo": "4 天前",
-        "fiveDaysAgo": "5 天前",
-        "sixDaysAgo": "6 天前"
-      }
     }
   },
   "passwordStrength": {
@@ -10744,7 +10799,6 @@
     },
     "disclaimer": "这些预测是根据你已记录的数据得出的描述性估计，不是避孕方法，也不是医疗建议。它们从不表示可以无保护性行为。避孕或任何医疗决定，请咨询医疗专业人员。",
     "title": "周期",
-    "subtitle": "记录月经和症状，看清接下来会发生什么。",
     "tabs": {
       "calendar": "日历",
       "predictions": "预测",
@@ -11131,6 +11185,7 @@
     "resetFilters": "重置",
     "clearFilter": "清除筛选：{label}",
     "selectAll": "全选本页",
+    "select": "选择",
     "selectRow": "选择该行",
     "selected": "已选 {count} 项",
     "deleteN": "删除（{count}）",
@@ -11144,28 +11199,6 @@
     "delete": "删除",
     "deleteConfirmTitle": "删除提醒？",
     "deleteConfirmDescription": "此体检提醒将被永久删除。",
-    "snoozedUntil": "已推迟至 {date}",
-    "skippedOn": "已于 {date} 跳过",
-    "skipCount": "已跳过 {count} 次",
-    "disabledBadge": "已关闭",
-    "overdueByDays": "已逾期 {days, plural, other {# 天}}",
-    "overdueSinceYesterday": "自昨天起已逾期",
-    "pushTitle": "体检提醒",
-    "pushBody": "该做了：{label}",
-    "pushLocation": "（在 {location}）",
-    "edit": "编辑",
-    "originCoach": "教练",
-    "until": "至 {date}",
-    "selfPlanned": "自行安排",
-    "captureValue": "记录数值",
-    "measureNow": "立即测量",
-    "startCheckIn": "开始自评",
-    "nextDueLabel": "下次到期：",
-    "lastDoneLabel": "上次完成：",
-    "customize": "自定义保健模块",
-    "showMeasurements": "显示测量",
-    "loadError": "无法加载你的提醒。",
-    "fileVisit": "记录一次就诊",
     "postpone": {
       "menuItem": "推迟……",
       "title": "推迟到期日",
@@ -11180,34 +11213,26 @@
       "action": "跳过",
       "confirmTitle": "跳过这次到期？"
     },
+    "snoozedUntil": "已推迟至 {date}",
+    "skippedOn": "已于 {date} 跳过",
+    "skipCount": "已跳过 {count} 次",
+    "disabledBadge": "已关闭",
     "nextDue": {
       "none": "未安排",
       "today": "今天到期",
       "tomorrow": "明天到期",
       "inDays": "{days, plural, other {# 天后}}"
     },
+    "overdueByDays": "已逾期 {days, plural, other {# 天}}",
+    "overdueSinceYesterday": "自昨天起已逾期",
     "cadence": {
       "everyNDays": "每 {days, plural, other {# 天}}",
       "custom": "自定义计划",
       "customInterval": "自定义（每 N 天）",
       "rruleOption": "自定义规则（RRULE）"
     },
-    "adherence": {
-      "label": "间隔内",
-      "onTrack": "正常进行",
-      "due": "现在到期"
-    },
-    "capture": {
-      "title": "记录测量",
-      "description": "输入读数；该提醒会被标记为已完成。"
-    },
-    "dashboard": {
-      "empty": "没有即将到期的体检提醒。",
-      "openLink": "打开保健"
-    },
-    "empty": {
-      "title": "还没有提醒",
-      "description": "添加一条提醒，按固定节奏测量血压，或安排每年一次的血液检查。"
+    "location": {
+      "prefix": "在：{location}"
     },
     "types": {
       "WEIGHT": "体重",
@@ -11237,6 +11262,10 @@
       "bodyComposition": "身体成分",
       "mentalWellbeing": "心理健康"
     },
+    "empty": {
+      "title": "还没有提醒",
+      "description": "添加一条提醒，按固定节奏测量血压，或安排每年一次的血液检查。"
+    },
     "form": {
       "label": "标签",
       "labelPlaceholder": "例如：测量血压",
@@ -11256,12 +11285,38 @@
       "rruleHint": "RFC-5545，例如每年一次检查用 FREQ=YEARLY。",
       "firstDue": "首次到期（可选）"
     },
-    "location": {
-      "prefix": "在：{location}"
+    "pushTitle": "体检提醒",
+    "pushBody": "该做了：{label}",
+    "pushLocation": "（在 {location}）",
+    "edit": "编辑",
+    "originCoach": "教练",
+    "until": "至 {date}",
+    "selfPlanned": "自行安排",
+    "captureValue": "记录数值",
+    "measureNow": "立即测量",
+    "startCheckIn": "开始自评",
+    "nextDueLabel": "下次到期：",
+    "lastDoneLabel": "上次完成：",
+    "customize": "自定义保健模块",
+    "adherence": {
+      "label": "间隔内",
+      "onTrack": "正常进行",
+      "due": "现在到期"
+    },
+    "capture": {
+      "title": "记录测量",
+      "description": "输入读数；该提醒会被标记为已完成。"
     },
     "manage": {
       "empty": "还没有可自定义的提醒。"
-    }
+    },
+    "dashboard": {
+      "empty": "没有即将到期的体检提醒。",
+      "openLink": "打开保健"
+    },
+    "showMeasurements": "显示测量",
+    "loadError": "无法加载你的提醒。",
+    "fileVisit": "记录一次就诊"
   },
   "moduleList": {
     "viewToggleLabel": "视图",
@@ -11977,7 +12032,6 @@
   },
   "illness": {
     "title": "疾病",
-    "subtitle": "你的疾病与病况发作的回顾性日志。",
     "settings": {
       "viewDescription": "选择发作记录以卡片还是紧凑列表显示。",
       "orderDescription": "拖动发作记录，设定你想要的显示顺序。"
@@ -12431,9 +12485,7 @@
   },
   "mentalHealth": {
     "pageTitle": "心理健康",
-    "pageDescription": "四项经过验证、自愿参与的自评。长期趋势比任何单次分数更能说明问题。",
     "attributionLabel": "来源标注",
-    "attributionShow": "{instrument} 的来源与许可",
     "choosePrompt": "选择一项自评",
     "start": "开始",
     "back": "返回",
@@ -12446,12 +12498,6 @@
       "gad7": "GAD-7（担忧）",
       "who5": "WHO-5（幸福感）",
       "sci": "SCI（睡眠）"
-    },
-    "instrumentSub": {
-      "phq9": "抑郁筛查，9 题",
-      "gad7": "焦虑筛查，7 题",
-      "who5": "幸福感自评，5 题",
-      "sci": "睡眠自评，8 题"
     },
     "functionalOptionalHint": "可选：不回答此题也可以提交。",
     "result": {
@@ -12490,7 +12536,6 @@
       "title": "你的历史",
       "empty": "还没有自评记录。完成一次后，你的趋势会出现在这里。",
       "flaggedBadge": "已展示支持资源",
-      "chartTitle": "分数趋势",
       "totalLabel": "分数",
       "bandLabel": "分级",
       "answersToggle": "回答",
@@ -13185,15 +13230,11 @@
       "titleRecord": "{name} 的文档库还是空的"
     },
     "detail": {
-      "title": "文档详情",
       "summary": {
         "title": "摘要",
         "pending": "摘要正在生成。",
-        "none": "这份文档还没有生成摘要。",
         "withheld": "已生成摘要，但未通过安全检查，因此不显示。你可以重试，或直接阅读文档本身。",
-        "unavailable": "无法为这份文档生成摘要。",
-        "generate": "生成摘要",
-        "generating": "正在生成……"
+        "unavailable": "无法为这份文档生成摘要。"
       },
       "index": {
         "outcome": {
@@ -13218,7 +13259,6 @@
       "titlePlaceholder": "添加标题",
       "kindLabel": "类型",
       "dateLabel": "文档日期",
-      "previewUnavailable": "这种文件类型没有内嵌预览",
       "uploadedMeta": "添加于 {date}，{size}",
       "importedFrom": "从 {system} 导入",
       "importedFromWithId": "从 {system} 导入，ID {id}",
@@ -13228,8 +13268,7 @@
       "share": "分享",
       "labValuesLink": "查看 {count, plural, other {# 条化验结果}}",
       "saved": "更改已保存",
-      "saving": "正在保存……",
-      "previewNotOnDevice": "此浏览器无法在页面内显示 PDF"
+      "saving": "正在保存……"
     },
     "dropOverlay": {
       "title": "拖放文件以上传",
@@ -13512,31 +13551,11 @@
     "deletedToast": "自定义指标已删除",
     "deleteError": "无法删除该自定义指标",
     "showAllValues": "显示全部数值",
-    "emptyDescription": "定义你自己的测量，以便追踪并用图表查看。",
     "noValuesYet": "还没有数值",
     "loadError": "无法加载自定义指标",
     "loadMore": "加载更多数值",
     "showingLatestOf": "显示 {total} 条中的最新 {shown} 条",
     "backToMeasurements": "返回测量",
-    "chart": {
-      "empty": "此范围内没有数值",
-      "valueLabel": "数值",
-      "range": {
-        "30": "30 天",
-        "90": "90 天",
-        "365": "1 年",
-        "all": "全部"
-      }
-    },
-    "detail": {
-      "title": "自定义指标",
-      "genericDescription": "你追踪的一项测量。添加数值即可随时间跟进。",
-      "emptyTitle": "还没有数值",
-      "emptyDescription": "添加第一个数值，开始为这个指标绘制图表。",
-      "valuesTitle": "{metric}：全部数值",
-      "valuesDescription": "该指标记录的全部数值。",
-      "backToMetric": "返回 {metric}"
-    },
     "form": {
       "name": "名称",
       "namePlaceholder": "例如：晨起握力",
@@ -13582,10 +13601,28 @@
       "restoredToast": "数值已恢复",
       "restoreError": "恢复失败",
       "deleteError": "无法删除该数值"
+    },
+    "chart": {
+      "empty": "此范围内没有数值",
+      "valueLabel": "数值",
+      "range": {
+        "30": "30 天",
+        "90": "90 天",
+        "365": "1 年",
+        "all": "全部"
+      }
+    },
+    "detail": {
+      "title": "自定义指标",
+      "genericDescription": "你追踪的一项测量。添加数值即可随时间跟进。",
+      "emptyTitle": "还没有数值",
+      "emptyDescription": "添加第一个数值，开始为这个指标绘制图表。",
+      "valuesTitle": "{metric}：全部数值",
+      "valuesDescription": "该指标记录的全部数值。",
+      "backToMetric": "返回 {metric}"
     }
   },
   "nutrients": {
-    "sparseNote": "这里的低数值通常表示记录稀疏，而不是营养缺乏。每日总计反映的是你的应用记录了什么，而不是全部膳食摄入。当记录应用与 Apple Health 报告同一天的数据时，取较大的总计。",
     "names": {
       "vitamin_a": "维生素 A",
       "thiamin": "硫胺素（B1）",
@@ -13648,26 +13685,6 @@
         "unknown": "这些记录已到达，但无法存储。"
       }
     },
-    "macros": {
-      "title": "能量与宏量营养素",
-      "pickLabel": "营养素",
-      "referenceMeta": "参考值 {value} {unit}/天（{authority}）",
-      "targetMeta": "你的目标 {value} {unit}/天",
-      "limitMeta": "你的上限 {value} {unit}/天",
-      "sheetTitle": "每日目标：{name}",
-      "sheetDescription": "每日需要达到或需要控制在其下的量，在图表中以虚线显示。",
-      "clearTarget": "移除目标",
-      "removeTitle": "移除这个目标？",
-      "removeBody": "图表会回到膳食参考值（若存在）。你设定的量不会保存在其他地方。",
-      "targetLabel": "每天 {name}（{unit}）",
-      "boundsHint": "大于 0，每天最多 {max} {unit}。",
-      "directionLabel": "目标类型",
-      "directionTarget": "至少达到",
-      "directionLimit": "控制在其下",
-      "saveFailed": "无法保存该目标，请重试。",
-      "loadError": "无法加载能量与宏量营养素。",
-      "gearLabel": "设置 {name} 的每日目标"
-    },
     "hydration": {
       "referenceMeta": "参考摄入量 {value} {unit}/天（{authority}）",
       "loadError": "无法加载水量。"
@@ -13698,6 +13715,36 @@
         "alpha_tocopherol": "该水平按 α-生育酚设定。"
       }
     },
+    "sparseNote": "这里的低数值通常表示记录稀疏，而不是营养缺乏。每日总计反映的是你的应用记录了什么，而不是全部膳食摄入。当记录应用与 Apple Health 报告同一天的数据时，取较大的总计。",
+    "units": {
+      "IU": "IU"
+    },
+    "sources": {
+      "SUPPLEMENT": "补充剂"
+    },
+    "macros": {
+      "title": "能量与宏量营养素",
+      "pickLabel": "营养素",
+      "referenceMeta": "参考值 {value} {unit}/天（{authority}）",
+      "targetMeta": "你的目标 {value} {unit}/天",
+      "limitMeta": "你的上限 {value} {unit}/天",
+      "sheetTitle": "每日目标：{name}",
+      "sheetDescription": "每日需要达到或需要控制在其下的量，在图表中以虚线显示。",
+      "clearTarget": "移除目标",
+      "removeTitle": "移除这个目标？",
+      "removeBody": "图表会回到膳食参考值（若存在）。你设定的量不会保存在其他地方。",
+      "targetLabel": "每天 {name}（{unit}）",
+      "boundsHint": "大于 0，每天最多 {max} {unit}。",
+      "directionLabel": "目标类型",
+      "directionTarget": "至少达到",
+      "directionLimit": "控制在其下",
+      "saveFailed": "无法保存该目标，请重试。",
+      "loadError": "无法加载能量与宏量营养素。",
+      "gearLabel": "设置 {name} 的每日目标"
+    },
+    "alcohol": {
+      "loadError": "无法加载酒精数据。"
+    },
     "energyBalance": {
       "title": "能量平衡",
       "loadError": "无法加载能量平衡。",
@@ -13709,15 +13756,6 @@
       "estimated": "这些天中有 {days} 天，静息能量是根据你的体重、身高、年龄与性别估算的（Mifflin-St Jeor），因为没有收到相关读数。",
       "needsProfile": "你的摄入量在此，但没有收到静息能量。请在个人资料中添加身高、出生日期与性别，并提供一条体重读数，即可估算能量平衡。",
       "needsExpenditure": "你的摄入量在此，但同几天没有收到活动能量，因此暂时无法显示能量平衡。"
-    },
-    "alcohol": {
-      "loadError": "无法加载酒精数据。"
-    },
-    "units": {
-      "IU": "IU"
-    },
-    "sources": {
-      "SUPPLEMENT": "补充剂"
     }
   },
   "daily": {
@@ -14424,6 +14462,8 @@
       "cycleDayLogDelete": "{name} 删除了一个周期日",
       "cyclePeriodBoundary": "{name} 修改了经期的开始或结束",
       "cycleSymptomCreate": "{name} 添加了一个周期症状",
+      "cycleSymptomUpdate": "{name} 修改了一条周期症状",
+      "cycleSymptomDelete": "{name} 删除了一条周期症状",
       "nutrientWaterWrite": "{name} 记录了饮水量",
       "healthRecordExport": "{name} 导出了记录",
       "rejectedMeasurementQuery": "{name} 发送了一个此记录无法读取的读数查询",
@@ -14469,6 +14509,8 @@
       "medicationOneShotReconciled": "在 {name} 记录的某次服药之后，一次单次用药被开启或关闭",
       "vaccinationBoosterPlanned": "{name} 计划了一次加强针",
       "medicationCategoryCreate": "{name} 添加了一个用药分类",
+      "medicationCategoryUpdate": "{name} 修改了一个用药分类",
+      "medicationCategoryDelete": "{name} 删除了一个用药分类",
       "symptomEventCreate": "{name} 记录了一个症状",
       "symptomEventUpdate": "{name} 编辑了一条症状记录",
       "symptomEventDelete": "{name} 删除了一条症状记录",
@@ -14579,27 +14621,6 @@
     }
   },
   "encounters": {
-    "bodySiteWithSide": "{site}（{side}）",
-    "sectionTitle": "就诊",
-    "sectionDescription": "以往与已预约的就诊，集中在一处。",
-    "add": "就诊",
-    "loadError": "无法加载就诊记录。",
-    "emptyTitle": "还没有记录任何就诊",
-    "emptyDescription": "只填日期就够了。其余都是可选的。",
-    "upcomingHeading": "即将到来",
-    "pastHeading": "以往",
-    "createTitle": "记录一次就诊",
-    "editTitle": "编辑就诊",
-    "formDescription": "只有日期是必填的。",
-    "created": "就诊已保存",
-    "updated": "就诊已更新",
-    "saveFailed": "无法保存该就诊。",
-    "checkupNotClosed": "就诊已保存。体检提醒保持开启；你的访问权不包含该操作。",
-    "deleteTitle": "删除这次就诊？",
-    "deleteDescription": "该记录将被移除。若这次就诊已预约，其提醒也会随之停止。",
-    "deleteFailed": "无法删除该就诊。",
-    "deleted": "就诊已删除",
-    "restoreFailed": "无法恢复该就诊。",
     "kind": {
       "routine": "常规就诊",
       "acute": "急性就诊",
@@ -14617,6 +14638,22 @@
       "both": "双侧",
       "none": "未说明"
     },
+    "bodySiteWithSide": "{site}（{side}）",
+    "sectionTitle": "就诊",
+    "sectionDescription": "以往与已预约的就诊，集中在一处。",
+    "add": "就诊",
+    "loadError": "无法加载就诊记录。",
+    "emptyTitle": "还没有记录任何就诊",
+    "emptyDescription": "只填日期就够了。其余都是可选的。",
+    "upcomingHeading": "即将到来",
+    "pastHeading": "以往",
+    "createTitle": "记录一次就诊",
+    "editTitle": "编辑就诊",
+    "formDescription": "只有日期是必填的。",
+    "created": "就诊已保存",
+    "updated": "就诊已更新",
+    "saveFailed": "无法保存该就诊。",
+    "checkupNotClosed": "就诊已保存。体检提醒保持开启；你的访问权不包含该操作。",
     "status": {
       "planned": "已计划",
       "done": "已就诊",
@@ -14627,12 +14664,6 @@
       "documentCount": "关联文档",
       "labCount": "关联化验结果",
       "conditionCount": "关联病症"
-    },
-    "episodeCard": {
-      "add": "添加就诊"
-    },
-    "dashboard": {
-      "nextVisit": "下次就诊：{when} 的 {what}"
     },
     "form": {
       "date": "日期与时间",
@@ -14657,9 +14688,18 @@
       "linkConditions": "病症",
       "linkNothingToOffer": "目前没有可关联的内容。"
     },
+    "deleteTitle": "删除这次就诊？",
+    "deleteDescription": "该记录将被移除。若这次就诊已预约，其提醒也会随之停止。",
+    "deleteFailed": "无法删除该就诊。",
     "suggestion": {
       "single": "这属于本次就诊吗？",
       "choose": "这属于哪次就诊？"
+    },
+    "episodeCard": {
+      "add": "添加就诊"
+    },
+    "dashboard": {
+      "nextVisit": "下次就诊：{when} 的 {what}"
     },
     "procedures": {
       "title": "操作与手术",
@@ -14684,7 +14724,9 @@
       "defaultReason": "没有更早的、同一诊所、专科或类型的就诊。",
       "capped": "最近两年",
       "cappedReason": "上一次匹配的就诊在两年以前，而报告最多覆盖两年。"
-    }
+    },
+    "deleted": "就诊已删除",
+    "restoreFailed": "无法恢复该就诊。"
   },
   "checkups": {
     "viewSwitchLabel": "显示保健、就诊、操作或身体部位",
@@ -15602,9 +15644,14 @@
     "metricLink": "这些数值来自哪里"
   },
   "recordImport": {
-    "title": "从电子表格导入化验结果与用药",
-    "description": "从 CSV 文件导入多年的化验结果或一份用药清单。",
-    "detail": "你来决定哪一列是什么，HealthLog 会先检查每一行，在你确认之前不会导入任何内容。",
+    "sheetTitle": {
+      "labs": "导入化验结果",
+      "medications": "导入用药"
+    },
+    "sheetDescription": {
+      "labs": "标志物会与你的匹配，已知换算关系的单位会被转换。",
+      "medications": "名称、剂量、每日时间、按需、起止日期。其他节奏请在应用内之后设置。"
+    },
     "file": "CSV 文件",
     "template": "下载模板",
     "mapping": "哪一列是什么",
@@ -15612,8 +15659,22 @@
     "notInFile": "不在文件中",
     "column": "第 {n} 列",
     "delimiter": "分隔符",
+    "delimiterOption": {
+      "comma": "逗号",
+      "semicolon": "分号",
+      "tab": "制表符"
+    },
     "decimal": "小数点",
+    "decimalOption": {
+      "dot": "点（5.4）",
+      "comma": "逗号（5,4）"
+    },
     "dateOrder": "日期格式",
+    "dateOrderOption": {
+      "iso": "2025-03-01",
+      "dmy": "01.03.2025（日在先）",
+      "mdy": "03/01/2025（月在前）"
+    },
     "header": "第一行是列名",
     "reminders": "为导入的药物开启提醒",
     "timezoneNote": "不带时区的时间按你账户的时区解读。不带时间的日期按该日历日期保留。",
@@ -15628,33 +15689,6 @@
     "markersCreated": "新建标志物：",
     "line": "第 {line} 行",
     "errorsTruncated": "仅列出前 500 个问题。",
-    "unitlessHint": "比值或指数（INR、胆固醇/HDL）没有单位：在单位列写 1。单位单元格留空仍会报错。",
-    "kind": {
-      "labs": "化验结果",
-      "medications": "用药"
-    },
-    "sheetTitle": {
-      "labs": "导入化验结果",
-      "medications": "导入用药"
-    },
-    "sheetDescription": {
-      "labs": "标志物会与你的匹配，已知换算关系的单位会被转换。",
-      "medications": "名称、剂量、每日时间、按需、起止日期。其他节奏请在应用内之后设置。"
-    },
-    "delimiterOption": {
-      "comma": "逗号",
-      "semicolon": "分号",
-      "tab": "制表符"
-    },
-    "decimalOption": {
-      "dot": "点（5.4）",
-      "comma": "逗号（5,4）"
-    },
-    "dateOrderOption": {
-      "iso": "2025-03-01",
-      "dmy": "01.03.2025（日在先）",
-      "mdy": "03/01/2025（月在前）"
-    },
     "error": {
       "tooLarge": "文件超过 16 MB。",
       "rateLimited": "最近一小时导入次数过多，请稍后再试。",
@@ -15700,7 +15734,13 @@
       "asNeeded": "按需",
       "startsOn": "开始",
       "endsOn": "结束"
-    }
+    },
+    "unitlessHint": "比值或指数（INR、胆固醇/HDL）没有单位：在单位列写 1。单位单元格留空仍会报错。",
+    "row": {
+      "labs": "化验结果（CSV）",
+      "medications": "用药（CSV）"
+    },
+    "rowMeta": "由你对应各列"
   },
   "seizures": {
     "ilae": {
@@ -16218,14 +16258,14 @@
       "missBody": "该链接可能已被撤销或已到期。卡片的主人可以重新生成一个。",
       "title": "二维码链接",
       "loadError": "无法加载链接状态。",
-      "disclosure": "任何扫码的人无需登录即可看到你勾选的项目。你可以为链接设定到期时间并随时撤销；每次打开都会为你记录。",
+      "disclosure": "任何扫码的人无需登录即可看到你勾选的项目。",
       "fieldsLabel": "链接显示的内容",
       "expiryLabel": "链接到期",
       "expiry": {
+        "none": "永不，直到被撤销",
         "30": "30 天后",
         "365": "一年后",
-        "730": "两年后",
-        "none": "永不，直到被撤销"
+        "730": "两年后"
       },
       "create": "生成链接",
       "qrAlt": "急救卡链接的二维码",
@@ -16240,17 +16280,17 @@
       "revoke": "撤销链接",
       "revokeTitle": "撤销急救卡链接？",
       "revokeBody": "带有此二维码的已打印卡片将失效。你可以生成新链接并重新打印卡片。",
-      "error": "无法更改该链接，请重试。"
+      "error": "无法更改该链接，请重试。",
+      "disclosureMore": "你可以为链接设定到期时间并随时撤销；每次打开都会为你记录。"
     },
     "page": {
       "title": "急救卡",
-      "description": "你外出时使用的急救信息。",
       "loadError": "无法加载急救卡。",
       "offlineHint": "本应用有意不支持离线使用。请把一份副本保存到手机，以便在没有网络连接时携带该卡片；它显示的是你保存当天的内容。",
       "downloadError": "下载未能完成，请重试。",
-      "saveOffline": "保存离线副本",
-      "wallet": "钱包卡片（PDF）",
-      "walletWithQr": "带二维码的钱包卡片（PDF）",
+      "saveOffline": "离线副本",
+      "wallet": "PDF 卡片",
+      "walletWithQr": "带二维码的 PDF",
       "preview": "你的卡片"
     },
     "name": "姓名",
@@ -16352,7 +16392,8 @@
         "title": "你的急救卡已就绪",
         "body": "在此 iPhone 上把它添加到 Apple 钱包。"
       }
-    }
+    },
+    "fieldsCount": "{total} 项中的 {count} 项"
   },
   "treatmentSeries": {
     "heading": "治疗序列",

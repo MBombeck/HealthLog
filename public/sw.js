@@ -16,7 +16,7 @@ try {
 }
 const CACHE_VERSION =
   (typeof self !== "undefined" && self.__APP_VERSION__) ||
-  /* @sw-version-fallback */ "v1.49.0";
+  /* @sw-version-fallback */ "v1.49.1";
 const STATIC_CACHE = `healthlog-static-${CACHE_VERSION}`;
 const PAGE_CACHE = `healthlog-pages-${CACHE_VERSION}`;
 // Every HealthLog cache, current and legacy, and nothing another app on the
@@ -361,16 +361,16 @@ async function networkFirst(event, cacheName) {
 // Content-Security-Policy, so the inline script is not refused; without
 // script the device scheme stands.
 const OFFLINE_THEME_SCRIPT =
-  '(function(){var t=null,c="dark";try{t=localStorage.getItem("healthlog-theme")}catch(e){}if(t==="light"||t==="dark"){c=t}else{try{c=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"}catch(e){}}document.documentElement.setAttribute("data-theme",c);var m=document.querySelector(\'meta[name="theme-color"]\');if(m)m.setAttribute("content",c==="light"?"#f3f2f5":"#282a36")})()';
+  '(function(){var t=null,c="dark";try{t=localStorage.getItem("healthlog-theme")}catch(e){}if(t==="light"||t==="dark"){c=t}else{try{c=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"}catch(e){}}document.documentElement.setAttribute("data-theme",c);var m=document.querySelector(\'meta[name="theme-color"]\');if(m)m.setAttribute("content",c==="light"?"#f2f0eb":"#101113")})()';
 
 const OFFLINE_PAGE =
-  '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="dark light"><meta name="theme-color" content="#282a36"><title>HealthLog — Offline</title><script>' +
+  '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="dark light"><meta name="theme-color" content="#101113"><title>HealthLog — Offline</title><script>' +
   OFFLINE_THEME_SCRIPT +
   "</script><style>" +
-  ":root{--bg:#282a36;--fg:#f8f8f2;--accent:#bd93f9;--muted:#a4a9c9;color-scheme:dark}" +
-  "@media (prefers-color-scheme:light){:root{--bg:#f3f2f5;--fg:#1f2030;--accent:#6b46c1;--muted:#5b5e78;color-scheme:light}}" +
-  ":root[data-theme=dark]{--bg:#282a36;--fg:#f8f8f2;--accent:#bd93f9;--muted:#a4a9c9;color-scheme:dark}" +
-  ":root[data-theme=light]{--bg:#f3f2f5;--fg:#1f2030;--accent:#6b46c1;--muted:#5b5e78;color-scheme:light}" +
+  ":root{--bg:#101113;--fg:#f8f8f2;--accent:#ebebf5;--muted:#acadb5;color-scheme:dark}" +
+  "@media (prefers-color-scheme:light){:root{--bg:#f2f0eb;--fg:#42403c;--accent:#42403c;--muted:#67645f;color-scheme:light}}" +
+  ":root[data-theme=dark]{--bg:#101113;--fg:#f8f8f2;--accent:#ebebf5;--muted:#acadb5;color-scheme:dark}" +
+  ":root[data-theme=light]{--bg:#f2f0eb;--fg:#42403c;--accent:#42403c;--muted:#67645f;color-scheme:light}" +
   "body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--fg);display:flex;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;margin:0;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);box-sizing:border-box}" +
   "main{text-align:center;padding:2rem}h1{color:var(--accent);margin:0 0 .5rem;font-size:2rem;letter-spacing:.05em}p{color:var(--muted);margin:.25rem 0 1.5rem;font-size:1rem}" +
   "a{display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:9999px;color:var(--accent);border:2px solid currentColor}a:focus-visible{outline:3px solid var(--accent);outline-offset:3px}svg{width:28px;height:28px}" +

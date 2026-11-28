@@ -176,6 +176,88 @@ describe("buildFhirDocumentBundle", () => {
     expect(patient.identifier).toBeUndefined();
   });
 
+  const patientIdentifier = (identity: {
+    insuranceNumber: string;
+    insuranceNumberCountry?: string | null;
+  }) =>
+    (
+      buildFhirDocumentBundle(makeData(), identity, FIXED_NOW).entry.find(
+        (e) => e.resource.resourceType === "Patient",
+      )?.resource as FhirPatient
+    ).identifier?.[0];
+
+  it.each([
+    [null, "A123456780", "http://fhir.de/sid/gkv/kvid-10"],
+    ["DE", "A123456780", "http://fhir.de/sid/gkv/kvid-10"],
+    ["AT", "1237010180", "urn:oid:1.2.40.0.10.1.4.3.1"],
+    ["CH", "7569217076985", "urn:oid:2.16.756.5.32"],
+    ["NL", "111222333", "http://fhir.nl/fhir/NamingSystem/bsn"],
+    ["FR", "185057505612388", "urn:oid:1.2.250.1.213.1.4.8"],
+  ])(
+    "puts a %s number under its national system",
+    (country, insuranceNumber, system) => {
+      expect(
+        patientIdentifier({ insuranceNumber, insuranceNumberCountry: country }),
+      ).toEqual({ system, value: insuranceNumber });
+    },
+  );
+
+  it("emits a member number of any other country as type MB, no system", () => {
+    const identifier = patientIdentifier({
+      insuranceNumber: "W123-456 789",
+      insuranceNumberCountry: "US",
+    });
+    expect(identifier).toEqual({
+      type: {
+        coding: [
+          {
+            system: "http://terminology.hl7.org/CodeSystem/v2-0203",
+            code: "MB",
+            display: "Member Number",
+          },
+        ],
+      },
+      value: "W123-456 789",
+    });
+    expect(identifier).not.toHaveProperty("system");
+  });
+
+  it("puts a US group number on Coverage.class as group", () => {
+    const bundle = buildFhirDocumentBundle(
+      makeData({
+        patient: {
+          name: "Sample Patient",
+          dateOfBirth: "1985-06-15T00:00:00.000Z",
+          gender: "MALE",
+          heightCm: 182,
+          insurerName: "Example Plan",
+          insurerIkNumber: null,
+        },
+      }),
+      {
+        insuranceNumber: "W123456",
+        insuranceNumberCountry: "US",
+        insuranceGroupNumber: "GRP 0042",
+      },
+      FIXED_NOW,
+    );
+    const coverage = coverageOf(bundle);
+    expect(coverage?.subscriberId).toBe("W123456");
+    expect(coverage?.class).toEqual([
+      {
+        type: {
+          coding: [
+            {
+              system: "http://terminology.hl7.org/CodeSystem/coverage-class",
+              code: "group",
+            },
+          ],
+        },
+        value: "GRP 0042",
+      },
+    ]);
+  });
+
   it("emits a Coverage with a contained Organization carrying the IKNR + subscriberId KVNR", () => {
     const bundle = buildFhirDocumentBundle(
       makeData({

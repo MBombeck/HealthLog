@@ -146,9 +146,7 @@
         }
       ],
       "forbidden": {
-        "de": [
-          "Messung erfassen"
-        ],
+        "de": ["Messung erfassen"],
         "en": [],
         "fr": [],
         "es": [],
@@ -872,10 +870,7 @@
             "wholeWord": true
           }
         ],
-        "es": [
-          "atención preventiva",
-          "recordatorios preventivos"
-        ],
+        "es": ["atención preventiva", "recordatorios preventivos"],
         "it": [
           {
             "text": "Prevenzione",
@@ -885,12 +880,8 @@
           "promemoria di prevenzione"
         ],
         "pl": [],
-        "ko": [
-          "예방 관리"
-        ],
-        "nl": [
-          "preventieve zorg"
-        ],
+        "ko": ["예방 관리"],
+        "nl": ["preventieve zorg"],
         "pt-BR": [
           "cuidados preventivos",
           {
@@ -972,34 +963,21 @@
           "Check-up",
           "Erinnerung zum Messen"
         ],
-        "en": [
-          "checkup",
-          "measurement reminder"
-        ],
-        "fr": [
-          "rappel de mesure",
-          "rappels de mesure"
-        ],
+        "en": ["checkup", "measurement reminder"],
+        "fr": ["rappel de mesure", "rappels de mesure"],
         "es": [
           "recordatorio de medición",
           "recordatorios de medición",
           "chequeo"
         ],
-        "it": [
-          "promemoria di misurazione",
-          "promemoria misurazione"
-        ],
+        "it": ["promemoria di misurazione", "promemoria misurazione"],
         "pl": [
           "przypomnienie o pomiar",
           "przypomnienia o pomiar",
           "przypomnień o pomiar"
         ],
-        "ko": [
-          "측정 알림"
-        ],
-        "nl": [
-          "meetherinnering"
-        ],
+        "ko": ["측정 알림"],
+        "nl": ["meetherinnering"],
         "pt-BR": [
           "lembrete de medição",
           "lembretes de medição",
@@ -1102,14 +1080,8 @@
             "caseSensitive": true
           }
         ],
-        "en": [
-          "appointment"
-        ],
-        "fr": [
-          "consultation",
-          "visite médicale",
-          "visites médicales"
-        ],
+        "en": ["appointment"],
+        "fr": ["consultation", "visite médicale", "visites médicales"],
         "es": [
           {
             "text": "visita",
@@ -1120,15 +1092,9 @@
             "wholeWord": true
           }
         ],
-        "it": [
-          "appuntament"
-        ],
+        "it": ["appuntament"],
         "pl": [],
-        "ko": [
-          "진료 예약",
-          "병원 방문",
-          "예약된 방문"
-        ],
+        "ko": ["진료 예약", "병원 방문", "예약된 방문"],
         "nl": [
           {
             "text": "afspraak",
@@ -1139,9 +1105,7 @@
             "wholeWord": true
           }
         ],
-        "pt-BR": [
-          "compromisso"
-        ],
+        "pt-BR": ["compromisso"],
         "ru": [
           "приём у врач",
           "приёма у врач",
@@ -1218,24 +1182,15 @@
         }
       ],
       "forbidden": {
-        "de": [
-          "Behandlungsreihe",
-          "Behandlungskurs"
-        ],
-        "en": [
-          "treatment course"
-        ],
+        "de": ["Behandlungsreihe", "Behandlungskurs"],
+        "en": ["treatment course"],
         "fr": [],
         "es": [],
         "it": [],
         "pl": [],
-        "ko": [
-          "치료 코스"
-        ],
+        "ko": ["치료 코스"],
         "nl": [],
-        "pt-BR": [
-          "curso de tratamento"
-        ],
+        "pt-BR": ["curso de tratamento"],
         "ru": [],
         "zh-CN": []
       }
@@ -1375,12 +1330,8 @@
           "wyniku laboratoryjn",
           "wynikiem laboratoryjn"
         ],
-        "ko": [
-          "검사 수치"
-        ],
-        "nl": [
-          "labwaarde"
-        ],
+        "ko": ["검사 수치"],
+        "nl": ["labwaarde"],
         "pt-BR": [
           "valor laboratorial",
           "valores laboratoriais",
@@ -1808,39 +1759,16 @@
         }
       ],
       "forbidden": {
-        "de": [
-          "Anfallstagebuch",
-          "Anfallsprotokoll"
-        ],
-        "en": [
-          "seizure log",
-          "seizure calendar"
-        ],
+        "de": ["Anfallstagebuch", "Anfallsprotokoll"],
+        "en": ["seizure log", "seizure calendar"],
         "fr": [],
         "es": [],
         "it": [],
-        "pl": [
-          "dziennik napad",
-          "kalendarz napad",
-          "rejestr napad"
-        ],
-        "ko": [
-          "발작 다이어리",
-          "발작 캘린더"
-        ],
-        "nl": [
-          "aanvallendagboek",
-          "aanvalslogboek",
-          "aanvalskalender"
-        ],
-        "pt-BR": [
-          "registro de crises",
-          "calendário de crises"
-        ],
-        "ru": [
-          "журнал приступ",
-          "календарь приступ"
-        ],
+        "pl": ["dziennik napad", "kalendarz napad", "rejestr napad"],
+        "ko": ["발작 다이어리", "발작 캘린더"],
+        "nl": ["aanvallendagboek", "aanvalslogboek", "aanvalskalender"],
+        "pt-BR": ["registro de crises", "calendário de crises"],
+        "ru": ["журнал приступ", "календарь приступ"],
         "zh-CN": []
       }
     },
@@ -2131,9 +2059,7 @@
       "forbidden": {
         "de": [],
         "en": [],
-        "fr": [
-          "insight"
-        ],
+        "fr": ["insight"],
         "es": [],
         "it": [],
         "pl": [
@@ -2470,30 +2396,15 @@
         }
       ],
       "forbidden": {
-        "de": [
-          "Notfallausweis",
-          "Notfallpass"
-        ],
-        "en": [
-          "emergency pass"
-        ],
+        "de": ["Notfallausweis", "Notfallpass"],
+        "en": ["emergency pass"],
         "fr": [],
         "es": [],
         "it": [],
-        "pl": [
-          "paszport ratunkow"
-        ],
-        "ko": [
-          "응급카드",
-          "비상 카드"
-        ],
-        "nl": [
-          "noodpas"
-        ],
-        "pt-BR": [
-          "ficha de emergência",
-          "passe de emergência"
-        ],
+        "pl": ["paszport ratunkow"],
+        "ko": ["응급카드", "비상 카드"],
+        "nl": ["noodpas"],
+        "pt-BR": ["ficha de emergência", "passe de emergência"],
         "ru": [],
         "zh-CN": []
       }
@@ -2555,32 +2466,19 @@
       ],
       "forbidden": {
         "de": [],
-        "en": [
-          "Anamnesis"
-        ],
-        "fr": [
-          "Anamnèse"
-        ],
-        "es": [
-          "Anamnesis"
-        ],
+        "en": ["Anamnesis"],
+        "fr": ["Anamnèse"],
+        "es": ["Anamnesis"],
         "it": [],
-        "pl": [
-          "anamnez",
-          "wywiad zdrowotn"
-        ],
-        "ko": [
-          "문진"
-        ],
+        "pl": ["anamnez", "wywiad zdrowotn"],
+        "ko": ["문진"],
         "nl": [
           {
             "text": "anamnese",
             "wholeWord": true
           }
         ],
-        "pt-BR": [
-          "Anamnese"
-        ],
+        "pt-BR": ["Anamnese"],
         "ru": [
           "медицинский анамнез",
           "медицинского анамнез",
@@ -2637,15 +2535,9 @@
       "forbidden": {
         "de": [],
         "en": [],
-        "fr": [
-          "dossier médical"
-        ],
-        "es": [
-          "historial médico"
-        ],
-        "it": [
-          "cartella clinica"
-        ],
+        "fr": ["dossier médical"],
+        "es": ["historial médico"],
+        "it": ["cartella clinica"],
         "pl": [],
         "ko": [],
         "nl": [],
@@ -2713,13 +2605,15 @@
           "key": "onboarding.tour.steps.export.title",
           "form": "name",
           "match": "exact"
+        },
+        {
+          "key": "settings.sections.health-record.title",
+          "form": "name",
+          "match": "exact"
         }
       ],
       "forbidden": {
-        "de": [
-          "Gesundheitsbericht",
-          "Arztreport"
-        ],
+        "de": ["Gesundheitsbericht", "Arztreport"],
         "en": [
           {
             "text": "health report",
@@ -2733,10 +2627,7 @@
           "compte rendu médical",
           "rapport personnel de santé"
         ],
-        "es": [
-          "informe de salud",
-          "informes de salud"
-        ],
+        "es": ["informe de salud", "informes de salud"],
         "it": [
           "rapporto sanitario",
           "rapporto personale di salute",
@@ -2755,21 +2646,14 @@
           "raporcie medyczn",
           "raport o zdrowiu"
         ],
-        "ko": [
-          "진료 보고서",
-          "건강 리포트",
-          "건강 보고서"
-        ],
+        "ko": ["진료 보고서", "건강 리포트", "건강 보고서"],
         "nl": [
           "gezondheidsrapport",
           "artsrapport",
           "doktersrapport",
           "medisch rapport"
         ],
-        "pt-BR": [
-          "relatório de saúde",
-          "relatório pessoal de saúde"
-        ],
+        "pt-BR": ["relatório de saúde", "relatório pessoal de saúde"],
         "ru": [
           "отчёт о здоровье",
           "отчет о здоровье",
@@ -2785,66 +2669,6 @@
       }
     },
     {
-      "id": "doctorReportAndExport",
-      "description": "The settings section that builds the doctor report and exports the record. A web settings section: a client that splits the doctor report and the export into other places has no section to name, and keeps its own section names.",
-      "wire": "settings section id health-record",
-      "terms": {
-        "de": {
-          "name": "Arztbericht und Export"
-        },
-        "en": {
-          "name": "Doctor report and export"
-        },
-        "fr": {
-          "name": "Rapport médical et export"
-        },
-        "es": {
-          "name": "Informe médico y exportación"
-        },
-        "it": {
-          "name": "Referto medico ed esportazione"
-        },
-        "pl": {
-          "name": "Raport dla lekarza i eksport"
-        },
-        "ko": {
-          "name": "진료용 리포트 및 내보내기"
-        },
-        "nl": {
-          "name": "Artsenrapport en export"
-        },
-        "pt-BR": {
-          "name": "Relatório médico e exportação"
-        },
-        "ru": {
-          "name": "Отчёт для врача и экспорт"
-        },
-        "zh-CN": {
-          "name": "医生报告与导出"
-        }
-      },
-      "anchors": [
-        {
-          "key": "settings.sections.health-record.title",
-          "form": "name",
-          "match": "exact"
-        }
-      ],
-      "forbidden": {
-        "de": [],
-        "en": [],
-        "fr": [],
-        "es": [],
-        "it": [],
-        "pl": [],
-        "ko": [],
-        "nl": [],
-        "pt-BR": [],
-        "ru": [],
-        "zh-CN": []
-      }
-    },
-    {
       "id": "healthScore",
       "description": "The 0 to 100 Health score.",
       "terms": {
@@ -2853,35 +2677,44 @@
           "short": "Gesundheit"
         },
         "en": {
-          "name": "Health score"
+          "name": "Health score",
+          "short": "Health"
         },
         "fr": {
-          "name": "Score de santé"
+          "name": "Score de santé",
+          "short": "Santé"
         },
         "es": {
-          "name": "Puntuación de salud"
+          "name": "Puntuación de salud",
+          "short": "Salud"
         },
         "it": {
-          "name": "Punteggio di salute"
+          "name": "Punteggio di salute",
+          "short": "Salute"
         },
         "pl": {
-          "name": "Wynik zdrowia"
+          "name": "Wynik zdrowia",
+          "short": "Zdrowie"
         },
         "ko": {
-          "name": "건강 점수"
+          "name": "건강 점수",
+          "short": "건강"
         },
         "nl": {
           "name": "Gezondheidsscore",
           "short": "Gezondheid"
         },
         "pt-BR": {
-          "name": "Pontuação de saúde"
+          "name": "Pontuação de saúde",
+          "short": "Saúde"
         },
         "ru": {
-          "name": "Балл здоровья"
+          "name": "Балл здоровья",
+          "short": "Здоровье"
         },
         "zh-CN": {
-          "name": "健康评分"
+          "name": "健康评分",
+          "short": "健康"
         }
       },
       "anchors": [
@@ -2898,37 +2731,19 @@
       ],
       "shortKey": "measurements.shortTypeHealthScore",
       "forbidden": {
-        "de": [
-          "Health Score",
-          "Health-Score",
-          "Gesundheits-Score"
-        ],
+        "de": ["Health Score", "Health-Score", "Gesundheits-Score"],
         "en": [
           {
             "text": "Health Score",
             "caseSensitive": true
           }
         ],
-        "fr": [
-          "score santé"
-        ],
+        "fr": ["score santé"],
         "es": [],
-        "it": [
-          "health score",
-          "punteggio salute"
-        ],
-        "pl": [
-          "Health Score",
-          "Health-Score"
-        ],
-        "ko": [
-          "건강점수",
-          "헬스 스코어"
-        ],
-        "nl": [
-          "Health Score",
-          "gezondheids-score"
-        ],
+        "it": ["health score", "punteggio salute"],
+        "pl": ["Health Score", "Health-Score"],
+        "ko": ["건강점수", "헬스 스코어"],
+        "nl": ["Health Score", "gezondheids-score"],
         "pt-BR": [
           {
             "text": "Pontuação de Saúde",
@@ -2936,10 +2751,7 @@
           },
           "escore de saúde"
         ],
-        "ru": [
-          "Health Score",
-          "индекс здоровья"
-        ],
+        "ru": ["Health Score", "индекс здоровья"],
         "zh-CN": []
       }
     },
@@ -3369,37 +3181,48 @@
       "wire": "composite READINESS",
       "terms": {
         "de": {
-          "name": "Bereitschaft"
+          "name": "Bereitschaft",
+          "short": "Bereitschaft"
         },
         "en": {
-          "name": "Readiness"
+          "name": "Readiness",
+          "short": "Readiness"
         },
         "fr": {
-          "name": "Disponibilité"
+          "name": "Disponibilité",
+          "short": "Disponibilité"
         },
         "es": {
-          "name": "Disposición"
+          "name": "Disposición",
+          "short": "Disposición"
         },
         "it": {
-          "name": "Prontezza"
+          "name": "Prontezza",
+          "short": "Prontezza"
         },
         "pl": {
-          "name": "Gotowość"
+          "name": "Gotowość",
+          "short": "Gotowość"
         },
         "ko": {
-          "name": "준비도"
+          "name": "준비도",
+          "short": "준비도"
         },
         "nl": {
-          "name": "Paraatheid"
+          "name": "Paraatheid",
+          "short": "Paraatheid"
         },
         "pt-BR": {
-          "name": "Prontidão"
+          "name": "Prontidão",
+          "short": "Prontidão"
         },
         "ru": {
-          "name": "Готовность"
+          "name": "Готовность",
+          "short": "Готовность"
         },
         "zh-CN": {
-          "name": "准备度"
+          "name": "准备度",
+          "short": "准备度"
         }
       },
       "anchors": [
@@ -3409,6 +3232,7 @@
           "match": "exact"
         }
       ],
+      "shortKey": "measurements.shortTypeReadiness",
       "forbidden": {
         "de": [],
         "en": [],
@@ -3434,37 +3258,48 @@
       "wire": "composite SLEEP_SCORE",
       "terms": {
         "de": {
-          "name": "Schlafscore"
+          "name": "Schlafscore",
+          "short": "Schlafscore"
         },
         "en": {
-          "name": "Sleep score"
+          "name": "Sleep score",
+          "short": "Sleep score"
         },
         "fr": {
-          "name": "Score de sommeil"
+          "name": "Score de sommeil",
+          "short": "Score de sommeil"
         },
         "es": {
-          "name": "Puntuación de sueño"
+          "name": "Puntuación de sueño",
+          "short": "Puntuación de sueño"
         },
         "it": {
-          "name": "Punteggio del sonno"
+          "name": "Punteggio del sonno",
+          "short": "Punteggio del sonno"
         },
         "pl": {
-          "name": "Wynik snu"
+          "name": "Wynik snu",
+          "short": "Wynik snu"
         },
         "ko": {
-          "name": "수면 점수"
+          "name": "수면 점수",
+          "short": "수면 점수"
         },
         "nl": {
-          "name": "Slaapscore"
+          "name": "Slaapscore",
+          "short": "Slaapscore"
         },
         "pt-BR": {
-          "name": "Pontuação de sono"
+          "name": "Pontuação de sono",
+          "short": "Pontuação de sono"
         },
         "ru": {
-          "name": "Балл сна"
+          "name": "Балл сна",
+          "short": "Балл сна"
         },
         "zh-CN": {
-          "name": "睡眠评分"
+          "name": "睡眠评分",
+          "short": "睡眠评分"
         }
       },
       "anchors": [
@@ -3479,6 +3314,7 @@
           "match": "exact"
         }
       ],
+      "shortKey": "measurements.shortTypeSleepScore",
       "forbidden": {
         "de": [],
         "en": [],
@@ -3488,9 +3324,7 @@
         "pl": [],
         "ko": [],
         "nl": [],
-        "pt-BR": [
-          "pontuação do sono"
-        ],
+        "pt-BR": ["pontuação do sono"],
         "ru": [],
         "zh-CN": []
       }
@@ -3501,37 +3335,48 @@
       "wire": "measurement type RECOVERY_SCORE",
       "terms": {
         "de": {
-          "name": "Erholungsscore"
+          "name": "Erholungsscore",
+          "short": "Erholung"
         },
         "en": {
-          "name": "Recovery score"
+          "name": "Recovery score",
+          "short": "Recovery"
         },
         "fr": {
-          "name": "Score de récupération"
+          "name": "Score de récupération",
+          "short": "Récupération"
         },
         "es": {
-          "name": "Puntuación de recuperación"
+          "name": "Puntuación de recuperación",
+          "short": "Recuperación"
         },
         "it": {
-          "name": "Punteggio di recupero"
+          "name": "Punteggio di recupero",
+          "short": "Recupero"
         },
         "pl": {
-          "name": "Wynik regeneracji"
+          "name": "Wynik regeneracji",
+          "short": "Regeneracja"
         },
         "ko": {
-          "name": "회복 점수"
+          "name": "회복 점수",
+          "short": "회복"
         },
         "nl": {
-          "name": "Herstelscore"
+          "name": "Herstelscore",
+          "short": "Herstel"
         },
         "pt-BR": {
-          "name": "Pontuação de recuperação"
+          "name": "Pontuação de recuperação",
+          "short": "Recuperação"
         },
         "ru": {
-          "name": "Балл восстановления"
+          "name": "Балл восстановления",
+          "short": "Восстановление"
         },
         "zh-CN": {
-          "name": "恢复评分"
+          "name": "恢复评分",
+          "short": "恢复"
         }
       },
       "anchors": [
@@ -3551,6 +3396,7 @@
           "match": "exact"
         }
       ],
+      "shortKey": "measurements.shortTypeRecoveryScore",
       "forbidden": {
         "de": [],
         "en": [],
@@ -3611,18 +3457,14 @@
         }
       ],
       "forbidden": {
-        "de": [
-          "Push-Relais"
-        ],
+        "de": ["Push-Relais"],
         "en": [],
         "fr": [],
         "es": [],
         "it": [],
         "pl": [],
         "ko": [],
-        "nl": [
-          "push-relay"
-        ],
+        "nl": ["push-relay"],
         "pt-BR": [],
         "ru": [],
         "zh-CN": []
@@ -3677,10 +3519,7 @@
         "de": [],
         "en": [],
         "fr": [],
-        "es": [
-          "actividad en vivo",
-          "actividades en vivo"
-        ],
+        "es": ["actividad en vivo", "actividades en vivo"],
         "it": [],
         "pl": [],
         "ko": [],
@@ -3748,15 +3587,9 @@
         }
       ],
       "forbidden": {
-        "de": [
-          "Vormund"
-        ],
+        "de": ["Vormund"],
         "en": [],
-        "fr": [
-          "tuteur",
-          "tutrice",
-          "tutelle"
-        ],
+        "fr": ["tuteur", "tutrice", "tutelle"],
         "es": [
           {
             "text": "tutor",
@@ -3776,31 +3609,12 @@
           },
           "tutela"
         ],
-        "it": [
-          "tutor",
-          "tutel"
-        ],
-        "pl": [
-          "opiekując",
-          "opiekun prawn"
-        ],
-        "ko": [
-          "후견인",
-          "법정 대리인"
-        ],
-        "nl": [
-          "voogd"
-        ],
-        "pt-BR": [
-          "guardião",
-          "guardiões",
-          "guardiã",
-          "tutor legal"
-        ],
-        "ru": [
-          "опекун",
-          "попечител"
-        ],
+        "it": ["tutor", "tutel"],
+        "pl": ["opiekując", "opiekun prawn"],
+        "ko": ["후견인", "법정 대리인"],
+        "nl": ["voogd"],
+        "pt-BR": ["guardião", "guardiões", "guardiã", "tutor legal"],
+        "ru": ["опекун", "попечител"],
         "zh-CN": []
       }
     },
@@ -3851,20 +3665,10 @@
         }
       ],
       "forbidden": {
-        "de": [
-          "betreutes Profil",
-          "betreuten Profil",
-          "Kinderprofil"
-        ],
-        "en": [
-          "child profile",
-          "dependent profile"
-        ],
+        "de": ["betreutes Profil", "betreuten Profil", "Kinderprofil"],
+        "en": ["child profile", "dependent profile"],
         "fr": [],
-        "es": [
-          "perfil administrado",
-          "perfiles administrados"
-        ],
+        "es": ["perfil administrado", "perfiles administrados"],
         "it": [],
         "pl": [
           "zarządzany profil",
@@ -3872,21 +3676,10 @@
           "zarządzanym profil",
           "profil dziecka"
         ],
-        "ko": [
-          "자녀 프로필"
-        ],
-        "nl": [
-          "kindprofiel"
-        ],
-        "pt-BR": [
-          "perfil infantil",
-          "perfil de dependente"
-        ],
-        "ru": [
-          "детский профиль",
-          "профиль ребёнка",
-          "профиль ребенка"
-        ],
+        "ko": ["자녀 프로필"],
+        "nl": ["kindprofiel"],
+        "pt-BR": ["perfil infantil", "perfil de dependente"],
+        "ru": ["детский профиль", "профиль ребёнка", "профиль ребенка"],
         "zh-CN": []
       }
     },
@@ -3948,25 +3741,15 @@
         }
       ],
       "forbidden": {
-        "de": [
-          "Freigabe-Link"
-        ],
-        "en": [
-          "clinician link",
-          "doctor share link"
-        ],
-        "fr": [
-          "lien clinicien",
-          "liens cliniciens"
-        ],
+        "de": ["Freigabe-Link"],
+        "en": ["clinician link", "doctor share link"],
+        "fr": ["lien clinicien", "liens cliniciens"],
         "es": [
           "enlace compartido",
           "enlaces compartidos",
           "enlaces para profesionales"
         ],
-        "it": [
-          "link di condivisione con i medici"
-        ],
+        "it": ["link di condivisione con i medici"],
         "pl": [
           "link do udostępni",
           "linki do udostępni",
@@ -3975,16 +3758,8 @@
           "linków dla lekarz",
           "udostępniania dla lekarz"
         ],
-        "ko": [
-          "공유링크",
-          "의료진 링크",
-          "의료진용 링크"
-        ],
-        "nl": [
-          "deel-link",
-          "deellinks voor arts",
-          "links voor zorgverlener"
-        ],
+        "ko": ["공유링크", "의료진 링크", "의료진용 링크"],
+        "nl": ["deel-link", "deellinks voor arts", "links voor zorgverlener"],
         "pt-BR": [
           "link para profissionais",
           "links para profissionais",
@@ -4125,14 +3900,9 @@
         "en": [],
         "fr": [],
         "es": [],
-        "it": [
-          "fonte dati",
-          "fonti dati"
-        ],
+        "it": ["fonte dati", "fonti dati"],
         "pl": [],
-        "ko": [
-          "데이터 원본"
-        ],
+        "ko": ["데이터 원본"],
         "nl": [],
         "pt-BR": [],
         "ru": [],
@@ -4201,9 +3971,7 @@
         }
       ],
       "forbidden": {
-        "de": [
-          "still seit"
-        ],
+        "de": ["still seit"],
         "en": [],
         "fr": [],
         "es": [],
@@ -4305,9 +4073,7 @@
       ],
       "shortKey": "measurements.shortTypeRestingHeartRate",
       "forbidden": {
-        "de": [
-          "Ruheherzfrequenz"
-        ],
+        "de": ["Ruheherzfrequenz"],
         "en": [],
         "fr": [],
         "es": [],
@@ -4392,10 +4158,7 @@
         }
       ],
       "forbidden": {
-        "de": [
-          "viszerales Fett",
-          "viszeralen Fett"
-        ],
+        "de": ["viszerales Fett", "viszeralen Fett"],
         "en": [],
         "fr": [],
         "es": [],
@@ -4497,22 +4260,12 @@
         "de": [],
         "en": [],
         "fr": [],
-        "es": [
-          "glucosa en sangre"
-        ],
+        "es": ["glucosa en sangre"],
         "it": [],
-        "pl": [
-          "glukoza we krwi",
-          "glukozy we krwi",
-          "poziom glukozy"
-        ],
+        "pl": ["glukoza we krwi", "glukozy we krwi", "poziom glukozy"],
         "ko": [],
-        "nl": [
-          "bloedsuiker"
-        ],
-        "pt-BR": [
-          "glicose no sangue"
-        ],
+        "nl": ["bloedsuiker"],
+        "pt-BR": ["glicose no sangue"],
         "ru": [],
         "zh-CN": []
       }
@@ -4611,10 +4364,7 @@
         "it": [],
         "pl": [],
         "ko": [],
-        "nl": [
-          "zuurstofverzadiging",
-          "bloedzuurstof"
-        ],
+        "nl": ["zuurstofverzadiging", "bloedzuurstof"],
         "pt-BR": [],
         "ru": [],
         "zh-CN": []
@@ -4688,9 +4438,7 @@
           }
         ],
         "it": [],
-        "pl": [
-          "ud./min"
-        ],
+        "pl": ["ud./min"],
         "ko": [],
         "nl": [],
         "pt-BR": [],
@@ -4781,18 +4529,14 @@
         }
       ],
       "forbidden": {
-        "de": [
-          "Workout"
-        ],
+        "de": ["Workout"],
         "en": [],
         "fr": [],
         "es": [],
         "it": [],
         "pl": [],
         "ko": [],
-        "nl": [
-          "workout"
-        ],
+        "nl": ["workout"],
         "pt-BR": [],
         "ru": [],
         "zh-CN": []
@@ -4960,21 +4704,14 @@
         }
       ],
       "forbidden": {
-        "de": [
-          "Treppendaten",
-          "Treppenwerte"
-        ],
+        "de": ["Treppendaten", "Treppenwerte"],
         "en": [],
         "fr": [],
         "es": [],
         "it": [],
         "pl": [],
         "ko": [],
-        "nl": [
-          "trappen gelopen",
-          "gelopen trappen",
-          "trappen beklommen"
-        ],
+        "nl": ["trappen gelopen", "gelopen trappen", "trappen beklommen"],
         "pt-BR": [],
         "ru": [],
         "zh-CN": []
@@ -9578,9 +9315,7 @@
         "ko": [],
         "nl": [],
         "pt-BR": [],
-        "ru": [
-          "обезжиренн"
-        ],
+        "ru": ["обезжиренн"],
         "zh-CN": []
       }
     },
@@ -10235,9 +9970,7 @@
         }
       ],
       "forbidden": {
-        "de": [
-          "Atemaussetzer"
-        ],
+        "de": ["Atemaussetzer"],
         "en": [],
         "fr": [],
         "es": [],
@@ -10550,37 +10283,48 @@
       "description": "The Stress score metric (STRESS_SCORE).",
       "terms": {
         "de": {
-          "name": "Stressscore"
+          "name": "Stressscore",
+          "short": "Stress"
         },
         "en": {
-          "name": "Stress score"
+          "name": "Stress score",
+          "short": "Stress"
         },
         "fr": {
-          "name": "Score de stress"
+          "name": "Score de stress",
+          "short": "Stress"
         },
         "es": {
-          "name": "Puntuación de estrés"
+          "name": "Puntuación de estrés",
+          "short": "Estrés"
         },
         "it": {
-          "name": "Punteggio di stress"
+          "name": "Punteggio di stress",
+          "short": "Stress"
         },
         "pl": {
-          "name": "Wynik stresu"
+          "name": "Wynik stresu",
+          "short": "Stres"
         },
         "ko": {
-          "name": "스트레스 점수"
+          "name": "스트레스 점수",
+          "short": "스트레스"
         },
         "nl": {
-          "name": "Stressscore"
+          "name": "Stressscore",
+          "short": "Stress"
         },
         "pt-BR": {
-          "name": "Pontuação de estresse"
+          "name": "Pontuação de estresse",
+          "short": "Estresse"
         },
         "ru": {
-          "name": "Балл стресса"
+          "name": "Балл стресса",
+          "short": "Стресс"
         },
         "zh-CN": {
-          "name": "压力评分"
+          "name": "压力评分",
+          "short": "压力"
         }
       },
       "anchors": [
@@ -10595,6 +10339,7 @@
           "match": "exact"
         }
       ],
+      "shortKey": "measurements.shortTypeStressScore",
       "forbidden": {
         "de": [
           "Stress-Score",
@@ -10621,37 +10366,48 @@
       "description": "The Strain score metric (STRAIN_SCORE).",
       "terms": {
         "de": {
-          "name": "Belastungsscore"
+          "name": "Belastungsscore",
+          "short": "Belastung"
         },
         "en": {
-          "name": "Strain score"
+          "name": "Strain score",
+          "short": "Strain"
         },
         "fr": {
-          "name": "Score d'effort"
+          "name": "Score d'effort",
+          "short": "Effort"
         },
         "es": {
-          "name": "Puntuación de esfuerzo diario"
+          "name": "Puntuación de esfuerzo diario",
+          "short": "Esfuerzo"
         },
         "it": {
-          "name": "Punteggio di sforzo"
+          "name": "Punteggio di sforzo",
+          "short": "Sforzo"
         },
         "pl": {
-          "name": "Wynik obciążenia"
+          "name": "Wynik obciążenia",
+          "short": "Obciążenie"
         },
         "ko": {
-          "name": "부하 점수"
+          "name": "부하 점수",
+          "short": "부하"
         },
         "nl": {
-          "name": "Belastingsscore"
+          "name": "Belastingsscore",
+          "short": "Belasting"
         },
         "pt-BR": {
-          "name": "Pontuação de esforço"
+          "name": "Pontuação de esforço",
+          "short": "Esforço"
         },
         "ru": {
-          "name": "Балл напряжения"
+          "name": "Балл напряжения",
+          "short": "Напряжение"
         },
         "zh-CN": {
-          "name": "负荷评分"
+          "name": "负荷评分",
+          "short": "负荷"
         }
       },
       "anchors": [
@@ -10666,6 +10422,7 @@
           "match": "exact"
         }
       ],
+      "shortKey": "measurements.shortTypeStrainScore",
       "forbidden": {
         "de": [
           "Belastungs-Score",
@@ -11920,9 +11677,7 @@
       "shortKey": "measurements.shortTypeAfibBurden",
       "forbidden": {
         "de": [],
-        "en": [
-          "AFib history"
-        ],
+        "en": ["AFib history"],
         "fr": [],
         "es": [],
         "it": [],

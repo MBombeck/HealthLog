@@ -33,13 +33,9 @@
 
 import { shownAdherence } from "@/lib/medications/shown-adherence";
 import type { MedicationCourseWire } from "@/components/medications/course-fields";
-import {
-  CoursesRow,
-  GuardianCoursesSection,
-} from "@/components/medications/sections/courses-section";
+import { GuardianCoursesSection } from "@/components/medications/sections/courses-section";
 import {
   COMPOSITION_CATEGORIES,
-  CompositionRow,
   CompositionSection,
 } from "@/components/medications/sections/composition-section";
 import type { MedicationIngredientDto } from "@/components/medications/sections/use-composition";
@@ -52,7 +48,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useUrlSearch, writeUrlState } from "@/lib/url-state";
-import { ArrowLeft, Pencil } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -70,24 +66,16 @@ import { Segmented } from "@/components/ui/segmented";
 import { ScheduleTimesEditor } from "@/components/medications/scheduling/schedule-times-editor";
 import { ScheduleHistoryTimeline } from "@/components/medications/scheduling/schedule-history-timeline";
 import type { DoseWindowEntry } from "@/components/medications/scheduling/dose-window";
-import { IntakeImportDialog } from "@/components/medications/intake-import-dialog";
 import { InventorySection } from "@/components/medications/sections/inventory-section";
 import {
   ManageChannelsLink,
   NotificationsBody,
 } from "@/components/medications/sections/notifications-section";
 import {
-  DrugCodingRow,
   GraceRow,
   PhasesRow,
 } from "@/components/medications/sections/settings-section";
-import { ApiTokensRow } from "@/components/medications/sections/api-tokens-row";
-import { DataPortabilityRow } from "@/components/medications/sections/data-portability-row";
-import {
-  DangerZoneBody,
-  LifecycleManageBody,
-} from "@/components/medications/sections/destructive-zone-section";
-import { SettingsGroup } from "@/components/medications/settings-group";
+import { MedicationAdvancedTab } from "@/components/medications/detail/medication-advanced-tab";
 import { PhaseConfigSheet } from "@/components/medications/sections/phase-config-sheet";
 import { SideEffectsSection } from "@/components/medications/side-effects-section";
 import { ChartSkeleton } from "@/components/charts/chart-skeleton";
@@ -235,7 +223,10 @@ const OWNER_ONLY_TABS: ReadonlySet<TabSlug> = new Set([
   // reads inside it stay quiet in a shared record. See `runsSchedule`.
   "schedule",
   // Phase config, export and the per-medication tokens (a credential
-  // surface, never delegated) resolve the caller.
+  // surface, never delegated) resolve the caller. #1615 — a managed
+  // profile's guardian gets the tab for its lifecycle, editor and danger
+  // zone (pause, end, purge, delete), whose routes admit them; the
+  // caller-resolving rows stay hidden inside a shared record.
   "advanced",
 ]);
 
@@ -281,7 +272,6 @@ export function MedicationDetailTabs({
   // reload stays closed.
   const shouldOpenEditFromUrl = searchParams?.get("edit") === "1";
   const [editOpen, setEditOpen] = useState(shouldOpenEditFromUrl);
-  const [importOpen, setImportOpen] = useState(false);
   const [phaseSheetOpen, setPhaseSheetOpen] = useState(false);
   // Verlauf tab: the schedule-expanded ledger covers only a trailing 90-day
   // window; "all" swaps in the full paginated intake history so older doses
@@ -347,7 +337,7 @@ export function MedicationDetailTabs({
           (slug !== "effect" || hasEfficacyTarget) &&
           (!inSharedRecord ||
             !OWNER_ONLY_TABS.has(slug) ||
-            (slug === "schedule" && runsSchedule)) &&
+            ((slug === "schedule" || slug === "advanced") && runsSchedule)) &&
           (canManageMedications || !MANAGE_TABS.has(slug)),
       ),
     [
@@ -754,103 +744,12 @@ export function MedicationDetailTabs({
             The API tab folded back in here (v1.42); its group stays
             collapsed like the other two, and the danger zone stays last. */}
         <TabsContent value="advanced" className="space-y-4 pt-2">
-          <SettingsGroup
-            label={t("medications.detail.erweitert.group.lifecycle")}
-            dataSlot="erweitert-group-lifecycle"
-            collapsible
-            defaultOpen={false}
-          >
-            <div className="py-3">
-              <LifecycleManageBody medication={medication} />
-            </div>
-            {/* v1.40 (#1024) — the courses: when it was taken, and a new
-                course once the last one has ended. */}
-            <div className="py-3">
-              <CoursesRow
-                medicationId={id}
-                courses={medication.courses ?? []}
-                canStartCourse={medication.canStartCourse === true}
-                canEdit={!inSharedRecord}
-              />
-            </div>
-            {/* The structural editor (the create/edit wizard) — name,
-                class, cadence kind, schedules. Replaces the former hero
-                "Vollständig bearbeiten" button, which read as "edit this
-                page". */}
-            <div
-              className="flex items-center justify-between gap-3 py-3"
-              data-slot="erweitert-editor-row"
-            >
-              <div className="space-y-1">
-                <p className="text-foreground text-sm font-medium">
-                  {t("medications.detail.erweitert.editor.title")}
-                </p>
-                <p className="text-muted-foreground text-xs">
-                  {t("medications.detail.erweitert.editor.helper")}
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setEditOpen(true)}
-                className="min-h-11 shrink-0 sm:min-h-9"
-                data-slot="medication-detail-full-edit"
-              >
-                <Pencil aria-hidden="true" className="h-4 w-4" />
-                {t("medications.detail.erweitert.editor.button")}
-              </Button>
-            </div>
-            {nutrientsOn && !showComposition && (
-              <CompositionRow medicationId={id} ownRecord={!inSharedRecord} />
-            )}
-          </SettingsGroup>
-
-          <SettingsGroup
-            label={t("medications.detail.erweitert.group.data")}
-            dataSlot="erweitert-group-data"
-            collapsible
-            defaultOpen={false}
-          >
-            <div className="py-3">
-              <DataPortabilityRow
-                medicationId={id}
-                onOpenImport={() => setImportOpen(true)}
-              />
-            </div>
-          </SettingsGroup>
-
-          <SettingsGroup
-            label={t("medications.detail.erweitert.group.externalApi")}
-            dataSlot="api-group-external-api"
-            collapsible
-            defaultOpen={false}
-          >
-            <div className="py-3">
-              <ApiTokensRow
-                medicationId={id}
-                medicationName={medication.name}
-              />
-            </div>
-            <div className="py-3">
-              <DrugCodingRow
-                medicationId={id}
-                atcCode={medication.atcCode}
-                rxNormCode={medication.rxNormCode}
-              />
-            </div>
-          </SettingsGroup>
-
-          <ComplianceGatedDangerZone
-            medicationId={id}
-            medicationName={medication.name}
+          <MedicationAdvancedTab
+            medication={medication}
+            inSharedRecord={inSharedRecord}
+            showCompositionRow={nutrientsOn && !showComposition}
+            onEdit={() => setEditOpen(true)}
           />
-
-          {importOpen && (
-            <IntakeImportDialog
-              medicationId={id}
-              onClose={() => setImportOpen(false)}
-            />
-          )}
         </TabsContent>
       </Tabs>
 
@@ -877,67 +776,5 @@ export function MedicationDetailTabs({
         onOpenChange={setPhaseSheetOpen}
       />
     </div>
-  );
-}
-
-/**
- * The danger zone's purge gate needs `intakeCount`. Fetch it lazily here
- * (the Erweitert tab pays for it; the other tabs never do) rather than
- * threading a count the page doesn't otherwise need.
- */
-function ComplianceGatedDangerZone({
-  medicationId,
-  medicationName,
-}: {
-  medicationId: string;
-  medicationName: string;
-}) {
-  const params = {
-    sortBy: "takenAt",
-    sortDir: "desc" as const,
-    limit: 1,
-    offset: 0,
-    status: "completed",
-  };
-  const { data: intakeCount } = useQuery({
-    queryKey: queryKeys.medicationIntakeList(medicationId, params),
-    queryFn: async () => {
-      const search = new URLSearchParams({
-        sortBy: params.sortBy,
-        sortDir: params.sortDir,
-        limit: String(params.limit),
-        offset: String(params.offset),
-        status: params.status,
-      });
-      try {
-        const data = await apiGet<{ meta?: { total?: number } }>(
-          `/api/medications/${medicationId}/intake?${search.toString()}`,
-        );
-        return data?.meta?.total ?? 0;
-      } catch {
-        return 0;
-      }
-    },
-    staleTime: 30_000,
-  });
-
-  const { t } = useTranslations();
-
-  return (
-    // v1.16.1 — same neutral card chrome as every other group; only the
-    // action buttons stay destructive. A red-washed card read as a
-    // constant alarm on a page the user visits routinely.
-    <SettingsGroup
-      label={t("medications.detail.erweitert.group.danger")}
-      dataSlot="erweitert-group-danger"
-      collapsible
-      defaultOpen={false}
-    >
-      <DangerZoneBody
-        medicationId={medicationId}
-        medicationName={medicationName}
-        intakeCount={intakeCount ?? 0}
-      />
-    </SettingsGroup>
   );
 }

@@ -8,6 +8,7 @@ import {
   JOB_FAILURE_WINDOW_HOURS,
   readFailingQueues,
 } from "@/lib/jobs/job-failures";
+import { readGoneHolds } from "@/lib/notifications/gone-registrations";
 import { readFileSync } from "node:fs";
 import {
   containerMemoryLimitMb,
@@ -79,7 +80,23 @@ export const GET = apiHandler(async () => {
   // queue itself knows which job broke and why, so that is what the status
   // reports. `null` = no queue schema to ask (web-only deployment); an empty
   // array = asked, nothing is failing.
-  const failingJobs = await readFailingQueues();
+  const queueFailures = await readFailingQueues();
+  // A push channel whose breaker holds deletions is listed with them: the
+  // push service called too many registrations gone at once, which points at
+  // this server's push configuration (`gone-registrations.ts`).
+  const holds = (await readGoneHolds()).map((hold) => ({
+    queue: `push-registration-cleanup:${hold.channel}`,
+    failures: hold.count,
+    lastFailedAt: hold.trippedAt.toISOString(),
+    lastError:
+      `${hold.count} registrations reported gone at once; deletions are held until ` +
+      `${hold.until.toISOString()}. Check the push configuration ` +
+      `(APNs topic and bundle id, Wallet Pass Type ID, key environment, VAPID keys).`,
+  }));
+  const failingJobs =
+    queueFailures === null && holds.length === 0
+      ? null
+      : [...holds, ...(queueFailures ?? [])];
   // The process's heap ceiling, and whether it is the 1 GB-container size
   // that a long-used account can fill (`heap-limit.ts`).
   const heapLimit = heapLimitMb();

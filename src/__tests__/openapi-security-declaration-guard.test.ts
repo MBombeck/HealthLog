@@ -93,6 +93,8 @@ const UNAUTHENTICATED: Readonly<Record<string, string>> = {
     "A calendar provider polls it from its own servers with no session; the `hlf_` path token is the credential.",
   "/api/care/feed/{token}":
     "The care calendar feed a calendar provider polls with no session; the hlf_ token in the path is the credential, checked by its HMAC after a rate limit.",
+  "/api/health-connect/pair":
+    "Exchanges a one-time pairing code for an Android device's token; the code in the body is the credential, there is none before it.",
   "/api/notifications/vapid":
     "The instance's public Web Push key. Public by definition.",
   "/api/auth/claim/preview":

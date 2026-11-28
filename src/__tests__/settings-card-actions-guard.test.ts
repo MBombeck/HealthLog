@@ -30,7 +30,6 @@ import { readSource, readSourceFolder } from "./helpers/source-files";
 const FROZEN = new Set([
   "components/settings/coach-memory-section.tsx",
   "components/settings/medications-section.tsx",
-  "components/settings/import-panel/record-csv-import-card.tsx",
   "components/admin/invite-tokens-section.tsx",
   "components/admin/user-management-section.tsx",
   "components/admin/backups/backup-rows.tsx",

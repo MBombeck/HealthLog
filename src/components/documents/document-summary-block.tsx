@@ -21,20 +21,16 @@
  *   WITHHELD    → says the summary was blocked, offers another attempt. The
  *                 blocked prose is never shown or stored
  *   UNAVAILABLE → says none could be produced, offers another attempt
- *   NONE        → says none exists yet, offers to generate one
+ *   NONE        → nothing: a document without a summary needs no line saying so
  *
  * #1404 — when the server recorded why the last attempt stopped (`failure`), the
- * absent state says that reason instead of the generic line, and the action
- * reads "Try again".
+ * absent state says that reason instead of the generic line.
  *
- * The action is a click, never an effect: opening a document must not spend a
- * provider call. With no AI provider configured the block renders the state
- * without an action rather than an button that would 422.
+ * Writing one is the sheet's "⋯" entry "Summarise", a click, never an effect:
+ * opening a document must not spend a provider call. While that runs, the
+ * block shows where it stands.
  */
-import { FileText } from "lucide-react";
-
 import { AiJobFailureLine } from "@/components/ai/ai-job-failure-line";
-import { Button } from "@/components/ui/button";
 import type { AiJobFailureDto } from "@/lib/ai/job-failure/types";
 import type { AiRunPhase } from "@/hooks/use-ai-run";
 import { useTranslations } from "@/lib/i18n/context";
@@ -42,67 +38,44 @@ import type { DocumentSummaryStateValue } from "@/lib/validations/inbound-docume
 
 import { AiRunPhaseNote } from "./document-ai-panels";
 
-/** Copy key for a state with no summary to show. */
+/** Copy key for a state that says why there is no summary. */
 function absentCopyKey(state: DocumentSummaryStateValue): string {
-  if (state === "WITHHELD") return "documents.detail.summary.withheld";
-  if (state === "UNAVAILABLE") return "documents.detail.summary.unavailable";
-  return "documents.detail.summary.none";
+  return state === "WITHHELD"
+    ? "documents.detail.summary.withheld"
+    : "documents.detail.summary.unavailable";
 }
 
 export function DocumentSummaryBlock({
   summary,
   summaryState,
   generatedAtLabel,
-  aiEnabled,
-  isGenerating,
   runPhase = "idle",
-  actionsDisabled,
-  canGenerate = true,
   failures,
-  onGenerate,
 }: {
   /** The stored, decrypted summary, or null when there is none to show. */
   summary: string | null;
   summaryState: DocumentSummaryStateValue;
-  /** Pre-formatted generation date — the sheet owns locale formatting. */
+  /** Pre-formatted generation date; the sheet owns locale formatting. */
   generatedAtLabel: string | null;
-  /** Whether an AI provider is configured; false hides the action, not the state. */
-  aiEnabled: boolean;
-  isGenerating: boolean;
   /**
-   * v1.40 — where the background read stands while one runs. The summary is
+   * v1.40: where the background read stands while one runs. The summary is
    * stored on the document, so the line tells the person they may leave.
    */
   runPhase?: AiRunPhase;
-  /** Capability still resolving — the transport mode isn't known yet. */
-  actionsDisabled: boolean;
-  /**
-   * v1.36.x — false inside somebody else's record: a stored summary is
-   * readable, generating one writes to the owner's record and no grant level
-   * admits it. The state line stays; the button goes.
-   */
-  canGenerate?: boolean;
-  /** #1404 — the document's recorded AI failures; the summary's is shown. */
+  /** #1404: the document's recorded AI failures; the summary's is shown. */
   failures?: readonly AiJobFailureDto[];
-  onGenerate: () => void;
 }) {
   const { t } = useTranslations();
   const failure =
     failures?.find((entry) => entry.job === "documentSummary") ?? null;
 
   // A stored summary wins over every state and is shown read-only from storage.
-  // Generation remains available only for absent terminal states below.
   if (summary) {
     return (
       <section className="space-y-2" data-slot="document-detail-summary">
-        <div
-          data-slot="document-detail-summary-header"
-          className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between"
-        >
-          <p className="text-sm leading-none font-medium">
-            {t("documents.detail.summary.title")}
-          </p>
-        </div>
+        <p className="text-sm leading-none font-medium">
+          {t("documents.detail.summary.title")}
+        </p>
         <p className="text-foreground text-sm">{summary}</p>
         {generatedAtLabel ? (
           <p className="text-muted-foreground text-xs">{generatedAtLabel}</p>
@@ -122,6 +95,17 @@ export function DocumentSummaryBlock({
     );
   }
 
+  const phase = (
+    <AiRunPhaseNote
+      phase={runPhase}
+      outcome="savedWithDocument"
+      slot="document-detail-summary-run-phase"
+    />
+  );
+  if (summaryState === "NONE" && !failure) {
+    return runPhase === "idle" ? null : phase;
+  }
+
   return (
     <section className="space-y-2" data-slot="document-detail-summary-absent">
       <p className="text-sm leading-none font-medium">
@@ -137,28 +121,7 @@ export function DocumentSummaryBlock({
           {t(absentCopyKey(summaryState))}
         </p>
       )}
-      {aiEnabled && canGenerate ? (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          data-slot="document-detail-summary-generate"
-          onClick={onGenerate}
-          disabled={isGenerating || actionsDisabled}
-        >
-          <FileText className="size-4" aria-hidden />
-          {isGenerating
-            ? t("documents.detail.summary.generating")
-            : failure
-              ? t("aiRuns.jobFailure.retry")
-              : t("documents.detail.summary.generate")}
-        </Button>
-      ) : null}
-      <AiRunPhaseNote
-        phase={runPhase}
-        outcome="savedWithDocument"
-        slot="document-detail-summary-run-phase"
-      />
+      {phase}
     </section>
   );
 }

@@ -2,6 +2,7 @@ import pLimit from "p-limit";
 import { prisma } from "@/lib/db";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { recordSyncSuccess } from "@/lib/integrations/status";
+import { noteBackfillFailure } from "@/lib/integrations/page-walk";
 import { afterProviderBackfill } from "@/lib/integrations/sync-kit/after-write";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
@@ -325,6 +326,7 @@ async function runGoogleHealthSyncCycle(
         }
       } catch (err) {
         anyFailed = true;
+        noteBackfillFailure(err);
         resourceOutcomes.push(
           boundedOutcome({
             resource: name,

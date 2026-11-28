@@ -14,8 +14,8 @@
  * actually painted, whichever scheme the media query would pick.
  */
 export const THEME_COLOR = {
-  light: "#f3f2f5",
-  dark: "#282a36",
+  light: "#f2f0eb",
+  dark: "#101113",
 } as const;
 
 export type ThemeChoice = "dark" | "light" | "system";
@@ -73,4 +73,4 @@ export function applyThemeColor(
  * refuses storage still follows its own scheme rather than one fixed theme.
  */
 export const THEME_BOOT_SCRIPT =
-  '(function(){var t=null,c="dark";try{t=localStorage.getItem("healthlog-theme")}catch(e){}if(t==="light"||t==="dark"){c=t}else{try{c=window.matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"}catch(e){}}document.documentElement.classList.add(c);var k=c==="light"?"#f3f2f5":"#282a36";function m(){var a=document.querySelectorAll(\'meta[name="theme-color"]\');for(var i=0;i<a.length;i++)a[i].setAttribute("content",k)}m();document.addEventListener("DOMContentLoaded",m)})()';
+  '(function(){var t=null,c="dark";try{t=localStorage.getItem("healthlog-theme")}catch(e){}if(t==="light"||t==="dark"){c=t}else{try{c=window.matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"}catch(e){}}document.documentElement.classList.add(c);var k=c==="light"?"#f2f0eb":"#101113";function m(){var a=document.querySelectorAll(\'meta[name="theme-color"]\');for(var i=0;i<a.length;i++)a[i].setAttribute("content",k)}m();document.addEventListener("DOMContentLoaded",m)})()';

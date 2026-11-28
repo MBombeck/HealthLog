@@ -85,7 +85,13 @@ export function resolveToCanonicalUnit(
 
   // Glucose: mmol/L → mg/dL.
   if (type === "BLOOD_GLUCOSE" && MMOL_ALIASES.has(lower)) {
-    return { value: value * MGDL_PER_MMOL, unit: canonical };
+    // Kept to a tenth of a mg/dL: a mmol/L figure carries no more than
+    // that, and the unrounded product (5.55 × 18.0182 = 99.99999…) is not
+    // the reading it was written from.
+    return {
+      value: Math.round(value * MGDL_PER_MMOL * 10) / 10,
+      unit: canonical,
+    };
   }
 
   // Body mass: lb → kg.

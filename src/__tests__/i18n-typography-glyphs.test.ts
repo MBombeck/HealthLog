@@ -3,10 +3,12 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * The stricter sibling of the dot-separator guard (i18n-no-dot-separator). That guard catches
- * a spaced separator; this one looks at every arrow, dash and middle dot in
- * the bundles, spaced or not, and admits only the forms that are typography
- * rather than a stand-in for words:
+ * Typography in the message bundles: one walk, three rules. Every arrow,
+ * dash and middle dot in the bundles, spaced or not, is held to the forms
+ * that are typography rather than a stand-in for words, the spaced
+ * separator is refused outright, and the ellipsis is one glyph.
+ *
+ * Glyphs:
  *
  * - U+2192 (arrow) never. A menu path is written "Settings > Account", the
  *   way the release notes write it; a change is "from 80 kg to 78 kg", an
@@ -23,6 +25,18 @@ import { join } from "node:path";
  * A key that genuinely needs another form goes into `ALLOWED` with the reason
  * next to it. An allowed key that no longer holds a flagged glyph fails, so
  * the list cannot go stale.
+ *
+ * Spaced separator: "Added {date} · {size}" or "Could not save — try again"
+ * reads as fragments; the dash or dot stands in for a comma, a colon or a
+ * full stop. A space, then U+00B7, U+2014 or U+2013, then a space, fails in
+ * every bundle and for every key, `ALLOWED` included. Russian may set the
+ * spaced dash as punctuation; its spaced middle dot still fails.
+ *
+ * Ellipsis: the typographic "…" (U+2026). Four bundles once carried three
+ * ASCII full stops in the same keys ("Cargando estado..."), and one stacked
+ * both ("Cargando…..."). Two placeholders are exempt: they show the opening
+ * characters of a key the operator pastes ("sk-...", "BElx..."), where the
+ * dots are part of the sample, not a pause.
  */
 
 const MESSAGES_DIR = join(__dirname, "../../messages");
@@ -43,6 +57,19 @@ const ALLOWED: Record<string, string> = {
  * same exemption stands in the dot-separator guard.
  */
 const EM_DASH_BUNDLES = new Set(["ru.json"]);
+
+const SPACED_DOT = " · ";
+const SPACED_DASHES = [" — ", " – "] as const;
+
+function hasSpacedSeparator(value: string, dashAllowed: boolean): boolean {
+  if (value.includes(SPACED_DOT)) return true;
+  return !dashAllowed && SPACED_DASHES.some((dash) => value.includes(dash));
+}
+
+const KEY_SAMPLE = /^(sk-|BElx)\.\.\./;
+
+const badEllipsis = (value: string) =>
+  !KEY_SAMPLE.test(value) && (/\.\.\./.test(value) || /…\./.test(value));
 
 const OPERAND_BEFORE = /[\p{L}\p{N}}%)°]/u;
 const OPERAND_AFTER = /[\p{L}\p{N}{(±]/u;
@@ -115,13 +142,29 @@ describe("the glyph rule itself", () => {
     expect(flaggedGlyphs(value, false)).not.toEqual([]);
   });
 
+  it("refuses a spaced separator, the spaced dash only where the bundle has no use for it", () => {
+    expect(hasSpacedSeparator("Added {date} · {size}", false)).toBe(true);
+    expect(hasSpacedSeparator("Could not save — try again", false)).toBe(true);
+    expect(hasSpacedSeparator("Saved – done", false)).toBe(true);
+    expect(hasSpacedSeparator("Курс {start} — {end}", true)).toBe(false);
+    expect(hasSpacedSeparator("Добавлено {date} · {size}", true)).toBe(true);
+    expect(hasSpacedSeparator("70–100 mmHg", false)).toBe(false);
+  });
+
+  it("writes the ellipsis as one glyph", () => {
+    expect(badEllipsis("Cargando estado...")).toBe(true);
+    expect(badEllipsis("Cargando…...")).toBe(true);
+    expect(badEllipsis("Postpone…")).toBe(false);
+    expect(badEllipsis("sk-...")).toBe(false);
+  });
+
   it("admits the em dash only where the bundle allows it", () => {
     expect(flaggedGlyphs("Курс {start} — {end}", true)).toEqual([]);
     expect(flaggedGlyphs("Курс {start} — {end} →", true)).toEqual(["→@21"]);
   });
 });
 
-describe("message bundles hold no arrow, em dash, stray en dash or stray middle dot", () => {
+describe("message bundles hold no arrow, em dash, stray en dash, stray middle dot, spaced separator or ASCII ellipsis", () => {
   it("finds the bundles", () => {
     expect(bundles.length).toBeGreaterThanOrEqual(7);
   });
@@ -138,11 +181,14 @@ describe("message bundles hold no arrow, em dash, stray en dash or stray middle 
       expect(values.size).toBeGreaterThan(1000);
     });
 
-    it(`${file} has no flagged glyph outside the allowlist`, () => {
+    it(`${file} has no flagged glyph outside the allowlist, no spaced separator and no "..."`, () => {
       const offenders = [...values]
         .filter(
           ([key, value]) =>
-            !(key in ALLOWED) && flaggedGlyphs(value, emDashAllowed).length > 0,
+            (!(key in ALLOWED) &&
+              flaggedGlyphs(value, emDashAllowed).length > 0) ||
+            hasSpacedSeparator(value, emDashAllowed) ||
+            badEllipsis(value),
         )
         .map(([key, value]) => `${key} = ${JSON.stringify(value)}`);
       expect(offenders).toEqual([]);

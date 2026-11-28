@@ -52,7 +52,7 @@ describe("<DurationReadAs>", () => {
       "utf8",
     );
     expect(form).toMatch(
-      /hint=\{\s*durationRead\?\.ok === true \? \(\s*<DurationReadAs minutes=\{durationRead\.minutes\} \/>/,
+      /valueHint=\{\s*durationRead\?\.ok === true \? \(\s*<DurationReadAs minutes=\{durationRead\.minutes\} \/>/,
     );
     // A refused entry is an inline field error, never a toast.
     expect(form).toMatch(/setValueError\(\s*t\(/);

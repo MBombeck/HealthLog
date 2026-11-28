@@ -11,6 +11,7 @@ import {
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 
+import { ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
@@ -618,10 +619,10 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
         </form>
         {footerEl
           ? createPortal(
-              <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <ActionPair>
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="outline"
                   onClick={() => setOpen(false)}
                 >
                   {t("medications.sideEffects.cancelCta")}
@@ -636,7 +637,7 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
                   )}
                   {t("medications.sideEffects.submitCta")}
                 </Button>
-              </div>,
+              </ActionPair>,
               footerEl,
             )
           : null}

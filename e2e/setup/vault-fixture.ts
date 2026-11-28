@@ -31,9 +31,25 @@ import {
   randomBytes,
 } from "node:crypto";
 
+import type { Locator, Page } from "@playwright/test";
 import pg from "pg";
 
 import { E2E_USER } from "./global-setup";
+
+/**
+ * Opens the document sheet's "⋯" and returns the menu: the AI reads, the
+ * Coach, the original in a new tab and Delete live there. The menu renders
+ * outside the dialog, so its entries are found on the page.
+ */
+export async function openDocumentMenu(
+  page: Page,
+  sheet: Locator,
+): Promise<Locator> {
+  await sheet.locator('[data-slot="document-detail-more"]').click();
+  const menu = page.getByRole("menu");
+  await menu.waitFor();
+  return menu;
+}
 
 // ─── binary2 codec (mirrors src/lib/crypto.ts encryptBytes) ────────────────
 

@@ -392,7 +392,7 @@ describe("doctor-report pagination", () => {
   });
 });
 
-// Audit-2026-05-07 / phase P0 / closes audit C-9: server-side PDF used a
+// Audit 2026-05-07, finding C-9: server-side PDF used a
 // stale type map and silently dropped body composition while the browser
 // PDF rendered them. These tests pin the contract.
 describe("doctor-report-pdf-core type-map coverage", () => {
@@ -477,7 +477,7 @@ describe("doctor-report-pdf-core type-map coverage", () => {
     expect(text).toContain("%");
   });
 
-  // ── v1.4.15 phase B6 ── practice name on cover page.
+  // ── v1.4.15 ── practice name on cover page.
 
   it("renders the practice name on the cover when supplied (DE)", async () => {
     const data = makeData({ practiceName: "Praxis Dr. Müller" });
@@ -1024,6 +1024,38 @@ describe("extracted doctor-report section boundaries", () => {
     expect(text).toContain("Ada Lovelace");
     expect(text).toContain("Example Health");
     expect(text).toContain("A123456789");
+  });
+
+  it("header/profile writes the number in its country's form", async () => {
+    const options = {
+      timeFormat: "AUTO" as const,
+      dateFormat: "AUTO" as const,
+      t: getServerTranslator("en").t,
+      locale: "en" as const,
+      now: FIXED_NOW,
+    };
+    const austrian = await extractText(
+      renderDoctorReportPdfBytes(makeData(), {
+        ...options,
+        insuranceNumber: "1237010180",
+        insuranceNumberCountry: "AT",
+        insuranceGroupNumber: "GRP 0042",
+      }),
+    );
+    expect(austrian).toContain("1237 010180");
+    // A group number belongs to a US plan only.
+    expect(austrian).not.toContain("Group no.");
+
+    const american = await extractText(
+      renderDoctorReportPdfBytes(makeData(), {
+        ...options,
+        insuranceNumber: "W123456",
+        insuranceNumberCountry: "US",
+        insuranceGroupNumber: "GRP 0042",
+      }),
+    );
+    expect(american).toContain("W123456");
+    expect(american).toContain("Group no.: GRP 0042");
   });
 
   it("measurements/charts keeps the table but omits chart drawing when disabled", async () => {

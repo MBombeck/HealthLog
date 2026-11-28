@@ -1,5 +1,5 @@
 /**
- * APNs sender unit tests (v1.4.23 Wave 3 / F4).
+ * APNs sender unit tests (v1.4.23).
  *
  * Drives the real `apns.ts` against a stubbed `@parse/node-apn` Provider
  * so we can exercise:
@@ -70,6 +70,10 @@ vi.mock("@/lib/devices/delete-devices", async () => {
 
 vi.mock("@/lib/db", () => ({
   prisma: {
+    // The gone-verdict breaker (`gone-registrations.ts`) reads an empty,
+    // closed window: no hold, one verdict counted.
+    $queryRaw: async (s: TemplateStringsArray) =>
+      s.join("").includes("RETURNING count") ? [{ count: 1 }] : [],
     device: {
       findMany: vi.fn(),
       deleteMany: vi.fn(),

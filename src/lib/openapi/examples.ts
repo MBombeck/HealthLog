@@ -72,6 +72,7 @@ export const sameTimeBaselineDailyTotalExample = {
     reason: null,
     assessment: null,
     ai: { available: true, reason: null, onDeviceAllowed: true },
+    shortLabel: null,
   },
   error: null,
 };
@@ -291,6 +292,7 @@ export const readinessFreshExample = {
     reason: null,
     assessment: null,
     ai: { available: true, reason: null, onDeviceAllowed: true },
+    shortLabel: "Readiness",
   },
   error: null,
 };
@@ -339,6 +341,7 @@ export const readinessStaleExample = {
     reason: null,
     assessment: null,
     ai: { available: true, reason: null, onDeviceAllowed: true },
+    shortLabel: "Readiness",
   },
   error: null,
 };

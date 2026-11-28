@@ -54,13 +54,18 @@ import {
 } from "./account-section-utils";
 import { AvatarField } from "./avatar-section";
 import { SetupCard } from "./setup-card";
+import {
+  InsuranceNumberFields,
+  insuranceDraft,
+} from "./insurance-number-fields";
+import { countryHasGroupNumber } from "@/lib/validations/insurance-number";
 import { dateOfBirthKey } from "@/lib/tz/date-only";
 import { translateCodeOrNull } from "@/lib/i18n/translate-code";
 
 export { resolveInitialTimezone } from "./account-section-utils";
 
 export function AccountSection() {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const { user, isLoading, isAuthenticated, refetch } = useAuth();
   // v1.16.4 — see `useMounted`: keeps the hydration render identical to
   // the SSR HTML when this boundary hydrates after `/api/auth/me`
@@ -98,6 +103,8 @@ export function AccountSection() {
   const [fullName, setFullName] = useState("");
   const [insurerName, setInsurerName] = useState("");
   const [insuranceNumber, setInsuranceNumber] = useState("");
+  const [insuranceCountry, setInsuranceCountry] = useState("DE");
+  const [insuranceGroupNumber, setInsuranceGroupNumber] = useState("");
   const [profileSeed, setProfileSeed] = useState({
     email: "",
     displayName: "",
@@ -107,6 +114,8 @@ export function AccountSection() {
     fullName: "",
     insurerName: "",
     insuranceNumber: "",
+    insuranceCountry: "DE",
+    insuranceGroupNumber: "",
   });
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<StatusMessage | null>(null);
@@ -156,7 +165,7 @@ export function AccountSection() {
       gender: user.gender ?? "",
       fullName: user.fullName ?? "",
       insurerName: user.insurerName ?? "",
-      insuranceNumber: user.insuranceNumber ?? "",
+      ...insuranceDraft(user, locale),
     };
     setSeededUserId(user.id);
     setEmail(seed.email);
@@ -167,6 +176,8 @@ export function AccountSection() {
     setFullName(seed.fullName);
     setInsurerName(seed.insurerName);
     setInsuranceNumber(seed.insuranceNumber);
+    setInsuranceCountry(seed.insuranceCountry);
+    setInsuranceGroupNumber(seed.insuranceGroupNumber);
     setProfileSeed(seed);
   }
 
@@ -198,6 +209,8 @@ export function AccountSection() {
       fullName,
       insurerName,
       insuranceNumber,
+      insuranceCountry,
+      insuranceGroupNumber,
     },
     blocked: saving,
     guardNavigation: true,
@@ -262,6 +275,10 @@ export function AccountSection() {
         fullName: fullName.trim(),
         insurerName: insurerName.trim(),
         insuranceNumber: insuranceNumber.trim(),
+        insuranceCountry,
+        insuranceGroupNumber: countryHasGroupNumber(insuranceCountry)
+          ? insuranceGroupNumber.trim()
+          : "",
       };
 
       // v1.44 — the timezone left this form: it saves on change in the
@@ -283,6 +300,8 @@ export function AccountSection() {
           fullName: savedProfile.fullName || null,
           insurerName: savedProfile.insurerName || null,
           insuranceNumber: savedProfile.insuranceNumber || null,
+          insuranceNumberCountry: savedProfile.insuranceCountry,
+          insuranceGroupNumber: savedProfile.insuranceGroupNumber || null,
         }),
       });
 
@@ -320,8 +339,12 @@ export function AccountSection() {
           setFullName(savedProfile.fullName);
           setInsurerName(savedProfile.insurerName);
           setInsuranceNumber(savedProfile.insuranceNumber);
+          setInsuranceGroupNumber(savedProfile.insuranceGroupNumber);
           setProfileSeed(savedProfile);
           await refetch();
+          // Reseed from what the server stored: the number comes back
+          // normalised and written in its country's form.
+          setSeededUserId(null);
         }
       } else {
         // The server's top-level `error` string is intentionally generic
@@ -562,7 +585,8 @@ export function AccountSection() {
 
           {/* v1.7.0 — optional patient-identity fields surfaced on the
               health-record export cover + FHIR Patient. All optional;
-              the KVNR is validated server-side and stored encrypted. */}
+              the number is checked server-side by its country's rule and
+              stored encrypted. */}
           <div className="border-border space-y-4 border-t pt-4">
             <p className="text-muted-foreground text-xs">
               {t("settings.identity.description")}
@@ -588,61 +612,37 @@ export function AccountSection() {
               />
               <FieldError id="full-name-error" message={fieldErrors.fullName} />
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="insurer">
-                  {t("settings.identity.insurer")}
-                </Label>
-                <Input
-                  id="insurer"
-                  value={insurerName}
-                  onChange={(e) => {
-                    setInsurerName(e.target.value);
-                    clearFieldError("insurerName");
-                  }}
-                  placeholder={t("settings.identity.insurerPlaceholder")}
-                  maxLength={120}
-                  aria-invalid={fieldErrors.insurerName ? true : undefined}
-                  aria-describedby={
-                    fieldErrors.insurerName ? "insurer-error" : undefined
-                  }
-                />
-                <FieldError
-                  id="insurer-error"
-                  message={fieldErrors.insurerName}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="insurance-number">
-                  {t("settings.identity.insuranceNumber")}
-                </Label>
-                <Input
-                  id="insurance-number"
-                  value={insuranceNumber}
-                  onChange={(e) => {
-                    setInsuranceNumber(e.target.value.toUpperCase());
-                    clearFieldError("insuranceNumber");
-                  }}
-                  placeholder="A123456780"
-                  maxLength={10}
-                  autoCapitalize="characters"
-                  spellCheck={false}
-                  aria-invalid={fieldErrors.insuranceNumber ? true : undefined}
-                  aria-describedby={
-                    fieldErrors.insuranceNumber
-                      ? "insurance-number-error"
-                      : undefined
-                  }
-                />
-                <p className="text-muted-foreground text-xs">
-                  {t("settings.identity.insuranceNumberHint")}
-                </p>
-                <FieldError
-                  id="insurance-number-error"
-                  message={fieldErrors.insuranceNumber}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="insurer">{t("settings.identity.insurer")}</Label>
+              <Input
+                id="insurer"
+                value={insurerName}
+                onChange={(e) => {
+                  setInsurerName(e.target.value);
+                  clearFieldError("insurerName");
+                }}
+                placeholder={t("settings.identity.insurerPlaceholder")}
+                maxLength={120}
+                aria-invalid={fieldErrors.insurerName ? true : undefined}
+                aria-describedby={
+                  fieldErrors.insurerName ? "insurer-error" : undefined
+                }
+              />
+              <FieldError
+                id="insurer-error"
+                message={fieldErrors.insurerName}
+              />
             </div>
+            <InsuranceNumberFields
+              country={insuranceCountry}
+              number={insuranceNumber}
+              groupNumber={insuranceGroupNumber}
+              fieldErrors={fieldErrors}
+              clearFieldError={clearFieldError}
+              onCountryChange={setInsuranceCountry}
+              onNumberChange={setInsuranceNumber}
+              onGroupNumberChange={setInsuranceGroupNumber}
+            />
           </div>
 
           {saveMsg && (

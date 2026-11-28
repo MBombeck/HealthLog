@@ -2,7 +2,7 @@ import { z } from "zod/v4";
 import { MEDICAL_REFERENCE_IDS } from "./medical-reference-ids";
 
 /**
- * Strict response schema for v1.4.15 AI hardening (Phase C1).
+ * Strict response schema for v1.4.15 AI hardening.
  *
  * The maintainer, verbatim 2026-05-09: "Es darf null Halluzinationen haben und es
  * muss sich halt irgendwie stützen auf medizinische Dinge."  ("It must
@@ -149,7 +149,7 @@ export const aiRecommendationSchema = z
      * Optional in v1.4.16 (B5a): the prompt asks the model to cite a
      * matching reference for normative claims, but a missing
      * referenceId is logged as a citation-coverage warning rather
-     * than a parse failure. v1.4.16 phase B5c flips it to required
+     * than a parse failure. A follow-up was planned to make it required
      * when `severity >= "important"`.
      */
     referenceId: z.string().optional(),
@@ -244,8 +244,8 @@ export const dailyBriefingKeyFindingSchema = z.object({
   /**
    * Metric the finding was drawn from.
    *
-   * v1.4.23 — extended with the seven Apple Health categories landed in
-   * Wave 2 so the daily-briefing surface can cite HRV / sleep / resting
+   * v1.4.23 — extended with the seven Apple Health categories that
+   * landed then so the daily-briefing surface can cite HRV / sleep / resting
    * HR / steps / active energy / flights / distance findings on iOS-
    * connected accounts. Web-only accounts never see those metrics in
    * the snapshot, so the prompt is told (rule 12) to treat the new

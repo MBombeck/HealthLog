@@ -71,12 +71,6 @@ export const SIDE_EFFECT_CATEGORIES: Record<
 };
 
 /**
- * Total entry count exposed as a const so callers (validators,
- * snapshot aggregators) can assert against drift without re-counting.
- */
-export const SIDE_EFFECT_ENTRY_COUNT = 22;
-
-/**
  * Ordered category list — defines the picker UI's category-tab
  * sequence. Stable across versions; new categories append.
  */

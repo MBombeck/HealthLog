@@ -90,7 +90,7 @@ function ConfirmationRow({
         onCheckedChange={(next) => onCheckedChange(next === true)}
         className="mt-0.5"
       />
-      <Label htmlFor={id} noColon className="leading-snug font-normal">
+      <Label htmlFor={id} className="leading-snug font-normal">
         <span>
           {before}
           {link ? (
