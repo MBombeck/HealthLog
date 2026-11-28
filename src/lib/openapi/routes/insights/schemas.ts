@@ -595,6 +595,13 @@ export const healthScoreBasis = z
       "What the Health Score rests on, resolved server-side. Present on every score computed from at least one usable pillar; optional on every shape that carries it, so payloads cached before v1.38 stay valid.",
   });
 
+/**
+ * 1.50 — the short name every score payload carries for a tile. Server
+ * feature `insights.scores-short-labels`.
+ */
+export const SCORE_SHORT_LABEL_DESCRIPTION =
+  "1.50 (`insights.scores-short-labels`) — the score's short name for a tile, a chip or a one-line header (de: Bereitschaft, Schlafscore, Gesundheit, Erholung, Stress, Belastung), worded in the response language from the glossary's `short` form through the score registry. Render it as given; never shorten a score's name on the client.";
+
 // v1.13.2 — per-derived-SCORE assessment text. Additive, non-breaking field
 // on the derived response; the iOS field-name contract is LOCKED.
 export const derivedAssessment = z
@@ -651,6 +658,12 @@ export const derivedMetricResponse = z
       .optional()
       .describe(
         "The `statusText` capability behind the model-written assessment. Present on the single-metric route; absent on the batch route, whose assessments are always the deterministic text.",
+      ),
+    shortLabel: z
+      .string()
+      .nullable()
+      .describe(
+        `${SCORE_SHORT_LABEL_DESCRIPTION} Set for READINESS, SLEEP_SCORE, RECOVERY_SCORE, STRESS_SCORE and STRAIN_SCORE; null for every other metric.`,
       ),
   })
   .meta({
@@ -1653,6 +1666,12 @@ export const dashboardSnapshotResponse = z
     healthScore: z
       .object({
         score: z.number().int().min(0).max(100),
+        shortLabel: z
+          .string()
+          .optional()
+          .describe(
+            `${SCORE_SHORT_LABEL_DESCRIPTION} Set on every read of this route; optional in the shape for snapshots other producers build.`,
+          ),
         band: z
           .enum(["green", "yellow", "red"])
           .describe(HEALTH_SCORE_BAND_DESCRIPTION),
@@ -1828,6 +1847,13 @@ export const dashboardSnapshotResponse = z
             .optional()
             .describe(
               "MED_COMPLIANCE only — today's dose tally behind the progress score, for a 'taken/scheduled' ring display (e.g. 1/3). Absent on the derived score rings.",
+            ),
+          shortLabel: z
+            .string()
+            .nullable()
+            .optional()
+            .describe(
+              `${SCORE_SHORT_LABEL_DESCRIPTION} Set on every read of this route; null on MED_COMPLIANCE, which is no score.`,
             ),
         }),
       )
@@ -2786,6 +2812,12 @@ export const healthScoreReport = z
       .describe(
         "Set on every response this route produces (null when no illness episode is active, or only chronic ongoing ones are: a condition the person lives with frames a dip but never puts the account into Rest Mode). Rest Mode FRAMES the score and never changes it: the number above is left exactly as computed and this attaches the value-free context. Resolved as of the scored window, not a fresh now.",
       ),
+    shortLabel: z
+      .string()
+      .optional()
+      .describe(
+        `${SCORE_SHORT_LABEL_DESCRIPTION} Set on every response of \`GET /api/analytics\`.`,
+      ),
   })
   .meta({
     id: "HealthScoreReport",
@@ -3653,6 +3685,7 @@ export const scoreHistoryResponse = z
       .describe(
         "The person's usual range behind the newest point: median and scaled MAD of the values in the 30 days before it, from its own side of the last seam. Null with fewer than seven such days. Describes, does not grade.",
       ),
+    shortLabel: z.string().describe(SCORE_SHORT_LABEL_DESCRIPTION),
   })
   .meta({
     id: "ScoreHistoryResponse",

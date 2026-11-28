@@ -1,41 +1,36 @@
 "use client";
 
 /**
- * The "Read with AI" block of the document detail sheet — one coherent, inviting
- * home for every AI reading action, lifted out of the sheet so the availability
- * gate and the review-first wiring render without the sheet's dialog portal and
- * are pinned by static-render tests.
+ * What the document's AI reads leave in the detail sheet, lifted out of the
+ * sheet so the availability gate and the review-first wiring render without
+ * the sheet's dialog portal and are pinned by static-render tests.
  *
- * Indexing is AUTOMATIC on upload, so this block never nags a "please index"
- * chore. It carries NO header or status chrome (the AI-read provenance marker
- * lives on the vault card's meta row) and offers AI reading as a capability the
- * user reaches for when they want more:
+ * The reads themselves are entries of the sheet's "⋯"
+ * (`useDocumentAiMenuItems` below), so the sheet carries one menu instead of
+ * a row of four buttons:
  *
- *   - "Read with AI" (prominent) runs a provider read of the document — the
- *     richer pass that also refreshes the searchable index. Labelled "Read
- *     again" once a provider has already read it.
- *   - "Suggest details" drafts a title / type / date to review before saving.
- *   - "Summarise" / "Show text" surface a transient, session-only read-out.
+ *   - "Read with AI" runs a provider read of the document, the richer pass
+ *     that also refreshes the searchable index ("Read again" once a provider
+ *     has read it).
+ *   - "Suggest details" drafts a title, type and date to review before saving.
+ *   - "Show text" shows the extracted text here, for this visit only.
+ *   - "Summarise" writes the stored summary; the summary block shows it.
  *
- * With auto-read ON, the document already read, and nothing pending to review
- * the block collapses entirely — the sheet content starts straight with the
- * document fields under the preview. An UNREAD document keeps the read action
- * visible whatever the preference says: auto-read is a promise that reading
- * happens on upload, and a document the automatic pass never reached (it may
- * predate the preference, or the pass did not complete) would otherwise have
- * no path to a read at all.
+ * With auto-read on, reading happens on upload, so suggest and show-text step
+ * back; an unread document keeps its read entry whatever the preference says,
+ * since a document the automatic pass never reached would otherwise have no
+ * path to a read at all.
  *
- * Presentational: the sheet owns the mutations + capability probe and passes
- * their state + handlers down. When `aiEnabled` is false the actions collapse to
- * the calm "set up an AI provider" pointer (never an error) and the manual form
- * below stays fully usable.
+ * This block shows only what there is: where a read stands, why the last one
+ * found nothing, a suggestion to review, the shown text. With nothing to show
+ * it renders nothing. When `aiEnabled` is false it is the calm "set up an AI
+ * provider" pointer (never an error), and the fields below stay usable.
  */
-import { FileText, ScanText, WandSparkles } from "lucide-react";
+import { FileText, ScanText, TextSearch, WandSparkles } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import type { AiRunPhase } from "@/hooks/use-ai-run";
 import { useTranslations } from "@/lib/i18n/context";
-import { cn } from "@/lib/utils";
 import type {
   DocumentContentIndexSourceValue,
   DocumentIndexOutcomeValue,
@@ -57,11 +52,7 @@ export function DocumentAiSection({
   autoReadEnabled = false,
   indexEnabled,
   unavailableReason,
-  actionsDisabled,
-  onSuggest,
-  suggestPending,
   suggestErrorKey,
-  onSummarise,
   summaryPending,
   suggestion,
   suggestionKindLabel,
@@ -76,31 +67,17 @@ export function DocumentAiSection({
   summaryErrorKey,
   onCloseSummary,
   hasContentIndex,
-  contentIndexSource,
   lastIndexOutcome = null,
-  indexPending,
   indexRunPhase = "idle",
   assistRunPhase = "idle",
-  onIndex,
 }: {
   aiEnabled: boolean;
-  /**
-   * Whether "read documents automatically with AI" is ON. When true, reading +
-   * indexing happen on upload, so the manual per-document action row (Read /
-   * Suggest / Summarise) is hidden — only the header + searchable status +
-   * content-search chat remain. Defaults to false so an omitting caller keeps
-   * the manual controls.
-   */
+  /** Whether "read documents automatically with AI" is on. */
   autoReadEnabled?: boolean;
   indexEnabled: boolean;
   unavailableReason: "no-provider" | "enable-local-ocr" | null;
-  /** Capability still resolving — the transport mode isn't known yet. */
-  actionsDisabled: boolean;
-  onSuggest: () => void;
-  suggestPending: boolean;
   /** Resolved user-facing error sentence (already translated), or null. */
   suggestErrorKey: string | null;
-  onSummarise: (output: DocumentSummaryMode) => void;
   summaryPending: boolean;
   suggestion: DocumentSuggestionDto | null;
   suggestionKindLabel: string | null;
@@ -116,47 +93,34 @@ export function DocumentAiSection({
   summaryErrorKey: string | null;
   onCloseSummary: () => void;
   hasContentIndex: boolean;
-  contentIndexSource: DocumentContentIndexSourceValue | null;
   /**
-   * Refs #776 — why the last index attempt produced no index (null: never
-   * tried, or the document IS indexed). Rendered as a muted plain-words line
-   * beside the read action so a failed read is explainable, not a mystery.
+   * Refs #776: why the last index attempt produced no index (null: never
+   * tried, or the document IS indexed). A muted plain-words line, so a failed
+   * read is explainable, not a mystery.
    */
   lastIndexOutcome?: DocumentIndexOutcomeValue | null;
-  indexPending: boolean;
-  /** v1.40 — where a background read stands, for the calm line under it. */
+  /** v1.40: where a background read stands, for the calm line under it. */
   indexRunPhase?: AiRunPhase;
-  /** v1.40 — the same for a suggestion or transient summary read. */
+  /** v1.40: the same for a suggestion or a shown text. */
   assistRunPhase?: AiRunPhase;
-  onIndex: () => void;
 }) {
   const { t } = useTranslations();
-  const aiRead = hasContentIndex && isAiReadSource(contentIndexSource);
-  // Refs #776 — only an un-indexed document explains itself; once an index
-  // exists the last failure is history. Muted per the text-colour rule: this
-  // is meta about the document, not content.
+  if (!aiEnabled) return <AiUnavailableHint reason={unavailableReason} />;
+
+  // Only an un-indexed document explains itself; once an index exists the
+  // last failure is history.
   const indexOutcomeText =
     !hasContentIndex && lastIndexOutcome
       ? t(`documents.detail.index.outcome.${lastIndexOutcome}`)
       : null;
-  const readLabel = indexPending
-    ? t("documents.ai.reading")
-    : aiRead
-      ? t("documents.ai.reread")
-      : t("documents.ai.read");
+  // Auto-read promised a read on upload that this document never got.
+  const unread = autoReadEnabled && !hasContentIndex && indexEnabled;
+  const phase = indexRunPhase !== "idle" ? indexRunPhase : assistRunPhase;
 
-  // v1.28.22 — the block carries NO header/status chrome any more (the
-  // provenance pill moved to the vault card's meta row; auto-read makes an
-  // in-sheet "read by AI" banner redundant). With auto-read ON, the document
-  // read, and nothing pending to review, nothing below would render —
-  // collapse the whole box so the content under the preview starts straight
-  // with the fields. An unindexed document does NOT collapse (unless indexing
-  // is unavailable on this transport): it still needs its read, and this
-  // section is the only place that action lives.
   if (
-    aiEnabled &&
-    autoReadEnabled &&
-    (hasContentIndex || !indexEnabled) &&
+    !unread &&
+    phase === "idle" &&
+    !indexOutcomeText &&
     !suggestErrorKey &&
     !suggestion &&
     !summaryOutput
@@ -165,152 +129,165 @@ export function DocumentAiSection({
   }
 
   return (
-    <div
-      data-slot="document-ai-section"
-      className="border-border bg-muted/30 space-y-3 rounded-lg border p-3 md:p-4"
-    >
-      {aiEnabled ? (
-        <>
-          {!autoReadEnabled ? (
-            <div className="flex flex-wrap items-center gap-2">
-              {indexEnabled ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  data-slot="document-read-ai"
-                  onClick={onIndex}
-                  disabled={indexPending || actionsDisabled}
-                >
-                  <ScanText
-                    className={cn(
-                      "size-4",
-                      indexPending &&
-                        "animate-pulse motion-reduce:animate-none",
-                    )}
-                    aria-hidden
-                  />
-                  {readLabel}
-                </Button>
-              ) : null}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                data-slot="assist-suggest"
-                onClick={onSuggest}
-                disabled={suggestPending || actionsDisabled}
-              >
-                <WandSparkles className="size-4" aria-hidden />
-                {suggestPending
-                  ? t("documents.assist.suggesting")
-                  : t("documents.assist.suggest")}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => onSummarise("summary")}
-                disabled={summaryPending || actionsDisabled}
-              >
-                <FileText className="size-4" aria-hidden />
-                {t("documents.summary.summarise")}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => onSummarise("text")}
-                disabled={summaryPending || actionsDisabled}
-              >
-                {t("documents.summary.showText")}
-              </Button>
-            </div>
-          ) : !hasContentIndex && indexEnabled ? (
-            // Auto-read is ON but this document has no content index: the
-            // automatic pass never reached it or did not complete. The
-            // suggest / summarise extras stay hidden (auto-read's promise
-            // covers them), but the read itself must stay reachable.
-            <div className="space-y-2">
-              <p
-                data-slot="document-unread-note"
-                className="text-muted-foreground text-xs"
-              >
-                {t("documents.ai.notReadYet")}
-              </p>
-              <Button
-                type="button"
-                size="sm"
-                data-slot="document-read-ai"
-                onClick={onIndex}
-                disabled={indexPending || actionsDisabled}
-              >
-                <ScanText
-                  className={cn(
-                    "size-4",
-                    indexPending && "animate-pulse motion-reduce:animate-none",
-                  )}
-                  aria-hidden
-                />
-                {readLabel}
-              </Button>
-            </div>
-          ) : null}
+    <div data-slot="document-ai-section" className="space-y-3">
+      {unread && !indexOutcomeText ? (
+        <p
+          data-slot="document-unread-note"
+          className="text-muted-foreground text-xs"
+        >
+          {t("documents.ai.notReadYet")}
+        </p>
+      ) : null}
 
-          {indexRunPhase !== "idle" ? (
-            <AiRunPhaseNote
-              phase={indexRunPhase}
-              outcome="savedWithDocument"
-              slot="document-index-run-phase"
-            />
-          ) : (
-            <AiRunPhaseNote
-              phase={assistRunPhase}
-              outcome="shownHere"
-              slot="document-assist-run-phase"
-            />
-          )}
-
-          {indexOutcomeText ? (
-            <p
-              data-slot="document-index-outcome"
-              className="text-muted-foreground text-xs"
-            >
-              {indexOutcomeText}
-            </p>
-          ) : null}
-
-          {suggestErrorKey ? (
-            <p role="alert" className="text-destructive text-sm">
-              {suggestErrorKey}
-            </p>
-          ) : null}
-
-          {suggestion ? (
-            <AssistSuggestionReview
-              suggestion={suggestion}
-              kindLabel={suggestionKindLabel}
-              dateLabel={suggestionDateLabel}
-              applied={appliedFields}
-              onUseTitle={onUseTitle}
-              onUseKind={onUseKind}
-              onUseDate={onUseDate}
-              onDismiss={onDismissSuggestion}
-            />
-          ) : null}
-
-          {summaryOutput ? (
-            <DocumentSummaryPanel
-              output={summaryOutput}
-              result={summaryResult}
-              isPending={summaryPending}
-              errorText={summaryErrorKey}
-              onClose={onCloseSummary}
-            />
-          ) : null}
-        </>
+      {indexRunPhase !== "idle" ? (
+        <AiRunPhaseNote
+          phase={indexRunPhase}
+          outcome="savedWithDocument"
+          slot="document-index-run-phase"
+        />
       ) : (
-        <AiUnavailableHint reason={unavailableReason} />
+        <AiRunPhaseNote
+          phase={assistRunPhase}
+          outcome="shownHere"
+          slot="document-assist-run-phase"
+        />
       )}
+
+      {indexOutcomeText ? (
+        <p
+          data-slot="document-index-outcome"
+          className="text-muted-foreground text-xs"
+        >
+          {indexOutcomeText}
+        </p>
+      ) : null}
+
+      {suggestErrorKey ? (
+        <p role="alert" className="text-destructive text-sm">
+          {suggestErrorKey}
+        </p>
+      ) : null}
+
+      {suggestion ? (
+        <AssistSuggestionReview
+          suggestion={suggestion}
+          kindLabel={suggestionKindLabel}
+          dateLabel={suggestionDateLabel}
+          applied={appliedFields}
+          onUseTitle={onUseTitle}
+          onUseKind={onUseKind}
+          onUseDate={onUseDate}
+          onDismiss={onDismissSuggestion}
+        />
+      ) : null}
+
+      {summaryOutput ? (
+        <DocumentSummaryPanel
+          output={summaryOutput}
+          result={summaryResult}
+          isPending={summaryPending}
+          errorText={summaryErrorKey}
+          onClose={onCloseSummary}
+        />
+      ) : null}
     </div>
   );
+}
+
+/**
+ * The AI reads as entries of the sheet's "⋯". Empty when no provider is set
+ * up: the section above says so instead.
+ */
+export function useDocumentAiMenuItems({
+  aiEnabled,
+  autoReadEnabled,
+  indexEnabled,
+  hasContentIndex,
+  contentIndexSource,
+  canSummarise,
+  actionsDisabled,
+  indexPending,
+  suggestPending,
+  summaryPending,
+  onIndex,
+  onSuggest,
+  onShowText,
+  onSummarise,
+}: {
+  aiEnabled: boolean;
+  autoReadEnabled: boolean;
+  indexEnabled: boolean;
+  hasContentIndex: boolean;
+  contentIndexSource: DocumentContentIndexSourceValue | null;
+  /** False while a stored summary is being written. */
+  canSummarise: boolean;
+  /** Capability still resolving: the transport mode isn't known yet. */
+  actionsDisabled: boolean;
+  indexPending: boolean;
+  suggestPending: boolean;
+  summaryPending: boolean;
+  onIndex: () => void;
+  onSuggest: () => void;
+  onShowText: () => void;
+  onSummarise: () => void;
+}): React.ReactNode[] {
+  const { t } = useTranslations();
+  const items: React.ReactNode[] = [];
+  if (!aiEnabled) return items;
+  const aiRead = hasContentIndex && isAiReadSource(contentIndexSource);
+  if (indexEnabled && (!autoReadEnabled || !hasContentIndex)) {
+    items.push(
+      <DropdownMenuItem
+        key="read"
+        data-slot="document-read-ai"
+        disabled={indexPending || actionsDisabled}
+        onSelect={onIndex}
+      >
+        <ScanText aria-hidden />
+        {indexPending
+          ? t("documents.ai.reading")
+          : aiRead
+            ? t("documents.ai.reread")
+            : t("documents.ai.read")}
+      </DropdownMenuItem>,
+    );
+  }
+  if (canSummarise) {
+    items.push(
+      <DropdownMenuItem
+        key="summarise"
+        data-slot="document-detail-summary-generate"
+        disabled={summaryPending || actionsDisabled}
+        onSelect={onSummarise}
+      >
+        <FileText aria-hidden />
+        {t("documents.summary.summarise")}
+      </DropdownMenuItem>,
+    );
+  }
+  if (!autoReadEnabled) {
+    items.push(
+      <DropdownMenuItem
+        key="suggest"
+        data-slot="assist-suggest"
+        disabled={suggestPending || actionsDisabled}
+        onSelect={onSuggest}
+      >
+        <WandSparkles aria-hidden />
+        {suggestPending
+          ? t("documents.assist.suggesting")
+          : t("documents.assist.suggest")}
+      </DropdownMenuItem>,
+      <DropdownMenuItem
+        key="text"
+        data-slot="document-show-text"
+        disabled={summaryPending || actionsDisabled}
+        onSelect={onShowText}
+      >
+        <TextSearch aria-hidden />
+        {t("documents.summary.showText")}
+      </DropdownMenuItem>,
+    );
+  }
+  return items;
 }

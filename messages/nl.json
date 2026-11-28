@@ -1185,6 +1185,11 @@
     "shortTypeAudioExposureEvent": "Melding hard geluid",
     "shortTypeRespiratoryRate": "Ademfrequentie",
     "shortTypeHealthScore": "Gezondheid",
+    "shortTypeReadiness": "Paraatheid",
+    "shortTypeSleepScore": "Slaapscore",
+    "shortTypeRecoveryScore": "Herstel",
+    "shortTypeStressScore": "Stress",
+    "shortTypeStrainScore": "Belasting",
     "shortTypeRestingHeartRate": "Rusthartslag",
     "shortTypeBloodPressure": "Bloeddruk",
     "shortTypeBloodGlucose": "Glucose",
@@ -9856,7 +9861,6 @@
   },
   "achievements": {
     "title": "Prestaties",
-    "subtitle": "Verdien prestaties door je gezondheid bij te houden en je medicatie op tijd in te nemen.",
     "loginRequired": "Log in om je prestaties te bekijken.",
     "points": "Punten",
     "unlocked": "Ontgrendeld",
@@ -9864,7 +9868,6 @@
     "allCompleted": "Alle prestaties ontgrendeld!",
     "completed": "Voltooid",
     "goalReached": "Doel bereikt",
-    "remainingUnlocks": "Nog {count} te ontgrendelen",
     "noneUnlockedYet": "Nog geen prestaties ontgrendeld.",
     "pointsValue": "{points, plural, one {# punt} other {# punten}}",
     "metricCount": "{count}",
@@ -10118,9 +10121,7 @@
         "description": "7 opeenvolgende dagen slaapgegevens geregistreerd."
       }
     },
-    "nextProgressLabel": "Voortgang tot ontgrendeling",
     "completedOn": "Voltooid op {date}",
-    "locked": "Vergrendeld",
     "criterionHint": "{current} / {target}",
     "progressPercent": "{percent}%",
     "categories": {
@@ -10148,7 +10149,6 @@
   "notifications": {
     "title": "Meldingen per kanaal",
     "eventColumn": "Gebeurtenis",
-    "subtitle": "Kies welke meldingen je via welk kanaal wilt ontvangen.",
     "loadError": "Je meldingsvoorkeuren konden niet worden geladen.",
     "noChannels": "Stel eerst een meldingskanaal in via Instellingen > Integraties.",
     "goToSettings": "Naar kanaalinstellingen",
@@ -10746,7 +10746,6 @@
     },
     "disclaimer": "Deze voorspellingen zijn beschrijvende schattingen op basis van je geregistreerde gegevens, geen anticonceptiemethode en geen medisch advies. Ze geven nooit aan dat onbeschermde seks veilig is. Raadpleeg voor anticonceptie of een medische beslissing een zorgverlener.",
     "title": "Cyclus",
-    "subtitle": "Registreer je menstruatie en symptomen en zie wat er komt.",
     "tabs": {
       "calendar": "Kalender",
       "predictions": "Voorspellingen",
@@ -11980,7 +11979,6 @@
   },
   "illness": {
     "title": "Ziekte",
-    "subtitle": "Een terugblikkend logboek van je ziekte- en aandoeningsepisodes.",
     "settings": {
       "viewDescription": "Kies of episodes als kaarten of als compacte lijst worden getoond.",
       "orderDescription": "Sleep je episodes in de volgorde waarin je ze wilt zien."
@@ -12434,9 +12432,7 @@
   },
   "mentalHealth": {
     "pageTitle": "Mentaal welzijn",
-    "pageDescription": "Vier gevalideerde, vrijwillige zelftests. De trend over langere tijd zegt meer dan één losse score.",
     "attributionLabel": "Bronvermelding",
-    "attributionShow": "Bron en licentie van {instrument}",
     "choosePrompt": "Kies een check-in",
     "start": "Starten",
     "back": "Terug",
@@ -12449,12 +12445,6 @@
       "gad7": "GAD-7 (piekeren)",
       "who5": "WHO-5 (welzijn)",
       "sci": "SCI (slaap)"
-    },
-    "instrumentSub": {
-      "phq9": "Screening op depressie, 9 vragen",
-      "gad7": "Screening op angst, 7 vragen",
-      "who5": "Welzijnscheck, 5 vragen",
-      "sci": "Slaapcheck, 8 vragen"
     },
     "functionalOptionalHint": "Optioneel: je kunt ook versturen zonder deze vraag te beantwoorden.",
     "result": {
@@ -12493,7 +12483,6 @@
       "title": "Je geschiedenis",
       "empty": "Nog geen check-ins. Je trend verschijnt hier zodra je er een hebt ingevuld.",
       "flaggedBadge": "Hulp getoond",
-      "chartTitle": "Scoreverloop",
       "totalLabel": "Score",
       "bandLabel": "Categorie",
       "answersToggle": "Antwoorden",
@@ -13188,15 +13177,11 @@
       "titleRecord": "De documentenkluis van {name} is leeg"
     },
     "detail": {
-      "title": "Documentdetails",
       "summary": {
         "title": "Samenvatting",
         "pending": "De samenvatting wordt voorbereid.",
-        "none": "Er is nog geen samenvatting voor dit document gemaakt.",
         "withheld": "Er is een samenvatting gemaakt, maar die kwam niet door de veiligheidscontrole en wordt daarom niet getoond. Je kunt het opnieuw proberen of het document zelf lezen.",
-        "unavailable": "Voor dit document kon geen samenvatting worden gemaakt.",
-        "generate": "Samenvatting genereren",
-        "generating": "Genereren…"
+        "unavailable": "Voor dit document kon geen samenvatting worden gemaakt."
       },
       "index": {
         "outcome": {
@@ -13221,7 +13206,6 @@
       "titlePlaceholder": "Titel toevoegen",
       "kindLabel": "Soort",
       "dateLabel": "Documentdatum",
-      "previewUnavailable": "Geen voorbeeld beschikbaar voor dit bestandstype",
       "uploadedMeta": "Toegevoegd op {date}, {size}",
       "importedFrom": "Geïmporteerd uit {system}",
       "importedFromWithId": "Geïmporteerd uit {system}, ID {id}",
@@ -13231,8 +13215,7 @@
       "share": "Delen",
       "labValuesLink": "{count, plural, one {# labuitslag} other {# labuitslagen}} bekijken",
       "saved": "Wijzigingen opgeslagen",
-      "saving": "Opslaan…",
-      "previewNotOnDevice": "Deze browser kan pdf's niet in de pagina tonen"
+      "saving": "Opslaan…"
     },
     "dropOverlay": {
       "title": "Zet bestanden neer om te uploaden",
@@ -16224,7 +16207,7 @@
       "missBody": "De link is misschien ingetrokken of verlopen. De persoon van wie de kaart is, kan een nieuwe maken.",
       "title": "QR-link",
       "loadError": "De status van de link kon niet worden geladen.",
-      "disclosure": "Wie de code scant, ziet de aangevinkte onderdelen zonder in te loggen. Je kunt de link een einddatum geven en altijd intrekken; elke keer openen wordt voor je vastgelegd.",
+      "disclosure": "Wie de code scant, ziet de aangevinkte onderdelen zonder in te loggen.",
       "fieldsLabel": "Wat de link toont",
       "expiryLabel": "Link verloopt",
       "expiry": {
@@ -16246,17 +16229,17 @@
       "revoke": "Link intrekken",
       "revokeTitle": "De link van de noodkaart intrekken?",
       "revokeBody": "Geprinte kaarten met deze code werken dan niet meer. Je kunt een nieuwe link maken en de kaart opnieuw printen.",
-      "error": "De link kon niet worden gewijzigd. Probeer het opnieuw."
+      "error": "De link kon niet worden gewijzigd. Probeer het opnieuw.",
+      "disclosureMore": "Je kunt de link een einddatum geven en altijd intrekken; elke keer openen wordt voor je vastgelegd."
     },
     "page": {
       "title": "Noodkaart",
-      "description": "Je noodgegevens voor onderweg.",
       "loadError": "De noodkaart kon niet worden geladen.",
       "offlineHint": "De app werkt bewust niet offline. Sla een kopie op je telefoon op om de kaart zonder verbinding bij je te hebben; die toont de stand van de dag van opslaan.",
       "downloadError": "Downloaden is mislukt. Probeer het opnieuw.",
-      "saveOffline": "Offline kopie opslaan",
-      "wallet": "Portemonneekaart (PDF)",
-      "walletWithQr": "Portemonneekaart met QR-code (PDF)",
+      "saveOffline": "Offline kopie",
+      "wallet": "Kaart als pdf",
+      "walletWithQr": "Pdf met QR-code",
       "preview": "Jouw kaart"
     },
     "name": "Naam",
@@ -16358,7 +16341,8 @@
         "title": "Je noodkaart is klaar",
         "body": "Voeg hem op deze iPhone toe aan Apple Wallet."
       }
-    }
+    },
+    "fieldsCount": "{count} van {total}"
   },
   "treatmentSeries": {
     "heading": "Behandelreeksen",

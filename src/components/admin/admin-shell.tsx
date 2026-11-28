@@ -19,13 +19,23 @@ import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { DESTINATION_ICONS as ICON } from "@/components/layout/destination-icons";
+import { ADMIN_ICONS } from "@/components/layout/destination-icons/admin";
+import { RAIL_ICONS } from "@/components/layout/destination-icons/rail";
+import { SHARED_ICONS } from "@/components/layout/destination-icons/shared";
 import { PageHeader } from "@/components/ui/page-header";
 import { SubNavLink, SubNavRow } from "@/components/ui/sub-nav";
 import { SUB_SHELL_GRID_FLOOR } from "@/components/layout/shell-metrics";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { isAdminSectionSlug, type AdminSectionSlug } from "./section-slugs";
+
+/**
+ * The Admin rail's glyphs, the same ones `DESTINATION_ICONS` holds, read from
+ * the per-surface maps: the full map would bring the Settings and area glyphs
+ * onto every Admin page. The Coach's glyph comes from the main rail, which
+ * the app shell carries anyway.
+ */
+const ICON = { ...ADMIN_ICONS, ...SHARED_ICONS, coach: RAIL_ICONS.coach };
 
 const AdminOverviewIcon = ICON.adminOverview;
 

@@ -286,8 +286,11 @@ describe("the check-in from the overview", () => {
     const post = api.deferred("POST", "/api/mental-health/assessments");
     const { screen } = await renderWithApp(<MentalWellbeing />);
 
-    const start =
-      '[data-instrument="WHO5"] [data-slot="instrument-card-start"]';
+    // The row opens the instrument's sheet; Start sits in its footer.
+    const open = '[data-instrument="WHO5"] [data-slot="list-item-action"]';
+    await expect.poll(() => document.querySelector(open)).toBeTruthy();
+    await page.elementLocator(document.querySelector(open)!).click();
+    const start = '[data-slot="instrument-detail-start"]';
     await expect.poll(() => document.querySelector(start)).toBeTruthy();
     await page.elementLocator(document.querySelector(start)!).click();
     await expect.element(screen.getByText(WHO5.items[0])).toBeVisible();

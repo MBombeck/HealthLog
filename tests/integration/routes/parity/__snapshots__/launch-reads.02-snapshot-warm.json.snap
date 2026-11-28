@@ -3539,7 +3539,8 @@
             "mood"
           ]
         },
-        "returnToBand": null
+        "returnToBand": null,
+        "shortLabel": "Health"
       },
       "scoreRings": [
         {
@@ -3549,7 +3550,8 @@
           "doses": {
             "taken": 0,
             "scheduled": 2
-          }
+          },
+          "shortLabel": null
         }
       ],
       "briefing": null,

@@ -1184,7 +1184,12 @@
     "shortTypeTimeInDaylight": "Tempo sob luz do dia",
     "shortTypeAudioExposureEvent": "Evento de escuta alta",
     "shortTypeRespiratoryRate": "Frequência respiratória",
-    "shortTypeHealthScore": "Pontuação de saúde",
+    "shortTypeHealthScore": "Saúde",
+    "shortTypeReadiness": "Prontidão",
+    "shortTypeSleepScore": "Pontuação de sono",
+    "shortTypeRecoveryScore": "Recuperação",
+    "shortTypeStressScore": "Estresse",
+    "shortTypeStrainScore": "Esforço",
     "shortTypeRestingHeartRate": "FC em repouso",
     "shortTypeBloodPressure": "Pressão",
     "shortTypeBloodGlucose": "Glicemia",
@@ -9856,7 +9861,6 @@
   },
   "achievements": {
     "title": "Conquistas",
-    "subtitle": "Ganhe conquistas acompanhando sua saúde e tomando seus medicamentos no horário.",
     "loginRequired": "Faça login para ver as conquistas.",
     "points": "Pontos",
     "unlocked": "Desbloqueadas",
@@ -9864,7 +9868,6 @@
     "allCompleted": "Todas as conquistas desbloqueadas!",
     "completed": "Concluída",
     "goalReached": "Meta alcançada",
-    "remainingUnlocks": "{count} ainda desbloqueáveis",
     "noneUnlockedYet": "Nenhuma conquista desbloqueada ainda.",
     "pointsValue": "{points, plural, one {# ponto} other {# pontos}}",
     "metricCount": "{count}",
@@ -10118,9 +10121,7 @@
         "description": "Dados de sono registrados em 7 dias consecutivos."
       }
     },
-    "nextProgressLabel": "Progresso para desbloquear",
     "completedOn": "Concluída em {date}",
-    "locked": "Bloqueada",
     "criterionHint": "{current} / {target}",
     "progressPercent": "{percent}%",
     "categories": {
@@ -10148,7 +10149,6 @@
   "notifications": {
     "title": "Notificações por canal",
     "eventColumn": "Evento",
-    "subtitle": "Escolha quais notificações você quer receber e por qual canal.",
     "loadError": "Não foi possível carregar as preferências de notificação.",
     "noChannels": "Configure primeiro um canal de notificação em Configurações > Integrações.",
     "goToSettings": "Ir para as configurações de canais",
@@ -10746,7 +10746,6 @@
     },
     "disclaimer": "Estas previsões são estimativas descritivas a partir dos seus dados registrados, não um método contraceptivo e não conselhos médicos. Elas nunca indicam que seja seguro ter relações sexuais sem proteção. Para contracepção ou qualquer decisão médica, consulte um profissional de saúde.",
     "title": "Ciclo",
-    "subtitle": "Registre sua menstruação e sintomas, veja o que vem a seguir.",
     "tabs": {
       "calendar": "Calendário",
       "predictions": "Previsões",
@@ -11980,7 +11979,6 @@
   },
   "illness": {
     "title": "Doenças",
-    "subtitle": "Um registro retrospectivo dos seus episódios de doença e condição.",
     "settings": {
       "viewDescription": "Escolha se os episódios aparecem como cartões ou como uma lista compacta.",
       "orderDescription": "Arraste seus episódios para a ordem em que quer vê-los."
@@ -12434,9 +12432,7 @@
   },
   "mentalHealth": {
     "pageTitle": "Bem-estar mental",
-    "pageDescription": "Quatro autoavaliações validadas e voluntárias. A tendência ao longo do tempo diz mais do que qualquer pontuação isolada.",
     "attributionLabel": "Atribuição",
-    "attributionShow": "Fonte e licença para {instrument}",
     "choosePrompt": "Escolha um check-in",
     "start": "Iniciar",
     "back": "Voltar",
@@ -12449,12 +12445,6 @@
       "gad7": "GAD-7 (preocupação)",
       "who5": "WHO-5 (bem-estar)",
       "sci": "SCI (sono)"
-    },
-    "instrumentSub": {
-      "phq9": "Triagem de depressão, 9 perguntas",
-      "gad7": "Triagem de ansiedade, 7 perguntas",
-      "who5": "Check de bem-estar, 5 perguntas",
-      "sci": "Check de sono, 8 perguntas"
     },
     "functionalOptionalHint": "Opcional: você pode enviar sem responder esta pergunta.",
     "result": {
@@ -12493,7 +12483,6 @@
       "title": "Seu histórico",
       "empty": "Nenhum check-in ainda. Sua tendência aparecerá aqui quando você completar um.",
       "flaggedBadge": "Suporte exibido",
-      "chartTitle": "Tendência da pontuação",
       "totalLabel": "Pontuação",
       "bandLabel": "Categoria",
       "answersToggle": "Respostas",
@@ -13188,15 +13177,11 @@
       "titleRecord": "O cofre de documentos de {name} está vazio"
     },
     "detail": {
-      "title": "Detalhes do documento",
       "summary": {
         "title": "Resumo",
         "pending": "O resumo está sendo preparado.",
-        "none": "Nenhum resumo foi gerado para este documento ainda.",
         "withheld": "Um resumo foi gerado, mas não passou na verificação de segurança, então não é exibido. Você pode tentar novamente ou ler o próprio documento.",
-        "unavailable": "Nenhum resumo pôde ser gerado para este documento.",
-        "generate": "Gerar resumo",
-        "generating": "Gerando…"
+        "unavailable": "Nenhum resumo pôde ser gerado para este documento."
       },
       "index": {
         "outcome": {
@@ -13221,7 +13206,6 @@
       "titlePlaceholder": "Adicionar um título",
       "kindLabel": "Tipo",
       "dateLabel": "Data do documento",
-      "previewUnavailable": "Sem pré-visualização embutida para este tipo de arquivo",
       "uploadedMeta": "Adicionado {date}, {size}",
       "importedFrom": "Importado de {system}",
       "importedFromWithId": "Importado de {system}, ID {id}",
@@ -13231,8 +13215,7 @@
       "share": "Compartilhar",
       "labValuesLink": "Ver {count, plural, one {# resultado laboratorial} other {# resultados laboratoriais}}",
       "saved": "Alterações salvas",
-      "saving": "Salvando…",
-      "previewNotOnDevice": "Este navegador não consegue exibir PDFs dentro da página"
+      "saving": "Salvando…"
     },
     "dropOverlay": {
       "title": "Solte arquivos para enviar",
@@ -16224,7 +16207,7 @@
       "missBody": "O link pode ter sido revogado ou ter expirado. A pessoa dona do cartão pode criar um novo.",
       "title": "Link QR",
       "loadError": "Não foi possível carregar o status do link.",
-      "disclosure": "Quem escanear o código vê os itens marcados, sem entrar. Você pode definir um fim para o link e revogá-lo a qualquer momento; cada abertura fica registrada para você.",
+      "disclosure": "Quem escanear o código vê os itens marcados, sem entrar.",
       "fieldsLabel": "O que o link mostra",
       "expiryLabel": "O link termina",
       "expiry": {
@@ -16246,17 +16229,17 @@
       "revoke": "Revogar link",
       "revokeTitle": "Revogar o link do cartão de emergência?",
       "revokeBody": "Cartões impressos com este código deixam de funcionar. Você pode criar um novo link e imprimir o cartão de novo.",
-      "error": "Não foi possível alterar o link. Tente de novo."
+      "error": "Não foi possível alterar o link. Tente de novo.",
+      "disclosureMore": "Você pode definir um fim para o link e revogá-lo a qualquer momento; cada abertura fica registrada para você."
     },
     "page": {
       "title": "Cartão de emergência",
-      "description": "Seus dados de emergência para quando estiver fora de casa.",
       "loadError": "Não foi possível carregar o cartão de emergência.",
       "offlineHint": "O app não funciona offline de propósito. Salve uma cópia no celular para levar o cartão sem conexão; ela mostra o conteúdo do dia em que foi salva.",
       "downloadError": "O download não funcionou. Tente de novo.",
-      "saveOffline": "Salvar cópia offline",
-      "wallet": "Cartão para a carteira (PDF)",
-      "walletWithQr": "Cartão com código QR (PDF)",
+      "saveOffline": "Cópia offline",
+      "wallet": "Cartão em PDF",
+      "walletWithQr": "PDF com código QR",
       "preview": "Seu cartão"
     },
     "name": "Nome",
@@ -16358,7 +16341,8 @@
         "title": "Seu cartão de emergência está pronto",
         "body": "Adicione-o à Apple Wallet neste iPhone."
       }
-    }
+    },
+    "fieldsCount": "{count} de {total}"
   },
   "treatmentSeries": {
     "heading": "Séries de tratamento",

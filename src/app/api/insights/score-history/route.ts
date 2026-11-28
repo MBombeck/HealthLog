@@ -34,6 +34,9 @@ import {
   SCORE_HISTORY_MAX_DAYS,
 } from "@/lib/insights/score-history-ids";
 import { DERIVED_MODULE } from "../derived/route";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+import { scoreShortLabel } from "@/lib/scores/registry";
 
 export const dynamic = "force-dynamic";
 
@@ -97,5 +100,15 @@ export const GET = apiHandler(async (request: NextRequest) => {
     },
   });
 
-  return apiSuccess(history);
+  // The score's short name for the page's header and tile, in the reader's
+  // language, from the glossary through the score registry.
+  const locale = await resolveServerLocale({
+    request,
+    userLocale: user.locale ?? null,
+    override: request.nextUrl.searchParams.get("locale"),
+  });
+  return apiSuccess({
+    ...history,
+    shortLabel: scoreShortLabel(score, getServerTranslator(locale).t),
+  });
 });

@@ -122,3 +122,59 @@ describe("forgetGoneRegistrations (real Postgres)", () => {
     expect(await getPrismaClient().device.count()).toBe(49);
   });
 });
+
+describe("forgetGoneRegistrations on Wallet pass registrations (real Postgres)", () => {
+  async function seedWalletRegistrations(n: number): Promise<string[]> {
+    const { randomUUID } = await import("node:crypto");
+    const { mintCardToken } = await import("@/lib/emergency-card/token");
+    const { createWalletPass } =
+      await import("@/lib/emergency-card/wallet-pass/store");
+    const db = getPrismaClient();
+    const pass = await db.$transaction((tx) =>
+      createWalletPass(tx, {
+        userId: USER,
+        createdById: USER,
+        token: mintCardToken(),
+        serialNumber: randomUUID(),
+        fields: ["NAME"],
+        expiresAt: null,
+        signer: "RELAY",
+        passTypeIdentifier: "pass.dev.healthlog.emergency",
+        teamIdentifier: "ABCDE12345",
+        webServiceOrigin: "https://health.example.org",
+        contentHash: "0".repeat(64),
+        contentChangedAt: new Date(),
+        consentTextVersion: "1",
+      }),
+    );
+    const ids: string[] = [];
+    for (let i = 0; i < n; i++) {
+      const reg = await db.walletPassRegistration.create({
+        data: {
+          walletPassId: pass.walletPassId,
+          deviceLibraryIdHash: i.toString(16).padStart(64, "0"),
+          pushTokenEncrypted: "sealed",
+        },
+      });
+      ids.push(reg.id);
+    }
+    return ids;
+  }
+
+  it("deletes one registration Apple called dead, and holds a mass verdict", async () => {
+    const { forgetGoneRegistrations, readGoneHolds } =
+      await import("@/lib/notifications/gone-registrations");
+    const db = getPrismaClient();
+    const ids = await seedWalletRegistrations(12);
+
+    expect(await forgetGoneRegistrations("walletPass", [ids[0]])).toBe(true);
+    expect(await db.walletPassRegistration.count()).toBe(11);
+
+    // A wrong Pass Type ID: every token reported dead at once.
+    expect(await forgetGoneRegistrations("walletPass", ids.slice(1))).toBe(
+      false,
+    );
+    expect(await db.walletPassRegistration.count()).toBe(11);
+    expect((await readGoneHolds()).map((h) => h.channel)).toEqual(["wallet"]);
+  });
+});

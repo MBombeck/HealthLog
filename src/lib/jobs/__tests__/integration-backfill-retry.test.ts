@@ -54,6 +54,9 @@ vi.mock("@/lib/jobs/reminder/shared", () => ({ workerLog: () => {} }));
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: () => {} }));
 
 import { GarminApiError } from "@/lib/garmin/client";
+import { GoogleHealthApiError } from "@/lib/google-health/response-classifier";
+import { StravaApiError } from "@/lib/strava/response-classifier";
+import { WhoopApiError } from "@/lib/whoop/response-classifier";
 import { drainIntegrationBackfillAdmission } from "../integration-backfill-drain";
 import type { IntegrationBackfillAdmissionPayload } from "../integration-backfill-admission";
 import {
@@ -219,7 +222,7 @@ describe("drainIntegrationBackfillAdmission on a failed slice", () => {
     );
   });
 
-  it("gives up after the bounded attempts, on the ledger and in the job error", async () => {
+  it("gives up after the bounded attempts as a terminal state on the ledger, without a throw", async () => {
     runGarminMock.mockImplementation(async (_u: string, _s: unknown, slice) => {
       throw sliceFailure(slice as number, garmin500());
     });
@@ -229,16 +232,11 @@ describe("drainIntegrationBackfillAdmission on a failed slice", () => {
       enqueuedAt: "2026-11-26T13:00:00Z",
       slice: 2,
     };
-    let error: unknown;
     for (let i = 0; i < INTEGRATION_BACKFILL_TRANSIENT_ATTEMPTS + 2; i++) {
       const before = sends.length;
-      try {
-        await drainIntegrationBackfillAdmission([job(data)]);
-      } catch (err) {
-        error = err;
-        break;
-      }
-      expect(sends.length).toBe(before + 1);
+      // Giving up completes the job: no attempt throws.
+      await drainIntegrationBackfillAdmission([job(data)]);
+      if (sends.length === before) break;
       data = (sends.at(-1)!.payload as IntegrationBackfillAdmissionPayload)
         .data;
     }
@@ -247,11 +245,6 @@ describe("drainIntegrationBackfillAdmission on a failed slice", () => {
       INTEGRATION_BACKFILL_TRANSIENT_ATTEMPTS,
     );
     expect(sends).toHaveLength(INTEGRATION_BACKFILL_TRANSIENT_ATTEMPTS - 1);
-    expect(String(error)).toMatch(
-      new RegExp(
-        `gave up after ${INTEGRATION_BACKFILL_TRANSIENT_ATTEMPTS} attempts: garmin backfill incomplete .*slice 9: Garmin dailySummaries error: 500`,
-      ),
-    );
     expect(recordSyncFailureMock).toHaveBeenCalledTimes(1);
     const recorded = recordSyncFailureMock.mock.calls[0]![0];
     expect(recorded).toMatchObject({
@@ -261,15 +254,60 @@ describe("drainIntegrationBackfillAdmission on a failed slice", () => {
       errorCode: "500",
       leg: "backfill",
     });
+    expect(recorded.message).toMatch(
+      new RegExp(
+        `History import paused after ${INTEGRATION_BACKFILL_TRANSIENT_ATTEMPTS} failed attempts: Garmin dailySummaries error: 500`,
+      ),
+    );
     // The card's message is the provider's, not the runner's account line.
-    expect(recorded.message).toContain("Garmin dailySummaries error: 500");
     expect(recorded.message).not.toContain("u1");
 
-    // A pg-boss retry of the job that gave up does not record it again.
-    await expect(
-      drainIntegrationBackfillAdmission([job(data, 1)]),
-    ).rejects.toThrow(/gave up/);
+    // An older job that gave up and is still retried by pg-boss neither
+    // records it again nor throws.
+    await drainIntegrationBackfillAdmission([job(data, 1)]);
     expect(recordSyncFailureMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("waits out the provider's Retry-After on WHOOP, Google Health and Strava", () => {
+    for (const err of [
+      new WhoopApiError({
+        verb: "fetchRecoveries",
+        classification: "transient",
+        httpStatus: 429,
+        reason: "rate_limited",
+        retryAfterMs: 90 * 60_000,
+      }),
+      new GoogleHealthApiError({
+        verb: "dailyRollUp",
+        classification: "transient",
+        httpStatus: 503,
+        reason: "server_error",
+        retryAfterMs: 90 * 60_000,
+      }),
+      new StravaApiError({
+        verb: "fetchActivities",
+        classification: "transient",
+        httpStatus: 429,
+        reason: "rate_limited",
+        retryAfterSeconds: 90 * 60,
+      }),
+    ]) {
+      const failure = classifyBackfillFailure(
+        new Error("slice", { cause: err }),
+      );
+      expect(failure).toMatchObject({
+        kind: "transient",
+        retryAfterMs: 90 * 60_000,
+      });
+      // First attempt: the doubled base is 5 minutes, the header wins.
+      expect(
+        backfillRetryDelaySeconds(
+          1,
+          failure.kind === "transient" ? failure.retryAfterMs : undefined,
+          () => 0,
+        ),
+      ).toBe(90 * 60);
+    }
   });
 
   it("parks a refused credential at reauth and does not retry it", async () => {
