@@ -732,7 +732,13 @@ describe("POST /api/onboarding/restart", () => {
     const res = await postRestart();
     expect(res.status).toBe(200);
     const state = await readState(res);
-    expect(state.steps.every((step) => step.status === "pending")).toBe(true);
+    // Every step owed again; the AI follow-up reads as passed while no
+    // provider can serve the Coach on this server (1.50).
+    expect(
+      state.steps
+        .filter((step) => step.id !== "ai")
+        .every((step) => step.status === "pending"),
+    ).toBe(true);
     expect(state.completedAt).toBeNull();
     // The answers survive as the prefill for the re-run.
     expect(state.needs.medication).toBe("yes");
@@ -884,5 +890,112 @@ describe("a delegate and somebody else's record", () => {
     const state = await readMe();
     expect(state.needs).toEqual(emptyOnboardingNeeds());
     expect(state.completedAt).not.toBeNull();
+  });
+});
+
+/** Where `/onboarding` sends the signed-in caller. */
+async function frontDoor(): Promise<string> {
+  const { default: OnboardingRootPage } = await import("@/app/onboarding/page");
+  try {
+    await OnboardingRootPage();
+  } catch (err) {
+    const digest = (err as { digest?: string }).digest ?? "";
+    if (digest.startsWith("NEXT_REDIRECT")) return digest.split(";")[2];
+    throw err;
+  }
+  throw new Error("the front door rendered instead of redirecting");
+}
+
+describe("the first run's end, against the first-run redirect", () => {
+  it("does not loop an account whose earlier flow settled every step without a confirm", async () => {
+    // A flow begun before this one stopped after its last screen without a
+    // confirm: every step settled, nothing stamped, so the proxy still holds
+    // the account and `/` sends it straight back to `/onboarding`.
+    const user = await makeUser("legacy");
+    await getPrismaClient().onboardingRecord.create({
+      data: {
+        userId: user.id,
+        needsJson: { recordTarget: "me", areas: ["blood-pressure"] },
+        stepsJson: [
+          "who",
+          "areas",
+          "medication",
+          "sources",
+          "visit",
+          "units",
+          "reminders",
+        ].map((id) => ({ id, status: id === "who" ? "done" : "skipped" })),
+      },
+    });
+    await signIn(user.id);
+    cookieJar.set("hl_onboarding", "pending");
+
+    // The front door opens a screen that can finish, not the dashboard.
+    const door = await frontDoor();
+    expect(door).not.toBe("/");
+    expect(door).toMatch(/^\/onboarding\/[a-z-]+$/);
+
+    // Answering that screen confirms on the server: the account is stamped,
+    // the redirect's cookie dropped, and the front door opens the dashboard.
+    expect(
+      (await patchAnswer({ step: "reminders", status: "skipped" })).status,
+    ).toBe(200);
+    const stamped = await getPrismaClient().user.findUniqueOrThrow({
+      where: { id: user.id },
+      select: { onboardingCompletedAt: true },
+    });
+    expect(stamped.onboardingCompletedAt).not.toBeNull();
+    expect(cookieJar.get("hl_onboarding")).toBeUndefined();
+    await signIn(user.id);
+    expect(await frontDoor()).toBe("/");
+  });
+
+  it("opens the dashboard for a new account once its last screen is answered", async () => {
+    const user = await makeUser("fresh");
+    await signIn(user.id);
+    cookieJar.set("hl_onboarding", "pending");
+    await patchAnswer({ step: "who", recordTarget: "me" });
+    await patchAnswer({ step: "areas", areas: ["blood-pressure"] });
+    await patchAnswer({ step: "units", status: "skipped" });
+    await patchAnswer({ step: "sources", status: "skipped" });
+    expect(cookieJar.get("hl_onboarding")).toBe("pending");
+    await patchAnswer({ step: "reminders", status: "skipped" });
+
+    expect(cookieJar.get("hl_onboarding")).toBeUndefined();
+    await signIn(user.id);
+    expect(await frontDoor()).toBe("/");
+  });
+
+  it("keeps medications and the doctor report on when the flow never asked about them", async () => {
+    const user = await makeUser("unasked");
+    await signIn(user.id);
+    await patchAnswer({ step: "who", recordTarget: "me" });
+    await patchAnswer({ step: "areas", areas: ["blood-pressure"] });
+    await patchAnswer({ step: "units", status: "skipped" });
+    await patchAnswer({ step: "medication", status: "skipped" });
+    await patchAnswer({ step: "visit", status: "skipped" });
+    await patchAnswer({ step: "sources", status: "skipped" });
+    expect((await postComplete()).status).toBe(200);
+
+    const prefs = await modulePrefs(user.id);
+    // Absence means on; a derived `true` lands as `true`. Either way, not off.
+    expect(prefs.medications).not.toBe(false);
+    expect(prefs.doctorReport).not.toBe(false);
+  });
+
+  it("still switches both off on an explicit no", async () => {
+    const user = await makeUser("said-no");
+    await signIn(user.id);
+    await patchAnswer({ step: "who", recordTarget: "me" });
+    await patchAnswer({ step: "areas", areas: ["blood-pressure"] });
+    await patchAnswer({ step: "units", status: "skipped" });
+    await patchAnswer({ step: "medication", medication: "no" });
+    await patchAnswer({ step: "visit", visit: "no" });
+    await patchAnswer({ step: "sources", status: "skipped" });
+    expect((await postComplete()).status).toBe(200);
+
+    const prefs = await modulePrefs(user.id);
+    expect(prefs.medications).toBe(false);
+    expect(prefs.doctorReport).toBe(false);
   });
 });

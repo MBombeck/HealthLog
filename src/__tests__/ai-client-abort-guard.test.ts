@@ -144,8 +144,9 @@ describe("browser aborts for model-backed requests", () => {
         }
       }
     }
-    // Six saves today; a matcher that finds none must not read as clean.
-    expect(sites.length).toBeGreaterThanOrEqual(6);
+    // Five saves today (the setup flow's confirm screen left in 1.50); a
+    // matcher that finds none must not read as clean.
+    expect(sites.length).toBeGreaterThanOrEqual(5);
     expect(missing).toEqual([]);
   });
 });

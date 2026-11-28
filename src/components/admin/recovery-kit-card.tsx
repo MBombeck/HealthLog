@@ -90,7 +90,7 @@ function platformCopy(
   }
 }
 
-function keyLabel(
+export function keyLabel(
   t: (key: string, params?: Record<string, string | number>) => string,
   key: KitKey,
 ): string {

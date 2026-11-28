@@ -140,10 +140,16 @@ describe("check-e2e-skipped-specs", () => {
     }
 
     it("exits 0 on a clean report and 1 on an all-skipped file", () => {
+      // The allowlisted files skip as they do on CI.
+      const allowed = Object.keys(ALLOWED_ALL_SKIPPED).map((file) => ({
+        file,
+        tests: [["chromium-desktop", "skipped"]] as Array<[string, Status]>,
+      }));
       expect(
         run(
           report([
             { file: "a.spec.ts", tests: [["chromium-desktop", "expected"]] },
+            ...allowed,
           ]),
         ),
       ).toBe(0);
@@ -151,6 +157,7 @@ describe("check-e2e-skipped-specs", () => {
         run(
           report([
             { file: "z.spec.ts", tests: [["chromium-desktop", "skipped"]] },
+            ...allowed,
           ]),
         ),
       ).toBe(1);
