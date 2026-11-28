@@ -945,6 +945,10 @@
     "morning": {
       "heroItemsTitle": "오늘 할 일",
       "heroItemsDescription": "오늘 할 일에 표시할 항목 유형을 선택하세요."
+    },
+    "tileComparison": {
+      "above": "목표 범위 초과",
+      "below": "목표 범위 미만"
     }
   },
   "measurements": {
@@ -2208,38 +2212,37 @@
         "deleteRow": {
           "failed": "복용 기록을 삭제하지 못했어요."
         },
-        "viewRecent90": "최근 90일",
-        "viewAll": "전체 기록",
-        "viewToggleLabel": "기록 범위"
+        "viewToggleLabel": "기록 범위",
+        "viewRecentShort": "90일",
+        "viewAllShort": "전체"
       },
       "verlauf": {
         "loading": "기록을 불러오는 중…",
         "loadError": "기록을 불러오지 못했어요.",
         "empty": "이 기간에는 복용 기록이 아직 없어요.",
         "summaryEmpty": "아직 계산할 복용이 없어요.",
-        "adherenceBarLabel": "정시 {onTime}, 늦음 {late}, 놓침 {missed}",
         "add": "복용 기록",
         "rowActionsLabel": "{time} 작업",
         "markAsTaken": "복용함으로 표시",
         "markAsSkipped": "건너뜀으로 표시",
-        "adHocTag": "일정 외",
-        "takenDetail": "예정 {planned}, 복용 {taken}",
         "doseTaken": "용량: {dose}",
-        "status": {
-          "ad_hoc": "일정 외"
-        },
         "pin": {
           "action": "{time} 시간대에 배정",
           "release": "배정 해제",
           "pinnedTag": "배정됨",
           "pinnedToast": "복용 기록을 시간대에 배정했어요",
           "unpinnedToast": "배정을 해제했어요",
-          "dueContext": "예정 시각: {time} ({delta})",
           "confirmTitle": "{time} 시간대에 배정할까요?",
           "confirmBody": "이 복용은 처음부터 이 시간대에 기록한 것과 똑같이 계산돼요. 복용한 시각에 따라 제시간 또는 늦게 복용한 것으로 계산되어 순응도가 부풀려지지 않아요. 배정은 언제든 해제할 수 있어요.",
           "confirmCancel": "취소",
           "confirmAction": "배정"
-        }
+        },
+        "backfill": "나중에 기록",
+        "extraColumn": "추가",
+        "takenAt": "{time}에 복용",
+        "weekOf": "{date}부터 한 주",
+        "thisWeek": "이번 주",
+        "showEarlier": "이전 주 보기"
       },
       "notifications": {
         "title": "알림",
@@ -2352,33 +2355,24 @@
       },
       "tabs": {
         "uebersicht": "개요",
-        "zeitplan": "일정",
-        "bestand": "재고",
         "verlauf": "기록",
         "injektion": "주사",
-        "erweitert": "고급",
-        "wirkung": "효과"
+        "wirkung": "효과",
+        "einstellungen": "설정"
       },
       "shell": {
         "loadFailed": "이 약을 불러오지 못했어요.",
         "tablistLabel": "약 상세 섹션"
       },
       "uebersicht": {
-        "statusTitle": "상태",
         "nextDoseLabel": "다음 복용",
-        "nextDoseNone": "예정된 복용이 없어요.",
-        "nextDoseAsNeeded": "필요시 복용: 예정된 복용이 없어요.",
         "nextDoseNotTracked": "복용을 기록하지 않아요. 기록으로만 남겨요.",
         "pausedHint": "일시중지: 알림이 오지 않아요.",
         "reminderLabel": "알림",
-        "reminderOn": "켜짐",
         "reminderOff": "꺼짐",
         "supplyLabel": "재고",
         "supplyRunway": "약 {days, plural, other {#일}} 더 쓸 수 있어요",
-        "jumpToZeitplan": "일정 열기",
-        "jumpToBestand": "재고 열기",
-        "complianceTitle": "복약 순응도",
-        "complianceEmpty": "아직 복약 순응도 데이터가 없어요."
+        "complianceTitle": "복약 순응도"
       },
       "bestand": {
         "title": "재고",
@@ -2460,15 +2454,7 @@
       },
       "erweitert": {
         "group": {
-          "lifecycle": "수명 주기",
-          "externalApi": "외부 API",
-          "data": "데이터",
-          "danger": "위험 영역"
-        },
-        "editor": {
-          "title": "편집기에서 약 수정",
-          "helper": "단계별 편집기에서 이름, 치료 분류, 주기, 일정을 바꿀 수 있어요.",
-          "button": "편집기 열기"
+          "data": "데이터"
         }
       },
       "zeitplan": {
@@ -2478,8 +2464,6 @@
         "scheduleLabel": "일정 {index}",
         "fullEditNote": "주기, 치료 분류, 복용 기간은 고급 > 수명 주기의 편집기에서 바꿔요.",
         "graceEcho": "알림 유예 시간: {minutes, plural, other {#분}}",
-        "reminderTitle": "알림",
-        "manageChannels": "알림 채널 관리",
         "history": {
           "title": "일정 변경 이력",
           "currentSince": "{date}부터 현재 일정",
@@ -2530,6 +2514,58 @@
           "orderError": "시작이 종료보다 앞서야 해요.",
           "noTimes": "아직 설정된 복용 시각이 없어요."
         }
+      },
+      "menu": {
+        "label": "약 작업",
+        "resume": "다시 시작"
+      },
+      "settingsTab": {
+        "groups": {
+          "period": "기간"
+        },
+        "rows": {
+          "history": "기록",
+          "medication": "약",
+          "export": "내보내기",
+          "import": "가져오기",
+          "api": "API 접근",
+          "codes": "임상 코드",
+          "channels": "알림 채널"
+        },
+        "intakeCount": "{count, plural, other {#회 복용}}",
+        "withAllData": "모든 데이터 포함",
+        "courseCount": "{count, plural, other {#개 기간}}"
+      },
+      "overview": {
+        "changeMetric": "측정값 변경",
+        "metricField": "측정값",
+        "details": "자세히",
+        "since": "이후",
+        "daysChip": "{days, plural, other {#일}}",
+        "today": {
+          "progress": "{total}회 중 {taken}회",
+          "noneToday": "오늘 예정된 용량이 없어요.",
+          "asNeededTaken": "오늘 {count, plural, other {#회}} 복용했어요."
+        },
+        "intake": {
+          "title": "복용",
+          "missedNone": "{days, plural, other {#일}} 동안 놓친 용량이 없어요.",
+          "missedSome": "{days, plural, other {#일}} 동안 {count, plural, other {#회}} 놓쳤어요.",
+          "asNeededCount": "{count, plural, =0 {{days}일 동안 복용하지 않았어요.} other {{days}일 동안 #회 복용했어요.}}"
+        },
+        "legend": {
+          "taken": "{count, plural, other {#회 복용}}",
+          "late": "{count, plural, other {#회 늦음}}",
+          "missed": "{count, plural, other {#회 놓침}}",
+          "skipped": "{count, plural, other {#회 건너뜀}}"
+        },
+        "plan": {
+          "title": "계획",
+          "since": "{date}부터",
+          "range": "{start}~{end}",
+          "autoRecorded": "자동 기록",
+          "reminderOn": "켜짐, {minutes, plural, other {#분}}"
+        }
       }
     },
     "logInjectionSiteTitle": "주사 부위 기록",
@@ -2570,7 +2606,6 @@
       "intro": "이 약이 영향을 주려는 측정값이 복용을 시작한 무렵을 전후로 어떻게 움직였는지 보여줘요. 치료나 용량에 대한 조언은 아니에요.",
       "notEligible": "이 약과 연결할 결과 지표가 없어요.",
       "startFallback": "시작일이 설정되지 않아서 처음 기록한 측정값을 기준점으로 비교해요.",
-      "noStart": "이 약의 시작일을 설정하면 복용 전후 측정값을 비교할 수 있어요.",
       "primaryBadge": "주요 목표",
       "noSeries": "이 목표로 기록된 측정값이 아직 없어요.",
       "startMarker": "시작",
@@ -2589,12 +2624,7 @@
         "error": "변경 내용을 저장하지 못했어요. 다시 시도해 주세요."
       },
       "beforeAfter": {
-        "summary": "시작 전 평균 {before}, 이후 평균 {after}, {delta} 변화.",
-        "counts": "시작 전 {beforeCount, plural, other {#개}}, 이후 {afterCount}개 측정값을 기준으로 했어요.",
-        "needBefore": "시작 전 측정값이 아직 부족해요. 비교하려면 전후로 약 {weeks, plural, other {#주씩}} 필요해요.",
-        "needAfter": "시작 이후 측정값이 아직 부족해요. 비교하려면 전후로 약 {weeks, plural, other {#주씩}} 필요해요.",
-        "needStart": "시작일을 설정하면 복용 전후 측정값을 비교할 수 있어요.",
-        "needData": "측정값이 아직 부족해요. 비교하려면 시작 전후로 약 {weeks, plural, other {#주씩}} 필요해요."
+        "counts": "시작 전 {beforeCount, plural, other {#개}}, 이후 {afterCount}개 측정값을 기준으로 했어요."
       },
       "insights": {
         "title": "약 효과",
@@ -2628,7 +2658,8 @@
         "needAfter": "시작 시점의 변화를 보려면 시작 후 {span, plural, other {#일에}} 걸쳐, 용량을 복용한 날 기준으로 최소 {days, plural, other {#일의}} 측정값이 필요합니다.",
         "fitFailed": "이 측정값으로는 계산할 수 없어 시작 시점의 변화를 표시하지 않습니다.",
         "autocorrelation": "하루 값이 전날 값에 크게 좌우되므로 이 범위도 너무 좁을 수 있습니다."
-      }
+      },
+      "method": "계산 방법"
     },
     "import": {
       "resultSuccess": "복용 {imported, plural, other {#건을}} 불러왔어요",
@@ -2843,7 +2874,6 @@
     "leaflet": {
       "title": "첨부문서",
       "find": "첨부문서 찾기",
-      "open": "열기",
       "saved": "공식 첨부문서",
       "newTab": "(새 탭에서 열림)",
       "opensIn": "이 약으로 {authority} 검색을 엽니다.",
@@ -2860,7 +2890,8 @@
       "urlInvalid": "https://로 시작하는 링크를 입력하세요.",
       "savedToast": "첨부문서 링크를 저장했습니다",
       "removedToast": "첨부문서 링크를 삭제했습니다",
-      "saveError": "첨부문서 링크를 저장하지 못했습니다."
+      "saveError": "첨부문서 링크를 저장하지 못했습니다.",
+      "searchShort": "검색"
     }
   },
   "charts": {
@@ -16545,6 +16576,15 @@
     "metricLabels": {
       "systolicBloodPressure": "수축기 혈압",
       "diastolicBloodPressure": "이완기 혈압"
+    },
+    "efficacyResult": {
+      "lower": "시작 이후 평균이 {amount} 낮아졌어요.",
+      "higher": "시작 이후 평균이 {amount} 높아졌어요.",
+      "unchanged": "시작 이후 평균은 거의 그대로예요.",
+      "needBefore": "비교하려면 시작 전 값이 더 필요해요.",
+      "needAfter": "비교하려면 시작 후 값이 더 필요해요.",
+      "needStart": "전후를 비교하려면 시작일을 입력하세요.",
+      "needData": "비교하려면 값이 더 필요해요."
     }
   }
 }

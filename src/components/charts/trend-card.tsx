@@ -146,12 +146,31 @@ interface TrendCardProps {
    */
   valueAdornment?: React.ReactNode;
   /**
+   * The deviation line the server wrote for this tile
+   * (`tiles.comparison[id].line`, "Above target range"), shown as served in
+   * the callout slot. Null or absent renders nothing.
+   */
+  deviationLine?: string | null;
+  /**
    * Decimal places for the headline, the averages and the deltas. Defaults
    * to 1. A whole-number metric (steps, mmHg, bpm, mg/dL) passes 0 so the
    * tile reads "121 mmHg", not "121,0 mmHg" — the precision its own
    * insights page uses.
    */
   fractionDigits?: number;
+}
+
+/** The stale caption's words, bucketed by how old the last reading is. */
+function staleHintText(
+  staleDays: number,
+  t: (key: string, params?: Record<string, string | number>) => string,
+  tCount: (key: string, count: number) => string,
+): string {
+  if (staleDays <= 30) return t("dashboard.staleHint", { count: staleDays });
+  if (staleDays <= 60) {
+    return tCount("dashboard.staleHintWeeks", Math.floor(staleDays / 7));
+  }
+  return tCount("dashboard.staleHintMonths", Math.floor(staleDays / 30));
 }
 
 export function TrendCard({
@@ -174,6 +193,7 @@ export function TrendCard({
   staleDays = null,
   emptyHint = null,
   valueAdornment = null,
+  deviationLine = null,
   fractionDigits = 1,
 }: TrendCardProps) {
   const { t, tCount } = useTranslations();
@@ -384,6 +404,14 @@ export function TrendCard({
           to one line at `<sm`; `sm:` releases the line-clamp + the
           [overflow-wrap:anywhere] fallback. */}
       <div className="mt-1 min-h-[18px]">
+        {deviationLine ? (
+          <span
+            className="line-clamp-1 block max-w-full text-xs leading-snug font-medium"
+            data-slot="tile-deviation-line"
+          >
+            {deviationLine}
+          </span>
+        ) : null}
         {compareBaseline !== "none" && compareDelta != null && (
           <span
             className={cn(
@@ -424,17 +452,7 @@ export function TrendCard({
             data-slot="tile-stale-hint"
             data-stale-days={staleDays}
           >
-            {(() => {
-              if (staleDays <= 30) {
-                return t("dashboard.staleHint", { count: staleDays });
-              }
-              if (staleDays <= 60) {
-                const weeks = Math.floor(staleDays / 7);
-                return tCount("dashboard.staleHintWeeks", weeks);
-              }
-              const months = Math.floor(staleDays / 30);
-              return tCount("dashboard.staleHintMonths", months);
-            })()}
+            {staleHintText(staleDays, t, tCount)}
           </span>
         )}
       </div>

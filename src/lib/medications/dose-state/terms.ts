@@ -90,8 +90,3 @@ export function doseStateOfHistoryRow(row: {
       return null;
   }
 }
-
-/** Whether a dose in this state still waits for a take or a skip. */
-export function isOpenDoseState(state: DoseState | null): boolean {
-  return state === "pending" || state === "due" || state === "overdue";
-}

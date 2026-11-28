@@ -34,6 +34,9 @@ const LOCALE_REGISTRIES: Readonly<Record<Locale, readonly MedicineRegistry[]>> =
     it: [],
     ko: [],
     ru: [],
+    // None of the registries in this table covers mainland China, so there is
+    // nothing to default to; the reader picks a registry explicitly.
+    "zh-CN": [],
   };
 
 /** Languages that name one registry without help from the time zone. */

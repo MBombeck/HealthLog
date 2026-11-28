@@ -945,6 +945,10 @@
     "morning": {
       "heroItemsTitle": "Da fare oggi",
       "heroItemsDescription": "Scegli quali tipi di elementi possono comparire in “Da fare oggi”."
+    },
+    "tileComparison": {
+      "above": "Sopra il range",
+      "below": "Sotto il range"
     }
   },
   "measurements": {
@@ -2208,38 +2212,37 @@
         "deleteRow": {
           "failed": "Impossibile eliminare l’assunzione."
         },
-        "viewRecent90": "Ultimi 90 giorni",
-        "viewAll": "Storico completo",
-        "viewToggleLabel": "Intervallo dello storico"
+        "viewToggleLabel": "Intervallo dello storico",
+        "viewRecentShort": "90 giorni",
+        "viewAllShort": "Tutto"
       },
       "verlauf": {
         "loading": "Caricamento cronologia …",
         "loadError": "Impossibile caricare la cronologia.",
         "empty": "Ancora nessuna assunzione in questo periodo.",
         "summaryEmpty": "Ancora nessuna dose da valutare.",
-        "adherenceBarLabel": "{onTime} puntuali, {late} in ritardo, {missed} mancate",
         "add": "Registra assunzione",
         "rowActionsLabel": "Azioni per {time}",
         "markAsTaken": "Segna come assunta",
         "markAsSkipped": "Segna come saltata",
-        "adHocTag": "fuori programma",
-        "takenDetail": "prevista {planned}, assunta {taken}",
         "doseTaken": "Dose: {dose}",
-        "status": {
-          "ad_hoc": "Fuori programma"
-        },
         "pin": {
           "action": "Attribuisci allo slot delle {time}",
           "release": "Rimuovi attribuzione",
           "pinnedTag": "attribuita",
           "pinnedToast": "Assunzione attribuita allo slot",
           "unpinnedToast": "Attribuzione rimossa",
-          "dueContext": "prevista alle {time} ({delta})",
           "confirmTitle": "Attribuire allo slot delle {time}?",
           "confirmBody": "L'assunzione conterà per questo slot esattamente come se fosse stata registrata lì: puntuale o in ritardo a seconda di quando è stata presa, quindi la percentuale non viene abbellita. L'attribuzione può essere rimossa in qualsiasi momento.",
           "confirmCancel": "Annulla",
           "confirmAction": "Attribuisci"
-        }
+        },
+        "backfill": "Registra dopo",
+        "extraColumn": "In più",
+        "takenAt": "Presa alle {time}",
+        "weekOf": "Settimana dal {date}",
+        "thisWeek": "Questa settimana",
+        "showEarlier": "Mostra settimane precedenti"
       },
       "notifications": {
         "title": "Promemoria",
@@ -2352,33 +2355,24 @@
       },
       "tabs": {
         "uebersicht": "Panoramica",
-        "zeitplan": "Programma",
-        "bestand": "Scorta",
         "verlauf": "Cronologia",
         "injektion": "Iniezione",
-        "erweitert": "Avanzate",
-        "wirkung": "Effetto"
+        "wirkung": "Effetto",
+        "einstellungen": "Impostazioni"
       },
       "shell": {
         "loadFailed": "Impossibile caricare questo farmaco.",
         "tablistLabel": "Sezioni di dettaglio del farmaco"
       },
       "uebersicht": {
-        "statusTitle": "Stato",
         "nextDoseLabel": "Prossima dose",
-        "nextDoseNone": "Nessuna dose in programma.",
-        "nextDoseAsNeeded": "Al bisogno, nessuna dose programmata.",
         "nextDoseNotTracked": "Assunzioni non registrate, solo annotato.",
         "pausedHint": "In pausa, nessun promemoria.",
         "reminderLabel": "Promemoria",
-        "reminderOn": "Attivo",
         "reminderOff": "Disattivo",
         "supplyLabel": "Scorta",
         "supplyRunway": "Copre ancora circa {days, plural, one {# giorno} other {# giorni}}",
-        "jumpToZeitplan": "Apri programma",
-        "jumpToBestand": "Apri scorta",
-        "complianceTitle": "Aderenza",
-        "complianceEmpty": "Ancora nessun dato sull'aderenza."
+        "complianceTitle": "Aderenza"
       },
       "bestand": {
         "title": "Scorta",
@@ -2460,15 +2454,7 @@
       },
       "erweitert": {
         "group": {
-          "lifecycle": "Ciclo di vita",
-          "externalApi": "API esterna",
-          "data": "Dati",
-          "danger": "Zona pericolosa"
-        },
-        "editor": {
-          "title": "Modifica il farmaco nell'editor",
-          "helper": "Cambia nome, classe di trattamento, frequenza e programmi nell'editor passo dopo passo.",
-          "button": "Apri editor"
+          "data": "Dati"
         }
       },
       "zeitplan": {
@@ -2478,8 +2464,6 @@
         "scheduleLabel": "Programma {index}",
         "fullEditNote": "Frequenza, classe di trattamento e periodo di trattamento si modificano nell'editor, in Avanzate > Ciclo di vita.",
         "graceEcho": "Durata dei promemoria: {minutes, plural, one {# minuto} other {# minuti}}",
-        "reminderTitle": "Promemoria",
-        "manageChannels": "Gestisci i canali di notifica",
         "history": {
           "title": "Cronologia del piano",
           "currentSince": "Piano attuale dal {date}",
@@ -2530,6 +2514,58 @@
           "orderError": "L'inizio deve precedere la fine.",
           "noTimes": "Nessun orario di assunzione impostato."
         }
+      },
+      "menu": {
+        "label": "Azioni sul farmaco",
+        "resume": "Riprendi"
+      },
+      "settingsTab": {
+        "groups": {
+          "period": "Periodo"
+        },
+        "rows": {
+          "history": "Cronologia",
+          "medication": "Farmaco",
+          "export": "Esporta",
+          "import": "Importa",
+          "api": "Accesso API",
+          "codes": "Codici clinici",
+          "channels": "Canali di notifica"
+        },
+        "intakeCount": "{count, plural, one {# assunzione} other {# assunzioni}}",
+        "withAllData": "con tutti i dati",
+        "courseCount": "{count, plural, one {# ciclo} other {# cicli}}"
+      },
+      "overview": {
+        "changeMetric": "Cambia misurazione",
+        "metricField": "Misurazione",
+        "details": "Dettagli",
+        "since": "da allora",
+        "daysChip": "{days, plural, one {# giorno} other {# giorni}}",
+        "today": {
+          "progress": "{taken} di {total}",
+          "noneToday": "Oggi non è prevista nessuna dose.",
+          "asNeededTaken": "Assunta {count, plural, one {una volta} other {# volte}} oggi."
+        },
+        "intake": {
+          "title": "Assunzione",
+          "missedNone": "Nessuna dose mancata in {days, plural, one {# giorno} other {# giorni}}.",
+          "missedSome": "{count, plural, one {Una dose mancata} other {# dosi mancate}} in {days, plural, one {# giorno} other {# giorni}}.",
+          "asNeededCount": "{count, plural, =0 {Non assunta in {days} giorni.} one {Assunta una volta in {days} giorni.} other {Assunta # volte in {days} giorni.}}"
+        },
+        "legend": {
+          "taken": "{count, plural, one {# assunta} other {# assunte}}",
+          "late": "{count, plural, one {# in ritardo} other {# in ritardo}}",
+          "missed": "{count, plural, one {# mancata} other {# mancate}}",
+          "skipped": "{count, plural, one {# saltata} other {# saltate}}"
+        },
+        "plan": {
+          "title": "Piano",
+          "since": "dal {date}",
+          "range": "dal {start} al {end}",
+          "autoRecorded": "registrata automaticamente",
+          "reminderOn": "attivi, {minutes, plural, one {# minuto} other {# minuti}}"
+        }
       }
     },
     "logInjectionSiteTitle": "Registra il sito di iniezione",
@@ -2570,7 +2606,6 @@
       "intro": "Come sono cambiate le misurazioni su cui agisce questo farmaco intorno al momento in cui hai iniziato a prenderlo. Mostra ciò che coincide nel tempo, mai un consiglio sul trattamento o sulla dose.",
       "notEligible": "Non c'è alcuna misurazione da collegare a questo farmaco.",
       "startFallback": "Non è impostata una data di inizio, quindi il confronto usa la tua prima misurazione registrata come riferimento.",
-      "noStart": "Imposta una data di inizio per confrontare le misurazioni prima e dopo l'avvio.",
       "primaryBadge": "Obiettivo principale",
       "noSeries": "Nessuna misurazione registrata per questo obiettivo.",
       "startMarker": "Inizio",
@@ -2589,12 +2624,7 @@
         "error": "Impossibile salvare questa modifica. Riprova."
       },
       "beforeAfter": {
-        "summary": "Ø {before} prima, Ø {after} da allora, una variazione di {delta}.",
-        "counts": "In base a {beforeCount, plural, one {# misurazione} other {# misurazioni}} prima e {afterCount} da allora.",
-        "needBefore": "Ancora troppe poche misurazioni prima dell'inizio: servono circa {weeks, plural, one {# settimana} other {# settimane}} prima e dopo per confrontare.",
-        "needAfter": "Ancora troppe poche misurazioni dall'inizio: servono circa {weeks, plural, one {# settimana} other {# settimane}} prima e dopo per confrontare.",
-        "needStart": "Imposta una data di inizio per confrontare le misurazioni prima e dopo l'avvio.",
-        "needData": "Ancora troppe poche misurazioni: servono circa {weeks, plural, one {# settimana} other {# settimane}} prima e dopo l'inizio per confrontare."
+        "counts": "In base a {beforeCount, plural, one {# misurazione} other {# misurazioni}} prima e {afterCount} da allora."
       },
       "insights": {
         "title": "Effetto dei farmaci",
@@ -2628,7 +2658,8 @@
         "needAfter": "La variazione all'inizio richiede valori in almeno {days, plural, one {# giorno} other {# giorni}} distribuiti su {span, plural, one {# giorno} other {# giorni}} dall'inizio, nei giorni con le dosi assunte.",
         "fitFailed": "Non è stato possibile elaborare questi valori, quindi non viene mostrata alcuna variazione all'inizio.",
         "autocorrelation": "I valori giornalieri dipendono molto dal giorno precedente, quindi anche questi intervalli possono essere troppo stretti."
-      }
+      },
+      "method": "Come si calcola"
     },
     "import": {
       "resultSuccess": "{imported, plural, one {# assunzione importata} other {# assunzioni importate}}",
@@ -2843,7 +2874,6 @@
     "leaflet": {
       "title": "Foglietto illustrativo",
       "find": "Trova il foglietto illustrativo",
-      "open": "Apri",
       "saved": "Foglietto illustrativo ufficiale",
       "newTab": "(si apre in una nuova scheda)",
       "opensIn": "Apre la ricerca di {authority} con questo farmaco.",
@@ -2860,7 +2890,8 @@
       "urlInvalid": "Inserisci un link che inizi con https://",
       "savedToast": "Link al foglietto illustrativo salvato",
       "removedToast": "Link al foglietto illustrativo rimosso",
-      "saveError": "Impossibile salvare il link al foglietto illustrativo."
+      "saveError": "Impossibile salvare il link al foglietto illustrativo.",
+      "searchShort": "Cerca"
     }
   },
   "charts": {
@@ -16545,6 +16576,15 @@
     "metricLabels": {
       "systolicBloodPressure": "Pressione arteriosa sistolica",
       "diastolicBloodPressure": "Pressione arteriosa diastolica"
+    },
+    "efficacyResult": {
+      "lower": "Dall'inizio la media è più bassa di {amount}.",
+      "higher": "Dall'inizio la media è più alta di {amount}.",
+      "unchanged": "Dall'inizio la media è rimasta più o meno invariata.",
+      "needBefore": "Mancano ancora valori prima dell'inizio per un confronto.",
+      "needAfter": "Mancano ancora valori dall'inizio per un confronto.",
+      "needStart": "Aggiungi una data di inizio per confrontare prima e dopo.",
+      "needData": "Mancano ancora valori per un confronto."
     }
   }
 }

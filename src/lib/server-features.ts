@@ -53,6 +53,7 @@ export const SERVER_FEATURES = [
   "medication.side-effect-headache",
   "medication.low-stock-trigger",
   "insights.score-origin",
+  "medication.efficacy-result",
   "account.dismissed-hints",
   "daily.asks",
   "daily.asks-compact",
@@ -60,6 +61,7 @@ export const SERVER_FEATURES = [
   "daily.asks-source-stalled",
   "insights.scores-short-labels",
   "profile.insurance-number-country",
+  "dashboard.tile-comparison-bands",
   "health-connect.sync",
 ] as const;
 
@@ -161,6 +163,8 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "GET /api/medications and GET /api/medications/{id} (and the create and edit answers) carry lowStockTriggerDays: max(lowStockRunwayDays, reorderLeadDays + one dose-interval) with the medication's own lead over the account default, null when the alert is off or nothing is consumed on a cadence; a row is low on stock when runwayDays <= lowStockTriggerDays.",
   "insights.score-origin":
     "RECOVERY_SCORE, STRESS_SCORE and STRAIN_SCORE values on GET /api/insights/derived carry origin (estimate | device | computed) and deviceSource (the measurement source of a device value, else null); the health score composite carries weights (one { id, weight } per counted pillar, summing to 1) and each snapshot healthScore.pillars row its weight (null when it did not count); every scored pillar carries its own band (green | yellow | red), resolved on the server: value.band on the score report's pillars (/api/analytics) and band on each snapshot healthScore.pillars row (null when it did not count).",
+  "medication.efficacy-result":
+    "GET /api/medications/{id}/efficacy carries targets[].result: { direction (lower | higher | unchanged | null), text }, the before/after comparison in one sentence in the reader's language.",
   "daily.asks":
     "GET /api/daily/digest carries asks: every row the start page asks today, often none (kind, tier safety | decision | due, itemKey, title, body, subject, exactly two actions with the primary first, learnMore), ranked on the server, never capped or folded; render as delivered, no card when empty. Later is dose.snooze:<medicationId> on a dose and ask.later:<dismissKey> on other reminders; the admin rows (push_relay, server_setup) come only to a browser session.",
   "daily.asks-compact":
@@ -173,6 +177,8 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "Every score payload carries shortLabel, the score's short name for a tile from the glossary's short form through the score registry, worded in the response language: GET /api/insights/derived and each GET /api/insights/derived/batch entry (null for a metric that is no HealthLog score), GET /api/insights/score-history, healthScore on GET /api/analytics, and on GET /api/dashboard/snapshot healthScore and each scoreRings entry (null on MED_COMPLIANCE). Render it as given, never a short name of the client's own.",
   "profile.insurance-number-country":
     "The profile (GET/PATCH /api/user/profile, PUT /api/auth/profile, GET /api/auth/me) carries insuranceNumberCountry (ISO 3166-1 alpha-2; a number stored without one is DE) and insuranceGroupNumber (US only, else null); GET /api/user/profile also carries insuranceNumberDisplay, the number in its country's form. insuranceNumber is checked under its country: DE KVNR, AT SVNR, CH AHV number, NL BSN and FR NIR by check digit, every other country 3 to 30 letters, digits, spaces, hyphens or dots as entered. A refused value comes back in rejectedFields with code invalid_kvnr, invalid_svnr, invalid_ahv, invalid_bsn, invalid_nir or invalid_member_id; a country change the stored number would fail is refused on insuranceNumberCountry. The FHIR Patient identifier uses the country's national system where one is verified, else type MB with no system, and a US group number rides Coverage.class (group).",
+  "dashboard.tile-comparison-bands":
+    "GET /api/dashboard/snapshot carries tiles.comparison: per ranged tile (weight, bp, pulse when it shows the resting heart rate) avg7 and avg30 as { band: good | fair | low | null, side: above | below | null }, placed in targetBands by the same rule as tiles.attention (bp is the side further from its band), and line, the deviation line in the response language, non-null only while tiles.attention[id] is range (the side of the latest value). Colour the comparison lines and show the line as served.",
   "health-connect.sync":
     "The Android Health Connect sync: POST /api/health-connect/pairing mints a one-time code (QR healthlog-sync://pair?server=…&code=…), POST /api/health-connect/pair exchanges it for a health-connect:write token bound to a Device, GET /api/health-connect/state answers the wanted types and limits, and POST /api/health-connect/batch takes records, aggregates and deletes with one result per item. Early preview.",
 };

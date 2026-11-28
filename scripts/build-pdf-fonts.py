@@ -15,6 +15,10 @@ Extended-A (Polish). This script merges them:
       The matching ReportSans weight plus Hangul (syllables, jamo,
       compatibility jamo) and CJK punctuation from Noto Sans KR, instanced
       at weight 400 / 700. Loaded only for a report that contains Hangul.
+  ReportSansSC-{Regular,Bold}.ttf
+      The matching ReportSans weight plus the Han characters of GB2312, CJK
+      punctuation and the fullwidth forms from Noto Sans SC, instanced at
+      weight 400 / 700. Loaded only for a report that contains Han text.
 
 All sources are SIL Open Font License 1.1; the licence texts sit beside the
 output. The merged fonts carry their own family name, as the OFL asks of a
@@ -32,6 +36,8 @@ where <download-dir> holds the unhinted upstream TTFs:
     https://github.com/notofonts/notofonts.github.io/tree/main/fonts/NotoSansMath/unhinted/ttf
   NotoSansKR[wght].ttf
     https://github.com/google/fonts/tree/main/ofl/notosanskr
+  NotoSansSC[wght].ttf
+    https://github.com/google/fonts/tree/main/ofl/notosanssc
 """
 
 import copy
@@ -75,6 +81,24 @@ HANGUL_CODEPOINTS = ranges(
     (0xA960, 0xA97F),  # jamo extended-A
     (0xAC00, 0xD7A3),  # syllables
     (0xD7B0, 0xD7FF),  # jamo extended-B
+)
+
+
+def gb2312():
+    """Every character GB2312 encodes in its two-byte rows (A1-F7)."""
+    out = set()
+    for hi in range(0xA1, 0xF8):
+        for lo in range(0xA1, 0xFF):
+            try:
+                out.add(ord(bytes([hi, lo]).decode("gb2312")))
+            except UnicodeDecodeError:
+                pass
+    return out
+
+
+HAN_CODEPOINTS = gb2312() | ranges(
+    (0x3000, 0x303F),  # CJK symbols and punctuation
+    (0xFF00, 0xFFEF),  # fullwidth forms
 )
 DROP_TABLES = ["GSUB", "GPOS", "GDEF", "MATH", "BASE", "JSTF", "DSIG", "STAT"]
 
@@ -169,6 +193,7 @@ def build(src: Path, out: Path) -> None:
     out.mkdir(parents=True, exist_ok=True)
     math = subset_font(TTFont(src / "NotoSansMath-Regular.ttf"), SYMBOL_CODEPOINTS)
     kr_source = src / "NotoSansKR[wght].ttf"
+    sc_source = src / "NotoSansSC[wght].ttf"
 
     for style in ("Regular", "Bold", "Italic"):
         base = subset_font(TTFont(src / f"NotoSans-{style}.ttf"), BASE_CODEPOINTS)
@@ -183,6 +208,12 @@ def build(src: Path, out: Path) -> None:
         with_hangul = TTFont(out / f"ReportSans-{style}.ttf")
         merge(with_hangul, kr, "kr.")
         finish(with_hangul, "ReportSansKR", style, out / f"ReportSansKR-{style}.ttf")
+
+        sc = subset_font(TTFont(sc_source), HAN_CODEPOINTS)
+        sc = instancer.instantiateVariableFont(sc, {"wght": weight})
+        with_han = TTFont(out / f"ReportSans-{style}.ttf")
+        merge(with_han, sc, "sc.")
+        finish(with_han, "ReportSansSC", style, out / f"ReportSansSC-{style}.ttf")
 
 
 if __name__ == "__main__":

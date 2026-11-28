@@ -945,6 +945,10 @@
     "morning": {
       "heroItemsTitle": "To do today",
       "heroItemsDescription": "Choose which item types can appear in “To do today”."
+    },
+    "tileComparison": {
+      "above": "Above target range",
+      "below": "Below target range"
     }
   },
   "measurements": {
@@ -2208,38 +2212,37 @@
         "deleteRow": {
           "failed": "Could not delete the intake."
         },
-        "viewRecent90": "Last 90 days",
-        "viewAll": "Full history",
-        "viewToggleLabel": "History range"
+        "viewToggleLabel": "History range",
+        "viewRecentShort": "90 days",
+        "viewAllShort": "All"
       },
       "verlauf": {
         "loading": "Loading history…",
         "loadError": "Could not load the history.",
         "empty": "No intakes in this period yet.",
         "summaryEmpty": "No doses to score yet.",
-        "adherenceBarLabel": "{onTime} on time, {late} late, {missed} missed",
         "add": "Log intake",
         "rowActionsLabel": "Actions for {time}",
         "markAsTaken": "Mark as taken",
         "markAsSkipped": "Mark as skipped",
-        "adHocTag": "off-schedule",
-        "takenDetail": "planned {planned}, taken {taken}",
         "doseTaken": "Dose: {dose}",
-        "status": {
-          "ad_hoc": "Off-schedule"
-        },
         "pin": {
           "action": "Attribute to slot {time}",
           "release": "Release attribution",
           "pinnedTag": "attributed",
           "pinnedToast": "Intake attributed to slot",
           "unpinnedToast": "Attribution released",
-          "dueContext": "was due: {time} ({delta})",
           "confirmTitle": "Attribute to slot {time}?",
           "confirmBody": "The intake counts for this slot just as it would if it had been logged there: on time or late depending on when it was taken, so the rate is never flattered. You can release the attribution at any time.",
           "confirmCancel": "Cancel",
           "confirmAction": "Attribute"
-        }
+        },
+        "backfill": "Log past dose",
+        "extraColumn": "Extra",
+        "takenAt": "Taken {time}",
+        "weekOf": "Week of {date}",
+        "thisWeek": "This week",
+        "showEarlier": "Show earlier weeks"
       },
       "notifications": {
         "title": "Notifications",
@@ -2352,33 +2355,24 @@
       },
       "tabs": {
         "uebersicht": "Overview",
-        "zeitplan": "Schedule",
-        "bestand": "Supply",
         "verlauf": "History",
         "injektion": "Injection",
-        "erweitert": "Advanced",
-        "wirkung": "Effect"
+        "wirkung": "Effect",
+        "einstellungen": "Settings"
       },
       "shell": {
         "loadFailed": "This medication could not be loaded.",
         "tablistLabel": "Medication detail sections"
       },
       "uebersicht": {
-        "statusTitle": "Status",
         "nextDoseLabel": "Next dose",
-        "nextDoseNone": "No upcoming dose.",
-        "nextDoseAsNeeded": "As needed, no planned dose.",
         "nextDoseNotTracked": "Not tracked, kept as a record.",
         "pausedHint": "Paused: no reminders.",
         "reminderLabel": "Reminder",
-        "reminderOn": "On",
         "reminderOff": "Off",
         "supplyLabel": "Supply",
         "supplyRunway": "Lasts about {days, plural, one {# more day} other {# more days}}",
-        "jumpToZeitplan": "Open schedule",
-        "jumpToBestand": "Open supply",
-        "complianceTitle": "Adherence",
-        "complianceEmpty": "No adherence data yet."
+        "complianceTitle": "Adherence"
       },
       "bestand": {
         "title": "Supply",
@@ -2460,15 +2454,7 @@
       },
       "erweitert": {
         "group": {
-          "lifecycle": "Lifecycle",
-          "externalApi": "External API",
-          "data": "Data",
-          "danger": "Danger zone"
-        },
-        "editor": {
-          "title": "Edit medication in the editor",
-          "helper": "Change name, treatment class, frequency and schedules in the step-by-step editor.",
-          "button": "Open editor"
+          "data": "Data"
         }
       },
       "zeitplan": {
@@ -2478,8 +2464,6 @@
         "scheduleLabel": "Schedule {index}",
         "fullEditNote": "Frequency, treatment class and course are edited in the editor under Advanced > Lifecycle.",
         "graceEcho": "Reminder duration: {minutes, plural, one {# minute} other {# minutes}}",
-        "reminderTitle": "Reminder",
-        "manageChannels": "Manage notification channels",
         "history": {
           "title": "Plan history",
           "currentSince": "Current plan since {date}",
@@ -2530,6 +2514,58 @@
           "orderError": "The start must be before the end.",
           "noTimes": "No dose times set yet."
         }
+      },
+      "menu": {
+        "label": "Medication actions",
+        "resume": "Resume"
+      },
+      "settingsTab": {
+        "groups": {
+          "period": "Period"
+        },
+        "rows": {
+          "history": "History",
+          "medication": "Medication",
+          "export": "Export",
+          "import": "Import",
+          "api": "API access",
+          "codes": "Clinical codes",
+          "channels": "Notification channels"
+        },
+        "intakeCount": "{count, plural, one {# intake} other {# intakes}}",
+        "withAllData": "with all its data",
+        "courseCount": "{count, plural, one {# course} other {# courses}}"
+      },
+      "overview": {
+        "changeMetric": "Change measurement",
+        "metricField": "Measurement",
+        "details": "Details",
+        "since": "since then",
+        "daysChip": "{days, plural, one {# day} other {# days}}",
+        "today": {
+          "progress": "{taken} of {total}",
+          "noneToday": "No dose is planned today.",
+          "asNeededTaken": "Taken {count, plural, one {once} other {# times}} today."
+        },
+        "intake": {
+          "title": "Intake",
+          "missedNone": "You have not missed a dose in {days, plural, one {# day} other {# days}}.",
+          "missedSome": "You missed {count, plural, one {one dose} other {# doses}} in {days, plural, one {# day} other {# days}}.",
+          "asNeededCount": "{count, plural, =0 {Not taken in {days} days.} one {Taken once in {days} days.} other {Taken # times in {days} days.}}"
+        },
+        "legend": {
+          "taken": "{count, plural, one {# taken} other {# taken}}",
+          "late": "{count, plural, one {# late} other {# late}}",
+          "missed": "{count, plural, one {# missed} other {# missed}}",
+          "skipped": "{count, plural, one {# skipped} other {# skipped}}"
+        },
+        "plan": {
+          "title": "Plan",
+          "since": "since {date}",
+          "range": "{start} to {end}",
+          "autoRecorded": "recorded automatically",
+          "reminderOn": "on, {minutes, plural, one {# minute} other {# minutes}}"
+        }
       }
     },
     "logInjectionSiteTitle": "Log injection site",
@@ -2570,7 +2606,6 @@
       "intro": "How the measurements this medication is meant to influence have moved around the time you started it. It shows what lines up in time and never advice about your treatment or dose.",
       "notEligible": "There is no outcome to relate this medication to.",
       "startFallback": "No start date is set, so the comparison uses your first recorded reading as the reference point.",
-      "noStart": "Set a start date for this medication to compare the readings before and after it began.",
       "primaryBadge": "Main target",
       "noSeries": "No readings recorded for this target yet.",
       "startMarker": "Start",
@@ -2589,12 +2624,7 @@
         "error": "Could not save that change. Try again."
       },
       "beforeAfter": {
-        "summary": "Ø {before} before, Ø {after} since, a change of {delta}.",
-        "counts": "Based on {beforeCount, plural, one {# reading} other {# readings}} before and {afterCount} since.",
-        "needBefore": "Not enough readings before the start yet. {weeks, plural, one {About # week is} other {About # weeks are}} needed before and after to compare.",
-        "needAfter": "Not enough readings since the start yet. {weeks, plural, one {About # week is} other {About # weeks are}} needed before and after to compare.",
-        "needStart": "Set a start date to compare the readings before and after it began.",
-        "needData": "Not enough readings yet. {weeks, plural, one {About # week is} other {About # weeks are}} needed before and after the start to compare."
+        "counts": "Based on {beforeCount, plural, one {# reading} other {# readings}} before and {afterCount} since."
       },
       "insights": {
         "title": "Medication effect",
@@ -2628,7 +2658,8 @@
         "needAfter": "The change at the start needs readings on at least {days, plural, one {# day} other {# days}} spread over {span, plural, one {# day} other {# days}} since the start, on days the doses were taken.",
         "fitFailed": "These readings could not be fitted, so no change at the start is shown.",
         "autocorrelation": "The daily values carry over strongly from one day to the next, so even these ranges may be too narrow."
-      }
+      },
+      "method": "How this is worked out"
     },
     "import": {
       "resultSuccess": "{imported, plural, one {# intake} other {# intakes}} imported",
@@ -2843,7 +2874,6 @@
     "leaflet": {
       "title": "Leaflet",
       "find": "Find leaflet",
-      "open": "Open",
       "saved": "Official leaflet",
       "newTab": "(opens in a new tab)",
       "opensIn": "Opens the {authority} search with this medication filled in.",
@@ -2860,7 +2890,8 @@
       "urlInvalid": "Enter a link that starts with https://",
       "savedToast": "Leaflet link saved",
       "removedToast": "Leaflet link removed",
-      "saveError": "The leaflet link could not be saved"
+      "saveError": "The leaflet link could not be saved",
+      "searchShort": "Search"
     }
   },
   "charts": {
@@ -16545,6 +16576,15 @@
     "metricLabels": {
       "systolicBloodPressure": "Systolic blood pressure",
       "diastolicBloodPressure": "Diastolic blood pressure"
+    },
+    "efficacyResult": {
+      "lower": "Since the start, the average is {amount} lower.",
+      "higher": "Since the start, the average is {amount} higher.",
+      "unchanged": "Since the start, the average has stayed about the same.",
+      "needBefore": "There are not enough readings before the start to compare yet.",
+      "needAfter": "There are not enough readings since the start to compare yet.",
+      "needStart": "Add a start date to compare before and after.",
+      "needData": "There are not enough readings to compare yet."
     }
   }
 }
