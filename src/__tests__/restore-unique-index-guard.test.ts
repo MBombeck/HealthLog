@@ -73,6 +73,9 @@ const DECISIONS: Record<string, Decision> = {
     reason: NOT_IN_BACKUP,
   },
   ai_job_failures_user_id_job_subject_id_key: { reason: NOT_IN_BACKUP },
+  imaging_exam_document_links_exam_id_document_id_key: {
+    reason: CAME_WITH_TABLE,
+  },
 };
 
 const UNIQUE_INDEX =

@@ -1297,6 +1297,27 @@ export async function seedEveryTwoEndedModel(
     },
   });
 
+  // v1.50 — an imaging exam with every text field and its report filed.
+  const imagingExam = await prisma.imagingExam.create({
+    data: {
+      userId: OWNER_ID,
+      modality: "MRI",
+      performedAt: AT("2026-05-14T00:00:00.000Z"),
+      side: "LEFT",
+      bodyPartEncrypted: encryptToBytes("Knee"),
+      facilityEncrypted: encryptToBytes("Radiology on the hill"),
+      requestingDoctorEncrypted: encryptToBytes("the orthopaedic surgeon"),
+      conclusionEncrypted: encryptToBytes("small meniscus tear"),
+    },
+  });
+  await prisma.imagingExamDocumentLink.create({
+    data: {
+      userId: OWNER_ID,
+      examId: imagingExam.id,
+      documentId: document.id,
+    },
+  });
+
   // v1.43 — one row in each of the five relation link tables, joining the
   // records seeded above.
   await prisma.labResultDocumentLink.create({

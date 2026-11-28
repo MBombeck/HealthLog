@@ -86,6 +86,10 @@ import {
   countSeizuresBackupSection,
 } from "@/lib/export/seizures-backup";
 import {
+  buildImagingBackupSection,
+  countImagingBackupSection,
+} from "@/lib/export/imaging-backup";
+import {
   buildVaccinationsBackupSection,
   countVaccinationsBackupSection,
 } from "@/lib/export/vaccinations-backup";
@@ -246,6 +250,16 @@ export const BACKUP_EXPORT_SECTIONS: readonly BackupExportSection[] = [
         { purpose: ctx.purpose },
       );
       return part(vaccinations, countVaccinationsBackupSection(vaccinations));
+    },
+  },
+  {
+    // Imaging exams and their filed documents (v1.50).
+    name: "imaging",
+    build: async (ctx) => {
+      const imaging = await buildImagingBackupSection(ctx.prisma, ctx.userId, {
+        purpose: ctx.purpose,
+      });
+      return part(imaging, countImagingBackupSection(imaging));
     },
   },
   {
@@ -443,4 +457,5 @@ export const BACKUP_EXPORT_COUNT_ORDER: readonly string[] = [
   "lifeEvents",
   "relationLinks",
   "seizures",
+  "imaging",
 ];

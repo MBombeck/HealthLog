@@ -218,6 +218,9 @@ const COUNT_BACK: Record<
     p.seizureRescueDose.count({ where: { userId } }),
   SeizureDiarySettings: (p, userId) =>
     p.seizureDiarySettings.count({ where: { userId } }),
+  ImagingExam: (p, userId) => p.imagingExam.count({ where: { userId } }),
+  ImagingExamDocumentLink: (p, userId) =>
+    p.imagingExamDocumentLink.count({ where: { userId } }),
   IllnessSymptomLink: (p, userId) =>
     p.illnessSymptomLink.count({ where: { dayLog: { userId } } }),
   UserHealthProfile: (p, userId) =>

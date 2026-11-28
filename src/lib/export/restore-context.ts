@@ -110,6 +110,7 @@ export const RESTORE_CLEARED_KEYS = [
   "lifeEvents",
   "seizureTypes",
   "seizureEvents",
+  "imagingExams",
 ] as const;
 
 export type RestoreClearedKey = (typeof RESTORE_CLEARED_KEYS)[number];
