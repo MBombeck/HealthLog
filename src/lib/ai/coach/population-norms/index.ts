@@ -16,6 +16,7 @@ import { patterns as nl } from "./nl";
 import { patterns as ptBR } from "./pt-br";
 import { patterns as ko } from "./ko";
 import { patterns as ru } from "./ru";
+import { patterns as zhCN } from "./zh-cn";
 
 export const POPULATION_NORM_PATTERNS: Readonly<
   Record<Locale, readonly RegExp[]>
@@ -30,4 +31,5 @@ export const POPULATION_NORM_PATTERNS: Readonly<
   "pt-BR": ptBR,
   ko,
   ru,
+  "zh-CN": zhCN,
 };

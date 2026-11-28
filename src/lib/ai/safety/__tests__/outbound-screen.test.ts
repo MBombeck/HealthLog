@@ -27,6 +27,7 @@ const DOSE_VIOLATIONS: Record<Locale, string> = {
   "pt-BR": "Aumente sua dose para 2,4 mg na próxima semana.",
   ko: "다음 주에 2.4mg으로 늘려 보세요.",
   ru: "Увеличьте дозу до 2,4 мг со следующей недели.",
+  "zh-CN": "下周把二甲双胍加到 2000 mg。",
 };
 
 /**
@@ -45,6 +46,7 @@ const DOSE_CLEAN: Record<Locale, string> = {
   "pt-BR": "Você está na semana 3 com 7,5 mg, e seu peso está diminuindo.",
   ko: "3주째 7.5mg을 복용 중이고, 체중은 내려가고 있어요.",
   ru: "Вы третью неделю на 7,5 мг, и вес понемногу снижается.",
+  "zh-CN": "这是使用 7.5 mg 的第 3 周，体重正在下降。",
 };
 
 describe("screenModelOutput — dose-prescription, all six locales", () => {
@@ -106,6 +108,7 @@ const RISK_VIOLATIONS: Record<Locale, string> = {
   "pt-BR": "Seu risco é de cerca de 12%.",
   ko: "10년 심혈관 위험도는 약 12%예요.",
   ru: "Ваш 10-летний сердечно-сосудистый риск — около 12%.",
+  "zh-CN": "你未来 10 年的心血管风险大约是 12%。",
 };
 
 /** A plain percentage that is NOT a clinical risk claim must pass. */
@@ -120,6 +123,7 @@ const RISK_CLEAN: Record<Locale, string> = {
   "pt-BR": "Sua adesão foi de 92% nos últimos 30 dias.",
   ko: "지난 30일 복약 순응도는 92%였어요.",
   ru: "Приверженность лечению за последние 30 дней — 92%.",
+  "zh-CN": "过去 30 天你的依从性是 92%。",
 };
 
 describe("screenModelOutput — risk-score, all six locales", () => {
@@ -379,6 +383,7 @@ const CAUSAL_VIOLATIONS: Record<Locale, string> = {
   "pt-BR": "Seu peso caiu porque você dormiu mais.",
   ko: "수면 때문에 체중이 줄었어요.",
   ru: "Ваш вес снизился, потому что вы больше спали.",
+  "zh-CN": "你的体重下降是因为你睡得更多。",
 };
 
 /** Descriptive association framing is what the contract REQUIRES. */
@@ -393,6 +398,7 @@ const CAUSAL_CLEAN: Record<Locale, string> = {
   "pt-BR": "Seu peso acompanhou o seu sono nesta semana.",
   ko: "이번 주 체중은 수면과 함께 움직였어요.",
   ru: "На этой неделе вес двигался вместе со сном.",
+  "zh-CN": "这周你的体重与睡眠同步变化。",
 };
 
 describe("screenModelOutput — causal claims, all six locales", () => {
@@ -655,6 +661,7 @@ const DOSE_CLASS_VIOLATIONS: Record<Locale, readonly string[]> = {
     "Увеличьте дозу витамина D до 4000 МЕ.",
     "Снизьте инсулин до 20 ЕД.",
   ],
+  "zh-CN": ["把剂量减半。", "服用半片。", "把二甲双胍停用。", "再加一片吧。"],
 };
 
 /**
@@ -809,6 +816,7 @@ const DOSE_CLASS_CLEAN: Record<Locale, readonly string[]> = {
     "Держите глюкозу ниже 140 мг/дл после еды.",
     "Сбросьте лишнюю минуту на запись лекарства.",
   ],
+  "zh-CN": ["把糖分摄入减半。", "把看屏幕的时间减半。", "花半小时去散步。"],
 };
 
 describe("screenModelOutput — the dose-change class, every locale", () => {

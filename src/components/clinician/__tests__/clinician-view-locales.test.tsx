@@ -222,9 +222,9 @@ const FULL_RECORD = {
 const DOTTED_KEY = /\b[a-z][A-Za-z0-9]*(\.[A-Za-z0-9_]+){2,}\b/g;
 
 describe("<ClinicianView> resolves every label in every locale", () => {
-  it("covers all ten shipped locales", () => {
+  it("covers all eleven shipped locales", () => {
     // A floor: an empty locale list would make the loop below assert nothing.
-    expect(locales.length).toBe(10);
+    expect(locales.length).toBe(11);
   });
 
   for (const locale of locales) {

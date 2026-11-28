@@ -85,6 +85,10 @@ const FORBIDDEN_SKIP: Record<string, RegExp> = {
   nl: /\bgenegeerd\b/i,
   "pt-BR": /\bomitid|\bignorad|\bsaltad/i,
   ru: /игнорир/i,
+  // 忽略 / 略过 / 免服 all read as "skip" but none of them is the term the
+  // card uses (跳过, "已跳过"). 遗漏 is deliberately absent: it is the word for
+  // the *missed* state, which has its own entry in the table.
+  "zh-CN": /忽略|略过|免服/,
 };
 
 const TAKEN_KEYS = [
@@ -124,6 +128,10 @@ const FORBIDDEN_WINDOW: Record<string, RegExp> = {
   nl: /herinneringsvenster/i,
   "pt-BR": /janelas? (de lembrete|do curso)/i,
   ru: /окн[ао] (напоминани|курса)/i,
+  // A course, an on-time window and a reminder duration are three words:
+  // 疗程 (course) / 时间窗 (window) / 时长 (duration). "提醒窗口" says window for
+  // all three and is what a translation drifts to.
+  "zh-CN": /提醒窗口|疗程窗口|用药窗口/,
 };
 
 const WINDOW_NAMESPACE =
@@ -147,6 +155,15 @@ function stem(word: string): string {
   const cut = [...lower].length <= 4 ? 1 : 2;
   return [...lower].slice(0, -cut).join("");
 }
+
+/**
+ * Chinese writes without spaces between words, so "at the start of a word" has
+ * no meaning there: the char before 已跳过 is always another Han character. For
+ * such a locale the stem is matched anywhere in the sentence, which still
+ * rejects a different verb — the stem is the state's own word, not a fragment
+ * of one.
+ */
+const NO_WORD_SPACES = new Set(["zh-CN"]);
 
 function hasWordStartingWith(text: string, prefix: string): boolean {
   const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -184,12 +201,15 @@ describe("dose vocabulary is the term table's, in every locale", () => {
     (locale) => {
       const taken = stem(value(locale, DOSE_STATE_TERM.taken));
       const skipped = stem(value(locale, DOSE_STATE_TERM.skipped));
+      const carries = NO_WORD_SPACES.has(locale)
+        ? includesFold
+        : hasWordStartingWith;
       const offenders = [
-        ...TAKEN_KEYS.filter(
-          (key) => !hasWordStartingWith(value(locale, key), taken),
-        ).map((key) => `${key} lacks "${taken}…": ${value(locale, key)}`),
+        ...TAKEN_KEYS.filter((key) => !carries(value(locale, key), taken)).map(
+          (key) => `${key} lacks "${taken}…": ${value(locale, key)}`,
+        ),
         ...SKIPPED_KEYS.filter(
-          (key) => !hasWordStartingWith(value(locale, key), skipped),
+          (key) => !carries(value(locale, key), skipped),
         ).map((key) => `${key} lacks "${skipped}…": ${value(locale, key)}`),
       ];
       expect(offenders).toEqual([]);

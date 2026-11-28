@@ -50,6 +50,7 @@ import { bank as it } from "./outbound-screen/locales/it";
 import { bank as pl } from "./outbound-screen/locales/pl";
 import { bank as nl } from "./outbound-screen/locales/nl";
 import { bank as ko } from "./outbound-screen/locales/ko";
+import { bank as zhCN } from "./outbound-screen/locales/zh-cn";
 import { bank as ptBR } from "./outbound-screen/locales/pt-br";
 import { bank as ru } from "./outbound-screen/locales/ru";
 import {
@@ -87,6 +88,7 @@ const LOCALE_BANKS: Readonly<Record<Locale, LocaleBank>> = {
   ko,
   "pt-BR": ptBR,
   ru,
+  "zh-CN": zhCN,
 };
 
 /** One value per locale, read off its bank. */

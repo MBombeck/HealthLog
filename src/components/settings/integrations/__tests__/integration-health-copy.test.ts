@@ -17,6 +17,7 @@ import ko from "../../../../../messages/ko.json";
 import nl from "../../../../../messages/nl.json";
 import pl from "../../../../../messages/pl.json";
 import ptBR from "../../../../../messages/pt-BR.json";
+import zhCN from "../../../../../messages/zh-CN.json";
 
 import {
   diagnosticsText,
@@ -31,6 +32,7 @@ const CATALOGS: Record<Locale, unknown> = {
   de,
   en,
   es,
+  "zh-CN": zhCN,
   fr,
   it: itMessages,
   pl,

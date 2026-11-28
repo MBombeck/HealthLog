@@ -373,6 +373,7 @@ describe("host names under every app language's country codes", () => {
   // Where each shipped language is at home. A new locale fails here until its
   // countries are listed, and a listed country fails until HOST_TLDS has it.
   const HOST_TLD_LOCALE_REGIONS: Record<Locale, readonly string[]> = {
+    "zh-CN": ["cn", "sg"],
     de: ["de", "at", "ch", "li", "lu", "be"],
     en: ["uk", "ie", "us", "ca", "au", "nz"],
     fr: ["fr", "be", "ch", "lu", "ca"],

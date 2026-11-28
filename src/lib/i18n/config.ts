@@ -9,6 +9,7 @@ export const locales = [
   "nl",
   "pt-BR",
   "ru",
+  "zh-CN",
 ] as const;
 export type Locale = (typeof locales)[number];
 
@@ -31,10 +32,27 @@ export function isLocale(value: unknown): value is Locale {
 }
 
 /**
+ * Tags that resolve to a shipped bundle without an exact locale match.
+ * `zh`, `zh-Hans` and `zh-SG` all read the one Simplified Chinese bundle.
+ * Other Chinese subtags (`zh-TW`, `zh-HK`) deliberately do not: the bundle is
+ * Simplified Chinese with mainland terminology, so those readers stay on
+ * English rather than being handed a script they did not ask for.
+ */
+const LANGUAGE_TAG_ALIASES: Readonly<Record<string, Locale>> = {
+  zh: "zh-CN",
+  "zh-hans": "zh-CN",
+  "zh-sg": "zh-CN",
+};
+
+/** Primary subtags that must never resolve through the generic fallback. */
+const NON_GENERIC_PRIMARY: ReadonlySet<string> = new Set(["zh"]);
+
+/**
  * Map a BCP-47 language tag (`navigator.language`, one Accept-Language entry)
  * to a shipped locale: an exact match first, case-insensitive so `pt-br`
- * finds `pt-BR`, then the primary subtag, so `de-AT` reads German and `pt-PT`
- * reads the one Portuguese bundle rather than English.
+ * finds `pt-BR`, then an explicit alias, then the primary subtag, so `de-AT`
+ * reads German and `pt-PT` reads the one Portuguese bundle rather than
+ * English.
  */
 export function localeFromLanguageTag(
   tag: string | null | undefined,
@@ -43,7 +61,10 @@ export function localeFromLanguageTag(
   if (!lower) return null;
   const exact = locales.find((l) => l.toLowerCase() === lower);
   if (exact) return exact;
+  const alias = LANGUAGE_TAG_ALIASES[lower];
+  if (alias) return alias;
   const primary = lower.split("-")[0];
+  if (NON_GENERIC_PRIMARY.has(primary)) return null;
   return locales.find((l) => l.toLowerCase().split("-")[0] === primary) ?? null;
 }
 
@@ -70,6 +91,7 @@ export const localeLanguageNames: Record<Locale, string> = {
   nl: "Dutch",
   "pt-BR": "Brazilian Portuguese",
   ru: "Russian",
+  "zh-CN": "Simplified Chinese",
 };
 
 export const localeLabels: Record<Locale, string> = {
@@ -83,6 +105,7 @@ export const localeLabels: Record<Locale, string> = {
   nl: "Nederlands",
   "pt-BR": "Português (Brasil)",
   ru: "Русский",
+  "zh-CN": "简体中文",
 };
 
 /**

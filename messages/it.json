@@ -955,6 +955,10 @@
     "morning": {
       "heroItemsTitle": "Da fare oggi",
       "heroItemsDescription": "Scegli quali tipi di elementi possono comparire in “Da fare oggi”."
+    },
+    "tileComparison": {
+      "above": "Sopra il range",
+      "below": "Sotto il range"
     }
   },
   "measurements": {

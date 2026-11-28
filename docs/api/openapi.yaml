@@ -15846,6 +15846,7 @@ paths:
               - nl
               - pt-BR
               - ru
+              - zh-CN
           description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
@@ -15886,6 +15887,7 @@ paths:
               - nl
               - pt-BR
               - ru
+              - zh-CN
           description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
@@ -15926,6 +15928,7 @@ paths:
               - nl
               - pt-BR
               - ru
+              - zh-CN
           description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
@@ -15966,6 +15969,7 @@ paths:
               - nl
               - pt-BR
               - ru
+              - zh-CN
           description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
@@ -16006,6 +16010,7 @@ paths:
               - nl
               - pt-BR
               - ru
+              - zh-CN
           description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
@@ -16047,6 +16052,7 @@ paths:
               - nl
               - pt-BR
               - ru
+              - zh-CN
           description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
@@ -16154,6 +16160,7 @@ paths:
               - nl
               - pt-BR
               - ru
+              - zh-CN
           description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
@@ -16207,6 +16214,7 @@ paths:
               - nl
               - pt-BR
               - ru
+              - zh-CN
           description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
@@ -33100,6 +33108,7 @@ components:
             - nl
             - pt-BR
             - ru
+            - zh-CN
         practiceName:
           type: string
           maxLength: 120
@@ -33842,6 +33851,7 @@ components:
                 - nl
                 - pt-BR
                 - ru
+                - zh-CN
             - type: "null"
         timezone:
           type: string
@@ -36199,6 +36209,7 @@ components:
             - nl
             - pt-BR
             - ru
+            - zh-CN
         today:
           description: "Optional override of the reference date used to resolve relative phrases (\"tomorrow\", \"next Monday\").
             Format: `YYYY-MM-DD`. Defaults to the account's own day in its time zone."
@@ -37294,6 +37305,7 @@ components:
             - nl
             - pt-BR
             - ru
+            - zh-CN
           description: One of the interface locales this build ships.
       required:
         - locale
@@ -37337,6 +37349,7 @@ components:
             - nl
             - pt-BR
             - ru
+            - zh-CN
         scope:
           type: object
           properties:
@@ -37509,6 +37522,7 @@ components:
             - nl
             - pt-BR
             - ru
+            - zh-CN
         attachmentIds:
           minItems: 1
           maxItems: 5
@@ -42281,6 +42295,7 @@ components:
             - nl
             - pt-BR
             - ru
+            - zh-CN
       required:
         - message
     InboundFactEditRequest:
@@ -44718,6 +44733,7 @@ components:
             - nl
             - pt-BR
             - ru
+            - zh-CN
         timezone:
           type: string
           minLength: 1
@@ -44775,6 +44791,7 @@ components:
             - nl
             - pt-BR
             - ru
+            - zh-CN
         timezone:
           type: string
           minLength: 1
@@ -45002,6 +45019,7 @@ components:
                 - nl
                 - pt-BR
                 - ru
+                - zh-CN
             - type: "null"
         timezone:
           type: string
@@ -50638,6 +50656,7 @@ components:
               - daily.scores-short-labels
               - insights.scores-short-labels
               - profile.insurance-number-country
+              - dashboard.tile-comparison-bands
               - health-connect.sync
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
@@ -50808,7 +50827,12 @@ components:
             invalid_svnr, invalid_ahv, invalid_bsn, invalid_nir or invalid_member_id; a country change the stored number
             would fail is refused on insuranceNumberCountry. The FHIR Patient identifier uses the country's national
             system where one is verified, else type MB with no system, and a US group number rides Coverage.class
-            (group). `health-connect.sync`: The Android Health Connect sync: POST /api/health-connect/pairing mints a
+            (group). `dashboard.tile-comparison-bands`: GET /api/dashboard/snapshot carries tiles.comparison: per ranged
+            tile (weight, bp, pulse when it shows the resting heart rate) avg7 and avg30 as { band: good | fair | low |
+            null, side: above | below | null }, placed in targetBands by the same rule as tiles.attention (bp is the
+            side further from its band), and line, the deviation line in the response language, non-null only while
+            tiles.attention[id] is range (the side of the latest value). Colour the comparison lines and show the line
+            as served. `health-connect.sync`: The Android Health Connect sync: POST /api/health-connect/pairing mints a
             one-time code (QR healthlog-sync://pair?server=…&code=…), POST /api/health-connect/pair exchanges it for a
             health-connect:write token bound to a Device, GET /api/health-connect/state answers the wanted types and
             limits, and POST /api/health-connect/batch takes records, aggregates and deletes with one result per item.
@@ -75014,6 +75038,7 @@ components:
                 - nl
                 - pt-BR
                 - ru
+                - zh-CN
           required:
             - locale
           additionalProperties: false
@@ -80278,6 +80303,35 @@ components:
               type: array
               items:
                 type: string
+            comparison:
+              description: "Server feature `dashboard.tile-comparison-bands`: per tile widget id (`weight`, `bp`, `pulse`), where the
+                tile's 7- and 30-day means sit against the person's target band in `targetBands`: `good` inside the
+                green band, `fair` in the orange wings, `low` beyond them, with `side` naming the crossed edge. `bp`
+                carries the side further from its band (systolic on a tie). `pulse` is judged only when the tile shows
+                the resting heart rate. A widget without a band is absent. Colour the comparison lines from this; never
+                place a value in `targetBands` on the client."
+              type: object
+              propertyNames:
+                type: string
+              additionalProperties:
+                type: object
+                properties:
+                  avg7:
+                    $ref: "#/components/schemas/DashboardTileComparisonTone"
+                  avg30:
+                    $ref: "#/components/schemas/DashboardTileComparisonTone"
+                  line:
+                    description: "The tile's deviation line in the response language (`Above target range`, `Below target range`), non-null
+                      only while `tiles.attention[id]` is `range`: it names the side of the latest value. Render as
+                      served."
+                    type:
+                      - string
+                      - "null"
+                required:
+                  - avg7
+                  - avg30
+                  - line
+                additionalProperties: false
             directions:
               description: v1.43 — per measurement type, which way a change counts. `weightTrend` stays.
               type: object
@@ -80950,6 +81004,30 @@ components:
         `briefingStale: true`. `layoutCatalogue` (full 27-id widget catalogue) and `metricStates` (latest reading per
         metric, keyed by iOS `MetricKind` raw value) are additive cold-launch seeds for the native client; both derive
         in-process from data already fetched, adding no DB round-trip."
+    DashboardTileComparisonTone:
+      type: object
+      properties:
+        band:
+          anyOf:
+            - type: string
+              enum:
+                - good
+                - fair
+                - low
+            - type: "null"
+          description: Null when there is no mean or no band to judge it against.
+        side:
+          anyOf:
+            - type: string
+              enum:
+                - above
+                - below
+            - type: "null"
+          description: Null inside the green band and when `band` is null.
+      required:
+        - band
+        - side
+      additionalProperties: false
     GlucoseClinicalMetrics:
       type: object
       properties:
@@ -107450,6 +107528,7 @@ components:
                 - nl
                 - pt-BR
                 - ru
+                - zh-CN
             - type: "null"
         timezone:
           type: string

@@ -94,6 +94,10 @@ const LOCALE_LANGUAGE: Record<Locale, (typeof LANGUAGE_ORDER)[number]> = {
   nl: "nld",
   "pt-BR": "por",
   ru: "rus",
+  // The Chinese bundle ships before its OCR data does: until the chi_sim
+  // pack is staged (a separate change, because it adds a multi-megabyte
+  // traineddata to the image), a Chinese account reads scans with English.
+  "zh-CN": "eng",
 };
 
 /** Image types tesseract decodes itself. */

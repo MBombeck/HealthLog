@@ -955,6 +955,10 @@
     "morning": {
       "heroItemsTitle": "Heute zu tun",
       "heroItemsDescription": "Wähle aus, welche Eintragstypen unter „Heute zu tun“ erscheinen."
+    },
+    "tileComparison": {
+      "above": "Über dem Zielbereich",
+      "below": "Unter dem Zielbereich"
     }
   },
   "measurements": {
