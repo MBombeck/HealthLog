@@ -1,21 +1,8 @@
 /**
- * v1.4.16 — Settings → Export section.
- *
- * The consolidated Export page surfaces:
- *   - Measurements CSV
- *   - Medications CSV (with optional intake-history toggle)
- *   - Mood CSV
- *   - Full JSON Backup
- *
- * Each card must surface a title, a 1-line description, and a
- * download/generate button. SSR-only smoke test — interaction is
+ * Settings → Export & Import: the page is two lists in one column, a row
+ * per import source and a row per export, each opening a sheet. SSR smoke:
+ * the sheets are closed, so the page is the rows alone. The sheets are
  * exercised by the e2e suite.
- *
- * v1.18.0 — the full health-record export moved out to its own
- * top-level "Gesundheitsakte" section; this page keeps only the generic
- * CSV/JSON data-out paths under a "Weitere Export-Optionen" / "Other
- * export options" sub-heading plus the import surface. Each component
- * owns its own contract test; this suite pins the page-level shape.
  */
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -71,77 +58,55 @@ describe("<ExportSection> — SSR smoke", () => {
     expect(html).not.toContain("settings.sections.export.");
   });
 
-  it("mounts the import area below the export options", () => {
+  it("lists every import source as a row with Choose", () => {
     const html = render(<ExportSection />);
-    // The import surface (issue #281) lives in the same section.
     expect(html).toContain('id="settings-section-import-title"');
-    expect(html).toContain('data-testid="import-card-apple-health"');
-    expect(html).toContain('data-testid="import-card-json"');
-  });
-
-  it("keeps the gated cycle export hidden when cycle is off", () => {
-    const html = render(<ExportSection />);
-    // The mocked `useQuery` returns no prefs, so the gated cycle card
-    // must not render (fail-closed gate).
-    expect(html).not.toContain('data-testid="export-card-cycle"');
-  });
-
-  it("no longer mounts the health-record export panel (moved to Gesundheitsakte)", () => {
-    const html = render(<ExportSection />);
-    // v1.18.0 — the full health-record export lives in its own
-    // top-level Gesundheitsakte section now, not on this page.
-    expect(html).not.toContain('data-testid="health-record-export-panel"');
-  });
-
-  it("no longer mounts a separate doctor-report card", () => {
-    const html = render(<ExportSection />);
-    // The doctor-report PDF now lives under the health-record export;
-    // the Export page no longer offers it as a separate surface.
-    expect(html).not.toContain('data-testid="export-hero-doctor-report"');
-    expect(html).not.toContain('data-testid="export-card-doctor-report"');
-  });
-
-  it("renders the 'Other export options' sub-heading above the grid", () => {
-    const html = render(<ExportSection />);
-    expect(html).toContain("Other export options");
-    expect(html).toContain('id="settings-section-export-other-title"');
-  });
-
-  it("renders exactly four secondary export cards in the grid", () => {
-    const html = render(<ExportSection />);
-    // Each card carries a stable data-testid so the e2e suite can target
-    // them without relying on the localised label. The doctor-report
-    // card is no longer in this grid — it's the hero above.
     const ids = [
+      "import-card-apple-health",
+      "import-card-health-connect",
+      "import-card-fit",
+      "import-card-gadgetbridge",
+      "import-card-fhir-bundle",
+      "import-card-csv",
+      "import-card-json",
+      "import-card-dose-history",
+      "import-card-labs-csv",
+      "import-card-medications-csv",
+    ];
+    for (const id of ids) expect(html).toContain(`data-testid="${id}"`);
+    // Nothing runs and nothing failed: every row offers Choose.
+    expect(html.match(/>Choose</g)?.length ?? 0).toBe(ids.length);
+    expect(html).not.toContain('data-slot="status-chip"');
+  });
+
+  it("lists the exports as rows that open, the doctor's report as a link", () => {
+    const html = render(<ExportSection />);
+    for (const id of [
+      "export-card-full-backup",
       "export-card-measurements-csv",
       "export-card-medications-csv",
       "export-card-mood-csv",
-      "export-card-full-backup",
-    ];
-    for (const id of ids) {
+    ])
       expect(html).toContain(`data-testid="${id}"`);
-    }
+    expect(html).toMatch(
+      /data-testid="export-card-doctor-report"[\s\S]*?href="\/settings\/health-record"/,
+    );
+    // The download sits in each row's sheet, not on the page.
+    expect(html).not.toContain('data-testid="export-action-');
   });
 
-  it("renders the medications-CSV intake-history toggle", () => {
+  it("is one column of two lists, no card grid", () => {
     const html = render(<ExportSection />);
-    // The medications card has a checkbox/toggle for "include intake
-    // history" so the user can pick a smaller export when they only
-    // want the medication list.
-    expect(html).toContain('data-testid="export-medications-include-intake"');
+    expect(html.match(/data-slot="list-group"/g)?.length).toBe(2);
+    expect(html).not.toContain("grid-cols");
+    expect(html).not.toContain("health-record-export-panel");
   });
 
-  it("renders a download/generate button per secondary card", () => {
-    const html = render(<ExportSection />);
-    // Four secondary cards each carry an `export-action-*` testid.
-    const buttonMatches = html.match(/data-testid="export-action-/g);
-    expect(buttonMatches?.length ?? 0).toBe(4);
-  });
-
-  it("German locale renders the DE heading + sub-heading copy", () => {
+  it("German locale renders the DE headings", () => {
     const html = render(<ExportSection />, "de");
-    expect(html).toContain("Export");
-    expect(html).toContain("Weitere Export-Optionen");
+    expect(html).toContain("Importieren");
+    expect(html).toContain("Exportieren");
+    expect(html).toContain("Auswählen");
     expect(html).not.toContain("settings.sections.export.");
   });
 });

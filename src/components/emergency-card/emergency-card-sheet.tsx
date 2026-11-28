@@ -11,7 +11,10 @@
  *
  * On the owner's page (`targets`) every line opens the surface that owns it:
  * an allergy the medical history, a condition its illness page, a medication
- * its own page. The public view gets no targets and no links.
+ * its own page. The items not recorded yet share one row there, each name a
+ * link to where it is filled in, rather than one "Not recorded" row apiece.
+ * The public view gets no targets and no links, and keeps every row: a first
+ * responder reads "Not recorded" against the item it answers.
  */
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
@@ -37,9 +40,11 @@ export function EmergencyCardSheet({
   targets?: EmergencyCardTargets;
 }) {
   // The name, when recorded, is the card's title line above the items.
-  const { title, rows } = splitCardTitle(
+  const { title, rows: all } = splitCardTitle(
     emergencyCardRows(view, t, locale, targets),
   );
+  const rows = targets ? all.filter((row) => !row.empty) : all;
+  const missing = targets ? all.filter((row) => row.empty) : [];
   return (
     <div data-slot="emergency-card-sheet">
       {title ? (
@@ -53,7 +58,7 @@ export function EmergencyCardSheet({
       <dl className="divide-border divide-y">
         {rows.map((row) => (
           <div key={row.key} className="py-3" data-field={row.key}>
-            <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+            <dt className="text-muted-foreground text-xs font-medium">
               {row.label}
             </dt>
             {row.lines.map((line, i) => {
@@ -87,6 +92,34 @@ export function EmergencyCardSheet({
             })}
           </div>
         ))}
+        {missing.length > 0 ? (
+          <div className="py-3" data-field="MISSING">
+            <dt className="text-muted-foreground text-xs font-medium">
+              {t("records.emergency.notRecorded")}
+            </dt>
+            <dd className="text-foreground mt-1 text-sm">
+              {missing.map((row, i) => {
+                const href = row.hrefs?.[0] ?? null;
+                return (
+                  <span key={row.key}>
+                    {i > 0 ? ", " : null}
+                    {href ? (
+                      <Link
+                        href={href}
+                        data-slot="emergency-card-missing-link"
+                        className="focus-visible:ring-ring/50 rounded-sm underline decoration-dotted underline-offset-4 hover:decoration-solid focus-visible:ring-[3px] focus-visible:outline-none"
+                      >
+                        {row.label}
+                      </Link>
+                    ) : (
+                      row.label
+                    )}
+                  </span>
+                );
+              })}
+            </dd>
+          </div>
+        ) : null}
       </dl>
     </div>
   );

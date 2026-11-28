@@ -13,7 +13,7 @@
  * the browser renders itself (see below). The page reads both
  * parameters: `visit` opens that visit on the visits tab
  * (`src/hooks/use-deep-linked-record.ts`), `view` picks a tab.
- * `visit-link-guard.test.ts` refuses a hand-spelled copy elsewhere.
+ * `care-wire-paths.test.ts` refuses a hand-spelled copy elsewhere.
  *
  * Pure and client-safe: no server imports.
  */

@@ -12,8 +12,6 @@ import { cn } from "@/lib/utils";
  * than the chart cards next to them; the visual reads as two card
  * languages on the same page. Matching the dashboard token here gives
  * the whole app a single card-padding contract.
- *
- * Refs `.planning/round-v1433-audit-polish.md` §4.1 + Win 4.
  */
 /**
  * The two card densities (UI standards §1) live here, not at the call site:

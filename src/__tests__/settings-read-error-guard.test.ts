@@ -15,8 +15,11 @@ import { describe, expect, it } from "vitest";
 
 import { readSourceFolder } from "./helpers/source-files";
 
+// `query={statusQuery}` hands an import source's status read to
+// `ImportSource`, which says a failure on the row and opens the sheet on the
+// query-error row with Retry.
 const HANDLES_ERROR =
-  /isError|QueryErrorRow|QueryErrorCard|ChartErrorState|CardQueryBody|ImportStatusRegion/;
+  /isError|QueryErrorRow|QueryErrorCard|ChartErrorState|CardQueryBody|\bquery=\{statusQuery\}/;
 
 const KNOWN_GAPS = new Set([
   "components/admin/_shared.tsx",

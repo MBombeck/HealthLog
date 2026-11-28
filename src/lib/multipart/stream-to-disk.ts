@@ -14,8 +14,6 @@
  * the body is held without a bound. The captured field's bytes are written to a temp file and
  * a SHA-256 digest is computed in the same pass — the digest powers
  * the content-hash idempotency check in the kick-off endpoint.
- *
- * Locks per `.planning/research/v1434-r-1-xml-import.md` §5.4.
  */
 import { createHash, randomUUID } from "node:crypto";
 import { createWriteStream } from "node:fs";

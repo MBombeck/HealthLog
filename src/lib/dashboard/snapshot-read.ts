@@ -43,6 +43,8 @@ import { briefingForToday } from "@/lib/daily/briefing-today";
 import { requestTodayBriefingWarm } from "@/lib/daily/briefing-today-warm";
 import { readBriefingGeneratedAt } from "@/lib/insights/briefing-generated-at";
 import { userDayKey } from "@/lib/tz/format";
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+import { scoreShortLabel, scoreShortLabelOrNull } from "@/lib/scores/registry";
 import {
   INSIGHTS_CACHE_SELECT,
   openInsightsCachedText,
@@ -192,9 +194,14 @@ export async function readDashboardSnapshotCached(
   // delegate sees the owner's briefing exactly when the owner would.
   const now = options.now ?? new Date();
   const generatedAt = readBriefingGeneratedAt(cachedText);
-  const body = applyBriefingForToday(
-    applyBriefingCapability(cached, briefingAi),
-    { generatedAt, timezone: user.timezone, language: locale, now },
+  const body = applyScoreShortLabels(
+    applyBriefingForToday(applyBriefingCapability(cached, briefingAi), {
+      generatedAt,
+      timezone: user.timezone,
+      language: locale,
+      now,
+    }),
+    locale,
   );
 
   // The day's first read with no briefing written today, or the first read
@@ -218,4 +225,35 @@ export async function readDashboardSnapshotCached(
   }
 
   return { body, locale };
+}
+
+/**
+ * Each score on the snapshot carries its short name for a tile, from the
+ * glossary through the score registry, in the reader's language. Added per
+ * read so a body cached before the field existed carries it too; a ring that
+ * is no HealthLog score (`MED_COMPLIANCE`) carries null.
+ */
+export function applyScoreShortLabels(
+  body: DashboardSnapshot,
+  locale: Locale,
+): DashboardSnapshot {
+  if (!body.healthScore && !body.scoreRings) return body;
+  const { t } = getServerTranslator(locale);
+  return {
+    ...body,
+    healthScore: body.healthScore
+      ? {
+          ...body.healthScore,
+          shortLabel: scoreShortLabel("HEALTH_SCORE", t),
+        }
+      : body.healthScore,
+    ...(body.scoreRings
+      ? {
+          scoreRings: body.scoreRings.map((ring) => ({
+            ...ring,
+            shortLabel: scoreShortLabelOrNull(ring.id, t),
+          })),
+        }
+      : {}),
+  };
 }

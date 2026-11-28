@@ -220,9 +220,9 @@ test.describe("achievements page renders all four card states", () => {
     // Hidden-unlocked — title revealed once earned
     await expect(page.getByText("House call")).toBeVisible();
 
-    // The opaque hidden card carries the data-slot for E2E hooks
+    // The hidden achievements not yet found share one row.
     await expect(
-      page.locator('[data-slot="achievement-card-hidden"]'),
+      page.locator('[data-slot="achievement-row-hidden"]'),
     ).toBeVisible();
   });
 });

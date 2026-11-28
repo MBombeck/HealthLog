@@ -18,9 +18,8 @@ import type { GlucoseClinicalMetrics } from "@/lib/analytics/glucose-metrics";
  * earliest consumer's options govern the shared cache cell, but every
  * route-change re-mount still spins up a fresh subscription tree and
  * any consumer without an `enabled: isAuthenticated` short-circuit
- * re-issues the network on a back-forward swing. The audit
- * (`.planning/round-v1433-audit-perf.md` §1) ranks this as the top-1
- * ROI win.
+ * re-issues the network on a back-forward swing. A v1.4.33 perf audit
+ * ranked this as the top-1 ROI win.
  *
  * The shared hook:
  *   - centralises the queryKey via `queryKeys.analytics(slice)`,

@@ -87,8 +87,7 @@ export const measurementTypeEnum = z.enum([
   // Native WHOOP scores ingest server-side as `source = WHOOP`. DAY_STRAIN /
   // HRV_RMSSD are deliberately distinct from STRAIN_SCORE / SDNN
   // HEART_RATE_VARIABILITY so a device-native value never shares a bucket
-  // with a derived proxy. See `apple-health-mapping.ts` convention block and
-  // `.planning/v1.11-build/epic-A-whoop-buildspec.md` §3.2.
+  // with a derived proxy. See `apple-health-mapping.ts` convention block.
   "HRV_RMSSD",
   "DAY_STRAIN",
   "WORKOUT_STRAIN",

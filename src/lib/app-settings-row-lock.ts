@@ -19,19 +19,12 @@ import { prisma } from "@/lib/db";
  * Every write to the row inside `fn` must go through `tx`: a write through
  * the global client would wait for the lock this transaction holds.
  */
-export async function lockAppSettingsRow(
-  tx: Pick<Prisma.TransactionClient, "$executeRaw" | "$queryRaw">,
-): Promise<void> {
-  await tx.$executeRaw`INSERT INTO "app_settings" ("id") VALUES ('singleton') ON CONFLICT ("id") DO NOTHING`;
-  await tx.$queryRaw`SELECT 1 FROM "app_settings" WHERE "id" = 'singleton' FOR UPDATE`;
-}
-
-/** `lockAppSettingsRow` in a transaction of its own, around `fn`. */
 export function withAppSettingsRowLock<T>(
   fn: (tx: Prisma.TransactionClient) => Promise<T>,
 ): Promise<T> {
   return prisma.$transaction(async (tx) => {
-    await lockAppSettingsRow(tx);
+    await tx.$executeRaw`INSERT INTO "app_settings" ("id") VALUES ('singleton') ON CONFLICT ("id") DO NOTHING`;
+    await tx.$queryRaw`SELECT 1 FROM "app_settings" WHERE "id" = 'singleton' FOR UPDATE`;
     return fn(tx);
   });
 }

@@ -16,6 +16,8 @@ const LIB = join(process.cwd(), "src", "lib");
 const DIR_OF: Partial<Record<string, string>> = {
   // The folder fetch is a second way into the Health Connect importer.
   "health-connect-remote": "import/health-connect",
+  // The Android sync's routes and pairing.
+  "health-connect-app": "health-connect",
 };
 
 export const PROVIDER_DIRS: readonly string[] = CONNECTION_KEYS.map((key) => {

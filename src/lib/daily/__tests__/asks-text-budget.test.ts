@@ -31,6 +31,7 @@ import {
   buildAdminAsk,
   doseMeta,
   quietMeta,
+  SOURCE_ASK_TITLE,
 } from "@/lib/daily/asks";
 import { CONNECTION_LABELS } from "@/lib/integrations/connection-health";
 import { STALL_SOURCES } from "@/lib/sync-stall/quiet";
@@ -72,6 +73,17 @@ const LABEL_KEYS = [
     [...ASKS_SOURCE.matchAll(/labelKey: "([^"]+)"/g)].map((m) => m[1]),
   ),
 ];
+
+/** The longest time on the language's own clock, over the day. */
+function allTimesOwn(locale: Locale): string {
+  const time = makeFormatters(locale, "UTC", "AUTO", "AUTO").time;
+  let longest = "";
+  for (let hour = 0; hour < 24; hour++) {
+    const label = time(new Date(Date.UTC(2026, 10, 27, hour, 38)));
+    if (label.length > longest.length) longest = label;
+  }
+  return longest;
+}
 
 /** Every time a reader of this language can see, over the day. */
 function allTimes(locale: Locale): string[] {
@@ -131,8 +143,10 @@ describe(`asks text budget at ${ASK_TEXT_BUDGET.phoneCssPx} px`, () => {
       const { t } = getServerTranslator(locale);
       const { px, widestLabel } = column(locale);
       const times = allTimes(locale);
-      const relay = buildAdminAsk("push_relay", t);
-      const setup = buildAdminAsk("server_setup", t);
+      // The longest the language's own clock prints (its default cycle).
+      const ownClockLabel = allTimesOwn(locale);
+      const relay = buildAdminAsk("push_relay", t, "2026-11-27");
+      const setup = buildAdminAsk("server_setup", t, "2026-11-27");
       const metas: Record<string, string> = {
         overdueNow: t("daily.ask.overdueNow"),
         dueNow: t("daily.ask.dueNow"),
@@ -147,8 +161,8 @@ describe(`asks text budget at ${ASK_TEXT_BUDGET.phoneCssPx} px`, () => {
       // A dose's meta as the server sends it, at every time of day and
       // hour cycle: with the time when it fits, else the state alone.
       for (const time of times) {
-        metas[`overdue ${time}`] = doseMeta(true, time, t);
-        metas[`due ${time}`] = doseMeta(false, time, t);
+        metas[`overdue ${time}`] = doseMeta(true, time, t, ownClockLabel);
+        metas[`due ${time}`] = doseMeta(false, time, t, ownClockLabel);
       }
       // A quiet source's line, at every count a reader can see: with the
       // count when it fits, else the state alone.
@@ -166,11 +180,7 @@ describe(`asks text budget at ${ASK_TEXT_BUDGET.phoneCssPx} px`, () => {
       const own = makeFormatters(locale, "UTC", "AUTO", "AUTO").time(
         new Date(Date.UTC(2026, 10, 27, 7, 0)),
       );
-      // (Russian says "overdue" without the time: with it, the line ran
-      // past its column in the CI browser.)
-      if (t("daily.ask.overdue", { time: "\u0001" }).includes("\u0001")) {
-        expect(doseMeta(true, own, t)).toContain(own);
-      }
+      expect(doseMeta(true, own, t)).toContain(own);
       const titles: Record<string, string> = {
         medication: t("daily.ask.medication"),
         planFallback: t("daily.ask.planFallback"),
@@ -179,7 +189,8 @@ describe(`asks text budget at ${ASK_TEXT_BUDGET.phoneCssPx} px`, () => {
       };
       // A quiet source is titled with the provider's name.
       for (const source of STALL_SOURCES) {
-        titles[`source ${source}`] = CONNECTION_LABELS[source];
+        titles[`source ${source}`] =
+          SOURCE_ASK_TITLE[source] ?? CONNECTION_LABELS[source];
       }
       const over: string[] = [];
       for (const [key, text] of Object.entries(metas)) {

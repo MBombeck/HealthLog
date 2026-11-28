@@ -2,25 +2,17 @@
 
 import * as React from "react";
 import { createPortal } from "react-dom";
-import { MoreHorizontal } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
 /**
  * The one shape of a dialog's or a sheet's actions: at most two buttons, the
  * secondary left of the primary, both as wide as the wider of the two, at the
  * right edge; on a phone the pair takes the whole row in two halves. Anything
- * beyond the two goes into an `ActionMenu` (the "⋯"). Inside a
- * `ResponsiveSheet` the menu stands in the sheet's header beside the close
- * button (`ActionMenuSlot`), so a sheet's footer holds exactly the pair; in a
- * plain dialog it stands at the left edge of the row.
+ * beyond the two goes into an `ActionMenu` (the "⋯", in `action-menu.tsx`).
+ * Inside a `ResponsiveSheet` the menu stands in the sheet's header beside
+ * the close button (`ActionMenuSlot`), so a sheet's footer holds exactly the
+ * pair; in a plain dialog it stands at the left edge of the row.
  *
  * `DialogFooter`, `SheetFooter` (and so every `ResponsiveSheet` footer) and
  * `AlertDialogFooter` lay their children out through this, so a call site
@@ -131,54 +123,8 @@ function ActionPair({
   );
 }
 
-/**
- * The "⋯" of an action row: whatever does not fit the pair (reset, delete,
- * a rarely used alternative). Pass `DropdownMenuItem`s as children.
- */
-function ActionMenu({
-  children,
-  disabled,
-  label,
-  slot = "action-menu",
-  quiet = false,
-}: {
-  children: React.ReactNode;
-  disabled?: boolean;
-  /** Accessible name; "More options" by default. */
-  label?: string;
-  /** `data-slot` of the trigger, for tests; `action-menu` by default. */
-  slot?: string;
-  /** A borderless trigger, for a "⋯" standing on its own (a list's). */
-  quiet?: boolean;
-}) {
-  const { t } = useTranslations();
-  // In a sheet's header it is a quiet icon beside the close button, the same
-  // size and weight; in a dialog's row a framed button beside the pair.
-  const inHeader = React.useContext(MenuInHeaderContext) || quiet;
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          type="button"
-          variant={inHeader ? "ghost" : "outline"}
-          size="icon"
-          className={cn(
-            "max-sm:size-11",
-            inHeader && "text-muted-foreground hover:text-foreground sm:size-9",
-          )}
-          data-slot={slot}
-          disabled={disabled}
-          aria-label={label ?? t("common.moreOptions")}
-        >
-          <MoreHorizontal className="size-4" aria-hidden />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start">{children}</DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
 const MenuSlotContext = React.createContext<HTMLElement | null>(null);
+/** True for an `ActionMenu` rendered into a sheet's header slot. */
 const MenuInHeaderContext = React.createContext(false);
 
 /**
@@ -198,8 +144,18 @@ function ActionMenuSlot({
   );
 }
 
+/**
+ * An `ActionMenu` is told apart by a mark on the component rather than by
+ * importing it: the menu lives in `action-menu.tsx` with the dropdown it
+ * needs, so the footers of every dialog and sheet (which render through this
+ * file) do not carry the dropdown runtime onto pages that never show a "⋯".
+ */
 function isActionMenu(node: React.ReactNode): boolean {
-  return React.isValidElement(node) && node.type === ActionMenu;
+  return (
+    React.isValidElement(node) &&
+    typeof node.type === "function" &&
+    (node.type as { actionMenu?: boolean }).actionMenu === true
+  );
 }
 
 /** Children with fragments opened, holes (`false`, `null`) dropped. */
@@ -229,7 +185,7 @@ type ActionPairVariant = "footer" | "compact";
 
 const PAIR_CLASS: Record<ActionPairVariant, string> = {
   footer:
-    "ml-auto grid w-max shrink-0 auto-cols-fr grid-flow-col gap-2 *:w-full data-[stacked=true]:w-auto data-[stacked=true]:min-w-0 data-[stacked=true]:flex-1 data-[stacked=true]:auto-cols-auto data-[stacked=true]:grid-flow-row max-sm:w-full max-sm:*:min-h-11 *:data-[variant=outline]:border-transparent *:data-[variant=outline]:bg-muted *:data-[variant=outline]:text-foreground *:data-[variant=outline]:shadow-none *:data-[variant=outline]:hover:bg-muted/70",
+    "ml-auto grid w-max shrink-0 auto-cols-fr grid-flow-col gap-2 *:w-full data-[stacked=true]:w-auto data-[stacked=true]:min-w-0 data-[stacked=true]:flex-1 data-[stacked=true]:auto-cols-auto data-[stacked=true]:grid-flow-row max-sm:w-full max-sm:*:min-h-11 *:data-[variant=outline]:border-transparent *:data-[variant=outline]:bg-muted *:data-[variant=outline]:text-muted-foreground *:data-[variant=outline]:font-normal *:data-[variant=outline]:shadow-none *:data-[variant=outline]:hover:bg-muted/70 *:data-[variant=outline]:hover:text-foreground",
   compact: "grid w-full grid-cols-[1fr_1fr] gap-2 *:w-full *:only:col-start-2",
 };
 
@@ -247,4 +203,4 @@ function actionPairButton(
   return { variant: side === "primary" ? "default" : "neutral", size: "sm" };
 }
 
-export { ActionMenu, ActionMenuSlot, ActionPair, actionPairButton };
+export { ActionMenuSlot, ActionPair, MenuInHeaderContext, actionPairButton };

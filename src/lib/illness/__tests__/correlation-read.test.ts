@@ -195,10 +195,11 @@ describe("computeEpisodeCorrelation — rollup-vs-live parity", () => {
     expect(dayOut.value.nadir[0]?.value).toBe(76);
     expect(dayOut.value.preOnset[0]?.day).toBe("2026-01-08");
     // Active episode → no felt-better marker → the gap is null but the
-    // physiological return is still detected (01-17 is the first in-band day
-    // that then holds for ≥3 observed days).
+    // physiological return is still detected. 01-17 (58 bpm) is still 2σ
+    // above a 55 ± 1.5 baseline; 01-18 is the first in-band day that then
+    // holds for ≥3 observed days.
     expect(dayOut.value.recoveryGapDays).toBeNull();
-    expect(dayOut.value.returns[0]?.returnedDay).toBe("2026-01-17");
+    expect(dayOut.value.returns[0]?.returnedDay).toBe("2026-01-18");
   });
 });
 

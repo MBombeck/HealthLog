@@ -304,17 +304,20 @@ describe("GET /api/export/measurements", () => {
     expect(prisma.measurement.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          measuredAt: expect.objectContaining({
-            gte: new Date("2026-04-01"),
-            lte: new Date("2026-05-01"),
-          }),
+          // Whole local days in the account zone (the Europe/Berlin
+          // fallback here): the until day runs to its end.
+          measuredAt: {
+            gte: new Date("2026-03-31T22:00:00.000Z"),
+            lt: new Date("2026-05-01T22:00:00.000Z"),
+          },
         }),
       }),
     );
   });
 
   // v1.16.16 — glucose unit-at-source. A mmol/L-preference user's CSV emits
-  // BLOOD_GLUCOSE converted (100 → 5.5) with `mmol/L` in the unit column.
+  // BLOOD_GLUCOSE converted (100 → 5.55, three places so it reads back as
+  // 100) with `mmol/L` in the unit column.
   it("exports BLOOD_GLUCOSE in the user's mmol/L preference", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(checkRateLimit).mockResolvedValue({
@@ -343,7 +346,7 @@ describe("GET /api/export/measurements", () => {
     const res = await GET(mkReq("http://localhost/api/export/measurements"));
     expect(res.status).toBe(200);
     const body = await res.text();
-    expect(body).toContain("BLOOD_GLUCOSE,5.5,mmol/L");
+    expect(body).toContain("BLOOD_GLUCOSE,5.55,mmol/L");
     expect(body).not.toContain("100,mg/dL");
   });
 

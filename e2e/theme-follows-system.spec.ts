@@ -26,7 +26,7 @@ test("a light device with nothing stored paints light, and switches live", async
   const barColours = await page
     .locator('meta[name="theme-color"]')
     .evaluateAll((tags) => tags.map((t) => t.getAttribute("content")));
-  expect(new Set(barColours)).toEqual(new Set(["#f3f2f5"]));
+  expect(new Set(barColours)).toEqual(new Set(["#f2f0eb"]));
 
   // The device turns dark: the page follows without a reload.
   await page.emulateMedia({ colorScheme: "dark" });

@@ -732,6 +732,15 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: ["ConfirmButton"],
   },
 
+  // ── Integrations ────────────────────────────────────────────────────────
+  {
+    file: "components/settings/integrations/health-connect-app-connection.tsx",
+    destroys:
+      "a paired Android device and the token it syncs with; its readings stay, and the phone syncs again once paired anew",
+    recovery: "permanent",
+    confirm: ["ConfirmButton"],
+  },
+
   // ── Account sharing ─────────────────────────────────────────────────────
   {
     file: "components/settings/access/grants-given-card.tsx",

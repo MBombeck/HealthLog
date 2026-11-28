@@ -96,7 +96,8 @@ export async function resolveServerLocale(
   if (fromHeader && isBearerRequest(hdrs)) return fromHeader;
 
   try {
-    const cookieStore = await cookies();
+    // The passed request's own cookies, else the ambient request's.
+    const cookieStore = options.request?.cookies ?? (await cookies());
     for (const name of LOCALE_COOKIE_NAMES) {
       const value = cookieStore.get(name)?.value;
       if (isLocale(value)) return value;

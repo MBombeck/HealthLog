@@ -3,7 +3,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 /**
- * The code-side twin of `i18n-no-dot-separator.test.ts`: a string the code
+ * The code-side twin of `i18n-typography-glyphs.test.ts`: a string the code
  * composes itself (an aria-label `${action} — ${name}`, a meta line
  * `parts.join(" · ")`, a JSX run `{name} · {email}`) carries no spaced middle
  * dot, em dash or en dash either. The bundles say "Move up: Ramipril" and

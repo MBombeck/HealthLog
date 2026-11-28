@@ -65,6 +65,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { pendingDeletionOf } from "@/lib/account-deletion/pending";
 import { getEvent } from "@/lib/logging/context";
+import { forgetGoneRegistrations } from "@/lib/notifications/gone-registrations";
 import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
 import { projectUpcomingIntakes } from "@/lib/medications/scheduling/project-today-intakes";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
@@ -681,7 +682,7 @@ export async function runDeviceLiveActivities(
   let updated = 0;
   for (const u of updates) {
     if (summary.activityGone.includes(u.item.ref)) {
-      await prisma.liveActivityToken.deleteMany({ where: { id: u.rowId } });
+      await forgetGoneRegistrations("liveActivityToken", [u.rowId]);
     } else if (accepted.has(u.item.ref)) {
       updated += 1;
     }

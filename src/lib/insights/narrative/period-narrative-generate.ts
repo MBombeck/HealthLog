@@ -27,6 +27,7 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma as defaultPrisma } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/crypto";
+import { proseFromModelReply } from "@/lib/ai/prose-reply";
 import { annotate } from "@/lib/logging/context";
 import { AI_BUDGETS, REFERENCE_AI_SEED } from "@/lib/ai/ai-budgets";
 import { dayRotatedSeed } from "@/lib/ai/prompts/opener-archetype";
@@ -468,7 +469,9 @@ export async function generatePeriodNarrative(
     return { status: "generated", providerType: DETERMINISTIC_PROVIDER_TYPE };
   }
 
-  let text = completion.content.trim();
+  // Asked for prose; a reply wrapped as `{"narrative": "…"}` or in a fence is
+  // unwrapped before it is checked and stored.
+  let text = proseFromModelReply(completion.content, "narrative");
   if (text.length === 0) {
     return { status: "failed", reason: "empty" };
   }
@@ -506,7 +509,7 @@ export async function generatePeriodNarrative(
       responseFormat: "text",
     });
     if (retry.kind === "ok") {
-      const retryText = retry.content.trim();
+      const retryText = proseFromModelReply(retry.content, "narrative");
       const retryFindings = validateNarrativeText(retryText, context, locale);
       if (retryText.length > 0 && retryFindings.length === 0) {
         text = retryText;

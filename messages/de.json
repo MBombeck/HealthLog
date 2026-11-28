@@ -72,7 +72,8 @@
     "status": {
       "active": "Aktiv",
       "error": "Fehler",
-      "off": "Aus"
+      "off": "Aus",
+      "running": "Läuft"
     }
   },
   "apiErrors": {
@@ -396,6 +397,7 @@
     "practiceLabel": "Praxis",
     "insurer": "Krankenkasse",
     "insuranceNumber": "Versichertennr.",
+    "insuranceGroupNumber": "Gruppennr.",
     "summaryTitle": "Klinische Zusammenfassung",
     "summaryReadings": "Über {days, plural, one {# Tag} other {# Tage}} erfasst: {count, plural, one {# Messwert} other {# Messwerte}} über {params, plural, one {# Parameter} other {# Parameter}}.",
     "summaryTrend": "{label}: zuletzt {latest} {arrow}",
@@ -1171,6 +1173,11 @@
     "shortTypeAudioExposureEvent": "Lautstärkehinweis",
     "shortTypeRespiratoryRate": "Atemfrequenz",
     "shortTypeHealthScore": "Gesundheit",
+    "shortTypeReadiness": "Bereitschaft",
+    "shortTypeSleepScore": "Schlafscore",
+    "shortTypeRecoveryScore": "Erholung",
+    "shortTypeStressScore": "Stress",
+    "shortTypeStrainScore": "Belastung",
     "shortTypeRestingHeartRate": "Ruhepuls",
     "shortTypeBloodPressure": "Blutdruck",
     "shortTypeBloodGlucose": "Blutzucker",
@@ -6211,7 +6218,6 @@
       },
       "export": {
         "title": "Export & Import",
-        "otherOptionsHeading": "Weitere Export-Optionen",
         "downloadFailed": "Der Export konnte nicht heruntergeladen werden. Bitte versuche es erneut.",
         "actions": {
           "download": "Herunterladen"
@@ -6222,14 +6228,17 @@
         },
         "cards": {
           "measurementsCsv": {
-            "title": "Messwerte"
+            "title": "Messwerte (CSV)",
+            "description": "Zeitraum wählbar"
           },
           "medicationsCsv": {
-            "title": "Medikamente",
-            "includeIntake": "Einnahmehistorie einschließen"
+            "title": "Medikamente (CSV)",
+            "includeIntake": "Einnahmehistorie einschließen",
+            "description": "Auf Wunsch mit jeder Einnahme"
           },
           "moodCsv": {
-            "title": "Stimmung"
+            "title": "Stimmung (CSV)",
+            "description": "Zeitraum wählbar"
           },
           "fullBackup": {
             "title": "Voll-Backup",
@@ -6238,20 +6247,22 @@
             "passphrasePlaceholder": "Passphrase (mind. 12 Zeichen)",
             "passphraseHelp": "Leitet den Archivschlüssel per Argon2id ab und versiegelt ihn mit AES-256-GCM. Speichere die Datei mit der Endung .hlx.",
             "noRecoveryWarning": "Es gibt keine Wiederherstellung. Geht diese Passphrase verloren, lässt sich das Archiv nicht mehr öffnen. Bewahre sie sicher auf.",
-            "detail": "Eine portable Kopie deiner Akte zum Aufbewahren und Lesen: Werte als einfaches JSON, Dokumente nur mit ihren Metadaten."
+            "detail": "Eine portable Kopie deiner Akte zum Aufbewahren und Lesen: Werte als einfaches JSON, Dokumente nur mit ihren Metadaten.",
+            "description": "Alles, auf Wunsch verschlüsselt"
+          },
+          "doctorReport": {
+            "title": "Arztbericht",
+            "description": "PDF, FHIR oder ZIP"
           }
         },
         "import": {
-          "heading": "Import",
-          "description": "Hochgeladene Dateien werden vom Server gelöscht, sobald der Import endet, und dieselbe Datei noch einmal zu importieren fügt nichts doppelt hinzu.",
+          "heading": "Importieren",
+          "description": "Der Server löscht jede Datei nach dem Import, und dieselbe Datei zweimal fügt nichts doppelt hinzu.",
           "charCount": "{used} / {max, plural, one {# Zeichen} other {# Zeichen}}",
           "appleHealth": {
             "title": "Apple Health",
             "description": "Die export.zip aus der Health-App auf dem iPhone.",
-            "dropLabel": "export.zip hier ablegen",
-            "dropHint": "oder zum Auswählen klicken",
             "fileInputLabel": "Eine Apple-Health-export.zip-Datei auswählen",
-            "choose": "Datei auswählen",
             "idempotencyNote": "Große Archive werden im Hintergrund verarbeitet.",
             "uploading": "Wird hochgeladen…",
             "uploadFailed": "Upload fehlgeschlagen. Bitte erneut versuchen.",
@@ -6314,16 +6325,15 @@
             "skipBreakdownMore": "+ {count, plural, one {# weiterer Typ} other {# weitere Typen}}",
             "cycleSummary": "{samples, plural, one {# Zyklus-Sample} other {# Zyklus-Samples}} zu {days, plural, one {# Tagesprotokoll} other {# Tagesprotokollen}} zusammengeführt.",
             "cycleModuleOff": "{count, plural, one {# Zyklus-Sample} other {# Zyklus-Samples}} übersprungen, weil Zyklus-Tracking für dieses Konto deaktiviert ist.",
-            "cycleDaysFailed": "{count, plural, one {# Zyklustag konnte} other {# Zyklustage konnten}} nicht geschrieben werden: {reason}"
+            "cycleDaysFailed": "{count, plural, one {# Zyklustag konnte} other {# Zyklustage konnten}} nicht geschrieben werden: {reason}",
+            "fileHint": "export.zip, bis 1,5 GB"
           },
           "json": {
-            "title": "Messwerte und Stimmung (JSON)",
+            "title": "JSON-Datei",
             "description": "Messwerte und Stimmungseinträge als JSON.",
-            "pasteLabel": "JSON einfügen",
             "fileInputLabel": "Eine JSON-Datei zum Import auswählen",
             "schemaHint": "Zwei Arrays: measurements und moodEntries.",
             "docsLink": "Schema und Beispiel ansehen.",
-            "uploadFile": "Datei auswählen",
             "downloadExample": "Beispiel herunterladen",
             "import": "Importieren",
             "invalidJson": "Das ist kein gültiges JSON. Bitte die Syntax prüfen und erneut versuchen.",
@@ -6337,16 +6347,18 @@
             "keptLabels": "Dieses Konto hat Tags oder Gruppen mit diesen Schlüsseln schon unter eigenem Namen, die wurden behalten: {keys}",
             "resultNothing": "Nichts importiert. {skipped, plural, =1 {Der eine Eintrag wurde} other {Alle # Einträge wurden}} übersprungen.",
             "resultEmpty": "Diese Datei enthielt weder Messwerte noch Stimmungseinträge.",
-            "limitsHint": "Bis {mb} MB und bis zu {rows, plural, one {# Eintrag} other {# Einträge}} je Liste."
+            "limitsHint": "Bis {mb} MB und bis zu {rows, plural, one {# Eintrag} other {# Einträge}} je Liste.",
+            "rowMeta": "Messwerte und Stimmung",
+            "fileMeta": ".json, bis {mb} MB",
+            "partial": "Der Import brach mittendrin ab. Noch einmal importieren ist sicher, nichts kommt doppelt hinzu.",
+            "partialCounts": "Schon gespeichert: {measurements, plural, one {# Messwert} other {# Messwerte}} und {moods, plural, one {# Stimmungseintrag} other {# Stimmungseinträge}}."
           },
           "csv": {
             "title": "CSV-Datei",
             "description": "Messwerte aus einer Tabelle oder einem Geräteexport.",
-            "pasteLabel": "CSV einfügen",
             "fileInputLabel": "CSV-Datei zum Importieren auswählen",
             "schemaHint": "Spalten: type, value, unit, measuredAt (mit Zeitzonen-Offset) sowie optional glucoseContext, notes, externalId.",
             "docsLink": "Spaltenschema und Beispiel ansehen.",
-            "uploadFile": "Datei auswählen",
             "downloadExample": "Beispiel herunterladen",
             "preview": "Vorschau",
             "import": "Importieren",
@@ -6382,14 +6394,15 @@
             "reasonUnstableExternalId": "Externe ID ist über Exporte hinweg nicht stabil",
             "reasonDuplicate": "bereits importiert",
             "reasonUnknown": "übersprungen",
-            "detail": "Eine Zeile pro Wert."
+            "detail": "Eine Zeile pro Wert.",
+            "rowMeta": "Messwerte aus einer Tabelle",
+            "fileMeta": ".csv, bis 16 MB",
+            "guideMeta": "type, value, unit, measuredAt mit Offset"
           },
           "doseHistory": {
             "title": "Einnahmeverlauf",
             "description": "Ein Einnahmeverlauf aus einer anderen Medikamenten-App.",
-            "pasteLabel": "Export einfügen",
             "fileInputLabel": "Datei mit Einnahmeverlauf wählen",
-            "uploadFile": "Datei auswählen",
             "preview": "Vorschau",
             "import": "Importieren",
             "empty": "Erst den Export einfügen oder eine Datei wählen.",
@@ -6438,12 +6451,13 @@
               "jsonNoIntakeTime": "Der JSON-Export hält fest, wann eine Dosis fällig war, nicht wann sie genommen wurde, und eine geplante Zeit wird nicht als Einnahmezeit geschrieben. Stattdessen die CSV exportieren, die beides trägt.",
               "tooManyRows": "Diese Datei enthält mehr Zeilen, als ein Import aufnehmen kann. Teilen und in Teilen importieren."
             },
-            "detail": "Eine Datei deckt alle Medikamente darin ab."
+            "detail": "Eine Datei deckt alle Medikamente darin ab.",
+            "rowMeta": "Aus einer anderen App",
+            "fileMeta": ".csv oder .json, bis 16 MB"
           },
           "healthConnect": {
-            "title": "Health-Connect-Export",
+            "title": "Health Connect",
             "description": "Die ZIP, die Health Connect auf Android schreibt.",
-            "choose": "Datei auswählen",
             "uploading": "Wird hochgeladen …",
             "uploadFailed": "Das Hochladen ist fehlgeschlagen. Bitte versuch es noch einmal.",
             "tooLarge": "Die Datei ist größer, als dieser Server annimmt.",
@@ -6462,8 +6476,6 @@
               "cloud": "Health Connect speichert den Export nur in einer Cloud-App wie Google Drive, Dropbox oder Nextcloud, nie auf dem Handy selbst.",
               "upload": "Lade die ZIP-Datei aus dieser Cloud auf dieses Gerät herunter und lade sie hier hoch."
             },
-            "dropLabel": "Health-Connect-ZIP hier ablegen",
-            "dropHint": "oder klicken, um sie auszuwählen. Bis 1 GB.",
             "fileInputLabel": "ZIP-Datei des Health-Connect-Exports",
             "privacyNote": "Einträge von Apps, die du schon direkt verbunden hast, etwa Withings, werden ausgelassen, damit nichts doppelt ankommt.",
             "rateLimited": "Zu viele Uploads in kurzer Zeit. Warte eine Minute und versuch es noch einmal.",
@@ -6481,23 +6493,20 @@
               "tooLarge": "Der Export ist größer, als dieser Server annimmt.",
               "stagingMissing": "Die hochgeladene Datei war nicht mehr auf dem Server. Lade sie noch einmal hoch.",
               "interrupted": "Der Import wurde durch einen Neustart des Servers unterbrochen. Lade die Datei noch einmal hoch."
-            }
+            },
+            "folderRow": "Automatisch aus einem Ordner",
+            "folderMeta": "WebDAV oder Nextcloud, unter Integrationen",
+            "fileHint": "ZIP, bis 1 GB"
           },
           "fit": {
             "title": "Aktivitätsdatei (FIT)",
-            "description": "Ein Training von einer Uhr oder einem Radcomputer.",
-            "choose": "Datei auswählen",
+            "description": "Trainings von einer Uhr oder einem Radcomputer.",
             "uploading": "Wird hochgeladen…",
             "uploadFailed": "Das Hochladen ist fehlgeschlagen. Bitte versuche es erneut.",
-            "tooLarge": "Die Datei ist größer als 10 MB.",
-            "rateLimited": "Zu viele Uploads in kurzer Zeit. Warte eine Minute und versuche es erneut.",
-            "busy": "Für dein Konto läuft bereits ein Import. Warte, bis er abgeschlossen ist.",
             "failed": "Der Import ist fehlgeschlagen. Bitte versuche es erneut.",
             "doneSummary": "Die Aktivitätsdatei wurde importiert.",
             "doneNothing": "Der Import ist abgeschlossen, es gab aber nichts Neues hinzuzufügen.",
-            "dropLabel": "Aktivitätsdatei hier ablegen",
-            "dropHint": "oder klicken, um sie auszuwählen: eine .fit-, .fit.gz- oder .zip-Datei bis 10 MB.",
-            "fileInputLabel": "Aktivitätsdatei",
+            "fileInputLabel": "Aktivitätsdateien",
             "privacyNote": "Der GPS-Verlauf wird nur gespeichert, wenn Trainingsrouten eingeschaltet sind.",
             "steps": {
               "garmin": "Garmin Connect: Öffne die Aktivität auf der Website, wähle das Zahnradmenü und dann „Original exportieren“.",
@@ -6528,16 +6537,34 @@
               "noSession": "Die Datei enthält kein lesbares Training.",
               "stagingMissing": "Die hochgeladene Datei war nicht mehr auf dem Server. Lade sie erneut hoch.",
               "interrupted": "Der Import wurde durch einen Neustart des Servers unterbrochen. Lade die Datei erneut hoch."
-            }
+            },
+            "batch": {
+              "waiting": "Wartet",
+              "imported": "Importiert",
+              "duplicate": "Schon importiert",
+              "progress": "{done} von {total}",
+              "capped": "Nur die ersten 100 Dateien werden importiert.",
+              "reason": {
+                "tooLarge": "Größer als 10 MB",
+                "unsupported": "Keine FIT-Datei",
+                "damaged": "Datei beschädigt",
+                "notActivity": "Keine Aktivität",
+                "noWorkout": "Kein Training gefunden",
+                "busy": "Ein anderer Import läuft",
+                "retry": "Fehlgeschlagen, bitte erneut versuchen"
+              }
+            },
+            "fileHint": ".fit, .fit.gz oder .zip, je bis 10 MB"
           },
           "recordFile": {
             "gadgetbridge": {
-              "title": "Gadgetbridge-Datenbank",
+              "title": "Gadgetbridge",
               "description": "Die Datenbank, die Gadgetbridge auf Android exportiert.",
               "steps": {
                 "export": "In Gadgetbridge Einstellungen öffnen, dann Datenverwaltung, dann Datenbank exportieren.",
                 "upload": "Die Datei namens Gadgetbridge hier hochladen. Bis 512 MB."
-              }
+              },
+              "fileHint": "Datenbank, bis 512 MB"
             },
             "fhirBundle": {
               "title": "Patientenakte (FHIR)",
@@ -6545,9 +6572,9 @@
               "steps": {
                 "export": "Im Patientenportal die Akte als FHIR R4 (JSON) exportieren.",
                 "upload": "Die .json-Datei hier hochladen. Bis 32 MB."
-              }
+              },
+              "fileHint": ".json, bis 32 MB"
             },
-            "choose": "Datei wählen",
             "uploading": "Wird hochgeladen…",
             "running": "Import läuft im Hintergrund…",
             "doneSummary": "Die Datei wurde übernommen.",
@@ -6612,8 +6639,18 @@
             "remove": "Ordner entfernen",
             "removeTitle": "Diesen Ordner entfernen?",
             "removeBody": "HealthLog holt nichts mehr von dort und vergisst das Passwort. Was schon übernommen wurde, bleibt."
-          }
-        }
+          },
+          "row": {
+            "done": "{date}, {count, plural, one {# Eintrag} other {# Einträge}}",
+            "failed": "{date}, nicht importiert"
+          },
+          "pasteOr": "Oder einfügen",
+          "guideTitle": "Beispiel und Spalten",
+          "pickerFile": "Datei",
+          "pickerFiles": "Dateien",
+          "pickerChoose": "Auswählen"
+        },
+        "exportHeading": "Exportieren"
       },
       "about": {
         "title": "Über diese App"
@@ -6663,7 +6700,7 @@
         }
       },
       "health-record": {
-        "title": "Arztbericht und Export"
+        "title": "Arztbericht"
       },
       "coach": {
         "title": "Coach"
@@ -6841,7 +6878,13 @@
       "other": "Dieser Wert wurde nicht angenommen. Bitte prüfen und erneut versuchen.",
       "reproofRequired": "Gib dein aktuelles Passwort ein, um die E-Mail-Adresse zu ändern.",
       "reproofFailed": "Das Passwort stimmt nicht, die E-Mail-Adresse wurde nicht geändert.",
-      "secondFactorRequired": "Bestätige mit deinem zweiten Faktor oder einem Passkey, um die E-Mail-Adresse zu ändern."
+      "secondFactorRequired": "Bestätige mit deinem zweiten Faktor oder einem Passkey, um die E-Mail-Adresse zu ändern.",
+      "invalidKvnr": "Das ist keine gültige KVNR. Bitte den Buchstaben und die neun Ziffern prüfen.",
+      "invalidSvnr": "Das ist keine gültige SVNR. Bitte die zehn Ziffern prüfen.",
+      "invalidAhv": "Das ist keine gültige AHV-Nummer. Sie hat 13 Ziffern und beginnt mit 756.",
+      "invalidBsn": "Das ist keine gültige BSN. Bitte die neun Ziffern prüfen.",
+      "invalidNir": "Das ist keine gültige NIR. Bitte die 13 Zeichen und den zweistelligen Schlüssel prüfen.",
+      "invalidMemberId": "Erlaubt sind 3 bis 30 Buchstaben, Ziffern, Leerzeichen, Bindestriche oder Punkte."
     },
     "avatar": {
       "title": "Profilfoto",
@@ -7515,6 +7558,16 @@
       "description": "Wird alle sechs Stunden aus deinem WebDAV- oder Nextcloud-Ordner abgeholt. Eingerichtet und geändert wird es unter Import.",
       "manage": "Ordner-Einstellungen öffnen"
     },
+    "healthConnectApp": {
+      "connect": "Android-Gerät verbinden",
+      "disconnect": "Trennen",
+      "newCode": "Neuer Code",
+      "validUntil": "Gültig bis {time}",
+      "qrAlt": "QR-Code für HealthLog Sync",
+      "preview": "HealthLog Sync für Android, Vorschau",
+      "disconnectTitle": "{device} trennen?",
+      "disconnectBody": "Das Telefon synchronisiert nicht mehr, bis du es neu verbindest."
+    },
     "withingsViewData": "Messwerte ansehen",
     "whoopViewData": "Erholung ansehen",
     "googleHealthViewData": "Schritte ansehen",
@@ -7654,8 +7707,17 @@
       "fullNamePlaceholder": "z. B. Erika Mustermann",
       "insurer": "Krankenkasse",
       "insurerPlaceholder": "z. B. AOK Bayern",
-      "insuranceNumber": "Versichertennummer (KVNR)",
-      "insuranceNumberHint": "10 Zeichen: ein Buchstabe + neun Ziffern (z. B. A123456780)."
+      "insuranceNumber": "Versichertennummer",
+      "insuranceCountry": "Land",
+      "numberLabel": {
+        "DE": "Versichertennummer (KVNR)",
+        "AT": "Sozialversicherungsnummer (SVNR)",
+        "CH": "AHV-Nummer",
+        "NL": "Bürgerservicenummer (BSN)",
+        "FR": "Sozialversicherungsnummer (NIR)",
+        "US": "Mitglieds-ID"
+      },
+      "insuranceGroupNumber": "Gruppennummer"
     },
     "healthRecord": {
       "title": "Gesundheitsakte exportieren",
@@ -9839,7 +9901,6 @@
   },
   "achievements": {
     "title": "Erfolge",
-    "subtitle": "Sammle Erfolge, indem du regelmäßig misst und deine Medikamente nimmst.",
     "loginRequired": "Bitte anmelden, um Erfolge zu sehen.",
     "points": "Punkte",
     "unlocked": "Freigeschaltet",
@@ -9847,7 +9908,6 @@
     "allCompleted": "Alle Erfolge freigeschaltet!",
     "completed": "Abgeschlossen",
     "goalReached": "Ziel erreicht",
-    "remainingUnlocks": "Noch {count} freischaltbar",
     "noneUnlockedYet": "Noch keine Erfolge freigeschaltet.",
     "pointsValue": "{points, plural, one {# Punkt} other {# Punkte}}",
     "metricCount": "{count}",
@@ -10101,9 +10161,7 @@
         "description": "An 7 Tagen in Folge Schlafdaten erfasst."
       }
     },
-    "nextProgressLabel": "Fortschritt bis Freischaltung",
     "completedOn": "Abgeschlossen am {date}",
-    "locked": "Gesperrt",
     "criterionHint": "{current} / {target}",
     "progressPercent": "{percent}%",
     "categories": {
@@ -10131,7 +10189,6 @@
   "notifications": {
     "title": "Benachrichtigungen je Kanal",
     "eventColumn": "Ereignis",
-    "subtitle": "Wähle aus, welche Benachrichtigungen du über welchen Kanal erhalten möchtest.",
     "loadError": "Benachrichtigungseinstellungen konnten nicht geladen werden.",
     "noChannels": "Konfiguriere zuerst einen Benachrichtigungskanal unter Einstellungen > Integrationen.",
     "goToSettings": "Zu den Kanal-Einstellungen",
@@ -10729,7 +10786,6 @@
     },
     "disclaimer": "Diese Vorhersagen sind beschreibende Schätzungen aus deinen erfassten Daten, keine Verhütungsmethode und keine medizinische Beratung. Sie zeigen nie an, dass ungeschützter Geschlechtsverkehr sicher ist. Wende dich für Verhütung oder medizinische Entscheidungen an eine medizinische Fachperson.",
     "title": "Zyklus",
-    "subtitle": "Erfasse deine Periode und Symptome und sieh, was als Nächstes kommt.",
     "tabs": {
       "calendar": "Kalender",
       "predictions": "Prognosen",
@@ -11963,7 +12019,6 @@
   },
   "illness": {
     "title": "Krankheit",
-    "subtitle": "Ein rückblickendes Protokoll deiner Krankheits- und Beschwerde-Episoden.",
     "settings": {
       "viewDescription": "Wähle, ob Episoden als Karten oder als kompakte Liste erscheinen.",
       "orderDescription": "Ziehe deine Episoden in die gewünschte Reihenfolge."
@@ -12417,9 +12472,7 @@
   },
   "mentalHealth": {
     "pageTitle": "Seelisches Wohlbefinden",
-    "pageDescription": "Vier validierte, freiwillige Selbsttests. Aussagekräftig ist der Verlauf, nicht ein einzelner Wert.",
     "attributionLabel": "Quelle",
-    "attributionShow": "Quelle und Lizenz für {instrument}",
     "choosePrompt": "Check-in auswählen",
     "start": "Starten",
     "back": "Zurück",
@@ -12432,12 +12485,6 @@
       "gad7": "GAD-7 (Sorgen)",
       "who5": "WHO-5 (Wohlbefinden)",
       "sci": "SCI (Schlaf)"
-    },
-    "instrumentSub": {
-      "phq9": "Depressions-Screening, 9 Fragen",
-      "gad7": "Angst-Screening, 7 Fragen",
-      "who5": "Wohlbefindens-Check, 5 Fragen",
-      "sci": "Schlaf-Check, 8 Fragen"
     },
     "functionalOptionalHint": "Optional: Du kannst auch ohne Antwort auf diese Frage absenden.",
     "result": {
@@ -12476,7 +12523,6 @@
       "title": "Dein Verlauf",
       "empty": "Noch keine Check-ins. Dein Verlauf erscheint hier, sobald du einen abgeschlossen hast.",
       "flaggedBadge": "Hilfe angezeigt",
-      "chartTitle": "Punkteverlauf",
       "totalLabel": "Punkte",
       "bandLabel": "Einstufung",
       "answersToggle": "Antworten",
@@ -13171,15 +13217,11 @@
       "titleRecord": "Der Dokumenten-Tresor von {name} ist leer"
     },
     "detail": {
-      "title": "Dokumentdetails",
       "summary": {
         "title": "Zusammenfassung",
         "pending": "Die Zusammenfassung wird erstellt.",
-        "none": "Für dieses Dokument wurde noch keine Zusammenfassung erstellt.",
         "withheld": "Eine Zusammenfassung wurde erstellt, hat die Sicherheitsprüfung aber nicht bestanden und wird deshalb nicht angezeigt. Du kannst es erneut versuchen oder das Dokument selbst lesen.",
-        "unavailable": "Für dieses Dokument konnte keine Zusammenfassung erstellt werden.",
-        "generate": "Zusammenfassung erstellen",
-        "generating": "Wird erstellt…"
+        "unavailable": "Für dieses Dokument konnte keine Zusammenfassung erstellt werden."
       },
       "index": {
         "outcome": {
@@ -13204,7 +13246,6 @@
       "titlePlaceholder": "Titel hinzufügen",
       "kindLabel": "Typ",
       "dateLabel": "Dokumentdatum",
-      "previewUnavailable": "Keine Inline-Vorschau für diesen Dateityp",
       "uploadedMeta": "Hinzugefügt am {date}, {size}",
       "importedFrom": "Importiert aus {system}",
       "importedFromWithId": "Importiert aus {system}, ID {id}",
@@ -13214,8 +13255,7 @@
       "share": "Teilen",
       "labValuesLink": "{count, plural, one {# Laborwert} other {# Laborwerte}} ansehen",
       "saved": "Änderungen gespeichert",
-      "saving": "Wird gespeichert…",
-      "previewNotOnDevice": "Dieser Browser kann PDFs nicht in der Seite anzeigen"
+      "saving": "Wird gespeichert…"
     },
     "dropOverlay": {
       "title": "Zum Hochladen ablegen",
@@ -14428,6 +14468,8 @@
       "cycleDayLogDelete": "{name} hat einen Zyklustag gelöscht",
       "cyclePeriodBoundary": "{name} hat den Beginn oder das Ende einer Periode geändert",
       "cycleSymptomCreate": "{name} hat ein Zyklussymptom angelegt",
+      "cycleSymptomUpdate": "{name} hat ein Zyklussymptom geändert",
+      "cycleSymptomDelete": "{name} hat ein Zyklussymptom gelöscht",
       "nutrientWaterWrite": "{name} hat die Trinkmenge erfasst",
       "healthRecordExport": "{name} hat die Akte exportiert",
       "rejectedMeasurementQuery": "{name} hat eine Messwert-Suche gesendet, die diese Akte nicht lesen konnte",
@@ -14473,6 +14515,8 @@
       "medicationOneShotReconciled": "Ein einmaliges Medikament wurde nach einer Einnahme von {name} geöffnet oder geschlossen",
       "vaccinationBoosterPlanned": "{name} hat eine Auffrischung geplant",
       "medicationCategoryCreate": "{name} hat eine Medikamentenkategorie angelegt",
+      "medicationCategoryUpdate": "{name} hat eine Medikamentenkategorie geändert",
+      "medicationCategoryDelete": "{name} hat eine Medikamentenkategorie gelöscht",
       "symptomEventCreate": "{name} hat ein Symptom erfasst",
       "symptomEventUpdate": "{name} hat einen Symptom-Eintrag bearbeitet",
       "symptomEventDelete": "{name} hat einen Symptom-Eintrag gelöscht",
@@ -15606,13 +15650,6 @@
     "metricLink": "Woher diese Werte kommen"
   },
   "recordImport": {
-    "title": "Laborwerte und Medikamente aus einer Tabelle",
-    "description": "Hol dir Laborwerte aus Jahren oder eine Medikamentenliste aus einer CSV-Datei.",
-    "detail": "Du legst fest, welche Spalte was enthält. HealthLog prüft jede Zeile vorher und importiert erst, wenn du bestätigst.",
-    "kind": {
-      "labs": "Laborwerte",
-      "medications": "Medikamente"
-    },
     "sheetTitle": {
       "labs": "Laborwerte importieren",
       "medications": "Medikamente importieren"
@@ -15704,7 +15741,12 @@
       "startsOn": "Beginn",
       "endsOn": "Ende"
     },
-    "unitlessHint": "Ein Quotient oder Index ohne Einheit (INR, Cholesterin/HDL): Trag in der Spalte für die Einheit eine 1 ein. Eine leere Einheit bleibt ein Fehler."
+    "unitlessHint": "Ein Quotient oder Index ohne Einheit (INR, Cholesterin/HDL): Trag in der Spalte für die Einheit eine 1 ein. Eine leere Einheit bleibt ein Fehler.",
+    "row": {
+      "labs": "Laborwerte (CSV)",
+      "medications": "Medikamente (CSV)"
+    },
+    "rowMeta": "Spalten selbst zuordnen"
   },
   "seizures": {
     "ilae": {
@@ -16222,7 +16264,7 @@
       "missBody": "Der Link wurde vielleicht widerrufen oder ist abgelaufen. Die Person, der die Karte gehört, kann einen neuen erstellen.",
       "title": "QR-Link",
       "loadError": "Der Status des Links konnte nicht geladen werden.",
-      "disclosure": "Wer den Code scannt, sieht die angehakten Punkte, ohne Anmeldung. Du kannst dem Link ein Ende geben und ihn jederzeit widerrufen; jedes Öffnen wird für dich festgehalten.",
+      "disclosure": "Wer den Code scannt, sieht die angehakten Punkte, ohne Anmeldung.",
       "fieldsLabel": "Was der Link zeigt",
       "expiryLabel": "Link endet",
       "expiry": {
@@ -16244,17 +16286,17 @@
       "revoke": "Link widerrufen",
       "revokeTitle": "Link zur Notfallkarte widerrufen?",
       "revokeBody": "Gedruckte Karten mit diesem Code funktionieren dann nicht mehr. Du kannst einen neuen Link erstellen und die Karte neu drucken.",
-      "error": "Der Link konnte nicht geändert werden. Versuch es noch einmal."
+      "error": "Der Link konnte nicht geändert werden. Versuch es noch einmal.",
+      "disclosureMore": "Du kannst dem Link ein Ende geben und ihn jederzeit widerrufen; jedes Öffnen wird für dich festgehalten."
     },
     "page": {
       "title": "Notfallkarte",
-      "description": "Deine Notfalldaten für unterwegs.",
       "loadError": "Die Notfallkarte konnte nicht geladen werden.",
       "offlineHint": "Die App funktioniert absichtlich nicht offline. Speichere eine Kopie auf dem Handy, um die Karte ohne Verbindung dabeizuhaben; sie zeigt den Stand vom Tag des Speicherns.",
       "downloadError": "Der Download hat nicht geklappt. Versuch es noch einmal.",
-      "saveOffline": "Offline-Kopie speichern",
-      "wallet": "Karte für die Brieftasche (PDF)",
-      "walletWithQr": "Brieftaschenkarte mit QR-Code (PDF)",
+      "saveOffline": "Offline-Kopie",
+      "wallet": "Karte als PDF",
+      "walletWithQr": "PDF mit QR-Code",
       "preview": "Deine Karte"
     },
     "name": "Name",
@@ -16356,7 +16398,8 @@
         "title": "Deine Notfallkarte ist bereit",
         "body": "Füge sie auf diesem iPhone zu Apple Wallet hinzu."
       }
-    }
+    },
+    "fieldsCount": "{count} von {total}"
   },
   "treatmentSeries": {
     "heading": "Behandlungsserien",

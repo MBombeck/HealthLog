@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { ActionMenu } from "@/components/ui/action-pair";
+import { ActionMenu } from "@/components/ui/action-menu";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-button";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";

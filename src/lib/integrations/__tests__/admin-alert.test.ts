@@ -1,5 +1,5 @@
 /**
- * v1.4.15 Phase B2, criterion 3 — admin Telegram alert formatting.
+ * v1.4.15 — admin Telegram alert formatting.
  *
  * The state-machine threshold tests live in `status.test.ts` (when
  * does the alert fire?). This file proves WHAT the alert looks like

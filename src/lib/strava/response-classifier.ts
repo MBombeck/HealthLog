@@ -44,7 +44,13 @@ export class StravaApiError extends IntegrationApiError {
     retryAfterSeconds?: number;
   }) {
     const { retryAfterSeconds, ...rest } = opts;
-    super({ vendor: "Strava", ...rest });
+    super({
+      vendor: "Strava",
+      ...rest,
+      ...(retryAfterSeconds !== undefined
+        ? { retryAfterMs: retryAfterSeconds * 1000 }
+        : {}),
+    });
     this.name = "StravaApiError";
     this.retryAfterSeconds = retryAfterSeconds;
   }

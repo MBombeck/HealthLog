@@ -13,7 +13,7 @@ primeLocales("de");
 
 /**
  * v1.4.25 — RTL-style coverage for the body-map injection
- * picker deferred by phase W4d.
+ * picker, deferred when the GLP-1 card first shipped.
  *
  * The picker is a controlled SVG with 8 click-targets. Each visible
  * dot is wrapped in an invisible 22px circle that carries the
@@ -26,7 +26,7 @@ primeLocales("de");
  * interactive behaviour is smoke-checked by invoking the supplied
  * `onChange` directly.
  *
- * Test cases (from the phase-W4d backlog item):
+ * Test cases:
  *   1. All 8 InjectionSite enum values render as click-targets
  *   2. Active site is visually highlighted (`fill-primary`)
  *   3. Recommended next-site is dashed-ring annotated

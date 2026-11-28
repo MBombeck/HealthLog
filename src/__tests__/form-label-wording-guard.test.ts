@@ -14,6 +14,10 @@
  * Not read (stated, not hidden): a label built from a variable, a template
  * or more than one child. They are a minority and read differently in a
  * sweep.
+ *
+ * The other half of the colon rule, that a `Label` never renders a colon of
+ * its own (no `::after`, no `noColon` switch), is held by
+ * `label-colon-guard.test.tsx`.
  */
 import { join } from "node:path";
 
@@ -76,16 +80,16 @@ function fieldLabelKeys(source: string): string[] {
   return keys;
 }
 
+/** Every component and page, with its source. */
+const VIEWS = walkSourceFiles(SRC, { floor: 1200, extensions: [".tsx"] })
+  .filter(
+    (path) => /^(components|app)\//.test(path) && !path.includes("__tests__/"),
+  )
+  .map((path) => ({ path, source: readSourceText(join(SRC, path)) }));
+
 function sweep(): Array<{ file: string; key: string; text: string }> {
   const found: Array<{ file: string; key: string; text: string }> = [];
-  for (const path of walkSourceFiles(SRC, {
-    floor: 1200,
-    extensions: [".tsx"],
-  })) {
-    if (!/^(components|app)\//.test(path) || path.includes("__tests__/")) {
-      continue;
-    }
-    const source = readSourceText(join(SRC, path));
+  for (const { path, source } of VIEWS) {
     if (!source.includes("<FieldGroup") && !source.includes("<Label")) {
       continue;
     }

@@ -134,8 +134,7 @@ export const IOS_PIN_ONLY_WIDGET_IDS = [
  * exists only so the dashboard snapshot can publish the full 27-id
  * catalogue (`DASHBOARD_WIDGET_CATALOGUE_IDS`) the iOS cold-launch seed
  * needs, letting the layout round-trip in one key without a second
- * round-trip. See `.planning/ios-coord/v1.7.0-ios-convergence-locks.md`
- * §2b.
+ * round-trip.
  */
 export const DASHBOARD_IOS_ONLY_WIDGET_IDS = [
   "restingHeartRate",

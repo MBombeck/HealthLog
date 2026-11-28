@@ -221,21 +221,20 @@ describe("<AchievementsPage>", () => {
   it("renders an unlocked card with the completed-on footer", () => {
     const html = render();
     expect(html).toContain("First intake");
-    // Unlocked badge text
+    // The unlocked row's meta line says when.
     expect(html).toContain("Completed on");
-    // Unlocked styling marker — the unlocked variant uses the primary
-    // gradient background; the locked variant uses opacity-70.
-    expect(html).toContain("achievement-card-unlocked");
+    expect(html).toContain("achievement-row-unlocked");
   });
 
-  it("renders locked entries grayed out with a criterion hint and progress", () => {
+  it("renders locked entries as rows with their progress", () => {
     const html = render();
     // Locked entry must still appear — pre-v1.4.15 the page silently
     // dropped locked entries, which is what this guard prevents.
-    expect(html).toContain("achievement-card-locked");
+    expect(html).toContain("achievement-row-locked");
     expect(html).toContain("Intake starter"); // intake-total-10 title
-    // "Locked" badge label
-    expect(html).toContain("Locked");
+    // Locked is said once, by the progress: no chip beside it.
+    expect(html).not.toContain(">Locked<");
+    expect(html).toContain("40%");
     // Criterion hint "{current} / {target}" — for intake-total-10 the
     // mock has current=4 / target=10. Using the formatted version
     // (English uses the bare number) so the assertion is precise.
@@ -255,7 +254,6 @@ describe("<AchievementsPage>", () => {
     const html = render("de");
     expect(html).toContain("Medikation");
     expect(html).toContain("Konto &amp; Sicherheit");
-    expect(html).toContain("Gesperrt"); // German "Locked"
   });
 
   it("renders a locked hidden achievement as an opaque placeholder", () => {
@@ -277,9 +275,9 @@ describe("<AchievementsPage>", () => {
     expect(html).toContain("House call");
   });
 
-  it("flags hidden cards with the achievement-card-hidden data slot", () => {
+  it("folds the hidden achievements not yet found into one row", () => {
     const html = render();
-    expect(html).toContain('data-slot="achievement-card-hidden"');
+    expect(html.match(/data-slot="achievement-row-hidden"/g)).toHaveLength(1);
   });
 
   it("hidden category appears under its own localized heading", () => {

@@ -1,7 +1,7 @@
 /**
  * v1.4.25 — two-axis source-priority resolution, end-to-end.
  *
- * Wave 8c lays down a per-user, per-metric, per-device-type canonical
+ * The release lays down a per-user, per-metric, per-device-type canonical
  * picker. The picker is unit-tested at the helper level; this file
  * locks the integration path: a user with both axes set in
  * `User.sourcePriorityJson`, multiple Measurement rows for the same

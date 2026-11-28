@@ -24,7 +24,7 @@
  *    cannot be), and every term occurs in its locale's bundle;
  * 7. a timeline lane is labelled with its concept's name;
  * 8. a short form (`short`, for a one-line heading, tile, chip or tab) is
- *    shorter than its name, names one thing in its locale, reuses no retired
+ *    shorter than its name (a score's may repeat a name that is short already), names one thing in its locale, reuses no retired
  *    synonym, is what its `shortKey` carries in the bundle, and reaches a
  *    surface only through `metricName`;
  * 9. every metric name the web shows (`measurements.type*`) is a concept's
@@ -67,6 +67,7 @@ import {
   COMPOSITE_METRIC_LABEL_KEYS,
   MEASUREMENT_TYPE_SHORT_LABEL_KEYS,
 } from "@/lib/measurements/type-label-keys";
+import { HEALTHLOG_SCORE_IDS, HEALTHLOG_SCORES } from "@/lib/scores/registry";
 
 import {
   readSource,
@@ -611,6 +612,20 @@ const DIAGNOSIS_LIKE: Record<string, string[]> = {
 };
 const SHORTENED = CONCEPTS.filter((c) => c.shortKey !== undefined);
 
+/** The short keys of HealthLog's own scores, whose short form may be the name. */
+const SCORE_SHORT_KEYS = new Set<string>(
+  HEALTHLOG_SCORE_IDS.map((id) => {
+    const metric = HEALTHLOG_SCORES[id].metric;
+    return Object.hasOwn(COMPOSITE_METRIC_LABEL_KEYS, metric)
+      ? COMPOSITE_METRIC_LABEL_KEYS[
+          metric as keyof typeof COMPOSITE_METRIC_LABEL_KEYS
+        ].short
+      : (MEASUREMENT_TYPE_SHORT_LABEL_KEYS[
+          metric as keyof typeof MEASUREMENT_TYPE_SHORT_LABEL_KEYS
+        ] ?? "");
+  }),
+);
+
 describe("short forms", () => {
   it("is shorter than the name, and only on a concept with a short key", () => {
     expect(SHORTENED.length).toBeGreaterThan(30);
@@ -625,7 +640,13 @@ describe("short forms", () => {
         if (!concept.shortKey) {
           offenders.push(`${concept.id}.${locale}: a short form, no short key`);
         }
-        if (!name || short!.length >= name.length) {
+        // A score's short form exists in every locale (the wire serves it
+        // as `shortLabel`), so where the name is already short it repeats
+        // the name; it is never longer.
+        const tooLong = SCORE_SHORT_KEYS.has(concept.shortKey ?? "")
+          ? short!.length > (name?.length ?? 0)
+          : short!.length >= (name?.length ?? 0);
+        if (!name || tooLong) {
           offenders.push(
             `${concept.id}.${locale}: "${short}" is not shorter than "${name}"`,
           );

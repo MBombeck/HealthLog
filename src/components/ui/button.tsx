@@ -46,15 +46,15 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost:
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
-        // The quiet pair, for a list whose rows each carry their own two
-        // actions (the start page's asks): `neutral` is the secondary, a
-        // grey fill with foreground text; `tonal` is the primary, the accent
-        // at a tenth with accent text. Both filled, neither framed, same
-        // size, so the pair reads as one control and the primary differs
-        // by colour alone, never by weight or outline (UI standards §15).
-        neutral: "bg-muted text-foreground hover:bg-muted/70",
+        // The pair's two quiet looks, chosen through `actionPairButton`
+        // (UI standards §15), never by hand. `neutral` is a secondary: the
+        // fill token with the meta ink at regular weight. `tonal` is a
+        // compact pair's primary: `--primary-tonal` (ink at 22 % over the
+        // card) with the foreground ink, semibold. Both filled, unframed.
+        neutral:
+          "bg-muted text-muted-foreground font-normal hover:bg-muted/70 hover:text-foreground",
         tonal:
-          "bg-primary/10 text-primary hover:bg-primary/15 dark:bg-primary/15 dark:hover:bg-primary/20",
+          "bg-primary-tonal text-foreground font-semibold hover:bg-primary-tonal/80",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {

@@ -3,8 +3,7 @@
  *
  * HealthLog historically pinned every display surface to the
  * `DEFAULT_TIMEZONE` constant ("Europe/Berlin"). The per-user
- * timezone feature (Option B in `.planning/feature-user-timezone.md`)
- * threads the user's stored zone through every surface that renders
+ * timezone feature threads the user's stored zone through every surface that renders
  * a date or buckets by day — exports, charts, AI Coach snapshot,
  * doctor-report PDF, reminders.
  *

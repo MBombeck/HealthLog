@@ -135,7 +135,7 @@ export function DashboardHeader({
                   ("Log measurement", "Log mood") — the trigger above already
                   says "Add", and the icon is `aria-hidden`, so the visible
                   text is the only thing distinguishing the rows. v1.4.15
-                  phase-A3 fix #1 hardened this with a unit guard at
+                  hardened this with a unit guard at
                   `src/app/__tests__/quick-add-labels.test.ts` — both labels
                   must differ from each other AND from `common.add`. */}
                 {canAddMeasurement && (

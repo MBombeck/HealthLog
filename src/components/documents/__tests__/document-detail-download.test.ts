@@ -90,24 +90,25 @@ describe("the detail sheet's original-document transport", () => {
  * report gets the browser's zoom and search. It must open the object URL the
  * sheet already holds (a bare navigation to the route carries no record-session
  * assertion and is refused once the session has been inside a shared record),
- * and it must never appear for a type outside the inline serving class.
+ * and it must never appear for a type outside the inline serving class. It is
+ * an entry of the sheet's "⋯".
  */
-describe("the detail sheet's open-in-new-tab control", () => {
+describe("the detail sheet's open-in-new-tab entry", () => {
   const control = SHEET.slice(
-    SHEET.indexOf("function DocumentOpenInTabButton("),
-    SHEET.indexOf("/** Inline preview for Class A documents"),
+    SHEET.indexOf("function DocumentOpenInTabItem("),
+    SHEET.indexOf("const subscribeNever"),
   );
 
   it("exists", () => {
     expect(control.length).toBeGreaterThan(0);
-    expect(SHEET).toMatch(/<DocumentOpenInTabButton\s/);
+    expect(SHEET).toMatch(/<DocumentOpenInTabItem\s/);
   });
 
   it("renders only for the inline serving class", () => {
     expect(SHEET).toMatch(
-      /detail\.previewInline \? \(\s*\n\s*<DocumentOpenInTabButton\s+readyUrl=\{inlineSrc\}/,
+      /if \(detail\.previewInline\) \{\s*items\.push\(\s*<DocumentOpenInTabItem\s/,
     );
-    expect([...SHEET.matchAll(/<DocumentOpenInTabButton\s/g)]).toHaveLength(1);
+    expect([...SHEET.matchAll(/<DocumentOpenInTabItem\s/g)]).toHaveLength(1);
   });
 
   it("opens the fetched object URL, never the route, without an opener", () => {
@@ -118,7 +119,7 @@ describe("the detail sheet's open-in-new-tab control", () => {
   it("is disabled until the bytes are in hand, and when they failed", () => {
     expect(control).toMatch(/disabled=\{readyUrl === null \|\| unavailable\}/);
     expect(SHEET).toMatch(
-      /<DocumentOpenInTabButton\s+readyUrl=\{inlineSrc\}\s+unavailable=\{inlineFailed\}/,
+      /<DocumentOpenInTabItem\s+key="tab"\s+readyUrl=\{inlineSrc\}\s+unavailable=\{inlineFailed\}/,
     );
   });
 });

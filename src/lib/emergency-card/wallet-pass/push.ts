@@ -22,6 +22,7 @@ import { isApiGloballyEnabled } from "@/lib/app-settings";
 import { decrypt } from "@/lib/crypto";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
+import { forgetGoneRegistrations } from "@/lib/notifications/gone-registrations";
 import {
   notifyWalletPasses,
   WALLET_NOTIFY_MAX,
@@ -45,8 +46,17 @@ export interface WalletPushOutcome {
   /** Registrations that were owed a push. */
   owed: number;
   accepted: number;
-  /** Registrations dropped: the device is gone or the token is bad. */
+  /**
+   * Registrations dropped because Apple called the token dead, through the
+   * breaker (`forgetGoneRegistrations`): 0 when it held them.
+   */
   dropped: number;
+  /**
+   * Registrations whose stored token does not decrypt or is not a token:
+   * kept, never dropped (a key missing from `ENCRYPTION_KEYS` would
+   * otherwise empty the table), stay owed, and the job fails on them.
+   */
+  unreadable: number;
   /**
    * Pushes Apple refused for a reason that is not the token's (certificate,
    * topic, payload): kept owed, never dropped, and the job fails on them.
@@ -163,6 +173,7 @@ export async function pushOwedWalletUpdates(
     owed: 0,
     accepted: 0,
     dropped: 0,
+    unreadable: 0,
     rejected: 0,
     deferredUntil: null,
     skipped: null,
@@ -224,11 +235,12 @@ export async function pushOwedWalletUpdates(
 
   const results = await send(mode, items);
   const accepted: string[] = [];
-  const gone: string[] = [...unreadable];
+  const gone: string[] = [];
   for (const [ref, result] of results) {
     if (result === "accepted") accepted.push(ref);
-    // Only a dead token drops its registration; `rejected` is about the
-    // certificate, topic or payload and would otherwise wipe every device.
+    // Only a dead token drops its registration, and only through the
+    // breaker; `rejected` is about the certificate, topic or payload and
+    // would otherwise wipe every device.
     else if (result === "unregistered") gone.push(ref);
     else if (result === "rejected") outcome.rejected += 1;
   }
@@ -238,18 +250,19 @@ export async function pushOwedWalletUpdates(
       data: { lastPushAt: now },
     });
   }
-  if (gone.length > 0) {
-    await prisma.walletPassRegistration.deleteMany({
-      where: { id: { in: gone } },
-    });
-  }
+  // The breaker holds them all when too many go at once: a wrong Pass Type
+  // ID makes Apple call every token dead.
+  const forgotten =
+    gone.length > 0 && (await forgetGoneRegistrations("walletPass", gone));
   outcome.accepted = accepted.length;
-  outcome.dropped = gone.length;
+  outcome.dropped = forgotten ? gone.length : 0;
+  outcome.unreadable = unreadable.length;
   annotate({
     meta: {
       wallet_push_owed: outcome.owed,
       wallet_push_accepted: outcome.accepted,
       wallet_push_dropped: outcome.dropped,
+      wallet_push_unreadable: outcome.unreadable,
       wallet_push_rejected: outcome.rejected,
     },
   });

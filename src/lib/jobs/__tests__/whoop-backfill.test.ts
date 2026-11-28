@@ -39,10 +39,13 @@ vi.mock("@/lib/logging/context", () => ({
   getEvent: () => null,
 }));
 
+import { noteBackfillFailure } from "@/lib/integrations/page-walk";
+import { WhoopApiError } from "@/lib/whoop/response-classifier";
 import {
   enqueueBootTimeWhoopBackfill,
   runWhoopBackfillForUser,
 } from "../whoop-backfill";
+import { classifyBackfillFailure } from "../integration-backfill-retry";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -114,6 +117,26 @@ describe("runWhoopBackfillForUser — verdict-gated marker", () => {
 
     await expect(runWhoopBackfillForUser("u1")).rejects.toThrow(/incomplete/);
     expect(prismaMock.whoopConnection.update).not.toHaveBeenCalled();
+  });
+
+  it("throws with the collection's error as the cause, so the drain can retry an outage", async () => {
+    const outage = new WhoopApiError({
+      verb: "recovery",
+      classification: "transient",
+      httpStatus: 503,
+      reason: "server error",
+    });
+    syncUserWhoop.mockImplementation(async () => {
+      noteBackfillFailure(outage);
+      return { imported: 0, failed: true };
+    });
+
+    const err = await runWhoopBackfillForUser("u1").catch((e: unknown) => e);
+    expect((err as Error).cause).toBe(outage);
+    expect(classifyBackfillFailure(err)).toMatchObject({
+      kind: "transient",
+      httpStatus: 503,
+    });
   });
 
   it("a connection parked at error_reauth returns WITHOUT running the sync or stamping", async () => {

@@ -65,6 +65,8 @@ export const PROXY_BYPASS_ROUTES: readonly string[] = [
   "/api/mood-entries/bulk",
   "/api/medications/intake/bulk",
   "/api/cycle/day-logs/bulk",
+  // The Android Health Connect sync's batch, 4 MB.
+  "/api/health-connect/batch",
 ];
 
 /** An entry with a `[segment]` matches any one path segment there. */

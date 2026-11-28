@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 // Stub out next/navigation. The settings sections that read it (Account)
 // only call `useRouter().push()` from inside an effect after mount, so a
-// no-op stub is enough for SSR smoke rendering. v1.4.16 phase B2:
+// no-op stub is enough for SSR smoke rendering. v1.4.16:
 // `<AiSection>` reads `?provider=…` via `useSearchParams()` to pick the
 // dropdown branch, so the mock has to expose that hook too.
 vi.mock("next/navigation", () => ({
@@ -306,7 +306,7 @@ describe("settings sections — SSR smoke", () => {
   });
 
   it("<ThresholdsSection> renders the Targets heading and the threshold editor only", () => {
-    // v1.4.16 phase B6 contract: the route wrapper is named
+    // v1.4.16 contract: the route wrapper is named
     // `<ThresholdsSection>` (was `<ThresholdsSettingsSection>`), lives
     // at `thresholds-section.tsx`, and embeds the inner editor under
     // `<ThresholdsEditorSection>` (was `<ThresholdsSection>`).

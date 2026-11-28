@@ -12,10 +12,13 @@
  * The scoping rules for every field are on the route's docblock
  * (`src/app/api/auth/me/route.ts`).
  */
+import {
+  INSURANCE_IDENTITY_SELECT,
+  readInsuranceIdentity,
+} from "@/lib/profile/insurance-identity";
 import { mfaEnrollmentPayload } from "@/lib/auth/mfa-confinement";
 import { isScopedCredential, type AuthContext } from "@/lib/api-handler";
 import { buildAvatarUrl } from "@/lib/avatar";
-import { decrypt } from "@/lib/crypto";
 import { prisma } from "@/lib/db";
 import { resolveStoredTimezone } from "@/lib/tz/resolver";
 import { isCycleEnabled } from "@/lib/cycle/enabled";
@@ -92,7 +95,7 @@ export async function buildAuthMePayload(
     cycleTrackingEnabled,
     ai,
     coachReasoning,
-    insuranceNumber,
+    insurance,
   } = await loadRecordView(auth, accountAccess);
 
   const payload = {
@@ -179,15 +182,15 @@ export async function buildAuthMePayload(
     // resolved `ai.capabilities.coach` and `modules.coach` below, which fold
     // in the record's own opt-out, the operator's switches and the grant.
     disableCoach: user.disableCoach ?? false,
-    // The name the app addresses the account by (dashboard greeting,
-    // reports). Set in the setup flow and edited on the profile card, which
-    // seeds its field from here.
+    // The name the app addresses the account by; the profile card edits it.
     displayName: user.displayName ?? null,
-    // Health-record export identity fields. All optional.
+    // Health-record export identity fields (`readInsuranceIdentity`).
     fullName: user.fullName ?? null,
     insurerName: user.insurerName ?? null,
     insurerIkNumber: user.insurerIkNumber ?? null,
-    insuranceNumber,
+    insuranceNumber: insurance.insuranceNumber,
+    insuranceNumberCountry: insurance.insuranceNumberCountry,
+    insuranceGroupNumber: insurance.insuranceGroupNumber,
     // Cycle-tracking feature gate, resolved server-side. iOS
     // hides the whole cycle tab when this is false. v1.38.14 — resolved for
     // the ACTIVE RECORD, so a switched browser hides the tab the record does
@@ -469,7 +472,7 @@ async function loadRecordView(auth: AuthContext, accountAccess: AccountAccess) {
     // shows it.
     prisma.user.findUnique({
       where: { id: user.id },
-      select: { insuranceNumberEncrypted: true },
+      select: INSURANCE_IDENTITY_SELECT,
     }),
   ]);
 
@@ -520,9 +523,7 @@ async function loadRecordView(auth: AuthContext, accountAccess: AccountAccess) {
     sectionsOpen(sections, "cycle") &&
     isCycleEnabled(record?.gender ?? null, cycleProfile);
 
-  const insuranceNumber = readInsuranceNumber(
-    identity?.insuranceNumberEncrypted,
-  );
+  const insurance = readInsuranceIdentity(identity);
 
   return {
     onboarding,
@@ -532,7 +533,7 @@ async function loadRecordView(auth: AuthContext, accountAccess: AccountAccess) {
     cycleTrackingEnabled,
     ai,
     coachReasoning,
-    insuranceNumber,
+    insurance,
   };
 }
 
@@ -559,18 +560,3 @@ const SERVER_FEATURES = {
   // The macro codes on `POST /api/nutrients/batch` (shipped in 1.48.0).
   nutrientMacros: true,
 } as const;
-
-/**
- * Patient-identity fields for the health-record export. The KVNR is
- * stored encrypted; decrypt fail-soft so a key-rotation gap on one row never
- * 500s the whole profile fetch (the field just reads null and the user
- * re-enters it).
- */
-function readInsuranceNumber(encrypted: string | null | undefined) {
-  if (!encrypted) return null;
-  try {
-    return decrypt(encrypted);
-  } catch {
-    return null;
-  }
-}

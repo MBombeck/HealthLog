@@ -250,6 +250,8 @@ interface GoogleHealthDataResponse<T> {
   json: T | null;
   verdict: ReturnType<typeof classifyGoogleHealthResponse>;
   apiErrorDetail: string | undefined;
+  /** What Google asked to wait on a 429 or a 5xx it gave up on, in ms. */
+  retryAfterMs: number | undefined;
 }
 
 /**
@@ -385,6 +387,15 @@ export async function googleHealthDataRequest<T>(
       forceRefresh = true;
       continue;
     }
-    return { status: res.status, json, verdict, apiErrorDetail };
+    return {
+      status: res.status,
+      json,
+      verdict,
+      apiErrorDetail,
+      retryAfterMs:
+        res.status === 429 || GOOGLE_HEALTH_TRANSIENT_STATUSES.has(res.status)
+          ? googleHealthRetryDelayMs(res, json)
+          : undefined,
+    };
   }
 }

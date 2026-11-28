@@ -52,9 +52,9 @@ import { CoachRemindersSection } from "../coach-reminders-section";
 import { AboutMeNoteManager } from "@/components/records/about-me-note-manager";
 import { AllergyFreeTextNote } from "@/components/records/allergy-free-text-note";
 import { HealthConnectRemoteCard } from "../import-panel/health-connect-remote-card";
-import { RecordFileImportCard } from "../import-panel/record-file-import-card";
-import { FitImportCard } from "../import-panel/fit-import-card";
-import { HealthConnectImportCard } from "../import-panel/health-connect-import-card";
+import { RecordFileImportSource } from "../import-panel/record-file-import-card";
+import { FitImportSource } from "../import-panel/fit-import-card";
+import { HealthConnectImportSource } from "../import-panel/health-connect-import-card";
 import { DoseSnoozeCard } from "../dose-snooze-card";
 
 function renderCard(node: React.ReactNode) {
@@ -74,12 +74,6 @@ const cases: Array<[string, () => React.ReactNode]> = [
   // 1.49.0: the folder import showed an empty card, the file imports a
   // silent status, and the snooze setting its default as if it were stored.
   ["HealthConnectRemoteCard", () => <HealthConnectRemoteCard />],
-  [
-    "RecordFileImportCard (Gadgetbridge)",
-    () => <RecordFileImportCard kind="gadgetbridge" />,
-  ],
-  ["FitImportCard", () => <FitImportCard />],
-  ["HealthConnectImportCard", () => <HealthConnectImportCard />],
   ["DoseSnoozeCard", () => <DoseSnoozeCard isAuthenticated />],
 ];
 
@@ -91,4 +85,29 @@ describe("settings read-error family — a read failure is foreground and recove
     // No bare red line: the alert is the primitive now.
     expect(html).not.toContain('<p role="alert" class="text-destructive');
   });
+});
+
+// The file imports are rows on the page with their step in a sheet. A failed
+// status read turns the row's chip to Error and its meta to the load failure;
+// the sheet opens on the shared query-error row with Retry (`ImportSource`).
+const sources: Array<[string, () => React.ReactNode]> = [
+  [
+    "RecordFileImportSource (Gadgetbridge)",
+    () => <RecordFileImportSource kind="gadgetbridge" />,
+  ],
+  ["FitImportSource", () => <FitImportSource />],
+  ["HealthConnectImportSource", () => <HealthConnectImportSource />],
+];
+
+describe("import sources — a failed status read is said on the row", () => {
+  it.each(sources)(
+    "%s shows the Error chip and the load failure",
+    (_n, node) => {
+      const html = renderCard(<ul>{node()}</ul>);
+      expect(html).toContain('data-status="failed"');
+      expect(html).toContain('data-slot="status-chip"');
+      expect(html).toContain("Could not load");
+      expect(html).not.toContain('<p role="alert" class="text-destructive');
+    },
+  );
 });

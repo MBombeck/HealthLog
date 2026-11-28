@@ -25,6 +25,7 @@ import {
   ensureVaultAiFixture,
   AI_PROBE_DOC_ID,
   CONTENT_DOC_ID,
+  openDocumentMenu,
 } from "./setup/vault-fixture";
 
 async function fulfilJson(
@@ -206,10 +207,11 @@ test.describe("automatic AI reading — vault per-document contract", () => {
     const sheet = page.getByRole("dialog");
     await expect(sheet).toBeVisible();
 
-    // With auto-read OFF the per-document read is the explicit path — the action
-    // is present and the user taps it. (When auto-read is ON the row collapses;
-    // that is covered by its own test below.)
-    await expect(sheet.locator('[data-slot="document-read-ai"]')).toBeVisible();
+    // With auto-read OFF the per-document read is the explicit path: the
+    // sheet's menu offers it. (When auto-read is ON it steps back; that is
+    // covered by its own test below.)
+    const menu = await openDocumentMenu(page, sheet);
+    await expect(menu.locator('[data-slot="document-read-ai"]')).toBeVisible();
   });
 
   test("reading through the action succeeds with no per-document consent prompt", async ({
@@ -232,7 +234,8 @@ test.describe("automatic AI reading — vault per-document contract", () => {
     const sheet = page.getByRole("dialog");
     await expect(sheet).toBeVisible();
 
-    const read = sheet.locator('[data-slot="document-read-ai"]');
+    const menu = await openDocumentMenu(page, sheet);
+    const read = menu.locator('[data-slot="document-read-ai"]');
     await expect(read).toBeVisible();
     await read.click();
 
@@ -255,7 +258,8 @@ test.describe("automatic AI reading — vault per-document contract", () => {
     const sheet = page.getByRole("dialog");
     await expect(sheet).toBeVisible();
 
-    await expect(sheet.locator('[data-slot="document-read-ai"]')).toBeVisible();
+    const menu = await openDocumentMenu(page, sheet);
+    await expect(menu.locator('[data-slot="document-read-ai"]')).toBeVisible();
   });
 
   test("with auto-read ON the sheet drops the AI row only for a read document", async ({
@@ -281,10 +285,9 @@ test.describe("automatic AI reading — vault per-document contract", () => {
     await expect(
       sheet.locator('[data-slot="document-ai-section"]'),
     ).toHaveCount(0);
-    await expect(sheet.locator('[data-slot="document-read-ai"]')).toHaveCount(
-      0,
-    );
-    await expect(sheet.locator('[data-slot="assist-suggest"]')).toHaveCount(0);
+    const menu = await openDocumentMenu(page, sheet);
+    await expect(menu.locator('[data-slot="document-read-ai"]')).toHaveCount(0);
+    await expect(menu.locator('[data-slot="assist-suggest"]')).toHaveCount(0);
   });
 
   test("with auto-read ON an unread document keeps its read action", async ({
@@ -308,6 +311,7 @@ test.describe("automatic AI reading — vault per-document contract", () => {
     await expect(
       sheet.locator('[data-slot="document-ai-section"]'),
     ).toHaveCount(1);
-    await expect(sheet.locator('[data-slot="document-read-ai"]')).toBeVisible();
+    const menu = await openDocumentMenu(page, sheet);
+    await expect(menu.locator('[data-slot="document-read-ai"]')).toBeVisible();
   });
 });

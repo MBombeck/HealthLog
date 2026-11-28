@@ -55,7 +55,6 @@ import type { DailyDigestInput } from "@/lib/daily/digest";
 import type { DailyDigestQuietSource } from "@/lib/daily/quiet-source-items";
 import type { Locale } from "@/lib/i18n/config";
 import { pluralKey } from "@/lib/i18n/plural";
-import type { ModuleKey } from "@/lib/modules/registry";
 import {
   ASK_INTENT,
   askLaterKey,
@@ -68,6 +67,8 @@ import {
 } from "@/lib/daily/priority-item-key";
 import { COACH_CHECKIN_ADJUST_INTENT } from "@/lib/daily/coach-checkin-intents";
 import type { EncounterKind } from "@/generated/prisma/client";
+import { resolveIntlLocale } from "@/lib/format-locale";
+import { getDateTimeFormat } from "@/lib/intl/formatter-cache";
 import { encounterKindLabelKey } from "@/lib/encounters/kind-label";
 
 export { ASK_INTENT, OPTIONAL_ASK_KINDS };
@@ -150,6 +151,9 @@ export type DailyAskTier = (typeof DAILY_ASK_TIERS)[number];
 
 /** The admin questions an ask can carry beside the digest's own kinds. */
 export const ADMIN_ASK_KINDS = ["push_relay", "server_setup"] as const;
+
+/** The server setup ask's item key, and the key its "later" sets aside. */
+const SERVER_SETUP_ASK_KEY = "server_setup:notice";
 export type AdminAskKind = (typeof ADMIN_ASK_KINDS)[number];
 
 /** The digest kinds that can ask. Everything else is information. */
@@ -198,12 +202,11 @@ export const SYNC_ASK_STATES: readonly string[] = ["error_reauth"];
 export const SOURCE_ASK_CATEGORY = "sync_issue" as const;
 
 /**
- * A source whose data reaches one module only. With that module off its data
- * is not wanted, so its silence is not asked about; every other source feeds
- * a core domain or several modules.
+ * A source ask's title where the provider's name would not fit the row
+ * (`ASK_TEXT_BUDGET`): the phone that went quiet, by its platform.
  */
-const SOURCE_ONLY_MODULE: Readonly<Partial<Record<string, ModuleKey>>> = {
-  nightscout: "glucose",
+export const SOURCE_ASK_TITLE: Readonly<Partial<Record<string, string>>> = {
+  "health-connect-app": "Android",
 };
 
 /** `source_stalled:<source>`: one ask per source. */
@@ -394,7 +397,9 @@ export function resolveDailyAsks(input: ResolveDailyAsksInput): DailyAsk[] {
 
   // The admin question first: inside the decision tier it is the one that
   // holds up the server for everyone (reminders on the iPhone, Wallet).
-  if (input.adminAsk) push(input.adminAsk);
+  if (input.adminAsk && !input.snoozedItemKeys.has(input.adminAsk.itemKey)) {
+    push(input.adminAsk);
+  }
   for (const candidate of input.candidates) {
     const tier = askTier(candidate, input.now);
     if (tier === null) continue;
@@ -452,15 +457,21 @@ type Translate = (
 /**
  * The one admin question, worded: the unfinished server setup first, else
  * the open push-relay question. The setup is a reminder: Set up, or Later,
- * which sets the notice aside as the admin start page does. The relay is a
- * consent: No and Yes, the answers the admin start page records.
+ * which sets it aside for the rest of the local day like every other ask
+ * (`ask.later`), so it comes back tomorrow and the relay question behind it
+ * is never lost. The relay is a consent: No and Yes, the answers the admin
+ * start page records.
  */
-export function buildAdminAsk(kind: AdminAskKind, t: Translate): DailyAsk {
+export function buildAdminAsk(
+  kind: AdminAskKind,
+  t: Translate,
+  today: string,
+): DailyAsk {
   if (kind === "server_setup") {
     return {
       kind,
       tier: "decision",
-      itemKey: "server_setup:notice",
+      itemKey: SERVER_SETUP_ASK_KEY,
       title: t("daily.ask.setupTitle"),
       body: t("daily.ask.setupMeta"),
       subject: null,
@@ -470,7 +481,10 @@ export function buildAdminAsk(kind: AdminAskKind, t: Translate): DailyAsk {
           intent: ASK_INTENT.setupOpen,
           href: "/onboarding/server",
         },
-        { labelKey: "daily.action.later", intent: ASK_INTENT.noticeLater },
+        {
+          labelKey: "daily.action.later",
+          intent: `${ASK_INTENT.later}:${askLaterKey(today, SERVER_SETUP_ASK_KEY)}`,
+        },
       ],
       learnMore: null,
     };
@@ -517,15 +531,15 @@ export function quietMeta(days: number, locale: Locale, t: Translate): string {
  * One ask per source the stall rule holds quiet now (`quietSources`, read by
  * the digest through `loadQuietSources`; no second idea of "quiet" here).
  * Not for a source whose sign-in needs renewing: the reconnect ask names it.
- * Not for a source whose only module is off. Titled with the provider's
- * name, its state the days it has been quiet; "Open" leads to the source's
- * own card, "Later" sets it aside for the day.
+ * A source whose only module is off never reaches here: the stall rule
+ * leaves it out. Titled with the provider's name, or its short name where
+ * the name would not fit the row; its state the days it has been quiet;
+ * "Open" leads to the source's own card, "Later" sets it aside for the day.
  */
 export function sourceStalledAsks(
   input: {
     quietSources?: readonly DailyDigestQuietSource[];
     syncIssues: DailyDigestInput["syncIssues"];
-    modules: DailyDigestInput["modules"];
     todayLocalDate: string;
     locale?: Locale;
   },
@@ -540,8 +554,6 @@ export function sourceStalledAsks(
   const asks: DailyAsk[] = [];
   for (const quiet of input.quietSources ?? []) {
     if (covered.has(quiet.source) || seen.has(quiet.source)) continue;
-    const onlyModule = SOURCE_ONLY_MODULE[quiet.source];
-    if (onlyModule && input.modules[onlyModule] === false) continue;
     seen.add(quiet.source);
     const itemKey = sourceStalledAskKey(quiet.source);
     const spec = PRIMARY_BY_KIND.source_stalled;
@@ -549,7 +561,7 @@ export function sourceStalledAsks(
       kind: "source_stalled",
       tier: "due",
       itemKey,
-      title: quiet.provider,
+      title: SOURCE_ASK_TITLE[quiet.source] ?? quiet.provider,
       body: quietMeta(quiet.days, input.locale ?? "en", t),
       subject: null,
       actions: [
@@ -646,7 +658,9 @@ export function asksFromDigest(
             : undefined,
       };
     }),
-    adminAsk: input.adminAsk ? buildAdminAsk(input.adminAsk, t) : null,
+    adminAsk: input.adminAsk
+      ? buildAdminAsk(input.adminAsk, t, input.todayLocalDate)
+      : null,
     sourceAsks: sourceStalledAsks(input, t),
     enabledKinds: input.enabledHeroItemKinds,
     snoozedItemKeys: input.snoozedDoseItemKeys ?? new Set(),
@@ -664,7 +678,7 @@ export function asksFromDigest(
 interface WordingContext {
   input: Pick<
     DailyDigestInput,
-    "preventiveDue" | "coachPlans" | "syncIssues" | "localTime"
+    "preventiveDue" | "coachPlans" | "syncIssues" | "localTime" | "locale"
   >;
   doses: ReadonlyMap<
     string,
@@ -682,13 +696,35 @@ export function doseMeta(
   overdue: boolean,
   time: string | null,
   t: Translate,
+  /** The same instant on the language's own clock, when known. */
+  ownTime?: string | null,
 ): string {
-  const withTime = time
-    ? t(overdue ? "daily.ask.overdue" : "daily.ask.due", { time })
-    : null;
+  // A label longer than the language's own clock is an hour cycle the
+  // reader forced ("8:00 AM" in German, Russian): its suffix is what runs a
+  // line past the column, so the state goes alone.
+  const forced = Boolean(time && ownTime && time.length > ownTime.length);
+  const withTime =
+    time && !forced
+      ? t(overdue ? "daily.ask.overdue" : "daily.ask.due", { time })
+      : null;
   return withTime && askTextLength(withTime) <= ASK_TEXT_BUDGET.metaChars
     ? withTime
     : t(overdue ? "daily.ask.overdueNow" : "daily.ask.dueNow");
+}
+
+/** An instant on the language's own clock (its default hour cycle). */
+function ownClock(
+  iso: string | undefined,
+  locale: Locale | undefined,
+): string | null {
+  const at = iso ? Date.parse(iso) : NaN;
+  if (!locale || !Number.isFinite(at)) return null;
+  // The language's default hour cycle: no preference applied, and no date.
+  return getDateTimeFormat(resolveIntlLocale(locale), {
+    timeZone: "UTC",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(at));
 }
 
 /** How many due check-ups a title names before it counts the rest. */
@@ -718,7 +754,7 @@ export function wordAsk(
       const overdue = ask.tier === "safety";
       return {
         title: dose?.name ?? ask.subject ?? t("daily.ask.medication"),
-        body: doseMeta(overdue, at, t),
+        body: doseMeta(overdue, at, t, ownClock(dose?.dueAt, input.locale)),
       };
     }
     case "preventive_care": {

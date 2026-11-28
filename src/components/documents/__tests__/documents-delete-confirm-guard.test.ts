@@ -56,6 +56,6 @@ describe("vault delete paths confirm before deleting", () => {
     const mutateCalls = [...sheet.matchAll(/remove\.mutate\(/g)];
     expect(mutateCalls.length).toBe(1);
     expect(sheet).toMatch(/onConfirm=\{\(\) => remove\.mutate\(doc\.id\)\}/);
-    expect(sheet).toMatch(/onClick=\{\(\) => setConfirmDeleteOpen\(true\)\}/);
+    expect(sheet).toMatch(/onSelect=\{\(\) => setConfirmDeleteOpen\(true\)\}/);
   });
 });

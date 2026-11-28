@@ -383,7 +383,6 @@ describe("an integration the watchdog flagged", () => {
     const { GET: digest } = await import("@/app/api/daily/digest/route");
     const res = await digest(
       new NextRequest("http://localhost/api/daily/digest"),
-      { params: Promise.resolve({}) },
     );
     expect(res.status).toBe(200);
     const asks = ((await res.json()) as { data: { asks: DailyAsk[] } }).data

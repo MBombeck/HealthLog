@@ -13,7 +13,9 @@
  * with `withPageWalkLedger`.
  *
  * The backfill contract (`backfillVerdict`), the same for every provider:
- *   - a failed collection is transient: the job throws and pg-boss retries;
+ *   - a failed collection fails the run: the job throws with the provider's
+ *     error as the cause (`noteBackfillFailure`), and the drain sends it
+ *     again after an outage (`jobs/integration-backfill-retry.ts`);
  *   - a truncated collection is not complete: the marker is not stamped, and
  *     boot discovery offers the account again, without a retry storm. Where
  *     a real history can outrun the ceiling (Strava's forty pages, about
@@ -66,7 +68,12 @@ export interface PageWalk<T> {
   truncated: boolean;
 }
 
-const ledger = new AsyncLocalStorage<Set<string>>();
+interface Ledger {
+  walks: Set<string>;
+  failure?: unknown;
+}
+
+const ledger = new AsyncLocalStorage<Ledger>();
 
 /**
  * Walk `fetchPage` from `first` (or no cursor) until a page has no `next`,
@@ -109,21 +116,43 @@ function truncated<T>(
     action: { name: "integration.page_walk.truncated" },
     meta: { walk: label, pages, reason },
   });
-  ledger.getStore()?.add(label);
+  ledger.getStore()?.walks.add(label);
   return { items, pages, truncated: true };
 }
 
 /**
- * Run `run` with a ledger of the walks inside it that ended truncated. A
- * backfill wraps its full sync in this and reads the ledger before it
- * stamps its marker.
+ * Note the error a collection failed on, from a sync that carries on past it
+ * (WHOOP, Google Health). The first one is kept: the backfill throws with it
+ * as the cause, so the drain can tell an outage from a bug.
+ */
+export function noteBackfillFailure(err: unknown): void {
+  const store = ledger.getStore();
+  if (store && store.failure === undefined) store.failure = err;
+}
+
+/**
+ * Run `run` with a ledger of the walks inside it that ended truncated and the
+ * first collection failure noted. A backfill wraps its full sync in this and
+ * reads the ledger before it stamps its marker.
  */
 export async function withPageWalkLedger<R>(
   run: () => Promise<R>,
-): Promise<{ result: R; truncated: string[] }> {
-  const walks = new Set<string>();
-  const result = await ledger.run(walks, run);
-  return { result, truncated: [...walks].sort() };
+): Promise<{ result: R; truncated: string[]; failure: unknown }> {
+  const store: Ledger = { walks: new Set() };
+  const result = await ledger.run(store, run);
+  return {
+    result,
+    truncated: [...store.walks].sort(),
+    failure: store.failure,
+  };
+}
+
+/** The error a backfill throws when its run failed, with the cause noted. */
+export function backfillIncomplete(message: string, failure: unknown): Error {
+  return new Error(
+    message,
+    failure === undefined ? undefined : { cause: failure },
+  );
 }
 
 /** What a backfill does with its full sync's outcome. */

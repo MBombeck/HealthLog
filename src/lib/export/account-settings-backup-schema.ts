@@ -36,6 +36,8 @@ export const accountSettingsBackupSchema = z
     insurerName: z.string().nullable().optional(),
     insuranceNumber: z.string().nullable().optional(),
     insuranceNumberEncrypted: z.string().nullable().optional(),
+    insuranceNumberCountry: z.string().nullable().optional(),
+    insuranceGroupNumber: z.string().nullable().optional(),
     insurerIkNumber: z.string().nullable().optional(),
     lastReportPracticeName: z.string().nullable().optional(),
     avatarBytes: base64BytesSchema.nullable().optional(),
