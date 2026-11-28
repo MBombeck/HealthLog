@@ -2248,11 +2248,11 @@
           "confirmAction": "归属"
         },
         "backfill": "补记过去的服药",
-        "extraColumn": "额外",
-        "takenAt": "{time} 服用",
-        "weekOf": "{date} 这一周",
+        "extraColumn": "追加",
+        "takenAt": "{time}已服",
+        "weekOf": "{date}当周",
         "thisWeek": "本周",
-        "showEarlier": "显示更早的几周"
+        "showEarlier": "显示更早的周"
       },
       "notifications": {
         "title": "通知",
@@ -2526,55 +2526,55 @@
         }
       },
       "menu": {
-        "label": "药物操作",
-        "resume": "恢复"
+        "label": "用药操作",
+        "resume": "继续"
       },
       "settingsTab": {
         "groups": {
-          "period": "期间"
+          "period": "周期"
         },
         "rows": {
           "history": "历史",
-          "medication": "药物",
+          "medication": "用药",
           "export": "导出",
           "import": "导入",
           "api": "API 访问",
           "codes": "临床编码",
           "channels": "通知渠道"
         },
-        "intakeCount": "{count, plural, other {#次服药}}",
-        "withAllData": "连同其全部数据",
+        "intakeCount": "{count, plural, other {#条服药记录}}",
+        "withAllData": "及其全部数据",
         "courseCount": "{count, plural, other {#个疗程}}"
       },
       "overview": {
-        "changeMetric": "更换测量",
-        "metricField": "测量",
+        "changeMetric": "更换测量指标",
+        "metricField": "测量指标",
         "details": "详情",
-        "since": "自那以后",
+        "since": "从那时起",
         "daysChip": "{days, plural, other {#天}}",
         "today": {
-          "progress": "{taken} / {total}",
-          "noneToday": "今天没有计划剂量。",
-          "asNeededTaken": "今天已服用{count, plural, other {#次}}。"
+          "progress": "{taken}/{total}",
+          "noneToday": "今天没有计划服药。",
+          "asNeededTaken": "今天已服{count, plural, other {#次}}。"
         },
         "intake": {
-          "title": "服药",
-          "missedNone": "{days, plural, other {#天}}内你没有漏服任何剂量。",
-          "missedSome": "{days, plural, other {#天}}内你漏服了{count, plural, other {#剂}}。",
-          "asNeededCount": "{count, plural, =0 {{days}天内未服用。} other {{days}天内服用#次。}}"
+          "title": "服药记录",
+          "missedNone": "{days, plural, other {#天}}内没有漏服。",
+          "missedSome": "{days, plural, other {#天}}内漏服{count, plural, other {#次}}。",
+          "asNeededCount": "{count, plural, =0 {近{days}天未服。} other {近{days}天服过#次。}}"
         },
         "legend": {
-          "taken": "{count, plural, other {已服 #}}",
-          "late": "{count, plural, other {延迟 #}}",
-          "missed": "{count, plural, other {漏服 #}}",
-          "skipped": "{count, plural, other {跳过 #}}"
+          "taken": "{count, plural, other {已服#次}}",
+          "late": "{count, plural, other {迟服#次}}",
+          "missed": "{count, plural, other {漏服#次}}",
+          "skipped": "{count, plural, other {跳过#次}}"
         },
         "plan": {
-          "title": "计划",
-          "since": "自 {date} 起",
-          "range": "{start} 至 {end}",
+          "title": "方案",
+          "since": "自{date}起",
+          "range": "{start}至{end}",
           "autoRecorded": "自动记录",
-          "reminderOn": "开，{minutes, plural, other {#分钟}}"
+          "reminderOn": "开启，提前{minutes, plural, other {#分钟}}"
         }
       }
     },
@@ -2669,7 +2669,7 @@
         "fitFailed": "这些读数无法拟合，因此不显示开始时的变化。",
         "autocorrelation": "每日数值在相邻日之间相关很强，因此即便是这些区间也可能偏窄。"
       },
-      "method": "计算方法"
+      "method": "计算方式"
     },
     "import": {
       "resultSuccess": "{imported, plural, other {已导入 # 条服药}}",
@@ -16302,13 +16302,13 @@
       "diastolicBloodPressure": "舒张压"
     },
     "efficacyResult": {
-      "lower": "自开始以来，均值降低了 {amount}。",
-      "higher": "自开始以来，均值升高了 {amount}。",
-      "unchanged": "自开始以来，均值基本保持不变。",
-      "needBefore": "开始前的读数还不足以进行比较。",
-      "needAfter": "开始后的读数还不足以进行比较。",
-      "needStart": "添加开始日期，即可比较前后变化。",
-      "needData": "读数还不足以进行比较。"
+      "lower": "自开始以来，平均值降低了 {amount}。",
+      "higher": "自开始以来，平均值升高了 {amount}。",
+      "unchanged": "自开始以来，平均值基本持平。",
+      "needBefore": "开始前的读数还不足以比较。",
+      "needAfter": "开始后的读数还不足以比较。",
+      "needStart": "添加开始日期才能比较前后。",
+      "needData": "读数还不足以比较。"
     }
   },
   "setup": {
