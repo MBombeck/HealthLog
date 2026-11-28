@@ -59,6 +59,7 @@ export const SERVER_FEATURES = [
   "insights.scores-short-labels",
   "profile.insurance-number-country",
   "dashboard.tile-comparison-bands",
+  "health-connect.sync",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -136,7 +137,7 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
   "profile.emergency-card-wallet-ready-push":
     "EMERGENCY_CARD_WALLET_READY is a notification event (default on): once per Wallet pass, at most twice per person, while the pass is live, emergencyCard.wallet.apple.state is available, no device registered the pass and the card shows something; never for a managed profile. Its category is the event name and its tap opens the add-pass sheet (web: /emergency-card#wallet). POST /api/emergency-card/wallet/apple/ready-push/dismiss records the person's no, per person, and it is never sent again; a tap that finds the pass no longer available is not a no.",
   "notifications.sync-stalled":
-    "SYNC_STALLED is a notification category (default on, toggled per channel in the notification preferences): once per stall and in daytime, the owner is told that a daily source went quiet, among them an iPhone whose Apple Health upload stopped; GET /api/integrations/healthkit carries quietDevices (model, quietSince). The push names the source as a connection key (apple-health, garmin, google-health, nightscout, oura, polar, whoop, withings), and its deep link is always /settings/integrations#<source>, the source's card on the integrations page: a direct push carries it as url, a relay push carries only d.source and the client builds the same path.",
+    "SYNC_STALLED is a notification category (default on, toggled per channel in the notification preferences): once per stall and in daytime, the owner is told that a daily source went quiet, among them an iPhone whose Apple Health upload stopped and, since v1.50.0, an Android device whose HealthLog Sync upload stopped; GET /api/integrations/healthkit carries quietDevices (model, quietSince). The push names the source as a connection key (apple-health, garmin, google-health, health-connect-app, nightscout, oura, polar, whoop, withings), and its deep link is always /settings/integrations#<source>, the source's card on the integrations page: a direct push carries it as url, a relay push carries only d.source and the client builds the same path.",
   "insights.same-time-daily-total":
     "SAME_TIME_BASELINE on GET /api/insights/derived carries mode: hourly is the hour-by-hour comparison, daily_total compares today's running total from a once-a-day source with the usual full day (dayRangeReached not_yet, within or above; gated reasons learning_usual_total and no_total_today).",
   "push.live-activity-token-state":
@@ -169,4 +170,6 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "The profile (GET/PATCH /api/user/profile, PUT /api/auth/profile, GET /api/auth/me) carries insuranceNumberCountry (ISO 3166-1 alpha-2; a number stored without one is DE) and insuranceGroupNumber (US only, else null); GET /api/user/profile also carries insuranceNumberDisplay, the number in its country's form. insuranceNumber is checked under its country: DE KVNR, AT SVNR, CH AHV number, NL BSN and FR NIR by check digit, every other country 3 to 30 letters, digits, spaces, hyphens or dots as entered. A refused value comes back in rejectedFields with code invalid_kvnr, invalid_svnr, invalid_ahv, invalid_bsn, invalid_nir or invalid_member_id; a country change the stored number would fail is refused on insuranceNumberCountry. The FHIR Patient identifier uses the country's national system where one is verified, else type MB with no system, and a US group number rides Coverage.class (group).",
   "dashboard.tile-comparison-bands":
     "GET /api/dashboard/snapshot carries tiles.comparison: per ranged tile (weight, bp, pulse when it shows the resting heart rate) avg7 and avg30 as { band: good | fair | low | null, side: above | below | null }, placed in targetBands by the same rule as tiles.attention (bp is the side further from its band), and line, the deviation line in the response language, non-null only while tiles.attention[id] is range (avg7's side, else avg30's). Colour the comparison lines and show the line as served.",
+  "health-connect.sync":
+    "The Android Health Connect sync: POST /api/health-connect/pairing mints a one-time code (QR healthlog-sync://pair?server=…&code=…), POST /api/health-connect/pair exchanges it for a health-connect:write token bound to a Device, GET /api/health-connect/state answers the wanted types and limits, and POST /api/health-connect/batch takes records, aggregates and deletes with one result per item. Early preview.",
 };

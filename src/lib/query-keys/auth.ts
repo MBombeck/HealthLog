@@ -56,6 +56,13 @@ export const authKeys = {
    */
   trustedDevices: () => ["auth", "trusted-devices"] as const,
 
+  /**
+   * The account's registered devices behind `GET /api/auth/me/devices`; the
+   * Android sync group lists its paired phones from it. Disconnecting one
+   * invalidates it.
+   */
+  authDevices: () => ["auth", "devices"] as const,
+
   userAiProvider: () => ["user", "ai-provider"] as const,
   userProfile: () => ["user", "profile"] as const,
   /**

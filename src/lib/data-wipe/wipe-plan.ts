@@ -372,6 +372,8 @@ export const WIPE_EXEMPT: Readonly<Record<string, string>> = {
     "the remember-this-device grant that suppresses a second-factor prompt; a sign-in credential",
   OidcNativeHandoff:
     "an in-flight one-time sign-in code, minutes-lived and swept by its own expiry",
+  HealthConnectPairing:
+    "an in-flight one-time pairing code for an Android device, minutes-lived and cleared with the next code the account mints",
   InviteRedemption:
     "the instance's registration ledger, not the person's record; even account deletion only detaches it (onDelete: SetNull) rather than removing it",
 };

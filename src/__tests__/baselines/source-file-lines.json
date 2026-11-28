@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 70,
-  "total": 76314,
+  "total": 76045,
   "entries": {
     "components/cycle/log-day-sheet.tsx": 1645,
     "components/insights/coach-panel/chat-bubble.tsx": 821,
@@ -42,7 +42,7 @@
     "lib/google-health/sync-core.ts": 1620,
     "lib/idempotency.ts": 886,
     "lib/illness/correlation.ts": 1059,
-    "lib/import/health-connect/import.ts": 1686,
+    "lib/import/health-connect/import.ts": 1417,
     "lib/import/unzip-export-xml.ts": 823,
     "lib/insights/comprehensive-aggregator.ts": 818,
     "lib/insights/comprehensive-generate.ts": 939,

@@ -218,3 +218,48 @@ test.describe("Settings → Integrations: one card per health state", () => {
     });
   }
 });
+
+test.describe("Settings → Integrations: connect an Android device", () => {
+  test.use({ storageState: STORAGE_STATE_PATH });
+
+  test.beforeEach(({}, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "chromium-desktop",
+      "sizes the viewport itself",
+    );
+  });
+
+  for (const viewport of VIEWPORTS) {
+    test(`the row opens the pairing sheet with a QR code at ${viewport.name}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      // The mint sits behind the recent-proof gate; answered here so the
+      // sheet's own states are what is checked.
+      await page.route("**/api/health-connect/pairing", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            data: {
+              code: "hcp_0123456789abcdef0123456789abcdef",
+              expiresAt: new Date(Date.now() + 600_000).toISOString(),
+              link: "healthlog-sync://pair?server=http%3A%2F%2Flocalhost&code=hcp_0123456789abcdef0123456789abcdef",
+            },
+            error: null,
+          }),
+        }),
+      );
+      await page.goto("/settings/integrations#health-connect-app");
+      const group = page.getByTestId("health-connect-app");
+      await expect(group).toBeVisible({ timeout: 15_000 });
+      await group.getByTestId("health-connect-app-connect").click();
+      const sheet = page.getByTestId("health-connect-app-sheet");
+      await expect(sheet.getByTestId("health-connect-app-qr")).toBeVisible();
+      await expect(sheet.getByTestId("health-connect-app-qr")).toHaveAttribute(
+        "src",
+        /^data:image\/svg\+xml/,
+      );
+    });
+  }
+});

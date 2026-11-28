@@ -319,6 +319,17 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     ],
     // The status defaults, derived from the table `apiHandler` applies so the
     // two cannot drift apart.
+    "health-connect": [
+      "health-connect.batch.idempotency_key_required",
+      "health-connect.batch.invalid",
+      "health-connect.batch.too_large",
+      "health-connect.device_token_required",
+      "health-connect.device_unpaired",
+      "health-connect.pair.api_disabled",
+      "health-connect.pair.code_invalid",
+      "health-connect.pair.install_taken",
+      "health-connect.pair.invalid",
+    ],
     http: [...new Set(Object.values(DEFAULT_ERROR_CODES))].sort(),
     illness: [
       "illness.day-log.invalid",

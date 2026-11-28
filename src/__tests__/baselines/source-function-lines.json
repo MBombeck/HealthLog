@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 307,
-  "total": 95550,
+  "total": 95533,
   "entries": {
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
     "app/api/admin/notifications/reminder-check/route.ts :: apiHandler(arg)": 206,
@@ -65,7 +65,7 @@
     "components/charts/medication-compliance-chart.tsx :: MedicationComplianceChart": 533,
     "components/charts/mood-chart.tsx :: MoodChart": 472,
     "components/charts/mood-heatmap.tsx :: MoodHeatmap": 296,
-    "components/charts/trend-card.tsx :: TrendCard": 324,
+    "components/charts/trend-card.tsx :: TrendCard": 323,
     "components/clinician/clinician-view.tsx :: ClinicianView": 224,
     "components/command-palette/command-palette.tsx :: PaletteBody": 333,
     "components/custom-metrics/custom-metric-chart.tsx :: CustomMetricChart": 228,
@@ -257,7 +257,7 @@
     "lib/insights/features.ts :: extractFeatures": 654,
     "lib/insights/mood-aggregates.ts :: fetchMoodAggregates": 227,
     "lib/insights/status-provider.ts :: runStatusCompletion": 215,
-    "lib/integrations/connection-health-load.ts :: loadConnectionFacts": 217,
+    "lib/integrations/connection-health-load.ts :: loadConnectionFacts": 201,
     "lib/integrations/status.ts :: recordSyncFailure": 292,
     "lib/jobs/apple-health-import-worker.ts :: handleAppleHealthImport": 273,
     "lib/jobs/coach-nudge.ts :: findTriggerForUser": 279,

@@ -7572,6 +7572,16 @@
       "description": "Wordt elke zes uur uit je WebDAV- of Nextcloud-map opgehaald. Instellen en wijzigen doe je onder Importeren.",
       "manage": "Mapinstellingen openen"
     },
+    "healthConnectApp": {
+      "connect": "Android-apparaat koppelen",
+      "disconnect": "Ontkoppelen",
+      "newCode": "Nieuwe code",
+      "validUntil": "Geldig tot {time}",
+      "qrAlt": "QR-code voor HealthLog Sync",
+      "preview": "HealthLog Sync voor Android, preview",
+      "disconnectTitle": "{device} ontkoppelen?",
+      "disconnectBody": "De telefoon synchroniseert niet meer tot je hem opnieuw koppelt."
+    },
     "withingsViewData": "Je metingen bekijken",
     "whoopViewData": "Je herstel bekijken",
     "googleHealthViewData": "Je stappen bekijken",

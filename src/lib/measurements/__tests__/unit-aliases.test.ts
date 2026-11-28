@@ -62,7 +62,7 @@ describe("resolveToCanonicalUnit", () => {
     // pinning the constant twice is how the two drifted apart.
     const out = resolveToCanonicalUnit("BLOOD_GLUCOSE", 5.3, "mmol/L");
     expect(out?.unit).toBe("mg/dL");
-    expect(out?.value).toBeCloseTo(5.3 * MGDL_PER_MMOL, 3);
+    expect(out?.value).toBe(Math.round(5.3 * MGDL_PER_MMOL * 10) / 10);
     // The round trip a mmol/L reader actually experiences.
     expect(mgdlToMmol(out?.value ?? 0)).toBe(5.3);
   });

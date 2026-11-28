@@ -33,8 +33,13 @@ import type { IntegrationKey } from "./status";
 import type { SyncHealth } from "./sync-verdict";
 import { silenceStands } from "@/lib/sync-stall/cadence";
 
-/** Every connection the health read covers: the polled providers + Apple Health. */
-export type ConnectionKey = IntegrationKey | "apple-health";
+/**
+ * Every connection the health read covers: the polled providers, Apple Health
+ * and the Android devices running HealthLog Sync (`health-connect-app`), the
+ * two that deliver from a phone rather than being polled.
+ */
+export type ConnectionKey =
+  IntegrationKey | "apple-health" | "health-connect-app";
 
 export const CONNECTION_KEYS: readonly ConnectionKey[] = [
   "withings",
@@ -48,6 +53,7 @@ export const CONNECTION_KEYS: readonly ConnectionKey[] = [
   "garmin",
   "health-connect-remote",
   "apple-health",
+  "health-connect-app",
 ];
 
 /** Provider names, the same in every language. */
@@ -63,6 +69,7 @@ export const CONNECTION_LABELS: Record<ConnectionKey, string> = {
   garmin: "Garmin",
   "health-connect-remote": "Health Connect folder",
   "apple-health": "Apple Health",
+  "health-connect-app": "Health Connect",
 };
 
 export const CONNECTION_HEALTH_STATES = [

@@ -82,6 +82,17 @@ async function signedInWithFortnight() {
   return { user, auth: await makeSession(user) };
 }
 
+/**
+ * A minute ago, but never before the local day began: in the first minute
+ * after local midnight, "a minute ago" is yesterday, beside the fortnight's
+ * own reading, and the card (which reports today's readings) shows none.
+ */
+function aMinuteAgoToday(): Date {
+  const now = Date.now();
+  const todayStart = startOfLocalDayInTz(new Date(now), TZ).getTime();
+  return new Date(Math.max(now - 60_000, todayStart));
+}
+
 const pulseDeviation = (body: HealthStatusBody) =>
   body.deviations.find((d) => d.type === "PULSE");
 
@@ -101,7 +112,7 @@ describe("GET /api/insights/health-status: the cached answer", () => {
       type: "PULSE",
       value: RAISED_PULSE,
       unit: "bpm",
-      measuredAt: new Date(Date.now() - 60_000),
+      measuredAt: aMinuteAgoToday(),
     });
     const second = await readHealthStatus(auth);
 
@@ -119,7 +130,7 @@ describe("GET /api/insights/health-status: the cached answer", () => {
         type: "PULSE",
         value: RAISED_PULSE,
         unit: "bpm",
-        measuredAt: new Date(Date.now() - 60_000).toISOString(),
+        measuredAt: aMinuteAgoToday().toISOString(),
       },
       auth,
     });
@@ -139,7 +150,7 @@ describe("GET /api/insights/health-status: the cached answer", () => {
       type: "PULSE",
       value: RAISED_PULSE,
       unit: "bpm",
-      measuredAt: new Date(Date.now() - 60_000),
+      measuredAt: aMinuteAgoToday(),
     });
     const patch = await callRoute(patchModules, {
       method: "PATCH",

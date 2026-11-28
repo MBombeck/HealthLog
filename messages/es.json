@@ -7572,6 +7572,16 @@
       "description": "Se recoge de tu carpeta WebDAV o Nextcloud cada seis horas. Se configura y se cambia en Importar.",
       "manage": "Abrir los ajustes de la carpeta"
     },
+    "healthConnectApp": {
+      "connect": "Conectar dispositivo Android",
+      "disconnect": "Desconectar",
+      "newCode": "Código nuevo",
+      "validUntil": "Válido hasta las {time}",
+      "qrAlt": "Código QR para HealthLog Sync",
+      "preview": "HealthLog Sync para Android, vista previa",
+      "disconnectTitle": "¿Desconectar {device}?",
+      "disconnectBody": "El teléfono deja de sincronizar hasta que lo vuelvas a vincular."
+    },
     "withingsViewData": "Ver tus mediciones",
     "whoopViewData": "Ver tu recuperación",
     "googleHealthViewData": "Ver tus pasos",

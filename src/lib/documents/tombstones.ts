@@ -229,3 +229,154 @@ export async function restoreDocumentTombstone(
   });
   return now && now.deletedAt === null ? { kind: "live" } : { kind: "gone" };
 }
+
+/**
+ * {@link restoreDocumentTombstone} over many documents at once, for the bulk
+ * route. Same rules and the same per-id outcomes, in a bounded number of
+ * statements whatever the batch size: three reads (the tombstones with their
+ * import keys, the live duplicates of their bytes, their staged facts) and
+ * one transaction holding one guarded update per restored status and one
+ * ledger cleanup.
+ *
+ * Two tombstones in the batch holding the same bytes cannot both come back
+ * (the partial unique index allows one live copy); the first in `ids` order
+ * wins and the next reads as a duplicate of it, as it would have one by one.
+ * A concurrent upload racing the transaction into that index fails the whole
+ * transaction; the batch then falls back to the one-by-one restore, which
+ * reports that race per id.
+ */
+export async function restoreDocumentTombstones(
+  userId: string,
+  ids: readonly string[],
+): Promise<Map<string, TombstoneRestoreResult>> {
+  const results = new Map<string, TombstoneRestoreResult>();
+  if (ids.length === 0) return results;
+
+  const rows = await prisma.inboundDocument.findMany({
+    where: { id: { in: [...ids] }, userId },
+    select: { id: true, deletedAt: true, contentSha256: true },
+  });
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const tombstones = ids.flatMap((id) => {
+    const row = byId.get(id);
+    if (!row) results.set(id, { kind: "gone" });
+    else if (row.deletedAt === null) results.set(id, { kind: "live" });
+    else return [row];
+    return [];
+  });
+  if (tombstones.length === 0) return results;
+
+  // Bytes already held by a live document, then claimed in `ids` order.
+  const shas = [
+    ...new Set(
+      tombstones.flatMap((row) =>
+        row.contentSha256 ? [row.contentSha256] : [],
+      ),
+    ),
+  ];
+  const holders = new Map<string, string>();
+  if (shas.length > 0) {
+    const live = await prisma.inboundDocument.findMany({
+      where: { userId, deletedAt: null, contentSha256: { in: shas } },
+      select: { id: true, contentSha256: true },
+    });
+    for (const row of live) {
+      if (row.contentSha256 && !holders.has(row.contentSha256)) {
+        holders.set(row.contentSha256, row.id);
+      }
+    }
+  }
+  const restorable: string[] = [];
+  for (const row of tombstones) {
+    const holder = row.contentSha256 ? holders.get(row.contentSha256) : null;
+    if (holder) {
+      results.set(row.id, { kind: "duplicate", existingId: holder });
+      continue;
+    }
+    if (row.contentSha256) holders.set(row.contentSha256, row.id);
+    restorable.push(row.id);
+  }
+  if (restorable.length === 0) return results;
+
+  const facts = await prisma.extractedFact.findMany({
+    where: { documentId: { in: restorable }, userId },
+    select: { documentId: true, status: true },
+  });
+  const factsByDoc = new Map<string, Array<{ status: string }>>();
+  for (const fact of facts) {
+    const list = factsByDoc.get(fact.documentId) ?? [];
+    list.push(fact);
+    factsByDoc.set(fact.documentId, list);
+  }
+  const byStatus = new Map<InboundDocumentStatus, string[]>();
+  for (const id of restorable) {
+    const status = restoredStatus(factsByDoc.get(id) ?? []);
+    byStatus.set(status, [...(byStatus.get(status) ?? []), id]);
+  }
+
+  let restored: Set<string>;
+  try {
+    restored = await prisma.$transaction(async (tx) => {
+      const done = new Set<string>();
+      for (const [status, group] of byStatus) {
+        // Guarded on the tombstone, so a purge or a restore that won the race
+        // is not undone or repeated here.
+        const updated = await tx.inboundDocument.updateManyAndReturn({
+          where: { id: { in: group }, userId, deletedAt: { not: null } },
+          data: { deletedAt: null, status },
+          select: { id: true },
+        });
+        for (const row of updated) done.add(row.id);
+      }
+      if (done.size === 0) return done;
+      const keyed = await tx.inboundDocument.findMany({
+        where: {
+          id: { in: [...done] },
+          userId,
+          OR: [
+            { sourceSystem: { not: null }, sourceId: { not: null } },
+            { sourceAliases: { some: {} } },
+          ],
+        },
+        select: SOURCE_KEY_SELECT,
+      });
+      const keys = keyed.flatMap(importKeysOf);
+      if (keys.length > 0) {
+        await tx.documentImportKey.deleteMany({ where: { OR: keys } });
+      }
+      return done;
+    });
+  } catch (err) {
+    if (!isP2002(err)) throw err;
+    for (const id of restorable) {
+      results.set(id, await restoreDocumentTombstone(userId, id));
+    }
+    return results;
+  }
+
+  // A tombstone the guarded update did not clear was restored or purged by
+  // someone else in between: live now, or gone.
+  const raced = restorable.filter((id) => !restored.has(id));
+  const nowLive =
+    raced.length === 0
+      ? new Set<string>()
+      : new Set(
+          (
+            await prisma.inboundDocument.findMany({
+              where: { id: { in: raced }, userId, deletedAt: null },
+              select: { id: true },
+            })
+          ).map((row) => row.id),
+        );
+  for (const id of restorable) {
+    results.set(
+      id,
+      restored.has(id)
+        ? { kind: "restored" }
+        : nowLive.has(id)
+          ? { kind: "live" }
+          : { kind: "gone" },
+    );
+  }
+  return results;
+}

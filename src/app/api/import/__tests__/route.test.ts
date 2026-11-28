@@ -15,6 +15,10 @@ vi.mock("@/lib/db", () => {
       createManyAndReturn: vi.fn(),
       update: vi.fn(),
       findUnique: vi.fn(),
+      // The probe for readings the account already holds under another
+      // source. Given as the mock's own implementation, so `resetAllMocks`
+      // keeps it.
+      findMany: vi.fn(async () => []),
       upsert: vi.fn(),
     },
     moodEntry: { create: vi.fn(), findUnique: vi.fn(), upsert: vi.fn() },
@@ -606,6 +610,56 @@ describe("POST /api/import — measurement externalId dedup (v1.17.1)", () => {
     expect(response.status).toBeLessThan(400);
     expect(vi.mocked(prisma.measurement.create)).toHaveBeenCalledTimes(1);
     expect(vi.mocked(prisma.measurement.upsert)).not.toHaveBeenCalled();
+  });
+
+  it("skips a reading the account already holds under another source", async () => {
+    vi.mocked(prisma.measurement.findMany).mockResolvedValueOnce([
+      {
+        type: "WEIGHT",
+        measuredAt: new Date("2026-05-01T08:00:00.000Z"),
+        value: 80,
+        sleepStage: null,
+      },
+    ] as unknown as Awaited<ReturnType<typeof prisma.measurement.findMany>>);
+    vi.mocked(prisma.measurement.create).mockResolvedValue(
+      {} as Awaited<ReturnType<typeof prisma.measurement.create>>,
+    );
+
+    const response = await POST(
+      new NextRequest("http://localhost/api/import", {
+        method: "POST",
+        body: JSON.stringify({
+          measurements: [
+            {
+              type: "WEIGHT",
+              value: 80,
+              unit: "kg",
+              measuredAt: "2026-05-01T08:00:00.000Z",
+            },
+            {
+              type: "WEIGHT",
+              value: 81,
+              unit: "kg",
+              measuredAt: "2026-05-01T08:00:00.000Z",
+            },
+          ],
+        }),
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.data).toMatchObject({ measurements: 1, skipped: 1 });
+    expect(vi.mocked(prisma.measurement.create)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(prisma.measurement.findMany)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          source: { not: "IMPORT" },
+          deletedAt: null,
+        }),
+      }),
+    );
   });
 });
 
