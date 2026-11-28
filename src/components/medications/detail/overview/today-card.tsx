@@ -31,6 +31,7 @@ import type { DoseState } from "@/lib/medications/dose-state/resolve";
 import { cardTakeSlot, type TakeSlot } from "@/lib/medications/dose-state/pill";
 import { DOSE_ACTION_TERM } from "@/lib/medications/dose-state/terms";
 import { queryKeys } from "@/lib/query-keys";
+import { dateOnlyAtNoonUtc, dateOnlyKey } from "@/lib/tz/date-only";
 import { userDayKey } from "@/lib/tz/format";
 
 import { OverviewCard, type OverviewCompliance } from "./anatomy";
@@ -167,11 +168,20 @@ export function TodayCard({
     extras,
   });
   const nextDueAt = medication.nextDueAt ?? null;
+  // The next dose after today, only when it is not tomorrow: a daily plan's
+  // next dose is the header's time again, a weekly one's day is news.
+  // Calendar arithmetic on day keys: a noon anchor never crosses a DST edge.
+  const todayKey = userDayKey(now, tz);
+  const tomorrowKey = dateOnlyKey(
+    new Date(dateOnlyAtNoonUtc(todayKey).getTime() + 86_400_000),
+  );
+  const nextKey = nextDueAt ? userDayKey(new Date(nextDueAt), tz) : null;
   const showNext =
     canAct &&
     !asNeeded &&
-    !!nextDueAt &&
-    userDayKey(new Date(nextDueAt), tz) !== userDayKey(now, tz);
+    nextKey !== null &&
+    nextKey !== todayKey &&
+    nextKey !== tomorrowKey;
 
   return (
     <OverviewCard
@@ -279,7 +289,7 @@ function TodayRows({
 }
 
 /**
- * The card's foot: the early / extra hint and the snooze above the pair,
+ * The card's foot: the early hint and the snooze above the pair,
  * then Skip / Take (Log past dose / Take as needed). A dose that cannot be
  * taken now (paused, ended, record only) offers Log past dose / History.
  */
@@ -323,7 +333,7 @@ function TodayActions({
   );
   if (!canAct) {
     return (
-      <ActionPair>
+      <ActionPair pairClassName="w-full">
         {backfill}
         {onHistory ? (
           <Button
@@ -342,14 +352,9 @@ function TodayActions({
   const extra = takeSlot?.binding === "extra";
   return (
     <div className="space-y-2">
-      {takeSlot && extra ? (
-        <p
-          className="text-muted-foreground text-xs"
-          data-slot="medication-intake-extra"
-        >
-          {t("medications.dose.extraHint", { time: fmt.time(takeSlot.at) })}
-        </p>
-      ) : takeSlot?.earlyFrom ? (
+      {/* An extra take is named by its button ("Take extra") and confirmed
+          by its toast; the early hint stays, it prevents a double dose. */}
+      {!extra && takeSlot?.earlyFrom ? (
         <p
           className="text-muted-foreground text-xs"
           data-slot="medication-intake-early"
@@ -381,7 +386,7 @@ function TodayActions({
           {t(DOSE_ACTION_TERM.snooze, { minutes: snooze.minutes })}
         </InlineAction>
       ) : null}
-      <ActionPair>
+      <ActionPair pairClassName="w-full">
         {asNeeded ? (
           backfill
         ) : (

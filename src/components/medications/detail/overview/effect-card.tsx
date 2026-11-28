@@ -55,7 +55,7 @@ export function EffectCard({
       }
       slot="medication-overview-effect"
       actions={
-        <ActionPair>
+        <ActionPair pairClassName="w-full">
           {mayRetarget ? (
             <Button
               variant="outline"

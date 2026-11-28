@@ -250,7 +250,7 @@ export function IntakeCard({
       slot="medication-overview-intake"
       actions={
         onBackfill || onHistory ? (
-          <ActionPair>
+          <ActionPair pairClassName="w-full">
             {onBackfill ? (
               <Button
                 variant="outline"
