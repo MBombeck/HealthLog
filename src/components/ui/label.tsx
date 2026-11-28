@@ -6,49 +6,32 @@ import { Label as LabelPrimitive } from "radix-ui";
 import { cn } from "@/lib/utils";
 
 /**
- * Form label. The trailing colon is an `::after` on the label itself; pass
- * `noColon` where the label is not followed by its field.
+ * Form label. A field name, never followed by a colon: the field sits under
+ * or beside its name, and the colon was one more mark on every line of every
+ * sheet. It used to be an `::after` here with a `noColon` opt-out, which left
+ * half the labels with one and half without; there is now no colon and no
+ * switch. Guard: `label-colon-guard.test.tsx`.
  *
  * The label starts on the reading edge, like the text and the controls
- * around it (UI standards §2, §13). It carried `pl-1` from the first
- * release, so every field name sat 4 px right of the sentence above it and
- * of a switch's name in the same card, which `SwitchRow` had to undo.
- *
- * A label that already ends in punctuation takes no colon: an abbreviation
- * such as "Dose no." would read "Dose no.:". The label knows its own text, so
- * the call site does not have to remember. A field is named by a noun, never a
+ * around it (UI standards §2, §13). A field is named by a noun, never a
  * question (`form-label-wording-guard.test.ts`).
  *
- * The label is `inline-block`, not `inline-flex`. In a flex box the colon is
- * a flex item of its own, so a label that wraps (a long German or French
- * field name in a narrow column) left the colon floating beside the whole
- * text block instead of after the last word. In inline flow the colon is
- * glued to the last word and wraps with it. A call site that lays out a name
- * beside a unit sets `flex` itself and owns the colon there.
+ * The label is `inline-block`; a call site that lays out a name beside a unit
+ * sets `flex` itself.
  */
-const ENDS_IN_PUNCTUATION = /[?!.:;\u2026\uFF1F\uFF01\uFF1A\u3002]\s*$/;
-
 function Label({
   className,
-  noColon = false,
-  children,
   ...props
-}: React.ComponentProps<typeof LabelPrimitive.Root> & { noColon?: boolean }) {
-  const withoutColon =
-    noColon ||
-    (typeof children === "string" && ENDS_IN_PUNCTUATION.test(children));
+}: React.ComponentProps<typeof LabelPrimitive.Root>) {
   return (
     <LabelPrimitive.Root
       data-slot="label"
-      data-no-colon={withoutColon}
       className={cn(
-        "inline-block text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 after:content-[':'] data-[no-colon=true]:after:content-none",
+        "inline-block text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
         className,
       )}
       {...props}
-    >
-      {children}
-    </LabelPrimitive.Root>
+    />
   );
 }
 

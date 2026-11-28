@@ -1,5 +1,6 @@
 "use client";
 
+import { parseDecimalEntry } from "@/lib/measurements/entry-units";
 import { useId, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -210,7 +211,6 @@ export function useMeasurementEdit({
   // The error banner is linked to the inputs through `aria-describedby`, so a
   // screen reader announces why a submit was refused.
   const editErrorId = useId();
-  const editValueErrorId = useId();
   // The sheet's footer is a slot the form portals its buttons into.
   const editFormId = useId();
   const [editFooterEl, setEditFooterEl] = useState<HTMLDivElement | null>(null);
@@ -310,8 +310,9 @@ export function useMeasurementEdit({
 
     setEditError(null);
     setEditValueError(null);
-    const parsedValue = Number(editValue);
-    if (!Number.isFinite(parsedValue)) {
+    // The field takes a decimal comma like the add form's.
+    const parsedValue = parseDecimalEntry(editValue);
+    if (parsedValue === null) {
       setEditValueError(t("measurements.invalidValue"));
       return;
     }
@@ -361,7 +362,6 @@ export function useMeasurementEdit({
     editErrorId,
     editErrorDescriptor: editError ? editErrorId : undefined,
     editValueError,
-    editValueErrorId,
     editFormId,
     editFooterEl,
     setEditFooterEl,

@@ -110,14 +110,12 @@ export function BiomarkerMergeSheet({
       title={t("labs.merge.title")}
       description={t("labs.merge.description")}
       footer={
-        <div className="flex w-full flex-wrap justify-end gap-2">
+        <>
           {preview ? (
             <>
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
-                className="min-h-11 sm:min-h-9"
                 onClick={() => setPreview(null)}
                 disabled={run.isPending}
               >
@@ -125,8 +123,6 @@ export function BiomarkerMergeSheet({
               </Button>
               <Button
                 type="button"
-                size="sm"
-                className="min-h-11 sm:min-h-9"
                 data-slot="biomarker-merge-confirm"
                 onClick={() => run.mutate(false)}
                 disabled={run.isPending || (refused?.length ?? 0) > 0}
@@ -143,8 +139,6 @@ export function BiomarkerMergeSheet({
           ) : (
             <Button
               type="button"
-              size="sm"
-              className="min-h-11 sm:min-h-9"
               data-slot="biomarker-merge-preview"
               onClick={() => run.mutate(true)}
               disabled={!canPreview || run.isPending}
@@ -158,7 +152,7 @@ export function BiomarkerMergeSheet({
               {t("labs.merge.showPreview")}
             </Button>
           )}
-        </div>
+        </>
       }
     >
       {preview ? (

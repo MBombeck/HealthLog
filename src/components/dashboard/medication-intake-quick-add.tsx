@@ -4,8 +4,9 @@ import { localDateTimeValue } from "@/components/day/prefill";
 import { useId, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
-import { Loader2, Pill, Plus } from "lucide-react";
+import { Loader2, Pill } from "lucide-react";
 import Link from "next/link";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
@@ -217,14 +218,13 @@ export function MedicationIntakeQuickAdd({
   }
 
   const footerNode = (
-    <div className="flex w-full items-center justify-end gap-2">
+    <ActionPair>
       {onCancel && (
         <Button
           type="button"
           variant="outline"
           onClick={onCancel}
           disabled={loading}
-          className="min-h-11 sm:min-h-9"
         >
           {t("common.cancel")}
         </Button>
@@ -233,16 +233,13 @@ export function MedicationIntakeQuickAdd({
         type="submit"
         form={formId}
         disabled={loading || !medicationId || medications.length === 0}
-        className="min-h-11 sm:min-h-9"
       >
         {loading ? (
           <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-        ) : (
-          <Plus className="h-4 w-4" />
-        )}
+        ) : null}
         {t("common.save")}
       </Button>
-    </div>
+    </ActionPair>
   );
 
   // Empty-state branch: the user has no active medications. Render a
@@ -264,25 +261,20 @@ export function MedicationIntakeQuickAdd({
     const noneActionable =
       Array.isArray(medicationsRaw) && medicationsRaw.length > 0;
     const emptyFooter = (
-      <div className="flex w-full items-center justify-end gap-2">
+      <ActionPair>
         {onCancel && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            className="min-h-11 sm:min-h-9"
-          >
+          <Button type="button" variant="outline" onClick={onCancel}>
             {t("common.cancel")}
           </Button>
         )}
-        <Button asChild className="min-h-11 sm:min-h-9">
+        <Button asChild>
           <Link href="/medications">
             {noneActionable
               ? t("dashboard.medicationIntakeQuickAdd.noneActionableCta")
               : t("dashboard.medicationIntakeQuickAdd.emptyCta")}
           </Link>
         </Button>
-      </div>
+      </ActionPair>
     );
     return (
       <>

@@ -5,6 +5,7 @@ import { XIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
+import { ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
 
@@ -123,6 +124,10 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
+/**
+ * The dialog's actions, laid out by `ActionPair`: at most two buttons, equal
+ * width, at the right edge, a "⋯" `ActionMenu` at the left for the rest.
+ */
 function DialogFooter({
   className,
   showCloseButton = false,
@@ -133,20 +138,15 @@ function DialogFooter({
 }) {
   const { t } = useTranslations();
   return (
-    <div
-      data-slot="dialog-footer"
-      className={cn(
-        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
-        className,
-      )}
-      {...props}
-    >
-      {children}
-      {showCloseButton && (
-        <DialogPrimitive.Close asChild>
-          <Button variant="outline">{t("common.close")}</Button>
-        </DialogPrimitive.Close>
-      )}
+    <div data-slot="dialog-footer" className={cn("flex", className)} {...props}>
+      <ActionPair>
+        {children}
+        {showCloseButton && (
+          <DialogPrimitive.Close asChild>
+            <Button variant="outline">{t("common.close")}</Button>
+          </DialogPrimitive.Close>
+        )}
+      </ActionPair>
     </div>
   );
 }
