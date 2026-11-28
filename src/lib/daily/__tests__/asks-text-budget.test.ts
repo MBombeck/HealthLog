@@ -125,8 +125,8 @@ describe(`asks text budget at ${ASK_TEXT_BUDGET.phoneCssPx} px`, () => {
       const { t } = getServerTranslator(locale);
       const { px, widestLabel } = column(locale);
       const times = allTimes(locale);
-      const relay = buildAdminAsk("push_relay", t);
-      const setup = buildAdminAsk("server_setup", t);
+      const relay = buildAdminAsk("push_relay", t, "2026-11-27");
+      const setup = buildAdminAsk("server_setup", t, "2026-11-27");
       const metas: Record<string, string> = {
         overdueNow: t("daily.ask.overdueNow"),
         dueNow: t("daily.ask.dueNow"),
