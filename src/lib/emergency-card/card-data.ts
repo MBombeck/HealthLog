@@ -344,6 +344,18 @@ async function readCard(
 export function emergencyCardHasContent(view: EmergencyCardView): boolean {
   return (
     view.name !== null ||
+    view.dateOfBirth !== null ||
+    emergencyCardHasHealthItems(view)
+  );
+}
+
+/**
+ * Does the card hold something a first responder needs beyond who it is
+ * (the name and the date of birth)? The start page offers the card for
+ * Wallet only then (`readEmergencyWalletAsk`).
+ */
+export function emergencyCardHasHealthItems(view: EmergencyCardView): boolean {
+  return (
     view.bloodType !== null ||
     view.allergies !== null ||
     view.conditions !== null ||
@@ -353,7 +365,6 @@ export function emergencyCardHasContent(view: EmergencyCardView): boolean {
     view.contacts !== null ||
     view.advanceDirective !== null ||
     view.organDonor !== null ||
-    view.note !== null ||
-    view.dateOfBirth !== null
+    view.note !== null
   );
 }

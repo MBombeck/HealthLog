@@ -4,7 +4,7 @@ import { useId } from "react";
 
 import { SwitchRow } from "@/components/ui/switch-row";
 import { OPTIONAL_ASK_KINDS } from "@/lib/daily/ask-intents";
-import { PRIORITY_ITEM_KINDS } from "@/lib/daily/priority-item";
+import { HERO_ITEM_KINDS } from "@/lib/daily/priority-item";
 import type { DashboardLayout } from "@/lib/dashboard-layout";
 import { useTranslations } from "@/lib/i18n/context";
 
@@ -57,7 +57,7 @@ export function HeroSettingsFieldset({
         {OPTIONAL_ASK_KINDS.map((kind) => {
           const inputId = `hero-item-${kind}`;
           const checked = (
-            layout.enabledHeroItemKinds ?? PRIORITY_ITEM_KINDS
+            layout.enabledHeroItemKinds ?? HERO_ITEM_KINDS
           ).includes(kind);
           return (
             <SwitchRow

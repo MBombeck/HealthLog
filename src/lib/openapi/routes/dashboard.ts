@@ -28,7 +28,7 @@ import {
   COMPARISON_BASELINES,
   CHART_OVERLAY_KEYS,
 } from "@/lib/dashboard/chart-overlay-prefs";
-import { PRIORITY_ITEM_KINDS } from "@/lib/daily/priority-item";
+import { HERO_ITEM_KINDS } from "@/lib/daily/priority-item";
 import {
   MAX_NIGHT_OVERLAY_LINES,
   NIGHT_OVERLAY_KINDS,
@@ -87,11 +87,11 @@ const dashboardLayoutSchema = z
     selectedScoreRings: z.array(z.enum(SCORE_RING_IDS)).max(3).optional(),
     heroRingOrder: z.array(z.enum(HERO_RING_IDS)).max(4).optional(),
     enabledHeroItemKinds: z
-      .array(z.enum(PRIORITY_ITEM_KINDS))
-      .max(PRIORITY_ITEM_KINDS.length)
+      .array(z.enum(HERO_ITEM_KINDS))
+      .max(HERO_ITEM_KINDS.length)
       .optional()
       .describe(
-        "Today-highlight item kinds in catalogue order. Missing means every current kind is enabled; an empty array disables all kinds.",
+        "Today-highlight item kinds in catalogue order. Missing means every current kind is enabled; an empty array disables all kinds. `feature_offer` is no rail kind: it is the start-page switch of the asks that offer a feature not used yet (`DailyAsk.kind` `emergency_wallet`).",
       ),
     hero: z
       .enum(HERO_PRIMARY_CONTENTS)

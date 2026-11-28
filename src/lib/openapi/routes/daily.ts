@@ -83,12 +83,12 @@ const dailyAskSchema = z
     kind: z
       .enum([...DAILY_ASK_KINDS])
       .describe(
-        "What is asked. `dose_window`, `coach_checkin`, `preventive_care`, `upcoming_visit` and `sync_issue` (a reconnect only, never a quiet source) are the rail's own kinds; `push_relay` and `server_setup` are the admin question the admin start page asks (only on a browser session on the admin's own record, never on a Bearer request).",
+        "What is asked. `dose_window`, `coach_checkin`, `preventive_care`, `upcoming_visit` and `sync_issue` (a reconnect only, never a quiet source) are the rail's own kinds; `emergency_wallet` offers the reader's emergency card for Apple Wallet once (`itemKey` `emergency_wallet:offer`, follows the `feature_offer` switch, feature `daily.ask-emergency-wallet`); `push_relay` and `server_setup` are the admin question the admin start page asks (only on a browser session on the admin's own record, never on a Bearer request).",
       ),
     tier: z
       .enum([...DAILY_ASK_TIERS])
       .describe(
-        "Why it is asked, in the order asks are ranked: `safety` (a dose past its on-time window), `decision` (a question only the reader can answer: the admin question, a coach check-in), `due` (a dose takeable now, check-ups due now, a visit today or tomorrow, a source whose sign-in expired or was refused and that has delivered nothing for a day).",
+        "Why it is asked, in the order asks are ranked: `safety` (a dose past its on-time window), `decision` (a question only the reader can answer: the admin question, a coach check-in), `due` (a dose takeable now, check-ups due now, a visit today or tomorrow, a source whose sign-in expired or was refused and that has delivered nothing for a day, and last a feature offer such as `emergency_wallet`).",
       ),
     itemKey: z
       .string()
@@ -119,7 +119,7 @@ const dailyAskSchema = z
           intent: z
             .string()
             .describe(
-              "Stable action token. Beside the rail's tokens: `dose.snooze:<medicationId>` (the medication's own snooze, `POST /api/medications/intake` with status `snoozed`), `relay.yes` / `relay.no` (the relay question), `admin.setup.open` (with `href`), `ask.later:<dismissKey>` (sets the ask aside until the next local day: `POST /api/daily/digest/dismiss` with that key, `ask-later:<YYYY-MM-DD>:<itemKey>`). Labels are the short verbs under `daily.action.*`. A consent row (`push_relay`) carries exactly No and Yes, never a later.",
+              "Stable action token. Beside the rail's tokens: `dose.snooze:<medicationId>` (the medication's own snooze, `POST /api/medications/intake` with status `snoozed`), `relay.yes` / `relay.no` (the relay question), `admin.setup.open` (with `href`), `ask.later:<dismissKey>` (sets the ask aside until the next local day: `POST /api/daily/digest/dismiss` with that key, `ask-later:<YYYY-MM-DD>:<itemKey>`; for `emergency_wallet` the key is `emergency_wallet:offer`, which names no day and sets the offer aside for good), `emergency_wallet.add` (with `href` `/emergency-card#wallet`: the web opens the card's Wallet section, the app its own add flow). Labels are the short verbs under `daily.action.*`. A consent row (`push_relay`) carries exactly No and Yes, never a later.",
             ),
           href: z.string().optional().describe("Deep-link when navigational."),
         }),
@@ -505,7 +505,7 @@ const morningCardSchema = z
             .string()
             .nullable()
             .describe(
-              "Null where the card's own `href` is the target, which is the usual case.",
+              "The page of the metric the line names (a vital, the sleep score, readiness, a readiness contributor), or `/insights` when that metric has no page of its own. Null when the line names no metric (the night not in yet).",
             ),
         }),
       )

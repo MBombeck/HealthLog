@@ -15,7 +15,7 @@ import {
   mergePreservedLayoutFields,
   type DashboardLayout,
 } from "@/lib/dashboard-layout";
-import { PRIORITY_ITEM_KINDS } from "@/lib/daily/priority-item";
+import { HERO_ITEM_KINDS } from "@/lib/daily/priority-item";
 
 /**
  * v1.4.15 — Dashboard layout: top tiles selectable.
@@ -847,7 +847,7 @@ describe("resolveDashboardLayout() — enabledHeroItemKinds", () => {
 
   it("enables every current kind for legacy layouts", () => {
     expect(resolveDashboardLayout(legacy).enabledHeroItemKinds).toEqual([
-      ...PRIORITY_ITEM_KINDS,
+      ...HERO_ITEM_KINDS,
     ]);
   });
 
@@ -882,13 +882,13 @@ describe("resolveDashboardLayout() — enabledHeroItemKinds", () => {
   it("omits the all-enabled default from storage", () => {
     const serialized = serializeDashboardLayout({
       ...DEFAULT_DASHBOARD_LAYOUT,
-      enabledHeroItemKinds: [...PRIORITY_ITEM_KINDS].reverse(),
+      enabledHeroItemKinds: [...HERO_ITEM_KINDS].reverse(),
     });
     expect(
       Object.prototype.hasOwnProperty.call(serialized, "enabledHeroItemKinds"),
     ).toBe(false);
     expect(resolveDashboardLayout(serialized).enabledHeroItemKinds).toEqual([
-      ...PRIORITY_ITEM_KINDS,
+      ...HERO_ITEM_KINDS,
     ]);
   });
 
@@ -905,7 +905,7 @@ describe("resolveDashboardLayout() — enabledHeroItemKinds", () => {
 
   it("the default layout enables every current kind", () => {
     expect(DEFAULT_DASHBOARD_LAYOUT.enabledHeroItemKinds).toEqual([
-      ...PRIORITY_ITEM_KINDS,
+      ...HERO_ITEM_KINDS,
     ]);
   });
 });
@@ -1061,7 +1061,7 @@ describe("layout field merge disposition", () => {
     },
     selectedScoreRings: ["MED_COMPLIANCE"],
     heroRingOrder: ["HEALTH_SCORE", "MED_COMPLIANCE"],
-    enabledHeroItemKinds: [...PRIORITY_ITEM_KINDS],
+    enabledHeroItemKinds: [...HERO_ITEM_KINDS],
     hero: "reminders",
     todayCardVisible: false,
     tilesExpanded: true,

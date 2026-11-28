@@ -29,7 +29,8 @@
           "ecg_new_recording",
           "tension_window",
           "same_time_baseline",
-          "upcoming_visit"
+          "upcoming_visit",
+          "feature_offer"
         ],
         "hero": "score",
         "todayCardVisible": true,

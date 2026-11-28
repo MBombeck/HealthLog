@@ -860,7 +860,8 @@
       "ecg_new_recording": "Nuove registrazioni ECG",
       "tension_window": "Periodi di tensione",
       "same_time_baseline": "Attività alla stessa ora",
-      "upcoming_visit": "Visite"
+      "upcoming_visit": "Visite",
+      "feature_offer": "Funzioni"
     },
     "layoutReset": "Ripristina i valori predefiniti",
     "layoutResetTitle": "Reimpostare il layout della dashboard?",
@@ -13805,7 +13806,8 @@
       "viewPulse": "Vedi battito",
       "viewEcg": "Vedi registrazione",
       "viewSteps": "Vedi i passi",
-      "openSource": "Apri"
+      "openSource": "Apri",
+      "add": "Aggiungi"
     },
     "ask": {
       "medication": "Farmaco",
@@ -13822,7 +13824,9 @@
       "setupTitle": "Questo server",
       "setupMeta": "Da configurare",
       "relayTitle": "Relay push?",
-      "relayMeta": "Crittografato"
+      "relayMeta": "Crittografato",
+      "walletTitle": "Tessera SOS",
+      "walletMeta": "Metti in Wallet"
     },
     "today": {
       "deltaShort": "{delta} vs riferimento",

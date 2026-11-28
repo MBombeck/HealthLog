@@ -67,10 +67,7 @@ import {
 } from "@/lib/daily/milestones";
 import { loadIntradayPulse } from "@/lib/analytics/intraday-pulse-io";
 import { computeSameTimeBaseline } from "@/lib/insights/derived/same-time-baseline";
-import {
-  PRIORITY_ITEM_KINDS,
-  type PriorityItemKind,
-} from "@/lib/daily/priority-item";
+import { HERO_ITEM_KINDS, type HeroItemKind } from "@/lib/daily/priority-item";
 import type { MeasurementType } from "@/generated/prisma/client";
 import { computeCoincidentDeviation } from "@/lib/insights/derived/coincident-deviation";
 import { loadBaselineProfile } from "@/lib/insights/derived/baseline";
@@ -545,7 +542,7 @@ export interface DailyDigestLoadOptions {
    * Passing `PRIORITY_ITEM_KINDS` keeps notification eligibility independent
    * from which cards the user chose to display in the Today hero.
    */
-  enabledItemKinds?: readonly PriorityItemKind[];
+  enabledItemKinds?: readonly HeroItemKind[];
   /**
    * A locale already resolved by a background caller (the morning briefing
    * push). Request-driven readers leave it unset and the snapshot read
@@ -554,6 +551,12 @@ export interface DailyDigestLoadOptions {
   locale?: Locale;
   /** Ask the admin question; a browser session on its own record only. */
   adminAsks?: boolean;
+  /**
+   * The instance origin the request reached, on the reader's own record:
+   * whether a Wallet pass can be made there decides the emergency-wallet
+   * ask. Unset, the ask is not offered (a background caller, a delegate).
+   */
+  walletOrigin?: string | null;
 }
 
 /**
@@ -932,7 +935,7 @@ export async function loadDailyDigest(
       enabledHeroItemKinds:
         options.enabledItemKinds ??
         snapshot.layout.enabledHeroItemKinds ??
-        PRIORITY_ITEM_KINDS,
+        HERO_ITEM_KINDS,
       score,
       // Resolved for today by the snapshot read (`applyBriefingForToday`).
       briefing: snapshot.briefing,

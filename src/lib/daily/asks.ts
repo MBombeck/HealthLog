@@ -19,7 +19,8 @@
  *         or the server setup for an admin, a coach check-in);
  *      3. due: a dose that can be taken now, check-ups due now, a visit
  *         today or tomorrow, a source whose sign-in expired or was refused
- *         and that has delivered nothing for a day.
+ *         and that has delivered nothing for a day, and last a feature the
+ *         person has not used yet (`FEATURE_ASK_KINDS`), offered once.
  *    Inside a tier the digest's own order holds.
  *  - No cap and no fold: every row that passes these rules is asked, in
  *    that order. The rules are what keeps the card short; more than
@@ -53,8 +54,10 @@ import type { DailyDigestInput } from "@/lib/daily/digest";
 import {
   ASK_INTENT,
   askLaterKey,
+  EMERGENCY_WALLET_ASK_KEY,
   OPTIONAL_ASK_KINDS,
 } from "@/lib/daily/ask-intents";
+import { WALLET_CREATE_PATH } from "@/lib/emergency-card/wallet-pass/constants";
 import {
   coachCheckinItemKey,
   doseWindowItemKey,
@@ -157,9 +160,21 @@ export const ASKING_ITEM_KINDS = [
 ] as const satisfies readonly PriorityItemKind[];
 export type AskingItemKind = (typeof ASKING_ITEM_KINDS)[number];
 
+/**
+ * The asks that offer a feature the person has not used yet. Each is offered
+ * once: its "Later" sets it aside for good, and using the feature ends it.
+ * They follow one switch on Settings › Dashboard, {@link FEATURE_ASK_CATEGORY}.
+ */
+export const FEATURE_ASK_KINDS = ["emergency_wallet"] as const;
+export type FeatureAskKind = (typeof FEATURE_ASK_KINDS)[number];
+
+/** The start-page switch the feature asks follow. */
+export const FEATURE_ASK_CATEGORY = "feature_offer" as const;
+
 export const DAILY_ASK_KINDS = [
   ...ASKING_ITEM_KINDS,
   ...ADMIN_ASK_KINDS,
+  ...FEATURE_ASK_KINDS,
 ] as const;
 export type DailyAskKind = (typeof DAILY_ASK_KINDS)[number];
 
@@ -167,6 +182,7 @@ export type DailyAskKind = (typeof DAILY_ASK_KINDS)[number];
 export const REST_MODE_PAUSED_ASK_KINDS: readonly DailyAskKind[] = [
   "preventive_care",
   "coach_checkin",
+  "emergency_wallet",
 ];
 
 /** A visit of today asks until this long after its start (running late). */
@@ -236,6 +252,12 @@ export interface ResolveDailyAsksInput {
   enabledKinds?: readonly string[];
   /** The admin question, already worded, when one is open for this admin. */
   adminAsk: DailyAsk | null;
+  /**
+   * The feature offers, already worded and already narrowed to the eligible
+   * ones (`readEmergencyWalletAsk`); the policy holds them to the switch,
+   * Rest mode and the set-aside keys like any other row.
+   */
+  featureAsks?: readonly DailyAsk[];
   /** Item keys held back: a dose's running snooze, an ask set aside today. */
   snoozedItemKeys: ReadonlySet<string>;
   /** The reader's local day, `YYYY-MM-DD`, for the "later" key. */
@@ -380,6 +402,22 @@ export function resolveDailyAsks(input: ResolveDailyAsksInput): DailyAsk[] {
     }
     push(ask);
   }
+  // Last: what can wait for good.
+  for (const ask of input.featureAsks ?? []) {
+    if (input.snoozedItemKeys.has(ask.itemKey)) continue;
+    if (
+      input.restMode &&
+      (REST_MODE_PAUSED_ASK_KINDS as readonly string[]).includes(ask.kind)
+    )
+      continue;
+    if (
+      input.enabledKinds &&
+      !input.enabledKinds.includes(FEATURE_ASK_CATEGORY)
+    ) {
+      continue;
+    }
+    push(ask);
+  }
 
   const asks = ranked
     .sort((a, b) => a.tier - b.tier || a.order - b.order)
@@ -449,6 +487,35 @@ export function buildAdminAsk(
     // No link on the row: it has no room on a phone, and "Yes" opens the
     // relay dialog, which links the terms and the privacy notice before
     // anything is switched on.
+    learnMore: null,
+  };
+}
+
+/**
+ * The emergency card for Wallet, offered once: Add leads to the card's Wallet
+ * section on the web (`href`) and to the app's own add flow (the intent);
+ * Later sets the offer aside for good, through the dismiss ledger under a
+ * key that names no day.
+ */
+export function buildEmergencyWalletAsk(t: Translate): DailyAsk {
+  return {
+    kind: "emergency_wallet",
+    tier: "due",
+    itemKey: EMERGENCY_WALLET_ASK_KEY,
+    title: t("daily.ask.walletTitle"),
+    body: t("daily.ask.walletMeta"),
+    subject: null,
+    actions: [
+      {
+        labelKey: "daily.action.add",
+        intent: ASK_INTENT.walletAdd,
+        href: WALLET_CREATE_PATH,
+      },
+      {
+        labelKey: "daily.action.later",
+        intent: `${ASK_INTENT.later}:${EMERGENCY_WALLET_ASK_KEY}`,
+      },
+    ],
     learnMore: null,
   };
 }
@@ -537,6 +604,7 @@ export function asksFromDigest(
     adminAsk: input.adminAsk
       ? buildAdminAsk(input.adminAsk, t, input.todayLocalDate)
       : null,
+    featureAsks: input.emergencyWalletAsk ? [buildEmergencyWalletAsk(t)] : [],
     enabledKinds: input.enabledHeroItemKinds,
     snoozedItemKeys: input.snoozedDoseItemKeys ?? new Set(),
     today: input.todayLocalDate,
@@ -686,6 +754,7 @@ export function wordAsk(
     }
     case "push_relay":
     case "server_setup":
+    case "emergency_wallet":
       return { title: ask.title, body: ask.body };
   }
 }

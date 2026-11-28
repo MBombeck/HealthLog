@@ -43871,9 +43871,10 @@ components:
               - SLEEP_SCORE
               - MED_COMPLIANCE
         enabledHeroItemKinds:
-          description: Today-highlight item kinds in catalogue order. Missing means every current kind is enabled; an empty array
-            disables all kinds.
-          maxItems: 9
+          description: "Today-highlight item kinds in catalogue order. Missing means every current kind is enabled; an empty array
+            disables all kinds. `feature_offer` is no rail kind: it is the start-page switch of the asks that offer a
+            feature not used yet (`DailyAsk.kind` `emergency_wallet`)."
+          maxItems: 10
           type: array
           items:
             type: string
@@ -43887,6 +43888,7 @@ components:
               - tension_window
               - same_time_baseline
               - upcoming_visit
+              - feature_offer
         hero:
           description: 'Primary hero-card content on the dashboard: "score" (the health-score read, default) or "reminders" (the
             Today-highlight rail promoted into the hero slot). Missing resolves to "score"; the stored default is
@@ -49996,6 +49998,7 @@ components:
               - daily.asks-compact
               - daily.scores-short-labels
               - insights.scores-short-labels
+              - daily.ask-emergency-wallet
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices; since
@@ -50158,7 +50161,15 @@ components:
             /api/insights/derived and each GET /api/insights/derived/batch entry (null for a metric that is no HealthLog
             score), GET /api/insights/score-history, healthScore on GET /api/analytics, and on GET
             /api/dashboard/snapshot healthScore and each scoreRings entry (null on MED_COMPLIANCE). Render it as given,
-            never a short name of the client's own."
+            never a short name of the client's own. `daily.ask-emergency-wallet`: GET /api/daily/digest asks may carry
+            kind emergency_wallet (tier due, itemKey emergency_wallet:offer, ranked last): the reader's own emergency
+            card holds something beyond the name and date of birth, emergencyCard.wallet.apple.state is available, no
+            Wallet pass was ever made for the record, the offer was not set aside, the feature_offer switch
+            (enabledHeroItemKinds) is on and Rest mode is off. title Emergency card, body Add to Wallet. Actions: Add
+            (intent emergency_wallet.add, href /emergency-card#wallet for the web; the app opens its own add flow) and
+            Later (ask.later:emergency_wallet:offer, a dismiss key that names no day, so the offer does not return).
+            Making a pass writes the same key. GET /api/daily/morning card lines now carry href to the metric they name
+            (its page, else /insights); a line that names no metric keeps null."
       required:
         - version
         - buildSha
@@ -102124,10 +102135,12 @@ components:
             - sync_issue
             - push_relay
             - server_setup
+            - emergency_wallet
           description: What is asked. `dose_window`, `coach_checkin`, `preventive_care`, `upcoming_visit` and `sync_issue` (a
-            reconnect only, never a quiet source) are the rail's own kinds; `push_relay` and `server_setup` are the
-            admin question the admin start page asks (only on a browser session on the admin's own record, never on a
-            Bearer request).
+            reconnect only, never a quiet source) are the rail's own kinds; `emergency_wallet` offers the reader's
+            emergency card for Apple Wallet once (`itemKey` `emergency_wallet:offer`, follows the `feature_offer`
+            switch, feature `daily.ask-emergency-wallet`); `push_relay` and `server_setup` are the admin question the
+            admin start page asks (only on a browser session on the admin's own record, never on a Bearer request).
         tier:
           type: string
           enum:
@@ -102137,7 +102150,7 @@ components:
           description: "Why it is asked, in the order asks are ranked: `safety` (a dose past its on-time window), `decision` (a
             question only the reader can answer: the admin question, a coach check-in), `due` (a dose takeable now,
             check-ups due now, a visit today or tomorrow, a source whose sign-in expired or was refused and that has
-            delivered nothing for a day)."
+            delivered nothing for a day, and last a feature offer such as `emergency_wallet`)."
         itemKey:
           type: string
           description: Stable identity, namespaced `<kind>:...`; the rail item's own key for the rail kinds.
@@ -102177,9 +102190,11 @@ components:
                 description: "Stable action token. Beside the rail's tokens: `dose.snooze:<medicationId>` (the medication's own snooze,
                   `POST /api/medications/intake` with status `snoozed`), `relay.yes` / `relay.no` (the relay question),
                   `admin.setup.open` (with `href`), `ask.later:<dismissKey>` (sets the ask aside until the next local
-                  day: `POST /api/daily/digest/dismiss` with that key, `ask-later:<YYYY-MM-DD>:<itemKey>`). Labels are
-                  the short verbs under `daily.action.*`. A consent row (`push_relay`) carries exactly No and Yes, never
-                  a later."
+                  day: `POST /api/daily/digest/dismiss` with that key, `ask-later:<YYYY-MM-DD>:<itemKey>`; for
+                  `emergency_wallet` the key is `emergency_wallet:offer`, which names no day and sets the offer aside
+                  for good), `emergency_wallet.add` (with `href` `/emergency-card#wallet`: the web opens the card's
+                  Wallet section, the app its own add flow). Labels are the short verbs under `daily.action.*`. A
+                  consent row (`push_relay`) carries exactly No and Yes, never a later."
               href:
                 description: Deep-link when navigational.
                 type: string
@@ -102383,7 +102398,9 @@ components:
                 type: string
                 description: Localised, resolved server-side.
               href:
-                description: Null where the card's own `href` is the target, which is the usual case.
+                description: The page of the metric the line names (a vital, the sleep score, readiness, a readiness contributor), or
+                  `/insights` when that metric has no page of its own. Null when the line names no metric (the night not
+                  in yet).
                 type:
                   - string
                   - "null"
@@ -103070,9 +103087,10 @@ components:
               - SLEEP_SCORE
               - MED_COMPLIANCE
         enabledHeroItemKinds:
-          description: Today-highlight item kinds in catalogue order. Missing means every current kind is enabled; an empty array
-            disables all kinds.
-          maxItems: 9
+          description: "Today-highlight item kinds in catalogue order. Missing means every current kind is enabled; an empty array
+            disables all kinds. `feature_offer` is no rail kind: it is the start-page switch of the asks that offer a
+            feature not used yet (`DailyAsk.kind` `emergency_wallet`)."
+          maxItems: 10
           type: array
           items:
             type: string
@@ -103086,6 +103104,7 @@ components:
               - tension_window
               - same_time_baseline
               - upcoming_visit
+              - feature_offer
         hero:
           description: 'Primary hero-card content on the dashboard: "score" (the health-score read, default) or "reminders" (the
             Today-highlight rail promoted into the hero slot). Missing resolves to "score"; the stored default is
@@ -103362,9 +103381,10 @@ components:
               - SLEEP_SCORE
               - MED_COMPLIANCE
         enabledHeroItemKinds:
-          description: Today-highlight item kinds in catalogue order. Missing means every current kind is enabled; an empty array
-            disables all kinds.
-          maxItems: 9
+          description: "Today-highlight item kinds in catalogue order. Missing means every current kind is enabled; an empty array
+            disables all kinds. `feature_offer` is no rail kind: it is the start-page switch of the asks that offer a
+            feature not used yet (`DailyAsk.kind` `emergency_wallet`)."
+          maxItems: 10
           type: array
           items:
             type: string
@@ -103378,6 +103398,7 @@ components:
               - tension_window
               - same_time_baseline
               - upcoming_visit
+              - feature_offer
         hero:
           description: 'Primary hero-card content on the dashboard: "score" (the health-score read, default) or "reminders" (the
             Today-highlight rail promoted into the hero slot). Missing resolves to "score"; the stored default is

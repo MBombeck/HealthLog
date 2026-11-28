@@ -860,7 +860,8 @@
       "ecg_new_recording": "Nouveaux enregistrements ECG",
       "tension_window": "Périodes de tension",
       "same_time_baseline": "Activité à la même heure",
-      "upcoming_visit": "Rendez-vous"
+      "upcoming_visit": "Rendez-vous",
+      "feature_offer": "Fonctionnalités"
     },
     "layoutReset": "Rétablir les valeurs par défaut",
     "layoutResetTitle": "Réinitialiser la disposition du tableau de bord ?",
@@ -13805,7 +13806,8 @@
       "viewPulse": "Voir le pouls",
       "viewEcg": "Voir l’enregistrement",
       "viewSteps": "Voir les pas",
-      "openSource": "Ouvrir"
+      "openSource": "Ouvrir",
+      "add": "Ajouter"
     },
     "ask": {
       "medication": "Médicament",
@@ -13822,7 +13824,9 @@
       "setupTitle": "Ce serveur",
       "setupMeta": "Pas configuré",
       "relayTitle": "Relais push ?",
-      "relayMeta": "Chiffré"
+      "relayMeta": "Chiffré",
+      "walletTitle": "Carte SOS",
+      "walletMeta": "Ajouter à Wallet"
     },
     "today": {
       "deltaShort": "{delta} vs référence",

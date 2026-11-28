@@ -37,7 +37,7 @@ import { dropUnknownWidgetIds } from "@/lib/dashboard/widgets/unknown-ids";
 import { reportLayoutValidationFailure } from "@/lib/dashboard/widgets/validation-report";
 import { layoutToStore } from "@/lib/dashboard/widgets/merge-stored";
 import { resetDashboardLayout } from "@/lib/dashboard/widgets/reset-layout";
-import { PRIORITY_ITEM_KINDS } from "@/lib/daily/priority-item";
+import { HERO_ITEM_KINDS } from "@/lib/daily/priority-item";
 import {
   MAX_NIGHT_OVERLAY_LINES,
   NIGHT_OVERLAY_KINDS,
@@ -166,8 +166,8 @@ const layoutSchema = z.object({
   // Today hero item visibility. Empty is an explicit all-off choice; omission
   // preserves the stored value for clients that predate this field.
   enabledHeroItemKinds: z
-    .array(z.enum(PRIORITY_ITEM_KINDS))
-    .max(PRIORITY_ITEM_KINDS.length)
+    .array(z.enum(HERO_ITEM_KINDS))
+    .max(HERO_ITEM_KINDS.length)
     .optional(),
   // Hero primary content — what the dashboard hero card leads with:
   // "score" (default) or "reminders" (the worth-a-look rail promoted into

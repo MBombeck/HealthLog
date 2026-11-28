@@ -860,7 +860,8 @@
       "ecg_new_recording": "Neue EKG-Aufzeichnungen",
       "tension_window": "Anspannungsphasen",
       "same_time_baseline": "Aktivität zur gleichen Tageszeit",
-      "upcoming_visit": "Termine"
+      "upcoming_visit": "Termine",
+      "feature_offer": "Funktionen"
     },
     "layoutReset": "Auf Standard zurücksetzen",
     "layoutResetTitle": "Dashboard-Layout zurücksetzen?",
@@ -13805,7 +13806,8 @@
       "viewPulse": "Puls ansehen",
       "viewEcg": "Aufzeichnung ansehen",
       "viewSteps": "Schritte ansehen",
-      "openSource": "Öffnen"
+      "openSource": "Öffnen",
+      "add": "Anlegen"
     },
     "ask": {
       "medication": "Medikament",
@@ -13822,7 +13824,9 @@
       "setupTitle": "Dieser Server",
       "setupMeta": "Nicht fertig",
       "relayTitle": "Push-Relay?",
-      "relayMeta": "Verschlüsselt"
+      "relayMeta": "Verschlüsselt",
+      "walletTitle": "Notfallkarte",
+      "walletMeta": "In Wallet legen"
     },
     "today": {
       "deltaShort": "{delta} zum Ausgangswert",

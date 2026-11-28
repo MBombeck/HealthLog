@@ -131,9 +131,11 @@ describe("GET /api/daily/digest — the reader's language (#176)", () => {
     });
     await callGet(req);
     // No locale override; the admin question is asked on a browser session
-    // on its own record (the loader still checks the role).
+    // on its own record (the loader still checks the role), and the Wallet
+    // offer is weighed at the origin the request reached.
     expect(vi.mocked(loadDailyDigest).mock.calls[0][2]).toEqual({
       adminAsks: true,
+      walletOrigin: "http://localhost",
     });
   });
 });

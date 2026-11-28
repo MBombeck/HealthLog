@@ -33,6 +33,7 @@ import { apiError, apiSuccess } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { isApiGloballyEnabled } from "@/lib/app-settings";
 import { auditLog } from "@/lib/auth/audit";
+import { EMERGENCY_WALLET_ASK_KEY } from "@/lib/daily/ask-intents";
 import { prisma } from "@/lib/db";
 import {
   emergencyWalletAppleCreateSchema,
@@ -195,6 +196,18 @@ export const POST = apiHandler(
     try {
       created = await prisma.$transaction(async (tx) => {
         replaced = await voidExpiredWalletPasses(tx, user.id, now);
+        // The start page's Wallet offer is done once a pass is made: the
+        // same ledger row its "Later" writes, so it never comes back.
+        await tx.dismissedPriorityItem.upsert({
+          where: {
+            userId_itemKey: {
+              userId: user.id,
+              itemKey: EMERGENCY_WALLET_ASK_KEY,
+            },
+          },
+          update: {},
+          create: { userId: user.id, itemKey: EMERGENCY_WALLET_ASK_KEY },
+        });
         return createWalletPass(tx, {
           userId: user.id,
           createdById: actor.id,

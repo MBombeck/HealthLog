@@ -860,7 +860,8 @@
       "ecg_new_recording": "새 심전도 기록",
       "tension_window": "긴장 구간",
       "same_time_baseline": "같은 시간대 활동",
-      "upcoming_visit": "진료"
+      "upcoming_visit": "진료",
+      "feature_offer": "기능"
     },
     "layoutReset": "기본값으로 초기화",
     "layoutResetTitle": "대시보드 레이아웃을 초기화할까요?",
@@ -13805,7 +13806,8 @@
       "viewPulse": "맥박 보기",
       "viewEcg": "기록 보기",
       "viewSteps": "걸음 수 보기",
-      "openSource": "열기"
+      "openSource": "열기",
+      "add": "추가"
     },
     "ask": {
       "medication": "약",
@@ -13822,7 +13824,9 @@
       "setupTitle": "이 서버",
       "setupMeta": "설정 안 됨",
       "relayTitle": "푸시 릴레이?",
-      "relayMeta": "암호화됨"
+      "relayMeta": "암호화됨",
+      "walletTitle": "응급 카드",
+      "walletMeta": "Wallet에 추가"
     },
     "today": {
       "deltaShort": "기준값 대비 {delta}",

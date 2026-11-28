@@ -2,10 +2,7 @@ import type {
   DashboardLayout,
   DashboardWidgetId,
 } from "@/lib/dashboard-layout";
-import {
-  PRIORITY_ITEM_KINDS,
-  type PriorityItemKind,
-} from "@/lib/daily/priority-item";
+import { HERO_ITEM_KINDS, type HeroItemKind } from "@/lib/daily/priority-item";
 
 /**
  * Pure reorder helper shared by the arrow buttons and the
@@ -36,14 +33,14 @@ export function reorderWidgets(
 }
 
 export function setHeroItemKindEnabled(
-  enabledKinds: readonly PriorityItemKind[] | undefined,
-  kind: PriorityItemKind,
+  enabledKinds: readonly HeroItemKind[] | undefined,
+  kind: HeroItemKind,
   enabled: boolean,
-): PriorityItemKind[] {
-  const next = new Set(enabledKinds ?? PRIORITY_ITEM_KINDS);
+): HeroItemKind[] {
+  const next = new Set(enabledKinds ?? HERO_ITEM_KINDS);
   if (enabled) next.add(kind);
   else next.delete(kind);
-  return PRIORITY_ITEM_KINDS.filter((itemKind) => next.has(itemKind));
+  return HERO_ITEM_KINDS.filter((itemKind) => next.has(itemKind));
 }
 
 /**
@@ -128,7 +125,7 @@ export const WIDGET_LABEL_KEYS: Record<DashboardWidgetId, string> = {
   energyIntake: "nutrients.names.energy",
 };
 
-export const HERO_ITEM_LABEL_KEYS: Record<PriorityItemKind, string> = {
+export const HERO_ITEM_LABEL_KEYS: Record<HeroItemKind, string> = {
   coach_checkin: "dashboard.heroItems.coach_checkin",
   dose_window: "dashboard.heroItems.dose_window",
   preventive_care: "dashboard.heroItems.preventive_care",
@@ -138,4 +135,5 @@ export const HERO_ITEM_LABEL_KEYS: Record<PriorityItemKind, string> = {
   tension_window: "dashboard.heroItems.tension_window",
   same_time_baseline: "dashboard.heroItems.same_time_baseline",
   upcoming_visit: "dashboard.heroItems.upcoming_visit",
+  feature_offer: "dashboard.heroItems.feature_offer",
 };

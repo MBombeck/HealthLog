@@ -29,6 +29,7 @@ import {
   ASK_TEXT_BUDGET,
   askTextLength,
   buildAdminAsk,
+  buildEmergencyWalletAsk,
   doseMeta,
 } from "@/lib/daily/asks";
 import { makeFormatters, type TimeFormatPreference } from "@/lib/format-locale";
@@ -60,6 +61,7 @@ function width(text: string, px: number, weight: Weight): number {
 const ASKS_SOURCE = readSource("src/lib/daily/asks.ts", [
   "PRIMARY_BY_KIND",
   "buildAdminAsk",
+  "buildEmergencyWalletAsk",
 ]);
 const LABEL_KEYS = [
   ...new Set(
@@ -107,6 +109,7 @@ describe(`asks text budget at ${ASK_TEXT_BUDGET.phoneCssPx} px`, () => {
         "daily.action.logDose",
         "daily.action.later",
         "daily.action.setUp",
+        "daily.action.add",
         "admin.pushRelay.question.yes",
       ]),
     );
@@ -140,6 +143,7 @@ describe(`asks text budget at ${ASK_TEXT_BUDGET.phoneCssPx} px`, () => {
       const ownClockLabel = allTimesOwn(locale);
       const relay = buildAdminAsk("push_relay", t, "2026-11-27");
       const setup = buildAdminAsk("server_setup", t, "2026-11-27");
+      const wallet = buildEmergencyWalletAsk(t);
       const metas: Record<string, string> = {
         overdueNow: t("daily.ask.overdueNow"),
         dueNow: t("daily.ask.dueNow"),
@@ -150,6 +154,7 @@ describe(`asks text budget at ${ASK_TEXT_BUDGET.phoneCssPx} px`, () => {
         planReview: t("daily.ask.planReview"),
         setup: setup.body ?? "",
         relay: relay.body ?? "",
+        wallet: wallet.body ?? "",
       };
       // A dose's meta as the server sends it, at every time of day and
       // hour cycle: with the time when it fits, else the state alone.
@@ -168,6 +173,7 @@ describe(`asks text budget at ${ASK_TEXT_BUDGET.phoneCssPx} px`, () => {
         planFallback: t("daily.ask.planFallback"),
         setup: setup.title,
         relay: relay.title,
+        wallet: wallet.title,
       };
       const over: string[] = [];
       for (const [key, text] of Object.entries(metas)) {

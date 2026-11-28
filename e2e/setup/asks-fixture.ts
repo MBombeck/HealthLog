@@ -10,16 +10,14 @@
  *
  * One card with every kind but the relay (an admin sees the setup or the
  * relay, never both): a dose past its time, the server setup, a coach
- * check-in, a check-up, a visit tomorrow and a broken source. That puts the
+ * check-in, a check-up, a visit tomorrow, a broken source and the Wallet
+ * offer for the emergency card. That puts the
  * widest button labels of the language in one card, the narrowest text
  * column the card can have.
  */
 import { asksFromDigest, type DailyAsk } from "@/lib/daily/asks";
 import type { DailyDigestInput } from "@/lib/daily/digest";
-import {
-  PRIORITY_ITEM_KINDS,
-  type PriorityItem,
-} from "@/lib/daily/priority-item";
+import { HERO_ITEM_KINDS, type PriorityItem } from "@/lib/daily/priority-item";
 import {
   coachCheckinItemKey,
   doseWindowItemKey,
@@ -54,7 +52,7 @@ export function asksFixtureInput(
     ai: DIGEST_AI_AVAILABLE,
     todayEndExclusive: new Date("2026-11-28T00:00:00.000Z"),
     modules: {},
-    enabledHeroItemKinds: [...PRIORITY_ITEM_KINDS],
+    enabledHeroItemKinds: [...HERO_ITEM_KINDS],
     score: null,
     briefing: null,
     medsToday: {
@@ -110,6 +108,7 @@ export function asksFixtureInput(
     todayLocalDate: "2026-11-27",
     dismissedItemKeys: new Set<string>(),
     adminAsk: "server_setup",
+    emergencyWalletAsk: true,
     localTime,
     locale,
   };

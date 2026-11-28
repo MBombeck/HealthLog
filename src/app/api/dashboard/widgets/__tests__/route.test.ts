@@ -101,7 +101,7 @@ import {
   type DashboardLayout,
   type DashboardLayoutWithToken,
 } from "@/lib/dashboard-layout";
-import { PRIORITY_ITEM_KINDS } from "@/lib/daily/priority-item";
+import { HERO_ITEM_KINDS } from "@/lib/daily/priority-item";
 import { auditLog } from "@/lib/auth/audit";
 
 const SESSION_OK = {
@@ -735,7 +735,7 @@ describe("dashboard widgets — hero-content visibility persistence", () => {
       makeReq({
         version: 1,
         widgets: DEFAULT_DASHBOARD_LAYOUT.widgets,
-        enabledHeroItemKinds: [...PRIORITY_ITEM_KINDS].reverse(),
+        enabledHeroItemKinds: [...HERO_ITEM_KINDS].reverse(),
       }),
     );
     expect(res.status).toBe(200);
@@ -789,7 +789,7 @@ describe("dashboard widgets — optimistic concurrency (issue #581)", () => {
       chartOverlayPrefs: {},
       selectedScoreRings: ["MED_COMPLIANCE"],
       heroRingOrder: ["HEALTH_SCORE", "MED_COMPLIANCE"],
-      enabledHeroItemKinds: [...PRIORITY_ITEM_KINDS],
+      enabledHeroItemKinds: [...HERO_ITEM_KINDS],
       ...(baseUpdatedAt !== undefined ? { baseUpdatedAt } : {}),
     };
   }
@@ -954,7 +954,7 @@ describe("DELETE /api/dashboard/widgets — web-owned reset scope", () => {
 
     const body = (await res.json()) as { data: DashboardLayoutWithToken };
     expect(body.data.widgets).toEqual(DEFAULT_DASHBOARD_LAYOUT.widgets);
-    expect(body.data.enabledHeroItemKinds).toEqual([...PRIORITY_ITEM_KINDS]);
+    expect(body.data.enabledHeroItemKinds).toEqual([...HERO_ITEM_KINDS]);
     expect(body.data.comparisonBaseline).toBe("lastYear");
     expect(body.data.chartOverlayPrefs).toEqual(persisted.chartOverlayPrefs);
     expect(body.data.selectedScoreRings).toEqual(persisted.selectedScoreRings);

@@ -109,7 +109,19 @@ const routes = async () => ({
   hint: await import("@/app/api/emergency-card/wallet/apple/relay-hint/route"),
   decision: await import("@/app/api/admin/push-relay/decision/route"),
   me: await import("@/app/api/auth/me/route"),
+  digest: await import("@/app/api/daily/digest/route"),
+  dismiss: await import("@/app/api/daily/digest/dismiss/route"),
 });
+
+/** The kinds the start page asks, as the digest serves them. */
+async function askKinds(auth: RouteAuth, headers = HTTPS) {
+  const { digest } = await routes();
+  const res = await callRoute<{
+    asks: Array<{ kind: string; actions: Array<{ intent: string }> }>;
+  }>(digest.GET, { method: "GET", route: "/api/daily/digest", auth, headers });
+  expect(res.status).toBe(200);
+  return res.data.asks;
+}
 
 const CREATE = {
   fields: ["NAME", "BLOOD_TYPE", "ALLERGIES", "CONTACTS"],
@@ -216,6 +228,61 @@ afterEach(() => {
 
 describe("with the operator's own Pass Type ID", () => {
   beforeEach(localEnv);
+
+  it("offers the card for Wallet on the start page once, until Later or a pass", async () => {
+    const owner = await makeUser();
+    const session = await makeSession(owner);
+    // A card with nothing but the name is not offered.
+    expect((await askKinds(session)).map((a) => a.kind)).not.toContain(
+      "emergency_wallet",
+    );
+    await seedCard(owner.id);
+    // Not over plain http: no pass can be made there.
+    expect(
+      (await askKinds(session, { host: "health.example.test" })).map(
+        (a) => a.kind,
+      ),
+    ).not.toContain("emergency_wallet");
+    const asks = await askKinds(session);
+    const offer = asks.find((a) => a.kind === "emergency_wallet");
+    expect(offer?.actions.map((a) => a.intent)).toEqual([
+      "emergency_wallet.add",
+      "ask.later:emergency_wallet:offer",
+    ]);
+
+    // Later puts it away for good, through the dismiss ledger.
+    const { dismiss } = await routes();
+    const later = await callRoute(dismiss.POST, {
+      method: "POST",
+      route: "/api/daily/digest/dismiss",
+      auth: session,
+      body: { itemKey: "emergency_wallet:offer" },
+    });
+    expect(later.status).toBeLessThan(300);
+    expect((await askKinds(session)).map((a) => a.kind)).not.toContain(
+      "emergency_wallet",
+    );
+
+    // Making a pass writes the same key, so a second person who never said
+    // Later loses the offer too, and keeps it lost once the pass is gone.
+    const other = await makeUser();
+    await seedCard(other.id);
+    const otherSession = await makeSession(other);
+    expect((await askKinds(otherSession)).map((a) => a.kind)).toContain(
+      "emergency_wallet",
+    );
+    expect((await create(otherSession)).status).toBe(201);
+    expect(
+      await prisma.dismissedPriorityItem.count({
+        where: { userId: other.id, itemKey: "emergency_wallet:offer" },
+      }),
+    ).toBe(1);
+    expect((await revoke(otherSession)).status).toBe(200);
+    await prisma.walletPass.deleteMany({ where: { userId: other.id } });
+    expect((await askKinds(otherSession)).map((a) => a.kind)).not.toContain(
+      "emergency_wallet",
+    );
+  });
 
   it("makes one pass, serves it signed, and withdraws it", async () => {
     const owner = await makeUser();

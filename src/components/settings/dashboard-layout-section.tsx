@@ -9,7 +9,7 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { Button } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { useMounted } from "@/hooks/use-mounted";
-import { PRIORITY_ITEM_KINDS } from "@/lib/daily/priority-item";
+import { HERO_ITEM_KINDS } from "@/lib/daily/priority-item";
 import { DEFAULT_DASHBOARD_LAYOUT } from "@/lib/dashboard-layout";
 import { useTranslations } from "@/lib/i18n/context";
 
@@ -124,7 +124,7 @@ export function DashboardLayoutSection({ id }: { id: string }) {
           {layout &&
           JSON.stringify(layout.widgets) ===
             JSON.stringify(DEFAULT_DASHBOARD_LAYOUT.widgets) &&
-          JSON.stringify(layout.enabledHeroItemKinds ?? PRIORITY_ITEM_KINDS) ===
+          JSON.stringify(layout.enabledHeroItemKinds ?? HERO_ITEM_KINDS) ===
             JSON.stringify(DEFAULT_DASHBOARD_LAYOUT.enabledHeroItemKinds) &&
           (layout.hero ?? "score") === DEFAULT_DASHBOARD_LAYOUT.hero &&
           layout.todayCardVisible !== false

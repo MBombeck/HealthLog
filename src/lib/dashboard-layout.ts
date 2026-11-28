@@ -5,9 +5,9 @@
  * what the default layout is for new users. Null / missing = default.
  */
 import {
-  PRIORITY_ITEM_KINDS,
-  isPriorityItemKind,
-  type PriorityItemKind,
+  HERO_ITEM_KINDS,
+  isHeroItemKind,
+  type HeroItemKind,
 } from "@/lib/daily/priority-item";
 import {
   coerceChartOverlayPrefsMap,
@@ -386,13 +386,13 @@ function coerceHeroPrimaryContent(value: unknown): HeroPrimaryContent {
  * catalogue. Legacy or malformed values enable every current kind. Arrays are
  * explicit choices, including an empty array, and resolve in catalogue order.
  */
-function coerceEnabledHeroItemKinds(value: unknown): PriorityItemKind[] {
-  if (!Array.isArray(value)) return [...PRIORITY_ITEM_KINDS];
-  const enabled = new Set<PriorityItemKind>();
+function coerceEnabledHeroItemKinds(value: unknown): HeroItemKind[] {
+  if (!Array.isArray(value)) return [...HERO_ITEM_KINDS];
+  const enabled = new Set<HeroItemKind>();
   for (const entry of value) {
-    if (isPriorityItemKind(entry)) enabled.add(entry);
+    if (isHeroItemKind(entry)) enabled.add(entry);
   }
-  return PRIORITY_ITEM_KINDS.filter((kind) => enabled.has(kind));
+  return HERO_ITEM_KINDS.filter((kind) => enabled.has(kind));
 }
 
 export interface DashboardLayout {
@@ -420,7 +420,7 @@ export interface DashboardLayout {
    * Item kinds allowed in the Today hero rail. Missing legacy data enables
    * every current kind; an explicit empty array keeps the rail off.
    */
-  enabledHeroItemKinds?: PriorityItemKind[];
+  enabledHeroItemKinds?: HeroItemKind[];
   /**
    * Primary hero-card content: `"score"` (default — health-score ring plus
    * the day's read) or `"reminders"` (the worth-a-look rail promoted into
@@ -551,7 +551,7 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayout = {
   // consumers even though the web layout settings do not edit them.
   selectedScoreRings: [...DEFAULT_SELECTED_SCORE_RINGS],
   heroRingOrder: [...DEFAULT_HERO_RING_ORDER],
-  enabledHeroItemKinds: [...PRIORITY_ITEM_KINDS],
+  enabledHeroItemKinds: [...HERO_ITEM_KINDS],
   hero: DEFAULT_HERO_PRIMARY_CONTENT,
   todayCardVisible: true,
   tilesExpanded: false,
@@ -783,7 +783,7 @@ export function serializeDashboardLayout(
     ),
     // Every kind enabled is the forward-compatible default, so omit it from
     // storage. Empty and partial arrays remain explicit user choices.
-    ...(enabledHeroItemKinds.length === PRIORITY_ITEM_KINDS.length
+    ...(enabledHeroItemKinds.length === HERO_ITEM_KINDS.length
       ? {}
       : { enabledHeroItemKinds }),
     // The default "score" is omitted from storage (same forward-compatible

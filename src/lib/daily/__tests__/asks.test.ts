@@ -14,6 +14,9 @@ import {
   isMandatoryAsk,
   OPTIONAL_ASK_KINDS,
   DAILY_ASK_KINDS,
+  buildEmergencyWalletAsk,
+  FEATURE_ASK_CATEGORY,
+  FEATURE_ASK_KINDS,
   resolveDailyAsks,
   type AskCandidate,
   type DailyAsk,
@@ -28,7 +31,7 @@ import {
   PRIORITY_ITEM_KINDS,
   type PriorityItem,
 } from "@/lib/daily/priority-item";
-import { askLaterKey } from "@/lib/daily/ask-intents";
+import { askLaterKey, EMERGENCY_WALLET_ASK_KEY } from "@/lib/daily/ask-intents";
 import { doseWindowItemKey } from "@/lib/daily/priority-item-key";
 import type { MedsTodayBlock } from "@/lib/dashboard/meds-today";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
@@ -245,13 +248,85 @@ describe("the person's switches", () => {
   });
 
   it("offers a switch only for optional categories", () => {
-    for (const kind of OPTIONAL_ASK_KINDS) {
+    for (const category of OPTIONAL_ASK_KINDS) {
+      // `feature_offer` is the switch of the feature asks, not a kind.
+      const kind =
+        category === FEATURE_ASK_CATEGORY ? FEATURE_ASK_KINDS[0] : category;
       expect(isMandatoryAsk({ kind, tier: "due" })).toBe(false);
     }
     expect(isMandatoryAsk({ kind: "dose_window", tier: "safety" })).toBe(true);
     for (const kind of ["push_relay", "server_setup"] as const) {
       expect(isMandatoryAsk({ kind, tier: "decision" })).toBe(true);
     }
+  });
+});
+
+describe("emergency_wallet", () => {
+  const wallet = () => buildEmergencyWalletAsk(t);
+
+  it("offers the card with Add to its Wallet section and Later for good", () => {
+    const ask = wallet();
+    expect(ask).toMatchObject({
+      kind: "emergency_wallet",
+      tier: "due",
+      itemKey: EMERGENCY_WALLET_ASK_KEY,
+      title: "Emergency card",
+      body: "Add to Wallet",
+      learnMore: null,
+    });
+    expect(ask.actions).toEqual([
+      {
+        labelKey: "daily.action.add",
+        intent: ASK_INTENT.walletAdd,
+        href: "/emergency-card#wallet",
+      },
+      {
+        labelKey: "daily.action.later",
+        intent: `${ASK_INTENT.later}:${EMERGENCY_WALLET_ASK_KEY}`,
+      },
+    ]);
+    // Its "Later" names no day, and the dismiss route takes it.
+    const key = ask.actions[1].intent.slice(ASK_INTENT.later.length + 1);
+    expect(key).not.toMatch(/\d{4}-\d{2}-\d{2}/);
+    expect(isDismissibleItemKey(key)).toBe(true);
+  });
+
+  it("comes last, after what is due", () => {
+    expect(
+      resolve([checkups], { featureAsks: [wallet()] }).map((a) => a.kind),
+    ).toEqual(["preventive_care", "emergency_wallet"]);
+  });
+
+  it("set aside, it stays away on every later day", () => {
+    const held = new Set([EMERGENCY_WALLET_ASK_KEY]);
+    for (const today of ["2026-07-16", "2026-07-17", "2027-01-01"]) {
+      expect(
+        resolve([], { featureAsks: [wallet()], snoozedItemKeys: held, today }),
+      ).toEqual([]);
+    }
+  });
+
+  it("follows the Features switch and waits in Rest mode", () => {
+    const featureAsks = [wallet()];
+    expect(resolve([], { featureAsks, enabledKinds: ["dose_window"] })).toEqual(
+      [],
+    );
+    expect(
+      resolve([], { featureAsks, enabledKinds: [FEATURE_ASK_CATEGORY] }).length,
+    ).toBe(1);
+    expect(resolve([], { featureAsks, restMode: true })).toEqual([]);
+  });
+
+  it("reaches the digest's asks only when the loader said so", () => {
+    const base = asksFixtureInput("en");
+    const kinds = (input: DailyDigestInput) =>
+      (buildDailyDigest(input, t).asks ?? []).map((a) => a.kind);
+    expect(kinds({ ...base, emergencyWalletAsk: false })).not.toContain(
+      "emergency_wallet",
+    );
+    expect(kinds({ ...base, emergencyWalletAsk: true }).at(-1)).toBe(
+      "emergency_wallet",
+    );
   });
 });
 
@@ -738,7 +813,7 @@ describe("the browser test's asks are the builder's", () => {
       const input = asksFixtureInput(locale);
       const built = buildDailyDigest(input, getServerTranslator(locale).t).asks;
       expect(pick(serverAsks(locale))).toEqual(pick(built));
-      expect(built).toHaveLength(6);
+      expect(built).toHaveLength(7);
     }
   });
 });

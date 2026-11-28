@@ -19,6 +19,11 @@ export const ASK_INTENT = {
    * the key). The key names the day, so the ask returns tomorrow.
    */
   later: "ask.later",
+  /**
+   * Opens the emergency card's Wallet section to add the pass; the ask's
+   * `href` is the web's page, the app opens its own add flow.
+   */
+  walletAdd: "emergency_wallet.add",
 } as const;
 
 /** The dismiss-ledger namespace of a "later" on an ask. */
@@ -30,9 +35,22 @@ export function askLaterKey(localDay: string, itemKey: string): string {
 }
 
 /**
+ * The emergency-wallet ask's item key, and the dismiss-ledger key that holds
+ * it back for good. Unlike a day's "later" it names no day: the offer is made
+ * once, and "Later" or a pass made (`POST /api/emergency-card/wallet/apple`
+ * writes the same row) ends it.
+ */
+export const EMERGENCY_WALLET_ASK_KEY = "emergency_wallet:offer";
+
+/** Dismiss-ledger keys that set an ask aside for good, not for a day. */
+export const ASK_SET_ASIDE_KEYS: readonly string[] = [EMERGENCY_WALLET_ASK_KEY];
+
+/**
  * The categories a person may switch off for the start page (Settings ›
  * Dashboard). Everything else that asks is mandatory: a dose past its time
  * (the safety tier) and the admin's setup and consent questions.
+ * `feature_offer` is no rail kind: it is the switch of the asks that offer
+ * a feature the person has not used yet (`FEATURE_ASK_KINDS` in `asks.ts`).
  */
 export const OPTIONAL_ASK_KINDS = [
   "dose_window",
@@ -40,4 +58,5 @@ export const OPTIONAL_ASK_KINDS = [
   "upcoming_visit",
   "coach_checkin",
   "sync_issue",
+  "feature_offer",
 ] as const;

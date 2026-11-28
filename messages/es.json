@@ -860,7 +860,8 @@
       "ecg_new_recording": "Nuevos registros de ECG",
       "tension_window": "Periodos de tensión",
       "same_time_baseline": "Actividad a la misma hora",
-      "upcoming_visit": "Citas"
+      "upcoming_visit": "Citas",
+      "feature_offer": "Funciones"
     },
     "layoutReset": "Restablecer valores por defecto",
     "layoutResetTitle": "¿Restablecer el diseño del panel?",
@@ -13805,7 +13806,8 @@
       "viewPulse": "Ver pulso",
       "viewEcg": "Ver registro",
       "viewSteps": "Ver pasos",
-      "openSource": "Abrir"
+      "openSource": "Abrir",
+      "add": "Añadir"
     },
     "ask": {
       "medication": "Medicamento",
@@ -13822,7 +13824,9 @@
       "setupTitle": "Este servidor",
       "setupMeta": "Sin configurar",
       "relayTitle": "¿Relé push?",
-      "relayMeta": "Cifrado"
+      "relayMeta": "Cifrado",
+      "walletTitle": "Tarjeta SOS",
+      "walletMeta": "Añadir a Wallet"
     },
     "today": {
       "deltaShort": "{delta} vs referencia",

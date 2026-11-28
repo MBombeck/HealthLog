@@ -6,7 +6,7 @@ import type { DragEndEvent } from "@dnd-kit/core";
 import { toast } from "sonner";
 
 import { apiDelete, apiGet, apiPut, ApiError } from "@/lib/api/api-fetch";
-import type { PriorityItemKind } from "@/lib/daily/priority-item";
+import type { HeroItemKind } from "@/lib/daily/priority-item";
 import type {
   DashboardLayout,
   DashboardLayoutWithToken,
@@ -234,7 +234,7 @@ function layoutEdits(
     });
   }
 
-  function toggleHeroItem(kind: PriorityItemKind, enabled: boolean) {
+  function toggleHeroItem(kind: HeroItemKind, enabled: boolean) {
     if (!layout) return;
     setDraft({
       ...layout,

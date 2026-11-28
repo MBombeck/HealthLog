@@ -8,7 +8,19 @@ import type { SessionUser } from "@/lib/auth/session-user";
 import { prisma } from "@/lib/db";
 import { readServerSetupState } from "@/lib/admin/server-setup-store";
 import type { AdminAskKind } from "@/lib/daily/asks";
-import { askLaterKey } from "@/lib/daily/ask-intents";
+import {
+  ASK_SET_ASIDE_KEYS,
+  askLaterKey,
+  EMERGENCY_WALLET_ASK_KEY,
+} from "@/lib/daily/ask-intents";
+import {
+  emergencyCardHasHealthItems,
+  loadEmergencyCard,
+} from "@/lib/emergency-card/card-data";
+import {
+  isHttpsOrigin,
+  resolveEmergencyWalletApple,
+} from "@/lib/emergency-card/wallet-pass/availability";
 import { userDayKey } from "@/lib/tz/format";
 import { doseWindowItemKey } from "@/lib/daily/priority-item-key";
 import type { MedsTodayBlock } from "@/lib/dashboard/meds-today";
@@ -109,20 +121,68 @@ async function readAskLaterKeys(
 ): Promise<string[]> {
   const prefix = askLaterKey(today, "");
   const rows = await prisma.dismissedPriorityItem.findMany({
-    where: { userId, itemKey: { startsWith: prefix } },
+    where: {
+      userId,
+      OR: [
+        { itemKey: { startsWith: prefix } },
+        // The asks set aside for good name no day (`ASK_SET_ASIDE_KEYS`).
+        { itemKey: { in: [...ASK_SET_ASIDE_KEYS] } },
+      ],
+    },
     select: { itemKey: true },
   });
-  return rows.map((row) => row.itemKey.slice(prefix.length));
+  return rows.map((row) =>
+    row.itemKey.startsWith(prefix)
+      ? row.itemKey.slice(prefix.length)
+      : row.itemKey,
+  );
+}
+
+/**
+ * Whether the start page offers the reader's emergency card for Wallet,
+ * cheapest read first: the offer was not set aside (`heldKeys`, the dismiss
+ * ledger, where a pass made writes the same key), the origin is https, no
+ * pass was ever made for this record, Wallet is `available` here (the
+ * resolution `/api/auth/me` publishes), and the card holds something beyond
+ * the name and the date of birth.
+ */
+async function readEmergencyWalletAsk(
+  user: SessionUser,
+  origin: string,
+  heldKeys: ReadonlySet<string>,
+  now: Date,
+): Promise<boolean> {
+  if (heldKeys.has(EMERGENCY_WALLET_ASK_KEY)) return false;
+  // No pass is made off https; known without a read.
+  if (!isHttpsOrigin(origin)) return false;
+  if ((await prisma.walletPass.count({ where: { userId: user.id } })) > 0) {
+    return false;
+  }
+  const apple = await resolveEmergencyWalletApple({
+    recordUserId: user.id,
+    allowed: true,
+    origin,
+    // The state, not who may press the button: that is the card page's.
+    authMethod: "cookie",
+    callerIsAdmin: user.role === "ADMIN",
+    relayHintDismissed: false,
+    pass: null,
+    now,
+  });
+  if (apple.state !== "available") return false;
+  const card = await loadEmergencyCard(user.id, userDayKey(now, user.timezone));
+  return emergencyCardHasHealthItems(card);
 }
 
 export async function readAskInputs(
   user: SessionUser,
   medsToday: MedsTodayBlock,
   now: Date,
-  options: { adminAsks?: boolean },
+  options: { adminAsks?: boolean; walletOrigin?: string | null },
 ): Promise<{
   adminAsk: AdminAskKind | null;
   snoozedDoseItemKeys: Set<string>;
+  emergencyWalletAsk: boolean;
 }> {
   const [snoozedDoseItemKeys, adminAsk, laterKeys] = await Promise.all([
     readSnoozedDoseKeys(user.id, user.timezone, medsToday, now).catch(
@@ -131,16 +191,26 @@ export async function readAskInputs(
     options.adminAsks && user.role === "ADMIN"
       ? readAdminAsk(user.id).catch(() => null)
       : Promise.resolve(null),
-    readAskLaterKeys(user.id, userDayKey(now, user.timezone)).catch(
-      () => [] as string[],
-    ),
+    readAskLaterKeys(user.id, userDayKey(now, user.timezone)).catch(() => null),
   ]);
-  for (const key of laterKeys) snoozedDoseItemKeys.add(key);
+  for (const key of laterKeys ?? []) snoozedDoseItemKeys.add(key);
+  // Without the ledger a "Later" given for good cannot be told, so the
+  // one-time offer waits rather than come back.
+  const emergencyWalletAsk =
+    options.walletOrigin && laterKeys
+      ? await readEmergencyWalletAsk(
+          user,
+          options.walletOrigin,
+          snoozedDoseItemKeys,
+          now,
+        ).catch(() => false)
+      : false;
   annotate({
     meta: {
       daily_digest_admin_ask: adminAsk,
       daily_digest_held_asks: snoozedDoseItemKeys.size,
+      daily_digest_wallet_ask: emergencyWalletAsk,
     },
   });
-  return { adminAsk, snoozedDoseItemKeys };
+  return { adminAsk, snoozedDoseItemKeys, emergencyWalletAsk };
 }

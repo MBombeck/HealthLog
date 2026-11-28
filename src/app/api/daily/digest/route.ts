@@ -20,6 +20,7 @@
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import { loadDailyDigest } from "@/lib/daily/load-digest";
+import { resolveOrigin } from "@/lib/http/origin";
 import { nativeRequestLocale } from "@/lib/i18n/server-locale";
 
 export const dynamic = "force-dynamic";
@@ -42,9 +43,13 @@ export const GET = apiHandler(async (request: Request) => {
   // The admin question is asked only where it can be answered: a browser
   // session on the admin's own record (the answers are cookie-only routes).
   const adminAsks = authMethod === "cookie" && grantId === null;
+  // The Wallet offer only on the reader's own record: a pass is made by the
+  // card's owner, at the origin this request reached.
+  const walletOrigin = grantId === null ? resolveOrigin(request) : null;
   const digest = await loadDailyDigest(user, new Date(), {
     ...(locale ? { locale } : {}),
     adminAsks,
+    walletOrigin,
   });
 
   return apiSuccess(digest);

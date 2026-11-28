@@ -860,7 +860,8 @@
       "ecg_new_recording": "Nieuwe ECG-opnames",
       "tension_window": "Momenten van spanning",
       "same_time_baseline": "Activiteit op hetzelfde tijdstip",
-      "upcoming_visit": "Bezoeken"
+      "upcoming_visit": "Bezoeken",
+      "feature_offer": "Functies"
     },
     "layoutReset": "Standaardwaarden herstellen",
     "layoutResetTitle": "Dashboardindeling herstellen?",
@@ -13805,7 +13806,8 @@
       "viewPulse": "Hartslag bekijken",
       "viewEcg": "Opname bekijken",
       "viewSteps": "Stappen bekijken",
-      "openSource": "Openen"
+      "openSource": "Openen",
+      "add": "Voeg toe"
     },
     "ask": {
       "medication": "Medicijn",
@@ -13822,7 +13824,9 @@
       "setupTitle": "Deze server",
       "setupMeta": "Niet ingericht",
       "relayTitle": "Pushrelay?",
-      "relayMeta": "Versleuteld"
+      "relayMeta": "Versleuteld",
+      "walletTitle": "Noodkaart",
+      "walletMeta": "In Wallet zetten"
     },
     "today": {
       "deltaShort": "{delta} t.o.v. basislijn",

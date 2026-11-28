@@ -40,6 +40,7 @@ import {
   Pill,
   RefreshCw,
   Send,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 
@@ -67,6 +68,7 @@ const KIND_ICON: Record<DailyAskKind, LucideIcon> = {
   sync_issue: RefreshCw,
   push_relay: Send,
   server_setup: Compass,
+  emergency_wallet: Wallet,
 };
 
 /** The dose action's intent; on the web it opens the intake sheet. */

@@ -32,7 +32,7 @@ import {
   MAX_PRIORITY_ACTIONS,
   isDismissibleKind,
   type PriorityItem,
-  type PriorityItemKind,
+  type HeroItemKind,
 } from "@/lib/daily/priority-item";
 import {
   coachCheckinItemKey,
@@ -309,7 +309,7 @@ export interface DailyDigestInput {
   todayEndExclusive: Date;
   modules: DigestModuleMap;
   /** Item kinds allowed to appear in the Today hero rail. */
-  enabledHeroItemKinds: readonly PriorityItemKind[];
+  enabledHeroItemKinds: readonly HeroItemKind[];
   score: DailyDigestScore | null;
   /** The cached daily briefing (paragraph + signals-of-day), or null. */
   briefing: DailyBriefing | null;
@@ -399,6 +399,12 @@ export interface DailyDigestInput {
   adminAsk?: AdminAskKind | null;
   /** Dose item keys whose snooze is running (`load-digest.ts`). */
   snoozedDoseItemKeys?: ReadonlySet<string>;
+  /**
+   * Offer the emergency card for Wallet (`readEmergencyWalletAsk`): the
+   * reader's own card has something on it, Wallet is available, no pass was
+   * ever made and the offer was not set aside.
+   */
+  emergencyWalletAsk?: boolean;
 }
 
 export interface DailyDigest {
@@ -1149,7 +1155,7 @@ export function buildDailyDigest(
   // Apply the account's hero-content visibility before the rail cap so a
   // hidden high-priority item cannot crowd out an enabled later candidate.
   const enabled = worthALook.filter((item) =>
-    input.enabledHeroItemKinds.includes(item.kind),
+    (input.enabledHeroItemKinds as readonly string[]).includes(item.kind),
   );
 
   // Defence-in-depth: no card ever exceeds the P1 action cap.

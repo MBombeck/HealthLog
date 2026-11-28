@@ -19,7 +19,10 @@
  * inline); a serialisable single-source-of-truth DTO cannot hold a component.
  */
 import type { ModuleKey } from "@/lib/modules/registry";
-import { ASK_LATER_KEY_PREFIX } from "@/lib/daily/ask-intents";
+import {
+  ASK_LATER_KEY_PREFIX,
+  ASK_SET_ASIDE_KEYS,
+} from "@/lib/daily/ask-intents";
 
 /**
  * Closed set of rail-item kinds. A new kind also needs its server builder and
@@ -47,6 +50,28 @@ export const PRIORITY_ITEM_KINDS = [
 ] as const;
 
 export type PriorityItemKind = (typeof PRIORITY_ITEM_KINDS)[number];
+
+/**
+ * Switches of the start page that are no rail kind: categories only the
+ * asks know (`feature_offer`, `asks.ts`). Stored beside the rail kinds in
+ * `enabledHeroItemKinds`, under the same rule, so a new one also needs the
+ * data migration described above (0579 for `feature_offer`).
+ */
+export const ASK_ONLY_CATEGORIES = ["feature_offer"] as const;
+
+/** Everything `enabledHeroItemKinds` can name, in settings order. */
+export const HERO_ITEM_KINDS = [
+  ...PRIORITY_ITEM_KINDS,
+  ...ASK_ONLY_CATEGORIES,
+] as const;
+export type HeroItemKind = (typeof HERO_ITEM_KINDS)[number];
+
+export function isHeroItemKind(value: unknown): value is HeroItemKind {
+  return (
+    typeof value === "string" &&
+    (HERO_ITEM_KINDS as readonly string[]).includes(value)
+  );
+}
 
 export function isPriorityItemKind(value: unknown): value is PriorityItemKind {
   return (
@@ -119,8 +144,9 @@ export function isScoreNoticeItemKey(itemKey: string): boolean {
 
 export function isDismissibleItemKey(itemKey: string): boolean {
   return (
-    // An ask set aside for the day (`ask-intents.ts`).
+    // An ask set aside for the day, or for good (`ask-intents.ts`).
     itemKey.startsWith(`${ASK_LATER_KEY_PREFIX}:`) ||
+    ASK_SET_ASIDE_KEYS.includes(itemKey) ||
     DISMISSIBLE_PRIORITY_ITEM_KINDS.some((kind) =>
       itemKey.startsWith(`${kind}:`),
     ) ||
