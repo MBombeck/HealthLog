@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- The licence list shipped in the image now covers every package the image contains. The list was built from the production dependencies alone, but the server build can copy in a package that only a development tool asks for; the 1.49.1 image carried one ISC-licensed package the list missed. Every package the build copies into the image is now listed with its licence and held to the same licence policy.
+
 ## [1.49.1] — 2026-11-28
 
 ### Fixed
