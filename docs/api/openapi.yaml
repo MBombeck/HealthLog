@@ -47254,11 +47254,15 @@ components:
                 environment.travel_suggestion.not_found; export — export.selection.empty, export.selection.unknown_leaf;
                 familyHistory — familyHistory.invalid; feedback — feedback.body.invalid; garmin — garmin.key_refused,
                 garmin.rate_limited, garmin.unreachable; glp1 — glp1.doseChange.deleted; health_score_config —
-                health_score_config.invalid, health_score_config.too_narrow; http — http.bad_gateway, http.bad_request,
-                http.client_error, http.conflict, http.forbidden, http.gateway_timeout, http.gone, http.internal,
-                http.invalid, http.method_not_allowed, http.not_found, http.payload_too_large, http.rate_limited,
-                http.server_error, http.unauthenticated, http.unavailable, http.unsupported_media_type; illness —
-                illness.day-log.invalid, illness.disabled, illness.episode.chronic-no-resolve, illness.episode.invalid,
+                health_score_config.invalid, health_score_config.too_narrow; health-connect —
+                health-connect.batch.idempotency_key_required, health-connect.batch.invalid,
+                health-connect.batch.too_large, health-connect.device_token_required, health-connect.device_unpaired,
+                health-connect.pair.api_disabled, health-connect.pair.code_invalid, health-connect.pair.install_taken,
+                health-connect.pair.invalid; http — http.bad_gateway, http.bad_request, http.client_error,
+                http.conflict, http.forbidden, http.gateway_timeout, http.gone, http.internal, http.invalid,
+                http.method_not_allowed, http.not_found, http.payload_too_large, http.rate_limited, http.server_error,
+                http.unauthenticated, http.unavailable, http.unsupported_media_type; illness — illness.day-log.invalid,
+                illness.disabled, illness.episode.chronic-no-resolve, illness.episode.invalid,
                 illness.episode.invalid-window, illness.episode.parent-not-found, illness.insights.invalid; import —
                 import.apple_health.busy, import.csv.content_type, import.csv.empty, import.csv.too_large,
                 import.file.too_large, import.health_connect.remote.https_required,
@@ -50733,11 +50737,12 @@ components:
             records the person's no, per person, and it is never sent again; a tap that finds the pass no longer
             available is not a no. `notifications.sync-stalled`: SYNC_STALLED is a notification category (default on,
             toggled per channel in the notification preferences): once per stall and in daytime, the owner is told that
-            a daily source went quiet, among them an iPhone whose Apple Health upload stopped; GET
-            /api/integrations/healthkit carries quietDevices (model, quietSince). The push names the source as a
-            connection key (apple-health, garmin, google-health, nightscout, oura, polar, whoop, withings), and its deep
-            link is always /settings/integrations#<source>, the source's card on the integrations page: a direct push
-            carries it as url, a relay push carries only d.source and the client builds the same path.
+            a daily source went quiet, among them an iPhone whose Apple Health upload stopped and, since v1.50.0, an
+            Android device whose HealthLog Sync upload stopped; GET /api/integrations/healthkit carries quietDevices
+            (model, quietSince). The push names the source as a connection key (apple-health, garmin, google-health,
+            health-connect-app, nightscout, oura, polar, whoop, withings), and its deep link is always
+            /settings/integrations#<source>, the source's card on the integrations page: a direct push carries it as
+            url, a relay push carries only d.source and the client builds the same path.
             `insights.same-time-daily-total`: SAME_TIME_BASELINE on GET /api/insights/derived carries mode: hourly is
             the hour-by-hour comparison, daily_total compares today's running total from a once-a-day source with the
             usual full day (dayRangeReached not_yet, within or above; gated reasons learning_usual_total and
