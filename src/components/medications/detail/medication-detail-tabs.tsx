@@ -57,9 +57,7 @@ import {
   useMayRetarget,
 } from "@/components/medications/detail/efficacy/retarget-sheet";
 import { resolveMedicationTargets } from "@/lib/medications/med-target-map";
-import { DoseHistoryLedger } from "@/components/medications/dose-history-ledger";
 import { LedgerAddDialog } from "@/components/medications/dose-history-add-dialog";
-import { IntakeHistoryListV2 } from "@/components/medications/intake-history-list-v2";
 import type { DoseWindowEntry } from "@/components/medications/scheduling/dose-window";
 import {
   EndCourseDialog,
@@ -98,12 +96,29 @@ import {
   TodayCard,
   useTodayDoses,
 } from "@/components/medications/detail/overview/today-card";
-import { MedicationSettingsTab } from "@/components/medications/detail/settings/settings-tab";
 import { useTodayKey } from "@/components/day/use-today-key";
 
 // Recharts stays out of the detail page's initial bundle: both chart bodies
 // load through `next/dynamic` (client-only) with the shared chart skeleton
 // standing in while the chunk streams.
+// The History and Settings tabs load when opened: the overview is the first
+// paint, and neither tab's lists, sheets and editors belong in it.
+const DoseHistoryLedger = dynamic(() =>
+  import("@/components/medications/dose-history-ledger").then((mod) => ({
+    default: mod.DoseHistoryLedger,
+  })),
+);
+const IntakeHistoryListV2 = dynamic(() =>
+  import("@/components/medications/intake-history-list-v2").then((mod) => ({
+    default: mod.IntakeHistoryListV2,
+  })),
+);
+const MedicationSettingsTab = dynamic(() =>
+  import("@/components/medications/detail/settings/settings-tab").then(
+    (mod) => ({ default: mod.MedicationSettingsTab }),
+  ),
+);
+
 const DrugLevelChart = dynamic(
   () =>
     import("@/components/charts/chart-runtime").then((mod) => ({
