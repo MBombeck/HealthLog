@@ -2210,38 +2210,37 @@
         "deleteRow": {
           "failed": "Einnahme konnte nicht gelöscht werden."
         },
-        "viewRecent90": "Letzte 90 Tage",
-        "viewAll": "Komplette Historie",
-        "viewToggleLabel": "Verlaufsbereich"
+        "viewToggleLabel": "Verlaufsbereich",
+        "viewRecentShort": "90 Tage",
+        "viewAllShort": "Alle"
       },
       "verlauf": {
         "loading": "Verlauf wird geladen…",
         "loadError": "Verlauf konnte nicht geladen werden.",
         "empty": "Noch keine Einnahmen in diesem Zeitraum.",
         "summaryEmpty": "Noch keine auswertbaren Dosen.",
-        "adherenceBarLabel": "{onTime} pünktlich, {late} verspätet, {missed} verpasst",
         "add": "Einnahme erfassen",
         "rowActionsLabel": "Aktionen für {time}",
         "markAsTaken": "Als genommen markieren",
         "markAsSkipped": "Als übersprungen markieren",
-        "adHocTag": "außerplanmäßig",
-        "takenDetail": "geplant {planned}, genommen {taken}",
         "doseTaken": "Dosis: {dose}",
-        "status": {
-          "ad_hoc": "Außerplanmäßig"
-        },
         "pin": {
           "action": "Slot {time} zuordnen",
           "release": "Zuordnung lösen",
           "pinnedTag": "zugeordnet",
           "pinnedToast": "Einnahme dem Slot zugeordnet",
           "unpinnedToast": "Zuordnung gelöst",
-          "dueContext": "fällig gewesen: {time} ({delta})",
           "confirmTitle": "Slot {time} zuordnen?",
           "confirmBody": "Die Einnahme zählt für diesen Slot genau so, als wäre sie dort erfasst worden: pünktlich oder verspätet, je nachdem, wann sie genommen wurde. Die Quote wird also nicht geschönt. Die Zuordnung lässt sich jederzeit wieder lösen.",
           "confirmCancel": "Abbrechen",
           "confirmAction": "Zuordnen"
-        }
+        },
+        "backfill": "Nachtragen",
+        "extraColumn": "Zusätzlich",
+        "takenAt": "Genommen {time}",
+        "weekOf": "Woche ab {date}",
+        "thisWeek": "Diese Woche",
+        "showEarlier": "Frühere Wochen zeigen"
       },
       "notifications": {
         "title": "Erinnerungen",
@@ -2354,33 +2353,24 @@
       },
       "tabs": {
         "uebersicht": "Übersicht",
-        "zeitplan": "Zeitplan",
-        "bestand": "Bestand",
         "verlauf": "Verlauf",
         "injektion": "Injektion",
-        "erweitert": "Erweitert",
-        "wirkung": "Wirkung"
+        "wirkung": "Wirkung",
+        "einstellungen": "Einstellungen"
       },
       "shell": {
         "loadFailed": "Dieses Medikament konnte nicht geladen werden.",
         "tablistLabel": "Medikamenten-Detailbereiche"
       },
       "uebersicht": {
-        "statusTitle": "Status",
         "nextDoseLabel": "Nächste Dosis",
-        "nextDoseNone": "Keine anstehende Dosis.",
-        "nextDoseAsNeeded": "Bei Bedarf, keine geplante Dosis.",
         "nextDoseNotTracked": "Nicht erfasst, nur dokumentiert.",
         "pausedHint": "Pausiert, keine Erinnerungen.",
         "reminderLabel": "Erinnerung",
-        "reminderOn": "Aktiv",
         "reminderOff": "Aus",
         "supplyLabel": "Bestand",
         "supplyRunway": "Reicht noch ca. {days, plural, one {# Tag} other {# Tage}}",
-        "jumpToZeitplan": "Zum Zeitplan",
-        "jumpToBestand": "Zum Bestand",
-        "complianceTitle": "Therapietreue",
-        "complianceEmpty": "Noch keine Daten zur Therapietreue."
+        "complianceTitle": "Therapietreue"
       },
       "bestand": {
         "title": "Bestand",
@@ -2461,15 +2451,7 @@
       },
       "erweitert": {
         "group": {
-          "lifecycle": "Lebenszyklus",
-          "externalApi": "Externe API",
-          "data": "Daten",
-          "danger": "Gefahrenzone"
-        },
-        "editor": {
-          "title": "Medikament im Editor bearbeiten",
-          "helper": "Name, Wirkstoffklasse, Häufigkeit und Zeitpläne im Schritt-für-Schritt-Editor ändern.",
-          "button": "Editor öffnen"
+          "data": "Daten"
         }
       },
       "zeitplan": {
@@ -2479,8 +2461,6 @@
         "scheduleLabel": "Zeitplan {index}",
         "fullEditNote": "Häufigkeit, Wirkstoffklasse und Zeitraum bearbeitest du im Editor unter Erweitert > Lebenszyklus.",
         "graceEcho": "Erinnerungsdauer: {minutes, plural, one {# Minute} other {# Minuten}}",
-        "reminderTitle": "Erinnerung",
-        "manageChannels": "Benachrichtigungskanäle verwalten",
         "history": {
           "title": "Planhistorie",
           "currentSince": "Aktueller Plan seit {date}",
@@ -2531,6 +2511,58 @@
           "orderError": "Der Beginn muss vor dem Ende liegen.",
           "noTimes": "Noch keine Einnahmezeiten festgelegt."
         }
+      },
+      "menu": {
+        "label": "Aktionen für das Medikament",
+        "resume": "Fortsetzen"
+      },
+      "settingsTab": {
+        "groups": {
+          "period": "Zeitraum"
+        },
+        "rows": {
+          "history": "Verlauf",
+          "medication": "Medikament",
+          "export": "Export",
+          "import": "Import",
+          "api": "API-Zugang",
+          "codes": "Klinische Codes",
+          "channels": "Benachrichtigungskanäle"
+        },
+        "intakeCount": "{count, plural, one {# Einnahme} other {# Einnahmen}}",
+        "withAllData": "mit allen Daten",
+        "courseCount": "{count, plural, one {# Phase} other {# Phasen}}"
+      },
+      "overview": {
+        "changeMetric": "Messwert ändern",
+        "metricField": "Messwert",
+        "details": "Details",
+        "since": "seitdem",
+        "daysChip": "{days, plural, one {# Tag} other {# Tage}}",
+        "today": {
+          "progress": "{taken} von {total}",
+          "noneToday": "Heute ist keine Dosis geplant.",
+          "asNeededTaken": "Heute {count, plural, one {einmal} other {#-mal}} genommen."
+        },
+        "intake": {
+          "title": "Einnahme",
+          "missedNone": "In {days, plural, one {# Tag} other {# Tagen}} hast du keine Dosis verpasst.",
+          "missedSome": "In {days, plural, one {# Tag} other {# Tagen}} {count, plural, one {hast du eine Dosis verpasst} other {hast du # Dosen verpasst}}.",
+          "asNeededCount": "{count, plural, =0 {In {days} Tagen nicht genommen.} one {In {days} Tagen einmal genommen.} other {In {days} Tagen #-mal genommen.}}"
+        },
+        "legend": {
+          "taken": "{count, plural, one {# genommen} other {# genommen}}",
+          "late": "{count, plural, one {# verspätet} other {# verspätet}}",
+          "missed": "{count, plural, one {# verpasst} other {# verpasst}}",
+          "skipped": "{count, plural, one {# übersprungen} other {# übersprungen}}"
+        },
+        "plan": {
+          "title": "Plan",
+          "since": "seit {date}",
+          "range": "{start} bis {end}",
+          "autoRecorded": "wird automatisch erfasst",
+          "reminderOn": "an, {minutes, plural, one {# Minute} other {# Minuten}}"
+        }
       }
     },
     "logInjectionSiteTitle": "Injektionsstelle erfassen",
@@ -2571,7 +2603,6 @@
       "intro": "Wie sich die Messwerte, die dieses Medikament beeinflussen soll, rund um den Beginn der Einnahme entwickelt haben. Es zeigt den zeitlichen Zusammenhang und keine Empfehlung zu Behandlung oder Dosis.",
       "notEligible": "Für dieses Medikament gibt es keinen zugehörigen Messwert.",
       "startFallback": "Es ist kein Startdatum hinterlegt, daher dient der erste erfasste Wert als Bezugspunkt.",
-      "noStart": "Hinterlege ein Startdatum, um die Werte vor und nach Beginn zu vergleichen.",
       "primaryBadge": "Hauptziel",
       "noSeries": "Für diesen Zielwert sind noch keine Messungen erfasst.",
       "startMarker": "Beginn",
@@ -2590,12 +2621,7 @@
         "error": "Diese Änderung konnte nicht gespeichert werden. Bitte erneut versuchen."
       },
       "beforeAfter": {
-        "summary": "Ø {before} davor, Ø {after} seitdem, eine Veränderung von {delta}.",
-        "counts": "Basierend auf {beforeCount, plural, one {# Wert} other {# Werten}} davor und {afterCount} seitdem.",
-        "needBefore": "Noch zu wenige Werte vor dem Beginn. Für einen Vergleich {weeks, plural, one {wird etwa # Woche} other {werden etwa # Wochen}} davor und danach benötigt.",
-        "needAfter": "Noch zu wenige Werte seit dem Beginn. Für einen Vergleich {weeks, plural, one {wird etwa # Woche} other {werden etwa # Wochen}} davor und danach benötigt.",
-        "needStart": "Hinterlege ein Startdatum, um die Werte vor und nach Beginn zu vergleichen.",
-        "needData": "Noch zu wenige Werte. Für einen Vergleich {weeks, plural, one {wird etwa # Woche} other {werden etwa # Wochen}} vor und nach dem Beginn benötigt."
+        "counts": "Basierend auf {beforeCount, plural, one {# Wert} other {# Werten}} davor und {afterCount} seitdem."
       },
       "insights": {
         "title": "Medikamenten-Wirkung",
@@ -2629,7 +2655,8 @@
         "needAfter": "Für die Veränderung zum Start braucht es Werte an mindestens {days, plural, one {# Tag} other {# Tagen}}, verteilt über {span, plural, one {# Tag} other {# Tage}} seit dem Start und an Tagen mit eingenommenen Dosen.",
         "fitFailed": "Diese Werte ließen sich nicht auswerten, deshalb wird keine Veränderung zum Start gezeigt.",
         "autocorrelation": "Die Tageswerte hängen stark vom Vortag ab, deshalb können selbst diese Bereiche zu eng sein."
-      }
+      },
+      "method": "So wird gerechnet"
     },
     "import": {
       "resultSuccess": "{imported, plural, one {# Einnahme} other {# Einnahmen}} importiert",
@@ -2843,7 +2870,6 @@
     "leaflet": {
       "title": "Beipackzettel",
       "find": "Beipackzettel suchen",
-      "open": "Öffnen",
       "saved": "Offizieller Beipackzettel",
       "newTab": "(öffnet in einem neuen Tab)",
       "opensIn": "Öffnet die Suche von {authority} mit diesem Medikament.",
@@ -2860,7 +2886,8 @@
       "urlInvalid": "Gib einen Link ein, der mit https:// beginnt.",
       "savedToast": "Link zum Beipackzettel gespeichert",
       "removedToast": "Link zum Beipackzettel entfernt",
-      "saveError": "Der Link zum Beipackzettel konnte nicht gespeichert werden."
+      "saveError": "Der Link zum Beipackzettel konnte nicht gespeichert werden.",
+      "searchShort": "Suchen"
     }
   },
   "charts": {
@@ -16470,6 +16497,15 @@
     "metricLabels": {
       "systolicBloodPressure": "Systolischer Blutdruck",
       "diastolicBloodPressure": "Diastolischer Blutdruck"
+    },
+    "efficacyResult": {
+      "lower": "Seit dem Start liegt der Mittelwert {amount} niedriger.",
+      "higher": "Seit dem Start liegt der Mittelwert {amount} höher.",
+      "unchanged": "Seit dem Start ist der Mittelwert etwa gleich geblieben.",
+      "needBefore": "Für einen Vergleich fehlen noch Werte vor dem Start.",
+      "needAfter": "Für einen Vergleich fehlen noch Werte seit dem Start.",
+      "needStart": "Hinterlege ein Startdatum, um vorher und nachher zu vergleichen.",
+      "needData": "Für einen Vergleich fehlen noch Werte."
     }
   }
 }

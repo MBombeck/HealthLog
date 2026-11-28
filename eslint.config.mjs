@@ -292,7 +292,7 @@ const eslintConfig = defineConfig([
             "src/components/labs/lab-biomarker-detail.tsx": 1,
             "src/components/labs/lab-list-rows.tsx": 1,
             "src/components/medications/card-parts/medication-card-body.tsx": 1,
-            "src/components/medications/detail/efficacy/efficacy-tab.tsx": 1,
+            "src/components/medications/detail/overview/intake-card.tsx": 1,
             "src/components/medications/intake-history-list-v2.tsx": 3,
             "src/components/mental-health/assessment-result.tsx": 6,
             "src/components/mental-health/crisis-card.tsx": 1,

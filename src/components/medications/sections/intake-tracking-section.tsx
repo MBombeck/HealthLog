@@ -30,7 +30,10 @@ export function IntakeTrackingBody({
   medicationId,
   trackIntake,
   courseEnded = false,
+  compact = false,
 }: {
+  /** One line: the name and the switch, no helper. */
+  compact?: boolean;
   medicationId: string;
   trackIntake: boolean;
   /**
@@ -75,11 +78,13 @@ export function IntakeTrackingBody({
     <SwitchRow
       label={t("medications.trackIntake.label")}
       description={
-        !localTracked
-          ? t("medications.trackIntake.helperOff")
-          : courseEnded
-            ? t("medications.trackIntake.helperEnded")
-            : t("medications.trackIntake.helperOn")
+        compact
+          ? undefined
+          : !localTracked
+            ? t("medications.trackIntake.helperOff")
+            : courseEnded
+              ? t("medications.trackIntake.helperEnded")
+              : t("medications.trackIntake.helperOn")
       }
       id={SWITCH_ID}
       checked={localTracked}

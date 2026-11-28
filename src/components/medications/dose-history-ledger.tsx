@@ -1,52 +1,36 @@
 "use client";
 
 /**
- * The Verlauf tab's dose-history ledger.
+ * The History tab's dose history: one row per dose, one card per week.
  *
  * Renders the server-minted ledger (`GET /api/medications/[id]/dose-history`):
- * EVERY expected slot with its status (pünktlich / verspätet / übersprungen /
- * verpasst / ausstehend) even when never taken, plus every off-schedule intake
- * as a tagged ad-hoc row at its real time. Rows are grouped by day, most-recent
- * day first, chronological inside the day.
+ * every expected slot with its status (on time / late / skipped / missed /
+ * open) even when never taken, plus every off-schedule take. Each week is a
+ * `ListGroup` under its heading, newest first; each dose is a `ListItem`
+ * (`ledger-row-item.tsx`) whose second line appears only when what happened
+ * differs from the plan. The two most recent weeks show first; older weeks
+ * come in on request, so ninety days of a twice-daily plan never land on the
+ * page at once.
  *
- * Three interactions land here:
- *   - an actionable slot (upcoming, or missed today) exposes ONE visible
- *     [Genommen] button that marks the dose with INSTANT feedback — the
- *     cached ledger + the headline % are mutated optimistically (the engines
- *     are pure, so the client mirrors their accounting) before the server
- *     write fires and the authoritative refetch reconciles. The success
- *     toast carries an Undo. Übersprungen and the backfill of older missed
- *     slots live in the row's overflow kebab;
- *   - settled rows (taken / skipped / a past missed day) carry ONLY the
- *     kebab: Bearbeiten, the Übersprungen↔Genommen toggle, Löschen — so the
- *     ledger reads as a calm record, not a button wall;
- *   - a header "+ Eintrag" opens an add dialog scoped to this medication
- *     (incl. backdated / off-schedule); an off-window take surfaces the
- *     "diesem Slot zuordnen?" nudge, pinning it onto a chosen slot via
- *     `forceSlotInstant` rather than orphaning it to an ad-hoc row;
- *   - an ad-hoc row shows WHEN the dose would have been due
- *     (`nearestSlot` subline) and — when that slot is still unserved — a
- *     kebab "Slot … zuordnen" action that pins the take onto it after a
- *     confirm that names the consequence ("zählt als verspätet"). A pinned
- *     slot row carries a quiet "zugeordnet" badge and the inverse
- *     "Zuordnung lösen" kebab action (`forceSlotInstant: null`). The
- *     released row keeps USER_PIN provenance server-side (the dedup
- *     leaves it standalone) and reads as a plain ad-hoc row here — no
- *     badge, since it is no longer bound to a slot.
+ * Above the weeks: the window's rate with the counts that are not zero, and
+ * "Log past dose". The rate's bar lives once, on the overview.
  *
- * A compact took / skipped history chart sits at the top — the ledger already
- * carries the counts. The card body never tints by status (removed earlier);
- * the ledger uses the semantic feedback vocabulary on the row, not the card.
+ * A row opens the dose's sheet (take, skip, pin, release, edit, toggle, open
+ * the day, delete); a take or skip is optimistic, with an undo toast.
  */
 
-import { useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Loader2, Plus } from "lucide-react";
 
-import { DayLink } from "@/components/day/day-link";
+import { openDay } from "@/components/day/day-layer-controller";
+import type { DateKey } from "@/lib/day/contract";
+import { isOpenableDay } from "@/components/day/day-url";
+import { useTodayKey } from "@/components/day/use-today-key";
 import { LedgerAddDialog } from "@/components/medications/dose-history-add-dialog";
 import { IntakeEditDialog } from "@/components/medications/intake-edit-dialog";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ListGroup } from "@/components/ui/list-row";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { formatDateWithWeekdaySmart } from "@/lib/date-format";
@@ -55,11 +39,21 @@ import {
   useFormatters,
   useTranslations,
 } from "@/lib/i18n/context";
+import { dateOnlyAtNoonUtc, dateOnlyKey } from "@/lib/tz/date-only";
 
 import { PinConfirm } from "./dose-history/ledger-confirms";
-import { LedgerRowItem } from "./dose-history/ledger-row-item";
-import { LedgerSummaryChart } from "./dose-history/ledger-summary-chart";
+import {
+  doseActionsOf,
+  LedgerDoseRow,
+  LedgerDoseSheet,
+  type LedgerDose,
+  type LedgerRowHandlers,
+} from "./dose-history/ledger-row-item";
 import { useDoseHistoryLedger } from "./dose-history/use-dose-history-ledger";
+import type {
+  LedgerCompliance,
+  LedgerDayGroup,
+} from "./dose-history-ledger-compute";
 
 /** A schedule slot the add dialog offers for pinning. */
 export interface LedgerSchedule {
@@ -79,19 +73,57 @@ export interface DoseHistoryLedgerProps {
   windowDays?: number;
 }
 
+/** The dose times the window holds, as columns: "08:00" before "20:00". */
+export function ledgerColumns(groups: LedgerDayGroup[]): string[] {
+  const times = new Set<string>();
+  for (const group of groups) {
+    for (const row of group.rows) {
+      if (row.kind === "slot" && row.timeOfDay) times.add(row.timeOfDay);
+    }
+  }
+  return [...times].sort();
+}
+
+/** Weeks shown at first, and added per "Show earlier weeks". */
+const WEEKS_FIRST = 2;
+const WEEKS_MORE = 4;
+
+/** The Monday that starts a day key's week, as a day key. */
+export function weekStartKey(dayKey: string): string {
+  const noon = dateOnlyAtNoonUtc(dayKey);
+  const back = (noon.getUTCDay() + 6) % 7;
+  return dateOnlyKey(new Date(noon.getTime() - back * 24 * 60 * 60 * 1000));
+}
+
+/** Day groups (newest first) folded into weeks, newest first. */
+export function ledgerWeeks(
+  groups: LedgerDayGroup[],
+): { weekKey: string; days: LedgerDayGroup[] }[] {
+  const weeks: { weekKey: string; days: LedgerDayGroup[] }[] = [];
+  for (const group of groups) {
+    const weekKey = weekStartKey(group.dayKey);
+    const last = weeks[weeks.length - 1];
+    if (last && last.weekKey === weekKey) last.days.push(group);
+    else weeks.push({ weekKey, days: [group] });
+  }
+  return weeks;
+}
+
 export function DoseHistoryLedger({
   medicationId,
   medicationName,
   medicationDose,
   schedules,
   windowDays = 90,
-}: DoseHistoryLedgerProps) {
-  const { t, locale } = useTranslations();
+  controls,
+}: DoseHistoryLedgerProps & {
+  /** The range switch, at the right of the summary line. */
+  controls?: ReactNode;
+}) {
+  const { t } = useTranslations();
   const fmt = useFormatters();
-  const dateFormatPref = useDateFormatPreference();
-  // A delegate may record a dose, which is what "add" and the inline "mark
-  // taken" do. Editing, deleting, pinning and un-skipping an existing event
-  // are the owner's, so the row menu is absent for them.
+  // A delegate may record a dose, which is what "add" and take/skip do.
+  // Editing, deleting, pinning and un-skipping are the owner's.
   const { canWriteDomain } = useRecordCapabilities();
   const canAddIntake = canWriteDomain("medications");
   const [addOpen, setAddOpen] = useState(false);
@@ -120,29 +152,34 @@ export function DoseHistoryLedger({
     setPendingPin,
   } = useDoseHistoryLedger({ medicationId, medicationName, windowDays });
 
+  const handlers: LedgerRowHandlers = {
+    onMark: markSlot,
+    onToggleSkipped: toggleIntakeSkipped,
+    onEdit: (ev) => setEditingEvent(ev),
+    onDelete: (intake) => void deleteRow(intake),
+    onPin: (eventId, slotAt) => setPendingPin({ eventId, slotAt }),
+    onUnpin: (eventId) => void setAttribution(eventId, null),
+  };
+
   return (
-    <div className="space-y-4" data-slot="dose-history-ledger">
-      {/* Header: the took/skipped summary chart + the add affordance. */}
-      <div className="flex items-start justify-between gap-3">
-        {compliance && compliance.denominator > 0 ? (
-          <LedgerSummaryChart compliance={compliance} windowDays={windowDays} />
-        ) : (
-          <p className="text-muted-foreground text-sm">
-            {t("medications.detail.verlauf.summaryEmpty")}
-          </p>
-        )}
-        {canAddIntake && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setAddOpen(true)}
-            className="min-h-11 shrink-0 sm:min-h-9"
-            data-slot="ledger-add"
-          >
-            <Plus aria-hidden="true" className="h-4 w-4" />
-            {t("medications.detail.verlauf.add")}
-          </Button>
-        )}
+    <div className="space-y-6" data-slot="dose-history-ledger">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <LedgerSummary compliance={compliance} windowDays={windowDays} />
+        <div className="ml-auto flex items-center gap-2">
+          {canAddIntake && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setAddOpen(true)}
+              className="min-h-11 shrink-0 sm:min-h-9"
+              data-slot="ledger-add"
+            >
+              <Plus aria-hidden="true" className="size-4" />
+              {t("medications.detail.verlauf.backfill")}
+            </Button>
+          )}
+          {controls}
+        </div>
       </div>
 
       {isLoading && (
@@ -177,51 +214,14 @@ export function DoseHistoryLedger({
         />
       )}
 
-      {data &&
-        groups.map((group) => (
-          <section
-            key={group.dayKey}
-            className="space-y-1"
-            data-slot="ledger-day"
-            data-day={group.dayKey}
-          >
-            <h3 className="text-muted-foreground px-1 text-xs font-medium">
-              {/* Issue #490 — `dayKey` is a profile-timezone calendar day.
-                  The old browser-local-midnight parse re-interpreted it in
-                  the DEVICE zone and could shift the heading a day when
-                  browser ≠ profile zone; the day-key label renders
-                  UTC-pinned instead (zone-independent, weekday included). */}
-              {/* The day heading opens the whole day: did I take
-                  it, and how was that day otherwise. Rows keep their own
-                  actions. A planned future slot gets no link. */}
-              <DayLink date={group.dayKey}>
-                {formatDateWithWeekdaySmart(
-                  group.dayKey,
-                  dateFormatPref,
-                  locale,
-                )}
-              </DayLink>
-            </h3>
-            <ul className="border-border/60 divide-border/60 divide-y rounded-md border">
-              {group.rows.map((row, i) => (
-                <LedgerRowItem
-                  key={`${row.kind}:${row.at}:${row.intake?.id ?? i}`}
-                  row={row}
-                  marking={marking}
-                  isToday={group.dayKey === todayKey}
-                  onMark={markSlot}
-                  onToggleSkipped={toggleIntakeSkipped}
-                  onEdit={(ev) => setEditingEvent(ev)}
-                  onDelete={(intake) => void deleteRow(intake)}
-                  onPin={(eventId, slotAt) =>
-                    setPendingPin({ eventId, slotAt })
-                  }
-                  onUnpin={(eventId) => void setAttribution(eventId, null)}
-                />
-              ))}
-            </ul>
-          </section>
-        ))}
+      {data && groups.length > 0 && (
+        <LedgerWeeks
+          groups={groups}
+          todayKey={todayKey}
+          marking={marking}
+          handlers={handlers}
+        />
+      )}
 
       <IntakeEditDialog
         medicationId={medicationId}
@@ -252,6 +252,157 @@ export function DoseHistoryLedger({
           onCancel={() => setPendingPin(null)}
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * The window's rate and the counts behind it, a zero count left out: one
+ * line, no bar (the overview carries the picture).
+ */
+function LedgerSummary({
+  compliance,
+  windowDays,
+}: {
+  compliance: LedgerCompliance | null;
+  windowDays: number;
+}) {
+  const { t } = useTranslations();
+  const fmt = useFormatters();
+  // Nothing to score (an as-needed plan, a plan with no dose yet): no line.
+  if (!compliance || compliance.denominator === 0) return null;
+  const { takenOnTime, takenLate, missed, rate } = compliance;
+  const counts = [
+    t("medications.detail.overview.legend.taken", { count: takenOnTime }),
+    takenLate > 0
+      ? t("medications.detail.overview.legend.late", { count: takenLate })
+      : null,
+    missed > 0
+      ? t("medications.detail.overview.legend.missed", { count: missed })
+      : null,
+  ].filter(Boolean);
+  return (
+    <div className="min-w-0" data-slot="ledger-summary">
+      <p className="text-sm">
+        <span className="text-foreground font-semibold tabular-nums">
+          {rate !== null ? fmt.percent(rate / 100) : "—"}
+        </span>{" "}
+        <span className="text-muted-foreground">
+          {t("medications.complianceWindow", { days: windowDays })}
+        </span>
+      </p>
+      <p className="text-muted-foreground text-xs">{counts.join(", ")}</p>
+    </div>
+  );
+}
+
+/** The weeks, newest first, each one card of doses. */
+function LedgerWeeks({
+  groups,
+  todayKey,
+  marking,
+  handlers,
+}: {
+  groups: LedgerDayGroup[];
+  todayKey: string;
+  marking: string | null;
+  handlers: LedgerRowHandlers;
+}) {
+  const { t, locale } = useTranslations();
+  const fmt = useFormatters();
+  const dateFormatPref = useDateFormatPreference();
+  const today = useTodayKey();
+  const { canWriteDomain, canManageDomain } = useRecordCapabilities();
+  const can = {
+    write: canWriteDomain("medications"),
+    manage: canManageDomain("medications"),
+  };
+  const [shownWeeks, setShownWeeks] = useState(WEEKS_FIRST);
+  const [open, setOpen] = useState<LedgerDose | null>(null);
+  const weeks = useMemo(() => ledgerWeeks(groups), [groups]);
+  // The dose time joins the day only when a day has more than one dose; an
+  // off-schedule take says so only beside a plan (as needed, every take is).
+  const slotTimes = ledgerColumns(groups).length;
+  const multiSlot = slotTimes > 1;
+
+  const doseOf = (
+    group: LedgerDayGroup,
+    row: LedgerDayGroup["rows"][number],
+  ) => {
+    const day = formatDateWithWeekdaySmart(
+      group.dayKey,
+      dateFormatPref,
+      locale,
+    );
+    const suffix =
+      row.kind === "ad_hoc"
+        ? slotTimes > 0
+          ? t("medications.detail.verlauf.extraColumn")
+          : null
+        : multiSlot && row.timeOfDay
+          ? fmt.wallTime(row.timeOfDay)
+          : null;
+    const dayKey = group.dayKey;
+    const dose: LedgerDose = {
+      row,
+      title: suffix ? `${day}, ${suffix}` : day,
+      onOpenDay: isOpenableDay(dayKey, today)
+        ? () => openDay(dayKey as DateKey)
+        : undefined,
+    };
+    return dose;
+  };
+
+  return (
+    <div className="space-y-6" data-slot="ledger-weeks">
+      {weeks.slice(0, shownWeeks).map((week) => (
+        <section
+          key={week.weekKey}
+          className="space-y-2"
+          data-slot="ledger-week"
+          data-week={week.weekKey}
+        >
+          <h3 className="text-sm font-semibold">
+            {week.weekKey === weekStartKey(todayKey)
+              ? t("medications.detail.verlauf.thisWeek")
+              : t("medications.detail.verlauf.weekOf", {
+                  date: fmt.dateShortSmartCalendar(week.weekKey),
+                })}
+          </h3>
+          <ListGroup>
+            {week.days.flatMap((group) =>
+              [...group.rows].reverse().map((row, i) => {
+                const dose = doseOf(group, row);
+                const actionable =
+                  doseActionsOf(row, can, Boolean(dose.onOpenDay)).length > 0;
+                return (
+                  <LedgerDoseRow
+                    key={`${group.dayKey}:${row.at}:${row.intake?.id ?? i}`}
+                    dose={dose}
+                    onOpen={actionable ? () => setOpen(dose) : undefined}
+                  />
+                );
+              }),
+            )}
+          </ListGroup>
+        </section>
+      ))}
+      {weeks.length > shownWeeks && (
+        <Button
+          variant="outline"
+          className="min-h-11 w-full sm:min-h-9"
+          onClick={() => setShownWeeks((n) => n + WEEKS_MORE)}
+          data-slot="ledger-more"
+        >
+          {t("medications.detail.verlauf.showEarlier")}
+        </Button>
+      )}
+      <LedgerDoseSheet
+        dose={open}
+        onClose={() => setOpen(null)}
+        handlers={handlers}
+        marking={marking}
+      />
     </div>
   );
 }

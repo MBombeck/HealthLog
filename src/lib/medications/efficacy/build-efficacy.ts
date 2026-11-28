@@ -46,6 +46,10 @@ import {
 } from "@/lib/medications/efficacy/load-segmented-effects";
 import type { EfficacySegmented } from "@/lib/medications/efficacy/segmented-effect";
 import {
+  efficacyResultOf,
+  type EfficacyResult,
+} from "@/lib/medications/efficacy/efficacy-result";
+import {
   CANONICAL_DISPLAY,
   displaySegmented,
   efficacyDisplayFor,
@@ -113,7 +117,15 @@ export interface EfficacyTargetView {
    * whose readings are too sparse for a daily time series.
    */
   segmented: EfficacySegmented | null;
+  /**
+   * The before/after comparison in one sentence, worded on the server in the
+   * reader's language (`localiseEfficacyLabels`), so the web page and the app
+   * lead with the same line. Absent until the DTO is localised.
+   */
+  result?: EfficacyResult;
 }
+
+export type { EfficacyResult } from "@/lib/medications/efficacy/efficacy-result";
 
 export interface EfficacyMarkers {
   /** The pivot instant (ISO date) — `startsOn`, else the first-reading fallback. */
@@ -189,13 +201,16 @@ export function efficacyMetricLabelKey(mt: MeasurementType): string {
  */
 export function localiseEfficacyLabels(
   dto: MedicationEfficacyDTO,
-  t: (key: string) => string,
+  t: (key: string, params?: Record<string, string | number>) => string,
+  locale = "en",
 ): MedicationEfficacyDTO {
   return {
     ...dto,
-    targets: dto.targets.map((view) =>
-      view.kind === "metric" ? { ...view, label: t(view.label) } : view,
-    ),
+    targets: dto.targets.map((view) => ({
+      ...view,
+      ...(view.kind === "metric" ? { label: t(view.label) } : {}),
+      result: efficacyResultOf(view, dto.minWeeksPerSide, t, locale),
+    })),
     overrideOptions: {
       ...dto.overrideOptions,
       metrics: dto.overrideOptions.metrics.map((m) => ({
