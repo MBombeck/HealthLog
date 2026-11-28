@@ -113,9 +113,11 @@ export function SetupTaskRow({
   let value: string;
   if (task.count) {
     value = t("setup.values.count", task.count);
-  } else if (task.deadline && !isSettled(task)) {
+  } else if (task.deadlineDate && !isSettled(task)) {
+    // The server's day in the profile's zone, so the web and the app name
+    // the same date wherever the browser is.
     value = t("setup.values.until", {
-      date: fmt.date(new Date(task.deadline)),
+      date: fmt.dateShortSmartCalendar(task.deadlineDate),
     });
   } else if (task.value) {
     value = t(`setup.values.${task.value}`);
