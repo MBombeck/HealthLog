@@ -21,7 +21,7 @@ import {
   pickMainNightAndNaps,
   type SleepStageRow,
 } from "./analytics/sleep-night";
-import { convertGlucose, type GlucoseUnit } from "./glucose";
+import { glucoseForFile, type GlucoseUnit } from "./glucose";
 import type { SleepStage } from "@/generated/prisma/client";
 import { ownValue } from "@/lib/own-key";
 
@@ -184,7 +184,7 @@ export function formatMeasurementsForExport(
     const isGlucose = m.type === "BLOOD_GLUCOSE";
     return {
       type: m.type,
-      value: isGlucose ? convertGlucose(m.value, glucoseUnit) : m.value,
+      value: isGlucose ? glucoseForFile(m.value, glucoseUnit) : m.value,
       unit: isGlucose ? glucoseUnit : m.unit,
       measuredAt: formatTimestamp(m.measuredAt, userTz),
       source: m.source,

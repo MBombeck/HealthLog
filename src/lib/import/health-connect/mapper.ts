@@ -40,6 +40,9 @@ export const HC_CATEGORY = {
   VITALS: 6,
 } as const;
 
+/** Heart-rate samples newer than this stay per-sample; older ones fold. */
+export const HC_RAW_PULSE_WINDOW_MS = 90 * 86_400_000;
+
 export type HcCategory = (typeof HC_CATEGORY)[keyof typeof HC_CATEGORY];
 
 /**

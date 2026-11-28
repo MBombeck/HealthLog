@@ -29,6 +29,10 @@ import { SERVER_FEATURES, type ServerFeature } from "@/lib/server-features";
 const FEATURE_KEY_PATHS: Record<string, ServerFeature> = {
   "/api/daily/morning": "daily.morning",
   "/api/setup": "setup.resolved-state",
+  "/api/health-connect/pairing": "health-connect.sync",
+  "/api/health-connect/pair": "health-connect.sync",
+  "/api/health-connect/state": "health-connect.sync",
+  "/api/health-connect/batch": "health-connect.sync",
   "/api/auth/me/dismissed-hints": "account.dismissed-hints",
   "/api/insights/context": "insights.chart-context",
   "/api/documents/inbound/{id}/lab-values": "documents.lab-values-extract",

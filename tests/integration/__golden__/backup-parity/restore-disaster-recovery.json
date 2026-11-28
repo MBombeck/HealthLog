@@ -348,7 +348,7 @@
           "seizureTypes": 0,
           "seizureEvents": 0
         },
-        "accountSettingsApplied": 68,
+        "accountSettingsApplied": 70,
         "skipped": {
           "catalogueKeys": [],
           "links": 0
@@ -3202,6 +3202,8 @@
       "fullName": "rt-User-fullName",
       "insurerName": "rt-User-insurerName",
       "insuranceNumberEncrypted": "<sealed:v1:rt-User-insuranceNumberEncrypted>",
+      "insuranceNumberCountry": "US",
+      "insuranceGroupNumber": "rt-User-insuranceGroupNumber",
       "insurerIkNumber": "rt-User-insurerIkNumber"
     },
     "AppSettings": {
@@ -3343,6 +3345,8 @@
       "insurerName": "rt-User-insurerName",
       "insuranceNumber": null,
       "insuranceNumberEncrypted": "<sealed:v1:rt-User-insuranceNumberEncrypted>",
+      "insuranceNumberCountry": "US",
+      "insuranceGroupNumber": "rt-User-insuranceGroupNumber",
       "insurerIkNumber": "rt-User-insurerIkNumber",
       "lastReportPracticeName": "rt-User-lastReportPracticeName",
       "avatarBytes": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",

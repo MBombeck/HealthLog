@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { parseCsvMeasurements } from "@/lib/import/csv-measurements";
 import {
   toCSV,
   formatMeasurementsForExport,
@@ -174,11 +175,50 @@ describe("formatMeasurementsForExport", () => {
     const result = formatMeasurementsForExport(measurements, undefined, {
       glucoseUnit: "mmol/L",
     });
-    // 100 mg/dL → 5.5 mmol/L, 126 mg/dL → 7.0 mmol/L.
-    expect(result[0].value).toBe(5.5);
+    // 100 mg/dL → 5.550 mmol/L, 126 mg/dL → 6.993 mmol/L: three places,
+    // so the file reads back as the stored mg/dL value.
+    expect(result[0].value).toBe(5.55);
     expect(result[0].unit).toBe("mmol/L");
-    expect(result[1].value).toBe(7);
+    expect(result[1].value).toBe(6.993);
     expect(result[1].unit).toBe("mmol/L");
+  });
+
+  it("writes mmol/L glucose that the CSV import reads back as the stored value", () => {
+    const stored = [54, 70, 99.1, 100, 126, 180, 250.5, 400];
+    const records = formatMeasurementsForExport(
+      stored.map((value, i) => ({
+        type: "BLOOD_GLUCOSE",
+        value,
+        unit: "mg/dL",
+        measuredAt: new Date(Date.UTC(2025, 0, 15, 8, i)),
+        source: "MANUAL",
+        notes: null,
+      })),
+      undefined,
+      { glucoseUnit: "mmol/L" },
+    );
+    const back = parseCsvMeasurements(toCSV(records), {
+      now: Date.UTC(2025, 1, 1),
+    });
+    expect(back.rows.map((r) => r.row?.value)).toEqual(stored);
+  });
+
+  it("writes mg/dL glucose as stored, tenths included", () => {
+    const records = formatMeasurementsForExport(
+      [
+        {
+          type: "BLOOD_GLUCOSE",
+          value: 99.1,
+          unit: "mg/dL",
+          measuredAt: new Date("2025-01-15T08:00:00Z"),
+          source: "APPLE_HEALTH",
+          notes: null,
+        },
+      ],
+      undefined,
+      { glucoseUnit: "mg/dL" },
+    );
+    expect(records[0].value).toBe(99.1);
   });
 
   it("does not touch non-glucose rows when a glucose unit is set", () => {

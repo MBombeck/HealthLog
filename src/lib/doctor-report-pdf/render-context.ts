@@ -31,7 +31,9 @@ export interface DoctorReportPdfRenderContext {
   dateShort: (iso: string) => string;
   dateTime: (date: Date) => string;
   now: Date;
+  /** The insurance number already written in its country's form. */
   insuranceNumber: string | null;
+  insuranceGroupNumber?: string | null;
   includeCharts: boolean;
   footerTz: string;
   margin: number;

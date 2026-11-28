@@ -1725,6 +1725,7 @@ export const USER_FILL_OVERRIDES: Readonly<Record<string, unknown>> = {
   "User.unitPreference": "imperial",
   "User.glucoseUnit": "mmol/L",
   "User.medicineRegistry": "GB",
+  "User.insuranceNumberCountry": "US",
   "User.insightsPrivacyMode": "raw",
   "User.aiProvider": "LOCAL",
   "User.aiLocalBaseUrl": "https://llm.example.com/v1",

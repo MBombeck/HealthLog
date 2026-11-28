@@ -31,8 +31,8 @@ import { invalidateKeys, labDependentKeys } from "@/lib/query-keys";
 const ICON_BUTTON = "min-h-11 min-w-11 sm:min-h-9 sm:min-w-9";
 
 /**
- * The marker's own controls in the detail page header: Edit, and an overflow
- * menu that holds Delete. Delete removes the marker and every reading under
+ * The marker's own controls in the detail page header: one overflow menu
+ * that holds Edit and Delete. Delete removes the marker and every reading under
  * it, so it no longer sits as a same-size icon next to Edit, where a slip of
  * the thumb was the most expensive tap on the page; it is one menu away and
  * still asks first. Hide (in the edit sheet) stays the reversible way out.
@@ -50,6 +50,8 @@ export function BiomarkerHeaderActions({
   canEdit: boolean;
   onEdit: () => void;
 }) {
+  // One "⋯" beside the page's one button: Edit, then Delete, which still
+  // asks first. Edit stood as an icon of its own beside it.
   const { t } = useTranslations();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -68,17 +70,6 @@ export function BiomarkerHeaderActions({
 
   return (
     <>
-      <Button
-        variant="ghost"
-        size="icon"
-        className={ICON_BUTTON}
-        onClick={onEdit}
-        disabled={!canEdit}
-        aria-label={t("labs.biomarker.edit")}
-        title={t("labs.biomarker.edit")}
-      >
-        <Pencil className="size-4" />
-      </Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -93,6 +84,10 @@ export function BiomarkerHeaderActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem onSelect={onEdit} disabled={!canEdit}>
+            <Pencil className="size-4" aria-hidden="true" />
+            {t("labs.biomarker.edit")}
+          </DropdownMenuItem>
           <DropdownMenuItem
             variant="destructive"
             onSelect={() => setConfirmOpen(true)}

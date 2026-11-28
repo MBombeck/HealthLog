@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.49.0
+  version: 1.49.1
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -165,7 +165,7 @@ paths:
           name: Idempotency-Key
           in: header
           required: false
-          schema:
+          schema: &a42
             type: string
             pattern: ^[A-Za-z0-9_\-:.]{8,128}$
             minLength: 8
@@ -5034,9 +5034,12 @@ paths:
         saved nothing would be a lie.
 
 
-        The insurance number is validated with its check digit, normalised, and stored encrypted; it is never returned.
-        `hasInsuranceNumber` reports presence only. A null or empty string clears a nullable field rather than being
-        refused, so a form that renders “no answer” as `""` does not 422 the whole patch.
+        The insurance number is validated under the rule of its country (`insuranceNumberCountry`, sent or stored, DE
+        when neither), normalised, and stored encrypted; it is never returned. A number that fails the rule, or a
+        country change the stored number would fail, comes back in `rejectedFields` with code `invalid_kvnr`,
+        `invalid_svnr`, `invalid_ahv`, `invalid_bsn`, `invalid_nir` or `invalid_member_id`. `hasInsuranceNumber` reports
+        presence only. A null or empty string clears a nullable field rather than being refused, so a form that renders
+        “no answer” as `""` does not 422 the whole patch.
       requestBody:
         required: true
         content:
@@ -12100,8 +12103,8 @@ paths:
         - Auth
       summary: Update the calling user's profile
       description: Partial profile update — every field is optional. An explicit null (or empty string) clears a field. A
-        non-empty `insurerIkNumber` must be exactly 9 digits (422 otherwise); a non-empty `insuranceNumber` (KVNR) must
-        pass the mod-10 check. `userId` is never accepted from the body.
+        non-empty `insurerIkNumber` must be exactly 9 digits (422 otherwise); a non-empty `insuranceNumber` must pass
+        the rule of its country (`insuranceNumberCountry`). `userId` is never accepted from the body.
       requestBody:
         required: true
         content:
@@ -19765,6 +19768,179 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
+  /api/health-connect/pairing:
+    post:
+      tags:
+        - Integrations
+      summary: Mint a pairing code for an Android device
+      description: Cookie session with a recent sign-in proof. Answers a one-time code (`hcp_` and 32 hex), valid for ten
+        minutes and one exchange, and the deep link `healthlog-sync://pair?server=<origin>&code=<code>` the web shows as
+        a QR code. Only the code's hash is stored. 403 `health-connect.pair.api_disabled` when the operator switched the
+        API off.
+      responses:
+        "200":
+          description: A fresh pairing code.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthConnectPairingResponse"
+        "401": *a1
+        "403":
+          description: "`meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
+            generic auth gate answers it before the route's own checks run. Otherwise: The API is switched off
+            (`health-connect.pair.api_disabled`), or the session lacks a recent proof."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+  /api/health-connect/pair:
+    post:
+      tags:
+        - Integrations
+      summary: Exchange a pairing code for a device token
+      description: "No credential: the one-time code in the body is the credential, never in the URL. Answers a token with the
+        single scope `health-connect:write`, valid 365 days and extended a year by any accepted batch once fewer than 30
+        days are left, and the id of the `Device` row it is bound to. Pairing the same `installId` again revokes the
+        token it held before. Limited per IP; a 429 carries `Retry-After`."
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HealthConnectPairRequest"
+      responses:
+        "200":
+          description: Paired.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthConnectPairResponse"
+        "401":
+          description: "`health-connect.pair.code_invalid`: the code is unknown, expired or used, one answer for all three. Show a
+            new code."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403":
+          description: "`health-connect.pair.api_disabled`: the operator switched the API off."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: "`health-connect.pair.install_taken`: this `installId` is paired with another account. The app makes a new
+            install id and pairs again; the code stays valid."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422":
+          description: "`health-connect.pair.invalid`: a malformed body."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429": *a5
+  /api/health-connect/state:
+    get:
+      tags:
+        - Integrations
+      summary: Sync state for a paired Android device
+      description: "The types and aggregates the server takes, the apps whose data arrives through a direct integration, the
+        instant before which heart rate is sent hourly, the newest reading held per record type, and the limits of a
+        batch. The change tokens stay on the phone; this is no cursor. Bearer with the scope `health-connect:write`, the
+        token a paired Android device holds; a session or any other token is refused 403
+        `health-connect.device_token_required`. 401 `health-connect.device_unpaired` when the device was removed in
+        Settings: the app stops and asks to reconnect, as for any 401."
+      responses:
+        "200":
+          description: The state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthConnectStateResponse"
+        "401": *a1
+        "403":
+          description: "`health-connect.device_token_required`, or `auth.scope.insufficient` for a token without the scope."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+  /api/health-connect/batch:
+    post:
+      tags:
+        - Integrations
+      summary: Post one batch of Health Connect records
+      description: "Records (spot readings with the export's column names and units, heart-rate series, sleep and exercise
+        sessions), day totals and hourly heart rate, and deletes by record id. Written as source `HEALTH_CONNECT` with
+        the export import's own mapping and rules, so a record lands on the row an export of it writes. One result per
+        item; neither `rejected` nor a skip should hold a change token back, only a non-2xx answer does. The
+        `Idempotency-Key` is required here (400 `health-connect.batch.idempotency_key_required` without it). A 429 from
+        the account's bucket or the ingest admission carries `Retry-After`; resend the same batch with the same key
+        after it. Bearer with the scope `health-connect:write`, the token a paired Android device holds; a session or
+        any other token is refused 403 `health-connect.device_token_required`. 401 `health-connect.device_unpaired` when
+        the device was removed in Settings: the app stops and asks to reconnect, as for any 401."
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: *a42
+          description: "Makes this write safe to retry. Send the same key with the same body again and the first response is
+            replayed rather than the work repeated, marked with `X-Idempotent-Replay: true`. The body is compared as
+            JSON with key order ignored; a different body under the same key is not a retry and runs as a new write,
+            while the first response stays stored for retries of the first request. A key that does not match the
+            pattern is IGNORED rather than refused — the write then proceeds unprotected and looks exactly like a
+            request that carried no key, so validate the key on your side. Scoped per user and per (method, path): the
+            same key on a different route is a different key. While a first request under this key is still in flight, a
+            second with the same body is refused with 409 rather than queued."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HealthConnectBatchRequest"
+      responses:
+        "200":
+          description: Batch processed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthConnectBatchResponse"
+        "400":
+          description: "`health-connect.batch.idempotency_key_required`: no usable `Idempotency-Key`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401": *a1
+        "403":
+          description: "`health-connect.device_token_required`, or `auth.scope.insufficient` for a token without the scope."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409": *a7
+        "413":
+          description: The body exceeds 4 MiB.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422":
+          description: "`health-connect.batch.too_large`: more than 500 items or 5,000 heart-rate samples.
+            `health-connect.batch.invalid`: the envelope is malformed (a malformed single item is answered `rejected` at
+            its index instead). Nothing was written."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429": *a5
   /api/measurement-reminders:
     get:
       tags:
@@ -19836,7 +20012,7 @@ paths:
                 $ref: "#/components/schemas/MeasurementReminderEnvelope"
         "401": *a1
         "403": *a18
-        "404": &a42
+        "404": &a43
           description: Measurement reminder not found / not owned.
           content:
             application/json:
@@ -19874,7 +20050,7 @@ paths:
                 $ref: "#/components/schemas/MeasurementReminderPatchEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a42
+        "404": *a43
         "422": *a4
         "429": *a5
     delete:
@@ -19897,7 +20073,7 @@ paths:
                 $ref: "#/components/schemas/MeasurementReminderDeleteEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a42
+        "404": *a43
         "422": *a4
         "429": *a5
   /api/measurement-reminders/{id}/satisfy:
@@ -19922,7 +20098,7 @@ paths:
                 $ref: "#/components/schemas/MeasurementReminderSatisfyEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a42
+        "404": *a43
         "422": *a4
         "429": *a5
   /api/measurement-reminders/{id}/complete:
@@ -19950,7 +20126,7 @@ paths:
                 $ref: "#/components/schemas/MeasurementReminderCompleteEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a42
+        "404": *a43
         "422": *a4
         "429": *a5
   /api/measurement-reminders/{id}/skip:
@@ -19980,7 +20156,7 @@ paths:
                 $ref: "#/components/schemas/MeasurementReminderSkipEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a42
+        "404": *a43
         "422": *a4
         "429": *a5
   /api/measurement-reminders/{id}/snooze:
@@ -20014,7 +20190,7 @@ paths:
                 $ref: "#/components/schemas/MeasurementReminderSnoozeEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a42
+        "404": *a43
         "422": *a4
         "429": *a5
   /api/measurement-reminders/{id}/history:
@@ -20055,7 +20231,7 @@ paths:
                 $ref: "#/components/schemas/MeasurementReminderHistoryEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a42
+        "404": *a43
         "422": *a4
         "429": *a5
   /api/labs:
@@ -20264,7 +20440,7 @@ paths:
                 $ref: "#/components/schemas/GetLabResultResponse"
         "401": *a1
         "403": *a18
-        "404": &a43
+        "404": &a44
           description: Lab result not found (or owned by another user).
           content:
             application/json:
@@ -20299,7 +20475,7 @@ paths:
                 $ref: "#/components/schemas/UpdateLabResultResponse"
         "401": *a1
         "403": *a18
-        "404": *a43
+        "404": *a44
         "422": *a4
         "429": *a5
     delete:
@@ -20322,7 +20498,7 @@ paths:
                 $ref: "#/components/schemas/DeleteLabResultResponse"
         "401": *a1
         "403": *a18
-        "404": *a43
+        "404": *a44
         "422": *a4
         "429": *a5
   /api/labs/restore:
@@ -20410,7 +20586,7 @@ paths:
             schema:
               $ref: "#/components/schemas/OcrTextExtractRequest"
       responses:
-        "202": &a54
+        "202": &a55
           description: Queued for the background worker. Every refusal the route can answer quickly (capability, provider, rate
             limit, budget, validation) has already been answered; anything that goes wrong from here is reported on the
             run.
@@ -20591,7 +20767,7 @@ paths:
                 $ref: "#/components/schemas/GetBiomarkerResponse"
         "401": *a1
         "403": *a18
-        "404": &a44
+        "404": &a45
           description: "Biomarker not found (or owned by another user). `meta.errorCode` = `labs.biomarker.notFound`. Since v1.43
             a marker that was merged into another answers with `meta.mergedInto` naming the marker it went into: drop
             the cached marker and open that one."
@@ -20635,7 +20811,7 @@ paths:
                 $ref: "#/components/schemas/UpdateBiomarkerResponse"
         "401": *a1
         "403": *a18
-        "404": *a44
+        "404": *a45
         "409":
           description: "`labs.biomarker.duplicate`: a rename collides with another of the caller's markers.
             `labs.biomarker.alias.taken` (v1.43): one of `aliases` is already the name or an alias of another marker;
@@ -20669,7 +20845,7 @@ paths:
                 $ref: "#/components/schemas/DeleteBiomarkerResponse"
         "401": *a1
         "403": *a18
-        "404": *a44
+        "404": *a45
         "422": *a4
         "429": *a5
   /api/biomarkers/{id}/series:
@@ -20744,7 +20920,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "404": *a44
+        "404": *a45
         "422":
           description: "`labs.series.invalid`: an unknown `zoom`, a malformed date, a `range` without both ends or longer than 15
             years, or `from` after `to`."
@@ -20788,7 +20964,7 @@ paths:
                 $ref: "#/components/schemas/MergeBiomarkersResponse"
         "401": *a1
         "403": *a18
-        "404": *a44
+        "404": *a45
         "409": *a7
         "422":
           description: "`labs.biomarker.merge.invalid`: a malformed body, or the target among the sources (Zod issues in
@@ -21013,7 +21189,7 @@ paths:
                 $ref: "#/components/schemas/GetEncounterEnvelope"
         "401": *a1
         "403": *a18
-        "404": &a45
+        "404": &a46
           description: Visit not found (or owned by another user).
           content:
             application/json:
@@ -21047,7 +21223,7 @@ paths:
                 $ref: "#/components/schemas/UpdateEncounterEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a45
+        "404": *a46
         "422": *a4
         "429": *a5
     delete:
@@ -21072,7 +21248,7 @@ paths:
                 $ref: "#/components/schemas/DeleteEncounterEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a45
+        "404": *a46
         "422": *a4
         "429": *a5
   /api/encounters/{id}/restore:
@@ -21098,7 +21274,7 @@ paths:
                 $ref: "#/components/schemas/RestoreEncounterEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a45
+        "404": *a46
         "422": *a4
         "429": *a5
   /api/encounters/{id}/links:
@@ -21130,7 +21306,7 @@ paths:
                 $ref: "#/components/schemas/LinkEncounterEnvelope"
         "401": *a1
         "403": *a9
-        "404": *a45
+        "404": *a46
         "422": *a4
         "429": *a5
     delete:
@@ -21160,7 +21336,7 @@ paths:
                 $ref: "#/components/schemas/UnlinkEncounterEnvelope"
         "401": *a1
         "403": *a9
-        "404": *a45
+        "404": *a46
         "422": *a4
         "429": *a5
   /api/practitioners:
@@ -21249,7 +21425,7 @@ paths:
                 $ref: "#/components/schemas/GetPractitionerEnvelope"
         "401": *a1
         "403": *a18
-        "404": &a46
+        "404": &a47
           description: Practitioner not found (or owned by another user).
           content:
             application/json:
@@ -21283,7 +21459,7 @@ paths:
                 $ref: "#/components/schemas/UpdatePractitionerEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a46
+        "404": *a47
         "422": *a4
         "429": *a5
     delete:
@@ -21308,7 +21484,7 @@ paths:
                 $ref: "#/components/schemas/DeletePractitionerEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a46
+        "404": *a47
         "422": *a4
         "429": *a5
   /api/practitioners/{id}/restore:
@@ -21334,7 +21510,7 @@ paths:
                 $ref: "#/components/schemas/RestorePractitionerEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a46
+        "404": *a47
         "422": *a4
         "429": *a5
   /api/treatment-series:
@@ -21414,7 +21590,7 @@ paths:
                 $ref: "#/components/schemas/GetTreatmentSeriesEnvelope"
         "401": *a1
         "403": *a18
-        "404": &a47
+        "404": &a48
           description: Treatment series not found (or owned by another user).
           content:
             application/json:
@@ -21448,7 +21624,7 @@ paths:
                 $ref: "#/components/schemas/UpdateTreatmentSeriesEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a47
+        "404": *a48
         "422": *a4
         "429": *a5
     delete:
@@ -21472,7 +21648,7 @@ paths:
                 $ref: "#/components/schemas/DeleteTreatmentSeriesEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a47
+        "404": *a48
         "422": *a4
         "429": *a5
   /api/treatment-series/{id}/restore:
@@ -21496,7 +21672,7 @@ paths:
                 $ref: "#/components/schemas/RestoreTreatmentSeriesEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a47
+        "404": *a48
         "422": *a4
         "429": *a5
   /api/vaccinations/custom:
@@ -21540,7 +21716,7 @@ paths:
                 $ref: "#/components/schemas/CreateCustomVaccineEnvelope"
         "401": *a1
         "403": *a18
-        "409": &a48
+        "409": &a49
           description: A live definition on the record already carries this name, compared without case
             (`vaccination.custom.name-taken`).
           content:
@@ -21577,13 +21753,13 @@ paths:
                 $ref: "#/components/schemas/UpdateCustomVaccineEnvelope"
         "401": *a1
         "403": *a18
-        "404": &a49
+        "404": &a50
           description: No live definition with this id on the record (`vaccination.custom.not-found`).
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "409": *a48
+        "409": *a49
         "422": *a4
         "429": *a5
     delete:
@@ -21608,7 +21784,7 @@ paths:
                 $ref: "#/components/schemas/DeleteCustomVaccineEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a49
+        "404": *a50
         "422": *a4
         "429": *a5
   /api/vaccinations:
@@ -21720,7 +21896,7 @@ paths:
                 $ref: "#/components/schemas/GetVaccinationEnvelope"
         "401": *a1
         "403": *a18
-        "404": &a50
+        "404": &a51
           description: Vaccination not found (or owned by another user).
           content:
             application/json:
@@ -21755,7 +21931,7 @@ paths:
                 $ref: "#/components/schemas/UpdateVaccinationEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a50
+        "404": *a51
         "422": *a4
         "429": *a5
     delete:
@@ -21780,7 +21956,7 @@ paths:
                 $ref: "#/components/schemas/DeleteVaccinationEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a50
+        "404": *a51
         "422": *a4
         "429": *a5
   /api/vaccinations/{id}/restore:
@@ -21805,7 +21981,7 @@ paths:
                 $ref: "#/components/schemas/RestoreVaccinationEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a50
+        "404": *a51
         "422": *a4
         "429": *a5
   /api/vaccinations/{id}/booster:
@@ -21873,7 +22049,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "404": *a50
+        "404": *a51
         "422": *a4
         "429": *a5
   /api/vaccinations/suggest:
@@ -21934,7 +22110,7 @@ paths:
                 $ref: "#/components/schemas/LinkVaccinationEnvelope"
         "401": *a1
         "403": *a9
-        "404": *a50
+        "404": *a51
         "422": *a4
         "429": *a5
     delete:
@@ -21964,7 +22140,7 @@ paths:
                 $ref: "#/components/schemas/UnlinkVaccinationEnvelope"
         "401": *a1
         "403": *a9
-        "404": *a50
+        "404": *a51
         "422": *a4
         "429": *a5
   /api/illness/episodes:
@@ -22079,7 +22255,7 @@ paths:
                 $ref: "#/components/schemas/GetIllnessEpisodeEnvelope"
         "401": *a1
         "403": *a18
-        "404": &a51
+        "404": &a52
           description: Illness episode not found (or owned by another user).
           content:
             application/json:
@@ -22114,7 +22290,7 @@ paths:
                 $ref: "#/components/schemas/UpdateIllnessEpisodeEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a51
+        "404": *a52
         "422": *a4
         "429": *a5
     delete:
@@ -22138,7 +22314,7 @@ paths:
                 $ref: "#/components/schemas/DeleteIllnessEpisodeEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a51
+        "404": *a52
         "422": *a4
         "429": *a5
   /api/illness/episodes/{id}/restore:
@@ -22166,7 +22342,7 @@ paths:
                 $ref: "#/components/schemas/RestoreIllnessEpisodeEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a51
+        "404": *a52
         "409": *a7
         "422": *a4
         "429": *a5
@@ -22199,7 +22375,7 @@ paths:
                 $ref: "#/components/schemas/ResolveIllnessEpisodeEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a51
+        "404": *a52
         "422": *a4
         "429": *a5
   /api/illness/episodes/{id}/day-logs:
@@ -22250,7 +22426,7 @@ paths:
                 $ref: "#/components/schemas/GetIllnessDayLogEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a51
+        "404": *a52
         "422": *a4
         "429": *a5
     post:
@@ -22287,7 +22463,7 @@ paths:
                 $ref: "#/components/schemas/UpsertIllnessDayLogCreatedEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a51
+        "404": *a52
         "422": *a4
         "429": *a5
   /api/illness/episodes/{id}/correlation:
@@ -22315,7 +22491,7 @@ paths:
                 $ref: "#/components/schemas/IllnessCorrelationEnvelope"
         "401": *a1
         "403": *a9
-        "404": *a51
+        "404": *a52
         "422": *a4
         "429": *a5
   /api/illness/insights:
@@ -22532,7 +22708,7 @@ paths:
                 $ref: "#/components/schemas/GetAllergyEnvelope"
         "401": *a1
         "403": *a18
-        "404": &a52
+        "404": &a53
           description: Allergy not found (or owned by another user).
           content:
             application/json:
@@ -22566,7 +22742,7 @@ paths:
                 $ref: "#/components/schemas/UpdateAllergyEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a52
+        "404": *a53
         "422": *a4
         "429": *a5
     delete:
@@ -22590,7 +22766,7 @@ paths:
                 $ref: "#/components/schemas/DeleteAllergyEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a52
+        "404": *a53
         "422": *a4
         "429": *a5
   /api/family-history:
@@ -22664,7 +22840,7 @@ paths:
                 $ref: "#/components/schemas/GetFamilyHistoryEnvelope"
         "401": *a1
         "403": *a18
-        "404": &a53
+        "404": &a54
           description: Family history entry not found (or owned by another user).
           content:
             application/json:
@@ -22698,7 +22874,7 @@ paths:
                 $ref: "#/components/schemas/UpdateFamilyHistoryEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a53
+        "404": *a54
         "422": *a4
         "429": *a5
     delete:
@@ -22722,7 +22898,7 @@ paths:
                 $ref: "#/components/schemas/DeleteFamilyHistoryEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a53
+        "404": *a54
         "422": *a4
         "429": *a5
   /api/documents/inbound:
@@ -23493,7 +23669,7 @@ paths:
           required: true
           schema:
             type: string
-        - &a55
+        - &a56
           name: Prefer
           in: header
           required: false
@@ -23518,9 +23694,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/InboundExtractEnvelope"
-        "202": *a54
+        "202": *a55
         "401": *a1
-        "403": &a56
+        "403": &a57
           description: >-
             `meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: AI refusal: the `documentAi`
@@ -23558,7 +23734,7 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
-        "503": &a57
+        "503": &a58
           description: "`ai.unavailable` — the inputs behind the AI capability could not be read, and the answer failed closed.
             Nothing was sent. Retry later."
           content:
@@ -23757,7 +23933,7 @@ paths:
           required: true
           schema:
             type: string
-        - *a55
+        - *a56
       requestBody:
         required: false
         content:
@@ -23793,12 +23969,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DocumentSuggestEnvelope"
-        "202": *a54
+        "202": *a55
         "401": *a1
-        "403": *a56
+        "403": *a57
         "422": *a4
         "429": *a5
-        "503": *a57
+        "503": *a58
   /api/documents/inbound/{id}/summary:
     post:
       tags:
@@ -23848,7 +24024,7 @@ paths:
             type: boolean
             default: false
           description: With `persist=true`, explicitly replace an existing stored summary.
-        - *a55
+        - *a56
       requestBody:
         required: false
         content:
@@ -23884,12 +24060,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DocumentSummaryEnvelope"
-        "202": *a54
+        "202": *a55
         "401": *a1
-        "403": *a56
+        "403": *a57
         "422": *a4
         "429": *a5
-        "503": *a57
+        "503": *a58
   /api/documents/inbound/{id}/index:
     post:
       tags:
@@ -23917,7 +24093,7 @@ paths:
           required: true
           schema:
             type: string
-        - *a55
+        - *a56
       requestBody:
         required: false
         content:
@@ -23953,12 +24129,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DocumentIndexEnvelope"
-        "202": *a54
+        "202": *a55
         "401": *a1
-        "403": *a56
+        "403": *a57
         "422": *a4
         "429": *a5
-        "503": *a57
+        "503": *a58
   /api/documents/inbound/{id}/chat:
     post:
       tags:
@@ -23998,10 +24174,10 @@ paths:
                 type: string
                 description: "SSE frames: `data: <json>\\n\\n`. See the operation description for the per-`type` frame shapes."
         "401": *a1
-        "403": *a56
+        "403": *a57
         "422": *a4
         "429": *a5
-        "503": *a57
+        "503": *a58
     get:
       tags:
         - Documents
@@ -24065,10 +24241,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentReindexEnvelope"
         "401": *a1
-        "403": *a56
+        "403": *a57
         "422": *a4
         "429": *a5
-        "503": *a57
+        "503": *a58
   /api/documents/inbound/{id}/facts/{factId}:
     patch:
       tags:
@@ -24181,7 +24357,7 @@ paths:
                 $ref: "#/components/schemas/CreateCustomMetricResponse"
         "401": *a1
         "403": *a9
-        "409": &a59
+        "409": &a60
           description: A custom metric with this name already exists for the caller.
           content:
             application/json:
@@ -24210,7 +24386,7 @@ paths:
                 $ref: "#/components/schemas/GetCustomMetricResponse"
         "401": *a1
         "403": *a18
-        "404": &a58
+        "404": &a59
           description: Custom metric not found (or owned by another user).
           content:
             application/json:
@@ -24245,8 +24421,8 @@ paths:
                 $ref: "#/components/schemas/UpdateCustomMetricResponse"
         "401": *a1
         "403": *a9
-        "404": *a58
-        "409": *a59
+        "404": *a59
+        "409": *a60
         "422": *a4
         "429": *a5
     delete:
@@ -24270,7 +24446,7 @@ paths:
                 $ref: "#/components/schemas/DeleteCustomMetricResponse"
         "401": *a1
         "403": *a9
-        "404": *a58
+        "404": *a59
         "422": *a4
         "429": *a5
   /api/custom-metrics/{id}/entries:
@@ -24314,7 +24490,7 @@ paths:
                 $ref: "#/components/schemas/ListCustomMetricEntriesEnvelope"
         "401": *a1
         "403": *a18
-        "404": *a58
+        "404": *a59
         "422": *a4
         "429": *a5
     post:
@@ -24356,7 +24532,7 @@ paths:
                 $ref: "#/components/schemas/CreateCustomMetricEntryResponse"
         "401": *a1
         "403": *a9
-        "404": *a58
+        "404": *a59
         "409": *a7
         "422": *a4
         "429": *a12
@@ -24393,7 +24569,7 @@ paths:
                 $ref: "#/components/schemas/UpdateCustomMetricEntryResponse"
         "401": *a1
         "403": *a9
-        "404": &a60
+        "404": &a61
           description: Custom metric entry not found (or owned by another user).
           content:
             application/json:
@@ -24427,7 +24603,7 @@ paths:
                 $ref: "#/components/schemas/DeleteCustomMetricEntryResponse"
         "401": *a1
         "403": *a9
-        "404": *a60
+        "404": *a61
         "422": *a4
         "429": *a5
   /api/custom-metrics/{id}/entries/restore:
@@ -24776,7 +24952,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NutrientCatalogEnvelope"
         "401": *a1
-        "403": &a61
+        "403": &a62
           description: >-
             `meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: The opt-in `nutrients` module is
@@ -24922,7 +25098,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NutrientBatchEnvelope"
         "401": *a1
-        "403": &a62
+        "403": &a63
           description: "`meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: The opt-in `nutrients` module is
             off for this account (errorCode `module.disabled`). Stop syncing and do not retry; offer the
@@ -24958,7 +25134,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NutrientOverviewEnvelope"
         "401": *a1
-        "403": *a61
+        "403": *a62
         "422": *a4
         "429": *a5
   /api/nutrients/daily:
@@ -24998,7 +25174,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NutrientDailySeriesEnvelope"
         "401": *a1
-        "403": *a61
+        "403": *a62
         "422": *a4
         "429": *a5
   /api/nutrients/energy-balance:
@@ -25029,7 +25205,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/EnergyBalanceEnvelope"
         "401": *a1
-        "403": *a61
+        "403": *a62
         "422": *a4
         "429": *a5
   /api/nutrients/water:
@@ -25058,7 +25234,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NutrientWaterWriteEnvelope"
         "401": *a1
-        "403": *a61
+        "403": *a62
         "409": *a7
         "422": *a4
         "429": *a5
@@ -25079,7 +25255,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NutrientTargetsEnvelope"
         "401": *a1
-        "403": *a62
+        "403": *a63
         "422": *a4
         "429": *a5
     patch:
@@ -25103,7 +25279,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NutrientTargetsPatchEnvelope"
         "401": *a1
-        "403": *a62
+        "403": *a63
         "422": *a4
         "429": *a12
   /api/integrations/healthkit:
@@ -25814,7 +25990,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WithingsCredentialsUpdateEnvelope"
-        "400": &a63
+        "400": &a64
           description: Body is not parseable JSON.
           content:
             application/json:
@@ -25822,19 +25998,19 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "401": *a1
         "403": *a9
-        "413": &a64
+        "413": &a65
           description: Body exceeds 64 KiB.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "415": &a65
+        "415": &a66
           description: Content-Type is not `application/json`.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": &a66
+        "422": &a67
           description: "`clientId` and `clientSecret` are both required and each must be 1–200 characters. The envelope carries a
             single fixed message, not per-field issues."
           content:
@@ -26025,12 +26201,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GoogleHealthCredentialsUpdateEnvelope"
-        "400": *a63
+        "400": *a64
         "401": *a1
         "403": *a9
-        "413": *a64
-        "415": *a65
-        "422": *a66
+        "413": *a65
+        "415": *a66
+        "422": *a67
         "429": *a5
     delete:
       tags:
@@ -26196,12 +26372,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OuraCredentialsUpdateEnvelope"
-        "400": *a63
+        "400": *a64
         "401": *a1
         "403": *a9
-        "413": *a64
-        "415": *a65
-        "422": *a66
+        "413": *a65
+        "415": *a66
+        "422": *a67
         "429": *a5
     delete:
       tags:
@@ -26281,21 +26457,21 @@ paths:
                 $ref: "#/components/schemas/OuraTestEnvelope"
         "401": *a1
         "403": *a9
-        "422": &a67
+        "422": &a68
           description: No usable connection for this provider — nothing stored, or the stored grant could no longer be resolved
             into an access token. `meta.errorCode` = `not_configured`.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "429": &a68
+        "429": &a69
           description: More than 5 requests in 60 s from this user. `meta.errorCode` = `rate_limited_self` — this is the local
             limiter, distinct from a `rate_limited` 502 which is the provider's.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "502": &a69
+        "502": &a70
           description: "The probe did not complete. `meta.errorCode` names the class: `credentials_rejected` (the provider
             answered 401/403 — the stored grant is gone), `rate_limited` (the PROVIDER answered 429, which is not this
             endpoint's own limiter), `upstream_error` (5xx), `timeout` (no answer within 5 s), `connection_failed`
@@ -26341,12 +26517,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PolarCredentialsUpdateEnvelope"
-        "400": *a63
+        "400": *a64
         "401": *a1
         "403": *a9
-        "413": *a64
-        "415": *a65
-        "422": *a66
+        "413": *a65
+        "415": *a66
+        "422": *a67
         "429": *a5
     delete:
       tags:
@@ -26426,9 +26602,9 @@ paths:
                 $ref: "#/components/schemas/PolarTestEnvelope"
         "401": *a1
         "403": *a9
-        "422": *a67
-        "429": *a68
-        "502": *a69
+        "422": *a68
+        "429": *a69
+        "502": *a70
   /api/strava/credentials:
     get:
       tags:
@@ -26465,12 +26641,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StravaCredentialsUpdateEnvelope"
-        "400": *a63
+        "400": *a64
         "401": *a1
         "403": *a9
-        "413": *a64
-        "415": *a65
-        "422": *a66
+        "413": *a65
+        "415": *a66
+        "422": *a67
         "429": *a5
     delete:
       tags:
@@ -26552,9 +26728,9 @@ paths:
                 $ref: "#/components/schemas/StravaTestEnvelope"
         "401": *a1
         "403": *a9
-        "422": *a67
-        "429": *a68
-        "502": *a69
+        "422": *a68
+        "429": *a69
+        "502": *a70
   /api/integrations/status:
     get:
       tags:
@@ -26632,7 +26808,7 @@ paths:
         "401": *a1
         "403": *a9
         "422": *a4
-        "429": *a68
+        "429": *a69
   /api/integrations/google-health/test:
     post:
       tags:
@@ -26666,9 +26842,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a67
-        "429": *a68
-        "502": *a69
+        "422": *a68
+        "429": *a69
+        "502": *a70
   /api/integrations/whoop/resume:
     post:
       tags:
@@ -26686,7 +26862,7 @@ paths:
         "401": *a1
         "403": *a9
         "422": *a4
-        "429": *a68
+        "429": *a69
   /api/integrations/whoop/test:
     post:
       tags:
@@ -26704,9 +26880,9 @@ paths:
                 $ref: "#/components/schemas/WhoopIntegrationTestEnvelope"
         "401": *a1
         "403": *a9
-        "422": *a67
-        "429": *a68
-        "502": *a69
+        "422": *a68
+        "429": *a69
+        "502": *a70
   /api/integrations/withings/resume:
     post:
       tags:
@@ -26725,7 +26901,7 @@ paths:
         "401": *a1
         "403": *a9
         "422": *a4
-        "429": *a68
+        "429": *a69
   /api/integrations/withings/test:
     post:
       tags:
@@ -26744,8 +26920,8 @@ paths:
                 $ref: "#/components/schemas/WithingsIntegrationTestEnvelope"
         "401": *a1
         "403": *a9
-        "422": *a67
-        "429": *a68
+        "422": *a68
+        "429": *a69
         "502":
           description: "The probe did not complete. The shared codes apply (`credentials_rejected`, `rate_limited`,
             `upstream_error`, `timeout`, `connection_failed`) and this path adds one of its own:
@@ -27184,7 +27360,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RecordActivityEnvelope"
         "401": *a1
-        "403": &a70
+        "403": &a71
           description: "`meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: Refused. `meta.errorCode` is
             `sharing.not_permitted` when the request was made while acting on another account (grant management is never
@@ -27211,7 +27387,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/AccountGrantListEnvelope"
         "401": *a1
-        "403": *a70
+        "403": *a71
         "422": *a4
         "429": *a5
     post:
@@ -27315,7 +27491,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/AcceptedAccountGrantEnvelope"
         "401": *a1
-        "403": *a70
+        "403": *a71
         "404":
           description: No such invitation for this account.
           content:
@@ -27359,7 +27535,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RevokedAccountGrantEnvelope"
         "401": *a1
-        "403": *a70
+        "403": *a71
         "404":
           description: No such grant on this account's record.
           content:
@@ -27400,7 +27576,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RenouncedAccountGrantEnvelope"
         "401": *a1
-        "403": *a70
+        "403": *a71
         "404":
           description: No such grant held by this account.
           content:
@@ -27835,7 +28011,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "401": *a1
-        "403": *a70
+        "403": *a71
         "409":
           description: "The record this browser session is on is not the record the request asserted. `meta.errorCode` is
             `sharing.session.changed`. It is not a refusal of access — the caller may well be entitled to both records —
@@ -28225,7 +28401,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/McpConnectionListEnvelope"
         "401": *a1
-        "403": &a71
+        "403": &a72
           description: "`meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: The operator has disabled the API
             instance-wide. Every route in this module refuses while that setting is off, for a cookie session as well as
@@ -28259,7 +28435,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/McpConnectionRevokeEnvelope"
         "401": *a1
-        "403": *a71
+        "403": *a72
         "404":
           description: No live connection with this id for this caller — also the answer for an already-revoked one, so a repeat
             revoke is 404 rather than an idempotent 200.
@@ -28286,7 +28462,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/McpConnectorTokenListEnvelope"
         "401": *a1
-        "403": *a71
+        "403": *a72
         "422": *a4
         "429": *a5
     post:
@@ -28323,7 +28499,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "401": *a1
-        "403": *a71
+        "403": *a72
         "413":
           description: Body exceeds 16 KiB.
           content:
@@ -28366,7 +28542,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/McpConnectorTokenRevokeEnvelope"
         "401": *a1
-        "403": *a71
+        "403": *a72
         "404":
           description: No `health:read` token with this id for this caller. An already-revoked token is still found, so a repeat
             revoke answers 200.
@@ -28427,7 +28603,7 @@ paths:
         the record has no provider app of its own and the deployment has none, the Guardian's own app is copied onto the
         record (audited). Cookie session, while acting on a managed record the caller guards."
       parameters:
-        - &a72
+        - &a73
           name: provider
           in: path
           required: true
@@ -28474,7 +28650,7 @@ paths:
         Audited against the record with the Guardian as the actor. Cookie session or Bearer, while acting on a managed
         record the caller guards."
       parameters:
-        - *a72
+        - *a73
       responses:
         "200":
           description: The provider is disconnected.
@@ -28500,7 +28676,7 @@ paths:
       description: Returns the named family's resolved settings for the record the session is acting on. Cookie session or
         Bearer, while acting on a managed record the caller guards.
       parameters:
-        - &a73
+        - &a74
           name: family
           in: path
           required: true
@@ -28544,7 +28720,7 @@ paths:
         ride the audit row. Body capped at 64 KiB. Cookie session or Bearer, while acting on a managed record the caller
         guards.
       parameters:
-        - *a73
+        - *a74
       requestBody:
         required: true
         content:
@@ -29371,13 +29547,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminBackupDocument"
-        "403": &a74
+        "403": &a75
           description: Caller is not an admin. `requireAdmin()` is cookie-only, so a Bearer token lands here whatever its scope.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "404": &a75
+        "404": &a76
           description: No stored copy with this id.
           content:
             application/json:
@@ -29451,8 +29627,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "403": *a74
-        "404": *a75
+        "403": *a75
+        "404": *a76
         "409":
           description: A restore of the same account is already queued or running (`meta.errorCode` = `backup.restore.active`,
             `meta.jobId` names it), the stored copy was replaced by a newer one while it was being checked
@@ -29496,7 +29672,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminBackupRestoreJobListResponse"
-        "403": *a74
+        "403": *a75
   /api/admin/backups/restores/{jobId}:
     get:
       tags:
@@ -29519,7 +29695,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminBackupRestoreJobResponse"
-        "403": *a74
+        "403": *a75
         "404":
           description: No restore job with this id.
           content:
@@ -29538,7 +29714,7 @@ paths:
         request leaves the server. Needs neither the Documents module nor the list: with the list unset, `available` is
         false and any connection still stored is listed (with `originAllowed: false`) so it can be removed. Cookie
         session only; not delegable."
-      security: &a76
+      security: &a77
         - cookieAuth: []
       responses:
         "200":
@@ -29548,7 +29724,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourcesStatusEnvelope"
         "401": *a1
-        "403": &a77
+        "403": &a78
           description: "`meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: Refused before any request to the
             source: `documents.sources.browserOnly` for a Bearer caller, `sharing.not_permitted` while acting on another
@@ -29573,9 +29749,9 @@ paths:
         `documents.sources.tokenRequired`), so a stored token is never sent to an address it was not saved for. A Papra
         organization id is letters, digits, `_` and `-`. The token is stored encrypted (AES-256-GCM) and never returned.
         Ten saves and tests a minute per person. Cookie session only; not delegable."
-      security: *a76
+      security: *a77
       parameters:
-        - &a78
+        - &a79
           name: system
           in: path
           required: true
@@ -29614,8 +29790,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceConnectionEnvelope"
         "401": *a1
-        "403": *a77
-        "404": &a79
+        "403": *a78
+        "404": &a80
           description: "`documents.sources.unavailable`: the operator has not listed any origin in `DOCUMENT_SOURCE_ORIGINS`, so
             the picker is off. `documents.sources.notConnected`: no connection is saved for this system.
             `documents.sources.notFound`: the source has no such document, or (Papra) no such organization, including
@@ -29634,7 +29810,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
-        "502": &a80
+        "502": &a81
           description: "The source could not answer usefully, with the reason in `meta.errorCode` and, when the source answered at
             all, its HTTP status in `meta.upstreamStatus` (its body is never passed on): `documents.sources.unreachable`
             (no connection, timeout, or a destination refused at dial time), `documents.sources.redirected` (the source
@@ -29653,9 +29829,9 @@ paths:
       description: Deletes the caller's connection for this system, and its token with it. Works even after the operator
         removed the origin from the list, and with the Documents module switched off. `disconnected` is false when there
         was nothing to delete. Cookie session only; not delegable.
-      security: *a76
+      security: *a77
       parameters:
-        - *a78
+        - *a79
       responses:
         "200":
           description: Removed, or there was nothing to remove.
@@ -29664,7 +29840,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceDisconnectEnvelope"
         "401": *a1
-        "403": *a77
+        "403": *a78
         "422": *a4
         "429": *a5
   /api/documents/sources/{system}/test:
@@ -29675,9 +29851,9 @@ paths:
       description: One request to the source with the stored token. Answers `ok` with the round-trip time and stamps
         `lastVerifiedAt`, or the reason in `meta.errorCode`. Shares the save's allowance of ten a minute. Cookie session
         only; not delegable.
-      security: *a76
+      security: *a77
       parameters:
-        - *a78
+        - *a79
       responses:
         "200":
           description: The source answered.
@@ -29686,9 +29862,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceTestEnvelope"
         "401": *a1
-        "403": *a77
-        "404": *a79
-        "422": &a81
+        "403": *a78
+        "404": *a80
+        "422": &a82
           description: "`documents.sources.originNotAllowed`: the base address's origin is not on the operator's list (checked on
             every request, so a connection saved earlier is cut off once its origin is removed), or another validation
             failure."
@@ -29697,7 +29873,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
-        "502": *a80
+        "502": *a81
   /api/documents/sources/{system}/tags:
     get:
       tags:
@@ -29705,9 +29881,9 @@ paths:
       summary: Tags of a connected archive
       description: The source's tags for the picker's filter, the first 250 by name, in the source's own ids. Shares the
         search allowance of sixty a minute. Cookie session only; not delegable.
-      security: *a76
+      security: *a77
       parameters:
-        - *a78
+        - *a79
       responses:
         "200":
           description: The tags.
@@ -29716,11 +29892,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceTagsEnvelope"
         "401": *a1
-        "403": *a77
-        "404": *a79
-        "422": *a81
+        "403": *a78
+        "404": *a80
+        "422": *a82
         "429": *a5
-        "502": *a80
+        "502": *a81
   /api/documents/sources/{system}/search:
     get:
       tags:
@@ -29734,9 +29910,9 @@ paths:
         under that source key: `new`, `imported` with the vault document's `documentId`, or `deleted` (deleted in
         HealthLog; importing it again stores nothing). Nothing is stored. Sixty searches a minute, shared with the tag
         read. Cookie session only; not delegable."
-      security: *a76
+      security: *a77
       parameters:
-        - *a78
+        - *a79
         - name: q
           in: query
           required: false
@@ -29777,11 +29953,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceSearchEnvelope"
         "401": *a1
-        "403": *a77
-        "404": *a79
-        "422": *a81
+        "403": *a78
+        "404": *a80
+        "422": *a82
         "429": *a5
-        "502": *a80
+        "502": *a81
   /api/documents/sources/{system}/import:
     post:
       tags:
@@ -29803,9 +29979,9 @@ paths:
         fetched), including a duplicate. `kind` sets the document type (default OTHER). Automatic AI reading follows the
         person's own setting. Counts against the person's upload allowance (60 an hour) and storage quota. 201 for a new
         document, 200 otherwise. Cookie session only; not delegable."
-      security: *a76
+      security: *a77
       parameters:
-        - *a78
+        - *a79
       requestBody:
         required: true
         content:
@@ -29866,7 +30042,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceImportEnvelope"
         "401": *a1
-        "403": *a77
+        "403": *a78
         "404":
           description: "`documents.sources.unavailable`: the operator has not listed any origin in `DOCUMENT_SOURCE_ORIGINS`, so
             the picker is off. `documents.sources.notConnected`: no connection is saved for this system.
@@ -29897,7 +30073,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a81
+        "422": *a82
         "429":
           description: "`documents.inbound.rateLimited` (the person's hourly upload allowance, with the rate-limit headers) or
             `documents.inbound.uploadBusy` (too many uploads in progress; `Retry-After: 1`)."
@@ -29905,7 +30081,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "502": *a80
+        "502": *a81
   /api/symptoms/definitions:
     get:
       tags:
@@ -29929,7 +30105,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListSymptomDefinitionsEnvelope"
         "401": *a1
-        "403": &a82
+        "403": &a83
           description: >-
             `meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: `illness.disabled`: the record
@@ -29973,7 +30149,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateSymptomDefinitionEnvelope"
         "401": *a1
-        "403": *a82
+        "403": *a83
         "409": *a7
         "422": *a4
         "429": *a5
@@ -30003,8 +30179,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateSymptomDefinitionEnvelope"
         "401": *a1
-        "403": *a82
-        "404": &a83
+        "403": *a83
+        "404": &a84
           description: "`symptoms.definition.notFound`: no definition with this id on the record."
           content:
             application/json:
@@ -30041,8 +30217,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteSymptomDefinitionEnvelope"
         "401": *a1
-        "403": *a82
-        "404": *a83
+        "403": *a83
+        "404": *a84
         "422": *a4
         "429": *a5
   /api/symptoms/events:
@@ -30091,7 +30267,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListSymptomEventsEnvelope"
         "401": *a1
-        "403": *a82
+        "403": *a83
         "422": *a4
         "429": *a5
     post:
@@ -30117,8 +30293,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateSymptomEventEnvelope"
         "401": *a1
-        "403": *a82
-        "404": *a83
+        "403": *a83
+        "404": *a84
         "409": *a7
         "422": *a4
         "429": *a5
@@ -30196,8 +30372,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetSymptomEventEnvelope"
         "401": *a1
-        "403": *a82
-        "404": &a84
+        "403": *a83
+        "404": &a85
           description: "`symptoms.event.notFound`: no occurrence with this id on the record."
           content:
             application/json:
@@ -30232,8 +30408,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateSymptomEventEnvelope"
         "401": *a1
-        "403": *a82
-        "404": *a84
+        "403": *a83
+        "404": *a85
         "422": *a4
         "429": *a5
     delete:
@@ -30256,8 +30432,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteSymptomEventEnvelope"
         "401": *a1
-        "403": *a82
-        "404": *a84
+        "403": *a83
+        "404": *a85
         "422": *a4
         "429": *a5
   /api/day/index:
@@ -30422,7 +30598,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/TimelineEnvelope"
         "401": *a1
-        "403": &a85
+        "403": &a86
           description: >-
             `meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: `module.disabled` with
@@ -30461,7 +30637,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/TimelineReadinessEnvelope"
         "401": *a1
-        "403": *a85
+        "403": *a86
         "422": *a4
         "429": *a5
   /api/life-events:
@@ -30479,7 +30655,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/LifeEventListEnvelope"
         "401": *a1
-        "403": &a86
+        "403": &a87
           description: >-
             `meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: Owner-only in v1.42: no share
@@ -30521,7 +30697,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateLifeEventEnvelope"
         "401": *a1
-        "403": *a86
+        "403": *a87
         "409": *a7
         "422": *a4
         "429": *a12
@@ -30552,8 +30728,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateLifeEventEnvelope"
         "401": *a1
-        "403": *a86
-        "404": &a87
+        "403": *a87
+        "404": &a88
           description: No such life event on this account.
           content:
             application/json:
@@ -30580,8 +30756,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteLifeEventEnvelope"
         "401": *a1
-        "403": *a86
-        "404": *a87
+        "403": *a87
+        "404": *a88
         "422": *a4
         "429": *a5
   /api/search:
@@ -30777,7 +30953,7 @@ paths:
               required:
                 - file
       responses:
-        "202": *a54
+        "202": *a55
         "401": *a1
         "403":
           description: "`meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
@@ -31425,7 +31601,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/SeizureDiaryEnvelope"
         "401": *a1
-        "403": &a88
+        "403": &a89
           description: >-
             `meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: `seizures.disabled`: the record
@@ -31470,7 +31646,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateSeizureEventEnvelope"
         "401": *a1
-        "403": *a88
+        "403": *a89
         "404":
           description: "`seizures.type.notFound`: no seizure type with this id on the record."
           content:
@@ -31506,7 +31682,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateSeizureEventEnvelope"
         "401": *a1
-        "403": *a88
+        "403": *a89
         "404":
           description: "`seizures.event.notFound`: no seizure with this id on the record."
           content:
@@ -31535,7 +31711,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteSeizureEventEnvelope"
         "401": *a1
-        "403": *a88
+        "403": *a89
         "404":
           description: "`seizures.event.notFound`: no seizure with this id on the record."
           content:
@@ -31572,7 +31748,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateSeizureRescueDoseEnvelope"
         "401": *a1
-        "403": *a88
+        "403": *a89
         "404":
           description: "`seizures.event.notFound`: no seizure with this id on the record."
           content:
@@ -31612,7 +31788,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateSeizureRescueDoseEnvelope"
         "401": *a1
-        "403": *a88
+        "403": *a89
         "404":
           description: "`seizures.rescue.notFound`: no rescue dose with this id on the record."
           content:
@@ -31645,7 +31821,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteSeizureRescueDoseEnvelope"
         "401": *a1
-        "403": *a88
+        "403": *a89
         "404":
           description: "`seizures.rescue.notFound`: no rescue dose with this id on the record."
           content:
@@ -31667,7 +31843,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListSeizureTypesEnvelope"
         "401": *a1
-        "403": *a88
+        "403": *a89
         "422": *a4
         "429": *a5
     post:
@@ -31689,7 +31865,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateSeizureTypeEnvelope"
         "401": *a1
-        "403": *a88
+        "403": *a89
         "422": *a4
         "429": *a5
   /api/seizures/types/{id}:
@@ -31717,7 +31893,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateSeizureTypeEnvelope"
         "401": *a1
-        "403": *a88
+        "403": *a89
         "404":
           description: "`seizures.type.notFound`: no seizure type with this id on the record."
           content:
@@ -31745,7 +31921,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteSeizureTypeEnvelope"
         "401": *a1
-        "403": *a88
+        "403": *a89
         "404":
           description: "`seizures.type.notFound`: no seizure type with this id on the record."
           content:
@@ -31773,7 +31949,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/SeizureSettingsEnvelope"
         "401": *a1
-        "403": *a88
+        "403": *a89
         "422": *a4
         "429": *a5
     patch:
@@ -31795,7 +31971,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateSeizureSettingsEnvelope"
         "401": *a1
-        "403": *a88
+        "403": *a89
         "422": *a4
         "429": *a5
   /api/bugreport:
@@ -33775,7 +33951,25 @@ components:
               maxLength: 120
             - type: "null"
         insuranceNumber:
-          description: German KVNR. Empty/null clears it; mod-10 check enforced.
+          description: The insurance number, checked under the rule of `insuranceNumberCountry` (sent in the same request, else
+            stored, else DE) and stored normalised. Empty/null clears it. A value that fails the rule is not written and
+            comes back in `rejectedFields` with code `invalid_kvnr`, `invalid_svnr`, `invalid_ahv`, `invalid_bsn`,
+            `invalid_nir` or `invalid_member_id`.
+          type:
+            - string
+            - "null"
+        insuranceNumberCountry:
+          description: "ISO 3166-1 alpha-2 country whose rule the insurance number follows: DE (KVNR), AT (SVNR), CH (AHV number),
+            NL (BSN) and FR (NIR) are checked against their check digit; every other country takes 3 to 30 letters,
+            digits, spaces, hyphens or dots, as entered. A number stored without a country follows DE. Case-insensitive;
+            empty/null clears it. A change the stored number would fail, sent without a new number, is refused with the
+            stored number's rejection code."
+          type:
+            - string
+            - "null"
+        insuranceGroupNumber:
+          description: "The plan's group number beside a US member ID: 3 to 30 letters, digits, spaces, hyphens or dots. Kept only
+            while the country is US; any other country clears it. Empty/null clears it."
           type:
             - string
             - "null"
@@ -33801,9 +33995,10 @@ components:
           maxLength: 512
       description: Partial profile update. Every field is optional and an omitted field is left untouched. An explicit null
         clears any nullable field; an empty string also clears `displayName`, `dateOfBirth`, `gender`, `fullName`,
-        `insurerName`, `insuranceNumber` and `insurerIkNumber`. `email` is not among them — it is validated as an
-        address, so send null to clear it. `locale`, `timezone`, `timeFormat` and `dateFormat` are not clearable.
-        `userId` is never accepted — it is narrowed from the session/token.
+        `insurerName`, `insuranceNumber`, `insuranceNumberCountry`, `insuranceGroupNumber` and `insurerIkNumber`.
+        `email` is not among them — it is validated as an address, so send null to clear it. `locale`, `timezone`,
+        `timeFormat` and `dateFormat` are not clearable. `userId` is never accepted — it is narrowed from the
+        session/token.
     PasskeyReauthRequest:
       type: object
       properties:
@@ -39826,6 +40021,448 @@ components:
         that key is used and never overwritten (a different label is named in `keptMoodTagKeys`); a missing one is
         created, within the account's custom-tag cap; a key another account of this server holds comes over under a key
         derived from the account and the file's key, so a second import of the same file finds it."
+    HealthConnectPairRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          pattern: ^hcp_[0-9a-f]{32}$
+        installId:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{16,128}$
+          description: A random id the app generates once per install. It names the device in every later `X-Device-Id` header.
+        deviceModel:
+          type: string
+          minLength: 1
+          maxLength: 128
+        appVersion:
+          type: string
+          minLength: 1
+          maxLength: 32
+      required:
+        - code
+        - installId
+      additionalProperties: false
+    HealthConnectBatchRequest:
+      type: object
+      properties:
+        phase:
+          type: string
+          enum:
+            - live
+            - backfill
+          description: "`live` for change-token reads, `backfill` for the first import. Only `live` moves the device's delivery
+            stamps the stall rule reads."
+        records:
+          maxItems: 500
+          type: array
+          items:
+            $ref: "#/components/schemas/HealthConnectRecord"
+        aggregates:
+          maxItems: 500
+          type: array
+          items:
+            $ref: "#/components/schemas/HealthConnectAggregate"
+        deletes:
+          description: Record ids Health Connect reported deleted. Each removes the rows that record became (a spot reading, a
+            heart-rate series, a sleep session's stages, a workout).
+          maxItems: 500
+          type: array
+          items:
+            description: The record's Health Connect `metadata.id`, a UUID. Matched case-insensitively.
+            type: string
+            pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+      required:
+        - phase
+      additionalProperties: false
+      description: At most 500 items over records, aggregates and deletes together, 5000 heart-rate samples, and 4194304 bytes.
+    HealthConnectRecord:
+      oneOf:
+        - $ref: "#/components/schemas/HealthConnectInstantRecord"
+        - $ref: "#/components/schemas/HealthConnectHeartRateRecord"
+        - $ref: "#/components/schemas/HealthConnectSleepSessionRecord"
+        - $ref: "#/components/schemas/HealthConnectExerciseSessionRecord"
+      type: object
+      discriminator:
+        propertyName: type
+        mapping:
+          WeightRecord: "#/components/schemas/HealthConnectInstantRecord"
+          BodyFatRecord: "#/components/schemas/HealthConnectInstantRecord"
+          LeanBodyMassRecord: "#/components/schemas/HealthConnectInstantRecord"
+          BloodPressureRecord: "#/components/schemas/HealthConnectInstantRecord"
+          RestingHeartRateRecord: "#/components/schemas/HealthConnectInstantRecord"
+          HeartRateVariabilityRmssdRecord: "#/components/schemas/HealthConnectInstantRecord"
+          OxygenSaturationRecord: "#/components/schemas/HealthConnectInstantRecord"
+          RespiratoryRateRecord: "#/components/schemas/HealthConnectInstantRecord"
+          BloodGlucoseRecord: "#/components/schemas/HealthConnectInstantRecord"
+          BodyTemperatureRecord: "#/components/schemas/HealthConnectInstantRecord"
+          Vo2MaxRecord: "#/components/schemas/HealthConnectInstantRecord"
+          HeartRateRecord: "#/components/schemas/HealthConnectHeartRateRecord"
+          SleepSessionRecord: "#/components/schemas/HealthConnectSleepSessionRecord"
+          ExerciseSessionRecord: "#/components/schemas/HealthConnectExerciseSessionRecord"
+    HealthConnectInstantRecord:
+      type: object
+      properties:
+        id:
+          description: The record's Health Connect `metadata.id`, a UUID. Matched case-insensitively.
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        package:
+          description: "`metadata.dataOrigin.packageName`."
+          type: string
+          minLength: 1
+          maxLength: 255
+        deviceType:
+          description: "`metadata.device.type` (Health Connect `Device.TYPE_*`)."
+          type: integer
+          minimum: 0
+          maximum: 64
+        lastModified:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        type:
+          type: string
+          enum:
+            - WeightRecord
+            - BodyFatRecord
+            - LeanBodyMassRecord
+            - BloodPressureRecord
+            - RestingHeartRateRecord
+            - HeartRateVariabilityRmssdRecord
+            - OxygenSaturationRecord
+            - RespiratoryRateRecord
+            - BloodGlucoseRecord
+            - BodyTemperatureRecord
+            - Vo2MaxRecord
+        time:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        zoneOffsetSeconds:
+          type: integer
+          minimum: -64800
+          maximum: 64800
+        fields:
+          type: object
+          propertyNames:
+            type: string
+            minLength: 1
+            maxLength: 64
+          additionalProperties:
+            anyOf:
+              - type: number
+              - type: string
+                maxLength: 64
+              - type: "null"
+          description: "The record's values under the Health Connect export's column names and units: `weight` and `mass` in
+            grams, `percentage` 0–100, `systolic`/`diastolic` mmHg, `beats_per_minute`, `heart_rate_variability_millis`,
+            `rate`, `level` mmol/L with `relation_to_meal` (int), `temperature` °C,
+            `vo2_milliliters_per_minute_kilogram`. Unknown fields are ignored."
+      required:
+        - id
+        - type
+        - time
+        - fields
+      additionalProperties: false
+    HealthConnectHeartRateRecord:
+      type: object
+      properties:
+        id:
+          description: The record's Health Connect `metadata.id`, a UUID. Matched case-insensitively.
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        package:
+          description: "`metadata.dataOrigin.packageName`."
+          type: string
+          minLength: 1
+          maxLength: 255
+        deviceType:
+          description: "`metadata.device.type` (Health Connect `Device.TYPE_*`)."
+          type: integer
+          minimum: 0
+          maximum: 64
+        lastModified:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        type:
+          type: string
+          const: HeartRateRecord
+        start:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        end:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        startZoneOffsetSeconds:
+          type: integer
+          minimum: -64800
+          maximum: 64800
+        endZoneOffsetSeconds:
+          type: integer
+          minimum: -64800
+          maximum: 64800
+        samples:
+          maxItems: 5000
+          type: array
+          items:
+            type: object
+            properties:
+              time:
+                type: string
+                format: date-time
+                pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              bpm:
+                type: number
+                minimum: 0
+                maximum: 1000
+            required:
+              - time
+              - bpm
+            additionalProperties: false
+      required:
+        - id
+        - type
+        - start
+        - end
+        - samples
+      additionalProperties: false
+    HealthConnectSleepSessionRecord:
+      type: object
+      properties:
+        id:
+          description: The record's Health Connect `metadata.id`, a UUID. Matched case-insensitively.
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        package:
+          description: "`metadata.dataOrigin.packageName`."
+          type: string
+          minLength: 1
+          maxLength: 255
+        deviceType:
+          description: "`metadata.device.type` (Health Connect `Device.TYPE_*`)."
+          type: integer
+          minimum: 0
+          maximum: 64
+        lastModified:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        type:
+          type: string
+          const: SleepSessionRecord
+        start:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        end:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        startZoneOffsetSeconds:
+          type: integer
+          minimum: -64800
+          maximum: 64800
+        endZoneOffsetSeconds:
+          type: integer
+          minimum: -64800
+          maximum: 64800
+        stages:
+          default: []
+          maxItems: 500
+          type: array
+          items:
+            type: object
+            properties:
+              start:
+                type: string
+                format: date-time
+                pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              end:
+                type: string
+                format: date-time
+                pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              stage:
+                type: integer
+                minimum: 0
+                maximum: 64
+                description: "`SleepSessionRecord.STAGE_TYPE_*`."
+            required:
+              - start
+              - end
+              - stage
+            additionalProperties: false
+      required:
+        - id
+        - type
+        - start
+        - end
+      additionalProperties: false
+    HealthConnectExerciseSessionRecord:
+      type: object
+      properties:
+        id:
+          description: The record's Health Connect `metadata.id`, a UUID. Matched case-insensitively.
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        package:
+          description: "`metadata.dataOrigin.packageName`."
+          type: string
+          minLength: 1
+          maxLength: 255
+        deviceType:
+          description: "`metadata.device.type` (Health Connect `Device.TYPE_*`)."
+          type: integer
+          minimum: 0
+          maximum: 64
+        lastModified:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        type:
+          type: string
+          const: ExerciseSessionRecord
+        start:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        end:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        startZoneOffsetSeconds:
+          type: integer
+          minimum: -64800
+          maximum: 64800
+        endZoneOffsetSeconds:
+          type: integer
+          minimum: -64800
+          maximum: 64800
+        exerciseType:
+          type: integer
+          minimum: 0
+          maximum: 10000
+          description: "`ExerciseSessionRecord.EXERCISE_TYPE_*`."
+      required:
+        - id
+        - type
+        - start
+        - end
+        - exerciseType
+      additionalProperties: false
+    HealthConnectAggregate:
+      oneOf:
+        - type: object
+          properties:
+            metric:
+              type: string
+              const: STEPS_COUNT_TOTAL
+            day:
+              type: string
+              pattern: ^\d{4}-\d{2}-\d{2}$
+              description: The local calendar day the total covers, `YYYY-MM-DD`.
+            value:
+              type: number
+              minimum: 0
+              description: Steps as a count, active energy in small calories (`Energy.inCalories`), distance in metres.
+            computedAt:
+              description: When the phone computed the total. A total computed earlier than the stored one is answered `skipped`,
+                reason `stale`.
+              type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          required:
+            - metric
+            - day
+            - value
+          additionalProperties: false
+        - type: object
+          properties:
+            metric:
+              type: string
+              const: ACTIVE_CALORIES_TOTAL
+            day:
+              type: string
+              pattern: ^\d{4}-\d{2}-\d{2}$
+              description: The local calendar day the total covers, `YYYY-MM-DD`.
+            value:
+              type: number
+              minimum: 0
+              description: Steps as a count, active energy in small calories (`Energy.inCalories`), distance in metres.
+            computedAt:
+              description: When the phone computed the total. A total computed earlier than the stored one is answered `skipped`,
+                reason `stale`.
+              type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          required:
+            - metric
+            - day
+            - value
+          additionalProperties: false
+        - type: object
+          properties:
+            metric:
+              type: string
+              const: DISTANCE_TOTAL
+            day:
+              type: string
+              pattern: ^\d{4}-\d{2}-\d{2}$
+              description: The local calendar day the total covers, `YYYY-MM-DD`.
+            value:
+              type: number
+              minimum: 0
+              description: Steps as a count, active energy in small calories (`Energy.inCalories`), distance in metres.
+            computedAt:
+              description: When the phone computed the total. A total computed earlier than the stored one is answered `skipped`,
+                reason `stale`.
+              type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          required:
+            - metric
+            - day
+            - value
+          additionalProperties: false
+        - $ref: "#/components/schemas/HealthConnectHourlyHeartRate"
+      type: object
+    HealthConnectHourlyHeartRate:
+      type: object
+      properties:
+        metric:
+          type: string
+          const: HEART_RATE_BPM
+        hour:
+          type: string
+          pattern: ^\d{4}-\d{2}-\d{2}T\d{2}$
+          description: The local hour, `YYYY-MM-DDTHH`.
+        zoneOffsetSeconds:
+          type: integer
+          minimum: -64800
+          maximum: 64800
+        avg:
+          type: number
+          minimum: 0
+          maximum: 1000
+        min:
+          type: number
+          minimum: 0
+          maximum: 1000
+        max:
+          type: number
+          minimum: 0
+          maximum: 1000
+      required:
+        - metric
+        - hour
+        - zoneOffsetSeconds
+        - avg
+        - min
+        - max
+      additionalProperties: false
     MeasurementReminderCreate:
       type: object
       properties:
@@ -46704,11 +47341,15 @@ components:
                 environment.travel_suggestion.not_found; export — export.selection.empty, export.selection.unknown_leaf;
                 familyHistory — familyHistory.invalid; feedback — feedback.body.invalid; garmin — garmin.key_refused,
                 garmin.rate_limited, garmin.unreachable; glp1 — glp1.doseChange.deleted; health_score_config —
-                health_score_config.invalid, health_score_config.too_narrow; http — http.bad_gateway, http.bad_request,
-                http.client_error, http.conflict, http.forbidden, http.gateway_timeout, http.gone, http.internal,
-                http.invalid, http.method_not_allowed, http.not_found, http.payload_too_large, http.rate_limited,
-                http.server_error, http.unauthenticated, http.unavailable, http.unsupported_media_type; illness —
-                illness.day-log.invalid, illness.disabled, illness.episode.chronic-no-resolve, illness.episode.invalid,
+                health_score_config.invalid, health_score_config.too_narrow; health-connect —
+                health-connect.batch.idempotency_key_required, health-connect.batch.invalid,
+                health-connect.batch.too_large, health-connect.device_token_required, health-connect.device_unpaired,
+                health-connect.pair.api_disabled, health-connect.pair.code_invalid, health-connect.pair.install_taken,
+                health-connect.pair.invalid; http — http.bad_gateway, http.bad_request, http.client_error,
+                http.conflict, http.forbidden, http.gateway_timeout, http.gone, http.internal, http.invalid,
+                http.method_not_allowed, http.not_found, http.payload_too_large, http.rate_limited, http.server_error,
+                http.unauthenticated, http.unavailable, http.unsupported_media_type; illness — illness.day-log.invalid,
+                illness.disabled, illness.episode.chronic-no-resolve, illness.episode.invalid,
                 illness.episode.invalid-window, illness.episode.parent-not-found, illness.insights.invalid; import —
                 import.apple_health.busy, import.csv.content_type, import.csv.empty, import.csv.too_large,
                 import.file.too_large, import.health_connect.remote.https_required,
@@ -50084,6 +50725,8 @@ components:
               - setup.resolved-state
               - daily.scores-short-labels
               - insights.scores-short-labels
+              - profile.insurance-number-country
+              - health-connect.sync
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices; since
@@ -50183,11 +50826,12 @@ components:
             records the person's no, per person, and it is never sent again; a tap that finds the pass no longer
             available is not a no. `notifications.sync-stalled`: SYNC_STALLED is a notification category (default on,
             toggled per channel in the notification preferences): once per stall and in daytime, the owner is told that
-            a daily source went quiet, among them an iPhone whose Apple Health upload stopped; GET
-            /api/integrations/healthkit carries quietDevices (model, quietSince). The push names the source as a
-            connection key (apple-health, garmin, google-health, nightscout, oura, polar, whoop, withings), and its deep
-            link is always /settings/integrations#<source>, the source's card on the integrations page: a direct push
-            carries it as url, a relay push carries only d.source and the client builds the same path.
+            a daily source went quiet, among them an iPhone whose Apple Health upload stopped and, since v1.50.0, an
+            Android device whose HealthLog Sync upload stopped; GET /api/integrations/healthkit carries quietDevices
+            (model, quietSince). The push names the source as a connection key (apple-health, garmin, google-health,
+            health-connect-app, nightscout, oura, polar, whoop, withings), and its deep link is always
+            /settings/integrations#<source>, the source's card on the integrations page: a direct push carries it as
+            url, a relay push carries only d.source and the client builds the same path.
             `insights.same-time-daily-total`: SAME_TIME_BASELINE on GET /api/insights/derived carries mode: hourly is
             the hour-by-hour comparison, daily_total compares today's running total from a once-a-day source with the
             usual full day (dayRangeReached not_yet, within or above; gated reasons learning_usual_total and
@@ -50246,7 +50890,21 @@ components:
             /api/insights/derived and each GET /api/insights/derived/batch entry (null for a metric that is no HealthLog
             score), GET /api/insights/score-history, healthScore on GET /api/analytics, and on GET
             /api/dashboard/snapshot healthScore and each scoreRings entry (null on MED_COMPLIANCE). Render it as given,
-            never a short name of the client's own."
+            never a short name of the client's own. `profile.insurance-number-country`: The profile (GET/PATCH
+            /api/user/profile, PUT /api/auth/profile, GET /api/auth/me) carries insuranceNumberCountry (ISO 3166-1
+            alpha-2; a number stored without one is DE) and insuranceGroupNumber (US only, else null); GET
+            /api/user/profile also carries insuranceNumberDisplay, the number in its country's form. insuranceNumber is
+            checked under its country: DE KVNR, AT SVNR, CH AHV number, NL BSN and FR NIR by check digit, every other
+            country 3 to 30 letters, digits, spaces, hyphens or dots as entered. A refused value comes back in
+            rejectedFields with code invalid_kvnr, invalid_svnr, invalid_ahv, invalid_bsn, invalid_nir or
+            invalid_member_id; a country change the stored number would fail is refused on insuranceNumberCountry. The
+            FHIR Patient identifier uses the country's national system where one is verified, else type MB with no
+            system, and a US group number rides Coverage.class (group). `health-connect.sync`: The Android Health
+            Connect sync: POST /api/health-connect/pairing mints a one-time code (QR
+            healthlog-sync://pair?server=…&code=…), POST /api/health-connect/pair exchanges it for a
+            health-connect:write token bound to a Device, GET /api/health-connect/state answers the wanted types and
+            limits, and POST /api/health-connect/batch takes records, aggregates and deletes with one result per item.
+            Early preview."
       required:
         - version
         - buildSha
@@ -50900,6 +51558,14 @@ components:
                     - string
                     - "null"
                 insuranceNumberEncrypted:
+                  type:
+                    - string
+                    - "null"
+                insuranceNumberCountry:
+                  type:
+                    - string
+                    - "null"
+                insuranceGroupNumber:
                   type:
                     - string
                     - "null"
@@ -59312,6 +59978,20 @@ components:
           type: boolean
           description: Whether an insurance number is stored. The number itself is encrypted at rest and is never returned — only
             its presence.
+        insuranceNumberCountry:
+          description: "ISO 3166-1 alpha-2 country whose rule the insurance number follows: DE (KVNR), AT (SVNR), CH (AHV number),
+            NL (BSN) and FR (NIR) are checked against their check digit; every other country takes 3 to 30 letters,
+            digits, spaces, hyphens or dots, as entered. A number stored without a country follows DE. Null when no
+            number and no country is stored."
+          type:
+            - string
+            - "null"
+        insuranceGroupNumber:
+          description: "The plan's group number beside a US member ID: 3 to 30 letters, digits, spaces, hyphens or dots. Kept only
+            while the country is US; any other country clears it."
+          type:
+            - string
+            - "null"
         rejectedFields:
           description: "Present only on a PARTIAL success: the fields that were skipped while the rest of the patch was written. A
             200 carrying this key means the save was incomplete — surface it, do not treat the response as a clean save.
@@ -59334,6 +60014,8 @@ components:
         - insurerName
         - insurerIkNumber
         - hasInsuranceNumber
+        - insuranceNumberCountry
+        - insuranceGroupNumber
       additionalProperties: false
       description: "The profile after the patch, as THIS path projects it. Deliberately named apart from
         `ProfileUpdateResponse`: PATCH /api/user/profile runs the same handler and answers a different field set — this
@@ -73711,7 +74393,27 @@ components:
             - string
             - "null"
         insuranceNumber:
-          description: German KVNR, decrypted for the form prefill.
+          description: The insurance number as stored (compact for a checked country), decrypted for the form prefill.
+          type:
+            - string
+            - "null"
+        insuranceNumberCountry:
+          description: "ISO 3166-1 alpha-2 country whose rule the insurance number follows: DE (KVNR), AT (SVNR), CH (AHV number),
+            NL (BSN) and FR (NIR) are checked against their check digit; every other country takes 3 to 30 letters,
+            digits, spaces, hyphens or dots, as entered. A number stored without a country follows DE. Null when no
+            number and no country is stored."
+          type:
+            - string
+            - "null"
+        insuranceNumberDisplay:
+          description: The number written the way its country writes it (AT `NNNN DDMMYY`, CH `756.XXXX.XXXX.XX`, FR `S AA MM DD
+            CCC OOO KK`, every other country as stored). Show this, never a format of the client's own.
+          type:
+            - string
+            - "null"
+        insuranceGroupNumber:
+          description: "The plan's group number beside a US member ID: 3 to 30 letters, digits, spaces, hyphens or dots. Kept only
+            while the country is US; any other country clears it. Null for every other country."
           type:
             - string
             - "null"
@@ -73732,6 +74434,9 @@ components:
         - insurerName
         - insurerIkNumber
         - insuranceNumber
+        - insuranceNumberCountry
+        - insuranceNumberDisplay
+        - insuranceGroupNumber
         - modules
       additionalProperties: false
       description: Flattened profile fields for the native client (GET). The KVNR is decrypted server-side; the IKNR (v1.8.6)
@@ -73827,7 +74532,18 @@ components:
             - "null"
         hasInsuranceNumber:
           type: boolean
-          description: Whether a KVNR is on file (the value itself is not echoed).
+          description: Whether an insurance number is on file (the value itself is not echoed).
+        insuranceNumberCountry:
+          description: "The country the stored number follows, as GET reports it: DE for a number stored without one, null when
+            there is neither."
+          type:
+            - string
+            - "null"
+        insuranceGroupNumber:
+          description: The US plan's group number; null for every other country.
+          type:
+            - string
+            - "null"
         rejectedFields:
           description: "Present only on a PARTIAL success: the fields that were skipped while the rest of the patch was written. A
             200 carrying this key means the save was incomplete — surface it, do not treat the response as a clean save.
@@ -73853,11 +74569,13 @@ components:
         - insurerName
         - insurerIkNumber
         - hasInsuranceNumber
+        - insuranceNumberCountry
+        - insuranceGroupNumber
       additionalProperties: false
-      description: Profile echo returned by PATCH /api/user/profile. Reports KVNR presence as a boolean rather than
-        re-emitting the decrypted value. NOT the shape `PUT /api/auth/profile` returns — the two share a handler but
-        project it differently (see `AuthProfileUpdateResponse`), which is why this is no longer described as covering
-        both.
+      description: Profile echo returned by PATCH /api/user/profile. Reports insurance-number presence as a boolean rather
+        than re-emitting the decrypted value. NOT the shape `PUT /api/auth/profile` returns — the two share a handler
+        but project it differently (see `AuthProfileUpdateResponse`), which is why this is no longer described as
+        covering both.
     GetNotificationPrefsResponse:
       type: object
       properties:
@@ -90351,6 +91069,275 @@ components:
         - data
         - error
       additionalProperties: false
+    HealthConnectPairingResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/HealthConnectPairingResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    HealthConnectPairingResult:
+      type: object
+      properties:
+        code:
+          type: string
+          pattern: ^hcp_[0-9a-f]{32}$
+        expiresAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        link:
+          type: string
+          description: "`healthlog-sync://pair?server=<origin>&code=<code>`, the payload of the QR code."
+      required:
+        - code
+        - expiresAt
+        - link
+      additionalProperties: false
+    HealthConnectPairResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/HealthConnectPairResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    HealthConnectPairResult:
+      type: object
+      properties:
+        token:
+          type: string
+          description: An `hlk_` Bearer token with the single scope `health-connect:write`. Shown once.
+        tokenExpiresAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        deviceId:
+          type: string
+        server:
+          type: object
+          properties:
+            version:
+              type: string
+          required:
+            - version
+          additionalProperties: false
+      required:
+        - token
+        - tokenExpiresAt
+        - deviceId
+        - server
+      additionalProperties: false
+    HealthConnectStateResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/HealthConnectState"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    HealthConnectState:
+      type: object
+      properties:
+        serverNow:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        tokenExpiresAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+        wantedTypes:
+          type: array
+          items:
+            type: string
+          description: Record types the server takes. A record of any other type is answered `skipped`, reason `type_not_wanted`.
+        wantedAggregates:
+          type: array
+          items:
+            type: string
+        skipPackages:
+          type: array
+          items:
+            type: string
+          description: Apps whose data reaches HealthLog through a direct integration. Their records are answered `skipped`,
+            reason `skipped_package`; the app need not send them.
+        rawHeartRateDays:
+          type: integer
+          exclusiveMinimum: 0
+          maximum: 9007199254740991
+        rawHeartRateFrom:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          description: Heart rate before this instant is sent as `HEART_RATE_BPM` hourly aggregates, from it on as samples.
+        historyFrom:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+          description: How far back to read; null is the whole history.
+        types:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties:
+            type: object
+            properties:
+              newestAt:
+                anyOf:
+                  - type: string
+                    format: date-time
+                    pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                  - type: "null"
+            required:
+              - newestAt
+            additionalProperties: false
+          description: Per record type, the newest reading the server holds from Health Connect, null when it holds none.
+        limits:
+          type: object
+          properties:
+            maxItems:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            maxSamples:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            maxBytes:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            batchesPerMinute:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            backfillWindowDays:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            maxInFlight:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+          required:
+            - maxItems
+            - maxSamples
+            - maxBytes
+            - batchesPerMinute
+            - backfillWindowDays
+            - maxInFlight
+          additionalProperties: false
+      required:
+        - serverNow
+        - tokenExpiresAt
+        - wantedTypes
+        - wantedAggregates
+        - skipPackages
+        - rawHeartRateDays
+        - rawHeartRateFrom
+        - historyFrom
+        - types
+        - limits
+      additionalProperties: false
+    HealthConnectBatchResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/HealthConnectBatchResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    HealthConnectBatchResult:
+      type: object
+      properties:
+        accepted:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          description: Items not answered `rejected`.
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              kind:
+                type: string
+                enum:
+                  - record
+                  - aggregate
+                  - delete
+              index:
+                type: integer
+                minimum: 0
+                maximum: 9007199254740991
+              status:
+                type: string
+                enum:
+                  - inserted
+                  - updated
+                  - unchanged
+                  - skipped
+                  - rejected
+                  - deleted
+                  - not_found
+              reason:
+                description: "Why an item was skipped or rejected: `out_of_range`, `same_reading_other_source`, `same_instant_exists`,
+                  `folded_window`, `hour_already_raw`, `deleted_in_healthlog`, `stale`, `skipped_package`,
+                  `type_not_wanted`, `unknown_stage`, `out_of_bed`, `unmapped_stage`, `no_value`, `malformed`."
+                type: string
+            required:
+              - kind
+              - index
+              - status
+            additionalProperties: false
+      required:
+        - accepted
+        - results
+      additionalProperties: false
+      description: One result per item, index-aligned per kind. Neither `rejected` nor a skip holds a change token back; only
+        a non-2xx answer does.
     MeasurementReminderListEnvelope:
       type: object
       properties:

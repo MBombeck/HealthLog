@@ -47,33 +47,13 @@
 import { importValue } from "@/lib/integrations/import-value";
 import type {
   FlowLevel,
-  GlucoseContext,
   MeasurementType,
   Prisma,
   PrismaClient,
-  SleepStage,
 } from "@/generated/prisma/client";
-import { insertNewMeasurementRows } from "@/lib/export/measurement-bulk-insert";
-import {
-  measuredAtMatch,
-  MEASURED_AT_TOLERANCE_MS,
-  valuesMatch,
-} from "@/lib/measurements/cross-source-merge";
-import {
-  reconcileExternalMeasurementsInChunks,
-  type ExternalMeasurementWrite,
-} from "@/lib/measurements/reconcile-external-measurement";
-import {
-  FOLDED_WINDOW_REASON,
-  findFoldedWindowDuplicates,
-  isFoldedWindowCandidate,
-  loadFoldTimezone,
-} from "@/lib/measurements/folded-window";
-import {
-  canonicalDailyTimestamp,
-  foldBoundary,
-} from "@/lib/measurements/consolidation-tz";
-import { validateMeasurementRange } from "@/lib/validations/measurement";
+import { valuesMatch } from "@/lib/measurements/cross-source-merge";
+import { FOLDED_WINDOW_REASON } from "@/lib/measurements/folded-window";
+import { foldBoundary } from "@/lib/measurements/consolidation-tz";
 import { isModuleEnabled } from "@/lib/modules/gate";
 import { isCycleAvailableForUser } from "@/lib/cycle/gate";
 import { upsertCycleDayLog } from "@/lib/cycle/day-log-write";
@@ -97,12 +77,16 @@ import {
   NUTRITION_COLUMNS,
   dayKeyFromEpochDay,
   deviceClassFromHc,
-  hcDailyStatsExternalId,
   hcExternalId,
   hcHourlyPulseExternalId,
-  hcUnit,
-  mapHealthConnectSportType,
+  HC_RAW_PULSE_WINDOW_MS,
 } from "./mapper";
+import {
+  HealthConnectSink,
+  roundPendingRow,
+  type PendingRow,
+  type RowOutcome,
+} from "./sink";
 import {
   isKnownSleepStage,
   mapHealthConnectSleepStage,
@@ -113,9 +97,6 @@ import { ownRecord } from "@/lib/own-key";
 const SOURCE = "HEALTH_CONNECT" as const;
 const HOUR_MS = 3_600_000;
 const DAY_MS = 86_400_000;
-
-/** Heart-rate samples newer than this stay per-sample; older ones fold. */
-export const HC_RAW_PULSE_WINDOW_MS = 90 * DAY_MS;
 
 /** Rows written per statement batch. */
 const WRITE_BATCH = 500;
@@ -191,19 +172,6 @@ export interface ImportHealthConnectOptions {
   onProgress?: (snapshot: HealthConnectImportProgress) => Promise<void>;
 }
 
-/** One measurement on its way to the table. */
-interface PendingRow {
-  type: MeasurementType;
-  value: number;
-  valueMin?: number | null;
-  valueMax?: number | null;
-  measuredAt: Date;
-  externalId: string;
-  sleepStage: SleepStage | null;
-  glucoseContext?: GlucoseContext | null;
-  deviceType: string | null;
-}
-
 /**
  * Read `dbPath` and write it for `userId`. Throws `HealthConnectImportError`
  * for a file it refuses; any other throw is a database failure part-way, and
@@ -229,8 +197,8 @@ class ImportRun {
   private readonly userId: string;
   private readonly tz: string;
   private readonly now: Date;
-  /** The account zone the fold keys its hours in, read once on first need. */
-  private foldTz: string | undefined;
+  /** The shared write path, which also holds the account's fold zone. */
+  private readonly sink: HealthConnectSink;
   private readonly apps = new Map<number, string>();
   private readonly leftOutApps = new Set<number>();
   private readonly devices = new Map<number, string | null>();
@@ -274,6 +242,7 @@ class ImportRun {
     this.userId = options.userId;
     this.tz = options.userTimezone;
     this.now = options.now ?? new Date();
+    this.sink = new HealthConnectSink(this.prisma, this.userId);
   }
 
   async execute(): Promise<void> {
@@ -495,11 +464,10 @@ class ImportRun {
     // `now - 90 days` itself got an hourly mean of its first part here and
     // raw samples for the rest, and the fold then overwrote the boundary
     // hour's mean with the mean of the raw part alone.
-    this.foldTz ??= await loadFoldTimezone(this.prisma, this.userId);
     const cutoff = foldBoundary(
       this.now,
       HC_RAW_PULSE_WINDOW_MS,
-      this.foldTz,
+      await this.sink.foldTimezone(),
     ).getTime();
     await this.importHourlyPulse(cutoff);
     await this.importRawPulse(cutoff);
@@ -852,24 +820,13 @@ class ImportRun {
     this.workouts.overlapping = sessions.length - kept.length;
     for (let at = 0; at < kept.length; at += WRITE_BATCH) {
       const chunk = kept.slice(at, at + WRITE_BATCH);
-      const data: Prisma.WorkoutCreateManyInput[] = chunk.map((s) => ({
-        userId: this.userId,
-        sportType: mapHealthConnectSportType(s.exerciseType),
-        startedAt: new Date(s.start),
-        endedAt: new Date(s.end),
-        durationSec: Math.round((s.end - s.start) / 1000),
-        source: SOURCE,
-        externalId: hcExternalId(s.uuid),
-        // The raw Health Connect type, so the sport mapping stays reversible.
-        metadata: { healthConnectExerciseType: s.exerciseType },
-      }));
-      const created = await this.prisma.workout.createMany({
-        data,
-        skipDuplicates: true,
-      });
-      this.workouts.inserted += created.count;
-      this.workouts.unchanged += chunk.length - created.count;
-      this.rowsUpserted += created.count;
+      const outcomes = await this.sink.writeWorkouts(
+        chunk.map((s) => ({ ...s, externalId: hcExternalId(s.uuid) })),
+      );
+      const created = outcomes.filter((o) => o.status === "inserted").length;
+      this.workouts.inserted += created;
+      this.workouts.unchanged += chunk.length - created;
+      this.rowsUpserted += created;
       for (const s of chunk) {
         this.widen(new Date(s.start));
         this.widen(new Date(s.end));
@@ -956,70 +913,18 @@ class ImportRun {
     days: ReadonlyArray<{ dayKey: string; value: number }>,
   ): Promise<void> {
     if (days.length === 0) return;
-    const ids = days.map((d) => hcDailyStatsExternalId(type, d.dayKey));
-    const existing = new Map(
-      (
-        await this.prisma.measurement.findMany({
-          where: {
-            userId: this.userId,
-            type,
-            source: SOURCE,
-            externalId: { in: ids },
-          },
-          select: { externalId: true, value: true, deletedAt: true },
-        })
-      ).map((row) => [row.externalId, row]),
+    const { outcomes, measuredAt } = await this.sink.writeDayTotals(
+      type,
+      days,
+      this.tz,
     );
-    const stat = this.stat(type);
-    const writes: ExternalMeasurementWrite[] = [];
-    for (let i = 0; i < days.length; i++) {
-      const { dayKey, value } = days[i];
-      if (validateMeasurementRange(type, value) !== null) {
-        this.skip("out_of_range", 1, type);
-        continue;
-      }
-      const prior = existing.get(ids[i]);
-      if (
-        prior &&
-        prior.deletedAt === null &&
-        valuesMatch(prior.value, value)
-      ) {
-        stat.unchanged += 1;
-        continue;
-      }
-      writes.push({
-        userId: this.userId,
+    this.countOutcomes(
+      outcomes.map((outcome, i) => ({
         type,
-        value,
-        unit: hcUnit(type),
-        source: SOURCE,
-        measuredAt: canonicalDailyTimestamp(dayKey, this.tz),
-        externalId: ids[i],
-        externalSourceVersion: null,
-        sleepStage: null,
-        deviceType: null,
-      });
-    }
-    const verdicts = await reconcileExternalMeasurementsInChunks(
-      this.prisma,
-      writes,
-      { exactExternalMatch: "update" },
+        measuredAt: measuredAt[i]!,
+        outcome,
+      })),
     );
-    verdicts.forEach((verdict, index) => {
-      if (verdict.status === "duplicate") {
-        stat.unchanged += 1;
-        return;
-      }
-      if (verdict.status === "failed" || verdict.status === "rejected_range") {
-        const refused = verdict.status === "rejected_range";
-        this.skip(refused ? "out_of_range" : "write_failed", 1, type);
-        return;
-      }
-      if (verdict.status === "inserted") stat.inserted += 1;
-      else stat.updated += 1;
-      this.rowsUpserted += 1;
-      this.widen(writes[index]!.measuredAt);
-    });
     await this.progress();
   }
 
@@ -1350,232 +1255,63 @@ class ImportRun {
     sameReadingCheck: boolean,
     hourlyPulse: boolean,
   ): Promise<void> {
-    let batch = rows.filter((row) => {
-      if (validateMeasurementRange(row.type, row.value) !== null) {
-        this.skip("out_of_range", 1, row.type);
-        return false;
-      }
-      return true;
+    const outcomes = await this.sink.writeRows(rows, {
+      sameReadingCheck,
+      hourlyPulse,
     });
-    if (sameReadingCheck) batch = await this.withoutOtherSourceTwins(batch);
-    if (hourlyPulse) batch = await this.withoutRawPulseHours(batch);
-    else batch = await this.withoutFoldedHours(batch);
-    if (batch.length === 0) return;
-
-    const inserted = await insertNewMeasurementRows(
-      this.prisma,
-      batch.map((row) => ({
-        userId: this.userId,
+    this.countOutcomes(
+      rows.map((row, i) => ({
         type: row.type,
-        value: row.value,
-        valueMin: row.valueMin ?? null,
-        valueMax: row.valueMax ?? null,
-        unit: hcUnit(row.type),
-        source: SOURCE,
         measuredAt: row.measuredAt,
-        externalId: row.externalId,
-        externalSourceVersion: null,
-        glucoseContext: row.glucoseContext ?? null,
-        sleepStage: row.sleepStage,
-        deviceType: row.deviceType,
+        outcome: outcomes[i]!,
       })),
     );
-    const landed = new Set(inserted.map((r) => `${r.type}|${r.externalId}`));
-    const rest: PendingRow[] = [];
-    for (const row of batch) {
-      if (landed.has(`${row.type}|${row.externalId}`)) {
-        this.stat(row.type).inserted += 1;
-        this.rowsUpserted += 1;
-        this.widen(row.measuredAt);
-      } else {
-        rest.push(row);
-      }
-    }
-    if (rest.length > 0) await this.reconcileExisting(rest);
     await this.progress();
   }
 
   /**
-   * Rows the insert skipped: either this record was imported before (update
-   * it when its value changed, leave it when the person deleted it), or
-   * another row already holds the same instant.
+   * Fold the sink's outcomes into the counters. The filter skips first, in
+   * the order the write path applies its filters, then the rest in row order,
+   * so the `skipped` map keeps the key order the stored result has always had.
    */
-  private async reconcileExisting(rows: PendingRow[]): Promise<void> {
-    const found = await this.prisma.measurement.findMany({
-      where: {
-        userId: this.userId,
-        source: SOURCE,
-        type: { in: [...new Set(rows.map((r) => r.type))] },
-        externalId: { in: [...new Set(rows.map((r) => r.externalId))] },
-      },
-      select: {
-        id: true,
-        type: true,
-        externalId: true,
-        value: true,
-        valueMin: true,
-        valueMax: true,
-        deletedAt: true,
-      },
-    });
-    const byKey = new Map(found.map((r) => [`${r.type}|${r.externalId}`, r]));
-    for (const row of rows) {
-      const prior = byKey.get(`${row.type}|${row.externalId}`);
-      if (!prior) {
-        this.skip("same_instant_exists", 1, row.type);
-        continue;
+  private countOutcomes(
+    items: ReadonlyArray<{
+      type: MeasurementType;
+      measuredAt: Date;
+      outcome: RowOutcome;
+    }>,
+  ): void {
+    const filterReasons = [
+      "out_of_range",
+      "same_reading_other_source",
+      "hour_already_raw",
+      FOLDED_WINDOW_REASON,
+    ];
+    for (const reason of filterReasons) {
+      for (const { type, outcome } of items) {
+        if (outcome.status === "skipped" && outcome.reason === reason) {
+          this.skip(reason, 1, type);
+        }
       }
-      if (prior.deletedAt !== null) {
-        this.skip("deleted_in_healthlog", 1, row.type);
-        continue;
+    }
+    for (const { type, measuredAt, outcome } of items) {
+      switch (outcome.status) {
+        case "skipped":
+          if (!filterReasons.includes(outcome.reason)) {
+            this.skip(outcome.reason, 1, type);
+          }
+          break;
+        case "unchanged":
+          this.stat(type).unchanged += 1;
+          break;
+        case "inserted":
+        case "updated":
+          this.stat(type)[outcome.status] += 1;
+          this.rowsUpserted += 1;
+          this.widen(measuredAt);
+          break;
       }
-      const same =
-        valuesMatch(prior.value, row.value) &&
-        (prior.valueMin ?? null) === (row.valueMin ?? null) &&
-        (prior.valueMax ?? null) === (row.valueMax ?? null);
-      if (same) {
-        this.stat(row.type).unchanged += 1;
-        continue;
-      }
-      await this.prisma.measurement.update({
-        where: { id: prior.id },
-        data: {
-          value: row.value,
-          valueMin: row.valueMin ?? null,
-          valueMax: row.valueMax ?? null,
-          syncVersion: { increment: 1 },
-        },
-      });
-      this.stat(row.type).updated += 1;
-      this.rowsUpserted += 1;
-      this.widen(row.measuredAt);
     }
-  }
-
-  /**
-   * The same reading already stored under another source (same type and
-   * value within two seconds) is left out. The connected-integration skip
-   * removes the known duplicates by app; this catches what it cannot name,
-   * such as a reading typed into HealthLog and into a phone app alike.
-   */
-  private async withoutOtherSourceTwins(
-    rows: PendingRow[],
-  ): Promise<PendingRow[]> {
-    if (rows.length === 0) return rows;
-    let from = Infinity;
-    let to = -Infinity;
-    for (const row of rows) {
-      const t = row.measuredAt.getTime();
-      if (t < from) from = t;
-      if (t > to) to = t;
-    }
-    // Spot types only: the dense types (heart rate, sleep) never take this
-    // check, so the read is bounded by one batch's window of sparse readings.
-    const spotTypes = [...new Set(rows.map((r) => r.type))];
-    const others = await this.prisma.measurement.findMany({
-      where: {
-        userId: this.userId,
-        source: { not: SOURCE },
-        deletedAt: null,
-        type: { in: spotTypes },
-        measuredAt: {
-          gte: new Date(from - MEASURED_AT_TOLERANCE_MS),
-          lte: new Date(to + MEASURED_AT_TOLERANCE_MS),
-        },
-      },
-      select: { type: true, value: true, measuredAt: true },
-      orderBy: { measuredAt: "asc" },
-    });
-    if (others.length === 0) return rows;
-    const byType = new Map<string, typeof others>();
-    for (const o of others) {
-      const list = byType.get(o.type);
-      if (list) list.push(o);
-      else byType.set(o.type, [o]);
-    }
-    return rows.filter((row) => {
-      const list = byType.get(row.type);
-      if (!list) return true;
-      const twin = list.some(
-        (o) =>
-          measuredAtMatch(o.measuredAt, row.measuredAt) &&
-          valuesMatch(o.value, row.value),
-      );
-      if (twin) this.skip("same_reading_other_source", 1, row.type);
-      return !twin;
-    });
-  }
-
-  /**
-   * An hourly mean is left out for an hour that already holds raw samples of
-   * this import's source. A sample imported raw while it was recent falls
-   * past the 90-day window by the next import; folding it then would put the
-   * mean beside the samples it summarises.
-   */
-  private async withoutRawPulseHours(
-    rows: PendingRow[],
-  ): Promise<PendingRow[]> {
-    if (rows.length === 0) return rows;
-    let from = Infinity;
-    let to = -Infinity;
-    for (const row of rows) {
-      const t = row.measuredAt.getTime();
-      if (t < from) from = t;
-      if (t > to) to = t;
-    }
-    const hours = await this.prisma.$queryRaw<Array<{ h: bigint }>>`
-      SELECT DISTINCT floor(extract(epoch FROM measured_at) / 3600)::bigint AS h
-      FROM measurements
-      WHERE user_id = ${this.userId}
-        AND type = 'PULSE'::measurement_type
-        AND source = 'HEALTH_CONNECT'::measurement_source
-        AND external_id LIKE 'hc:%'
-        AND deleted_at IS NULL
-        AND measured_at >= ${new Date(from - HOUR_MS)}
-        AND measured_at < ${new Date(to + HOUR_MS)}`;
-    if (hours.length === 0) return rows;
-    const taken = new Set(hours.map((r) => Number(r.h)));
-    return rows.filter((row) => {
-      // The mean sits mid-hour; its hour spans half an hour either side.
-      const start = row.measuredAt.getTime() - HOUR_MS / 2;
-      const clash =
-        taken.has(Math.floor(start / HOUR_MS)) ||
-        taken.has(Math.floor((start + HOUR_MS - 1) / HOUR_MS));
-      if (clash) this.skip("hour_already_raw", 1, row.type);
-      return !clash;
-    });
-  }
-
-  /**
-   * A raw sample of a folded type is left out when the nightly fold has
-   * already turned its hour into a `stats:` mean under this source. The fold
-   * deletes the samples it summarises, so without this a later import of an
-   * export that still holds them would put them back beside their own mean.
-   * Same rule as the Apple Health batch route and ZIP import
-   * (`folded-window.ts`); rows too young to have been folded cost no query.
-   */
-  private async withoutFoldedHours(rows: PendingRow[]): Promise<PendingRow[]> {
-    if (rows.length === 0) return rows;
-    const candidates = rows.map((row) => ({
-      type: row.type,
-      source: SOURCE,
-      externalId: row.externalId,
-      measuredAt: row.measuredAt,
-    }));
-    if (!candidates.some((row) => isFoldedWindowCandidate(row))) return rows;
-    this.foldTz ??= await loadFoldTimezone(this.prisma, this.userId);
-    const folded = await findFoldedWindowDuplicates(
-      this.prisma,
-      this.userId,
-      candidates,
-      { tz: this.foldTz },
-    );
-    if (folded.size === 0) return rows;
-    return rows.filter((row, index) => {
-      if (!folded.has(index)) return true;
-      this.skip(FOLDED_WINDOW_REASON, 1, row.type);
-      return false;
-    });
   }
 
   /** Called by the collapse when two apps write the same instant. */
@@ -1605,12 +1341,7 @@ class MeasurementSink {
    * binary noise that would otherwise be stored and compared as is.
    */
   async push(row: PendingRow): Promise<void> {
-    this.rows.push({
-      ...row,
-      value: importValue(row.value),
-      valueMin: row.valueMin == null ? row.valueMin : importValue(row.valueMin),
-      valueMax: row.valueMax == null ? row.valueMax : importValue(row.valueMax),
-    });
+    this.rows.push(roundPendingRow(row));
     if (this.rows.length >= WRITE_BATCH) await this.flush();
   }
 

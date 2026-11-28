@@ -80,6 +80,7 @@ import { vaccinationPaths } from "./vaccinations";
 import { illnessPaths } from "./illness";
 import { importPaths } from "./import";
 import { healthConnectRemotePaths, importFilePaths } from "./import-files";
+import { healthConnectPaths } from "./health-connect";
 import {
   insightsPaths,
   readinessValue,
@@ -158,6 +159,7 @@ const registeredPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   ...importPaths,
   ...importFilePaths,
   ...healthConnectRemotePaths,
+  ...healthConnectPaths,
   ...measurementReminderPaths,
   ...labsPaths,
   ...ocrPaths,

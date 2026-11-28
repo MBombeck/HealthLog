@@ -136,6 +136,7 @@ const COOKIE_PROOF_ROUTES = [
   "app/api/admin/users/[id]/reset-password/route.ts",
   "app/api/admin/users/[id]/route.ts",
   "app/api/auth/reproof/route.ts",
+  "app/api/health-connect/pairing/route.ts",
   "app/api/tokens/documents/route.ts",
   "app/api/tokens/measurements/route.ts",
   "app/api/tokens/workouts/route.ts",
