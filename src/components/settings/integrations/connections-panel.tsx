@@ -372,7 +372,9 @@ export function ConnectionsPanel({
       <HealthConnectFolder
         viewModel={pickStatus(integrationStatus, "health-connect-remote")}
       />
-      <HealthConnectAppConnection />
+      <div id="health-connect-app" className="scroll-mt-28">
+        <HealthConnectAppConnection />
+      </div>
       {environmentOn ? (
         <div id="dawarich" className="scroll-mt-28">
           <DawarichCard viewModel={pickStatus(integrationStatus, "dawarich")} />

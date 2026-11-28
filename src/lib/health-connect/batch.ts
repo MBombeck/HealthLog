@@ -82,15 +82,42 @@ function combine(outcomes: readonly RowOutcome[], extraSkips: string[]) {
   return { status: "skipped" as const, reason };
 }
 
+/** One batch's shared state while its three parts are written. */
+interface BatchRun {
+  sink: HealthConnectSink;
+  input: HcBatchInput;
+  results: HcItemResult[];
+  touched: Array<{ type: MeasurementType; measuredAt: Date }>;
+  delivered: boolean;
+}
+
 export async function ingestHealthConnectBatch(
   input: HcBatchInput,
   prisma: PrismaClient = defaultPrisma,
 ): Promise<HcBatchOutcome> {
-  const sink = new HealthConnectSink(prisma, input.userId);
-  const results: HcItemResult[] = [];
-  const touched: Array<{ type: MeasurementType; measuredAt: Date }> = [];
-  let delivered = false;
+  const run: BatchRun = {
+    sink: new HealthConnectSink(prisma, input.userId),
+    input,
+    results: [],
+    touched: [],
+    delivered: false,
+  };
+  await writeRecords(run);
+  await writeAggregates(run);
+  await writeDeletes(run, prisma);
+  const { results, touched, delivered } = run;
 
+  if (touched.length > 0) {
+    await afterMeasurementMutation(input.userId, touched, { source: "sync" });
+  }
+
+  const order = { record: 0, aggregate: 1, delete: 2 } as const;
+  results.sort((a, b) => order[a.kind] - order[b.kind] || a.index - b.index);
+  const rejected = results.filter((r) => r.status === "rejected").length;
+  return { results, accepted: results.length - rejected, rejected, delivered };
+}
+
+async function writeRecords(run: BatchRun): Promise<void> {
   // ── Records ───────────────────────────────────────────────────────────
   // Rows of every record, written in two streams (spot readings take the
   // cross-source check, dense rows do not), each remembered by its record.
@@ -101,13 +128,13 @@ export async function ingestHealthConnectBatch(
     workout: Parameters<HealthConnectSink["writeWorkouts"]>[0][number];
   }> = [];
   const pendingRecords = new Map<number, string[]>();
-  input.records.forEach((raw, index) => {
+  run.input.records.forEach((raw, index) => {
     const type =
       typeof raw === "object" && raw !== null && "type" in raw
         ? (raw as { type: unknown }).type
         : undefined;
     if (typeof type === "string" && !WANTED.has(type)) {
-      results.push({
+      run.results.push({
         kind: "record",
         index,
         status: "skipped",
@@ -117,7 +144,7 @@ export async function ingestHealthConnectBatch(
     }
     const parsed = hcRecordSchema.safeParse(raw);
     if (!parsed.success) {
-      results.push({
+      run.results.push({
         kind: "record",
         index,
         status: "rejected",
@@ -126,8 +153,8 @@ export async function ingestHealthConnectBatch(
       return;
     }
     const record = parsed.data;
-    if (record.package && input.skipPackages.has(record.package)) {
-      results.push({
+    if (record.package && run.input.skipPackages.has(record.package)) {
+      run.results.push({
         kind: "record",
         index,
         status: "skipped",
@@ -138,7 +165,7 @@ export async function ingestHealthConnectBatch(
     const mapped = mapLiveRecord(record);
     if (mapped.kind === "workout") {
       if (mapped.workout.end <= mapped.workout.start) {
-        results.push({
+        run.results.push({
           kind: "record",
           index,
           status: "rejected",
@@ -160,9 +187,9 @@ export async function ingestHealthConnectBatch(
     list.push(outcome);
     rowOutcomes.set(record, list);
     if (outcome.status === "inserted" || outcome.status === "updated") {
-      touched.push({ type: row.type, measuredAt: row.measuredAt });
+      run.touched.push({ type: row.type, measuredAt: row.measuredAt });
     }
-    if (outcome.status !== "skipped") delivered = true;
+    if (outcome.status !== "skipped") run.delivered = true;
   };
   for (const [stream, sameReadingCheck] of [
     [spot, true],
@@ -170,7 +197,7 @@ export async function ingestHealthConnectBatch(
   ] as const) {
     for (let at = 0; at < stream.length; at += WRITE_BATCH) {
       const chunk = stream.slice(at, at + WRITE_BATCH);
-      const outcomes = await sink.writeRows(
+      const outcomes = await run.sink.writeRows(
         chunk.map((c) => c.row),
         { sameReadingCheck, hourlyPulse: false },
       );
@@ -178,35 +205,39 @@ export async function ingestHealthConnectBatch(
     }
   }
   for (const [index, skipped] of pendingRecords) {
-    results.push({
+    run.results.push({
       kind: "record",
       index,
       ...combine(rowOutcomes.get(index) ?? [], skipped),
     });
   }
   if (workouts.length > 0) {
-    const outcomes = await sink.writeWorkouts(workouts.map((w) => w.workout));
+    const outcomes = await run.sink.writeWorkouts(
+      workouts.map((w) => w.workout),
+    );
     workouts.forEach((w, i) => {
       const o = outcomes[i]!;
-      results.push({
+      run.results.push({
         kind: "record",
         index: w.index,
         status: o.status as HcItemStatus,
       });
-      if (o.status !== "skipped") delivered = true;
+      if (o.status !== "skipped") run.delivered = true;
     });
     if (outcomes.some((o) => o.status === "inserted")) {
-      invalidateUserMeasurements(input.userId);
+      invalidateUserMeasurements(run.input.userId);
     }
   }
+}
 
+async function writeAggregates(run: BatchRun): Promise<void> {
   // ── Aggregates ────────────────────────────────────────────────────────
   const days = new Map<
     MeasurementType,
     Array<{ index: number; dayKey: string; value: number; computedAt?: Date }>
   >();
   const hourly: Array<{ index: number; row: PendingRow }> = [];
-  input.aggregates.forEach((raw, index) => {
+  run.input.aggregates.forEach((raw, index) => {
     const parsed = hcAggregateSchema.safeParse(raw);
     if (!parsed.success) {
       const metric =
@@ -216,7 +247,7 @@ export async function ingestHealthConnectBatch(
       const known =
         metric === "HEART_RATE_BPM" ||
         (typeof metric === "string" && metric in DAILY_METRIC_TYPE);
-      results.push(
+      run.results.push(
         typeof metric === "string" && !known
           ? {
               kind: "aggregate",
@@ -251,43 +282,48 @@ export async function ingestHealthConnectBatch(
   for (const [type, list] of days) {
     for (let at = 0; at < list.length; at += WRITE_BATCH) {
       const chunk = list.slice(at, at + WRITE_BATCH);
-      const { outcomes, measuredAt } = await sink.writeDayTotals(
+      const { outcomes, measuredAt } = await run.sink.writeDayTotals(
         type,
         chunk,
-        input.timezone,
+        run.input.timezone,
       );
       chunk.forEach((d, i) => {
         const o = outcomes[i]!;
-        results.push({ kind: "aggregate", index: d.index, ...o });
+        run.results.push({ kind: "aggregate", index: d.index, ...o });
         if (o.status === "inserted" || o.status === "updated") {
-          touched.push({ type, measuredAt: measuredAt[i]! });
+          run.touched.push({ type, measuredAt: measuredAt[i]! });
         }
-        if (o.status !== "skipped") delivered = true;
+        if (o.status !== "skipped") run.delivered = true;
       });
     }
   }
   for (let at = 0; at < hourly.length; at += WRITE_BATCH) {
     const chunk = hourly.slice(at, at + WRITE_BATCH);
-    const outcomes = await sink.writeRows(
+    const outcomes = await run.sink.writeRows(
       chunk.map((h) => h.row),
       { sameReadingCheck: false, hourlyPulse: true },
     );
     chunk.forEach((h, i) => {
       const o = outcomes[i]!;
-      results.push({ kind: "aggregate", index: h.index, ...o });
+      run.results.push({ kind: "aggregate", index: h.index, ...o });
       if (o.status === "inserted" || o.status === "updated") {
-        touched.push({ type: h.row.type, measuredAt: h.row.measuredAt });
+        run.touched.push({ type: h.row.type, measuredAt: h.row.measuredAt });
       }
     });
   }
+}
 
+async function writeDeletes(
+  run: BatchRun,
+  prisma: PrismaClient,
+): Promise<void> {
   // ── Deletes ───────────────────────────────────────────────────────────
   const ids: Array<{ index: number; id: string }> = [];
-  input.deletes.forEach((raw, index) => {
+  run.input.deletes.forEach((raw, index) => {
     const parsed = hcRecordId.safeParse(raw);
     if (parsed.success) ids.push({ index, id: parsed.data });
     else
-      results.push({
+      run.results.push({
         kind: "delete",
         index,
         status: "rejected",
@@ -297,27 +333,18 @@ export async function ingestHealthConnectBatch(
   if (ids.length > 0) {
     const deleted = await deleteRecords(
       prisma,
-      input.userId,
+      run.input.userId,
       ids.map((d) => d.id),
-      touched,
+      run.touched,
     );
     for (const { index, id } of ids) {
-      results.push({
+      run.results.push({
         kind: "delete",
         index,
         status: deleted.has(id) ? "deleted" : "not_found",
       });
     }
   }
-
-  if (touched.length > 0) {
-    await afterMeasurementMutation(input.userId, touched, { source: "sync" });
-  }
-
-  const order = { record: 0, aggregate: 1, delete: 2 } as const;
-  results.sort((a, b) => order[a.kind] - order[b.kind] || a.index - b.index);
-  const rejected = results.filter((r) => r.status === "rejected").length;
-  return { results, accepted: results.length - rejected, rejected, delivered };
 }
 
 /**

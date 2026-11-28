@@ -44,7 +44,7 @@ const PAIR_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 class PairRefusal extends Error {
   constructor(
     readonly status: number,
-    readonly errorCode: string,
+    readonly meta: { errorCode: string },
     message: string,
   ) {
     super(message);
@@ -115,7 +115,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
       if (!pairing || claimed.count === 0) {
         throw new PairRefusal(
           401,
-          "health-connect.pair.code_invalid",
+          { errorCode: "health-connect.pair.code_invalid" },
           "This pairing code is not valid. Show a new one in Settings.",
         );
       }
@@ -130,7 +130,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
       if (existing && existing.userId !== userId) {
         throw new PairRefusal(
           409,
-          "health-connect.pair.install_taken",
+          { errorCode: "health-connect.pair.install_taken" },
           "This install is paired with another account.",
         );
       }
@@ -179,8 +179,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
     });
   } catch (err) {
     if (err instanceof PairRefusal) {
-      annotate({ meta: { outcome: err.errorCode } });
-      return apiError(err.message, err.status, { errorCode: err.errorCode });
+      annotate({ meta: { outcome: err.meta.errorCode } });
+      return apiError(err.message, err.status, err.meta);
     }
     throw err;
   }

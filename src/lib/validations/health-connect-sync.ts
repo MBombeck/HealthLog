@@ -252,9 +252,9 @@ export type HcAggregate = z.infer<typeof hcAggregateSchema>;
 export const hcBatchEnvelopeSchema = z
   .object({
     phase: z.enum(["live", "backfill"]),
-    records: z.array(z.unknown()).max(HC_SYNC_MAX_ITEMS).default([]),
-    aggregates: z.array(z.unknown()).max(HC_SYNC_MAX_ITEMS).default([]),
-    deletes: z.array(z.unknown()).max(HC_SYNC_MAX_ITEMS).default([]),
+    records: z.array(z.unknown()).default([]),
+    aggregates: z.array(z.unknown()).default([]),
+    deletes: z.array(z.unknown()).default([]),
   })
   .strict();
 

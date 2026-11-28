@@ -16,13 +16,8 @@
 import { NextRequest } from "next/server";
 
 import { apiHandler } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  apiValidationError,
-  safeJson,
-  sanitiseZodIssues,
-} from "@/lib/api-response";
+import { apiError, apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import { markNotReplayable, withIdempotency } from "@/lib/idempotency";
@@ -97,27 +92,13 @@ async function postBatch(request: NextRequest): Promise<Response> {
     return response;
   }
 
-  const { data: rawBody, error: jsonError } = await safeJson<unknown>(request, {
+  // No array caps in the schema: the caps are answered below with their own
+  // code, so the phone can tell "split the batch" from "malformed".
+  const parsed = await parseJsonBody(request, hcBatchEnvelopeSchema, {
     maxBytes: HC_SYNC_MAX_BYTES,
+    errorCode: "health-connect.batch.invalid",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = hcBatchEnvelopeSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    const tooMany = parsed.error.issues.some((i) => i.code === "too_big");
-    return apiValidationError(
-      tooMany
-        ? `A batch holds at most ${HC_SYNC_MAX_ITEMS} items of each kind`
-        : (parsed.error.issues[0]?.message ?? "Invalid batch"),
-      sanitiseZodIssues(parsed.error.issues),
-      422,
-      {
-        errorCode: tooMany
-          ? "health-connect.batch.too_large"
-          : "health-connect.batch.invalid",
-      },
-    );
-  }
+  if (!parsed.ok) return parsed.error;
   const body = parsed.data;
   const items =
     body.records.length + body.aggregates.length + body.deletes.length;

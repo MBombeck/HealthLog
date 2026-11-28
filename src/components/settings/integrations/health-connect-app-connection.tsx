@@ -18,7 +18,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus, Smartphone } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { ListGroup, ListItem } from "@/components/ui/list-row";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { SourceIcon } from "@/components/settings/import-panel/import-card-shell";
 import {
@@ -27,11 +29,9 @@ import {
   useRecentProof,
 } from "@/components/settings/security-section/use-recent-proof";
 import { apiDelete, apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
+import { CONFIRMS_INLINE } from "@/lib/api/mutation-feedback";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
-
-/** The anchor of the group; the stall notice links here. */
-export const HEALTH_CONNECT_APP_ANCHOR = "health-connect-app";
 
 interface DeviceRow {
   id: string;
@@ -79,6 +79,8 @@ export function HealthConnectAppConnection() {
     mutationKey: queryKeys.authDevices(),
     mutationFn: (id: string) =>
       apiDelete(`/api/auth/me/devices/${encodeURIComponent(id)}`),
+    // The device's row leaves the list; that is the answer.
+    meta: CONFIRMS_INLINE,
     onSettled: () =>
       queryClient.invalidateQueries({ queryKey: queryKeys.authDevices() }),
   });
@@ -122,12 +124,17 @@ export function HealthConnectAppConnection() {
 
   const title = t("settings.healthConnectApp.connect");
   return (
-    <div
-      id={HEALTH_CONNECT_APP_ANCHOR}
-      className="scroll-mt-28"
-      data-testid="health-connect-app"
-    >
+    <div data-testid="health-connect-app">
       <ListGroup>
+        {devices.isError ? (
+          <li>
+            <QueryErrorRow
+              inset
+              error={devices.error}
+              onRetry={() => void devices.refetch()}
+            />
+          </li>
+        ) : null}
         {(devices.data ?? []).map((device) => (
           <ListItem
             key={device.id}
@@ -136,16 +143,20 @@ export function HealthConnectAppConnection() {
             title={device.label}
             meta={fmt.dateTime(device.lastSeenAt)}
             trailing={
-              <Button
-                type="button"
-                variant="outline"
+              <ConfirmButton
                 size="sm"
                 className="relative z-10"
-                disabled={disconnect.isPending}
-                onClick={() => disconnect.mutate(device.id)}
-              >
-                {t("settings.healthConnectApp.disconnect")}
-              </Button>
+                label={t("settings.healthConnectApp.disconnect")}
+                title={t("settings.healthConnectApp.disconnectTitle", {
+                  device: device.label,
+                })}
+                body={t("settings.healthConnectApp.disconnectBody")}
+                confirmLabel={t("settings.healthConnectApp.disconnect")}
+                pending={disconnect.isPending}
+                destructive
+                testId="health-connect-app-disconnect"
+                onConfirm={() => disconnect.mutate(device.id)}
+              />
             }
           />
         ))}
@@ -206,7 +217,7 @@ export function HealthConnectAppConnection() {
             </p>
           ) : (
             <Loader2
-              className="text-muted-foreground size-6 animate-spin"
+              className="text-muted-foreground size-6 animate-spin motion-reduce:animate-none"
               aria-hidden="true"
             />
           )}

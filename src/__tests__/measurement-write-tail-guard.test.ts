@@ -94,8 +94,10 @@ const WRITE_SITES: Record<string, string> = {
     "the import worker refolds the import's span and re-warms every imported type",
   "lib/measurements/import-unchanged-rows.ts":
     "the Apple export import's natural-key rescue, inside the import; its worker runs both legs once over the whole import",
-  "lib/import/health-connect/import.ts":
-    "the Health Connect import worker refolds the import's span and re-warms every imported type",
+  "lib/import/health-connect/sink.ts":
+    "the shared Health Connect write path: the export import's worker refolds the import's span and re-warms every imported type, and the live batch runs the tail over the rows it wrote",
+  "lib/health-connect/batch.ts":
+    "runs afterMeasurementMutation over every row the batch wrote or deleted",
   "lib/import/file-import/write-measurements.ts":
     "the record-file import worker refolds the import's span and re-warms every imported type (afterBulkImport)",
   "lib/export/measurements-restore.ts":
@@ -217,7 +219,7 @@ describe("measurement write tail", () => {
       .filter(
         (file) =>
           file !== "lib/measurements/import-apple-health-export-writer.ts" &&
-          file !== "lib/import/health-connect/import.ts" &&
+          file !== "lib/import/health-connect/sink.ts" &&
           file !== "lib/import/file-import/write-measurements.ts",
       );
     expect(handRolled.length).toBeGreaterThan(0);

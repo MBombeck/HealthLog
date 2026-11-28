@@ -7574,7 +7574,9 @@
       "newCode": "Neuer Code",
       "validUntil": "Gültig bis {time}",
       "qrAlt": "QR-Code für HealthLog Sync",
-      "preview": "HealthLog Sync für Android, Vorschau"
+      "preview": "HealthLog Sync für Android, Vorschau",
+      "disconnectTitle": "{device} trennen?",
+      "disconnectBody": "Das Telefon synchronisiert nicht mehr, bis du es neu verbindest."
     },
     "withingsViewData": "Messwerte ansehen",
     "whoopViewData": "Erholung ansehen",

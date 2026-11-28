@@ -7574,7 +7574,9 @@
       "newCode": "새 코드",
       "validUntil": "{time}까지 유효",
       "qrAlt": "HealthLog Sync용 QR 코드",
-      "preview": "Android용 HealthLog Sync, 미리 보기"
+      "preview": "Android용 HealthLog Sync, 미리 보기",
+      "disconnectTitle": "{device} 연결을 해제할까요?",
+      "disconnectBody": "다시 연결할 때까지 휴대폰이 동기화하지 않습니다."
     },
     "withingsViewData": "측정값 보기",
     "whoopViewData": "회복도 보기",
