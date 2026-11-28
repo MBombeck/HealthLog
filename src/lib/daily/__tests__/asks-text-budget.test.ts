@@ -149,11 +149,7 @@ describe(`asks text budget at ${ASK_TEXT_BUDGET.phoneCssPx} px`, () => {
       const own = makeFormatters(locale, "UTC", "AUTO", "AUTO").time(
         new Date(Date.UTC(2026, 10, 27, 7, 0)),
       );
-      // (Russian says "overdue" without the time: with it, the line ran
-      // past its column in the CI browser.)
-      if (t("daily.ask.overdue", { time: "\u0001" }).includes("\u0001")) {
-        expect(doseMeta(true, own, t)).toContain(own);
-      }
+      expect(doseMeta(true, own, t)).toContain(own);
       const titles: Record<string, string> = {
         medication: t("daily.ask.medication"),
         planFallback: t("daily.ask.planFallback"),
