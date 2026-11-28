@@ -805,13 +805,6 @@
   },
   "dashboard": {
     "title": "总览",
-    "greeting": {
-      "morning": "早上好",
-      "day": "你好",
-      "evening": "晚上好"
-    },
-    "welcomeBack": "{greeting}，欢迎回来。",
-    "welcomeBackWithName": "{greeting}，{name}，欢迎回来。",
     "greetingSalutation": "你好，{name}",
     "streakLabel": "天连续",
     "weight": "体重",
@@ -948,9 +941,6 @@
       "body": "没有这台服务器所用密钥的副本，重装之后数据将无法恢复。只需几分钟。",
       "action": "打开工具包"
     },
-    "greetingOnly": "{greeting}。",
-    "welcomeNew": "欢迎。",
-    "welcomeNewWithName": "欢迎，{name}。",
     "quickAddSeizure": "记录发作",
     "morning": {
       "heroItemsTitle": "今日待办",
@@ -9715,8 +9705,6 @@
       },
       "question": {
         "title": "使用 HealthLog 推送中继？",
-        "askTitle": "通过推送中继发送通知？",
-        "askBody": "内容保持加密。",
         "body": "为 App Store 版应用提供的通知，端到端加密：中继只能看到通知何时被发送。",
         "yes": "是",
         "no": "否",
@@ -9809,7 +9797,6 @@
       "notice": {
         "title": "设置这台服务器",
         "body": "五个简短步骤：注册、通知、AI 与隐私；任何一步之后都可以跳过或更改。",
-        "bodyShort": "五个简短步骤：注册、通知、AI 与隐私。",
         "open": "开始设置",
         "dismiss": "暂不"
       },
@@ -13819,7 +13806,6 @@
       },
       "syncIssue": {
         "title": "同步需要处理",
-        "askTitle": "同步已停止",
         "body": "{integration} 没有在同步。请重新连接以保持数据最新。"
       },
       "sourceQuiet": {
@@ -13873,10 +13859,9 @@
       "logDose": "服用",
       "later": "稍后",
       "answer": "回答",
-      "learnMore": "更多",
       "open": "打开",
       "setUp": "设置",
-      "reconnectShort": "重新连接",
+      "reconnectShort": "连接",
       "reconnect": "重新连接",
       "viewCheckups": "打开保健",
       "checkinKeep": "继续",
@@ -13887,6 +13872,23 @@
       "viewEcg": "查看记录",
       "viewSteps": "查看步数",
       "openSource": "打开"
+    },
+    "ask": {
+      "medication": "药物",
+      "overdue": "{time} 已逾期",
+      "overdueNow": "已逾期",
+      "due": "{time} 服用",
+      "dueNow": "现在服用",
+      "checkupDue": "该做体检了",
+      "visitToday": "今天就诊",
+      "visitTomorrow": "明天就诊",
+      "signedOut": "已断开",
+      "planFallback": "你的计划",
+      "planReview": "该回顾了",
+      "setupTitle": "此服务器",
+      "setupMeta": "未设置",
+      "relayTitle": "推送中继？",
+      "relayMeta": "已加密"
     },
     "today": {
       "deltaShort": "对比基线 {delta}",
@@ -16293,10 +16295,10 @@
       "fieldsLabel": "链接显示的内容",
       "expiryLabel": "链接到期",
       "expiry": {
-        "none": "永不，直到被撤销",
         "30": "30 天后",
         "365": "一年后",
-        "730": "两年后"
+        "730": "两年后",
+        "none": "永不，直到被撤销"
       },
       "create": "生成链接",
       "qrAlt": "急救卡链接的二维码",
