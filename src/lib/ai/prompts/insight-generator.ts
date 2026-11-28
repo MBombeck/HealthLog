@@ -998,7 +998,8 @@ export function getStrictInsightsSystemPrompt(locale: Locale): string {
     locale === "ko" ||
     locale === "nl" ||
     locale === "pt-BR" ||
-    locale === "ru"
+    locale === "ru" ||
+    locale === "zh-CN"
   ) {
     return SYSTEM_PROMPT_EN + INSIGHTS_LOCALE_REPLY_FOOTER_FALLBACK[locale];
   }

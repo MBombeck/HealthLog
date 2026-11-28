@@ -165,8 +165,8 @@ describe("supply surfaces — server computes, the detail-page clients render th
 
   it("the Übersicht client renders the server summary and never imports the helper as a value", () => {
     const src = read(
-      // The Overview status moved into its own section component.
-      "src/components/medications/detail/overview-status-section.tsx",
+      // The overview's supply line lives in the plan card.
+      "src/components/medications/detail/overview/plan-card.tsx",
     );
     // Type-only import is allowed; a value import of the helper is not.
     expect(src).toContain(
@@ -177,7 +177,7 @@ describe("supply surfaces — server computes, the detail-page clients render th
     // derivation, and still drives the runway with the available figure.
     expect(src).toMatch(/inventory\?\.summary/);
     expect(src).toMatch(
-      /estimateRunwayDays\(dosesRemaining, medication\.schedules\)/,
+      /estimateRunwayDays\(summary\?\.dosesRemaining \?\? 0, medication\.schedules\)/,
     );
     expect(src).not.toContain('state !== "USED_UP"');
     expect(src).toContain("medications.detail.bestand.expiredSuffix");

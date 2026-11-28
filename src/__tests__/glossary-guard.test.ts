@@ -558,6 +558,9 @@ const NOTIFICATION_WORD: Record<string, RegExp> = {
   ko: /알림/u,
   nl: /melding|waarschuwing/iu,
   "pt-BR": /notificação|alerta/iu,
+  // Chinese says "notification" as 提醒 (a reminder) or 通知 (a notice);
+  // every device-notification name in the bundle uses one of them.
+  "zh-CN": /提醒|通知/iu,
   ru: /уведомление/iu,
 };
 
