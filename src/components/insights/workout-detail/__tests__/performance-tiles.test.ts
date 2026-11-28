@@ -35,7 +35,7 @@ describe("performanceTiles", () => {
     );
     expect(tiles.map((x) => [x.label, x.value])).toEqual([
       ["Aerobic training effect", "3.0"],
-      ["Ground contact balance", "49.5 % L, 50.5 % R"],
+      ["Ground contact balance", "49.5\u00a0% L, 50.5\u00a0% R"],
     ]);
   });
 

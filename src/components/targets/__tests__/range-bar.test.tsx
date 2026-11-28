@@ -93,7 +93,7 @@ describe("<RangeBar>", () => {
       unit: "bpm",
     });
     expect(html).toMatch(
-      /<button type="button" aria-label="Current: 72 bpm[^"]*"/,
+      /<button type="button" aria-label="Current: 72\u00a0bpm[^"]*"/,
     );
     expect(html).toContain('aria-haspopup="dialog"');
   });
@@ -105,9 +105,9 @@ describe("<RangeBar>", () => {
       "de",
     );
     expect(html).toContain("50,5 kg");
-    expect(html).toContain("70,25 kg");
-    expect(html).toContain("72,4 kg");
-    expect(html).toContain("2,2 kg");
+    expect(html).toContain("70,25\u00a0kg");
+    expect(html).toContain("72,4\u00a0kg");
+    expect(html).toContain("2,2\u00a0kg");
     expect(html).not.toMatch(/\d\.\d+ kg/);
   });
 });

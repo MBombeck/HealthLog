@@ -32,17 +32,17 @@ describe("<DurationReadAs>", () => {
   it.each(["7.5", "7,5", "7:30", "7h30", "7 h 30 min"])(
     "shows %j as seven and a half hours",
     (raw) => {
-      expect(readAs(raw)).toContain("Read as 7 h 30 min");
+      expect(readAs(raw)).toContain("Read as 7\u00a0h 30\u00a0min");
     },
   );
 
   it("leaves out a zero part", () => {
-    expect(render(480)).toContain("Read as 8 h<");
-    expect(render(45)).toContain("Read as 45 min");
+    expect(render(480)).toContain("Read as 8\u00a0h<");
+    expect(render(45)).toContain("Read as 45\u00a0min");
   });
 
   it("speaks the reader's language", () => {
-    expect(render(450, "de")).toContain("7 Std. 30 Min.");
+    expect(render(450, "de")).toContain("7\u00a0Std. 30\u00a0Min.");
     expect(render(450, "ko")).toContain("7시간 30분");
   });
 

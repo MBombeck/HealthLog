@@ -105,7 +105,7 @@ const BLOOD_PRESSURE: ScorePillarResult = {
       observed: {
         value: 126,
         unit: "mmHg",
-        label: "126/78 mmHg",
+        label: "126/78\u00a0mmHg",
         asOf: "2026-07-27T08:00:00.000Z",
         sources: ["MANUAL"],
       },
@@ -113,14 +113,14 @@ const BLOOD_PRESSURE: ScorePillarResult = {
         kind: "clinical-threshold",
         low: 120,
         high: 129,
-        label: "120 to 129/70 to 79 mmHg",
+        label: "120 to 129/70 to 79\u00a0mmHg",
         source: "ESH 2023",
       },
       personalReference: {
         kind: "guideline-band",
         low: 115,
         high: 125,
-        label: "115 to 125/65 to 75 mmHg",
+        label: "115 to 125/65 to 75\u00a0mmHg",
         source: "personal target",
       },
       noiseFloor: 1,
@@ -172,7 +172,7 @@ const FASTING_GLUCOSE: ScorePillarResult = {
         kind: "clinical-threshold",
         low: 70,
         high: 99,
-        label: "70 to 99 mg/dL fasting",
+        label: "70 to 99\u00a0mg/dL fasting",
         source: "ADA 2026",
       },
       noiseFloor: 1,
@@ -942,9 +942,9 @@ describe("<HealthScoreCard> footer", () => {
         })}
       />,
     );
-    expect(html).toContain("178.6 lb now");
-    expect(html).toContain("Goal 163.1 to 172 lb");
-    expect(html).not.toContain("81 kg");
+    expect(html).toContain("178.6\u00a0lb now");
+    expect(html).toContain("Goal 163.1 to 172\u00a0lb");
+    expect(html).not.toMatch(/81[ \u00a0]kg/);
   });
 });
 
@@ -963,13 +963,13 @@ describe("pillar detail formatting", () => {
         t: translator(),
         glucoseUnit: "mg/dL",
       }),
-    ).toBe("Fasting glucose: 100 mg/dL");
+    ).toBe("Fasting glucose: 100\u00a0mg/dL");
 
     const mmol = pillarObservedText(FASTING_GLUCOSE, {
       t: translator(),
       glucoseUnit: "mmol/L",
     });
-    expect(mmol).toBe("Fasting glucose: 5.5 mmol/L");
+    expect(mmol).toBe("Fasting glucose: 5.5\u00a0mmol/L");
   });
 
   it("converts the reference band behind the popover into the account unit", () => {
@@ -977,8 +977,8 @@ describe("pillar detail formatting", () => {
       t: translator(),
       glucoseUnit: "mmol/L",
     });
-    expect(lines.join("\n")).toContain("3.9 to 5.5 mmol/L fasting");
-    expect(lines.join("\n")).not.toContain("70 to 99 mg/dL");
+    expect(lines.join("\n")).toContain("3.9 to 5.5\u00a0mmol/L fasting");
+    expect(lines.join("\n")).not.toMatch(/70 to 99[ \u00a0]mg\/dL/);
   });
 
   it("keeps the reference, the personal target and the source together", () => {
@@ -988,7 +988,7 @@ describe("pillar detail formatting", () => {
     });
     expect(lines).toHaveLength(3);
     expect(lines[0]).toContain("ESH 2023");
-    expect(lines[1]).toContain("Your target: 115 to 125/65 to 75 mmHg");
+    expect(lines[1]).toContain("Your target: 115 to 125/65 to 75\u00a0mmHg");
     expect(lines[2]).toContain("Source: MANUAL");
   });
 

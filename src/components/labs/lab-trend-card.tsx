@@ -42,7 +42,7 @@ export function LabTrendCard({
   // "0.3 씩").
   const SLOT = "\u0000";
   const tidy = (text: string) =>
-    shownUnit ? text : text.replace(new RegExp(` ?${SLOT}`, "g"), "");
+    shownUnit ? text : text.replace(new RegExp(`[ \u00a0]?${SLOT}`, "g"), "");
   const slopeLine = tidy(
     t(`labs.trend.slope.${direction}`, {
       amount: per(trend.slopePerYear),

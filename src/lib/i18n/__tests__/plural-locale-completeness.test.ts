@@ -202,16 +202,16 @@ describe("duration abbreviations", () => {
     }
     // The regression: three components hardcoded German-or-English, so es / fr
     // / it / pl all read "8h 12m".
-    expect(rendered.get("de")).toBe("8 Std. 12 Min.");
+    expect(rendered.get("de")).toBe("8\u00a0Std. 12\u00a0Min.");
     expect(rendered.get("en")).toBe("8h 12m");
-    expect(rendered.get("pl")).toBe("8 godz. 12 min");
+    expect(rendered.get("pl")).toBe("8 godz. 12\u00a0min");
     expect(rendered.get("fr")).not.toBe(rendered.get("en"));
     expect(rendered.get("pl")).not.toBe(rendered.get("en"));
   });
 
   it("drops the hours part below an hour", () => {
     expect(formatDurationMinutes(42, getServerTranslator("de").t)).toBe(
-      "42 Min.",
+      "42\u00a0Min.",
     );
   });
 });

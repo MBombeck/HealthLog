@@ -124,7 +124,7 @@ describe("<SubPageShell>", () => {
       </SubPageShell>,
     );
     expect(html).toContain(
-      "a fasting reading under 5.6 mmol/L is normal, 5.6–6.9 is prediabetes, and 7.0 or above",
+      "a fasting reading under 5.6\u00a0mmol/L is normal, 5.6–6.9 is prediabetes, and 7.0 or above",
     );
     expect(html).not.toContain("{");
   });

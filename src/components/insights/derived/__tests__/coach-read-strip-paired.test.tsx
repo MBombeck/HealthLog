@@ -74,10 +74,10 @@ describe("CoachReadStrip — paired metrics", () => {
     (metricType) => {
       const html = render(metricType, READS);
       expect(html).toContain(
-        "Systolic: Your usual range is 110–140 mmHg; your latest reading, November 18, was 118, within it.",
+        "Systolic: Your usual range is 110–140\u00a0mmHg; your latest reading, November 18, was 118, within it.",
       );
       expect(html).toContain(
-        "Diastolic: Your usual range is 70–90 mmHg; your latest reading, November 18, was 77, within it.",
+        "Diastolic: Your usual range is 70–90\u00a0mmHg; your latest reading, November 18, was 77, within it.",
       );
       // Systolic first, as a reading is written.
       expect(html.indexOf("Systolic:")).toBeLessThan(
@@ -101,7 +101,7 @@ describe("CoachReadStrip — paired metrics", () => {
     const html = render("RESTING_HEART_RATE", {
       RESTING_HEART_RATE: read(55, 62, 58),
     });
-    expect(html).toContain("Your usual range is 55–62 mmHg");
+    expect(html).toContain("Your usual range is 55–62\u00a0mmHg");
     expect(html).not.toContain(": Your usual range");
   });
 });

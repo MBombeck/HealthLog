@@ -123,7 +123,7 @@ describe("EnergyMacrosCard", () => {
       }),
     };
     const html = render(<EnergyMacrosCard />);
-    expect(html).toContain("Your target 120 g/day");
+    expect(html).toContain("Your target 120\u00a0g/day");
     // The card is a read surface: the page header's gear edits the target.
     expect(html).not.toContain("Edit target");
     expect(state.chartLine).toEqual([120]);
@@ -143,7 +143,7 @@ describe("EnergyMacrosCard", () => {
       }),
     };
     const html = render(<EnergyMacrosCard />);
-    expect(html).toContain("Reference 56 g/day (IOM)");
+    expect(html).toContain("Reference 56\u00a0g/day (IOM)");
     expect(state.chartLine).toEqual([56]);
   });
 });
@@ -166,7 +166,7 @@ describe("MicronutrientsCard grouping", () => {
     expect(html).not.toContain("Alcohol");
     expect(html).not.toContain("Caffeine");
     // Sodium's reference is EFSA's safe and adequate intake.
-    expect(html).toContain("ref 2,000 mg (EFSA)");
+    expect(html).toContain("ref 2,000\u00a0mg (EFSA)");
     // Each group sits under its own section label.
     expect(html).toContain(">Minerals</h3>");
     expect(html).not.toContain(">Vitamins</h3>");

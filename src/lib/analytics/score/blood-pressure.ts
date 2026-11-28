@@ -9,6 +9,7 @@ import {
   okPillar,
   withinWindow,
 } from "./shared";
+import { NBSP } from "@/lib/format/unit-join";
 
 export const BLOOD_PRESSURE_WINDOW_DAYS = 90;
 export const BLOOD_PRESSURE_MIN_PAIRS = 12;
@@ -88,7 +89,7 @@ export function computeBloodPressurePillar(
       observed: {
         value: representativeSys,
         unit: "mmHg",
-        label: `${representativeSys}/${representativeDia} mmHg`,
+        label: `${representativeSys}/${representativeDia}${NBSP}mmHg`,
         asOf: input.latestAt.toISOString(),
         sources: input.sources,
       },
@@ -96,7 +97,7 @@ export function computeBloodPressurePillar(
         kind: "clinical-threshold",
         low: target.sysLow,
         high: target.sysHigh,
-        label: `${target.sysLow}–${target.sysHigh}/${target.diaLow}–${target.diaHigh} mmHg`,
+        label: `${target.sysLow}–${target.sysHigh}/${target.diaLow}–${target.diaHigh}${NBSP}mmHg`,
         source: "ESH 2023",
       },
       personalReference: input.personalTarget
@@ -104,7 +105,7 @@ export function computeBloodPressurePillar(
             kind: "guideline-band",
             low: input.personalTarget.sysLow,
             high: input.personalTarget.sysHigh,
-            label: `${input.personalTarget.sysLow}–${input.personalTarget.sysHigh}/${input.personalTarget.diaLow}–${input.personalTarget.diaHigh} mmHg`,
+            label: `${input.personalTarget.sysLow}–${input.personalTarget.sysHigh}/${input.personalTarget.diaLow}–${input.personalTarget.diaHigh}${NBSP}mmHg`,
             source: "personal target",
           }
         : undefined,

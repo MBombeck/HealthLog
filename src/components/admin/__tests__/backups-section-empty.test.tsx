@@ -123,10 +123,10 @@ describe("BackupsSection — empty state", () => {
     const className = helpElement?.match(/\bclass="([^"]*)"/)?.[1] ?? "";
 
     expect(english).toContain(
-      "A HealthLog backup as .json or .json.gz. The file is compressed before upload; compressed, it may be up to 512 MB.",
+      "A HealthLog backup as .json or .json.gz. The file is compressed before upload; compressed, it may be up to 512\u00a0MB.",
     );
     expect(german).toContain(
-      "HealthLog-Backup als .json oder .json.gz. Die Datei wird vor dem Hochladen komprimiert; komprimiert darf sie bis zu 512 MB groß sein.",
+      "HealthLog-Backup als .json oder .json.gz. Die Datei wird vor dem Hochladen komprimiert; komprimiert darf sie bis zu 512\u00a0MB groß sein.",
     );
     expect(helpElement).toBeDefined();
     expect(className.split(/\s+/)).toContain("text-muted-foreground");

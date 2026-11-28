@@ -8,6 +8,7 @@ import type {
   EfficacyBeforeAfter,
   EfficacyTargetView,
 } from "@/lib/medications/efficacy/build-efficacy";
+import { withUnit } from "@/lib/format/unit-join";
 
 /**
  * The comparison's direction and its sentence. `direction` is null while
@@ -60,7 +61,7 @@ export function efficacyResultOf(
   const number = new Intl.NumberFormat(locale, {
     maximumFractionDigits: 1,
   }).format(Math.abs(ba.delta.mean));
-  const amount = view.unit ? `${number} ${view.unit}` : number;
+  const amount = withUnit(number, view.unit);
   return {
     direction,
     text: t(`serverText.efficacyResult.${direction}`, { amount }),

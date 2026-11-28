@@ -125,7 +125,7 @@ describe("buildWeightTargetFeature — the reader's mass unit", () => {
       unit: "lb",
       position: "inside",
     });
-    expect(feature?.reading).toContain("143.3–154.3 lb");
+    expect(feature?.reading).toContain("143.3–154.3\u00a0lb");
     expect(feature?.reading).not.toContain("kg");
   });
 
@@ -135,6 +135,6 @@ describe("buildWeightTargetFeature — the reader's mass unit", () => {
       { avg7: 72, latest: 72 },
     );
     expect(feature).toMatchObject({ min: 65, max: 70, unit: "kg" });
-    expect(feature?.reading).toContain("65–70 kg");
+    expect(feature?.reading).toContain("65–70\u00a0kg");
   });
 });

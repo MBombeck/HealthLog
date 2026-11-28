@@ -43,7 +43,7 @@ describe("<EcgWaveform>", () => {
     expect(html).toContain("aria-label");
     // The device's verdict is folded into the whole-image label verbatim.
     expect(html).toContain("Atrial fibrillation detected");
-    expect(html).toContain("72 bpm");
+    expect(html).toContain("72\u00a0bpm");
   });
 
   it("renders no trace path for an empty sample array", () => {

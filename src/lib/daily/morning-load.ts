@@ -79,6 +79,7 @@ import {
   type MorningReadiness,
   type MorningSleepScore,
 } from "@/lib/daily/morning";
+import { withUnit } from "@/lib/format/unit-join";
 
 type Translate = (
   key: string,
@@ -379,7 +380,7 @@ async function readFloor(
     glucose,
   };
   const label = (mgdl: number) =>
-    `${convertGlucose(mgdl, glucoseUnit)} ${glucoseUnit}`;
+    withUnit(convertGlucose(mgdl, glucoseUnit), glucoseUnit);
   if (isFloorReason(reason)) {
     return {
       floor: floorFromReadings(readings, reason, label),

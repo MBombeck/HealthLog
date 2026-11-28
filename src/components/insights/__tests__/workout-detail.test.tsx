@@ -101,7 +101,7 @@ describe("<WorkoutDetailHeader>", () => {
     const html = render(<WorkoutDetailHeader workout={FIXTURE} />);
     expect(html).toContain("Running");
     expect(html).toContain("Apple Health");
-    expect(html).toContain("30:00 min");
+    expect(html).toContain("30:00\u00a0min");
     expect(html).toContain("5.20 km");
   });
 });

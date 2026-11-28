@@ -54,7 +54,7 @@ function bloodPressure(scoreBasis?: BpScoreBasis): ScorePillarResult {
         observed: {
           value: 137,
           unit: "mmHg",
-          label: "137/87 mmHg",
+          label: "137/87\u00a0mmHg",
           asOf: "2026-07-30T08:00:00.000Z",
           sources: ["MANUAL"],
         },
@@ -62,7 +62,7 @@ function bloodPressure(scoreBasis?: BpScoreBasis): ScorePillarResult {
           kind: "clinical-threshold",
           low: 120,
           high: 129,
-          label: "120 to 129/70 to 79 mmHg",
+          label: "120 to 129/70 to 79\u00a0mmHg",
           source: "ESH 2023",
         },
         noiseFloor: 1,
@@ -100,7 +100,7 @@ describe("blood-pressure score basis in the popover", () => {
       glucoseUnit: "mg/dL",
     });
     expect(lines[0]).toBe(
-      "Systolic sets this score: about 8 mmHg over its ceiling of 129 mmHg.",
+      "Systolic sets this score: about 8\u00a0mmHg over its ceiling of 129\u00a0mmHg.",
     );
   });
 
@@ -115,7 +115,7 @@ describe("blood-pressure score basis in the popover", () => {
       { t: translator(), glucoseUnit: "mg/dL" },
     );
     expect(lines[0]).toBe(
-      "Diastolic sets this score: about 9 mmHg over its ceiling of 79 mmHg.",
+      "Diastolic sets this score: about 9\u00a0mmHg over its ceiling of 79\u00a0mmHg.",
     );
   });
 
@@ -130,7 +130,7 @@ describe("blood-pressure score basis in the popover", () => {
       { t: translator(), glucoseUnit: "mg/dL" },
     );
     expect(lines[0]).toBe(
-      "Systolic sets this score: about 4 mmHg under the low-pressure floor of 90 mmHg.",
+      "Systolic sets this score: about 4\u00a0mmHg under the low-pressure floor of 90\u00a0mmHg.",
     );
   });
 
@@ -155,7 +155,7 @@ describe("blood-pressure score basis in the popover", () => {
       glucoseUnit: "mg/dL",
     });
     expect(lines[1]).toBe(
-      "At the ceiling the score is 85; 100 means roughly 12 mmHg below it.",
+      "At the ceiling the score is 85; 100 means roughly 12\u00a0mmHg below it.",
     );
     // The window comes off the pillar's own provenance, so the sentence
     // cannot drift from the window the score was actually read over.
@@ -173,10 +173,10 @@ describe("blood-pressure score basis in the popover", () => {
       glucoseUnit: "mg/dL",
     });
     expect(lines[0]).toBe(
-      "Ausschlaggebend: Systolisch, etwa 8 mmHg über der Obergrenze von 129 mmHg.",
+      "Ausschlaggebend: Systolisch, etwa 8\u00a0mmHg über der Obergrenze von 129\u00a0mmHg.",
     );
     expect(lines[1]).toBe(
-      "An der Obergrenze liegt der Wert bei 85; 100 bedeutet rund 12 mmHg darunter.",
+      "An der Obergrenze liegt der Wert bei 85; 100 bedeutet rund 12\u00a0mmHg darunter.",
     );
     expect(lines[2]).toBe(
       "Beruht auf einem Durchschnitt der letzten 90 Tage, der neuere Messungen stärker gewichtet, und kann deshalb von jeder einzelnen Messung abweichen.",

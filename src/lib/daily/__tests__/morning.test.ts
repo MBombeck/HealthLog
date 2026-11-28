@@ -32,8 +32,8 @@ function vital(over: Partial<TodayVital> = {}): TodayVital {
     high: 58,
     direction: "in",
     daysAgo: 0,
-    valueLabel: "54 bpm",
-    rangeLabel: "50 to 58 bpm",
+    valueLabel: "54\u00a0bpm",
+    rangeLabel: "50 to 58\u00a0bpm",
     moduleKey: null,
     ...over,
   };
@@ -122,7 +122,7 @@ describe("morning lead: one rank per state", () => {
   it("rank 0: a confirmed floor wins over everything, with its value", () => {
     const lead = expectRank(
       {
-        floor: { reason: "bp_hypertensive", valueLabel: "184/122 mmHg" },
+        floor: { reason: "bp_hypertensive", valueLabel: "184/122\u00a0mmHg" },
         restMode: { day: 3 },
         vitals: [out("BLOOD_PRESSURE_SYS"), out("RESTING_HEART_RATE")],
         sleepPending: true,
@@ -130,7 +130,7 @@ describe("morning lead: one rank per state", () => {
       "floor",
     );
     expect(lead.text).toBe(
-      "Blood pressure reached 184/122 mmHg in the last 24 hours.",
+      "Blood pressure reached 184/122\u00a0mmHg in the last 24 hours.",
     );
   });
 
@@ -198,8 +198,8 @@ describe("morning lead: one rank per state", () => {
       {
         vitals: [
           out("RESTING_HEART_RATE", {
-            valueLabel: "61 bpm",
-            rangeLabel: "52 to 57 bpm",
+            valueLabel: "61\u00a0bpm",
+            rangeLabel: "52 to 57\u00a0bpm",
           }),
           vital({ type: "HEART_RATE_VARIABILITY" }),
         ],
@@ -208,7 +208,7 @@ describe("morning lead: one rank per state", () => {
       "vital_outside",
     );
     expect(lead.text).toBe(
-      "Resting heart rate averages 61 bpm today, above your usual range (52 to 57 bpm).",
+      "Resting heart rate averages 61\u00a0bpm today, above your usual range (52 to 57\u00a0bpm).",
     );
   });
 
@@ -322,14 +322,17 @@ describe("morning lead: one rank per state", () => {
           vital({ type: "BLOOD_PRESSURE_SYS", value: 182 }),
           vital({ type: "BLOOD_PRESSURE_DIA", value: 121 }),
         ],
-        floorReading: { reason: "bp_hypertensive", valueLabel: "182/121 mmHg" },
+        floorReading: {
+          reason: "bp_hypertensive",
+          valueLabel: "182/121\u00a0mmHg",
+        },
         sleepExpected: true,
         sleepPending: true,
       },
       "vital_outside",
     );
     expect(lead.text).toBe(
-      "Blood pressure reached 182/121 mmHg in the last 24 hours.",
+      "Blood pressure reached 182/121\u00a0mmHg in the last 24 hours.",
     );
   });
 
@@ -385,10 +388,10 @@ describe("morning lead: one rank per state", () => {
   it("rank 8: a scale reading alone in range names it", () => {
     expect(
       expectRank(
-        { vitals: [vital({ type: "WEIGHT", valueLabel: "80 kg" })] },
+        { vitals: [vital({ type: "WEIGHT", valueLabel: "80\u00a0kg" })] },
         "in_range",
       ).text,
-    ).toMatch(/^Weight averages 80 kg today, inside your usual range/);
+    ).toMatch(/^Weight averages 80\u00a0kg today, inside your usual range/);
   });
 
   it("rank 8: an ordinary night with no values today", () => {
@@ -698,7 +701,7 @@ describe("morning cards", () => {
 });
 
 describe("floor readings", () => {
-  const label = (mgdl: number) => `${mgdl} mg/dL`;
+  const label = (mgdl: number) => `${mgdl}\u00a0mg/dL`;
 
   it("names the most extreme reading past the floor, or nothing", () => {
     const bp = [
@@ -708,7 +711,7 @@ describe("floor readings", () => {
     ];
     expect(floorFromReadings({ bp, glucose: [] }, null, label)).toEqual({
       reason: "bp_hypertensive",
-      valueLabel: "184/100 mmHg",
+      valueLabel: "184/100\u00a0mmHg",
     });
     expect(
       floorFromReadings(
@@ -730,13 +733,13 @@ describe("floor readings", () => {
         "glucose_hypo",
         label,
       ),
-    ).toEqual({ reason: "glucose_hypo", valueLabel: "58 mg/dL" });
+    ).toEqual({ reason: "glucose_hypo", valueLabel: "58\u00a0mg/dL" });
     expect(
       floorFromReadings({ bp: [], glucose: [96, 52] }, null, label),
-    ).toEqual({ reason: "glucose_hypo_severe", valueLabel: "52 mg/dL" });
+    ).toEqual({ reason: "glucose_hypo_severe", valueLabel: "52\u00a0mg/dL" });
     expect(
       floorFromReadings({ bp: [], glucose: [260, 240] }, null, label),
-    ).toEqual({ reason: "glucose_hyper", valueLabel: "260 mg/dL" });
+    ).toEqual({ reason: "glucose_hyper", valueLabel: "260\u00a0mg/dL" });
   });
 });
 

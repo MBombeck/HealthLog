@@ -78,7 +78,7 @@ describe("the card's snooze", () => {
       snooze: () => {},
     });
     expect(html).toContain('data-slot="medication-intake-snooze"');
-    expect(html).toContain("Remind me later (30 min)");
+    expect(html).toContain("Remind me later (30\u00a0min)");
   });
 
   it("shows the snoozed state instead of the action", () => {

@@ -53,10 +53,10 @@
     "learnMore": "Mehr erfahren",
     "dismiss": "Schließen",
     "moreInfo": "Mehr Informationen",
-    "durationHoursMinutes": "{hours} Std. {minutes} Min.",
-    "durationMinutes": "{minutes} Min.",
-    "durationClockMinutes": "{time} Min.",
-    "durationClockHours": "{time} Std.",
+    "durationHoursMinutes": "{hours} Std. {minutes} Min.",
+    "durationMinutes": "{minutes} Min.",
+    "durationClockMinutes": "{time} Min.",
+    "durationClockHours": "{time} Std.",
     "errorIdLabel": "Fehler-ID",
     "errorIdCopy": "Fehler-ID kopieren",
     "errorIdCopied": "Fehler-ID kopiert",
@@ -207,7 +207,7 @@
         "unitMismatch": "Diese Einheit gibt es für den Nährstoff nicht.",
         "extract": {
           "fileType": "Lade ein JPEG, PNG, WebP oder PDF hoch.",
-          "fileTooLarge": "Die Datei ist größer als 10 MB.",
+          "fileTooLarge": "Die Datei ist größer als 10 MB.",
           "rateLimited": "Zu viele Etiketten gelesen. Versuch es in einer Stunde noch einmal.",
           "budgetExceeded": "Dein KI-Budget für heute ist aufgebraucht.",
           "failed": "Das Etikett konnte nicht gelesen werden. Versuch ein schärferes Foto."
@@ -341,11 +341,11 @@
     "avgBp": "Durchschnittlicher Blutdruck",
     "classification": "Klassifikation",
     "bmiTitle": "Body-Mass-Index (BMI)",
-    "bmiRow": "BMI: {bmi} kg/m², Klassifikation: {class} (WHO)",
+    "bmiRow": "BMI: {bmi} kg/m², Klassifikation: {class} (WHO)",
     "complianceTitle": "Therapietreue",
     "glp1Title": "GLP-1-Therapie",
-    "glp1WeightSummary": "Gewicht im Berichtszeitraum: von {start} kg auf {end} kg ({delta} kg)",
-    "glp1CurrentDose": "Aktuelle Dosis: {value} {unit} (seit {since})",
+    "glp1WeightSummary": "Gewicht im Berichtszeitraum: von {start} kg auf {end} kg ({delta} kg)",
+    "glp1CurrentDose": "Aktuelle Dosis: {value} {unit} (seit {since})",
     "glp1Compliance": "Therapietreue: {taken} / {total} ({rate}%)",
     "glp1SideEffectsTitle": "Erfasste Nebenwirkungen",
     "colGlp1Date": "Datum",
@@ -390,7 +390,7 @@
     "typeGlucoseBedtime": "Glukose (vor dem Schlafen)",
     "typeGlucoseUnspecified": "Glukose (ohne Angabe)",
     "glucoseClassificationTitle": "Blutzucker: Referenzbereiche (ADA 2024 / DDG)",
-    "glucoseRow": "{label}: Ø {avg} {unit} (Ziel {rangeMin}–{rangeMax}): {class}",
+    "glucoseRow": "{label}: Ø {avg} {unit} (Ziel {rangeMin}–{rangeMax}): {class}",
     "glucoseInTarget": "im Ziel",
     "glucoseBelowTarget": "unter Ziel",
     "glucoseAboveTarget": "über Ziel",
@@ -434,11 +434,11 @@
       "title": "Glukose-Übersicht (klinisch)",
       "colMetric": "Kennzahl",
       "colValue": "Wert",
-      "tirInRange": "Zeit im Zielbereich ({low}–{high} {unit})",
-      "tirLow": "Niedrig (< {low} {unit})",
-      "tirVeryLow": "Sehr niedrig (< {veryLow} {unit})",
-      "tirHigh": "Hoch (> {high} {unit})",
-      "tirVeryHigh": "Sehr hoch (> {veryHigh} {unit})",
+      "tirInRange": "Zeit im Zielbereich ({low}–{high} {unit})",
+      "tirLow": "Niedrig (< {low} {unit})",
+      "tirVeryLow": "Sehr niedrig (< {veryLow} {unit})",
+      "tirHigh": "Hoch (> {high} {unit})",
+      "tirVeryHigh": "Sehr hoch (> {veryHigh} {unit})",
       "mean": "Durchschnittliche Glukose",
       "gmi": "Glukose-Management-Indikator (GMI)",
       "eA1c": "Geschätzter HbA1c",
@@ -537,7 +537,7 @@
     "lifeExposures": "Belastungen: {list}",
     "workouts": {
       "title": "Trainings",
-      "summary": "{sessions, plural, one {# Einheit} other {# Einheiten}}, insgesamt {hours} h; im Schnitt {perWeek, plural, one {# Einheit} other {# Einheiten}} und {minutesPerWeek, plural, one {# Minute} other {# Minuten}} pro Woche.",
+      "summary": "{sessions, plural, one {# Einheit} other {# Einheiten}}, insgesamt {hours} h; im Schnitt {perWeek, plural, one {# Einheit} other {# Einheiten}} und {minutesPerWeek, plural, one {# Minute} other {# Minuten}} pro Woche.",
       "colSport": "Sportart",
       "colSessions": "Einheiten",
       "colTime": "Dauer",
@@ -559,12 +559,12 @@
       "reasonBefore": "Zu wenige Werte vor dem Start",
       "reasonAfter": "Zu wenige Werte seit dem Start",
       "reasonFit": "Nicht berechenbar",
-      "excludedAdherence": "{count, plural, one {# Tag} other {# Tage}} nach dem Start ausgeschlossen (unter {floor} % der Dosen eingenommen)",
+      "excludedAdherence": "{count, plural, one {# Tag} other {# Tage}} nach dem Start ausgeschlossen (unter {floor} % der Dosen eingenommen)",
       "excludedNotTaking": "{count, plural, one {# Tag} other {# Tage}} ausgeschlossen (pausiert oder zwischen Einnahmezeiträumen)",
       "notTracked": "Einnahme nicht erfasst, daher keine Tage wegen nicht genommener Dosen entfernt",
       "endDoseChange": "Zeitraum endet am {date}, vor der ersten Dosisänderung",
       "days": "{before, plural, one {# Tag} other {# Tage}} vor, {after, plural, one {# Tag} other {# Tage}} nach dem Start, {excluded, plural, one {# Tag} other {# Tage}} ausgeschlossen",
-      "method": "Segmentierte Regression über die Tageswerte von 90 Tagen vor bis höchstens 180 Tagen nach dem Start, Intervalle nach Newey-West. Tage nach dem Start, an denen in den 14 Tagen davor weniger als 80 % der Dosen eingenommen wurden, sind ausgeschlossen. Beschreibt einen zeitlichen Zusammenhang, keine nachgewiesene Wirkung des Medikaments.",
+      "method": "Segmentierte Regression über die Tageswerte von 90 Tagen vor bis höchstens 180 Tagen nach dem Start, Intervalle nach Newey-West. Tage nach dem Start, an denen in den 14 Tagen davor weniger als 80 % der Dosen eingenommen wurden, sind ausgeschlossen. Beschreibt einen zeitlichen Zusammenhang, keine nachgewiesene Wirkung des Medikaments.",
       "autocorrelation": "starke Abhängigkeit vom Vortag, die Bereiche können daher noch zu eng sein",
       "window": "ausgewertet {from} bis {to}, das kann über den Berichtszeitraum hinausreichen",
       "windowLine": "Ausgewertet {from} bis {to}. Dieser Zeitraum kann über den Berichtszeitraum hinausreichen."
@@ -830,8 +830,8 @@
     "sleepShort": "Schlaf",
     "stepsShort": "Schritte",
     "vo2MaxShort": "VO₂max",
-    "bpInTargetWindow90": "BD-Ziel (90 T)",
-    "bpInTargetWindowDynamic": "BD-Ziel ({days} T)",
+    "bpInTargetWindow90": "BD-Ziel (90 T)",
+    "bpInTargetWindowDynamic": "BD-Ziel ({days} T)",
     "bpInTargetCollecting": "sammelt noch Daten",
     "medications": "Medikamente",
     "quickAddMeasurement": "Messwert erfassen",
@@ -895,7 +895,7 @@
     "emptyTitle": "Dein Dashboard ist leer",
     "emptyDescription": "Erfasse den ersten Messwert oder Stimmungseintrag. Kacheln und Charts erscheinen automatisch, sobald Daten vorhanden sind.",
     "emptyAddMeasurement": "Ersten Messwert erfassen",
-    "staleHint": "Letzter Wert vor {count} T.",
+    "staleHint": "Letzter Wert vor {count} T.",
     "staleHintWeeksOne": "Letzter Wert vor 1 Woche",
     "staleHintWeeksOther": "Letzter Wert vor {count} Wochen",
     "staleHintWeeksFew": "Letzter Wert vor {count} Wochen",
@@ -1026,8 +1026,8 @@
     "typeWalkingStepLength": "Schrittlänge",
     "typeWalkingSpeed": "Gehgeschwindigkeit",
     "glucoseContext": "Kontext",
-    "glucoseContextFasting": "Nüchtern (≥8 h ohne Nahrung)",
-    "glucoseContextPostprandial": "Postprandial (2 h nach dem Essen)",
+    "glucoseContextFasting": "Nüchtern (≥8 h ohne Nahrung)",
+    "glucoseContextPostprandial": "Postprandial (2 h nach dem Essen)",
     "glucoseContextRandom": "Beliebig / ohne Kontext",
     "glucoseContextBedtime": "Vor dem Schlafen",
     "glucoseContextNone": "Nicht angegeben",
@@ -1156,9 +1156,9 @@
     "typeIndoorTemperature": "Raumtemperatur",
     "typeIndoorHumidity": "Luftfeuchtigkeit (innen)",
     "durationReadAs": "Gelesen als {duration}",
-    "durationHoursMinutes": "{hours} Std. {minutes} Min.",
-    "durationHoursOnly": "{hours} Std.",
-    "durationMinutesOnly": "{minutes} Min.",
+    "durationHoursMinutes": "{hours} Std. {minutes} Min.",
+    "durationHoursOnly": "{hours} Std.",
+    "durationMinutesOnly": "{minutes} Min.",
     "durationInvalid": "Gib eine Dauer ein, zum Beispiel 7,5, 7:30 oder 7h 30m.",
     "durationTooLong": "Ein Eintrag kann nicht länger als 24 Stunden sein.",
     "sourceHealthConnect": "Health Connect",
@@ -1167,7 +1167,7 @@
     "typeTrainingReadiness": "Trainingsbereitschaft",
     "typeAcuteTrainingLoad": "Akute Trainingsbelastung",
     "sourceGarmin": "Garmin",
-    "valueOutOfRange": "Gib einen Wert zwischen {min} und {max} {unit} ein.",
+    "valueOutOfRange": "Gib einen Wert zwischen {min} und {max} {unit} ein.",
     "valueOutOfRangeNoUnit": "Gib einen Wert zwischen {min} und {max} ein.",
     "lastValueDeviates": "Deutlich anders als dein letzter Wert. Stimmt das?",
     "saveAndNext": "Nächster Wert",
@@ -1775,15 +1775,15 @@
       "naturalLanguage": {
         "title": "Medikament beschreiben",
         "description": "Beschreibe das Medikament in eigenen Worten, das Formular wird automatisch vorausgefüllt.",
-        "placeholder": "z. B. Mounjaro 5 mg wöchentlich am Mittwochmorgen ab nächstem Montag",
+        "placeholder": "z. B. Mounjaro 5 mg wöchentlich am Mittwochmorgen ab nächstem Montag",
         "submit": "Extrahieren",
         "submitBusy": "Wird verarbeitet…",
         "cancel": "Abbrechen",
         "examples": {
           "label": "Eines dieser Beispiele übernehmen",
-          "weekly": "Mounjaro 5 mg wöchentlich am Mittwochmorgen",
-          "daily": "Ibuprofen 200 mg täglich, 3-mal am Tag",
-          "rolling": "Methotrexat 7,5 mg alle 7 Tage nach der letzten Spritze"
+          "weekly": "Mounjaro 5 mg wöchentlich am Mittwochmorgen",
+          "daily": "Ibuprofen 200 mg täglich, 3-mal am Tag",
+          "rolling": "Methotrexat 7,5 mg alle 7 Tage nach der letzten Spritze"
         },
         "error": {
           "empty": "Gib zuerst eine Beschreibung ein.",
@@ -1943,7 +1943,7 @@
           "dosesPerUnitPlaceholder": "z. B. 4",
           "dosesPerUnitHint": "Was eine neue Packung enthält, z. B. 28 Tabletten.",
           "unitsPerDoseLabel": "Tabletten oder Einheiten pro Dosis",
-          "unitsPerDoseHint": "Z. B. 2 Tabletten à 2 mg für 4 mg.",
+          "unitsPerDoseHint": "Z. B. 2 Tabletten à 2 mg für 4 mg.",
           "packSizeToggle": "Packungsgröße (optional)"
         },
         "step4": {
@@ -2095,7 +2095,7 @@
       "title": "Dosisstärke im Zeitverlauf",
       "axisLabel": "Erfasste Dosis ({unit})",
       "tooltipLabel": "Dosis",
-      "currentDose": "Aktuelle Dosis: {dose} {unit}",
+      "currentDose": "Aktuelle Dosis: {dose} {unit}",
       "noCurrentDose": "Noch keine Dosis erfasst.",
       "empty": "Noch keine Titrations-Historie. Erfasse eine Dosisänderung, um die Stärkekurve zu sehen."
     },
@@ -2103,7 +2103,7 @@
       "title": "Titrationsplan",
       "empty": "Noch keine Dosis-Steigerungsschritte erfasst. Datierte Dosisänderungen hinzufügen, um den Plan abzubilden.",
       "youAreHere": "Du bist hier",
-      "doseStep": "{dose} {unit}",
+      "doseStep": "{dose} {unit}",
       "plannedFor": "Geplant für {date}"
     },
     "injectionSiteBodyOutlineAriaLabel": "Körperumriss",
@@ -2445,14 +2445,14 @@
         "packagingEdit": "Bearbeiten",
         "packagingDescription": "Lege fest, wie viele Einheiten eine Dosis verbraucht und wie groß eine neue Packung üblicherweise ist, z. B. nach einem Herstellerwechsel mit anderer Blistergröße.",
         "packagingUnitsPerDoseLabel": "Tabletten oder Einheiten pro Dosis",
-        "packagingUnitsPerDoseHelper": "Z. B. 2 Tabletten à 2 mg für eine 4-mg-Dosis oder 1,5 für anderthalb (über 0, bis 100). Bereits erfasste Einnahmen bleiben unverändert.",
+        "packagingUnitsPerDoseHelper": "Z. B. 2 Tabletten à 2 mg für eine 4-mg-Dosis oder 1,5 für anderthalb (über 0, bis 100). Bereits erfasste Einnahmen bleiben unverändert.",
         "packagingDefaultPackLabel": "Standard-Packungsgröße (Einheiten)",
         "packagingDefaultPackHelper": "Vorbefüllung beim Erfassen neuer Packungen (1–1000). Leer lassen, wenn keine üblich ist.",
         "packagingSuccess": "Packungsangaben gespeichert",
         "packagingFailed": "Speichern fehlgeschlagen",
         "addManufacturerLabel": "Hersteller",
         "addDoseStrengthLabel": "Wirkstärke",
-        "addDoseStrengthHint": "Wie auf dem Behälter aufgedruckt, z. B. 5 mg/0,5 ml.",
+        "addDoseStrengthHint": "Wie auf dem Behälter aufgedruckt, z. B. 5 mg/0,5 ml.",
         "openedOn": "Geöffnet {date}",
         "expiresOn": "Haltbar bis {date}",
         "summaryAllExpired": "Kein nutzbarer Bestand: {units, plural, one {# Einheit} other {# Einheiten}} als abgelaufen markiert",
@@ -2514,7 +2514,7 @@
         "saved": "Zeitplan gespeichert",
         "failed": "Zeitplan konnte nicht gespeichert werden",
         "window": {
-          "intro": "Pünktlich heißt ±1 Std. oder ein eigenes Fenster.",
+          "intro": "Pünktlich heißt ±1 Std. oder ein eigenes Fenster.",
           "explicitToggle": "Eigenes Fenster",
           "startLabel": "Fensterbeginn",
           "endLabel": "Fensterende",
@@ -2602,7 +2602,7 @@
     "tableColStock": "Bestand",
     "tableColActions": "Aktionen",
     "tableSortBy": "Sortieren nach {column}",
-    "tableComplianceDays": "{days} T",
+    "tableComplianceDays": "{days} T",
     "tableStockDoseOne": "1 Dosis",
     "tableStockDoses": "{count, plural, one {# Dosis} other {# Dosen}}",
     "tableStockRunway": "≈ {days, plural, one {# Tag} other {# Tage}} übrig",
@@ -2624,7 +2624,7 @@
       "levelShift": "Um {date} wurde eine Verschiebung des Niveaus erkannt.",
       "plateau": {
         "title": "Gewichts-Plateau auf aktueller Dosis",
-        "evidence": "Gewichtsveränderung von {delta} {unit} {window, plural, =1 {am letzten Tag} other {in den letzten # Tagen}} ({readings, plural, one {# Messung} other {# Messungen}}), seit {days, plural, one {# Tag} other {# Tagen}} auf {dose}."
+        "evidence": "Gewichtsveränderung von {delta} {unit} {window, plural, =1 {am letzten Tag} other {in den letzten # Tagen}} ({readings, plural, one {# Messung} other {# Messungen}}), seit {days, plural, one {# Tag} other {# Tagen}} auf {dose}."
       },
       "retarget": {
         "label": "Nicht der richtige Messwert?",
@@ -2647,12 +2647,12 @@
       "scaleToggleLabel": "Diagrammskala",
       "segmented": {
         "title": "Veränderung zum Start",
-        "level": "Direkt zum Start hat sich das Niveau um {value} {unit} verschoben (95-%-Bereich {low} bis {high}).",
-        "slope": "Nach dem Start hat sich der Wochentrend um {value} {unit} pro Woche verändert (95-%-Bereich {low} bis {high}).",
-        "preSlope": "Vor dem Start lag der Trend bei {value} {unit} pro Woche.",
+        "level": "Direkt zum Start hat sich das Niveau um {value} {unit} verschoben (95-%-Bereich {low} bis {high}).",
+        "slope": "Nach dem Start hat sich der Wochentrend um {value} {unit} pro Woche verändert (95-%-Bereich {low} bis {high}).",
+        "preSlope": "Vor dem Start lag der Trend bei {value} {unit} pro Woche.",
         "includesZero": "Wo ein Bereich die Null einschließt, passen diese Werte auch zu gar keiner Veränderung.",
         "basis": "Grundlage: {before, plural, one {# Tag} other {# Tage}} vor und {after, plural, one {# Tag} other {# Tage}} nach dem Start ({from} bis {to}).",
-        "excludedAdherence": "{count, plural, one {# Tag nach dem Start wurde ausgeschlossen} other {# Tage nach dem Start wurden ausgeschlossen}}, weil in den {lookback, plural, one {# Tag} other {# Tagen}} davor weniger als {floor} % der Dosen eingenommen wurden.",
+        "excludedAdherence": "{count, plural, one {# Tag nach dem Start wurde ausgeschlossen} other {# Tage nach dem Start wurden ausgeschlossen}}, weil in den {lookback, plural, one {# Tag} other {# Tagen}} davor weniger als {floor} % der Dosen eingenommen wurden.",
         "excludedNotTaking": "{count, plural, one {# Tag wurde ausgeschlossen} other {# Tage wurden ausgeschlossen}}, weil das Medikament pausiert war oder zwischen zwei Einnahmezeiträumen lag.",
         "notTracked": "Für dieses Medikament wird die Einnahme nicht erfasst, deshalb wurden keine Tage wegen nicht genommener Dosen entfernt.",
         "endDoseChange": "Der Zeitraum endet vor der ersten Dosisänderung und beschreibt deshalb die Anfangsdosis.",
@@ -2809,7 +2809,7 @@
       "action": {
         "take": "Einnehmen",
         "skip": "Überspringen",
-        "snooze": "Später erinnern ({minutes} Min.)",
+        "snooze": "Später erinnern ({minutes} Min.)",
         "undo": "Rückgängig",
         "takeFor": "Einnehmen: {name}",
         "skipFor": "Überspringen: {name}",
@@ -3149,7 +3149,7 @@
           "surprising": "Tage mit besserer Stimmung gehen in deinen Daten mit höherem Ruhepuls einher, das ist überraschend.",
           "none": "Stimmung und Ruhepuls bewegen sich in diesem Zeitraum nicht deutlich gemeinsam."
         },
-        "weightWeekday": "Das Gewicht am {weekday} liegt {delta} kg {direction} deinem Durchschnitt der übrigen Tage, ein Muster, das Beachtung verdient."
+        "weightWeekday": "Das Gewicht am {weekday} liegt {delta} kg {direction} deinem Durchschnitt der übrigen Tage, ein Muster, das Beachtung verdient."
       },
       "dailySameDay": {
         "high": "Mehr {behaviour} am selben Tag und am Vortag geht in deinen Daten tendenziell mit {direction} {outcome} einher. Das ist ein Muster, das sich zu beobachten lohnt, keine Ursache.",
@@ -3250,13 +3250,13 @@
       },
       "observed": "Beobachtet: {value}",
       "reference": "Referenz: {value}",
-      "fastingObserved": "Nüchternglukose: {value} {unit}",
-      "fastingReference": "{low} bis {high} {unit} nüchtern",
+      "fastingObserved": "Nüchternglukose: {value} {unit}",
+      "fastingReference": "{low} bis {high} {unit} nüchtern",
       "personalReference": "Dein Ziel: {value}",
-      "bpBasisAbove": "Ausschlaggebend: {axis}, etwa {offset} mmHg über der Obergrenze von {boundary} mmHg.",
-      "bpBasisBelowFloor": "Ausschlaggebend: {axis}, etwa {offset} mmHg unter der Grenze für niedrigen Blutdruck von {boundary} mmHg.",
+      "bpBasisAbove": "Ausschlaggebend: {axis}, etwa {offset} mmHg über der Obergrenze von {boundary} mmHg.",
+      "bpBasisBelowFloor": "Ausschlaggebend: {axis}, etwa {offset} mmHg unter der Grenze für niedrigen Blutdruck von {boundary} mmHg.",
       "bpBasisInBand": "Beide Werte liegen auf oder unter ihren Referenz-Obergrenzen.",
-      "bpScale": "An der Obergrenze liegt der Wert bei 85; 100 bedeutet rund 12 mmHg darunter.",
+      "bpScale": "An der Obergrenze liegt der Wert bei 85; 100 bedeutet rund 12 mmHg darunter.",
       "bpRepresentative": "Beruht auf einem Durchschnitt {days, plural, =1 {des letzten Tages} other {der letzten # Tage}}, der neuere Messungen stärker gewichtet, und kann deshalb von jeder einzelnen Messung abweichen.",
       "source": "Quelle: {source}, Stand {date}",
       "observedActivity": "{value, plural, one {# Schritt} other {# Schritte}} pro Tag",
@@ -3265,7 +3265,7 @@
       "referenceActivity": "Der Nutzen flacht bei {high, plural, one {# Schritt} other {# Schritten}} pro Tag ab",
       "referenceSleep": "Mindestens {low, plural, one {# Minute} other {# Minuten}} pro Nacht; längerer Schlaf wird nicht abgewertet",
       "referenceAdiposity": "Taille-zu-Körpergröße-Verhältnis unter {high}",
-      "referenceHba1c": "HbA1c {low} bis {high} %",
+      "referenceHba1c": "HbA1c {low} bis {high} %",
       "referenceDetail": "{label}: {low} bis {high} ({kind}, {source})",
       "openBound": "offen",
       "laboratoryReferenceSource": "Referenzbereiche des auswertenden Labors",
@@ -3291,8 +3291,8 @@
       "returnToBand": "{metric} liegt seit {days, plural, one {# Tag} other {# Tagen}} wieder im üblichen Bereich.",
       "weightGoal": {
         "title": "Persönliches Gewichtsziel",
-        "value": "Aktuell {current} {unit}. Ziel {min} bis {max} {unit}. Abstand zum Ziel: {distance} {unit}.",
-        "delta": "Der Abstand zum Ziel hat sich seit der vorherigen Messung um {delta} {unit} verändert.",
+        "value": "Aktuell {current} {unit}. Ziel {min} bis {max} {unit}. Abstand zum Ziel: {distance} {unit}.",
+        "delta": "Der Abstand zum Ziel hat sich seit der vorherigen Messung um {delta} {unit} verändert.",
         "noDelta": "Für einen Vergleich ist keine frühere Gewichtsmessung verfügbar.",
         "no_personal_goal": "Lege ein persönliches Gewichtsziel fest, um hier den Fortschritt zu sehen.",
         "weight_not_tracked": "Erfasse dein Gewicht, um den Fortschritt zum Ziel zu sehen.",
@@ -3611,21 +3611,21 @@
       "askAboutThis": "Den Coach dazu fragen",
       "readStrip": {
         "label": "Üblicher Bereich",
-        "baselineWithin": "Dein üblicher Bereich liegt bei {low}–{high} {unit}; heute liegt {value} darin.",
-        "baselineAbove": "Dein üblicher Bereich liegt bei {low}–{high} {unit}; heute liegt {value} darüber.",
-        "baselineBelow": "Dein üblicher Bereich liegt bei {low}–{high} {unit}; heute liegt {value} darunter.",
-        "sameHoursWithin": "Bis zu dieser Tageszeit liegst du sonst bei {low}–{high} {unit}; heute bisher {value}, also im Bereich.",
-        "sameHoursAbove": "Bis zu dieser Tageszeit liegst du sonst bei {low}–{high} {unit}; heute bisher {value}, also darüber.",
-        "sameHoursBelow": "Bis zu dieser Tageszeit liegst du sonst bei {low}–{high} {unit}; heute bisher {value}, also darunter.",
-        "steadyWithin": "Deine Werte liegen meist bei {low} {unit}; heute passt {value} dazu.",
-        "steadyAbove": "Deine Werte liegen meist bei {low} {unit}; heute liegt {value} darüber.",
-        "steadyBelow": "Deine Werte liegen meist bei {low} {unit}; heute liegt {value} darunter.",
-        "latestWithin": "Dein üblicher Bereich liegt bei {low}–{high} {unit}; dein letzter Wert vom {date} lag mit {value} darin.",
-        "latestAbove": "Dein üblicher Bereich liegt bei {low}–{high} {unit}; dein letzter Wert vom {date} lag mit {value} darüber.",
-        "latestBelow": "Dein üblicher Bereich liegt bei {low}–{high} {unit}; dein letzter Wert vom {date} lag mit {value} darunter.",
-        "steadyLatestWithin": "Deine Werte liegen meist bei {low} {unit}; dein letzter Wert vom {date} lag mit {value} genau dort.",
-        "steadyLatestAbove": "Deine Werte liegen meist bei {low} {unit}; dein letzter Wert vom {date} lag mit {value} darüber.",
-        "steadyLatestBelow": "Deine Werte liegen meist bei {low} {unit}; dein letzter Wert vom {date} lag mit {value} darunter.",
+        "baselineWithin": "Dein üblicher Bereich liegt bei {low}–{high} {unit}; heute liegt {value} darin.",
+        "baselineAbove": "Dein üblicher Bereich liegt bei {low}–{high} {unit}; heute liegt {value} darüber.",
+        "baselineBelow": "Dein üblicher Bereich liegt bei {low}–{high} {unit}; heute liegt {value} darunter.",
+        "sameHoursWithin": "Bis zu dieser Tageszeit liegst du sonst bei {low}–{high} {unit}; heute bisher {value}, also im Bereich.",
+        "sameHoursAbove": "Bis zu dieser Tageszeit liegst du sonst bei {low}–{high} {unit}; heute bisher {value}, also darüber.",
+        "sameHoursBelow": "Bis zu dieser Tageszeit liegst du sonst bei {low}–{high} {unit}; heute bisher {value}, also darunter.",
+        "steadyWithin": "Deine Werte liegen meist bei {low} {unit}; heute passt {value} dazu.",
+        "steadyAbove": "Deine Werte liegen meist bei {low} {unit}; heute liegt {value} darüber.",
+        "steadyBelow": "Deine Werte liegen meist bei {low} {unit}; heute liegt {value} darunter.",
+        "latestWithin": "Dein üblicher Bereich liegt bei {low}–{high} {unit}; dein letzter Wert vom {date} lag mit {value} darin.",
+        "latestAbove": "Dein üblicher Bereich liegt bei {low}–{high} {unit}; dein letzter Wert vom {date} lag mit {value} darüber.",
+        "latestBelow": "Dein üblicher Bereich liegt bei {low}–{high} {unit}; dein letzter Wert vom {date} lag mit {value} darunter.",
+        "steadyLatestWithin": "Deine Werte liegen meist bei {low} {unit}; dein letzter Wert vom {date} lag mit {value} genau dort.",
+        "steadyLatestAbove": "Deine Werte liegen meist bei {low} {unit}; dein letzter Wert vom {date} lag mit {value} darüber.",
+        "steadyLatestBelow": "Deine Werte liegen meist bei {low} {unit}; dein letzter Wert vom {date} lag mit {value} darunter.",
         "componentLine": "{component}: {line}",
         "insufficient": "Lerne noch deinen üblichen Bereich. Protokolliere noch ein paar Tage weiter.",
         "loadError": "Dein üblicher Bereich konnte nicht geladen werden.",
@@ -3883,7 +3883,7 @@
     },
     "oxygenSaturation": {
       "title": "Sauerstoffsättigung",
-      "description": "Blutsauerstoff (SpO₂), klinischer Normalbereich 95–100 %; Zielzonen sind am Chart hinterlegt.",
+      "description": "Blutsauerstoff (SpO₂), klinischer Normalbereich 95–100 %; Zielzonen sind am Chart hinterlegt.",
       "chartTitle": "Sauerstoffsättigung",
       "emptyState": {
         "title": "Noch keine SpO₂-Werte",
@@ -3943,8 +3943,8 @@
         "medicationsBody": "Die Therapietreue zeigt, wie zuverlässig du deine Medikamente wie verordnet einnimmst, hier als Anteil der erwarteten Dosen, die du erfasst hast. Eine gleichmäßige Einnahme entscheidet oft darüber, ob eine Therapie wie beabsichtigt wirkt.",
         "restingHrBody": "Der Ruhepuls ist die Herzfrequenz in völliger Ruhe, meist über Nacht gemessen. Ein niedriger Ruhepuls deutet in der Regel auf eine bessere Herz-Kreislauf-Fitness hin, ein steigender Trend kann ein frühes Zeichen für Stress oder Krankheit sein.",
         "hrvBody": "Die HRV ist die kleine Schwankung der Zeit zwischen aufeinanderfolgenden Herzschlägen. Eine höhere Variabilität spiegelt meist ein gut erholtes, anpassungsfähiges Nervensystem wider, ein anhaltender Rückgang kann auf Erschöpfung, Stress oder mangelnde Erholung hinweisen.",
-        "oxygenSaturationBody": "Die SpO₂ ist der Prozentsatz der roten Blutkörperchen, die Sauerstoff transportieren. Werte von 95–100 % sind in Ruhe normal; Werte dauerhaft unter 90 % verdienen Aufmerksamkeit, kurze nächtliche Abfälle sind jedoch häufig.",
-        "bodyTemperatureBody": "Die Körpertemperatur spiegelt deinen Kernwärmezustand wider, normalerweise um 37 °C mit kleinen Tagesschwankungen. Ein anhaltender Anstieg kann auf eine Infektion hindeuten; nächtliche Messungen am Handgelenk erfassen vor allem relative Änderungen, keinen klinischen Wert.",
+        "oxygenSaturationBody": "Die SpO₂ ist der Prozentsatz der roten Blutkörperchen, die Sauerstoff transportieren. Werte von 95–100 % sind in Ruhe normal; Werte dauerhaft unter 90 % verdienen Aufmerksamkeit, kurze nächtliche Abfälle sind jedoch häufig.",
+        "bodyTemperatureBody": "Die Körpertemperatur spiegelt deinen Kernwärmezustand wider, normalerweise um 37 °C mit kleinen Tagesschwankungen. Ein anhaltender Anstieg kann auf eine Infektion hindeuten; nächtliche Messungen am Handgelenk erfassen vor allem relative Änderungen, keinen klinischen Wert.",
         "activeEnergyBody": "Die aktive Energie sind die Kalorien, die du durch Bewegung verbrennst, zusätzlich zum Grundumsatz in Ruhe. Sie ist ein direktes Maß dafür, wie körperlich aktiv dein Tag war.",
         "workoutsBody": "Trainings sind die strukturierten Einheiten, die deine Geräte mit Art, Dauer und Energie aufzeichnen. Ihre Erfassung zeigt, wie sich regelmäßiges Training über Wochen summiert und wie es mit deinen anderen Gesundheitssignalen zusammenhängt.",
         "respiratoryRateBody": "Die Atemfrequenz ist die Anzahl der Atemzüge pro Minute. In Ruhe atmen die meisten Erwachsenen etwa zwölf- bis zwanzigmal pro Minute; ein anhaltender Anstieg kann mit Krankheit, Anstrengung oder Stress einhergehen.",
@@ -3966,11 +3966,11 @@
         "walkingSpeedBody": "Die Gehgeschwindigkeit ist, wie schnell du dich auf ebenem Untergrund fortbewegst. Sie ist ein gut untersuchter Marker für allgemeine Gesundheit und Beweglichkeit, und ein gleichbleibendes oder steigendes Tempo ist ein gutes Zeichen.",
         "pulseWaveVelocityBody": "Die Pulswellengeschwindigkeit misst, wie schnell die Druckwelle jedes Herzschlags durch deine Arterien läuft. Eine schnellere Welle weist auf steifere Arterien hin, was mit einem höheren Herz-Kreislauf-Risiko verbunden ist.",
         "vascularAgeBody": "Das Gefäßalter schätzt anhand der Arteriensteifigkeit, wie alt sich deine Arterien im Vergleich zu deinem tatsächlichen Alter verhalten. Ein Gefäßalter unter dem echten Alter deutet auf gesündere Blutgefäße hin.",
-        "environmentalAudioBody": "Die Umgebungslautstärke erfasst die Lautstärke deiner Umwelt in Dezibel. Anhaltende Belastung über etwa 70 dB kann das Gehör mit der Zeit schädigen, daher sind niedrigere Tagesmittel sicherer.",
+        "environmentalAudioBody": "Die Umgebungslautstärke erfasst die Lautstärke deiner Umwelt in Dezibel. Anhaltende Belastung über etwa 70 dB kann das Gehör mit der Zeit schädigen, daher sind niedrigere Tagesmittel sicherer.",
         "headphoneAudioBody": "Die Kopfhörerlautstärke erfasst in Dezibel, wie laut du über Ohrhörer oder Kopfhörer hörst. Die Lautstärke niedrig zu halten und Pausen einzulegen schützt dein Gehör langfristig.",
         "audioEventsBody": "Laute Geräuschereignisse markieren Momente, in denen der Lärm um dich herum ein Niveau erreicht hat, das bei ausreichender Belastung das Gehör schädigen kann. Häufige Ereignisse sind ein Hinweis, eine ruhigere Umgebung oder Gehörschutz zu suchen.",
         "daylightBody": "Die Zeit im Tageslicht ist, wie lange du dich täglich im Freien im Licht aufhältst. Regelmäßiges Tageslicht unterstützt einen gesunden Schlaf-Wach-Rhythmus und die Stimmung (CDC 2024), und Zeit im Freien ist mit der Augengesundheit verbunden.",
-        "bloodGlucoseBody": "Der Blutzucker ist die Zuckermenge in deinem Blut, die wichtigste Energiequelle des Körpers. Er steigt nach dem Essen und pendelt sich zwischen den Mahlzeiten ein. Als allgemeine Orientierung für Erwachsene ohne Diabetes gilt ein Nüchternwert unter {prediabetesFrom} {unit} als normal, {prediabetesFrom}–{prediabetesTo} als Prädiabetes, und ab {diabetesFrom} liegt er im Diabetesbereich (ADA 2024). Ein einzelner hoher Wert ist keine Diagnose; eine Ärztin oder ein Arzt bestätigt sie mit einer Wiederholungsmessung, und wer Diabetes behandelt, arbeitet mit anderen, ärztlich festgelegten Zielwerten.",
+        "bloodGlucoseBody": "Der Blutzucker ist die Zuckermenge in deinem Blut, die wichtigste Energiequelle des Körpers. Er steigt nach dem Essen und pendelt sich zwischen den Mahlzeiten ein. Als allgemeine Orientierung für Erwachsene ohne Diabetes gilt ein Nüchternwert unter {prediabetesFrom} {unit} als normal, {prediabetesFrom}–{prediabetesTo} als Prädiabetes, und ab {diabetesFrom} liegt er im Diabetesbereich (ADA 2024). Ein einzelner hoher Wert ist keine Diagnose; eine Ärztin oder ein Arzt bestätigt sie mit einer Wiederholungsmessung, und wer Diabetes behandelt, arbeitet mit anderen, ärztlich festgelegten Zielwerten.",
         "skinTemperatureBody": "Die Hauttemperatur ist hier die kleine nächtliche Abweichung deiner Handgelenkstemperatur von deinem eigenen Ausgangswert, keine absolute Fiebermessung. Veränderungen können Schlaf, Umgebung, Krankheit oder Zyklusphase widerspiegeln.",
         "cardioFitnessBody": "VO₂max gibt an, wie viel Sauerstoff dein Körper bei maximaler Anstrengung verwerten kann. Es ist der beste Laborindex der Ausdauerfitness, den Wearables indirekt schätzen. Ein höherer oder steigender Trend ist ein starkes Zeichen für eine gute Herz-Kreislauf-Gesundheit.",
         "cardioRecoveryBody": "Der Erholungspuls gibt an, um wie viele Schläge pro Minute dein Puls in der ersten Minute nach dem Ende einer anstrengenden Belastung fällt. Ein größerer Abfall bedeutet, dass sich dein Herz schneller beruhigt, ein Zeichen guter Fitness.",
@@ -3987,14 +3987,14 @@
         "strainBody": "Die Belastung erfasst, wie viel kardiovaskuläre und körperliche Last du deinem Körper zugemutet hast, von Trainings bis zu einem aktiven Tag auf den Beinen. Es ist ein geräteabgeleiteter Index, gemessen an deinem eigenen üblichen Aufwand, keine klinische Messung, und der Kennwert ist zwischen Geräten nicht vergleichbar.",
         "stressBody": "Stress ist hier eine Geräte-Heuristik aus Mustern der Herzfrequenzvariabilität. Sie ist keine Cortisol-Messung und nicht, wie du dich bewusst fühlst, und auch kein klinischer Stressscore. Lies ihn an deinem eigenen Ausgangswert; zwischen Geräten ist er nicht vergleichbar. Ein niedrigerer Wert deutet auf einen ruhigen, gut regulierten Zustand hin; ein höherer ist eine Einladung, Erholung einzuplanen.",
         "recoveryPageBody": "Was dein Wearable meldet, unter seinen eigenen Namen.",
-        "pulsePressureBody": "Der Pulsdruck ist die Differenz zwischen deinem systolischen und diastolischen Wert (systolisch minus diastolisch). Als allgemeine Orientierung sind etwa 40 mmHg in Ruhe typisch; eine große Differenz über rund 60 mmHg im mittleren Alter kann auf versteifte Arterien hinweisen, eine kleine Differenz unter etwa 25 mmHg kann mit niedrigem Schlagvolumen einhergehen (StatPearls/NIH 2023).",
-        "meanArterialPressureBody": "Der mittlere arterielle Druck ist der durchschnittliche Druck, den deine Organe über einen Herzschlag sehen, grob der diastolische Wert plus ein Drittel der Differenz zum systolischen. Als allgemeine Orientierung liegt ein Ruhewert bei etwa 70–100 mmHg (StatPearls/NIH 2023). Die oft genannte Grenze von ~60 mmHg ist ein Konzept der Akutmedizin, kein Alarm für die Selbstmessung.",
+        "pulsePressureBody": "Der Pulsdruck ist die Differenz zwischen deinem systolischen und diastolischen Wert (systolisch minus diastolisch). Als allgemeine Orientierung sind etwa 40 mmHg in Ruhe typisch; eine große Differenz über rund 60 mmHg im mittleren Alter kann auf versteifte Arterien hinweisen, eine kleine Differenz unter etwa 25 mmHg kann mit niedrigem Schlagvolumen einhergehen (StatPearls/NIH 2023).",
+        "meanArterialPressureBody": "Der mittlere arterielle Druck ist der durchschnittliche Druck, den deine Organe über einen Herzschlag sehen, grob der diastolische Wert plus ein Drittel der Differenz zum systolischen. Als allgemeine Orientierung liegt ein Ruhewert bei etwa 70–100 mmHg (StatPearls/NIH 2023). Die oft genannte Grenze von ~60 mmHg ist ein Konzept der Akutmedizin, kein Alarm für die Selbstmessung.",
         "cycleEducationBody": "Dein Zyklus durchläuft vier hormongesteuerte Phasen, und seine Länge und Regelmäßigkeit sind ein gut zugängliches Fenster auf die allgemeine Gesundheit. Als allgemeine Orientierung dauern Zyklen bei Erwachsenen typischerweise 21–35 Tage (klinische Referenzen nennen 24–38), mit einer Blutung von rund fünf Tagen (ACOG 2015). Die Lutealphase ist der stabile Anker, daher schätzt man den Eisprung am besten durch Rückrechnen von der nächsten erwarteten Periode, nie über einen festen „Tag 14“. Ein vorhergesagtes fruchtbares Fenster ist eine Schätzung, die mehrere erfasste Zyklen braucht und ungefähr bleibt, und die Basaltemperatur bestätigt den Eisprung im Nachhinein, statt ihn vorherzusagen. Dies ist keine Verhütungsmethode.",
         "sleepHygieneBody": "Einige evidenzbasierte Gewohnheiten unterstützen den Schlaf: gleichbleibende Zubett- und Aufstehzeiten auch am Wochenende, helles Morgenlicht und gedämpfte Abende, ein kühles, dunkles und ruhiges Zimmer sowie der Verzicht auf Koffein am Nachmittag, späten Alkohol und große späte Mahlzeiten (CDC 2024). Regelmäßigkeit sagt die Gesundheit mindestens so stark voraus wie die Dauer, und die Gesamtschlafzeit eines Wearables ist weit verlässlicher als seine Aufteilung in Tief-, Leicht- und REM-Schlaf."
       },
       "bpDerived": {
-        "pulsePressure": "Der Pulsdruck (die Differenz zwischen deinen Werten) beträgt etwa {value} mmHg; rund 40 ist in Ruhe typisch.",
-        "meanArterialPressure": "Der mittlere arterielle Druck (der Durchschnitt, den deine Organe sehen) liegt bei etwa {value} mmHg, normalerweise um 70–100.",
+        "pulsePressure": "Der Pulsdruck (die Differenz zwischen deinen Werten) beträgt etwa {value} mmHg; rund 40 ist in Ruhe typisch.",
+        "meanArterialPressure": "Der mittlere arterielle Druck (der Durchschnitt, den deine Organe sehen) liegt bei etwa {value} mmHg, normalerweise um 70–100.",
         "pulsePressureLabel": "Pulsdruck",
         "meanArterialPressureLabel": "Mitteldruck"
       },
@@ -4087,7 +4087,7 @@
       },
       "debt": {
         "title": "Schlafschuld",
-        "value": "{hours} Std. {minutes} Min. zu wenig",
+        "value": "{hours} Std. {minutes} Min. zu wenig",
         "caption": "Offene Bilanz {nights, plural, =1 {der letzten Nacht} other {der letzten # Nächte}}",
         "clearValue": "Ausgeglichen",
         "clearCaption": "Nichts offen {nights, plural, =1 {in der letzten Nacht} other {über die letzten # Nächte}}",
@@ -4096,7 +4096,7 @@
       },
       "average": {
         "title": "Durchschnitt pro Nacht",
-        "value": "{hours} Std. {minutes} Min.",
+        "value": "{hours} Std. {minutes} Min.",
         "caption": "Mittlerer Schlaf {nights, plural, =1 {in der letzten Nacht} other {über die letzten # Nächte}}",
         "learning": "Dein Schlaf wird noch erfasst: {counted, plural, one {# Nacht} other {# Nächte}} bisher, noch {remaining} für einen verlässlichen Durchschnitt."
       },
@@ -4104,7 +4104,7 @@
         "title": "Chronotyp",
         "learning": "Dein Rhythmus wird noch erfasst: {counted} von {total} freien Nächten. Ein Chronotyp braucht ein paar weckerfreie Morgen, um aussagekräftig zu sein.",
         "advancedToggle": "Mehr Details",
-        "socialJetlagValue": "{hours} Std. {minutes} Min. sozialer Jetlag",
+        "socialJetlagValue": "{hours} Std. {minutes} Min. sozialer Jetlag",
         "socialJetlagCaption": "Der Unterschied zwischen deinem Schlaf an Arbeits- und freien Tagen, wie eine kleine wöchentliche Zeitzonenverschiebung.",
         "msfScValue": "Korrigierte Schlafmitte {clock}",
         "msfScCaption": "Bereinigt um den Schlaf, den du am Wochenende nachholst (MSFsc).",
@@ -4217,7 +4217,7 @@
         "statsVerticalOscillation": "Vertikale Bewegung",
         "statsGroundContactTime": "Bodenkontaktzeit",
         "statsGroundContactBalance": "Bodenkontaktzeit-Balance",
-        "statsGroundContactBalanceValue": "{left} % L, {right} % R",
+        "statsGroundContactBalanceValue": "{left} % L, {right} % R",
         "routeTitle": "Strecke",
         "hrChartTitle": "Herzfrequenz",
         "notFound": "Training nicht gefunden.",
@@ -4225,7 +4225,7 @@
         "hrAxisMinutes": "Min.",
         "hrAvgMarker": "Ø {bpm}",
         "hrMaxMarker": "Max. {bpm}",
-        "hrRangeValue": "{low} bis {high} bpm",
+        "hrRangeValue": "{low} bis {high} bpm",
         "hrRangeLabel": "Spanne",
         "hrNoProfile": "Für diese Einheit liegen keine einzelnen Pulswerte vor.",
         "sportAverageLabel": "Dein aktueller Durchschnitt:",
@@ -4311,7 +4311,7 @@
           "durationTooLong": "Ein Training dauert höchstens 24 Stunden.",
           "endInFuture": "Das Training würde in der Zukunft enden. Stell den Beginn auf die Uhrzeit, zu der es angefangen hat.",
           "distanceInvalid": "Gib die Distanz als Zahl in einem realistischen Bereich ein.",
-          "energyInvalid": "Gib die aktive Energie als Zahl bis 20.000 kcal ein."
+          "energyInvalid": "Gib die aktive Energie als Zahl bis 20.000 kcal ein."
         },
         "editTitle": "Training bearbeiten",
         "editAction": "Bearbeiten",
@@ -4351,7 +4351,7 @@
         "daysCountOne": "1 Tag",
         "tir": {
           "title": "Zeit im Zielbereich",
-          "caption": "Anteil der Messungen je Bereich ({low}–{high} {unit} ist das Ziel).",
+          "caption": "Anteil der Messungen je Bereich ({low}–{high} {unit} ist das Ziel).",
           "veryLow": "Sehr niedrig",
           "low": "Niedrig",
           "inRange": "Im Zielbereich",
@@ -4375,7 +4375,7 @@
           "label": "Schwankung",
           "steady": "Stabil",
           "unstable": "Instabil",
-          "help": "Variationskoeffizient. Ab 36 % gilt die Glukose als instabil; niedriger ist stabiler."
+          "help": "Variationskoeffizient. Ab 36 % gilt die Glukose als instabil; niedriger ist stabiler."
         },
         "advanced": {
           "toggle": "Erweiterte Indizes",
@@ -4420,7 +4420,7 @@
         "description": "Blutzucker geteilt durch Ketone, für jeden Ketonwert mit einem Blutzuckerwert innerhalb von 15 Minuten.",
         "emptyTitle": "Noch kein Index",
         "emptyDescription": "Er erscheint, sobald zu einem Ketonwert über null ein Blutzuckerwert zur selben Zeit oder innerhalb von 15 Minuten vorliegt.",
-        "latest": "Zuletzt {value}: Blutzucker {glucose} {unit} durch Ketone {ketones} {unit}, {date}."
+        "latest": "Zuletzt {value}: Blutzucker {glucose} {unit} durch Ketone {ketones} {unit}, {date}."
       }
     },
     "totalBodyWater": {
@@ -4705,7 +4705,7 @@
         "sourceLabel": "Wie das berechnet wurde"
       },
       "structuredTagsTitle": "Tag-Auswertung",
-      "inTargetValue": "{pct} %",
+      "inTargetValue": "{pct} %",
       "inTargetCaption": "der letzten Tage im guten Stimmungsbereich",
       "narrative": {
         "title": "Das fällt auf",
@@ -4717,7 +4717,7 @@
         "weekendDown": "Am Wochenende ist deine Stimmung niedriger (-{delta} gegenüber Wochentagen).",
         "tagLift": "Tage mit „{tag}“ liegen im Schnitt {delta} über deiner allgemeinen Stimmung.",
         "tagDrop": "Tage mit „{tag}“ liegen {delta} unter deinem Durchschnitt.",
-        "inTarget": "Du warst an {pct} % der letzten 30 Tage in deinem guten Stimmungsbereich.",
+        "inTarget": "Du warst an {pct} % der letzten 30 Tage in deinem guten Stimmungsbereich.",
         "streak": "Du hast deine Stimmung {days, plural, one {# Tag} other {# Tage}} in Folge erfasst. Weiter so.",
         "timeOfDay": "Am {bucket} fühlst du dich am besten, im Schnitt {value}."
       },
@@ -4879,12 +4879,12 @@
         "infoLabel": "Wie wird das berechnet?",
         "building": "Typischer Bereich entsteht: {count} von {target, plural, one {# Tag} other {# Tagen}}",
         "typicalRange": "Typisch für dich: {low}–{high}",
-        "fitnessYounger": "Ausdauer wie ~{years} J. jünger",
-        "fitnessOlder": "Ausdauer ~{years} J. über deinem Alter",
+        "fitnessYounger": "Ausdauer wie ~{years} J. jünger",
+        "fitnessOlder": "Ausdauer ~{years} J. über deinem Alter",
         "fitnessTypical": "Ausdauer typisch für dein Alter",
         "fitnessNoNorm": "Alter und Geschlecht ergänzen, um dies einzuordnen",
-        "vascularBelow": "{years} J. unter deinem Alter",
-        "vascularAbove": "{years} J. über deinem Alter",
+        "vascularBelow": "{years} J. unter deinem Alter",
+        "vascularAbove": "{years} J. über deinem Alter",
         "vascularMatch": "Im Einklang mit deinem Alter",
         "vascularNoAge": "Geburtsdatum ergänzen, um dies einzuordnen",
         "hrvBand": {
@@ -5026,7 +5026,7 @@
       "trajectory": {
         "cardTitle": "Kurzfrist-Projektion",
         "headline": "Wenn dieses Muster anhält: {days, plural, =1 {der nächste Tag} other {die nächsten # Tage}}",
-        "range": "Projiziert auf rund {low} bis {high} {unit} in {days, plural, one {# Tag} other {# Tagen}}.",
+        "range": "Projiziert auf rund {low} bis {high} {unit} in {days, plural, one {# Tag} other {# Tagen}}.",
         "insufficient": "Noch kein klar genuger Trend für eine Projektion. Erfasse weiter, dann erscheint eine Projektion, sobald das jüngste Muster deutlich genug ist.",
         "daysNeeded": "Noch etwa {count, plural, one {# Tag} other {# Tage}} Erfassung nötig, bis eine Projektion erscheinen kann."
       },
@@ -5034,11 +5034,11 @@
         "sectionTitle": "Heute bisher",
         "sectionSubtitle": "Deine laufenden Summen im Vergleich zu dem, was zu dieser Stunde für dich üblich ist",
         "learning": "Lernt deinen üblichen Tag: {count} von {target, plural, one {# Tag} other {# Tagen}}",
-        "framing": "Üblich bis {time}: {typical} {unit}",
+        "framing": "Üblich bis {time}: {typical} {unit}",
         "comparisonLabel": "Dein üblicher Tag",
         "sectionSubtitleDailyTotal": "Deine laufenden Summen im Vergleich zu deinem üblichen ganzen Tag",
         "sectionSubtitleMixed": "Deine laufenden Summen im Vergleich zu dem, was für dich üblich ist",
-        "dailyFraming": "Üblicher ganzer Tag: {low}–{high} {unit}",
+        "dailyFraming": "Üblicher ganzer Tag: {low}–{high} {unit}",
         "dailyStamp": "{updated} ({source})"
       }
     },
@@ -5283,7 +5283,7 @@
     "navWaistToHeight": "Taille/Größe",
     "gripStrength": {
       "title": "Griffkraft",
-      "description": "Maximale Handgriffkraft, ein robuster Stellvertreter für die Ganzkörperkraft. Unter dem geschlechtsspezifischen Grenzwert (Männer 27 kg, Frauen 16 kg) deutet sie auf eine mögliche Sarkopenie hin; dein eigener Verlauf führt die Einschätzung.",
+      "description": "Maximale Handgriffkraft, ein robuster Stellvertreter für die Ganzkörperkraft. Unter dem geschlechtsspezifischen Grenzwert (Männer 27 kg, Frauen 16 kg) deutet sie auf eine mögliche Sarkopenie hin; dein eigener Verlauf führt die Einschätzung.",
       "chartTitle": "Griffkraft",
       "emptyState": {
         "title": "Noch keine Griffkraft",
@@ -5305,7 +5305,7 @@
     },
     "waist": {
       "title": "Taillenumfang",
-      "description": "Taillenumfang in Zentimetern, ein Marker für Bauchfett. Der WHO-Grenzwert für erhöhtes Risiko ist geschlechtsspezifisch (Männer 94 cm, Frauen 80 cm); dein eigener Verlauf führt die Einschätzung.",
+      "description": "Taillenumfang in Zentimetern, ein Marker für Bauchfett. Der WHO-Grenzwert für erhöhtes Risiko ist geschlechtsspezifisch (Männer 94 cm, Frauen 80 cm); dein eigener Verlauf führt die Einschätzung.",
       "chartTitle": "Taillenumfang",
       "emptyState": {
         "title": "Noch keine Taillenwerte",
@@ -5344,9 +5344,9 @@
         "averageHeartRate": "Durchschnittliche Herzfrequenz",
         "samplingRate": "Abtastrate",
         "leadSingle": "Einkanal (Ableitung I)",
-        "durationValue": "{seconds} s",
-        "bpmValue": "{bpm} bpm",
-        "hzValue": "{hz} Hz",
+        "durationValue": "{seconds} s",
+        "bpmValue": "{bpm} bpm",
+        "hzValue": "{hz} Hz",
         "unknown": "—"
       },
       "waveform": {
@@ -5468,7 +5468,7 @@
     "minLabel": "Min",
     "maxLabel": "Max",
     "unitSuffix": "({unit})",
-    "outOfBoundsHint": "Erlaubter Bereich: {min}–{max} {unit}",
+    "outOfBoundsHint": "Erlaubter Bereich: {min}–{max} {unit}",
     "overrideWarning": "Werte außerhalb der Leitlinien können zu ungesunden Zielen führen. Nur nach ärztlicher Rücksprache überschreiben.",
     "saveSuccess": "Zielwerte aktualisiert",
     "saveError": "Zielwerte konnten nicht gespeichert werden",
@@ -6113,7 +6113,7 @@
           "title": "Später erinnern",
           "description": "Wie lange eine Dosis-Erinnerung verschoben wird.",
           "label": "Verschieben um",
-          "option": "{minutes} Min.",
+          "option": "{minutes} Min.",
           "saveError": "Konnte nicht gespeichert werden. Bitte erneut versuchen"
         },
         "alerts": {
@@ -6239,7 +6239,7 @@
           "title": "Synchronisierte Nährstoffzufuhr",
           "description": "Tagessummen {days, plural, =1 {des letzten Tages} other {der letzten # Tage}} aus Apple Health oder einem Ernährungstracker und den eingenommenen Supplementen.",
           "empty": "Noch keine Nährstoffdaten synchronisiert.",
-          "latest": "{amount} {unit} am {date}",
+          "latest": "{amount} {unit} am {date}",
           "daysWithData": "{count} von {days, plural, one {# Tag} other {# Tagen}}",
           "moduleHint": "Die Synchronisierung steuert das Modul „Nährstoffzufuhr“.",
           "moduleHintLink": "Module verwalten",
@@ -6308,7 +6308,7 @@
             "uploading": "Wird hochgeladen…",
             "uploadFailed": "Upload fehlgeschlagen. Bitte erneut versuchen.",
             "rateLimited": "Zu viele Uploads. Bitte kurz warten und erneut versuchen.",
-            "tooLarge": "Diese Datei ist zu groß (Grenze 1,5 GB).",
+            "tooLarge": "Diese Datei ist zu groß (Grenze 1,5 GB).",
             "failed": "Der Import ist fehlgeschlagen.",
             "failureInterrupted": "Der Import wurde unterbrochen, bevor er fertig war, meist durch einen Server-Neustart oder Speichermangel. Die Daten sind sicher; das Archiv einfach erneut hochladen.",
             "failureInsufficientMemory": "Das Speicherlimit des Servers ist für ein Archiv dieser Größe zu niedrig. Bitte die Betreiberin oder den Betreiber das Node.js-Heap-Limit erhöhen lassen (NODE_OPTIONS=--max-old-space-size) und das Archiv danach erneut hochladen.",
@@ -6367,7 +6367,7 @@
             "cycleSummary": "{samples, plural, one {# Zyklus-Sample} other {# Zyklus-Samples}} zu {days, plural, one {# Tagesprotokoll} other {# Tagesprotokollen}} zusammengeführt.",
             "cycleModuleOff": "{count, plural, one {# Zyklus-Sample} other {# Zyklus-Samples}} übersprungen, weil Zyklus-Tracking für dieses Konto deaktiviert ist.",
             "cycleDaysFailed": "{count, plural, one {# Zyklustag konnte} other {# Zyklustage konnten}} nicht geschrieben werden: {reason}",
-            "fileHint": "export.zip, bis 1,5 GB"
+            "fileHint": "export.zip, bis 1,5 GB"
           },
           "json": {
             "title": "JSON-Datei",
@@ -6388,9 +6388,9 @@
             "keptLabels": "Dieses Konto hat Tags oder Gruppen mit diesen Schlüsseln schon unter eigenem Namen, die wurden behalten: {keys}",
             "resultNothing": "Nichts importiert. {skipped, plural, =1 {Der eine Eintrag wurde} other {Alle # Einträge wurden}} übersprungen.",
             "resultEmpty": "Diese Datei enthielt weder Messwerte noch Stimmungseinträge.",
-            "limitsHint": "Bis {mb} MB und bis zu {rows, plural, one {# Eintrag} other {# Einträge}} je Liste.",
+            "limitsHint": "Bis {mb} MB und bis zu {rows, plural, one {# Eintrag} other {# Einträge}} je Liste.",
             "rowMeta": "Messwerte und Stimmung",
-            "fileMeta": ".json, bis {mb} MB",
+            "fileMeta": ".json, bis {mb} MB",
             "partial": "Der Import brach mittendrin ab. Noch einmal importieren ist sicher, nichts kommt doppelt hinzu.",
             "partialCounts": "Schon gespeichert: {measurements, plural, one {# Messwert} other {# Messwerte}} und {moods, plural, one {# Stimmungseintrag} other {# Stimmungseinträge}}."
           },
@@ -6405,7 +6405,7 @@
             "import": "Importieren",
             "empty": "Bitte vor dem Import mindestens eine CSV-Zeile hinzufügen.",
             "rateLimited": "Zu viele Importe in dieser Stunde (Limit 5). Bitte später erneut versuchen.",
-            "tooLarge": "Diese Datei ist zu groß (Limit 16 MB).",
+            "tooLarge": "Diese Datei ist zu groß (Limit 16 MB).",
             "invalidPayload": "Die CSV konnte nicht gelesen werden. Bitte die Kopfzeile prüfen und erneut versuchen.",
             "failed": "Der Import ist fehlgeschlagen. Bitte erneut versuchen.",
             "readFailed": "Diese Datei konnte nicht gelesen werden.",
@@ -6437,7 +6437,7 @@
             "reasonUnknown": "übersprungen",
             "detail": "Eine Zeile pro Wert.",
             "rowMeta": "Messwerte aus einer Tabelle",
-            "fileMeta": ".csv, bis 16 MB",
+            "fileMeta": ".csv, bis 16 MB",
             "guideMeta": "type, value, unit, measuredAt mit Offset"
           },
           "doseHistory": {
@@ -6449,7 +6449,7 @@
             "empty": "Erst den Export einfügen oder eine Datei wählen.",
             "readFailed": "Diese Datei konnte nicht gelesen werden.",
             "rateLimited": "Das stündliche Importlimit ist erreicht. Später erneut versuchen.",
-            "tooLarge": "Diese Datei überschreitet das Limit von 16 MB.",
+            "tooLarge": "Diese Datei überschreitet das Limit von 16 MB.",
             "inProgress": "Ein Import des Einnahmeverlaufs läuft bereits. Auf sein Ende warten.",
             "workerUnavailable": "Der Hintergrunddienst ist nicht verfügbar, es wurde nichts importiert.",
             "failed": "Der Import ist fehlgeschlagen. Es wurde nichts geschrieben.",
@@ -6494,7 +6494,7 @@
             },
             "detail": "Eine Datei deckt alle Medikamente darin ab.",
             "rowMeta": "Aus einer anderen App",
-            "fileMeta": ".csv oder .json, bis 16 MB"
+            "fileMeta": ".csv oder .json, bis 16 MB"
           },
           "healthConnect": {
             "title": "Health Connect",
@@ -6537,7 +6537,7 @@
             },
             "folderRow": "Automatisch aus einem Ordner",
             "folderMeta": "WebDAV oder Nextcloud, unter Integrationen",
-            "fileHint": "ZIP, bis 1 GB"
+            "fileHint": "ZIP, bis 1 GB"
           },
           "fit": {
             "title": "Aktivitätsdatei (FIT)",
@@ -6586,7 +6586,7 @@
               "progress": "{done} von {total}",
               "capped": "Nur die ersten 100 Dateien werden importiert.",
               "reason": {
-                "tooLarge": "Größer als 10 MB",
+                "tooLarge": "Größer als 10 MB",
                 "unsupported": "Keine FIT-Datei",
                 "damaged": "Datei beschädigt",
                 "notActivity": "Keine Aktivität",
@@ -6595,7 +6595,7 @@
                 "retry": "Fehlgeschlagen, bitte erneut versuchen"
               }
             },
-            "fileHint": ".fit, .fit.gz oder .zip, je bis 10 MB"
+            "fileHint": ".fit, .fit.gz oder .zip, je bis 10 MB"
           },
           "recordFile": {
             "gadgetbridge": {
@@ -6603,18 +6603,18 @@
               "description": "Die Datenbank, die Gadgetbridge auf Android exportiert.",
               "steps": {
                 "export": "In Gadgetbridge Einstellungen öffnen, dann Datenverwaltung, dann Datenbank exportieren.",
-                "upload": "Die Datei namens Gadgetbridge hier hochladen. Bis 512 MB."
+                "upload": "Die Datei namens Gadgetbridge hier hochladen. Bis 512 MB."
               },
-              "fileHint": "Datenbank, bis 512 MB"
+              "fileHint": "Datenbank, bis 512 MB"
             },
             "fhirBundle": {
               "title": "Patientenakte (FHIR)",
               "description": "Eine FHIR-R4-Akte aus einem Patientenportal.",
               "steps": {
                 "export": "Im Patientenportal die Akte als FHIR R4 (JSON) exportieren.",
-                "upload": "Die .json-Datei hier hochladen. Bis 32 MB."
+                "upload": "Die .json-Datei hier hochladen. Bis 32 MB."
               },
-              "fileHint": ".json, bis 32 MB"
+              "fileHint": ".json, bis 32 MB"
             },
             "uploading": "Wird hochgeladen…",
             "running": "Import läuft im Hintergrund…",
@@ -6647,7 +6647,7 @@
               "unauthorized": "der Ordner hat Benutzername oder Passwort abgelehnt",
               "redirected": "der Server wollte umleiten, dem folgt HealthLog nicht",
               "upstreamError": "der Server hat mit einem Fehler geantwortet",
-              "tooLarge": "die Datei ist größer als 1 GB",
+              "tooLarge": "die Datei ist größer als 1 GB",
               "timeout": "der Server hat zu lange gebraucht",
               "network": "der Server war nicht erreichbar",
               "privateOrigin": "diese Adresse liegt in einem privaten Netz, das der Server nicht freigibt",
@@ -6935,11 +6935,11 @@
       "removeTitle": "Profilbild entfernen?",
       "removeBody": "Das Bild wird von deinem Server gelöscht, an seine Stelle treten deine Initialen. Zum erneuten Hochladen brauchst du die Originaldatei.",
       "removeConfirm": "Bild entfernen",
-      "hint": "JPEG, PNG oder WebP, bis 2 MB und 2048×2048 Pixel.",
+      "hint": "JPEG, PNG oder WebP, bis 2 MB und 2048×2048 Pixel.",
       "uploaded": "Profilfoto aktualisiert",
       "removed": "Profilfoto entfernt",
       "invalidType": "Nicht unterstützter Bildtyp. Verwende JPEG, PNG oder WebP.",
-      "tooLarge": "Das Bild überschreitet das Limit von 2 MB.",
+      "tooLarge": "Das Bild überschreitet das Limit von 2 MB.",
       "error": "Profilfoto konnte nicht aktualisiert werden. Bitte versuche es erneut."
     },
     "changePassword": "Passwort ändern",
@@ -7259,9 +7259,9 @@
         "questionsOpenCoach": "Im Coach beantworten"
       },
       "responseTimeoutHeading": "Antwort-Timeout",
-      "responseTimeoutBody": "Wie lange auf die Antwort der KI gewartet wird, bevor abgebrochen wird. Erhöhe den Wert für ein lokales oder selbst gehostetes Modell, das beim ersten Aufruf Zeit zum Laden braucht. Ohne Wert darf eine Antwort {seconds} s dauern, das Tagesbriefing bis zu {briefingSeconds} s.",
+      "responseTimeoutBody": "Wie lange auf die Antwort der KI gewartet wird, bevor abgebrochen wird. Erhöhe den Wert für ein lokales oder selbst gehostetes Modell, das beim ersten Aufruf Zeit zum Laden braucht. Ohne Wert darf eine Antwort {seconds} s dauern, das Tagesbriefing bis zu {briefingSeconds} s.",
       "responseTimeoutLabel": "Antwort-Timeout (Sekunden)",
-      "responseTimeoutPlaceholder": "Standard ({seconds} s)",
+      "responseTimeoutPlaceholder": "Standard ({seconds} s)",
       "responseTimeoutInvalid": "Gib eine Zahl zwischen 10 und 600 Sekunden ein.",
       "autoRead": {
         "title": "Dokumente automatisch mit KI lesen",
@@ -7576,9 +7576,9 @@
     },
     "integrationPill": {
       "justNow": "gerade eben",
-      "minutesAgo": "vor {count} min",
-      "hoursAgo": "vor {count} Std.",
-      "daysAgo": "vor {count} d",
+      "minutesAgo": "vor {count} min",
+      "hoursAgo": "vor {count} Std.",
+      "daysAgo": "vor {count} d",
       "resumeSuccess": "Integration wieder aktiv",
       "resumeError": "Wieder verbinden fehlgeschlagen"
     },
@@ -7710,7 +7710,7 @@
       "test": "Verbindung testen",
       "saveFirst": "Speichere zuerst deine Änderungen. Der Test nutzt die gespeicherten Einstellungen.",
       "testing": "Teste…",
-      "ok": "Verbunden (Latenz {latency} ms)",
+      "ok": "Verbunden (Latenz {latency} ms)",
       "errors": {
         "credentials_rejected": "Zugangsdaten abgelehnt. Token prüfen",
         "rate_limited": "Vom Upstream rate-limitiert",
@@ -8292,7 +8292,7 @@
       "saving": "Wird getestet …",
       "saved": "Verbunden. Das Archiv hat geantwortet.",
       "test": "Testen",
-      "testOk": "Das Archiv hat in {latency} ms geantwortet.",
+      "testOk": "Das Archiv hat in {latency} ms geantwortet.",
       "disconnect": "Trennen",
       "disconnectTitle": "{name} trennen?",
       "disconnectDescription": "HealthLog vergisst Adresse und Token. Bereits importierte Dokumente bleiben in HealthLog.",
@@ -8625,9 +8625,9 @@
     "offlineGeoEnabled": "Offline (GeoLite2)",
     "offlineGeoFallback": "Online ({host}). GeoLite2-Datenbanken einbinden und GEOLITE2_DIR setzen",
     "heapLimitLabel": "Heap-Grenze",
-    "heapLimitValue": "{mb} MB",
-    "heapLimitLow": "{mb} MB, zu knapp. APP_MEMORY_LIMIT=1536m in .env setzen",
-    "memoryBelowFloor": "Container {mb} MB, unter der unterstützten Untergrenze von {floor} MB. APP_MEMORY_LIMIT={floor}m in .env setzen",
+    "heapLimitValue": "{mb} MB",
+    "heapLimitLow": "{mb} MB, zu knapp. APP_MEMORY_LIMIT=1536m in .env setzen",
+    "memoryBelowFloor": "Container {mb} MB, unter der unterstützten Untergrenze von {floor} MB. APP_MEMORY_LIMIT={floor}m in .env setzen",
     "offlineGeoOff": "Aus",
     "offlineGeoChosen": "Online ({host})",
     "apiGlobal": "API-Endpunkte und API-Tokens erlauben.",
@@ -8651,7 +8651,7 @@
     "glitchtipTargetNoTarget": "Fehler-Tracking ist an, aber kein Ziel gesetzt, also wird nichts verschickt.",
     "glitchtipUnproven": "Unbestätigt",
     "glitchtipDeliveryUnproven": "Ein Ziel ist gesetzt, aber noch kein Bericht hat diesen Host verlassen. Drücke Test, um zu sehen, ob es einen annimmt.",
-    "glitchtipDeliveryStale": "In den letzten {hours} h hat kein Bericht diesen Host verlassen. Drücke Test, um zu prüfen, ob das Ziel noch annimmt.",
+    "glitchtipDeliveryStale": "In den letzten {hours} h hat kein Bericht diesen Host verlassen. Drücke Test, um zu prüfen, ob das Ziel noch annimmt.",
     "glitchtipDeliveryFailed": "Der letzte Bericht kam nicht durch ({reason}).",
     "webPushVapidDescription": "Konfiguriere VAPID-Schlüssel und Subject direkt hier, damit Browser-Push ohne ENV-Variablen funktioniert.",
     "webPushVapidPublicKey": "VAPID Public Key",
@@ -9055,7 +9055,7 @@
         "uploadTitle": "Backup hochladen",
         "uploadDescription": "Prüft eine Kontokopie und speichert sie neben den Kopien dieses Servers.",
         "uploadButton": "Datei hochladen",
-        "uploadHelp": "HealthLog-Backup als .json oder .json.gz. Die Datei wird vor dem Hochladen komprimiert; komprimiert darf sie bis zu 512 MB groß sein.",
+        "uploadHelp": "HealthLog-Backup als .json oder .json.gz. Die Datei wird vor dem Hochladen komprimiert; komprimiert darf sie bis zu 512 MB groß sein.",
         "uploadSuccess": "Backup hochgeladen ({count, plural, one {# Datensatz} other {# Datensätze}})",
         "uploadFailed": "Upload fehlgeschlagen",
         "restore": "Wiederherstellen",
@@ -9131,8 +9131,8 @@
           "stateUnknown": "Noch kein Eintrag",
           "neverDetail": "Für dieses Konto ist nichts angekommen. Zuletzt geprüft {when}.",
           "unknownDetail": "Noch kein nächtlicher Lauf hat dieses Konto erfasst.",
-          "age": "vor {hours} h",
-          "scheduleNote": "Der Upload läuft alle {hours} h. Frisch heißt innerhalb eines Laufs, fällig heißt ein Lauf blieb ohne Ergebnis, veraltet heißt zwei.",
+          "age": "vor {hours} h",
+          "scheduleNote": "Der Upload läuft alle {hours} h. Frisch heißt innerhalb eines Laufs, fällig heißt ein Lauf blieb ohne Ergebnis, veraltet heißt zwei.",
           "lifecycleConfigured": "Der Bucket löscht Kopien nach {days, plural, one {# Tag} other {# Tagen}} über seine eigene Lifecycle-Regel.",
           "lifecycleMissing": "Der Bucket hat keine Lifecycle-Regel, jede nächtliche Kopie bleibt also für immer liegen. Lege eine Regel an, die Objekte nach BACKUP_RETENTION_DAYS löscht.",
           "lifecycleUnknown": "Ob der Bucket alte Kopien löscht, ließ sich nicht lesen: Die Zugangsdaten dürfen seine Lifecycle-Regel nicht lesen. Prüfe, dass eine Regel Objekte nach BACKUP_RETENTION_DAYS löscht.",
@@ -9361,10 +9361,10 @@
         },
         "result": {
           "days": "Verglichene Tage",
-          "changed": "Tage mit mehr als 1 bpm Änderung",
+          "changed": "Tage mit mehr als 1 bpm Änderung",
           "max": "Größte Änderung",
-          "maxValue": "{value} bpm",
-          "bucket": "{range} bpm",
+          "maxValue": "{value} bpm",
+          "bucket": "{range} bpm",
           "account": "Konto {account}",
           "accountDays": "{changed} von {days, plural, one {# Tag} other {# Tagen}} ändern sich"
         },
@@ -9404,9 +9404,9 @@
     "ipCopied": "IP-Adresse kopiert",
     "copyFailed": "Kopieren fehlgeschlagen.",
     "documentMaxFile": "Upload-Limit für Dokumente",
-    "documentMaxFileDescription": "Maximale Dateigröße im Dokumenten-Bestand (1–100 MB).",
+    "documentMaxFileDescription": "Maximale Dateigröße im Dokumenten-Bestand (1–100 MB).",
     "documentQuota": "Speicherkontingent für Dokumente",
-    "documentQuotaDescription": "Standard-Speicherplatz pro Konto für Dokumente (0,1–1024 GB).",
+    "documentQuotaDescription": "Standard-Speicherplatz pro Konto für Dokumente (0,1–1024 GB).",
     "userDocumentQuota": "Abweichendes Dokumenten-Kontingent",
     "userDocumentQuotaDefault": "Standard",
     "userDocumentQuotaHint": "Leer lassen, um den Instanz-Standard zu verwenden.",
@@ -9471,7 +9471,7 @@
       "defaultLabel": "Standardstufe",
       "defaultAboveCeiling": "Die Standardstufe darf nicht über der höchsten Stufe liegen.",
       "gapLabel": "Stunden zwischen Karten-Erneuerungen nach einem Sync (Standard)",
-      "gapHint": "Ganze Stunden von 1 bis 48. Leer lassen für AI_SYNC_REGEN_GAP_HOURS, sonst 6. Gerade wirksam: {hours} h."
+      "gapHint": "Ganze Stunden von 1 bis 48. Leer lassen für AI_SYNC_REGEN_GAP_HOURS, sonst 6. Gerade wirksam: {hours} h."
     },
     "recoveryKit": {
       "title": "Wiederherstellungs-Kit",
@@ -9782,13 +9782,13 @@
         }
       },
       "handoff": {
-        "title": "Übergabezeit, letzte {hours} h",
+        "title": "Übergabezeit, letzte {hours} h",
         "median": "Median",
         "p95": "95. Perzentil",
         "pushes": "Pushes",
         "retried": "Erneut versucht",
-        "milliseconds": "{value} ms",
-        "seconds": "{value} s",
+        "milliseconds": "{value} ms",
+        "seconds": "{value} s",
         "empty": "Keine Pushes {hours, plural, =1 {in der letzten Stunde} other {in den letzten # Stunden}}",
         "helper": "Vom Einreihen in die Warteschlange dieses Servers bis zur Antwort des Relays. Das Relay antwortet, sobald Apple den Push angenommen hat."
       },
@@ -10431,7 +10431,7 @@
     "eventSeizureClusterDesc": "Wenn ein von jemand anderem eingetragener Anfall nach der Regel im Tagebuch eine Serie bildet. Einmal je Serie.",
     "seizureCluster": {
       "title": "Anfallsserie",
-      "body": "{count, plural, one {# Anfall} other {# Anfälle}} innerhalb von {hours} h, eingetragen von {name}. Der Notfallplan steht im Anfallskalender."
+      "body": "{count, plural, one {# Anfall} other {# Anfälle}} innerhalb von {hours} h, eingetragen von {name}. Der Notfallplan steht im Anfallskalender."
     },
     "eventMeasurementAnomaly": "Anhaltende Veränderung eines Vitalwerts",
     "eventMeasurementAnomalyDesc": "Ein Vitalwert, der seit zehn Tagen auf einem neuen Niveau liegt.",
@@ -10494,7 +10494,7 @@
       "systolicMax": "Systolisch max",
       "diastolicMin": "Diastolisch min",
       "diastolicMax": "Diastolisch max",
-      "boundsHint": "Erlaubter Bereich: {min}–{max} {unit}",
+      "boundsHint": "Erlaubter Bereich: {min}–{max} {unit}",
       "resetToDefault": "Auf Standard zurücksetzen",
       "resetTitle": "Dieses Ziel zurücksetzen?",
       "resetBody": "Der Bereich kehrt zum Standard zurück. Die von dir gesetzten Werte werden nirgends sonst gespeichert und lassen sich nicht wiederherstellen.",
@@ -10506,16 +10506,16 @@
       "validationOrder": "Der Minimalwert muss unter dem Maximalwert liegen.",
       "validationBounds": "Werte innerhalb des unten angegebenen Bereichs eingeben."
     },
-    "currentValue": "Aktuell: {value} {unit}",
-    "targetRangeValue": "Zielbereich: {min}–{max} {unit}",
+    "currentValue": "Aktuell: {value} {unit}",
+    "targetRangeValue": "Zielbereich: {min}–{max} {unit}",
     "sourceLabel": "Quelle: {source}",
     "sourceNames": {
       "moodEntries": "Stimmungseinträge",
       "sevenDays": "7 Tage"
     },
     "inTarget": "Im Zielbereich",
-    "aboveTarget": "{delta} {unit} über Zielbereich",
-    "belowTarget": "{delta} {unit} unter Zielbereich",
+    "aboveTarget": "{delta} {unit} über Zielbereich",
+    "belowTarget": "{delta} {unit} unter Zielbereich",
     "systolic": "Systolisch",
     "diastolic": "Diastolisch",
     "glucoseFasting": "Glukose, nüchtern",
@@ -10615,22 +10615,22 @@
     "measureValueInvalid": "Antworte mit einer Zahl, um einen Messwert zu speichern.",
     "measureValueOutOfRange": "Dieser Wert liegt außerhalb des plausiblen Bereichs.",
     "measureValueExpired": "Diese Aufforderung ist abgelaufen.",
-    "snoozeMinutes": "{minutes} Min."
+    "snoozeMinutes": "{minutes} Min."
   },
   "medicationReminders": {
     "phaseGreenTitle": "🟢 Fällig: {medName}",
-    "phaseGreenMessage": "🟢 Fällig:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nDas Zeitfenster endet in {minutes} Min.",
+    "phaseGreenMessage": "🟢 Fällig:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nDas Zeitfenster endet in {minutes} Min.",
     "phaseYellowTitle": "🟡 Noch fällig: {medName}",
-    "phaseYellowMessage": "🟡 Noch fällig:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nNoch {minutes} Min. im Zeitfenster.",
+    "phaseYellowMessage": "🟡 Noch fällig:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nNoch {minutes} Min. im Zeitfenster.",
     "phaseOrangeTitle": "🟠 Überfällig: {medName}",
-    "phaseOrangeMessage": "🟠 Überfällig:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nSeit {minutes} Min. überfällig.",
+    "phaseOrangeMessage": "🟠 Überfällig:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nSeit {minutes} Min. überfällig.",
     "phaseRedTitle": "🔴 Verpasst: {medName}",
     "phaseRedMessage": "🔴 Verpasst:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nNimmst du sie jetzt, zählt sie noch, als verspätet.",
     "buttonTaken": "✅ Einnehmen",
     "buttonConfirm": "Als verpasst lassen",
     "buttonTakenLate": "✅ Einnehmen (zählt verspätet)",
     "buttonSkip": "⏭ Überspringen",
-    "buttonSnooze": "🕐 Später erinnern ({minutes} Min.)"
+    "buttonSnooze": "🕐 Später erinnern ({minutes} Min.)"
   },
   "lowStockReminders": {
     "title": "Vorrat niedrig: {medName}",
@@ -10674,7 +10674,7 @@
     "medications": "Medikamente & Therapietreue",
     "bmi": "Body-Mass-Index (BMI)",
     "statSummary": "zuletzt {latest} (Ø {avg}, Bereich {min}–{max})",
-    "statSummaryWithUnit": "zuletzt {latest} {unit} (Ø {avg} {unit}, Bereich {min}–{max} {unit})",
+    "statSummaryWithUnit": "zuletzt {latest} {unit} (Ø {avg} {unit}, Bereich {min}–{max} {unit})",
     "adherence": "{rate} Therapietreue",
     "noAdherence": "—",
     "glucose": {
@@ -10951,7 +10951,7 @@
       "none": "Noch keine Zyklen erfasst.",
       "recentCycles": "Letzte Zyklen",
       "ongoing": "laufend",
-      "periodDays": "Periode {count} T",
+      "periodDays": "Periode {count} T",
       "ovulationChip": "Eisprung",
       "chartTitle": "Zykluslänge im Verlauf",
       "chartCaption": "Jeder Balken ist ein Zyklus: die rosa Basis ist deine Periode, der Rest die Zykluslänge.",
@@ -11052,19 +11052,19 @@
     "deleteError": "Eintrag konnte nicht gelöscht werden.",
     "bbt": {
       "title": "Basaltemperatur",
-      "caption": "Deine Morgentemperatur über diesen Zyklus. Ein anhaltender Anstieg um etwa 0,2 °C folgt auf den Eisprung.",
+      "caption": "Deine Morgentemperatur über diesen Zyklus. Ein anhaltender Anstieg um etwa 0,2 °C folgt auf den Eisprung.",
       "empty": "Noch keine Temperaturwerte",
       "emptyHint": "Miss deine Basaltemperatur jeden Morgen, um den Temperaturanstieg deines Zyklus zu sehen.",
       "ovulationEstimate": "Gesch. Eisprung",
-      "tooltipTemp": "{temp} {unit}",
+      "tooltipTemp": "{temp} {unit}",
       "ovulationConfirmed": "Bestätigter Eisprung"
     },
     "fieldInfo": {
-      "bbt": "Deine Ruhetemperatur, morgens als Erstes vor dem Aufstehen gemessen. Nach dem Eisprung steigt sie leicht an (etwa 0,2–0,3 °C).",
+      "bbt": "Deine Ruhetemperatur, morgens als Erstes vor dem Aufstehen gemessen. Nach dem Eisprung steigt sie leicht an (etwa 0,2–0,3 °C).",
       "bbtLabel": "Was ist die Basaltemperatur?",
       "mucus": "Der Ausfluss verändert sich im Zyklus: von trocken oder klebrig zu cremig, dann wässrig und spinnbar rund um die fruchtbarsten Tage.",
       "mucusLabel": "Was ist Zervixschleim?",
-      "ovulationTest": "Ein Urintest für zu Hause, der den LH-Anstieg erkennt, also den Hormonschub etwa 24–36 h vor dem Eisprung. Ein positives Ergebnis markiert die fruchtbarste Phase.",
+      "ovulationTest": "Ein Urintest für zu Hause, der den LH-Anstieg erkennt, also den Hormonschub etwa 24–36 h vor dem Eisprung. Ein positives Ergebnis markiert die fruchtbarste Phase.",
       "ovulationTestLabel": "Was ist ein Ovulationstest?",
       "spotting": "Leichte Blutung außerhalb der Periode.",
       "spottingLabel": "Was ist Schmierblutung zwischen den Perioden?",
@@ -11457,9 +11457,9 @@
       "empty": "Keine Werte in diesem Zeitraum.",
       "valueLabel": "Wert",
       "range": {
-        "30": "30 T",
-        "90": "90 T",
-        "365": "1 J",
+        "30": "30 T",
+        "90": "90 T",
+        "365": "1 J",
         "all": "Alle"
       },
       "sourceRangeLabel": "Laborbereich",
@@ -11600,7 +11600,7 @@
     },
     "noteLoadFailed": "Notiz konnte nicht geladen werden; sie bleibt beim Speichern unverändert.",
     "showingLatestOf": "Die neuesten {shown} von {total, plural, one {# Messwert} other {# Messwerten}} werden angezeigt",
-    "convertedFrom": "umgerechnet aus {value} {unit}",
+    "convertedFrom": "umgerechnet aus {value} {unit}",
     "ocr": {
       "scanButton": "Befund scannen",
       "addScan": "Dokument scannen",
@@ -11658,7 +11658,7 @@
       "errorUnit": "Bitte eine Einheit angeben.",
       "errorUnitMismatch": "Dieser Marker wird in {markerUnit} geführt. Ändere die Einheit, falls der Befund falsch gelesen wurde, oder wähle den Wert ab.",
       "unitDiffersBadge": "Geführt in {markerUnit}; dieser Befund nennt {unit}",
-      "unitConvertedBadge": "Wird als {value} {markerUnit} gespeichert, umgerechnet aus {statedValue} {unit}",
+      "unitConvertedBadge": "Wird als {value} {markerUnit} gespeichert, umgerechnet aus {statedValue} {unit}",
       "savedPartialUnitToast": "{count, plural, one {# Laborwert} other {# Laborwerte}} gespeichert. Nicht gespeichert, weil die Einheit von der des Markers abweicht: {analytes}",
       "savedNothingUnitToast": "Nichts gespeichert: Die Einheit weicht bei {analytes} von der des Markers ab",
       "saveFailed": "Werte konnten nicht gespeichert werden. Bitte erneut versuchen.",
@@ -11666,7 +11666,7 @@
       "consentRequired": "Für das Scannen eines Befunds ist die Einwilligung zur KI-Verarbeitung erforderlich.",
       "rateLimited": "Zu viele Scans. Bitte später erneut versuchen.",
       "budgetExceeded": "Dein KI-Nutzungsbudget für heute ist erreicht.",
-      "fileTooLarge": "Datei ist zu groß (max. 12 MB).",
+      "fileTooLarge": "Datei ist zu groß (max. 12 MB).",
       "fileType": "Lade ein JPEG, PNG, WebP oder PDF hoch.",
       "extractFailed": "Der Befund konnte nicht gelesen werden. Versuche ein schärferes Foto.",
       "pdfRendererUnavailable": "Der Prozessor dieses Servers kann keine PDF-Seiten darstellen. Einen gescannten Befund kann hier nur ein KI-Anbieter lesen, der PDF-Dateien direkt annimmt. Lade stattdessen ein Foto hoch.",
@@ -11755,8 +11755,8 @@
     "trend": {
       "title": "Verlauf",
       "slope": {
-        "rising": "Steigt um etwa {amount} {unit} pro Jahr, über {n, plural, one {# Wert} other {# Werte}} seit {since}.",
-        "falling": "Sinkt um etwa {amount} {unit} pro Jahr, über {n, plural, one {# Wert} other {# Werte}} seit {since}.",
+        "rising": "Steigt um etwa {amount} {unit} pro Jahr, über {n, plural, one {# Wert} other {# Werte}} seit {since}.",
+        "falling": "Sinkt um etwa {amount} {unit} pro Jahr, über {n, plural, one {# Wert} other {# Werte}} seit {since}.",
         "flat": "Keine Veränderung über {n, plural, one {# Wert} other {# Werte}} seit {since}."
       },
       "projection": {
@@ -11771,7 +11771,7 @@
         "no_clear_trend": "Über diese Werte ist die Veränderung nicht klar von keiner Veränderung zu unterscheiden, deshalb wird nichts fortgeschrieben.",
         "stale": "Der neueste Wert ist vom {date}, also älter als ein Jahr. Die Gerade gilt für diesen Stand, ohne Projektion."
       },
-      "interval": "95-%-Intervall der jährlichen Veränderung: {lo} bis {hi} {unit}."
+      "interval": "95-%-Intervall der jährlichen Veränderung: {lo} bis {hi} {unit}."
     },
     "unit": {
       "none": "Keine Einheit",
@@ -12159,8 +12159,8 @@
       "recoveryGapLagSymptom": "Dir ging es {days, plural, one {# Tag} other {# Tage}} besser, bevor deine erfassten Symptome abklangen.",
       "recoveryGapLeadSymptom": "Deine erfassten Symptome klangen {days, plural, one {# Tag} other {# Tage}} ab, bevor du Genesung vermerktest.",
       "recoveryGapSame": "Deine Werte normalisierten sich am selben Tag, an dem es dir besser ging.",
-      "sleepContextMore": "Während dieser Episode hast du deutlich mehr geschlafen als sonst (etwa {hours} Std./Nacht).",
-      "sleepContextLess": "Während dieser Episode hast du deutlich weniger geschlafen als sonst (etwa {hours} Std./Nacht).",
+      "sleepContextMore": "Während dieser Episode hast du deutlich mehr geschlafen als sonst (etwa {hours} Std./Nacht).",
+      "sleepContextLess": "Während dieser Episode hast du deutlich weniger geschlafen als sonst (etwa {hours} Std./Nacht).",
       "redFlagTitle": "Genauer ansehen",
       "redFlagSpo2": "Deine Sauerstoffsättigung blieb mehrere Tage niedrig. Wenn das erneut auftritt, suche ärztliche Hilfe.",
       "redFlagFever": "Du hattest anhaltend Fieber. Wenn das erneut auftritt, suche ärztliche Hilfe.",
@@ -12194,7 +12194,7 @@
       "severity": "Stärke {severity}",
       "noSymptoms": "Keine Symptome erfasst.",
       "impact": "Befinden: {impact}",
-      "fever": "Temperatur: {value} {unit}",
+      "fever": "Temperatur: {value} {unit}",
       "empty": "Noch keine Tage erfasst."
     },
     "loadError": "Diese Episode konnte nicht geladen werden.",
@@ -12419,7 +12419,7 @@
       "loadFailed": "Die Tabellen konnten nicht geladen werden.",
       "reusedFrom": "Aus einer früheren Antwort ({date})",
       "reusedFromUndated": "Aus einer früheren Antwort",
-      "histogramBin": "{from}–{to} {unit}"
+      "histogramBin": "{from}–{to} {unit}"
     },
     "method": {
       "label": "Wie das ermittelt wurde",
@@ -12491,20 +12491,20 @@
   "safety": {
     "floor": {
       "bpHighTitle": "Sehr hoher Blutdruck",
-      "bpHighDoctor": "Zwei aktuelle Messungen lagen bei {systolic}/{diastolic} mmHg oder höher. Ruhe dich aus, miss in einigen Minuten erneut und kontaktiere möglichst bald deine Ärztin oder deinen Arzt, wenn es so hoch bleibt.",
-      "bpHighEmergency": "Zwei aktuelle Messungen lagen bei {systolic}/{diastolic} mmHg oder höher und du hast Beschwerden angegeben. Bei Brustschmerz, Atemnot, Schwäche oder Seh- oder Sprachstörungen sofort den Notruf wählen.",
+      "bpHighDoctor": "Zwei aktuelle Messungen lagen bei {systolic}/{diastolic} mmHg oder höher. Ruhe dich aus, miss in einigen Minuten erneut und kontaktiere möglichst bald deine Ärztin oder deinen Arzt, wenn es so hoch bleibt.",
+      "bpHighEmergency": "Zwei aktuelle Messungen lagen bei {systolic}/{diastolic} mmHg oder höher und du hast Beschwerden angegeben. Bei Brustschmerz, Atemnot, Schwäche oder Seh- oder Sprachstörungen sofort den Notruf wählen.",
       "bpLowTitle": "Niedriger Blutdruck",
-      "bpLowDoctor": "Zwei aktuelle Messungen hatten einen systolischen Wert unter {systolic} mmHg. Wenn dir schwindelig oder schummrig ist, setz oder leg dich hin und kontaktiere deine Ärztin oder deinen Arzt, wenn es anhält.",
-      "bpLowEmergency": "Zwei aktuelle Messungen hatten einen systolischen Wert unter {systolic} mmHg und du hast Beschwerden angegeben. Bei Ohnmachtsgefühl, Verwirrtheit oder kalter, feuchter Haut sofort den Notruf wählen.",
+      "bpLowDoctor": "Zwei aktuelle Messungen hatten einen systolischen Wert unter {systolic} mmHg. Wenn dir schwindelig oder schummrig ist, setz oder leg dich hin und kontaktiere deine Ärztin oder deinen Arzt, wenn es anhält.",
+      "bpLowEmergency": "Zwei aktuelle Messungen hatten einen systolischen Wert unter {systolic} mmHg und du hast Beschwerden angegeben. Bei Ohnmachtsgefühl, Verwirrtheit oder kalter, feuchter Haut sofort den Notruf wählen.",
       "glucoseLowTitle": "Niedriger Blutzucker",
-      "glucoseLowDoctor": "Zwei aktuelle Messungen lagen unter {threshold} {unit} ({value} {unit}). Nimm schnell wirkende Kohlenhydrate, miss in 15 Minuten erneut und kontaktiere deine Ärztin oder deinen Arzt, wenn die Tiefs anhalten.",
-      "glucoseLowEmergency": "Zwei aktuelle Messungen lagen unter {threshold} {unit} ({value} {unit}) und du hast Beschwerden angegeben. Behandle jetzt mit schnellem Zucker; wenn das nicht geht oder dir sehr unwohl ist, wähle den Notruf.",
+      "glucoseLowDoctor": "Zwei aktuelle Messungen lagen unter {threshold} {unit} ({value} {unit}). Nimm schnell wirkende Kohlenhydrate, miss in 15 Minuten erneut und kontaktiere deine Ärztin oder deinen Arzt, wenn die Tiefs anhalten.",
+      "glucoseLowEmergency": "Zwei aktuelle Messungen lagen unter {threshold} {unit} ({value} {unit}) und du hast Beschwerden angegeben. Behandle jetzt mit schnellem Zucker; wenn das nicht geht oder dir sehr unwohl ist, wähle den Notruf.",
       "glucoseLowSevereTitle": "Sehr niedriger Blutzucker",
-      "glucoseLowSevereDoctor": "Zwei aktuelle Messungen lagen unter {threshold} {unit} ({value} {unit}). Behandle sofort mit schnell wirkenden Kohlenhydraten, miss in 15 Minuten erneut und kontaktiere deine Ärztin oder deinen Arzt.",
-      "glucoseLowSevereEmergency": "Zwei aktuelle Messungen lagen unter {threshold} {unit} ({value} {unit}) und du hast Beschwerden angegeben. Behandle jetzt; wenn du nichts bei dir behalten kannst oder dir sehr unwohl ist, wähle den Notruf.",
+      "glucoseLowSevereDoctor": "Zwei aktuelle Messungen lagen unter {threshold} {unit} ({value} {unit}). Behandle sofort mit schnell wirkenden Kohlenhydraten, miss in 15 Minuten erneut und kontaktiere deine Ärztin oder deinen Arzt.",
+      "glucoseLowSevereEmergency": "Zwei aktuelle Messungen lagen unter {threshold} {unit} ({value} {unit}) und du hast Beschwerden angegeben. Behandle jetzt; wenn du nichts bei dir behalten kannst oder dir sehr unwohl ist, wähle den Notruf.",
       "glucoseHighTitle": "Sehr hoher Blutzucker",
-      "glucoseHighDoctor": "Zwei aktuelle Messungen lagen bei {value} {unit} oder höher. Miss erneut, trink ausreichend und kontaktiere möglichst bald deine Ärztin oder deinen Arzt, wenn es so hoch bleibt.",
-      "glucoseHighEmergency": "Zwei aktuelle Messungen lagen bei {value} {unit} oder höher und du hast Beschwerden angegeben. Bei Erbrechen, schneller Atmung oder Verwirrtheit sofort den Notruf wählen."
+      "glucoseHighDoctor": "Zwei aktuelle Messungen lagen bei {value} {unit} oder höher. Miss erneut, trink ausreichend und kontaktiere möglichst bald deine Ärztin oder deinen Arzt, wenn es so hoch bleibt.",
+      "glucoseHighEmergency": "Zwei aktuelle Messungen lagen bei {value} {unit} oder höher und du hast Beschwerden angegeben. Bei Erbrechen, schneller Atmung oder Verwirrtheit sofort den Notruf wählen."
     }
   },
   "version": {
@@ -13717,11 +13717,11 @@
       }
     },
     "hydration": {
-      "referenceMeta": "Richtwert {value} {unit}/Tag ({authority})",
+      "referenceMeta": "Richtwert {value} {unit}/Tag ({authority})",
       "loadError": "Wasser konnte nicht geladen werden."
     },
     "caffeine": {
-      "ceilingMeta": "Sichere Obergrenze {value} {unit}/Tag ({authority})",
+      "ceilingMeta": "Sichere Obergrenze {value} {unit}/Tag ({authority})",
       "loadError": "Koffein konnte nicht geladen werden."
     },
     "micronutrients": {
@@ -13731,14 +13731,14 @@
         "mineral": "Mineralstoffe",
         "omega3": "Omega-3-Fettsäuren"
       },
-      "rowMeta": "{days} von {window, plural, one {# Tag} other {# Tagen}}, Richtwert {value} {unit} ({authority})",
+      "rowMeta": "{days} von {window, plural, one {# Tag} other {# Tagen}}, Richtwert {value} {unit} ({authority})",
       "rowMetaNoRef": "{days} von {window, plural, one {# Tag} other {# Tagen}}",
       "footer": "{tracked} von {total} erfassten Mikronährstoffen haben Daten in diesem Zeitraum.",
       "emptyTitle": "Noch keine Mikronährstoffdaten synchronisiert",
       "loadError": "Deine Nährstoffdaten konnten nicht geladen werden",
-      "sourcePart": "{source} {value} {unit}",
-      "aboveUpperLimit": "Über der tolerierbaren Höchstmenge für Erwachsene von {value} {unit} pro Tag ({source}).",
-      "aboveUpperLimitSupplemental": "Der Anteil aus Präparaten liegt über der tolerierbaren Höchstmenge für Erwachsene von {value} {unit} pro Tag für Präparate ({source}).",
+      "sourcePart": "{source} {value} {unit}",
+      "aboveUpperLimit": "Über der tolerierbaren Höchstmenge für Erwachsene von {value} {unit} pro Tag ({source}).",
+      "aboveUpperLimitSupplemental": "Der Anteil aus Präparaten liegt über der tolerierbaren Höchstmenge für Erwachsene von {value} {unit} pro Tag für Präparate ({source}).",
       "upperLimitForm": {
         "retinol": "Die Höchstmenge gilt nur für vorgeformtes Vitamin A (Retinol): Stammt die Menge aus Beta-Carotin, gilt sie nicht.",
         "folic_acid": "Die Höchstmenge gilt für Folsäure aus Präparaten und angereicherten Lebensmitteln, nicht für das Folat in gewöhnlicher Nahrung.",
@@ -13756,16 +13756,16 @@
     "macros": {
       "title": "Energie & Makronährstoffe",
       "pickLabel": "Nährstoff",
-      "referenceMeta": "Richtwert {value} {unit}/Tag ({authority})",
-      "targetMeta": "Dein Ziel {value} {unit}/Tag",
-      "limitMeta": "Deine Obergrenze {value} {unit}/Tag",
+      "referenceMeta": "Richtwert {value} {unit}/Tag ({authority})",
+      "targetMeta": "Dein Ziel {value} {unit}/Tag",
+      "limitMeta": "Deine Obergrenze {value} {unit}/Tag",
       "sheetTitle": "Tagesziel: {name}",
       "sheetDescription": "Eine Tagesmenge, die du erreichen oder nicht überschreiten willst, als gestrichelte Linie im Diagramm.",
       "clearTarget": "Ziel entfernen",
       "removeTitle": "Dieses Ziel entfernen?",
       "removeBody": "Das Diagramm zeigt dann wieder den Referenzwert, wo es einen gibt. Die Menge, die du gesetzt hast, wird nirgends sonst gespeichert.",
       "targetLabel": "{name} pro Tag in {unit}",
-      "boundsHint": "Über 0, höchstens {max} {unit} pro Tag.",
+      "boundsHint": "Über 0, höchstens {max} {unit} pro Tag.",
       "directionLabel": "Art des Ziels",
       "directionTarget": "Mindestens erreichen",
       "directionLimit": "Darunter bleiben",
@@ -13782,8 +13782,8 @@
       "perDay": "{value} pro Tag",
       "trendMeta": "Mittel der letzten sieben Tage: Gegessenes minus Ruhe- und Aktivenergie.",
       "meanMeta": "Mittel über {days, plural, one {# Tag} other {# Tage}}: Gegessenes minus Ruhe- und Aktivenergie.",
-      "means": "Über {days, plural, one {# Tag} other {# Tage}} im Mittel {intake} kcal gegessen und {used} kcal verbraucht.",
-      "dayLine": "{intake} kcal gegessen, {used} kcal verbraucht",
+      "means": "Über {days, plural, one {# Tag} other {# Tage}} im Mittel {intake} kcal gegessen und {used} kcal verbraucht.",
+      "dayLine": "{intake} kcal gegessen, {used} kcal verbraucht",
       "estimated": "An {days} dieser Tage ist die Ruheenergie eine Schätzung aus Gewicht, Größe, Alter und Geschlecht (Mifflin-St Jeor), weil kein Messwert ankam.",
       "needsProfile": "Deine Aufnahme ist da, aber keine Ruheenergie kam an. Trag Größe, Geburtsdatum und Geschlecht im Profil ein und erfasse ein Gewicht, dann wird die Bilanz geschätzt.",
       "needsExpenditure": "Deine Aufnahme ist da, aber an denselben Tagen kam keine Aktivenergie an, daher gibt es noch keine Bilanz."
@@ -13894,8 +13894,8 @@
       "steadyWeeksOne": "Seit {count} Woche stabil",
       "steadyWeeksFew": "Seit {count} Wochen stabil",
       "steadyWeeksOther": "Seit {count} Wochen stabil",
-      "valueWithUnit": "{value} {unit}",
-      "rangeWithUnit": "{low} bis {high} {unit}",
+      "valueWithUnit": "{value} {unit}",
+      "rangeWithUnit": "{low} bis {high} {unit}",
       "rangeAtThisTime": "{range} für diese Tageszeit",
       "vital": {
         "RESTING_HEART_RATE": "Ruhepuls",
@@ -15098,8 +15098,8 @@
     "valuesAllFew": "Alle {count} Werte",
     "valuesAllOther": "Alle {count} Werte",
     "valuesFewer": "Weniger Werte",
-    "gkiPair": "Blutzucker {glucose} {unit} / Ketone {ketones} {unit}",
-    "gkiPairShort": "{glucose} / {ketones} {unit}",
+    "gkiPair": "Blutzucker {glucose} {unit} / Ketone {ketones} {unit}",
+    "gkiPairShort": "{glucose} / {ketones} {unit}",
     "gkiCountOne": "Letzter von {count}",
     "gkiCountFew": "Letzter von {count}",
     "gkiCountOther": "Letzter von {count}",
@@ -15144,8 +15144,8 @@
       "away": "Außer Haus",
       "travel": "Reisetag",
       "travelYes": "Ja",
-      "kilometres": "{value} km",
-      "miles": "{value} mi"
+      "kilometres": "{value} km",
+      "miles": "{value} mi"
     },
     "nutrients": {
       "micronutrientsOne": "{count} Mikronährstoff erfasst",
@@ -15721,7 +15721,7 @@
     "line": "Zeile {line}",
     "errorsTruncated": "Nur die ersten 500 Probleme werden aufgelistet.",
     "error": {
-      "tooLarge": "Die Datei ist größer als 16 MB.",
+      "tooLarge": "Die Datei ist größer als 16 MB.",
       "rateLimited": "Zu viele Importe in der letzten Stunde. Versuch es später noch einmal.",
       "invalid": "Die Datei oder die Spaltenauswahl konnte nicht gelesen werden.",
       "failed": "Der Import hat nicht geklappt. Bitte versuch es noch einmal."
@@ -15908,7 +15908,7 @@
     "report": {
       "title": "Anfallskalender",
       "untyped": "Keine Anfallsart erfasst",
-      "ruleText": "{count} oder mehr in {hours} h",
+      "ruleText": "{count} oder mehr in {hours} h",
       "recorded": "Erfasste Anfälle",
       "diarySince": "Tagebuch geführt seit",
       "seizureDays": "Tage mit Anfall",
@@ -15920,7 +15920,7 @@
       "convulsive": "Bilateral tonisch-klonische Anfälle",
       "fromSleep": "Anfälle aus dem Schlaf",
       "clusters": "Anfallsserien (Regel: {rule})",
-      "niceClusters": "nach NICE: 3 in 24 h",
+      "niceClusters": "nach NICE: 3 in 24 h",
       "rescueDoses": "Gegebene Notfalldosen",
       "emergencies": "Rettungsdienst, Notaufnahme, stationäre Aufnahmen",
       "emergencyValue": "{ems} / {ed} / {admitted}",
@@ -15942,8 +15942,8 @@
       "median": "Median",
       "max": "Längste",
       "overT1": "t1 erreicht oder überschritten",
-      "prolonged": "2 min länger als üblich",
-      "durationNote": "Dauer als min:s. t1 ist die Zeit, nach der eine Notfallbehandlung angezeigt ist (ILAE, Trinka 2015: tonisch-klonisch 5 min, fokal mit Bewusstseinsstörung und Absence 10 min). „2 min länger als üblich“ zählt Anfälle, die mindestens 2 Minuten länger dauerten als die übliche Dauer bei dieser Person (NICE NG217).",
+      "prolonged": "2 min länger als üblich",
+      "durationNote": "Dauer als min:s. t1 ist die Zeit, nach der eine Notfallbehandlung angezeigt ist (ILAE, Trinka 2015: tonisch-klonisch 5 min, fokal mit Bewusstseinsstörung und Absence 10 min). „2 min länger als üblich“ zählt Anfälle, die mindestens 2 Minuten länger dauerten als die übliche Dauer bei dieser Person (NICE NG217).",
       "rescueTitle": "Notfallmedikation",
       "date": "Datum",
       "drug": "Medikament",
@@ -15956,7 +15956,7 @@
       "overlaysTitle": "Gleichzeitig erfasst",
       "overlayMissedDose": "{followed} von {of, plural, one {# Anfall} other {# Anfällen}} folgten innerhalb der vorangegangenen 48 Stunden auf eine verpasste oder übersprungene geplante Dosis.",
       "overlayIllness": "{during, plural, one {# Anfall trat} other {# Anfälle traten}} während einer von {episodes} erfassten Krankheitsepisoden auf.",
-      "overlaySleep": "Erfasster Schlaf in der Nacht vor einem Anfallstag: durchschnittlich {before} h ({nightsBefore, plural, one {# Nacht} other {# Nächte}}); andere Nächte: {other} h ({nightsOther, plural, one {# Nacht} other {# Nächte}}).",
+      "overlaySleep": "Erfasster Schlaf in der Nacht vor einem Anfallstag: durchschnittlich {before} h ({nightsBefore, plural, one {# Nacht} other {# Nächte}}); andere Nächte: {other} h ({nightsOther, plural, one {# Nacht} other {# Nächte}}).",
       "overlayCycleDays": "Anfälle nach Zyklustag (Tag: Anzahl): {list}.",
       "overlayCycleRatio": "Über {cycles} vollständig erfasste Zyklen lag die Anfallsrate pro Tag rund um die Periode (Tag −3 bis +3) beim {c1, plural, other {#-Fachen}} der Rate an den übrigen Tagen und rund um den Eisprung (Tag 10 bis −13) beim {c2, plural, other {#-Fachen}}. Herzogs Kriterium für katameniale Epilepsie ist ein mindestens zweifacher Anstieg; dies ist ein Referenzwert, kein Befund.",
       "overlayCycleTooFew": "Raten nach Zyklusphase werden ab drei vollständig erfassten Zyklen angezeigt (bisher {cycles}).",
@@ -16016,7 +16016,7 @@
       "sinceLast": "Tage seit dem letzten erfassten Anfall",
       "longestFree": "Längster anfallsfreier Zeitraum, Tage",
       "clusters": "Anfallsserien ({rule})",
-      "niceClusters": "Anfallsserien nach NICE (3 in 24 h)",
+      "niceClusters": "Anfallsserien nach NICE (3 in 24 h)",
       "suspected": "{count, plural, one {# Verdachtsfall ist aufgeführt, aber nicht mitgezählt.} other {# Verdachtsfälle sind aufgeführt, aber nicht mitgezählt.}}",
       "clusterLine": "Ab {start}: {count, plural, one {# Anfall} other {# Anfälle}}",
       "monthlyCaption": "Anfälle pro Anfallsart und Monat",
@@ -16293,10 +16293,10 @@
       "fieldsLabel": "Was der Link zeigt",
       "expiryLabel": "Link endet",
       "expiry": {
-        "none": "Nie, bis zum Widerruf",
         "30": "In 30 Tagen",
         "365": "In einem Jahr",
-        "730": "In zwei Jahren"
+        "730": "In zwei Jahren",
+        "none": "Nie, bis zum Widerruf"
       },
       "create": "Link erstellen",
       "qrAlt": "QR-Code für den Link zur Notfallkarte",
@@ -16527,19 +16527,19 @@
       },
       "bpTargetGood": {
         "title": "Blutdruck meist im Zielbereich",
-        "message": "{percent} % deiner Messungen liegen im Zielbereich."
+        "message": "{percent} % deiner Messungen liegen im Zielbereich."
       },
       "bpTargetLow": {
         "title": "Blutdruck oft außerhalb des Zielbereichs",
-        "message": "Nur {percent} % deiner Messungen liegen im Zielbereich."
+        "message": "Nur {percent} % deiner Messungen liegen im Zielbereich."
       },
       "weightIncreasing": {
         "title": "Gewicht steigt",
-        "message": "Dein Gewicht steigt in den letzten 30 Tagen um etwa {kg} kg pro Woche."
+        "message": "Dein Gewicht steigt in den letzten 30 Tagen um etwa {kg} kg pro Woche."
       },
       "weightDecreasing": {
         "title": "Gewicht sinkt",
-        "message": "Dein Gewicht sinkt in den letzten 30 Tagen um etwa {kg} kg pro Woche."
+        "message": "Dein Gewicht sinkt in den letzten 30 Tagen um etwa {kg} kg pro Woche."
       },
       "pulseOutliers": {
         "title": "Auffällige Pulswerte",
@@ -16547,11 +16547,11 @@
       },
       "complianceLow": {
         "title": "Geringe Therapietreue: {name}",
-        "message": "Deine Therapietreue für {name} liegt in den letzten 7 Tagen bei nur {percent} %. Eine regelmäßige Einnahme ist wichtig."
+        "message": "Deine Therapietreue für {name} liegt in den letzten 7 Tagen bei nur {percent} %. Eine regelmäßige Einnahme ist wichtig."
       },
       "complianceExcellent": {
         "title": "Sehr gute Therapietreue: {name}",
-        "message": "{percent} % Therapietreue in den letzten 7 Tagen. Weiter so!"
+        "message": "{percent} % Therapietreue in den letzten 7 Tagen. Weiter so!"
       }
     },
     "targetLabels": {

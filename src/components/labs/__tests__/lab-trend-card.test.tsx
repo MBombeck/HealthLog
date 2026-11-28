@@ -42,11 +42,13 @@ function render(
 describe("<LabTrendCard>", () => {
   it("words the server's slope and labels the exit as a projection", () => {
     const html = render(OK);
-    expect(html).toContain("Rising by about 13 mg/dL a year across 4 readings");
+    expect(html).toContain(
+      "Rising by about 13\u00a0mg/dL a year across 4 readings",
+    );
     expect(html).toContain('data-projection="exits"');
     expect(html).toContain("upper end of your reference range");
     expect(html).toContain("projection, not a forecast");
-    expect(html).toContain("4.25 to 20.75 mg/dL");
+    expect(html).toContain("4.25 to 20.75\u00a0mg/dL");
   });
 
   it("leaves no gap where a value without a unit has none, in any language", () => {

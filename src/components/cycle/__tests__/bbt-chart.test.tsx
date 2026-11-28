@@ -136,7 +136,7 @@ describe("<BbtChart> — the reader's temperature unit", () => {
           ]}
         />,
       );
-      expect(html).toContain("98.4 °F");
+      expect(html).toContain("98.4\u00a0°F");
       expect(html).not.toContain("°C");
     } finally {
       reader.preference = "metric";

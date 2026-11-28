@@ -424,8 +424,12 @@ describe("<ClinicianView>", () => {
       }),
     );
     // One precision per row, the one the PDF prints the row with.
-    expect(html).toContain("latest 79.0 kg (avg 80.0 kg, range 78.0–82.0 kg)");
-    expect(html).toContain("latest 7.5 h (avg 7.5 h, range 7.0–8.0 h)");
+    expect(html).toContain(
+      "latest 79.0\u00a0kg (avg 80.0\u00a0kg, range 78.0–82.0\u00a0kg)",
+    );
+    expect(html).toContain(
+      "latest 7.5\u00a0h (avg 7.5\u00a0h, range 7.0–8.0\u00a0h)",
+    );
   });
 
   it("shows glucose in the record owner's unit, never raw mg/dL", () => {
@@ -442,10 +446,10 @@ describe("<ClinicianView>", () => {
     );
     // 99 mg/dL = 5.5 mmol/L, 108 = 6.0, 90 = 5.0, 126 = 7.0, 95 = 5.3.
     expect(html).toContain(
-      "latest 5.5 mmol/L (avg 6.0 mmol/L, range 5.0–7.0 mmol/L)",
+      "latest 5.5\u00a0mmol/L (avg 6.0\u00a0mmol/L, range 5.0–7.0\u00a0mmol/L)",
     );
     expect(html).toContain(
-      "latest 5.3 mmol/L (avg 5.5 mmol/L, range 5.0–6.0 mmol/L)",
+      "latest 5.3\u00a0mmol/L (avg 5.5\u00a0mmol/L, range 5.0–6.0\u00a0mmol/L)",
     );
     expect(html).not.toContain("mg/dL");
     expect(html).not.toContain("latest 99");

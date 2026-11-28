@@ -294,7 +294,7 @@ describe("loadDailyDigest — Today texts (#173)", () => {
       body: {
         ...SNAPSHOT.body,
         briefing: {
-          paragraph: "Alex, your resting heart rate held at 54 bpm.",
+          paragraph: "Alex, your resting heart rate held at 54\u00a0bpm.",
           signalsOfDay: [],
           keyFindings: [],
         },
@@ -316,7 +316,9 @@ describe("loadDailyDigest — Today texts (#173)", () => {
       NOW,
     );
 
-    expect(digest.lead?.text).toBe("Your resting heart rate held at 54 bpm.");
+    expect(digest.lead?.text).toBe(
+      "Your resting heart rate held at 54\u00a0bpm.",
+    );
     expect(
       digest.today.find((fact) => fact.kind === "medications")?.value,
     ).toMatch(/^daily\.todayFact\.medications\.next 12:00/);
@@ -820,7 +822,9 @@ describe("loadDailyDigest — Today overview inputs", () => {
     } as never);
     const digest = await loadDailyDigest(USER, NOW);
     expect(digest.lead?.source).toBe("signal");
-    expect(digest.lead?.text).toMatch(/80 to 92 mg\/dL for this time of day/);
+    expect(digest.lead?.text).toMatch(
+      /80 to 92\u00a0mg\/dL for this time of day/,
+    );
   });
 
   it("publishes how long the score has held", async () => {

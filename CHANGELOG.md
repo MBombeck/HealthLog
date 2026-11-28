@@ -108,6 +108,7 @@
 
 - No sentence about the day calls it in range while the Health score flags something. "All 4 of today's values sit inside their usual range" could stand beside "Blood pressure: needs attention" under the score. The morning sentence now names the flagged area instead ("Blood pressure needs attention in your health score today."), the Today line says only how many values were checked, and "Nothing needs your attention today" is never said beside a flag. Every such sentence goes through one rule that reads the score's flagged pillar, and a test fails when a new one is added beside it.
 - A night 20 to 60 minutes off the usual is no longer called "close to your usual" in the morning sentence; it says the difference, as the night card already did.
+- A number and its unit no longer break across lines in the sentences the server writes. "91 %" or "120/80 mmHg" could end a line on the figure and start the next with the sign on a phone's start page; the space between them is a no-break space now, in every language's text and in the server code that joins a value and a unit itself.
 
 ### Security
 

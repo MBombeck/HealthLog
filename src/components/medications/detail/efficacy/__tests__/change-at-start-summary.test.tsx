@@ -61,9 +61,9 @@ function render(segmented: EfficacySegmented) {
 describe("ChangeAtStartSummary", () => {
   it("states the level and trend change with their ranges in plain words", () => {
     const html = render(present);
-    expect(html).toContain("the level moved by -7.3 mmHg");
-    expect(html).toContain("95 % range -8.5 to -6.1");
-    expect(html).toContain("changed by -0.3 mmHg per week");
+    expect(html).toContain("the level moved by -7.3\u00a0mmHg");
+    expect(html).toContain("95\u00a0% range -8.5 to -6.1");
+    expect(html).toContain("changed by -0.3\u00a0mmHg per week");
     // The slope interval spans zero, so the no-change reading is said aloud.
     expect(html).toContain("also consistent with no change");
     expect(html).toContain("Based on 80 days before and 70 days after");

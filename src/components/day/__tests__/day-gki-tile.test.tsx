@@ -54,7 +54,7 @@ describe("<DayGkiTile>", () => {
   it("names both readings for assistive tech", async () => {
     const html = await render("en");
     expect(html).toMatch(
-      /<span class="sr-only">Glucose 12\.5 mmol\/L \/ ketones 0\.25 mmol\/L<\/span>/,
+      /<span class="sr-only">Glucose 12\.5 mmol\/L \/ ketones 0\.25 mmol\/L<\/span>/,
     );
   });
 });

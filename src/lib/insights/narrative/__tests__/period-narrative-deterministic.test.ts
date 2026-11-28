@@ -46,7 +46,7 @@ describe("buildDeterministicNarrative", () => {
     );
     expect(text).toContain("the last week");
     expect(text).toContain("your weight");
-    expect(text).toContain("1 kg");
+    expect(text).toContain("1\u00a0kg");
     expect(text).toContain("1.2%"); // dot decimal mark in English
   });
 
@@ -57,7 +57,7 @@ describe("buildDeterministicNarrative", () => {
     );
     expect(text).toContain("der letzten Woche");
     expect(text).toContain("dein Gewicht");
-    expect(text).toContain("1,2 %"); // comma decimal mark
+    expect(text).toContain("1,2\u00a0%"); // comma decimal mark
   });
 
   it("ranks by relative magnitude and caps at three movers", () => {
@@ -208,13 +208,15 @@ describe("buildDeterministicNarrative", () => {
       },
     ];
     const de = buildDeterministicNarrative(ctx({ metricDeltas: deltas }), "de");
-    expect(de).toContain("deine Schritte (−2.909 Schritte, −14,3 %)");
-    expect(de).toContain("dein diastolischer Blutdruck (+6 mmHg, +8,2 %)");
-    expect(de).toContain("dein Gewicht (−0,5 kg, −0,6 %)");
+    expect(de).toContain("deine Schritte (−2.909\u00a0Schritte, −14,3\u00a0%)");
+    expect(de).toContain(
+      "dein diastolischer Blutdruck (+6\u00a0mmHg, +8,2\u00a0%)",
+    );
+    expect(de).toContain("dein Gewicht (−0,5\u00a0kg, −0,6\u00a0%)");
     const en = buildDeterministicNarrative(ctx({ metricDeltas: deltas }), "en");
-    expect(en).toContain("your step count (−2,909 steps, −14.3%)");
-    expect(en).toContain("your diastolic blood pressure (+6 mmHg, +8.2%)");
-    expect(en).toContain("your weight (−0.5 kg, −0.6%)");
+    expect(en).toContain("your step count (−2,909\u00a0steps, −14.3%)");
+    expect(en).toContain("your diastolic blood pressure (+6\u00a0mmHg, +8.2%)");
+    expect(en).toContain("your weight (−0.5\u00a0kg, −0.6%)");
     for (const text of [de, en]) {
       // No bracket opens inside another.
       expect(text).not.toMatch(/\([^)]*\(/);

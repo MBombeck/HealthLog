@@ -489,7 +489,7 @@ describe("<MessageThread>", () => {
     const html = render(<MessageThread conversation={withKeyValues} />);
     expect(html).not.toContain('data-slot="coach-evidence"');
     expect(html).not.toContain("What I&#x27;m looking at");
-    expect(html).not.toContain("138 mmHg");
+    expect(html).not.toMatch(/138[ \u00a0]mmHg/);
     // The areas the answer drew on stay reachable from the row.
     expect(html).toContain("Thought process (1 step)");
   });
@@ -735,7 +735,7 @@ describe("<MessageThread>", () => {
       />,
     );
     expect(html).toContain(
-      "Provider temporarily rate-limited; retry in ~5 min.",
+      "Provider temporarily rate-limited; retry in ~5\u00a0min.",
     );
   });
 

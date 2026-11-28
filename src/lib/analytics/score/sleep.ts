@@ -15,6 +15,7 @@ import {
   readingSpread,
 } from "./shared";
 import { mean } from "@/lib/stats/central";
+import { NBSP } from "@/lib/format/unit-join";
 
 export const SLEEP_WINDOW_DAYS = 28;
 export const SLEEP_MIN_NIGHTS = 14;
@@ -98,7 +99,7 @@ export function computeSleepPillar(
       observed: {
         value: Math.round(observed),
         unit: "minutes/night",
-        label: `${Math.round(observed)} min/night${regularity == null ? "" : " + regularity"}`,
+        label: `${Math.round(observed)}${NBSP}min/night${regularity == null ? "" : " + regularity"}`,
         asOf: `${latest.night}T00:00:00.000Z`,
         sources: input.sources,
       },
@@ -106,7 +107,7 @@ export function computeSleepPillar(
         kind: "guideline-band",
         low: need,
         high: null,
-        label: `at least ${need} min/night; long sleep is not penalised`,
+        label: `at least ${need}${NBSP}min/night; long sleep is not penalised`,
         source: "NSF 2015; Ai 2021; Daghlas 2019; Windred 2024",
       },
       noiseFloor,
