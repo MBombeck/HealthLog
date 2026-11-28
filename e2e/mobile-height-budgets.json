@@ -110,8 +110,8 @@
       "target": 7300
     },
     "/insights/workouts": {
-      "budget": 1400,
-      "target": 1400
+      "budget": 1000,
+      "target": 1000
     },
     "/insights/sources": {
       "budget": 1000,

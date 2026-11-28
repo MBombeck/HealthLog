@@ -175,7 +175,7 @@ describe("goals editor", () => {
     );
     expect(html).toContain("Steps per month");
     expect(html).toContain(
-      'data-slot="activity-goal-progress" data-goal-key="stepsPerMonth"',
+      'data-slot="activity-goal-progress" data-progress-key="stepsPerMonth"',
     );
   });
 });

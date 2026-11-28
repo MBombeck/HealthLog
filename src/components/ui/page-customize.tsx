@@ -55,12 +55,9 @@ export function PageCustomizeButton({ onClick }: { onClick: () => void }) {
  */
 export function PageAddButton({
   onClick,
-  label,
   slot = "page-add",
 }: {
   onClick: () => void;
-  /** Accessible name when "Hinzufügen" alone does not say what is added. */
-  label?: string;
   slot?: string;
 }) {
   const { t } = useTranslations();
@@ -68,7 +65,6 @@ export function PageAddButton({
     <Button
       type="button"
       data-slot={slot}
-      aria-label={label}
       onClick={onClick}
       className="shell-mobile:hidden"
     >

@@ -112,7 +112,7 @@ export function ActivityGoalsForm({
               {current ? (
                 <span
                   data-slot="activity-goal-progress"
-                  data-goal-key={key}
+                  data-progress-key={key}
                   className="text-muted-foreground text-xs tabular-nums"
                 >
                   {t("activityCalendar.goalOf", {

@@ -3,8 +3,9 @@
  *
  * The mood page carried two text links under its heading ("Log a mood entry",
  * "Take a mental-wellbeing check-in") where every other Insights page offers
- * a plus in the header, and the workouts page drew its plus by hand. Both now
- * go through `SubPageAddButton`. This sweep keeps it that way: no page under
+ * a plus in the header, and the workouts page drew its plus by hand. The mood
+ * page goes through `SubPageAddButton`; the workouts page is a domain page now
+ * and adds through `PageAddButton`. This sweep keeps it that way: no page under
  * `src/app/insights` draws its own plus glyph, and the mood page carries no
  * text link into a capture surface.
  *
@@ -44,12 +45,22 @@ describe("Insights add actions", () => {
     expect(own.map((file) => relative(ROOT, file))).toEqual([]);
   });
 
-  it("the mood and workouts pages add through SubPageAddButton", () => {
-    for (const rel of ["mood/page-client.tsx", "workouts/page-client.tsx"]) {
-      const source = readFileSync(join(INSIGHTS, rel), "utf8");
-      expect(source, rel).toContain("<SubPageAddButton");
-      expect(source, rel).toContain("headerAction=");
-    }
+  it("the mood page adds through SubPageAddButton", () => {
+    const source = readFileSync(join(INSIGHTS, "mood/page-client.tsx"), "utf8");
+    expect(source).toContain("<SubPageAddButton");
+    expect(source).toContain("headerAction=");
+  });
+
+  it("the workouts page, a domain page, adds through PageAddButton", () => {
+    // Domain page template: the filled add on a wide screen, the tab bar's
+    // plus on a phone (`captureKindForPath`), beside the one wrench.
+    const source = readFileSync(
+      join(INSIGHTS, "workouts/page-client.tsx"),
+      "utf8",
+    );
+    expect(source).toContain("<PageAddButton");
+    expect(source).toContain("<PageCustomizeButton");
+    expect(source).not.toContain("<SubPageAddButton");
   });
 
   it("the mood page has no text links into logging or the check-in", () => {

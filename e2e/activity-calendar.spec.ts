@@ -68,7 +68,7 @@ test.describe("workouts page", () => {
     );
     await goalsRow.click();
     const field = page.locator(
-      '[data-slot="activity-goals-form"] [data-goal-key="stepsPerMonth"]',
+      '[data-slot="activity-goals-form"] input[data-goal-key="stepsPerMonth"]',
     );
     await field.fill("150000");
     await page.locator('[data-slot="activity-goals-save"]').click();

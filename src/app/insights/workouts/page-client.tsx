@@ -101,7 +101,6 @@ export default function InsightsWorkoutsPageClient() {
             {showLog ? (
               <PageAddButton
                 slot="workout-log-manual"
-                label={t("insights.workouts.manual.logWorkout")}
                 onClick={() => setLogOpen(true)}
               />
             ) : null}
