@@ -119,7 +119,7 @@ function PrefRow({
   return (
     <div className="flex flex-col gap-1 py-2">
       <div className="flex min-h-11 items-center justify-between gap-4">
-        <Label htmlFor={id} noColon className="min-w-0 truncate">
+        <Label htmlFor={id} className="min-w-0 truncate">
           {label}
         </Label>
         {children}

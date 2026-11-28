@@ -31,8 +31,10 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { ActionMenu } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
-import { ConfirmButton, ConfirmDialog } from "@/components/ui/confirm-button";
+import { ConfirmDialog } from "@/components/ui/confirm-button";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -643,6 +645,7 @@ export function LogDaySheet({
   const cycleProfile = useCycleProfile();
   const showCervix = cycleProfile.data?.secondarySymptom === "CERVIX";
 
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [flow, setFlow] = useState<FlowLevel | null>(null);
   const [intermenstrual, setIntermenstrual] = useState(false);
   const [symptoms, setSymptoms] = useState<Map<string, number | null>>(
@@ -886,25 +889,12 @@ export function LogDaySheet({
       footer={
         <>
           {currentRowId ? (
-            <ConfirmButton
-              slot="cycle-day-delete"
-              destructive
-              variant="outline"
-              className="text-destructive hover:text-destructive mr-auto"
-              icon={<Trash2 className="h-4 w-4" />}
-              label={t("cycle.sheet.delete")}
-              ariaLabel={t("cycle.sheet.delete")}
-              title={t("cycle.sheet.deleteTitle")}
-              body={
-                startsCycle
-                  ? t("cycle.sheet.deleteBodyCycleStart")
-                  : t("cycle.sheet.deleteBody")
-              }
-              confirmLabel={t("cycle.sheet.deleteConfirm")}
-              disabled={busy && !deleteDay.isPending}
-              pending={deleteDay.isPending}
-              onConfirm={handleDelete}
-            />
+            <ActionMenu disabled={busy && !deleteDay.isPending}>
+              <DropdownMenuItem onClick={() => setConfirmDelete(true)}>
+                <Trash2 className="mr-2 h-4 w-4" />
+                {t("cycle.sheet.delete")}
+              </DropdownMenuItem>
+            </ActionMenu>
           ) : null}
           <Button
             variant="outline"
@@ -1362,6 +1352,21 @@ export function LogDaySheet({
           {t("cycle.sheet.saveError")}
         </p>
       ) : null}
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        slot="cycle-day-delete"
+        destructive
+        title={t("cycle.sheet.deleteTitle")}
+        body={
+          startsCycle
+            ? t("cycle.sheet.deleteBodyCycleStart")
+            : t("cycle.sheet.deleteBody")
+        }
+        confirmLabel={t("cycle.sheet.deleteConfirm")}
+        pending={deleteDay.isPending}
+        onConfirm={handleDelete}
+      />
     </ResponsiveSheet>
   );
 }

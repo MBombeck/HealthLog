@@ -5,10 +5,9 @@ import {
   holdsOwnerRights,
 } from "@/hooks/use-record-capabilities";
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Gauge, Plus } from "lucide-react";
+import { Gauge, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,7 +22,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { CustomMetricForm } from "./custom-metric-form";
 import { formatMetricValue } from "./format-value";
 import type { CustomMetricDto, CustomMetricListResponse } from "./types";
-import { EmptyState } from "@/components/ui/empty-state";
+import { ListGroup, ListItem } from "@/components/ui/list-row";
 
 /**
  * v1.25.5 — inline list of the user's custom metrics, mounted ON the
@@ -75,17 +74,21 @@ export function CustomMetricList() {
         icon={Gauge}
         title={t("customMetrics.sectionTitle")}
         subtitle={t("customMetrics.sectionSubtitle")}
+        // An empty list's own row adds the first metric; the heading's
+        // button would say it twice.
         action={
-          <Button
-            variant="outline"
-            size="sm"
-            className="min-h-11 shrink-0 sm:min-h-9"
-            onClick={() => setAddOpen(true)}
-            aria-label={t("customMetrics.add")}
-          >
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">{t("customMetrics.add")}</span>
-          </Button>
+          metrics.length > 0 ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="min-h-11 shrink-0 sm:min-h-9"
+              onClick={() => setAddOpen(true)}
+              aria-label={t("customMetrics.add")}
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">{t("customMetrics.add")}</span>
+            </Button>
+          ) : undefined
         }
       />
 
@@ -102,56 +105,42 @@ export function CustomMetricList() {
           description={t("customMetrics.loadError")}
           onRetry={() => refetch()}
         />
-      ) : metrics.length === 0 ? (
-        <EmptyState
-          icon={<Gauge className="size-6" />}
-          title={t("customMetrics.emptyDescription")}
-          action={
-            <Button
-              size="sm"
-              onClick={() => setAddOpen(true)}
-              aria-label={t("customMetrics.add")}
-            >
-              {t("customMetrics.add")}
-            </Button>
-          }
-        />
       ) : (
-        <Card>
-          <CardContent className="divide-border divide-y p-0">
-            {metrics.map((metric) => (
-              <Link
-                key={metric.id}
-                href={`/custom-metrics/${metric.id}`}
-                className="hover:bg-muted/40 flex items-center justify-between gap-3 px-4 py-2.5 transition-colors"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium">
-                    {metric.name}
-                  </div>
-                  <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 text-xs">
-                    {metric.latest ? (
-                      <>
-                        <span className="text-foreground font-semibold tabular-nums">
-                          {formatMetricValue(
-                            metric.latest.value,
-                            metric.decimals,
-                            fmt.number,
-                          )}
-                          {metric.unit ? ` ${metric.unit}` : ""}
-                        </span>
-                        <span>{fmt.date(metric.latest.measuredAt)}</span>
-                      </>
-                    ) : (
-                      <span>{t("customMetrics.noValuesYet")}</span>
+        <ListGroup
+          empty={{
+            label: t("customMetrics.add"),
+            onSelect: () => setAddOpen(true),
+          }}
+        >
+          {metrics.map((metric) => (
+            <ListItem
+              key={metric.id}
+              href={`/custom-metrics/${metric.id}`}
+              title={metric.name}
+              meta={
+                metric.latest
+                  ? fmt.date(metric.latest.measuredAt)
+                  : t("customMetrics.noValuesYet")
+              }
+              trailing={
+                metric.latest ? (
+                  <span className="whitespace-nowrap">
+                    {formatMetricValue(
+                      metric.latest.value,
+                      metric.decimals,
+                      fmt.number,
                     )}
-                  </div>
-                </div>
-                <ChevronRight className="text-muted-foreground h-4 w-4 shrink-0" />
-              </Link>
-            ))}
-          </CardContent>
-        </Card>
+                    {metric.unit ? (
+                      <span className="text-muted-foreground ml-1 text-xs font-normal">
+                        {metric.unit}
+                      </span>
+                    ) : null}
+                  </span>
+                ) : undefined
+              }
+            />
+          ))}
+        </ListGroup>
       )}
 
       <ResponsiveSheet

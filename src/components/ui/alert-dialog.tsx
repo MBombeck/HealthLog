@@ -4,6 +4,7 @@ import * as React from "react";
 import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
+import { ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
 
 function AlertDialog({
@@ -83,19 +84,20 @@ function AlertDialogHeader({
   );
 }
 
+/** The confirmation's two answers, laid out by `ActionPair`. */
 function AlertDialogFooter({
   className,
+  children,
   ...props
 }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="alert-dialog-footer"
-      className={cn(
-        "flex flex-col-reverse gap-2 group-data-[size=sm]/alert-dialog-content:grid group-data-[size=sm]/alert-dialog-content:grid-cols-2 sm:flex-row sm:justify-end",
-        className,
-      )}
+      className={cn("flex", className)}
       {...props}
-    />
+    >
+      <ActionPair>{children}</ActionPair>
+    </div>
   );
 }
 

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { ActionPair } from "@/components/ui/action-pair";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -112,7 +113,7 @@ export function FamilyHistoryForm({
   }
 
   const footerNode = (
-    <>
+    <ActionPair>
       {onCancel ? (
         <Button
           type="button"
@@ -129,7 +130,7 @@ export function FamilyHistoryForm({
         ) : null}
         {t("common.save")}
       </Button>
-    </>
+    </ActionPair>
   );
 
   return (
