@@ -639,8 +639,13 @@ export function wordAsk(
       const plan = input.coachPlans.find(
         (p) => coachCheckinItemKey(p.id) === ask.itemKey,
       );
+      // The thing is what the plan does, not its "cue → action" prose: the
+      // action alone, with no arrow in visible copy, as a title.
+      const action = plan?.planText?.split("→").pop()?.trim();
       return {
-        title: plan?.planText?.trim() || t("daily.ask.planFallback"),
+        title: action
+          ? action.charAt(0).toLocaleUpperCase() + action.slice(1)
+          : t("daily.ask.planFallback"),
         body: t("daily.ask.planReview"),
       };
     }

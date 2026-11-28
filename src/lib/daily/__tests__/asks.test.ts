@@ -680,10 +680,11 @@ describe("an ask says the thing in its title and its state in the body", () => {
       reviewDate: null,
       createdAt: new Date(NOW.getTime() - 10 * DAY),
       updatedAt: new Date(NOW.getTime() - 10 * DAY),
-      planText: "Walk after lunch",
+      planText: "After lunch → walk ten minutes",
     };
     const [ask] = buildDailyDigest(input({ coachPlans: [plan] }), t).asks;
-    expect([ask.title, ask.body]).toEqual(["Walk after lunch", "Check-in due"]);
+    // The action alone: the "cue → action" arrow never reaches the title.
+    expect([ask.title, ask.body]).toEqual(["Walk ten minutes", "Check-in due"]);
     const [unnamed] = buildDailyDigest(
       input({ coachPlans: [{ ...plan, planText: null }] }),
       t,
