@@ -19,7 +19,6 @@ import {
   SIDE_EFFECT_CATEGORIES,
   SIDE_EFFECT_CATEGORY_ORDER,
   SIDE_EFFECT_ENTRIES_BY_CATEGORY,
-  SIDE_EFFECT_ENTRY_COUNT,
   SIDE_EFFECT_SEVERITY_LADDER,
   categoryForEntry,
   entriesByCategory,
@@ -63,7 +62,6 @@ const ALL_CATEGORIES: MedicationSideEffectCategory[] = [
 describe("SIDE_EFFECT_CATEGORIES — entry → category mapping", () => {
   it("declares exactly 22 entries", () => {
     expect(Object.keys(SIDE_EFFECT_CATEGORIES)).toHaveLength(22);
-    expect(SIDE_EFFECT_ENTRY_COUNT).toBe(22);
   });
 
   it("files a headache under its own code, next to dizziness", () => {

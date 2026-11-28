@@ -140,7 +140,6 @@
     "__tests__/unit-preference-display-guard.test.ts": 1,
     "__tests__/unit-suite-browser-install-guard.test.ts": 1,
     "__tests__/utc-day-key-allowlist-guard.test.ts": 1,
-    "__tests__/visit-link-guard.test.ts": 1,
     "__tests__/workout-canonical-identity-guard.test.ts": 1,
     "__tests__/write-rate-limit-guard.test.ts": 1,
     "__tests__/written-outcome-response-consumer-guard.test.ts": 1,

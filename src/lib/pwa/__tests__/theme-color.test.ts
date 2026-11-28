@@ -49,9 +49,12 @@ describe("applyThemeColor", () => {
       resolve(__dirname, "../../../app/globals.css"),
       "utf8",
     );
-    // The dark palette is declared in hex; the bar colour must be it exactly.
+    // Both palettes are declared in hex; the bar colour must be each exactly.
     expect(css).toMatch(
       new RegExp(`--background:\\s*${THEME_COLOR.dark};`, "i"),
+    );
+    expect(css).toMatch(
+      new RegExp(`--background:\\s*${THEME_COLOR.light};`, "i"),
     );
   });
 });

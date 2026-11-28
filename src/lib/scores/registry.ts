@@ -13,10 +13,10 @@
  *     Recharge, a vendor sleep score). It is named after the row's source,
  *     shown on the vendor's scale and never gets a HealthLog band.
  *
- * `src/lib/scores/__tests__/score-registry.test.ts` holds the code to this
- * file: every `<ScoreRing>` call site and every anatomy slug must be listed
- * here, so a new ring or a new score page cannot appear without a decision
- * about which score it shows.
+ * `src/lib/scores/__tests__/score-registry.test.ts` holds the register of
+ * every `<ScoreRing>` call site and checks every score slug against the
+ * scores here, so a new ring or a new score page cannot appear without a
+ * decision about which score it shows.
  */
 import type { HealthLogScoreKind } from "@/lib/analytics/score/shared";
 import { translateOrNull } from "@/lib/i18n/translate-code";
@@ -122,48 +122,6 @@ export function scoreShortLabelOrNull(
 ): string | null {
   return isHealthLogScoreId(id) ? scoreShortLabel(id, t) : null;
 }
-
-/** Every slug `/insights/scores/<slug>` may answer to. */
-export const SCORE_SLUGS: readonly string[] = HEALTHLOG_SCORE_IDS.map(
-  (id) => HEALTHLOG_SCORES[id].slug,
-);
-
-/**
- * Every file that draws a `<ScoreRing>`, with the scores it may draw.
- * `planned` marks a site a 1.50 package is still building; the register
- * test accepts its absence and holds it like any other once it exists.
- */
-export const SCORE_RING_SITES: Readonly<
-  Record<string, { scores: readonly HealthLogScoreId[]; planned?: true }>
-> = {
-  "src/components/dashboard/today-scores.tsx": {
-    scores: ["HEALTH_SCORE", "SLEEP_SCORE", "READINESS"],
-  },
-  "src/components/insights/derived/score-anatomy-view.tsx": {
-    scores: [
-      "READINESS",
-      "SLEEP_SCORE",
-      "RECOVERY_SCORE",
-      "STRESS_SCORE",
-      "STRAIN_SCORE",
-    ],
-  },
-  // The shared score tile: the start page's row and the Insights row draw
-  // every score through it.
-  "src/components/insights/derived/score-ring-tile.tsx": {
-    scores: [
-      "READINESS",
-      "SLEEP_SCORE",
-      "HEALTH_SCORE",
-      "STRESS_SCORE",
-      "STRAIN_SCORE",
-    ],
-  },
-  "src/components/insights/derived/hero-strip.tsx": {
-    scores: ["READINESS", "SLEEP_SCORE", "HEALTH_SCORE"],
-    planned: true,
-  },
-};
 
 /**
  * The one proxy rule. A `RECOVERY_SCORE` row from `COMPUTED` is HealthLog's
