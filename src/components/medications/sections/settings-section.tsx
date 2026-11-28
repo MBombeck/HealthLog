@@ -198,7 +198,6 @@ export function GraceRow({
         <Label
           htmlFor="medication-detail-grace-input"
           className="text-foreground text-sm font-medium"
-          noColon
         >
           {t("medications.detail.settings.grace.label")}
         </Label>
