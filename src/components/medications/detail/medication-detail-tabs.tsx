@@ -27,7 +27,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ListChecks, MoreVertical } from "lucide-react";
+import { ArrowLeft, MoreVertical } from "lucide-react";
 
 import type { MedicationCourseWire } from "@/components/medications/course-fields";
 import {
@@ -42,7 +42,6 @@ import {
 } from "@/hooks/use-record-capabilities";
 import { useUrlSearch, writeUrlState } from "@/lib/url-state";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,7 +49,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TileHeader } from "@/components/insights/tile-header";
 import { Segmented } from "@/components/ui/segmented";
 import { MedicationDetailSummary } from "@/components/medications/medication-detail-summary";
 import { EfficacyTab } from "@/components/medications/detail/efficacy/efficacy-tab";
@@ -428,6 +426,29 @@ export function MedicationDetailTabs({
 
   const threeCards = hasEfficacyTarget;
 
+  const historyToggle = (
+    <div data-slot="chart-header-controls">
+      <Segmented
+        size="sm"
+        mode="toggle"
+        value={historyView}
+        options={[
+          {
+            value: "recent",
+            label: t("medications.detail.intake.viewRecentShort"),
+          },
+          {
+            value: "all",
+            label: t("medications.detail.intake.viewAllShort"),
+          },
+        ]}
+        onChange={setHistoryView}
+        label={t("medications.detail.intake.viewToggleLabel")}
+        slot="medication-verlauf-view-toggle"
+      />
+    </div>
+  );
+
   return (
     <div className="space-y-6" data-slot="medication-detail-page">
       <Button variant="ghost" size="sm" className="-ml-2 w-fit" asChild>
@@ -515,10 +536,8 @@ export function MedicationDetailTabs({
 
           <PlanCard
             medication={medication}
-            payload={payload}
             recordOnly={recordOnly}
             asNeeded={asNeeded}
-            oneShot={oneShot}
             onEdit={onEdit}
           />
 
@@ -553,49 +572,22 @@ export function MedicationDetailTabs({
 
         {/* VERLAUF — the dose history (90 days) or the full intake list. */}
         <TabsContent value="history" className="space-y-6 pt-2">
-          <Card data-slot="medication-verlauf-section">
-            <CardHeader>
-              <TileHeader
-                icon={ListChecks}
-                title={t("medications.detail.intake.title")}
-                titleAs="h2"
-                right={
-                  <div data-slot="chart-header-controls">
-                    <Segmented
-                      size="sm"
-                      mode="toggle"
-                      value={historyView}
-                      options={[
-                        {
-                          value: "recent",
-                          label: t("medications.detail.intake.viewRecentShort"),
-                        },
-                        {
-                          value: "all",
-                          label: t("medications.detail.intake.viewAllShort"),
-                        },
-                      ]}
-                      onChange={setHistoryView}
-                      label={t("medications.detail.intake.viewToggleLabel")}
-                      slot="medication-verlauf-view-toggle"
-                    />
-                  </div>
-                }
+          <div className="space-y-6" data-slot="medication-verlauf-section">
+            {historyView === "recent" ? (
+              <DoseHistoryLedger
+                medicationId={id}
+                medicationName={medication.name}
+                medicationDose={medication.dose}
+                schedules={schedulesForAdd}
+                controls={historyToggle}
               />
-            </CardHeader>
-            <CardContent>
-              {historyView === "recent" ? (
-                <DoseHistoryLedger
-                  medicationId={id}
-                  medicationName={medication.name}
-                  medicationDose={medication.dose}
-                  schedules={schedulesForAdd}
-                />
-              ) : (
+            ) : (
+              <>
+                <div className="flex justify-end">{historyToggle}</div>
                 <IntakeHistoryListV2 medicationId={id} />
-              )}
-            </CardContent>
-          </Card>
+              </>
+            )}
+          </div>
         </TabsContent>
 
         {/* INJEKTION — injectable routes only. */}

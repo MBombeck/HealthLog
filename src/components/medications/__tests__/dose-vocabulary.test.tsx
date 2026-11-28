@@ -23,7 +23,10 @@ vi.mock("@/hooks/use-record-capabilities", () => ({
 }));
 
 import { I18nProvider } from "@/lib/i18n/context";
-import { LedgerDoseCell } from "@/components/medications/dose-history/ledger-row-item";
+import {
+  LedgerDoseActions,
+  LedgerDoseRow,
+} from "@/components/medications/dose-history/ledger-row-item";
 import { DoseStateLabel } from "@/components/medications/dose-state-label";
 import type { LedgerRow } from "@/components/medications/dose-history-ledger-compute";
 import {
@@ -45,10 +48,26 @@ function slotRow(overrides: Partial<LedgerRow>): LedgerRow {
   };
 }
 
+const HANDLERS = {
+  onMark: () => {},
+  onToggleSkipped: () => {},
+  onEdit: () => {},
+  onDelete: () => {},
+  onPin: () => {},
+  onUnpin: () => {},
+};
+
 function renderRow(row: LedgerRow) {
+  const dose = { row, title: "Sat, 21 Nov, 08:00" };
   return renderToStaticMarkup(
     <I18nProvider initialLocale="en">
-      <LedgerDoseCell row={row} marking={null} isToday onMark={() => {}} />
+      <LedgerDoseRow dose={dose} onOpen={() => {}} />
+      <LedgerDoseActions
+        dose={dose}
+        handlers={HANDLERS}
+        marking={null}
+        onDone={() => {}}
+      />
     </I18nProvider>,
   );
 }
@@ -65,9 +84,42 @@ describe("dose vocabulary", () => {
     expect(html).toContain(">Pending<");
   });
 
-  it("labels the row's take button with the verb", () => {
+  it("labels the dose sheet's take with the verb", () => {
     const html = renderRow(slotRow({ state: "due" }));
-    expect(html).toMatch(/data-slot="ledger-mark-taken"[^>]*>.*Take<\/button>/);
+    expect(html).toMatch(/data-slot="ledger-mark-taken".*?>Take<\/span>/);
+    expect(html).toMatch(/data-slot="ledger-mark-skipped".*?>Skip<\/span>/);
+  });
+
+  it("says only what differs from the plan", () => {
+    const onTime = renderRow(
+      slotRow({
+        status: "taken_on_time",
+        intake: {
+          id: "i1",
+          scheduledFor: "2026-11-21T07:00:00.000Z",
+          takenAt: "2026-11-21T07:00:00.000Z",
+          skipped: false,
+          autoMissed: false,
+        },
+      }),
+    );
+    // Taken at the planned time: a check, no second line, no state word.
+    expect(onTime).not.toContain('data-slot="list-item-meta"');
+    expect(onTime).not.toContain(">Taken<");
+    const late = renderRow(
+      slotRow({
+        status: "taken_late",
+        intake: {
+          id: "i1",
+          scheduledFor: "2026-11-21T07:00:00.000Z",
+          takenAt: "2026-11-21T08:35:00.000Z",
+          skipped: false,
+          autoMissed: false,
+        },
+      }),
+    );
+    expect(late).toContain('data-slot="list-item-meta"');
+    expect(late).toMatch(/Taken 9:35|Taken 09:35/);
   });
 
   it("marks a dose to take with a clock and a taken one with a check", () => {

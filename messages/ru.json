@@ -2243,7 +2243,11 @@
         "dayColumn": "День",
         "takenColumn": "Принято",
         "extraColumn": "Дополнительно",
-        "actionsColumn": "Действия"
+        "actionsColumn": "Действия",
+        "takenAt": "Принято в {time}",
+        "weekOf": "Неделя с {date}",
+        "thisWeek": "Эта неделя",
+        "showEarlier": "Показать предыдущие недели"
       },
       "notifications": {
         "title": "Уведомления",

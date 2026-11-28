@@ -2243,7 +2243,11 @@
         "dayColumn": "Day",
         "takenColumn": "Taken",
         "extraColumn": "Extra",
-        "actionsColumn": "Actions"
+        "actionsColumn": "Actions",
+        "takenAt": "Taken {time}",
+        "weekOf": "Week of {date}",
+        "thisWeek": "This week",
+        "showEarlier": "Show earlier weeks"
       },
       "notifications": {
         "title": "Notifications",

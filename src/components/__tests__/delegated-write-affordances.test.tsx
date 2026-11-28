@@ -209,8 +209,8 @@ import { TodayAsks } from "@/components/dashboard/today-asks";
 import { VorsorgeDashboardCard } from "@/components/measurement-reminders/vorsorge-dashboard-card";
 import { EpisodeLinksCard } from "@/components/illness/episode-links-card";
 import {
-  LedgerDayMenu,
-  LedgerDoseCell,
+  LedgerDoseActions,
+  LedgerDoseRow,
 } from "@/components/medications/dose-history/ledger-row-item";
 import { VaccinationsView } from "@/components/vaccinations/vaccinations-view";
 import { VisitsSection } from "@/components/encounters/visits-section";
@@ -668,14 +668,14 @@ describe("marking a dose from the dose history", () => {
     status: "upcoming" as const,
     intake: null,
   };
+  const dose = { row, title: "Tue, 4 Aug, 07:00", onOpenDay: () => {} };
   const node = (
     <div>
-      <LedgerDoseCell row={row} marking={null} isToday onMark={() => {}} />
-      <LedgerDayMenu
-        dayLabel="Tue, 4 Aug"
-        rows={[row]}
-        isToday
-        onOpenDay={() => {}}
+      <LedgerDoseRow dose={dose} onOpen={() => {}} />
+      <LedgerDoseActions
+        dose={dose}
+        marking={null}
+        onDone={() => {}}
         handlers={{
           onMark: () => {},
           onToggleSkipped: () => {},
@@ -688,30 +688,29 @@ describe("marking a dose from the dose history", () => {
     </div>
   );
 
-  it("offers the owner take beside the day menu that holds the rest", () => {
+  it("offers the owner take, skip and opening the day in the dose's sheet", () => {
     const html = render(OWN_RECORD, node);
     expect(html).toContain('data-slot="ledger-mark-taken"');
-    expect(html).toContain('data-slot="ledger-row-menu"');
+    expect(html).toContain('data-slot="ledger-mark-skipped"');
+    expect(html).toContain('data-slot="ledger-open-day"');
   });
 
-  it("offers a write delegate BOTH markings, and no day menu", () => {
-    // Taken and skipped are one admitted verb, not two — the medication card
-    // has always offered the pair. This surface offered a delegate only the
-    // first, because skip lives in the kebab and the kebab also holds edit,
-    // re-attribute and delete, which are the owner's. So skip gets its own
-    // control here rather than the menu opening up.
+  it("offers a write delegate BOTH markings, and nothing the owner keeps", () => {
+    // Taken and skipped are one admitted verb, not two: the medication card
+    // has always offered the pair. Opening the day, editing, re-attributing
+    // and deleting stay the owner's.
     const html = render(WRITABLE, node);
     expect(html).toContain('data-slot="ledger-mark-taken"');
     expect(html).toContain('data-slot="ledger-mark-skipped"');
-    expect(html).not.toContain('data-slot="ledger-row-menu"');
+    expect(html).not.toContain('data-slot="ledger-open-day"');
   });
 
   it("offers a read-only delegate neither", () => {
     const html = render(READ_ONLY, node);
     expect(html).not.toContain('data-slot="ledger-mark-taken"');
     expect(html).not.toContain('data-slot="ledger-mark-skipped"');
-    expect(html).not.toContain('data-slot="ledger-row-menu"');
-    // The row itself stays — reading the history is a read.
+    expect(html).not.toContain('data-slot="ledger-dose-actions"');
+    // The row itself stays: reading the history is a read.
     expect(html).toContain('data-slot="ledger-row"');
   });
 });

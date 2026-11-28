@@ -2243,7 +2243,11 @@
         "dayColumn": "Dag",
         "takenColumn": "Ingenomen",
         "extraColumn": "Extra",
-        "actionsColumn": "Acties"
+        "actionsColumn": "Acties",
+        "takenAt": "Ingenomen {time}",
+        "weekOf": "Week van {date}",
+        "thisWeek": "Deze week",
+        "showEarlier": "Eerdere weken tonen"
       },
       "notifications": {
         "title": "Meldingen",

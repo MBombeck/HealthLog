@@ -2243,7 +2243,11 @@
         "dayColumn": "날짜",
         "takenColumn": "복용",
         "extraColumn": "추가",
-        "actionsColumn": "작업"
+        "actionsColumn": "작업",
+        "takenAt": "{time}에 복용",
+        "weekOf": "{date}부터 한 주",
+        "thisWeek": "이번 주",
+        "showEarlier": "이전 주 보기"
       },
       "notifications": {
         "title": "알림",

@@ -2243,7 +2243,11 @@
         "dayColumn": "Tag",
         "takenColumn": "Genommen",
         "extraColumn": "Zusätzlich",
-        "actionsColumn": "Aktionen"
+        "actionsColumn": "Aktionen",
+        "takenAt": "Genommen {time}",
+        "weekOf": "Woche ab {date}",
+        "thisWeek": "Diese Woche",
+        "showEarlier": "Frühere Wochen zeigen"
       },
       "notifications": {
         "title": "Erinnerungen",

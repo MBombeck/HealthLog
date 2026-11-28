@@ -2243,7 +2243,11 @@
         "dayColumn": "Giorno",
         "takenColumn": "Assunte",
         "extraColumn": "In più",
-        "actionsColumn": "Azioni"
+        "actionsColumn": "Azioni",
+        "takenAt": "Presa alle {time}",
+        "weekOf": "Settimana dal {date}",
+        "thisWeek": "Questa settimana",
+        "showEarlier": "Mostra settimane precedenti"
       },
       "notifications": {
         "title": "Promemoria",

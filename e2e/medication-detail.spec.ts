@@ -87,7 +87,11 @@ function ledgerRows() {
             : {
                 id: `in_${offset}_${time}`,
                 scheduledFor: at,
-                takenAt: at.replace(":00:00.000Z", ":12:00.000Z"),
+                // Every other day on the minute, the rest twelve minutes on.
+                takenAt:
+                  offset % 2 === 0
+                    ? at
+                    : at.replace(":00:00.000Z", ":12:00.000Z"),
                 skipped: false,
                 autoMissed: false,
               },
@@ -205,23 +209,35 @@ test.describe("medication detail page", () => {
     ).toBeVisible();
   });
 
-  test("the history is one row per day with one menu per day", async ({
+  test("the history is one row per dose, one card per week", async ({
     page,
   }) => {
     await page.goto(`/medications/${ID}?tab=history`);
-    const days = page.locator('[data-slot="ledger-day"]');
-    await expect(days).toHaveCount(14);
-    await expect(
-      page.locator('[data-slot="ledger-table"] thead th[scope=col]'),
-    ).toHaveCount(4);
-    // Today's open evening dose keeps its visible take; the rest sits in
-    // the day menu.
-    await expect(page.locator('[data-slot="ledger-mark-taken"]')).toHaveCount(
-      1,
+    const weeks = page.locator('[data-slot="ledger-week"]');
+    await expect(weeks.first()).toBeVisible();
+    // The two newest weeks first; the rest on request.
+    await expect(weeks).toHaveCount(2);
+    const more = page.locator('[data-slot="ledger-more"]');
+    if (await more.isVisible()) await more.click();
+    const rows = page.locator('[data-slot="ledger-row"]');
+    await expect(rows).toHaveCount(28);
+    // A dose taken at its planned time has no second line; one taken
+    // twelve minutes on says when.
+    const onTime = rows.filter({
+      has: page.locator('[data-slot="ledger-status"]'),
+    });
+    await expect(onTime.first()).toBeVisible();
+    const withMeta = page.locator(
+      '[data-slot="ledger-row"][data-status="taken_on_time"] [data-slot="list-item-meta"]',
     );
-    await expect(page.locator('[data-slot="ledger-row-menu"]')).toHaveCount(14);
-    await days.first().locator('[data-slot="ledger-row-menu"]').click();
-    await expect(page.locator('[data-slot="ledger-open-day"]')).toBeVisible();
+    await expect(withMeta).toHaveCount(13);
+    // The newest row is tonight's open dose; it opens its sheet.
+    await rows.first().locator('[data-slot="list-item-action"]').click();
+    const sheet = page.locator('[data-slot="ledger-dose-sheet"]');
+    await expect(
+      sheet.locator('[data-slot="ledger-mark-taken"]'),
+    ).toBeVisible();
+    await expect(sheet.locator('[data-slot="ledger-open-day"]')).toBeVisible();
   });
 
   test("the settings: four groups, one line per setting", async ({ page }) => {

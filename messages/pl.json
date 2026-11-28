@@ -2243,7 +2243,11 @@
         "dayColumn": "Dzień",
         "takenColumn": "Przyjęte",
         "extraColumn": "Dodatkowo",
-        "actionsColumn": "Działania"
+        "actionsColumn": "Działania",
+        "takenAt": "Przyjęto {time}",
+        "weekOf": "Tydzień od {date}",
+        "thisWeek": "Ten tydzień",
+        "showEarlier": "Pokaż wcześniejsze tygodnie"
       },
       "notifications": {
         "title": "Przypomnienia",

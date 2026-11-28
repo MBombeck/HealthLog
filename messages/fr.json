@@ -2243,7 +2243,11 @@
         "dayColumn": "Jour",
         "takenColumn": "Prises",
         "extraColumn": "En plus",
-        "actionsColumn": "Actions"
+        "actionsColumn": "Actions",
+        "takenAt": "Prise à {time}",
+        "weekOf": "Semaine du {date}",
+        "thisWeek": "Cette semaine",
+        "showEarlier": "Afficher les semaines précédentes"
       },
       "notifications": {
         "title": "Rappels",
