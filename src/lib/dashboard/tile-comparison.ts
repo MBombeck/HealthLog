@@ -35,9 +35,9 @@ export interface TileComparison {
   avg30: ComparisonTone;
   /**
    * The tile's deviation line in the response language ("Above target
-   * range"), only while `tiles.attention[id]` is `range`: avg7's side when
-   * it has one, else avg30's. Null otherwise, so a tile whose reading is back
-   * in range never carries one.
+   * range"), only while `tiles.attention[id]` is `range`: the side of the
+   * latest value, the reading attention itself judges. Null otherwise, so a
+   * tile whose reading is back in range never carries one.
    */
   line: string | null;
 }
@@ -75,12 +75,13 @@ const worse = (sys: ComparisonTone, dia: ComparisonTone) =>
 
 const hasReadings = (s: DataSummary | undefined) => (s?.count ?? 0) > 0;
 
-type Means = Omit<TileComparison, "line">;
+type Means = Omit<TileComparison, "line"> & { latest: ComparisonTone };
 
 const bothMeans = (
   s: DataSummary | undefined,
   range: TrafficRange | null,
 ): Means => ({
+  latest: rangeTone(s?.latest, range),
   avg7: rangeTone(s?.avg7, range),
   avg30: rangeTone(s?.avg30, range),
 });
@@ -116,7 +117,11 @@ export function resolveTileComparison(input: {
   ) {
     const s = bothMeans(sys, bands.bpSysRange);
     const d = bothMeans(dia, bands.bpDiaRange);
-    means.bp = { avg7: worse(s.avg7, d.avg7), avg30: worse(s.avg30, d.avg30) };
+    means.bp = {
+      latest: worse(s.latest, d.latest),
+      avg7: worse(s.avg7, d.avg7),
+      avg30: worse(s.avg30, d.avg30),
+    };
   }
   if (hasReadings(summaries.RESTING_HEART_RATE)) {
     means.pulse = bothMeans(
@@ -127,9 +132,10 @@ export function resolveTileComparison(input: {
   const out: TileComparisonMap = {};
   for (const [widget, m] of Object.entries(means)) {
     if (!m) continue;
-    const side = m.avg7.side ?? m.avg30.side;
+    const side = m.latest.side;
     out[widget] = {
-      ...m,
+      avg7: m.avg7,
+      avg30: m.avg30,
       line: attention[widget] === "range" && side ? t(LINE_KEY[side]) : null,
     };
   }

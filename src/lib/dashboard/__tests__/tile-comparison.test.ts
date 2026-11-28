@@ -14,8 +14,11 @@ import { getServerTranslator } from "@/lib/i18n/server-translator";
 
 const RANGE = { greenMin: 60, greenMax: 80, orangeMin: 54, orangeMax: 86 };
 
-const summary = (avg7: number | null, avg30: number | null) =>
-  ({ count: 10, avg7, avg30, latest: avg7 }) as unknown as DataSummary;
+const summary = (
+  avg7: number | null,
+  avg30: number | null,
+  latest: number | null = avg7,
+) => ({ count: 10, avg7, avg30, latest }) as unknown as DataSummary;
 
 const bands = {
   ...buildDashboardBands({
@@ -86,8 +89,8 @@ describe("resolveTileComparison", () => {
 
   it("words the line only while the tile's attention is range", () => {
     const summaries = {
-      WEIGHT: summary(84, 70),
-      RESTING_HEART_RATE: summary(70, 50),
+      WEIGHT: summary(84, 70, 84),
+      RESTING_HEART_RATE: summary(70, 50, 50),
     };
     const out = resolveTileComparison({
       summaries,
@@ -96,7 +99,7 @@ describe("resolveTileComparison", () => {
       t: de,
     });
     expect(out.weight?.line).toBe("Über dem Zielbereich");
-    // avg7 is inside, so the line names avg30's side.
+    // avg7 is inside; the line names the latest value's side.
     expect(out.pulse?.line).toBe("Unter dem Zielbereich");
 
     const calm = resolveTileComparison({
@@ -109,7 +112,29 @@ describe("resolveTileComparison", () => {
     expect(calm.pulse?.line).toBeNull();
   });
 
-  it("serves no line when neither mean has a side", () => {
+  it("names the side of the latest value, not of the means", () => {
+    const out = resolveTileComparison({
+      // Latest is below the band while both means sit above it.
+      summaries: { WEIGHT: summary(84, 84, 50) },
+      bands,
+      attention: { weight: "range" },
+      t: en,
+    });
+    expect(out.weight?.avg7.side).toBe("above");
+    expect(out.weight?.line).toBe("Below target range");
+  });
+
+  it("words a line when the latest value is out and both means are in", () => {
+    const out = resolveTileComparison({
+      summaries: { WEIGHT: summary(70, 70, 90) },
+      bands,
+      attention: { weight: "range" },
+      t: en,
+    });
+    expect(out.weight?.line).toBe("Above target range");
+  });
+
+  it("serves no line when the latest value is inside the band", () => {
     const out = resolveTileComparison({
       summaries: { WEIGHT: summary(70, 70) },
       bands,

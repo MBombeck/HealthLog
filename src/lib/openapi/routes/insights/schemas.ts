@@ -1539,7 +1539,7 @@ export const dashboardSnapshotResponse = z
               .string()
               .nullable()
               .describe(
-                "The tile's deviation line in the response language (`Above target range`, `Below target range`), non-null only while `tiles.attention[id]` is `range`: it names avg7's side when avg7 has one, else avg30's. Render as served.",
+                "The tile's deviation line in the response language (`Above target range`, `Below target range`), non-null only while `tiles.attention[id]` is `range`: it names the side of the latest value. Render as served.",
               ),
           }),
         )

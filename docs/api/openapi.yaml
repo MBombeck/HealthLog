@@ -50809,9 +50809,9 @@ components:
             /api/dashboard/snapshot carries tiles.comparison: per ranged tile (weight, bp, pulse when it shows the
             resting heart rate) avg7 and avg30 as { band: good | fair | low | null, side: above | below | null }, placed
             in targetBands by the same rule as tiles.attention (bp is the side further from its band), and line, the
-            deviation line in the response language, non-null only while tiles.attention[id] is range (avg7's side, else
-            avg30's). Colour the comparison lines and show the line as served. `health-connect.sync`: The Android Health
-            Connect sync: POST /api/health-connect/pairing mints a one-time code (QR
+            deviation line in the response language, non-null only while tiles.attention[id] is range (the side of the
+            latest value). Colour the comparison lines and show the line as served. `health-connect.sync`: The Android
+            Health Connect sync: POST /api/health-connect/pairing mints a one-time code (QR
             healthlog-sync://pair?server=…&code=…), POST /api/health-connect/pair exchanges it for a
             health-connect:write token bound to a Device, GET /api/health-connect/state answers the wanted types and
             limits, and POST /api/health-connect/batch takes records, aggregates and deletes with one result per item.
@@ -80276,8 +80276,8 @@ components:
                     $ref: "#/components/schemas/DashboardTileComparisonTone"
                   line:
                     description: "The tile's deviation line in the response language (`Above target range`, `Below target range`), non-null
-                      only while `tiles.attention[id]` is `range`: it names avg7's side when avg7 has one, else avg30's.
-                      Render as served."
+                      only while `tiles.attention[id]` is `range`: it names the side of the latest value. Render as
+                      served."
                     type:
                       - string
                       - "null"
