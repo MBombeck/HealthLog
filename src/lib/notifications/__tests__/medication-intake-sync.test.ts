@@ -84,6 +84,10 @@ vi.mock("@/lib/devices/delete-devices", async () => {
 
 vi.mock("@/lib/db", () => ({
   prisma: {
+    // The gone-verdict breaker (`gone-registrations.ts`) reads an empty,
+    // closed window: no hold, one verdict counted.
+    $queryRaw: async (s: TemplateStringsArray) =>
+      s.join("").includes("RETURNING count") ? [{ count: 1 }] : [],
     user: {
       findUnique: (...a: unknown[]) => userFindUnique(...a),
     },

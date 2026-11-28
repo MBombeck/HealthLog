@@ -18,8 +18,6 @@
  *
  *   - The Coach evidence shelf — chip-grouping by category makes the
  *     prose more navigable than a flat list.
- *
- * Locked: see `.planning/research/v15-r-f-apple-health-depth.md` §4.
  */
 import type { MeasurementType } from "@/generated/prisma/client";
 

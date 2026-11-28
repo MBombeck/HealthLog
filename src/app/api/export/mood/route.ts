@@ -1,7 +1,7 @@
 /**
  * GET /api/export/mood
  *
- * v1.4.16 phase B7. Per-type CSV download for the consolidated
+ * v1.4.16. Per-type CSV download for the consolidated
  * `/settings/export` UI. Filterable by `since` / `until` (inclusive
  * date strings parsed via the standard Date constructor — invalid
  * values are silently dropped from the where-clause).
@@ -21,6 +21,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { toCSV, formatMoodEntriesForExport } from "@/lib/export";
 import { shapeMoodNote } from "@/lib/crypto/note-cipher";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
+import { parseExportRange } from "@/lib/export/export-range";
 import { NextRequest, NextResponse } from "next/server";
 
 export const GET = apiHandler(async (request: NextRequest) => {
@@ -32,36 +33,17 @@ export const GET = apiHandler(async (request: NextRequest) => {
     return apiError("Maximum 10 exports per hour", 429);
   }
 
-  const params = new URL(request.url).searchParams;
-  const since = params.get("since")
-    ? safeDate(params.get("since")!)
-    : undefined;
-  const until = params.get("until")
-    ? safeDate(params.get("until")!)
-    : undefined;
+  const userTz = await resolveUserTimezone(user.id);
+  const range = parseExportRange(new URL(request.url).searchParams, userTz);
+  const where = range
+    ? // v1.7.0 sync — exclude tombstoned rows from the export.
+      { userId: user.id, deletedAt: null, moodLoggedAt: range }
+    : { userId: user.id, deletedAt: null };
 
-  const where: {
-    userId: string;
-    deletedAt: null;
-    moodLoggedAt?: { gte?: Date; lte?: Date };
-  } = {
-    userId: user.id,
-    // v1.7.0 sync — exclude tombstoned rows from the export.
-    deletedAt: null,
-  };
-  if (since || until) {
-    where.moodLoggedAt = {};
-    if (since) where.moodLoggedAt.gte = since;
-    if (until) where.moodLoggedAt.lte = until;
-  }
-
-  const [entries, userTz] = await Promise.all([
-    prisma.moodEntry.findMany({
-      where,
-      orderBy: { moodLoggedAt: "desc" },
-    }),
-    resolveUserTimezone(user.id),
-  ]);
+  const entries = await prisma.moodEntry.findMany({
+    where,
+    orderBy: { moodLoggedAt: "desc" },
+  });
 
   const csv = toCSV(
     formatMoodEntriesForExport(entries.map(shapeMoodNote), userTz),
@@ -72,8 +54,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
     ipAddress: getClientIp(request),
     details: {
       count: entries.length,
-      since: since?.toISOString() ?? null,
-      until: until?.toISOString() ?? null,
+      since: range?.gte?.toISOString() ?? null,
+      until: (range?.lt ?? range?.lte)?.toISOString() ?? null,
     },
   });
 
@@ -94,8 +76,3 @@ export const GET = apiHandler(async (request: NextRequest) => {
     },
   });
 });
-
-function safeDate(value: string): Date | undefined {
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? undefined : d;
-}

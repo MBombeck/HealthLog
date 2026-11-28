@@ -1,5 +1,5 @@
 /**
- * Wave 1D — the per-card status path delivers the REAL provider text.
+ * The per-card status path delivers the REAL provider text.
  *
  * Pins two contracts against a real Postgres + a seeded rich account:
  *

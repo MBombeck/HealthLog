@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 /**
- * Wave 1D — payload-budget verification. A dense daily weigher (2 years
+ * Payload-budget verification. A dense daily weigher (2 years
  * of daily WEIGHT + BP, plus a many-type Apple-Health account for
  * general-status) used to embed the full ~360-day daily array per
  * metric, running ~20-100 K tokens. After the graded-series rewrite the

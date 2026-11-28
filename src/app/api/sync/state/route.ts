@@ -33,8 +33,7 @@
  * No body. requireAuth() — cookie + Bearer both accepted (iOS uses
  * Bearer per `05-auth-flows.md`).
  *
- * Locked contract: see `.planning/v15-ios-handoff/08-locked-contracts.md`
- * §13 cross-reference. The shape is additive going forward.
+ * Locked contract with the iOS client. The shape is additive going forward.
  */
 import type { NextRequest } from "next/server";
 

@@ -3,9 +3,9 @@
  * compute function → a wire-flat `Derived<unknown>`.
  *
  * The generic `/api/insights/derived` route validates `metric` against
- * the closed registry enum, then calls `computeDerivedMetric`. Wave 1
- * implements `VITALS_BASELINE` end-to-end; every other registered id is
- * a metadata stub whose compute lands in W2/W3. A stub routed before its
+ * the closed registry enum, then calls `computeDerivedMetric`.
+ * `VITALS_BASELINE` is implemented end-to-end; every other registered id
+ * is a metadata stub until its compute lands. A stub routed before its
  * compute lands returns `insufficient` with `reason: "not_implemented"`
  * — never a fabricated value, never a 500.
  *

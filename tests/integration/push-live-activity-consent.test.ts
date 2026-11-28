@@ -39,6 +39,23 @@ vi.mock("@/lib/safe-fetch", async (importOriginal) => {
   };
 });
 
+// A switch that makes ending the relay-started Activities throw, the way a
+// database error inside it would. A withdrawal must land regardless.
+const endFailure = vi.hoisted(() => ({ on: false }));
+vi.mock("@/lib/push-relay/live-activity-relay-end", async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import("@/lib/push-relay/live-activity-relay-end")
+    >();
+  return {
+    ...actual,
+    endRelayStartedActivities: (deviceId: string) =>
+      endFailure.on
+        ? Promise.reject(new Error("end failed"))
+        : actual.endRelayStartedActivities(deviceId),
+  };
+});
+
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { callRoute } from "../kit/call-route";
 import {
@@ -68,6 +85,7 @@ beforeEach(async () => {
   vi.stubEnv("PUSH_RELAY_URL", RELAY_URL);
   vi.stubEnv("PUSH_RELAY_KEYS", RELAY_PUBLIC_KEY);
   vi.stubEnv("PUSH_RELAY_LIVE_ACTIVITY", "on");
+  endFailure.on = false;
   await truncateAllTables(getPrismaClient());
   fake = new FakeRelay();
   relay.current = fake;
@@ -666,6 +684,54 @@ describe("a running Activity ends when the consent or the switch goes", () => {
     });
     expect(ends()).toEqual([LA_TOKEN]);
     expect(await tokensLeft()).toEqual([APP_LA_TOKEN]);
+  });
+
+  it("stores a Live Activity withdrawal even when ending the Activities throws", async () => {
+    const t = await running();
+    endFailure.on = true;
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    const withdrawn = await t.reg({ liveActivityWithdraw: t.withdraw() });
+    expect(withdrawn.status).toBe(201);
+    expect(withdrawn.data.push.liveActivityConsent).toBe(false);
+    const device = await getPrismaClient().device.findFirstOrThrow({
+      select: { liveActivityConsentAt: true, liveActivityConsentVersion: true },
+    });
+    expect(device).toEqual({
+      liveActivityConsentAt: null,
+      liveActivityConsentVersion: null,
+    });
+    expect(errors).toHaveBeenCalledWith(
+      expect.stringContaining("live_activity_withdraw_end_failed"),
+      expect.anything(),
+    );
+    errors.mockRestore();
+  });
+
+  it("stores a relay withdrawal even when ending the Activities throws", async () => {
+    const t = await running();
+    endFailure.on = true;
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    const withdrawn = await t.reg({
+      relayConsent: { granted: false, textVersion: "2026-11-21" },
+    });
+    expect(withdrawn.status).toBe(201);
+    const device = await getPrismaClient().device.findFirstOrThrow({
+      select: {
+        relayState: true,
+        relayConsentAt: true,
+        liveActivityConsentAt: true,
+      },
+    });
+    expect(device).toEqual({
+      relayState: "none",
+      relayConsentAt: null,
+      liveActivityConsentAt: null,
+    });
+    expect(errors).toHaveBeenCalledWith(
+      expect.stringContaining("live_activity_withdraw_end_failed"),
+      expect.anything(),
+    );
+    errors.mockRestore();
   });
 
   it("ends the relay-started one on the next pass once the operator's switch is off", async () => {

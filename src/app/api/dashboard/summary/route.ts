@@ -55,9 +55,11 @@
  *
  * The builder lives in `src/lib/dashboard/summary/`.
  */
+import type { NextRequest } from "next/server";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
 import { validTimezoneOr } from "@/lib/tz/format";
 import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
@@ -68,7 +70,7 @@ import {
   buildSummaryContext,
 } from "@/lib/dashboard/summary/build";
 
-export const GET = apiHandler(async () => {
+export const GET = apiHandler(async (request: NextRequest) => {
   // v1.37.0 — MANAGE-level read: computed over the whole record, with no
   // provider anywhere on the path.
   const { user } = await requireRecordAuth("manage", "record");
@@ -96,13 +98,19 @@ export const GET = apiHandler(async () => {
   // reflected on the very next read — the window only bounds wall-clock
   // drift (the same self-correcting `nextDueOverdue`/tally drift the
   // snapshot read already tolerates).
+  // The two server-translated strings follow the request's language, so the
+  // cell is keyed on it; the `${userId}|` prefix still evicts every language.
+  const locale = await resolveServerLocale({
+    request,
+    userLocale: user.locale ?? null,
+  });
   const body = await cachedSwr(
     caches.analytics as ServerCache<
       Awaited<ReturnType<typeof buildDashboardSummary>>
     >,
-    `${user.id}|dashboard-summary`,
+    `${user.id}|dashboard-summary|${locale}`,
     async () =>
-      buildDashboardSummary(user.id, userTz, await buildSummaryContext(user)),
+      buildDashboardSummary(user.id, userTz, buildSummaryContext(user, locale)),
     annotate,
   );
 
@@ -120,7 +128,7 @@ export const GET = apiHandler(async () => {
   // means on every other dashboard surface.
   //
   // Applied AFTER the cache read, deliberately. The analytics LRU is keyed
-  // `<userId>|dashboard-summary` with a 60 s fresh / 1 h stale window, and
+  // `<userId>|dashboard-summary|<locale>` with a 60 s fresh / 1 h stale window, and
   // toggling a module does not evict it — gating inside the builder would
   // leave the disabled tile served for up to an hour after the user turned
   // it off. Filtering the cached body makes the toggle effective on the very
