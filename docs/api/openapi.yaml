@@ -50169,7 +50169,9 @@ components:
             (intent emergency_wallet.add, href /emergency-card#wallet for the web; the app opens its own add flow) and
             Later (ask.later:emergency_wallet:offer, a dismiss key that names no day, so the offer does not return).
             Making a pass writes the same key. GET /api/daily/morning card lines now carry href to the metric they name
-            (its page, else /insights); a line that names no metric keeps null."
+            (its page, else /insights); a line that names no metric keeps null. The today_different card never repeats a
+            reading the lead sentence states (the lead wins; the card moves on to the next finding or has one row
+            fewer)."
       required:
         - version
         - buildSha
@@ -102370,7 +102372,8 @@ components:
             - today_different
           description: "`night`: last night (sleep score ring only for last night, duration against the usual, the device's own
             sleep score). `today_different`: readiness, or the values outside their usual range today when there are
-            any."
+            any, never a reading the lead sentence already states (the lead wins; with nothing else outside, the card
+            shows readiness)."
         titleKey:
           type: string
           enum:

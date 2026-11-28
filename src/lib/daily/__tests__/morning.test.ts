@@ -616,6 +616,50 @@ describe("morning cards", () => {
     expect(card?.lines).toHaveLength(2);
   });
 
+  it("never states the lead's finding again in the today-different card", () => {
+    const rows = (over: Partial<MorningInput>) => {
+      const m = buildDailyMorning(
+        input({ readiness: readiness(), ...over }),
+        t,
+      );
+      const card = m.cards.find((c) => c.kind === "today_different");
+      return { lead: m.lead, lines: card?.lines.map((l) => l.text) ?? [] };
+    };
+    // One vital out: the lead names it, the card moves on to readiness.
+    const one = rows({
+      vitals: [
+        out("OXYGEN_SATURATION", { direction: "below", valueLabel: "91 %" }),
+      ],
+    });
+    expect(one.lead.key).toBe("vital_outside");
+    expect(one.lead.text).toContain("91 %");
+    expect(one.lines.some((l) => l.includes("91 %"))).toBe(false);
+    expect(one.lines[0]).toBe("Readiness in a middle range");
+    // Both halves of a blood pressure (one signal): the lead names the
+    // first, the card only the other.
+    const bp = rows({
+      vitals: [
+        out("BLOOD_PRESSURE_SYS", { valueLabel: "151 mmHg" }),
+        out("BLOOD_PRESSURE_DIA", { valueLabel: "97 mmHg" }),
+      ],
+    });
+    expect(bp.lead.key).toBe("vital_outside");
+    expect(bp.lead.text).toContain("151 mmHg");
+    expect(bp.lines).toHaveLength(1);
+    expect(bp.lines[0]).toContain("97 mmHg");
+    // A safety floor on blood pressure leads; no blood pressure row repeats it.
+    const floor = rows({
+      floor: { reason: "bp_hypertensive", valueLabel: "184/122 mmHg" },
+      vitals: [
+        out("BLOOD_PRESSURE_SYS", { valueLabel: "184 mmHg" }),
+        out("WEIGHT", { valueLabel: "82 kg" }),
+      ],
+    });
+    expect(floor.lead.key).toBe("floor");
+    expect(floor.lines.some((l) => l.includes("184"))).toBe(false);
+    expect(floor.lines.some((l) => l.includes("82 kg"))).toBe(true);
+  });
+
   it("links every line that names a metric to that metric's page", () => {
     const outside = buildDailyMorning(
       input({

@@ -486,7 +486,7 @@ const morningCardSchema = z
     kind: z
       .enum([...MORNING_CARD_KINDS])
       .describe(
-        "`night`: last night (sleep score ring only for last night, duration against the usual, the device's own sleep score). `today_different`: readiness, or the values outside their usual range today when there are any.",
+        "`night`: last night (sleep score ring only for last night, duration against the usual, the device's own sleep score). `today_different`: readiness, or the values outside their usual range today when there are any, never a reading the lead sentence already states (the lead wins; with nothing else outside, the card shows readiness).",
       ),
     titleKey: morningCardTitleKey,
     title: z

@@ -495,21 +495,51 @@ function gather(input: MorningInput): Facts {
   };
 }
 
+/** The vitals a floor reason is read from. */
+const FLOOR_TYPES: Record<MorningFloor["reason"], readonly string[]> = {
+  bp_hypertensive: ["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"],
+  bp_hypotensive: ["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"],
+  glucose_hypo: ["BLOOD_GLUCOSE"],
+  glucose_hypo_severe: ["BLOOD_GLUCOSE"],
+  glucose_hyper: ["BLOOD_GLUCOSE"],
+};
+
 /** The one sentence, by rank. Exported for the rule table test. */
 export function buildMorningLead(
   input: MorningInput,
   t: Translate,
 ): DailyMorningLead {
-  const facts = gather(input);
-  const lead = (key: MorningLeadKey, text: string): DailyMorningLead => ({
-    rank: rankOf(key),
-    key,
-    text,
-    language: input.locale,
+  return resolveLead(input, gather(input), t).lead;
+}
+
+/**
+ * The lead and the vitals whose reading it states. A reading the lead
+ * states is its finding, and the "today different" card does not state it
+ * again (`todayDifferentCard`).
+ */
+function resolveLead(
+  input: MorningInput,
+  facts: Facts,
+  t: Translate,
+): { lead: DailyMorningLead; stated: ReadonlySet<string> } {
+  const said = (
+    key: MorningLeadKey,
+    text: string,
+    stated: readonly string[] = [],
+  ) => ({
+    lead: { rank: rankOf(key), key, text, language: input.locale },
+    stated: new Set(stated),
   });
+  const lead = (key: MorningLeadKey, text: string) => said(key, text);
   const { locale } = input;
 
-  if (input.floor) return lead("floor", floorSentence(input.floor, t));
+  if (input.floor) {
+    return said(
+      "floor",
+      floorSentence(input.floor, t),
+      FLOOR_TYPES[input.floor.reason],
+    );
+  }
   if (facts.restMode) {
     return lead("rest_mode", restModeSentence(facts.restMode, locale, t));
   }
@@ -522,17 +552,22 @@ export function buildMorningLead(
   if (facts.outside.length > 0) {
     // The furthest out by name. Any others are fewer than two independent
     // signals (the other half of a blood pressure, weight beside glucose) and
-    // stand in the "today different" card, which lists every one.
-    return lead(
+    // stand in the "today different" card, which lists every other one.
+    return said(
       "vital_outside",
       vitalsOutsideSentence(facts.outside.slice(0, 1), locale, t),
+      [facts.outside[0].type],
     );
   }
   // A single reading past a safety floor is in a personal range that sits
   // that high, so the counted vitals call it usual; the day is not "all in
   // range" while it stands.
   if (input.floorReading) {
-    return lead("vital_outside", floorSentence(input.floorReading, t));
+    return said(
+      "vital_outside",
+      floorSentence(input.floorReading, t),
+      FLOOR_TYPES[input.floorReading.reason],
+    );
   }
   if (facts.sleepPending && input.localHour < SLEEP_PENDING_LEAD_UNTIL_HOUR) {
     return lead("sleep_pending", t("daily.lead.sleepPending"));
@@ -642,14 +677,17 @@ function todayDifferentCard(
   input: MorningInput,
   facts: Facts,
   t: Translate,
+  /** The vitals the lead states; never stated twice. */
+  stated: ReadonlySet<string>,
 ): DailyMorningCard | null {
   const sourceValues = [...input.recoverySourceValues];
-  if (facts.outside.length > 0) {
+  const outside = facts.outside.filter((v) => !stated.has(v.type));
+  if (outside.length > 0) {
     return {
       kind: "today_different",
       ...cardTitle("today_different", t),
       ring: null,
-      lines: facts.outside.slice(0, MAX_CARD_LINES).map((v) => ({
+      lines: outside.slice(0, MAX_CARD_LINES).map((v) => ({
         text: t("daily.morningCard.vitalOutside", {
           metric: vitalLabel(t, v.type),
           value: v.valueLabel,
@@ -742,12 +780,13 @@ export function buildDailyMorning(
   t: Translate,
 ): DailyMorning {
   const facts = gather(input);
+  const { lead, stated } = resolveLead(input, facts, t);
   const cards = [
     nightCard(input, facts, t),
-    todayDifferentCard(input, facts, t),
+    todayDifferentCard(input, facts, t, stated),
   ].filter((c): c is DailyMorningCard => c !== null);
   return {
-    lead: buildMorningLead(input, t),
+    lead,
     cards,
     scores: buildMorningScores(input, facts, t),
     toDo: cardTitle("to_do", t),
