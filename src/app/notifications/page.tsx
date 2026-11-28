@@ -330,7 +330,7 @@ function PhoneKinds({
               meta={
                 on.length > 0
                   ? on.map((ch) => ch.label).join(", ")
-                  : t("settings.moduleState.off")
+                  : t("common.status.off")
               }
             />
           );
