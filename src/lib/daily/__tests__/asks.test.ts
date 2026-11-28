@@ -877,8 +877,8 @@ describe("a source that went quiet (source_stalled)", () => {
         tr,
       )[0].body;
     expect(one("en", t, 1)).toBe("1 day quiet");
-    expect(one("de", de, 2)).toBe("Still seit 2 T.");
-    expect(one("ru", ru, 2)).toBe("Тихо 2 дня");
-    expect(one("ru", ru, 5)).toBe("Тихо 5 дней");
+    expect(one("de", de, 2)).toBe("2 T. verstummt");
+    expect(one("ru", ru, 2)).toBe("Молчит 2 дня");
+    expect(one("ru", ru, 5)).toBe("Молчит 5 дней");
   });
 });
