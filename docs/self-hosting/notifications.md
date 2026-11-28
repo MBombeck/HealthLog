@@ -444,6 +444,24 @@ Two gotchas worth knowing before you blame a stale token:
   `BadEnvironmentKeyInToken`. Confirm the key shows **Sandbox &
   Production**; a wrongly scoped key cannot be reconfigured — re-issue it.
 
+**A wrong configuration no longer signs every iPhone out.** A wrong
+topic, bundle id or key makes Apple report every device token as unknown
+(`BadDeviceToken`, `DeviceTokenNotForTopic`). The server used to trust
+that answer and delete the device each time. Now, when more than 5
+registrations of one channel are reported gone within 10 minutes, it stops
+deleting registrations of that channel for 24 hours and keeps the channel
+enabled. The same brake covers Live Activity tokens and Web Push
+subscriptions. What you see: one error line in the server log
+(`[push] … registrations reported gone within 10 minutes; deletions held
+for 24 hours`), and `/api/admin/status` lists the held channel under
+`failingJobs.queues` as `push-registration-cleanup:<channel>`. What you
+do: check the topic and bundle id, the key and its environment (or the
+VAPID keys for Web Push) and fix them. The devices are still registered,
+so pushes reach them again once the configuration is right; cleanup of
+genuinely gone tokens resumes on its own when the hold ends. Up to 5
+registrations per channel can still be lost before the brake engages,
+and again each day while the configuration stays wrong.
+
 > **`clientManaged` is iOS-app-only.** A native iOS app can opt to run its
 > own local medication reminders and ask the server to stop sending the
 > duplicate `MEDICATION_REMINDER` push (the `clientManaged` flag on

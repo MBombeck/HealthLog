@@ -10234,10 +10234,10 @@
     "eventMedicationIntakeRecordedDesc": "Un avviso discreto sull’iPhone quando una dose viene registrata altrove (web, Telegram, un dispositivo collegato), così un promemoria già visibile viene ritirato. Attivo per impostazione predefinita se il telefono gestisce i propri promemoria.",
     "intakeRecorded": {
       "title": "Dose registrata",
-      "bodyTaken": "Una dose è stata registrata come assunta su un altro dispositivo.",
-      "bodySkipped": "Una dose è stata registrata come saltata su un altro dispositivo.",
+      "bodyTaken": "Una dose è stata registrata come assunta.",
+      "bodySkipped": "Una dose è stata registrata come saltata.",
       "titleReopened": "Dose aggiornata",
-      "bodyReopened": "Una dose registrata è stata annullata su un altro dispositivo."
+      "bodyReopened": "Una dose registrata è stata annullata."
     },
     "security": {
       "newDeviceTitle": "Nuovo accesso al tuo account",

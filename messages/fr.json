@@ -10234,10 +10234,10 @@
     "eventMedicationIntakeRecordedDesc": "Un avis discret sur l’iPhone quand une dose est enregistrée ailleurs (web, Telegram, un appareil connecté), pour retirer un rappel déjà affiché. Activé par défaut si le téléphone gère ses propres rappels.",
     "intakeRecorded": {
       "title": "Dose enregistrée",
-      "bodyTaken": "Une dose a été enregistrée comme prise sur un autre appareil.",
-      "bodySkipped": "Une dose a été enregistrée comme sautée sur un autre appareil.",
+      "bodyTaken": "Une dose a été enregistrée comme prise.",
+      "bodySkipped": "Une dose a été enregistrée comme sautée.",
       "titleReopened": "Dose modifiée",
-      "bodyReopened": "Une dose enregistrée a été annulée sur un autre appareil."
+      "bodyReopened": "Une dose enregistrée a été annulée."
     },
     "security": {
       "newDeviceTitle": "Nouvelle connexion à votre compte",

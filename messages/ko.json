@@ -10234,10 +10234,10 @@
     "eventMedicationIntakeRecordedDesc": "다른 곳(웹, 텔레그램, 연결된 기기)에서 복용이 기록되면 iPhone에 조용히 알려 이미 표시된 알림을 거둡니다. 휴대폰이 자체 알림을 관리하면 기본으로 켜집니다.",
     "intakeRecorded": {
       "title": "복용 기록됨",
-      "bodyTaken": "다른 기기에서 복용으로 기록되었습니다.",
-      "bodySkipped": "다른 기기에서 건너뜀으로 기록되었습니다.",
+      "bodyTaken": "복용으로 기록되었습니다.",
+      "bodySkipped": "건너뜀으로 기록되었습니다.",
       "titleReopened": "복용 기록 변경됨",
-      "bodyReopened": "다른 기기에서 복용 기록이 취소되었습니다."
+      "bodyReopened": "복용 기록이 취소되었습니다."
     },
     "security": {
       "newDeviceTitle": "계정에 새 로그인",
