@@ -327,7 +327,6 @@ export function CoachMemorySection({
         <EmptyState
           data-testid="settings-coach-memory-empty"
           variant="plain"
-          size="compact"
           title={t("settings.ai.coachMemory.empty")}
         />
       ) : (
@@ -336,7 +335,7 @@ export function CoachMemorySection({
             <div key={group.category} className="space-y-2">
               <h3
                 data-testid={`settings-coach-memory-group-${group.category}`}
-                className="text-muted-foreground text-xs font-medium tracking-wide uppercase"
+                className="text-muted-foreground text-xs font-medium"
               >
                 {t(CATEGORY_LABEL_KEY[group.category])}
               </h3>

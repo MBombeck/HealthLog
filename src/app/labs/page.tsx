@@ -145,7 +145,6 @@ export default function LabsPage() {
       <PullToRefreshIndicator {...pull} />
       <PageHeader
         title={<span data-tour-id="labs-hero">{t("labs.title")}</span>}
-        description={t("labs.subtitle")}
         actions={
           <>
             {/* v1.18.6 — the wrench is the module's customize entry

@@ -67,7 +67,6 @@ export function CycleSymptomPatterns({ rows }: CycleSymptomPatternsProps) {
         {rows.length === 0 ? (
           <EmptyState
             variant="plain"
-            size="compact"
             title={t("cycle.insights.symptomPatternsEmpty")}
           />
         ) : (

@@ -63,9 +63,7 @@ describe("width stability — auth-shell scroll container", () => {
 
 describe("<PageHeader> — one canonical H1", () => {
   it("renders exactly one <h1> with the canonical type scale", () => {
-    const html = render(
-      <PageHeader title="Dashboard" description="Your day at a glance" />,
-    );
+    const html = render(<PageHeader title="Dashboard" />);
     const h1Count = (html.match(/<h1\b/g) ?? []).length;
     expect(h1Count).toBe(1);
     // The H1 carries the fixed header type scale used app-wide.

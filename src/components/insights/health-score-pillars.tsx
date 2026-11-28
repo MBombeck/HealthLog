@@ -43,7 +43,7 @@ export function HealthScorePillars({
       data-slot="health-score-contributors"
       className="border-border/60 space-y-2 border-t pt-3"
     >
-      <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+      <p className="text-muted-foreground text-xs font-semibold">
         {t("insights.derived.anatomy.contributorsLabel")}
       </p>
       <ul data-slot="health-score-pillars" className="space-y-2">

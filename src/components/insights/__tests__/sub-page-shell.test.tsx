@@ -62,24 +62,24 @@ describe("<SubPageShell>", () => {
     expect(html).toContain("<p>child</p>");
   });
 
-  it("renders the description paragraph when supplied", () => {
+  it("puts what the page is behind the (i), never under the title", () => {
     const html = render(
-      <SubPageShell title="Weight" description="One paragraph">
+      <SubPageShell title="Weight" info="One paragraph">
         <span />
       </SubPageShell>,
     );
-    expect(html).toContain("One paragraph");
+    // `InfoPopover` is mocked here: its trigger slot stands in for the (i).
+    expect(html).toContain('data-slot="sub-page-info"');
+    expect(html).not.toMatch(/<p[^>]*>One paragraph/);
   });
 
-  it("omits the description block when undefined", () => {
+  it("renders no paragraph under the title", () => {
     const html = render(
       <SubPageShell title="Pulse">
         <span />
       </SubPageShell>,
     );
-    // The shell uses a `<p>` for the description; no `<p>` appears when
-    // neither a description nor an explainer metric is supplied. The one
-    // paragraph left is the page's closing self-description note.
+    // The one paragraph left is the page's closing self-description note.
     expect(html).not.toMatch(
       /<p(?![^>]*data-slot="medical-disclaimer")[^>]*class="text-muted-foreground/,
     );

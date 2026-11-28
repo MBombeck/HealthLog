@@ -136,7 +136,7 @@ export function SourcesRail({ className, activeScopeLabel }: SourcesRailProps) {
         // edge across the Coach surfaces). v1.18.1 (W-COACH-UI C1/C4) —
         // typography matched to the history-rail heading so the two rails
         // read as one family.
-        className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium tracking-wide uppercase"
+        className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium"
       >
         <Eye className="text-muted-foreground size-3.5" aria-hidden="true" />
         {t("insights.coach.sourcesTitle")}

@@ -30,6 +30,7 @@ describe("SYNC_STALLED deep links", () => {
       "apple-health",
       "garmin",
       "google-health",
+      "health-connect-app",
       "nightscout",
       "oura",
       "polar",

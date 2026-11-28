@@ -5,7 +5,6 @@ import { useState } from "react";
 import { ActivityCalendarCard } from "@/components/activity/activity-calendar-card";
 import { WorkoutList } from "@/components/insights/workout-list";
 import { useCoachMetricScope } from "@/components/insights/use-coach-metric-scope";
-import { InfoPopover } from "@/components/ui/info-popover";
 import { ListGroup, ListHeading, ListItem } from "@/components/ui/list-row";
 import { MenuSelect } from "@/components/ui/menu-select";
 import {
@@ -87,15 +86,7 @@ export default function InsightsWorkoutsPageClient() {
       <PageHeader
         title={t("insights.workouts.title")}
         titleId="insights-subpage-title"
-        titleAccessory={
-          <InfoPopover
-            align="start"
-            triggerDataSlot="metric-explainer-trigger"
-            bodyDataSlot="metric-explainer"
-            iconClassName="size-5"
-            content={t("insights.subPage.explainer.workoutsBody")}
-          />
-        }
+        info={t("insights.subPage.explainer.workoutsBody")}
         actions={
           <>
             <PageCustomizeButton onClick={() => setCustomizeOpen(true)} />

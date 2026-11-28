@@ -126,7 +126,6 @@ export function VorsorgeReminderSwitchesCard() {
         ) : (reminders?.length ?? 0) === 0 ? (
           <EmptyState
             variant="plain"
-            size="compact"
             title={t("measurementReminders.manage.empty")}
           />
         ) : (

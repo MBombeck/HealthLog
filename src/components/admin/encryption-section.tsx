@@ -416,7 +416,6 @@ export function ColumnCoverage({
             {shown.length === 0 ? (
               <EmptyState
                 variant="plain"
-                size="compact"
                 title={t("admin.section.encryption.columnsNoneWithRows")}
               />
             ) : (

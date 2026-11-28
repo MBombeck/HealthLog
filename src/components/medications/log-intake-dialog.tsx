@@ -164,7 +164,6 @@ export function LogIntakeDialog({
         {medications.length === 0 ? (
           <EmptyState
             variant="plain"
-            size="compact"
             title={t("medications.intakeForm.noMedications")}
           />
         ) : (

@@ -112,7 +112,7 @@ const PROVIDER_INGESTS: ProviderIngest[] = [
     mapperFile: "lib/import/health-connect/mapper.ts",
     captureFile: "lib/import/health-connect/import.ts",
     captureField: "exercise_type",
-    writeFile: "lib/import/health-connect/import.ts",
+    writeFile: "lib/import/health-connect/sink.ts",
     metadataKey: "healthConnectExerciseType",
   },
   {

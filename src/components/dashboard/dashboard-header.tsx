@@ -153,7 +153,7 @@ export function DashboardHeader({
   return (
     <PageHeader
       title={t("dashboard.title")}
-      description={
+      meta={
         /* `min-h-5` reserves the greeting's line box from the SSR
            pass on: the text personalises (name and welcome appended) on
            the first client re-render after hydration, and the reserved

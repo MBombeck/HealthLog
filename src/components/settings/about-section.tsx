@@ -208,7 +208,7 @@ export function AboutSection() {
         ) : (
           <dl className="flex flex-wrap items-baseline gap-x-6 gap-y-3 text-sm">
             <div className="flex items-baseline gap-2">
-              <dt className="text-muted-foreground text-xs tracking-wide uppercase">
+              <dt className="text-muted-foreground text-xs">
                 {t("settings.about.version")}
               </dt>
               <dd className="font-mono font-medium">v{version.version}</dd>
@@ -232,7 +232,7 @@ export function AboutSection() {
             </div>
 
             <div className="flex items-baseline gap-2">
-              <dt className="text-muted-foreground text-xs tracking-wide uppercase">
+              <dt className="text-muted-foreground text-xs">
                 {t("settings.about.license")}
               </dt>
               <dd className="font-mono">{version.license}</dd>
@@ -240,7 +240,7 @@ export function AboutSection() {
 
             {version.buildSha && (
               <div className="flex items-baseline gap-2">
-                <dt className="text-muted-foreground text-xs tracking-wide uppercase">
+                <dt className="text-muted-foreground text-xs">
                   {t("settings.about.gitSha")}
                 </dt>
                 <dd className="font-mono">{version.buildSha.slice(0, 7)}</dd>
@@ -249,7 +249,7 @@ export function AboutSection() {
 
             {version.builtAt && (
               <div className="flex items-baseline gap-2">
-                <dt className="text-muted-foreground text-xs tracking-wide uppercase">
+                <dt className="text-muted-foreground text-xs">
                   {t("settings.about.builtAtLabel")}
                 </dt>
                 <dd className="text-muted-foreground">

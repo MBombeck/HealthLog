@@ -141,7 +141,7 @@ export function DocumentPickerSheet({
             onRetry={() => list.refetch()}
           />
         ) : documents.length === 0 ? (
-          <EmptyState variant="plain" size="compact" title={emptyLabel} />
+          <EmptyState variant="plain" title={emptyLabel} />
         ) : (
           <ul
             className="max-h-[50vh] space-y-1.5 overflow-y-auto overscroll-contain"

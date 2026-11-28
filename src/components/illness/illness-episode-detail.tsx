@@ -90,7 +90,7 @@ export function IllnessEpisodeDetail({ episodeId }: { episodeId: string }) {
     <div className="space-y-6">
       <PageHeader
         title={episode?.label ?? <Skeleton className="h-7 w-40" />}
-        description={
+        meta={
           episode ? (
             <span className="flex flex-wrap items-center gap-2">
               <Badge variant="secondary">
@@ -165,7 +165,7 @@ export function IllnessEpisodeDetail({ episodeId }: { episodeId: string }) {
         {episode?.note ? (
           <Card>
             <CardContent>
-              <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+              <p className="text-muted-foreground text-xs font-medium">
                 {t("illness.detail.note")}
               </p>
               <p className="text-foreground mt-1 text-sm whitespace-pre-wrap">

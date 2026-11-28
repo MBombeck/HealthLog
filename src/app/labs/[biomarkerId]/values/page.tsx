@@ -60,7 +60,7 @@ export default function LabBiomarkerValuesPage({
   return (
     <SubPageShell
       title={t("labs.detail.valuesTitle", { marker: markerName })}
-      description={t("labs.detail.valuesDescription")}
+      info={t("labs.detail.valuesDescription")}
       backLink={
         <BackLink
           href={`/labs/${biomarkerId}`}

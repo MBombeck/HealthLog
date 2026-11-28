@@ -264,20 +264,12 @@ export function AdminShell({ active, children }: AdminShellProps) {
     activeSlug === null
       ? t("admin.title")
       : t(`admin.section.${activeSlug}.title`);
-  const headingSubtitle =
-    activeSlug === null
-      ? t("admin.subtitle")
-      : t(`admin.section.${activeSlug}.subtitle`);
 
   // Same two-copy heading as the Settings shell (mobile above the chip strip,
   // desktop inside the grid row) and the same primitive, so the two consoles
   // cannot drift a step apart again.
   const headingBlock = (mobile = false) => (
-    <PageHeader
-      headingAs={mobile ? "div" : "h1"}
-      title={headingTitle}
-      description={headingSubtitle}
-    />
+    <PageHeader headingAs={mobile ? "div" : "h1"} title={headingTitle} />
   );
 
   // v1.4.25 — AuthShell wraps the page in `px-4 py-6 md:px-6`

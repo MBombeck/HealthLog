@@ -246,7 +246,6 @@ export function TagGroupsCard({ catalog }: TagGroupsCardProps) {
       {customGroupCount === 0 && (
         <EmptyState
           variant="plain"
-          size="compact"
           title={t("mood.manage.groupEmpty")}
           data-slot="mood-groups-empty"
         />

@@ -74,11 +74,7 @@ export function DayDrillDown({
   const rows = data?.measurements ?? [];
   if (rows.length === 0) {
     return (
-      <EmptyState
-        variant="plain"
-        size="compact"
-        title={t("measurements.emptyDescription")}
-      />
+      <EmptyState variant="plain" title={t("measurements.emptyDescription")} />
     );
   }
   // For SLEEP_DURATION the drill-down rows are stage segments;

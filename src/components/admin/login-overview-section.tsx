@@ -410,11 +410,6 @@ export function LoginOverviewSection() {
                 ? t("admin.loginEmptyFailedTitle")
                 : t("admin.section.auditLog.empty")
             }
-            description={
-              filter === "failed"
-                ? t("admin.loginEmptyFailedDescription")
-                : t("admin.loginEmptyDescription")
-            }
             action={
               filter === "failed" ? (
                 <Button

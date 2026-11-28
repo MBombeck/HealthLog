@@ -82,7 +82,7 @@ const PINNED_AFFORDANCES: Record<
   // The third `text-success` is the success arm of StatusItem's tone table:
   // the two status grids used to spell the tint at every call site and now
   // name a tone instead, so the marker lives here once.
-  "src/components/admin/_shared.tsx": { "text-success": 3, "toast.success": 1 },
+  "src/components/admin/_shared.tsx": { "text-success": 2, "toast.success": 1 },
   // v1.44: the activity calendar's per-week tick for "every weekly goal met",
   // a state of a row the person reads, not the outcome of a write.
   "src/components/activity/activity-calendar-card.tsx": { "text-success": 1 },
@@ -468,7 +468,7 @@ const PINNED_AFFORDANCES: Record<
   // The "Active" tone of the status chip: a connection's state, never that a
   // write succeeded. Every integration, channel and module badge that carried
   // its own copy of this class now renders through it.
-  "src/components/ui/status-chip.tsx": { "text-success": 1 },
+  "src/components/ui/status-chip.tsx": { "text-success": 2 },
 };
 
 /**

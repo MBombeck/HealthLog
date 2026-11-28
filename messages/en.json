@@ -72,7 +72,9 @@
     "status": {
       "active": "Active",
       "error": "Error",
-      "off": "Off"
+      "off": "Off",
+      "running": "Running",
+      "done": "Done"
     }
   },
   "apiErrors": {
@@ -432,6 +434,7 @@
     "practiceLabel": "Practice",
     "insurer": "Health insurer",
     "insuranceNumber": "Insurance no.",
+    "insuranceGroupNumber": "Group no.",
     "summaryTitle": "Clinical summary",
     "summaryReadings": "Recorded over {days, plural, one {# day} other {# days}}: {count, plural, one {# measurement} other {# measurements}} across {params, plural, one {# parameter} other {# parameters}}.",
     "summaryTrend": "{label}: latest {latest} {arrow}",
@@ -891,7 +894,6 @@
     "dragHandle": "Drag to reorder",
     "dragHandleHint": "Drag the handle to reorder this widget. You can also use the Up and Down arrow buttons, or focus the handle and press Space and the arrow keys.",
     "emptyTitle": "Your dashboard is empty",
-    "emptyDescription": "Log your first measurement or mood entry. Tiles and charts appear automatically as data lands.",
     "emptyAddMeasurement": "Add your first measurement",
     "staleHint": "Last reading {count} d ago",
     "staleHintWeeksOne": "Last reading 1 week ago",
@@ -957,7 +959,6 @@
   },
   "measurements": {
     "title": "Measurements",
-    "subtitle": "Log readings and browse the full history.",
     "addMeasurement": "Add",
     "editMeasurement": "Edit measurement",
     "type": "Type",
@@ -1053,7 +1054,6 @@
     "emptyTitle": "No measurements yet",
     "emptyDescription": "Log your weight, blood pressure, pulse, or other vitals to start tracking trends.",
     "emptyFilteredTitle": "No measurements match this filter",
-    "emptyFilteredDescription": "Try a different type or clear the filter to see all measurements.",
     "emptyAddFirst": "Add your first measurement",
     "emptyResetFilter": "Show all types",
     "comment": "Comment",
@@ -1248,7 +1248,6 @@
   },
   "mood": {
     "title": "Mood",
-    "subtitle": "How you felt, day by day.",
     "mentalWellbeingLink": "Take a mental-wellbeing check-in",
     "addEntry": "Add",
     "editEntry": "Edit entry",
@@ -1272,9 +1271,7 @@
     "allMoods": "All moods",
     "entryCount": "{count, plural, one {# entry} other {# entries}}",
     "emptyTitle": "No mood entries yet",
-    "emptyDescription": "Log how you feel today to spot patterns over time.",
     "emptyFilteredTitle": "No mood entries match this filter",
-    "emptyFilteredDescription": "Try a different mood level or clear the filter to see all entries.",
     "emptyAddFirst": "Log your first mood",
     "emptyResetFilter": "Show all moods",
     "actions": "Actions",
@@ -1591,7 +1588,6 @@
   },
   "medications": {
     "title": "Medications",
-    "subtitle": "Your medications, their schedules and every dose taken.",
     "loginRequired": "Please sign in to manage medications.",
     "addMedication": "Add",
     "firstMedication": "Add first medication",
@@ -1609,7 +1605,6 @@
       "failedToast": "No intake recorded. Please try again"
     },
     "emptyTitle": "No medications yet",
-    "emptyDescription": "Add medications, doses and their times to track adherence.",
     "loadFailed": "Could not load medications",
     "retryLoad": "Retry",
     "inactive": "Paused",
@@ -2140,7 +2135,6 @@
     "intakeSourceVia": "via {origin}",
     "intakeRecordedAutomatically": "Recorded automatically",
     "intakeHistoryEmptyTitle": "No intakes recorded yet",
-    "intakeHistoryEmptyDescription": "Log a dose on the daily intake page to start building the history.",
     "intakeHistoryEmptyAction": "Open daily intake",
     "intakeHistoryColTaken": "Taken",
     "intakeHistoryColScheduled": "Scheduled",
@@ -2401,7 +2395,6 @@
           "USED_UP": "Used up"
         },
         "empty": "No supply recorded.",
-        "emptyHelper": "Register a pack or container to track remaining supply and runway.",
         "emptyCta": "Register a pack",
         "addButton": "Register",
         "lowStockLinkOn": "Low-stock notification: below {days, plural, one {# day} other {# days}}",
@@ -2829,7 +2822,6 @@
       "clearSearch": "Clear search",
       "treatmentPeriod": "Treatment period",
       "noMatchesTitle": "No matching medications",
-      "noMatchesDescription": "Try adjusting your search query or filters.",
       "countOne": "{count} medication",
       "countFew": "{count} medications",
       "countOther": "{count} medications"
@@ -3133,7 +3125,6 @@
     "noAnalysisYet": "No assessment yet.",
     "assessmentPreparing": "Preparing your assessment…",
     "emptyTitle": "Not enough data yet",
-    "emptyDescription": "Insights light up once you've logged a handful of measurements. Start with weight or blood pressure.",
     "emptyAddMeasurement": "Add a measurement",
     "editMode": {
       "done": "Done",
@@ -3155,11 +3146,9 @@
       "saveSuccess": "Overview layout saved",
       "saveError": "Could not save your overview layout",
       "resetSuccess": "Overview reset to defaults",
-      "emptyTitle": "Every card is hidden",
-      "emptyDescription": "You've hidden every section. Open customize to bring cards back."
+      "emptyTitle": "Every card is hidden"
     },
     "bmiEmptyTitle": "Set your height to see BMI",
-    "bmiEmptyDescription": "BMI needs your height. Add it under Settings > Account.",
     "bmiEmptyAction": "Open account settings",
     "loadError": "Failed to load insights",
     "heroRegenerating": "Regenerating",
@@ -3279,7 +3268,6 @@
       "keyFindingsTitle": "Key findings",
       "signalsTitle": "Signals of the day",
       "emptyTitle": "No briefing yet",
-      "emptyDescription": "Generate today's briefing to get a narrative read of your trends.",
       "emptyAction": "Generate briefing",
       "loadingLabel": "Synthesizing today's briefing",
       "refreshFailedHint": "Couldn't refresh the briefing. Showing the last one.",
@@ -5333,7 +5321,6 @@
         "cta": "View recordings"
       },
       "emptyTitle": "No ECG recordings yet",
-      "emptyDescription": "ECG recordings sync from a compatible single-lead device. Once your device uploads a recording, it appears here.",
       "emptyCta": "Connect a device"
     },
     "intradayPulse": {
@@ -5371,7 +5358,6 @@
       "coachPrefill": "I haven’t added any medications yet. What should I know before I start tracking medication compliance here?"
     },
     "scoreHistory": {
-      "healthDescription": "Your Health score day by day, as it was shown on each day.",
       "emptyDescription": "No score was recorded in this range yet.",
       "usualRange": "Shaded: your usual range, {lo} to {hi}.",
       "seam": "The line breaks where what counts toward the score changed."
@@ -5388,7 +5374,6 @@
       "notEnough": "Too few readings",
       "hourRange": "{start}–{end}",
       "emptyTitle": "No complete readings in this range",
-      "emptyDescription": "Readings with both a systolic and a diastolic value show up here.",
       "error": "The time-of-day averages could not be loaded.",
       "chartTitle": {
         "morning": "Blood pressure in the morning",
@@ -6232,7 +6217,6 @@
       },
       "export": {
         "title": "Export & import",
-        "otherOptionsHeading": "Other export options",
         "downloadFailed": "Couldn't download the export. Please try again.",
         "actions": {
           "download": "Download"
@@ -6243,14 +6227,17 @@
         },
         "cards": {
           "measurementsCsv": {
-            "title": "Measurements"
+            "title": "Measurements (CSV)",
+            "description": "Choose a date range"
           },
           "medicationsCsv": {
-            "title": "Medications",
-            "includeIntake": "Include intake history"
+            "title": "Medications (CSV)",
+            "includeIntake": "Include intake history",
+            "description": "Optionally with every dose"
           },
           "moodCsv": {
-            "title": "Mood"
+            "title": "Mood (CSV)",
+            "description": "Choose a date range"
           },
           "fullBackup": {
             "title": "Full backup",
@@ -6259,20 +6246,22 @@
             "passphrasePlaceholder": "Passphrase (min. 12 characters)",
             "passphraseHelp": "Derives the archive key with Argon2id and seals it with AES-256-GCM. Save the file with a .hlx extension.",
             "noRecoveryWarning": "There is no recovery. If you lose this passphrase, the archive cannot be opened. Keep it somewhere safe.",
-            "detail": "A portable copy of your record for you to keep and read: values in plain JSON, documents as metadata only."
+            "detail": "A portable copy of your record for you to keep and read: values in plain JSON, documents as metadata only.",
+            "description": "Everything, encrypted if you like"
+          },
+          "doctorReport": {
+            "title": "Doctor report",
+            "description": "PDF, FHIR or ZIP"
           }
         },
         "import": {
           "heading": "Import",
-          "description": "Uploaded files are deleted from the server as soon as the import ends, and importing the same file again adds nothing twice.",
+          "description": "The server deletes each file after the import, and the same file twice adds nothing twice.",
           "charCount": "{used} / {max, plural, one {# character} other {# characters}}",
           "appleHealth": {
             "title": "Apple Health",
             "description": "The export.zip from the Health app on iPhone.",
-            "dropLabel": "Drop export.zip here",
-            "dropHint": "or click to choose a file",
             "fileInputLabel": "Choose an Apple Health export.zip file",
-            "choose": "Choose file",
             "idempotencyNote": "Large archives are processed in the background.",
             "uploading": "Uploading…",
             "uploadFailed": "Upload failed. Please try again.",
@@ -6335,16 +6324,15 @@
             "skipBreakdownMore": "+ {count, plural, one {# more type} other {# more types}}",
             "cycleSummary": "{samples, plural, one {# cycle sample} other {# cycle samples}} merged into {days, plural, one {# day log} other {# day logs}}.",
             "cycleModuleOff": "{count, plural, one {# cycle sample skipped} other {# cycle samples skipped}} because cycle tracking is off for this account.",
-            "cycleDaysFailed": "{count, plural, one {# cycle day couldn't be written} other {# cycle days couldn't be written}}: {reason}"
+            "cycleDaysFailed": "{count, plural, one {# cycle day couldn't be written} other {# cycle days couldn't be written}}: {reason}",
+            "fileHint": "export.zip, up to 1.5 GB"
           },
           "json": {
-            "title": "Measurements and mood (JSON)",
+            "title": "JSON file",
             "description": "Measurements and mood entries as JSON.",
-            "pasteLabel": "Paste JSON",
             "fileInputLabel": "Choose a JSON file to import",
             "schemaHint": "Two arrays: measurements and moodEntries.",
             "docsLink": "See the schema and an example.",
-            "uploadFile": "Choose file",
             "downloadExample": "Download example",
             "import": "Import",
             "invalidJson": "That isn't valid JSON. Check the syntax and try again.",
@@ -6358,16 +6346,18 @@
             "keptLabels": "This account already has tags or groups with these keys under its own names, so those were kept: {keys}",
             "resultNothing": "Nothing was imported. {skipped, plural, one {The # entry was} other {All # entries were}} skipped.",
             "resultEmpty": "That file carried no measurements and no mood entries.",
-            "limitsHint": "Up to {mb} MB and up to {rows, plural, one {# entry} other {# entries}} in each list."
+            "limitsHint": "Up to {mb} MB and up to {rows, plural, one {# entry} other {# entries}} in each list.",
+            "rowMeta": "Measurements and mood",
+            "fileMeta": ".json, up to {mb} MB",
+            "partial": "The import stopped part way. Importing again is safe; nothing is added twice.",
+            "partialCounts": "Already saved: {measurements, plural, one {# measurement} other {# measurements}} and {moods, plural, one {# mood entry} other {# mood entries}}."
           },
           "csv": {
             "title": "CSV file",
             "description": "Measurements from a spreadsheet or meter export.",
-            "pasteLabel": "Paste CSV",
             "fileInputLabel": "Choose a CSV file to import",
             "schemaHint": "Columns: type, value, unit, measuredAt (with timezone offset), and optional glucoseContext, notes, externalId.",
             "docsLink": "See the column schema and an example.",
-            "uploadFile": "Choose file",
             "downloadExample": "Download example",
             "preview": "Preview",
             "import": "Import",
@@ -6403,14 +6393,15 @@
             "reasonUnstableExternalId": "external ID is not stable across exports",
             "reasonDuplicate": "already imported",
             "reasonUnknown": "skipped",
-            "detail": "One row per reading."
+            "detail": "One row per reading.",
+            "rowMeta": "Measurements from a spreadsheet",
+            "fileMeta": ".csv, up to 16 MB",
+            "guideMeta": "type, value, unit, measuredAt with offset"
           },
           "doseHistory": {
             "title": "Medication dose history",
             "description": "A dose history from another medication tracker.",
-            "pasteLabel": "Paste the export",
             "fileInputLabel": "Choose a dose-history export file",
-            "uploadFile": "Choose file",
             "preview": "Preview",
             "import": "Import",
             "empty": "Paste the export or choose a file first.",
@@ -6459,12 +6450,13 @@
               "jsonNoIntakeTime": "The JSON export records when a dose was due but not when it was taken, and a scheduled time will not be written as if it were the take. Export the CSV instead, which carries both.",
               "tooManyRows": "That file holds more rows than one import can take. Split it and import the parts."
             },
-            "detail": "One file covers every medication in it."
+            "detail": "One file covers every medication in it.",
+            "rowMeta": "From another app",
+            "fileMeta": ".csv or .json, up to 16 MB"
           },
           "healthConnect": {
-            "title": "Health Connect export",
+            "title": "Health Connect",
             "description": "The ZIP that Health Connect writes on Android.",
-            "choose": "Choose file",
             "uploading": "Uploading…",
             "uploadFailed": "The upload failed. Please try again.",
             "tooLarge": "The file is larger than this server accepts.",
@@ -6483,8 +6475,6 @@
               "cloud": "Health Connect only saves the export to a cloud storage app such as Google Drive, Dropbox or Nextcloud, never to the phone itself.",
               "upload": "Download the ZIP file from that cloud to this device and upload it here."
             },
-            "dropLabel": "Drop the Health Connect ZIP here",
-            "dropHint": "or click to choose it. Up to 1 GB.",
             "fileInputLabel": "Health Connect export ZIP file",
             "privacyNote": "Records from apps you already connect directly, such as Withings, are left out so nothing arrives twice.",
             "rateLimited": "Too many uploads in a short time. Wait a minute and try again.",
@@ -6502,23 +6492,20 @@
               "tooLarge": "The export is larger than this server accepts.",
               "stagingMissing": "The uploaded file was no longer on the server. Upload it again.",
               "interrupted": "The import was interrupted by a server restart. Upload the file again."
-            }
+            },
+            "folderRow": "Automatically from a folder",
+            "folderMeta": "WebDAV or Nextcloud, under Integrations",
+            "fileHint": "ZIP, up to 1 GB"
           },
           "fit": {
             "title": "Activity file (FIT)",
-            "description": "A workout from a watch or bike computer.",
-            "choose": "Choose file",
+            "description": "Workouts from a watch or bike computer.",
             "uploading": "Uploading…",
             "uploadFailed": "The upload failed. Please try again.",
-            "tooLarge": "The file is larger than 10 MB.",
-            "rateLimited": "Too many uploads in a short time. Wait a minute and try again.",
-            "busy": "An import is already running for your account. Wait until it has finished.",
             "failed": "The import failed. Please try again.",
             "doneSummary": "The activity file was imported.",
             "doneNothing": "The import finished, but there was nothing new to add.",
-            "dropLabel": "Drop the activity file here",
-            "dropHint": "or click to choose it: a .fit, .fit.gz or .zip file up to 10 MB.",
-            "fileInputLabel": "Activity file",
+            "fileInputLabel": "Activity files",
             "privacyNote": "The GPS track is only kept when Workout routes is switched on.",
             "steps": {
               "garmin": "Garmin Connect: open the activity on the website, choose the gear menu, then Export original.",
@@ -6549,16 +6536,34 @@
               "noSession": "The file contains no workout that could be read.",
               "stagingMissing": "The uploaded file was no longer on the server. Upload it again.",
               "interrupted": "The import was interrupted by a server restart. Upload the file again."
-            }
+            },
+            "batch": {
+              "waiting": "Waiting",
+              "imported": "Imported",
+              "duplicate": "Already imported",
+              "progress": "{done} of {total}",
+              "capped": "Only the first 100 files are imported.",
+              "reason": {
+                "tooLarge": "Larger than 10 MB",
+                "unsupported": "Not a FIT file",
+                "damaged": "File is damaged",
+                "notActivity": "Not an activity",
+                "noWorkout": "No workout found",
+                "busy": "Another import is running",
+                "retry": "Failed, try again"
+              }
+            },
+            "fileHint": ".fit, .fit.gz or .zip, up to 10 MB each"
           },
           "recordFile": {
             "gadgetbridge": {
-              "title": "Gadgetbridge database",
+              "title": "Gadgetbridge",
               "description": "The database Gadgetbridge exports on Android.",
               "steps": {
                 "export": "In Gadgetbridge open Settings, then Data management, then Export database.",
                 "upload": "Upload the file called Gadgetbridge here. Up to 512 MB."
-              }
+              },
+              "fileHint": "Database, up to 512 MB"
             },
             "fhirBundle": {
               "title": "Patient record (FHIR)",
@@ -6566,9 +6571,9 @@
               "steps": {
                 "export": "In your patient portal, export your record as FHIR R4 (JSON).",
                 "upload": "Upload the .json file here. Up to 32 MB."
-              }
+              },
+              "fileHint": ".json, up to 32 MB"
             },
-            "choose": "Choose file",
             "uploading": "Uploading…",
             "running": "Importing in the background…",
             "doneSummary": "The file was imported.",
@@ -6633,8 +6638,18 @@
             "remove": "Remove folder",
             "removeTitle": "Remove this folder?",
             "removeBody": "HealthLog stops fetching from it and forgets the password. What was already imported stays."
-          }
-        }
+          },
+          "row": {
+            "done": "{date}, {count, plural, one {# entry} other {# entries}}",
+            "failed": "{date}, not imported"
+          },
+          "pasteOr": "Or paste",
+          "guideTitle": "Example and columns",
+          "pickerFile": "File",
+          "pickerFiles": "Files",
+          "pickerChoose": "Choose"
+        },
+        "exportHeading": "Export"
       },
       "about": {
         "title": "About this app"
@@ -6684,7 +6699,7 @@
         }
       },
       "health-record": {
-        "title": "Doctor report and export"
+        "title": "Doctor report"
       },
       "coach": {
         "title": "Coach"
@@ -6862,7 +6877,13 @@
       "other": "This value was not accepted. Check it and try again.",
       "reproofRequired": "Enter your current password to change the email address.",
       "reproofFailed": "That password is not correct, so the email address was not changed.",
-      "secondFactorRequired": "Confirm with your second factor or a passkey to change the email address."
+      "secondFactorRequired": "Confirm with your second factor or a passkey to change the email address.",
+      "invalidKvnr": "That is not a valid KVNR. Check the letter and the nine digits.",
+      "invalidSvnr": "That is not a valid SVNR. Check the ten digits.",
+      "invalidAhv": "That is not a valid AHV number. It has 13 digits and starts with 756.",
+      "invalidBsn": "That is not a valid BSN. Check the nine digits.",
+      "invalidNir": "That is not a valid NIR. Check the 13 characters and the two-digit key.",
+      "invalidMemberId": "Use 3 to 30 letters, digits, spaces, hyphens or dots."
     },
     "avatar": {
       "title": "Profile photo",
@@ -7536,6 +7557,16 @@
       "description": "Fetched from your WebDAV or Nextcloud folder every six hours. Set up and changed under Import.",
       "manage": "Open the folder settings"
     },
+    "healthConnectApp": {
+      "connect": "Connect Android device",
+      "disconnect": "Disconnect",
+      "newCode": "New code",
+      "validUntil": "Valid until {time}",
+      "qrAlt": "QR code for HealthLog Sync",
+      "preview": "HealthLog Sync for Android, preview",
+      "disconnectTitle": "Disconnect {device}?",
+      "disconnectBody": "The phone stops syncing until you pair it again."
+    },
     "withingsViewData": "View your measurements",
     "whoopViewData": "View your recovery",
     "googleHealthViewData": "View your steps",
@@ -7675,8 +7706,17 @@
       "fullNamePlaceholder": "e.g. Jane Doe",
       "insurer": "Health insurer",
       "insurerPlaceholder": "e.g. AOK Bayern",
-      "insuranceNumber": "Insurance number (KVNR)",
-      "insuranceNumberHint": "10 characters: one letter + nine digits (e.g. A123456780)."
+      "insuranceNumber": "Insurance number",
+      "insuranceCountry": "Country",
+      "numberLabel": {
+        "DE": "Insurance number (KVNR)",
+        "AT": "Social insurance number (SVNR)",
+        "CH": "AHV number",
+        "NL": "Citizen service number (BSN)",
+        "FR": "Social security number (NIR)",
+        "US": "Member ID"
+      },
+      "insuranceGroupNumber": "Group number"
     },
     "healthRecord": {
       "title": "Export health record",
@@ -8414,7 +8454,6 @@
   },
   "admin": {
     "title": "Administration",
-    "subtitle": "System status, users, and settings",
     "settingsSaveError": "Failed to save settings",
     "systemStatus": "System status",
     "systemStatusDescription": "Runtime state of this instance: database, worker, and record counts.",
@@ -8445,8 +8484,6 @@
       "byokHint": "A user's own key (BYOK, ChatGPT login or local provider) always takes precedence; the server key is the last step in the provider chain.",
       "consentHint": "Requests over the server key require the user's active AI consent; without a consent receipt nothing is sent.",
       "baseUrlHint": "The base URL selects the API: an Anthropic URL such as https://api.anthropic.com/v1 is understood, any other host is called on the OpenAI-compatible API.",
-      "statusConfigured": "Configured",
-      "statusNotConfigured": "Not configured",
       "keyLabel": "API key",
       "keyPlaceholder": "sk-...",
       "keyPlaceholderSet": "Stored ({preview}). Enter a new key to replace it",
@@ -8646,7 +8683,6 @@
       "qrAlt": "QR code for the invite link",
       "loadError": "Could not load the invites.",
       "emptyTitle": "No invites yet",
-      "emptyDescription": "Create an invite link to admit someone while registration is closed.",
       "colStatus": "Status",
       "colCreated": "Created",
       "colExpires": "Expires",
@@ -8706,14 +8742,11 @@
     "tokenCreated": "Created",
     "tokenNeverUsed": "Never",
     "tokensEmptyTitle": "No API tokens yet",
-    "tokensEmptyDescription": "Tokens are issued when a native client signs in or via Settings > Account.",
     "loginOverviewDescription": "Sign-in and auth events across all accounts, filterable and exportable as CSV.",
     "loginOverviewFilterLabel": "Filter events",
     "allAuthEvents": "All auth events",
     "failedOnly": "Failed only",
-    "loginEmptyDescription": "Sign-ins, sign-outs, and passkey changes will show up here.",
     "loginEmptyFailedTitle": "No failed sign-in attempts",
-    "loginEmptyFailedDescription": "That's the safe state. Switch to all events to see successful sign-ins.",
     "loginEmptyResetFilter": "Show all events",
     "showingEntries": "Showing {count} of {total} auth entries",
     "status": "Status",
@@ -8807,32 +8840,25 @@
     },
     "section": {
       "system-status": {
-        "title": "System status",
-        "subtitle": "Worker, database, and integration health at a glance."
+        "title": "System status"
       },
       "general": {
-        "title": "General",
-        "subtitle": "Registration, default language, and other app-wide toggles."
+        "title": "General"
       },
       "services": {
-        "title": "Push and channels",
-        "subtitle": "Notification channels, Web Push keys, the push relay and delivery health for the whole server."
+        "title": "Push and channels"
       },
       "integrations": {
-        "title": "Monitoring",
-        "subtitle": "Configure Umami, GlitchTip and bug reports."
+        "title": "Monitoring"
       },
       "coach": {
-        "title": "Coach",
-        "subtitle": "Assistant surfaces, the server key, and feedback quality in one place."
+        "title": "Coach"
       },
       "reminders": {
-        "title": "Reminders",
-        "subtitle": "Tune medication reminder thresholds and run a manual check."
+        "title": "Reminders"
       },
       "users": {
         "title": "Users",
-        "subtitle": "Manage user accounts, roles, and active sessions.",
         "filter": {
           "all": "All",
           "admin": "Admins",
@@ -8846,7 +8872,6 @@
         "forceLogoutFailed": "Failed to force logout",
         "cannotLogoutSelf": "Cannot force-logout yourself",
         "emptyTitle": "No users in this view",
-        "emptyDescription": "There are no users matching the current filter.",
         "emptyResetFilter": "Show all users",
         "deletionPending": "Deletion on {date}",
         "deletionPendingNoDate": "Deletion pending",
@@ -8867,16 +8892,13 @@
         "deleteUserFailed": "Could not delete the account"
       },
       "invites": {
-        "title": "Invites",
-        "subtitle": "Mint, track, and revoke registration invite links."
+        "title": "Invites"
       },
       "api-tokens": {
-        "title": "API & tokens",
-        "subtitle": "Active bearer tokens issued to native clients and integrations."
+        "title": "API & tokens"
       },
       "login-overview": {
-        "title": "Login overview",
-        "subtitle": "Audit trail of authentication and admin events."
+        "title": "Login overview"
       },
       "auditLog": {
         "filterActor": "Actor (user id or username)",
@@ -8909,7 +8931,6 @@
       },
       "app-logs": {
         "title": "App logs",
-        "subtitle": "Tail the most recent structured wide-events emitted by this process.",
         "processNote": "Showing app-process logs only; worker-process logs go to Loki when that integration is configured.",
         "filterTraceId": "Trace ID",
         "filterAction": "Action contains…",
@@ -9164,20 +9185,16 @@
         "restoreSkippedSeizureIntakeReference": "Seizure rescue dose linked to a medication intake the file does not contain (kept without the link)"
       },
       "danger-zone": {
-        "title": "Danger zone",
-        "subtitle": "Destructive system-wide operations."
+        "title": "Danger zone"
       },
       "about": {
-        "title": "About",
-        "subtitle": "Version, license, and update status."
+        "title": "About"
       },
       "module-availability": {
-        "title": "Modules",
-        "subtitle": "Turn modules on or off for every account on this server."
+        "title": "Modules"
       },
       "encryption": {
         "title": "Encryption",
-        "subtitle": "Encryption coverage and key-rotation status for data at rest.",
         "loadError": "Failed to load encryption status.",
         "coverageTitle": "Coverage",
         "coverageDescription": "How many encrypted rows sit under each key id.",
@@ -11143,7 +11160,6 @@
   },
   "measurementReminders": {
     "sectionTitle": "Care",
-    "sectionDescription": "Reminders for what to measure or check, when, and where.",
     "markDone": "Done",
     "delete": "Delete",
     "deleteConfirmTitle": "Delete reminder?",
@@ -11281,13 +11297,11 @@
   },
   "labs": {
     "title": "Lab results",
-    "subtitle": "Your blood work and biomarker readings.",
     "addResult": "Add value",
     "addDescription": "Record a biomarker reading from a lab report.",
     "addFirst": "Add your first result",
     "importAction": "Import from Apple Health or CSV",
     "emptyTitle": "No lab results yet",
-    "emptyDescription": "Record bloodwork like HbA1c, LDL or ferritin to track it over time and share it with your doctor.",
     "referenceLabel": "Reference",
     "readingsCount": "{count, plural, one {# reading} other {# readings}}",
     "deleteConfirmTitle": "Delete lab result?",
@@ -11359,7 +11373,6 @@
     "restoreError": "Could not restore the reading",
     "detail": {
       "emptyTitle": "No readings yet",
-      "emptyDescription": "Add a value to start tracking this biomarker over time.",
       "title": "Biomarker",
       "genericDescription": "A lab biomarker you track. Add readings to follow how it trends against its reference range.",
       "valuesTitle": "{marker}: all readings",
@@ -11399,7 +11412,6 @@
       "deleteConfirmTitle": "Delete biomarker?",
       "deleteConfirmDescription": "The biomarker and all of its recorded values are permanently deleted. This cannot be undone.",
       "emptyTitle": "No biomarkers yet",
-      "emptyDescription": "Define markers like LDL or HbA1c to record values against them.",
       "loadError": "Could not load biomarkers",
       "noRange": "No reference range",
       "form": {
@@ -11708,8 +11720,7 @@
       "markerCountOne": "{count} biomarker",
       "markerCountFew": "{count} biomarkers",
       "markerCountOther": "{count} biomarkers",
-      "noMatchesTitle": "No matching biomarkers",
-      "noMatchesDescription": "Try adjusting your search query or filters."
+      "noMatchesTitle": "No matching biomarkers"
     },
     "source": {
       "OCR": "Scanned report",
@@ -11804,22 +11815,18 @@
   },
   "moduleOff": {
     "disabled": {
-      "description": "{module} is off for this record, so its pages stay hidden. Turn it back on to bring them back.",
       "title": "{module} is switched off"
     },
     "notGranted": {
-      "description": "{module} sits outside the sections shared with you. What a shared record covers is decided by the person who owns it.",
       "title": "Not part of the shared access"
     },
     "unavailable": {
-      "description": "The operator switched {module} off for every account on this server. No setting of your own can bring it back.",
       "title": "Not available on this server"
     },
-    "openModules": "Open Settings, Modules"
+    "turnOn": "Turn on"
   },
   "vaccinations": {
     "title": "Vaccinations",
-    "subtitle": "Your immunization record, dose by dose.",
     "listLoadError": "Vaccinations could not be loaded.",
     "series": {
       "booster": "Booster",
@@ -12675,7 +12682,6 @@
       "editTitle": "Edit allergy",
       "formDescription": "The substance is stored as plain text; the reaction and note are encrypted.",
       "emptyTitle": "No allergies recorded",
-      "emptyDescription": "Add substances you react to and their reactions.",
       "loadError": "Couldn't load your allergies.",
       "deletedToast": "Allergy deleted",
       "deleteError": "Couldn't delete the allergy.",
@@ -12737,7 +12743,6 @@
       "editTitle": "Edit family history",
       "formDescription": "The relationship and condition are stored as plain text; the note is encrypted.",
       "emptyTitle": "No family history recorded",
-      "emptyDescription": "Add conditions that run in your family.",
       "loadError": "Couldn't load your family history.",
       "deletedToast": "Entry deleted",
       "deleteError": "Couldn't delete the entry.",
@@ -13095,7 +13100,6 @@
   },
   "documents": {
     "title": "Documents",
-    "subtitle": "Every letter, report and scan in one searchable place, encrypted at rest.",
     "pageUpload": "Upload",
     "ownerOnlyUpload": "Documents can only be added by the record owner.",
     "kind": {
@@ -13175,7 +13179,6 @@
       "description": "Store doctor letters, lab reports, imaging, prescriptions and vaccination records. They are encrypted and searchable by type, condition and year.",
       "action": "Upload a first document",
       "noMatchesTitle": "No matching documents",
-      "noMatchesDescription": "Nothing matches the current search and filters.",
       "titleRecord": "{name}'s document vault is empty"
     },
     "detail": {
@@ -13429,8 +13432,7 @@
       },
       "pickMore": "Pick more",
       "finishedHint": "Search again or change a filter to pick more documents.",
-      "maxReached": "You can import up to {max, plural, one {# document} other {# documents}} at a time.",
-      "noMatchHint": "Try part of the name, or clear the tag and dates."
+      "maxReached": "You can import up to {max, plural, one {# document} other {# documents}} at a time."
     },
     "customize": "Customize view",
     "layout": {
@@ -13454,7 +13456,6 @@
       "entryLabel": "Recently deleted ({count})",
       "loadError": "Couldn't load Recently deleted.",
       "emptyTitle": "Nothing in Recently deleted",
-      "emptyDescription": "Documents you delete wait here for {days, plural, one {# day} other {# days}} before they are removed for good.",
       "count": "Deleted documents ({count})",
       "restoreAll": "Restore all",
       "restore": "Restore",
@@ -13563,9 +13564,7 @@
     },
     "detail": {
       "title": "Custom metric",
-      "genericDescription": "A measurement you track. Add values to follow it over time.",
       "emptyTitle": "No values yet",
-      "emptyDescription": "Add your first value to start charting this metric.",
       "valuesTitle": "{metric}: all values",
       "valuesDescription": "Every logged value for this metric.",
       "backToMetric": "Back to {metric}"
@@ -14158,7 +14157,6 @@
       "title": "Who can open my record",
       "description": "Ended access stays listed, so you can always see who had it and when.",
       "emptyTitle": "Nobody else can open your record",
-      "emptyDescription": "Invite someone above if you want them to be able to read it.",
       "loadError": "The list could not be loaded.",
       "revoke": "End access",
       "withdrawInvite": "Withdraw",
@@ -14172,7 +14170,6 @@
       "title": "Records I can open",
       "description": "An invitation gives you nothing until you accept it.",
       "emptyTitle": "Nobody has shared a record with you",
-      "emptyDescription": "When someone invites you, the invitation appears here.",
       "loadError": "The list could not be loaded.",
       "accept": "Accept",
       "accepting": "Accepting…",
@@ -14190,7 +14187,6 @@
       "description": "Every time someone else opened your record.",
       "retention": "This covers the last {days, plural, one {# day} other {# days}}. Older entries are deleted.",
       "emptyTitle": "Nobody has opened your record",
-      "emptyDescription": "Openings by anyone other than you appear here, one line per person per day.",
       "loadError": "The activity could not be loaded.",
       "opened": "{name} opened your record {count}×",
       "acted": "{name} made a change in your record",
@@ -14201,7 +14197,6 @@
       "hint": "Who did what in this profile: every guardian's changes, yours included.",
       "action": "Show activity",
       "emptyTitle": "Nothing recorded yet",
-      "emptyDescription": "Changes a guardian makes in this profile appear here, and openings one line per guardian per day.",
       "you": "You",
       "opened": "{name} opened the profile {count}×",
       "acted": "{name} made a change in the profile",
@@ -14589,11 +14584,9 @@
     },
     "bodySiteWithSide": "{site} ({side})",
     "sectionTitle": "Visits",
-    "sectionDescription": "Past and booked visits in one place.",
     "add": "Visit",
     "loadError": "Visits could not be loaded.",
     "emptyTitle": "No visit recorded yet",
-    "emptyDescription": "A date is enough. Everything else is optional.",
     "upcomingHeading": "Upcoming",
     "pastHeading": "Past",
     "createTitle": "Record a visit",
@@ -14691,9 +14684,7 @@
     "searchPlaceholder": "Search name, practice or specialty",
     "loadError": "The address book could not be loaded.",
     "emptyTitle": "No entry yet",
-    "emptyDescription": "Add a practice so you can pick it when you record a visit.",
     "noMatchTitle": "No match",
-    "noMatchDescription": "No entry matches this search.",
     "createTitle": "Add an entry",
     "editTitle": "Edit entry",
     "formDescription": "Only the name is required.",
@@ -15079,7 +15070,6 @@
   },
   "timeline": {
     "title": "Timeline",
-    "subtitle": "What happened when, beside your values.",
     "standing": "Ongoing",
     "startUnknown": "start unknown",
     "zoom": {
@@ -15569,13 +15559,6 @@
     "metricLink": "Where these values come from"
   },
   "recordImport": {
-    "title": "Lab results and medications from a spreadsheet",
-    "description": "Bring years of lab results or a medication list in from a CSV file.",
-    "detail": "You choose which column holds what, HealthLog checks every row first and imports nothing until you confirm.",
-    "kind": {
-      "labs": "Lab results",
-      "medications": "Medications"
-    },
     "sheetTitle": {
       "labs": "Import lab results",
       "medications": "Import medications"
@@ -15667,7 +15650,12 @@
       "startsOn": "Start",
       "endsOn": "End"
     },
-    "unitlessHint": "A ratio or an index without a unit (INR, cholesterol/HDL): write 1 in the unit column. An empty unit cell stays an error."
+    "unitlessHint": "A ratio or an index without a unit (INR, cholesterol/HDL): write 1 in the unit column. An empty unit cell stays an error.",
+    "row": {
+      "labs": "Lab results (CSV)",
+      "medications": "Medications (CSV)"
+    },
+    "rowMeta": "You map the columns"
   },
   "seizures": {
     "ilae": {
@@ -15870,7 +15858,6 @@
       "seizureDaysValue": "on {count, plural, one {# day} other {# days}}"
     },
     "title": "Seizure diary",
-    "subtitle": "Seizures as they were seen, with the type, the duration and the rescue medication given.",
     "loadError": "The seizure diary could not be loaded.",
     "saveError": "That could not be saved. Please try again.",
     "untyped": "No type",
@@ -16060,7 +16047,6 @@
     "types": {
       "title": "Seizure types",
       "emptyTitle": "No seizure types yet",
-      "emptyDescription": "Set up the person's seizure types once, ideally with the care team.",
       "newTitle": "Add a seizure type",
       "editTitle": "Edit seizure type",
       "description": "The classification is chosen by you or the care team; HealthLog does not classify.",

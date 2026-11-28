@@ -153,9 +153,7 @@ test("mood and medications, switched off, leave every surface they own", async (
   );
   await expect(notice).toBeVisible({ timeout: 15_000 });
   await expect(notice).toHaveAttribute("data-module-access", "disabled");
-  await expect(
-    page.locator('[data-slot="module-off-open-settings"]'),
-  ).toBeVisible();
+  await expect(page.locator('[data-slot="module-off-turn-on"]')).toBeVisible();
   await expect(page.locator('[data-slot="chart-error-state"]')).toHaveCount(0);
 
   // The add menu offers a measurement and nothing the modules owned.

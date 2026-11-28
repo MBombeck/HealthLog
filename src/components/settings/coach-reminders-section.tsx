@@ -202,14 +202,13 @@ export function CoachRemindersSection({
         <EmptyState
           data-testid="settings-coach-reminders-empty"
           variant="plain"
-          size="compact"
           title={t("settings.ai.coachReminders.empty")}
         />
       ) : (
         <div className="space-y-4">
           {due.length > 0 && (
             <div className="space-y-2">
-              <h3 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+              <h3 className="text-muted-foreground text-xs font-medium">
                 {t("settings.ai.coachReminders.dueHeading")}
               </h3>
               <ul className="space-y-2">{due.map((r) => row(r, true))}</ul>
@@ -217,7 +216,7 @@ export function CoachRemindersSection({
           )}
           {rest.length > 0 && (
             <div className="space-y-2">
-              <h3 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+              <h3 className="text-muted-foreground text-xs font-medium">
                 {t("settings.ai.coachReminders.allHeading")}
               </h3>
               <ul className="space-y-2">{rest.map((r) => row(r, false))}</ul>

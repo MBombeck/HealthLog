@@ -127,7 +127,6 @@ export function SecurityActivityCard({
         {!isLoading && !isError && events.length === 0 && (
           <EmptyState
             variant="plain"
-            size="compact"
             title={t("settings.security.activityEmpty")}
           />
         )}

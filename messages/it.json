@@ -72,7 +72,9 @@
     "status": {
       "active": "Attivo",
       "error": "Errore",
-      "off": "Spento"
+      "off": "Spento",
+      "running": "In corso",
+      "done": "Fatto"
     }
   },
   "apiErrors": {
@@ -396,6 +398,7 @@
     "practiceLabel": "Studio",
     "insurer": "Assicurazione sanitaria",
     "insuranceNumber": "N. assicurato",
+    "insuranceGroupNumber": "N. gruppo",
     "summaryTitle": "Riepilogo clinico",
     "summaryReadings": "Registrato in {days, plural, one {# giorno} other {# giorni}}: {count, plural, one {# misurazione} other {# misurazioni}} su {params, plural, one {# parametro} other {# parametri}}.",
     "summaryTrend": "{label}: ultimo {latest} {arrow}",
@@ -891,7 +894,6 @@
     "dragHandle": "Trascina per riordinare",
     "dragHandleHint": "Trascina la maniglia per riordinare questo widget. Puoi anche usare i pulsanti freccia Su e Giù, oppure mettere a fuoco la maniglia e premere Spazio e i tasti freccia.",
     "emptyTitle": "La tua dashboard è vuota",
-    "emptyDescription": "Registra la prima misurazione o un umore. Tile e grafici appaiono automaticamente non appena ci sono dati.",
     "emptyAddMeasurement": "Registra la prima misurazione",
     "staleHint": "Ultimo valore {count} g fa",
     "staleHintWeeksOne": "Ultimo valore 1 settimana fa",
@@ -957,7 +959,6 @@
   },
   "measurements": {
     "title": "Misurazioni",
-    "subtitle": "Registra le misurazioni e consulta lo storico completo.",
     "addMeasurement": "Aggiungi",
     "editMeasurement": "Modifica misurazione",
     "type": "Tipo",
@@ -1053,7 +1054,6 @@
     "emptyTitle": "Ancora nessuna misurazione",
     "emptyDescription": "Registra peso, pressione, pulsazioni o altri valori per individuare i trend.",
     "emptyFilteredTitle": "Nessuna misurazione corrisponde al filtro",
-    "emptyFilteredDescription": "Scegli un altro tipo o rimuovi il filtro per vedere tutte le misurazioni.",
     "emptyAddFirst": "Registra la prima misurazione",
     "emptyResetFilter": "Mostra tutti i tipi",
     "comment": "Commento",
@@ -1248,7 +1248,6 @@
   },
   "mood": {
     "title": "Umore",
-    "subtitle": "Come ti sei sentito, giorno per giorno.",
     "mentalWellbeingLink": "Fai un check-in sul benessere mentale",
     "addEntry": "Aggiungi",
     "editEntry": "Modifica voce",
@@ -1272,9 +1271,7 @@
     "allMoods": "Tutti gli umori",
     "entryCount": "{count, plural, one {# voce} other {# voci}}",
     "emptyTitle": "Ancora nessuna voce di umore",
-    "emptyDescription": "Annota come ti senti oggi per individuare pattern nel tempo.",
     "emptyFilteredTitle": "Nessuna voce corrisponde al filtro",
-    "emptyFilteredDescription": "Scegli un altro livello o rimuovi il filtro per vedere tutte le voci.",
     "emptyAddFirst": "Registra il primo umore",
     "emptyResetFilter": "Mostra tutti gli umori",
     "actions": "Azioni",
@@ -1591,7 +1588,6 @@
   },
   "medications": {
     "title": "Farmaci",
-    "subtitle": "I tuoi farmaci, i loro orari e ogni assunzione.",
     "loginRequired": "Accedi per gestire i farmaci.",
     "addMedication": "Aggiungi",
     "firstMedication": "Aggiungi il primo farmaco",
@@ -1609,7 +1605,6 @@
       "failedToast": "Nessuna assunzione registrata. Riprova"
     },
     "emptyTitle": "Ancora nessun farmaco",
-    "emptyDescription": "Crea farmaci, dosi e fasce orarie per registrare l’aderenza.",
     "loadFailed": "Impossibile caricare i farmaci",
     "retryLoad": "Riprova",
     "inactive": "In pausa",
@@ -2140,7 +2135,6 @@
     "intakeSourceVia": "tramite {origin}",
     "intakeRecordedAutomatically": "Registrata automaticamente",
     "intakeHistoryEmptyTitle": "Ancora nessuna assunzione",
-    "intakeHistoryEmptyDescription": "Appena registrerai un’assunzione, comparirà qui con orario e sorgente.",
     "intakeHistoryEmptyAction": "Registra un’assunzione",
     "intakeHistoryColTaken": "Assunta",
     "intakeHistoryColScheduled": "Programmata",
@@ -2401,7 +2395,6 @@
           "USED_UP": "Esaurito"
         },
         "empty": "Nessuna scorta registrata.",
-        "emptyHelper": "Registra una confezione o un contenitore per monitorare la scorta rimanente e l'autonomia.",
         "emptyCta": "Registra una confezione",
         "addButton": "Registra",
         "lowStockLinkOn": "Avviso scorta bassa: sotto {days, plural, one {il # giorno} other {i # giorni}}",
@@ -2829,7 +2822,6 @@
       "clearSearch": "Cancella ricerca",
       "treatmentPeriod": "Periodo di trattamento",
       "noMatchesTitle": "Nessun farmaco trovato",
-      "noMatchesDescription": "Prova a modificare i termini di ricerca o i filtri.",
       "countOne": "{count} farmaco",
       "countFew": "{count} farmaci",
       "countOther": "{count} farmaci"
@@ -3133,7 +3125,6 @@
     "noAnalysisYet": "Ancora nessuna valutazione.",
     "assessmentPreparing": "Preparazione della valutazione…",
     "emptyTitle": "Dati ancora insufficienti",
-    "emptyDescription": "Gli insights compaiono appena registri qualche misurazione. Inizia da peso o pressione.",
     "emptyAddMeasurement": "Registra misurazione",
     "editMode": {
       "done": "Fine",
@@ -3155,11 +3146,9 @@
       "saveSuccess": "Panoramica salvata",
       "saveError": "Impossibile salvare la panoramica",
       "resetSuccess": "Panoramica reimpostata ai valori predefiniti",
-      "emptyTitle": "Tutte le schede sono nascoste",
-      "emptyDescription": "Hai nascosto tutte le sezioni. Apri Personalizza per mostrarle di nuovo."
+      "emptyTitle": "Tutte le schede sono nascoste"
     },
     "bmiEmptyTitle": "Aggiungi l’altezza per il BMI",
-    "bmiEmptyDescription": "Per il BMI serve la tua altezza. Salvala in Impostazioni > Account.",
     "bmiEmptyAction": "Apri impostazioni account",
     "loadError": "Impossibile caricare le analisi",
     "heroRegenerating": "Generazione in corso",
@@ -3279,7 +3268,6 @@
       "keyFindingsTitle": "Riscontri principali",
       "signalsTitle": "Segnali del giorno",
       "emptyTitle": "Ancora nessun briefing",
-      "emptyDescription": "Genera il briefing di oggi per avere un riepilogo dei tuoi trend.",
       "emptyAction": "Genera briefing",
       "loadingLabel": "Preparazione del briefing",
       "refreshFailedHint": "Impossibile aggiornare il briefing: viene mostrato l'ultimo.",
@@ -5333,7 +5321,6 @@
         "cta": "Vedi registrazioni"
       },
       "emptyTitle": "Ancora nessuna registrazione ECG",
-      "emptyDescription": "Le registrazioni ECG si sincronizzano da un dispositivo a singola derivazione compatibile. Non appena il dispositivo carica una registrazione, comparirà qui.",
       "emptyCta": "Collega un dispositivo"
     },
     "intradayPulse": {
@@ -5371,7 +5358,6 @@
       "coachPrefill": "Non ho ancora aggiunto farmaci: cosa dovrei sapere prima di iniziare a monitorare qui l’aderenza?"
     },
     "scoreHistory": {
-      "healthDescription": "Il tuo punteggio di salute giorno per giorno, come veniva mostrato ogni giorno.",
       "emptyDescription": "In questo periodo non è ancora stato registrato alcun punteggio.",
       "usualRange": "In ombra: il tuo intervallo abituale, da {lo} a {hi}.",
       "seam": "La linea si interrompe dove è cambiato ciò che conta per il punteggio."
@@ -5388,7 +5374,6 @@
       "notEnough": "Troppe poche misurazioni",
       "hourRange": "{start}–{end}",
       "emptyTitle": "Nessuna misurazione completa in questo periodo",
-      "emptyDescription": "Qui compaiono le misurazioni con valore sistolico e diastolico.",
       "error": "Impossibile caricare le medie per momento della giornata.",
       "chartTitle": {
         "morning": "Pressione arteriosa al mattino",
@@ -6232,7 +6217,6 @@
       },
       "export": {
         "title": "Esporta e importa",
-        "otherOptionsHeading": "Altre opzioni di esportazione",
         "downloadFailed": "Impossibile scaricare l'esportazione. Riprova.",
         "actions": {
           "download": "Scarica"
@@ -6243,14 +6227,17 @@
         },
         "cards": {
           "measurementsCsv": {
-            "title": "Misurazioni"
+            "title": "Misurazioni (CSV)",
+            "description": "Periodo a scelta"
           },
           "medicationsCsv": {
-            "title": "Farmaci",
-            "includeIntake": "Includi lo storico delle assunzioni"
+            "title": "Farmaci (CSV)",
+            "includeIntake": "Includi lo storico delle assunzioni",
+            "description": "Se vuoi, con ogni assunzione"
           },
           "moodCsv": {
-            "title": "Umore"
+            "title": "Umore (CSV)",
+            "description": "Periodo a scelta"
           },
           "fullBackup": {
             "title": "Backup completo",
@@ -6259,20 +6246,22 @@
             "passphrasePlaceholder": "Passphrase (min. 12 caratteri)",
             "passphraseHelp": "Deriva la chiave dell'archivio con Argon2id e lo sigilla con AES-256-GCM. Salva il file con estensione .hlx.",
             "noRecoveryWarning": "Non c'è recupero: se perdi questa passphrase, l'archivio non potrà essere aperto. Conservala in un luogo sicuro.",
-            "detail": "Una copia portabile della tua cartella da conservare e leggere: valori in JSON semplice, documenti solo con i metadati."
+            "detail": "Una copia portabile della tua cartella da conservare e leggere: valori in JSON semplice, documenti solo con i metadati.",
+            "description": "Tutto, cifrato se vuoi"
+          },
+          "doctorReport": {
+            "title": "Referto medico",
+            "description": "PDF, FHIR o ZIP"
           }
         },
         "import": {
           "heading": "Importa",
-          "description": "I file caricati vengono eliminati dal server appena l'importazione termina, e importare di nuovo lo stesso file non aggiunge nulla due volte.",
+          "description": "Il server elimina ogni file dopo l’importazione, e lo stesso file due volte non aggiunge nulla due volte.",
           "charCount": "{used} / {max, plural, one {# carattere} other {# caratteri}}",
           "appleHealth": {
             "title": "Apple Salute",
             "description": "Il file export.zip dell’app Salute dell’iPhone.",
-            "dropLabel": "Trascina qui export.zip",
-            "dropHint": "o fai clic per scegliere un file",
             "fileInputLabel": "Scegli un file export.zip di Apple Salute",
-            "choose": "Scegli file",
             "idempotencyNote": "Gli archivi grandi vengono elaborati in background.",
             "uploading": "Caricamento…",
             "uploadFailed": "Caricamento non riuscito. Riprova.",
@@ -6335,16 +6324,15 @@
             "skipBreakdownMore": "+ {count, plural, one {# altro tipo} other {# altri tipi}}",
             "cycleSummary": "{samples, plural, one {# campione del ciclo unito} other {# campioni del ciclo uniti}} in {days, plural, one {# registro giornaliero} other {# registri giornalieri}}.",
             "cycleModuleOff": "{count, plural, one {# campione del ciclo saltato} other {# campioni del ciclo saltati}} perché il monitoraggio del ciclo è disattivato per questo account.",
-            "cycleDaysFailed": "{count, plural, one {# giorno del ciclo non è stato scritto} other {# giorni del ciclo non sono stati scritti}}: {reason}"
+            "cycleDaysFailed": "{count, plural, one {# giorno del ciclo non è stato scritto} other {# giorni del ciclo non sono stati scritti}}: {reason}",
+            "fileHint": "export.zip, fino a 1,5 GB"
           },
           "json": {
-            "title": "Misurazioni e umore (JSON)",
+            "title": "File JSON",
             "description": "Misurazioni e voci dell’umore in JSON.",
-            "pasteLabel": "Incolla JSON",
             "fileInputLabel": "Scegli un file JSON da importare",
             "schemaHint": "Due array: measurements e moodEntries.",
             "docsLink": "Vedi lo schema e un esempio.",
-            "uploadFile": "Scegli file",
             "downloadExample": "Scarica esempio",
             "import": "Importa",
             "invalidJson": "Questo non è JSON valido. Controlla la sintassi e riprova.",
@@ -6358,16 +6346,18 @@
             "keptLabels": "Questo account ha già tag o gruppi con queste chiavi e con il proprio nome, quindi sono stati mantenuti: {keys}",
             "resultNothing": "Non è stato importato nulla. {skipped, plural, one {# voce è stata saltata} other {Tutte le # voci sono state saltate}}.",
             "resultEmpty": "Questo file non conteneva né misurazioni né voci dell'umore.",
-            "limitsHint": "Fino a {mb} MB e fino a {rows, plural, one {# voce} other {# voci}} per elenco."
+            "limitsHint": "Fino a {mb} MB e fino a {rows, plural, one {# voce} other {# voci}} per elenco.",
+            "rowMeta": "Misurazioni e umore",
+            "fileMeta": ".json, fino a {mb} MB",
+            "partial": "L’importazione si è interrotta a metà. Importare di nuovo è sicuro, nulla viene aggiunto due volte.",
+            "partialCounts": "Già salvato: {measurements, plural, one {# misurazione} other {# misurazioni}} e {moods, plural, one {# voce dell’umore} other {# voci dell’umore}}."
           },
           "csv": {
             "title": "File CSV",
             "description": "Misurazioni da un foglio di calcolo o da un misuratore.",
-            "pasteLabel": "Incolla CSV",
             "fileInputLabel": "Scegli un file CSV da importare",
             "schemaHint": "Colonne: type, value, unit, measuredAt (con offset del fuso orario) e, facoltative, glucoseContext, notes, externalId.",
             "docsLink": "Vedi lo schema delle colonne e un esempio.",
-            "uploadFile": "Scegli file",
             "downloadExample": "Scarica esempio",
             "preview": "Anteprima",
             "import": "Importa",
@@ -6403,14 +6393,15 @@
             "reasonUnstableExternalId": "l'ID esterno non è stabile tra un export e l'altro",
             "reasonDuplicate": "già importata",
             "reasonUnknown": "saltata",
-            "detail": "Una riga per lettura."
+            "detail": "Una riga per lettura.",
+            "rowMeta": "Misurazioni da un foglio di calcolo",
+            "fileMeta": ".csv, fino a 16 MB",
+            "guideMeta": "type, value, unit, measuredAt con offset"
           },
           "doseHistory": {
             "title": "Storico delle assunzioni",
             "description": "Uno storico delle assunzioni da un’altra app.",
-            "pasteLabel": "Incolla l'esportazione",
             "fileInputLabel": "Scegli un file con lo storico delle assunzioni",
-            "uploadFile": "Scegli file",
             "preview": "Anteprima",
             "import": "Importa",
             "empty": "Prima incolla l'esportazione o scegli un file.",
@@ -6459,12 +6450,13 @@
               "jsonNoIntakeTime": "L'esportazione JSON registra quando una dose era prevista, non quando è stata assunta, e un orario previsto non verrà scritto come se fosse l'assunzione. Esporta il CSV, che porta entrambi.",
               "tooManyRows": "Quel file contiene più righe di quante un'importazione possa accoglierne. Dividilo e importa le parti."
             },
-            "detail": "Un file copre tutti i farmaci che contiene."
+            "detail": "Un file copre tutti i farmaci che contiene.",
+            "rowMeta": "Da un’altra app",
+            "fileMeta": ".csv o .json, fino a 16 MB"
           },
           "healthConnect": {
-            "title": "Esportazione di Health Connect",
+            "title": "Health Connect",
             "description": "Lo ZIP che Health Connect crea su Android.",
-            "choose": "Scegli file",
             "uploading": "Caricamento…",
             "uploadFailed": "Il caricamento non è riuscito. Riprova.",
             "tooLarge": "Il file supera la dimensione accettata da questo server.",
@@ -6483,8 +6475,6 @@
               "cloud": "Health Connect salva l'esportazione solo in un'app di archiviazione cloud come Google Drive, Dropbox o Nextcloud, mai sul telefono stesso.",
               "upload": "Scarica il file ZIP da quel cloud su questo dispositivo e caricalo qui."
             },
-            "dropLabel": "Trascina qui lo ZIP di Health Connect",
-            "dropHint": "oppure fai clic per sceglierlo. Fino a 1 GB.",
             "fileInputLabel": "File ZIP dell'esportazione di Health Connect",
             "privacyNote": "I dati delle app che colleghi già direttamente, come Withings, vengono esclusi perché nulla arrivi due volte.",
             "rateLimited": "Troppi caricamenti in poco tempo. Attendi un minuto e riprova.",
@@ -6502,22 +6492,19 @@
               "tooLarge": "L'esportazione è più grande di quanto accetti questo server.",
               "stagingMissing": "Il file caricato non era più sul server. Caricalo di nuovo.",
               "interrupted": "Un riavvio del server ha interrotto l'importazione. Carica di nuovo il file."
-            }
+            },
+            "folderRow": "Automaticamente da una cartella",
+            "folderMeta": "WebDAV o Nextcloud, in Integrazioni",
+            "fileHint": "ZIP, fino a 1 GB"
           },
           "fit": {
             "title": "File di attività (FIT)",
-            "description": "Un allenamento da un orologio o ciclocomputer.",
-            "choose": "Scegli file",
+            "description": "Allenamenti da un orologio o ciclocomputer.",
             "uploading": "Caricamento…",
             "uploadFailed": "Il caricamento non è riuscito. Riprova.",
-            "tooLarge": "Il file supera i 10 MB.",
-            "rateLimited": "Troppi caricamenti in poco tempo. Attendi un minuto e riprova.",
-            "busy": "Per il tuo account è già in corso un’importazione. Attendi che finisca.",
             "failed": "L’importazione non è riuscita. Riprova.",
             "doneSummary": "Il file di attività è stato importato.",
             "doneNothing": "L’importazione è terminata, ma non c’era nulla di nuovo da aggiungere.",
-            "dropLabel": "Trascina qui il file di attività",
-            "dropHint": "oppure fai clic per sceglierlo: un file .fit, .fit.gz o .zip fino a 10 MB.",
             "fileInputLabel": "File di attività",
             "privacyNote": "Il tracciato GPS viene conservato solo se Percorsi degli allenamenti è attivo.",
             "steps": {
@@ -6549,16 +6536,34 @@
               "noSession": "Il file non contiene alcun allenamento leggibile.",
               "stagingMissing": "Il file caricato non era più sul server. Caricalo di nuovo.",
               "interrupted": "L’importazione è stata interrotta da un riavvio del server. Carica di nuovo il file."
-            }
+            },
+            "batch": {
+              "waiting": "In attesa",
+              "imported": "Importato",
+              "duplicate": "Già importato",
+              "progress": "{done} di {total}",
+              "capped": "Vengono importati solo i primi 100 file.",
+              "reason": {
+                "tooLarge": "Oltre 10 MB",
+                "unsupported": "Non è un file FIT",
+                "damaged": "File danneggiato",
+                "notActivity": "Non è un’attività",
+                "noWorkout": "Nessun allenamento trovato",
+                "busy": "Un’altra importazione è in corso",
+                "retry": "Non riuscito, riprova"
+              }
+            },
+            "fileHint": ".fit, .fit.gz o .zip, fino a 10 MB ciascuno"
           },
           "recordFile": {
             "gadgetbridge": {
-              "title": "Database di Gadgetbridge",
+              "title": "Gadgetbridge",
               "description": "Il database che Gadgetbridge esporta su Android.",
               "steps": {
                 "export": "In Gadgetbridge apri Impostazioni, poi Gestione dati, poi Esporta database.",
                 "upload": "Carica qui il file chiamato Gadgetbridge. Fino a 512 MB."
-              }
+              },
+              "fileHint": "Database, fino a 512 MB"
             },
             "fhirBundle": {
               "title": "Cartella sanitaria (FHIR)",
@@ -6566,9 +6571,9 @@
               "steps": {
                 "export": "Nel portale del paziente esporta la tua cartella come FHIR R4 (JSON).",
                 "upload": "Carica qui il file .json. Fino a 32 MB."
-              }
+              },
+              "fileHint": ".json, fino a 32 MB"
             },
-            "choose": "Scegli file",
             "uploading": "Caricamento…",
             "running": "Importazione in background…",
             "doneSummary": "Il file è stato importato.",
@@ -6633,8 +6638,18 @@
             "remove": "Rimuovi cartella",
             "removeTitle": "Rimuovere questa cartella?",
             "removeBody": "HealthLog smette di prelevare da lì e dimentica la password. Ciò che è già stato importato resta."
-          }
-        }
+          },
+          "row": {
+            "done": "{date}, {count, plural, one {# voce} other {# voci}}",
+            "failed": "{date}, non importato"
+          },
+          "pasteOr": "Oppure incolla",
+          "guideTitle": "Esempio e colonne",
+          "pickerFile": "File",
+          "pickerFiles": "File",
+          "pickerChoose": "Scegli"
+        },
+        "exportHeading": "Esporta"
       },
       "about": {
         "title": "Informazioni su questa app"
@@ -6684,7 +6699,7 @@
         }
       },
       "health-record": {
-        "title": "Referto medico ed esportazione"
+        "title": "Referto medico"
       },
       "coach": {
         "title": "Coach"
@@ -6862,7 +6877,13 @@
       "other": "Questo valore non è stato accettato. Controllalo e riprova.",
       "reproofRequired": "Inserisci la password attuale per cambiare l'indirizzo email.",
       "reproofFailed": "La password non è corretta, quindi l'indirizzo email non è stato cambiato.",
-      "secondFactorRequired": "Conferma con il tuo secondo fattore o una passkey per cambiare l'indirizzo email."
+      "secondFactorRequired": "Conferma con il tuo secondo fattore o una passkey per cambiare l'indirizzo email.",
+      "invalidKvnr": "Non è un KVNR valido. Controlla la lettera e le nove cifre.",
+      "invalidSvnr": "Non è un SVNR valido. Controlla le dieci cifre.",
+      "invalidAhv": "Non è un numero AVS valido. Ha 13 cifre e inizia con 756.",
+      "invalidBsn": "Non è un BSN valido. Controlla le nove cifre.",
+      "invalidNir": "Non è un NIR valido. Controlla i 13 caratteri e la chiave di due cifre.",
+      "invalidMemberId": "Usa da 3 a 30 lettere, cifre, spazi, trattini o punti."
     },
     "avatar": {
       "title": "Foto del profilo",
@@ -7536,6 +7557,16 @@
       "description": "Prelevato dalla tua cartella WebDAV o Nextcloud ogni sei ore. Si configura e si modifica in Importa.",
       "manage": "Apri le impostazioni della cartella"
     },
+    "healthConnectApp": {
+      "connect": "Collega dispositivo Android",
+      "disconnect": "Scollega",
+      "newCode": "Nuovo codice",
+      "validUntil": "Valido fino alle {time}",
+      "qrAlt": "Codice QR per HealthLog Sync",
+      "preview": "HealthLog Sync per Android, anteprima",
+      "disconnectTitle": "Scollegare {device}?",
+      "disconnectBody": "Il telefono smette di sincronizzare finché non lo colleghi di nuovo."
+    },
     "withingsViewData": "Vedi le tue misurazioni",
     "whoopViewData": "Vedi il tuo recupero",
     "googleHealthViewData": "Vedi i tuoi passi",
@@ -7675,8 +7706,17 @@
       "fullNamePlaceholder": "es. Maria Rossi",
       "insurer": "Assicurazione sanitaria",
       "insurerPlaceholder": "es. AOK Bayern",
-      "insuranceNumber": "Numero di assicurato (KVNR)",
-      "insuranceNumberHint": "10 caratteri: una lettera + nove cifre (es. A123456780)."
+      "insuranceNumber": "Numero di assicurato",
+      "insuranceCountry": "Paese",
+      "numberLabel": {
+        "DE": "Numero di assicurato (KVNR)",
+        "AT": "Numero di previdenza sociale (SVNR)",
+        "CH": "Numero AVS",
+        "NL": "Numero di servizio del cittadino (BSN)",
+        "FR": "Numero di sicurezza sociale (NIR)",
+        "US": "ID membro"
+      },
+      "insuranceGroupNumber": "Numero di gruppo"
     },
     "healthRecord": {
       "title": "Esporta cartella sanitaria",
@@ -8414,7 +8454,6 @@
   },
   "admin": {
     "title": "Administration",
-    "subtitle": "Stato del sistema, utenti e impostazioni",
     "settingsSaveError": "Impossibile salvare le impostazioni",
     "systemStatus": "Stato del sistema",
     "systemStatusDescription": "Stato di esecuzione dell’istanza: database, worker e conteggi.",
@@ -8445,8 +8484,6 @@
       "byokHint": "La chiave personale dell'utente (BYOK, accesso ChatGPT o provider locale) ha sempre la precedenza: la chiave del server è l'ultimo passo della catena dei provider.",
       "consentHint": "Le richieste tramite la chiave del server richiedono il consenso IA attivo dell'utente; senza una ricevuta di consenso non viene inviato nulla.",
       "baseUrlHint": "L'URL di base determina l'API: un URL Anthropic come https://api.anthropic.com/v1 viene riconosciuto, qualsiasi altro host viene chiamato tramite l'API compatibile con OpenAI.",
-      "statusConfigured": "Configurata",
-      "statusNotConfigured": "Non configurata",
       "keyLabel": "Chiave API",
       "keyPlaceholder": "sk-...",
       "keyPlaceholderSet": "Salvata ({preview}). Inserisci una nuova chiave per sostituirla",
@@ -8646,7 +8683,6 @@
       "qrAlt": "Codice QR del link di invito",
       "loadError": "Impossibile caricare gli inviti.",
       "emptyTitle": "Ancora nessun invito",
-      "emptyDescription": "Crea un link di invito per ammettere qualcuno nonostante la registrazione chiusa.",
       "colStatus": "Stato",
       "colCreated": "Creato",
       "colExpires": "Scade",
@@ -8706,14 +8742,11 @@
     "tokenCreated": "Creato",
     "tokenNeverUsed": "Mai",
     "tokensEmptyTitle": "Ancora nessun token API",
-    "tokensEmptyDescription": "I token vengono emessi quando un client nativo accede o tramite Impostazioni > Account.",
     "loginOverviewDescription": "Eventi di accesso e autenticazione di tutti gli account, filtrabili ed esportabili in CSV.",
     "loginOverviewFilterLabel": "Filtra eventi",
     "allAuthEvents": "Tutti gli eventi di autenticazione",
     "failedOnly": "Solo non riusciti",
-    "loginEmptyDescription": "Qui compariranno accessi, disconnessioni e modifiche delle passkey.",
     "loginEmptyFailedTitle": "Nessun tentativo di accesso non riuscito",
-    "loginEmptyFailedDescription": "Questo è lo stato sicuro. Passa a tutti gli eventi per vedere gli accessi riusciti.",
     "loginEmptyResetFilter": "Mostra tutti gli eventi",
     "showingEntries": "Mostrando {count} di {total} voci di autenticazione",
     "status": "Stato",
@@ -8807,32 +8840,25 @@
     },
     "section": {
       "system-status": {
-        "title": "Stato del sistema",
-        "subtitle": "Stato di worker, database e integrazioni a colpo d'occhio."
+        "title": "Stato del sistema"
       },
       "general": {
-        "title": "Generale",
-        "subtitle": "Registrazione, lingua predefinita e altri interruttori validi per l'intera app."
+        "title": "Generale"
       },
       "services": {
-        "title": "Push e canali",
-        "subtitle": "Canali di notifica, chiavi Web Push, il relay push e lo stato dei recapiti per tutto il server."
+        "title": "Push e canali"
       },
       "integrations": {
-        "title": "Monitoraggio",
-        "subtitle": "Configura Umami, GlitchTip e le segnalazioni di errori."
+        "title": "Monitoraggio"
       },
       "coach": {
-        "title": "Coach",
-        "subtitle": "Superfici dell'assistente, chiave del server e qualità del feedback."
+        "title": "Coach"
       },
       "reminders": {
-        "title": "Promemoria",
-        "subtitle": "Regola le soglie dei promemoria dei farmaci ed esegui un controllo manuale."
+        "title": "Promemoria"
       },
       "users": {
         "title": "Utenti",
-        "subtitle": "Gestisci gli account utente, i ruoli e le sessioni attive.",
         "filter": {
           "all": "Tutto",
           "admin": "Amministratori",
@@ -8846,7 +8872,6 @@
         "forceLogoutFailed": "Impossibile forzare la disconnessione",
         "cannotLogoutSelf": "Non puoi forzare la tua disconnessione",
         "emptyTitle": "Nessun utente in questa vista",
-        "emptyDescription": "Nessun utente corrisponde al filtro attuale.",
         "emptyResetFilter": "Mostra tutti gli utenti",
         "deletionPending": "Eliminazione il {date}",
         "deletionPendingNoDate": "Eliminazione in attesa",
@@ -8867,16 +8892,13 @@
         "deleteUserFailed": "Impossibile eliminare l’account"
       },
       "invites": {
-        "title": "Inviti",
-        "subtitle": "Creare, monitorare e revocare i link di invito."
+        "title": "Inviti"
       },
       "api-tokens": {
-        "title": "API e token",
-        "subtitle": "Token bearer attivi emessi a client nativi e integrazioni."
+        "title": "API e token"
       },
       "login-overview": {
-        "title": "Panoramica degli accessi",
-        "subtitle": "Traccia di audit degli eventi di autenticazione e di amministrazione."
+        "title": "Panoramica degli accessi"
       },
       "auditLog": {
         "filterActor": "Attore (ID utente o nome utente)",
@@ -8909,7 +8931,6 @@
       },
       "app-logs": {
         "title": "Log dell'app",
-        "subtitle": "Visualizza i wide-event strutturati più recenti emessi da questo processo.",
         "processNote": "Vengono mostrati solo i log del processo dell'app: i log del processo worker vanno su Loki quando l'integrazione è configurata.",
         "filterTraceId": "ID traccia",
         "filterAction": "L'azione contiene…",
@@ -9164,20 +9185,16 @@
         "restoreSkippedSeizureIntakeReference": "Dose di soccorso di una crisi collegata a un'assunzione non presente nel file (mantenuta senza il collegamento)"
       },
       "danger-zone": {
-        "title": "Zona pericolosa",
-        "subtitle": "Operazioni distruttive a livello di sistema."
+        "title": "Zona pericolosa"
       },
       "about": {
-        "title": "Informazioni",
-        "subtitle": "Versione, licenza e stato degli aggiornamenti."
+        "title": "Informazioni"
       },
       "module-availability": {
-        "title": "Moduli",
-        "subtitle": "Attiva o disattiva i moduli per tutti gli account su questo server."
+        "title": "Moduli"
       },
       "encryption": {
         "title": "Crittografia",
-        "subtitle": "Copertura della crittografia e stato della rotazione delle chiavi per i dati a riposo.",
         "loadError": "Impossibile caricare lo stato della crittografia.",
         "coverageTitle": "Copertura",
         "coverageDescription": "Quante righe cifrate stanno sotto ogni id di chiave.",
@@ -11143,7 +11160,6 @@
   },
   "measurementReminders": {
     "sectionTitle": "Controlli",
-    "sectionDescription": "Promemoria su cosa misurare o controllare, quando e dove.",
     "markDone": "Fatto",
     "delete": "Elimina",
     "deleteConfirmTitle": "Eliminare il promemoria?",
@@ -11281,13 +11297,11 @@
   },
   "labs": {
     "title": "Esami di laboratorio",
-    "subtitle": "Le tue analisi del sangue e i biomarcatori.",
     "addResult": "Aggiungi valore",
     "addDescription": "Registra un biomarcatore da un referto di laboratorio.",
     "addFirst": "Aggiungi il primo risultato",
     "importAction": "Importa da Apple Health o CSV",
     "emptyTitle": "Ancora nessun risultato",
-    "emptyDescription": "Registra esami come HbA1c, LDL o ferritina per seguirli nel tempo e condividerli con il tuo medico.",
     "referenceLabel": "Riferimento",
     "readingsCount": "{count, plural, one {# misurazione} other {# misurazioni}}",
     "deleteConfirmTitle": "Eliminare il risultato di laboratorio?",
@@ -11359,7 +11373,6 @@
     "restoreError": "Impossibile ripristinare la misurazione",
     "detail": {
       "emptyTitle": "Ancora nessuna misurazione",
-      "emptyDescription": "Aggiungi un valore per seguire questo biomarcatore nel tempo.",
       "title": "Biomarcatore",
       "genericDescription": "Un biomarcatore di laboratorio che monitori. Aggiungi misurazioni per seguirne l'andamento rispetto all'intervallo di riferimento.",
       "valuesTitle": "{marker}: tutte le letture",
@@ -11399,7 +11412,6 @@
       "deleteConfirmTitle": "Eliminare il biomarcatore?",
       "deleteConfirmDescription": "Il biomarcatore e tutti i suoi valori registrati vengono eliminati definitivamente. L'operazione non è reversibile.",
       "emptyTitle": "Ancora nessun biomarcatore",
-      "emptyDescription": "Definisci marcatori come LDL o HbA1c per registrare i valori.",
       "loadError": "Impossibile caricare i biomarcatori",
       "noRange": "Nessun intervallo di riferimento",
       "form": {
@@ -11708,8 +11720,7 @@
       "markerCountOne": "{count} biomarcatore",
       "markerCountFew": "{count} biomarcatori",
       "markerCountOther": "{count} biomarcatori",
-      "noMatchesTitle": "Nessun biomarcatore trovato",
-      "noMatchesDescription": "Prova a modificare i termini di ricerca o i filtri."
+      "noMatchesTitle": "Nessun biomarcatore trovato"
     },
     "source": {
       "OCR": "Referto scansionato",
@@ -11804,22 +11815,18 @@
   },
   "moduleOff": {
     "disabled": {
-      "description": "{module} è disattivato per questi dati, quindi le sue pagine restano nascoste. Riattivalo per ritrovarle.",
       "title": "{module} è disattivato"
     },
     "notGranted": {
-      "description": "{module} è fuori dalle sezioni condivise con te. Cosa comprende un accesso condiviso lo decide la persona a cui appartengono i dati.",
       "title": "Non fa parte dell'accesso condiviso"
     },
     "unavailable": {
-      "description": "Chi gestisce il server ha disattivato {module} per tutti gli account. Nessuna impostazione tua può riportarlo indietro.",
       "title": "Non disponibile su questo server"
     },
-    "openModules": "Apri Impostazioni, Moduli"
+    "turnOn": "Attiva"
   },
   "vaccinations": {
     "title": "Vaccinazioni",
-    "subtitle": "Il tuo libretto vaccinale, dose per dose.",
     "listLoadError": "Impossibile caricare le vaccinazioni.",
     "series": {
       "booster": "Richiamo",
@@ -12675,7 +12682,6 @@
       "editTitle": "Modifica allergia",
       "formDescription": "La sostanza è salvata in chiaro; la reazione e la nota sono cifrate.",
       "emptyTitle": "Nessuna allergia registrata",
-      "emptyDescription": "Aggiungi le sostanze a cui reagisci e le reazioni.",
       "loadError": "Impossibile caricare le tue allergie.",
       "deletedToast": "Allergia eliminata",
       "deleteError": "Impossibile eliminare l'allergia.",
@@ -12737,7 +12743,6 @@
       "editTitle": "Modifica anamnesi familiare",
       "formDescription": "La parentela e la patologia sono salvate in chiaro; la nota è cifrata.",
       "emptyTitle": "Nessuna anamnesi familiare",
-      "emptyDescription": "Aggiungi le patologie presenti nella tua famiglia.",
       "loadError": "Impossibile caricare la tua anamnesi familiare.",
       "deletedToast": "Voce eliminata",
       "deleteError": "Impossibile eliminare la voce.",
@@ -13095,7 +13100,6 @@
   },
   "documents": {
     "title": "Documenti",
-    "subtitle": "Ogni lettera, referto e scansione in un unico posto ricercabile, cifrato a riposo.",
     "pageUpload": "Carica",
     "ownerOnlyUpload": "Solo il titolare della cartella può aggiungere documenti.",
     "kind": {
@@ -13175,7 +13179,6 @@
       "description": "Conserva lettere mediche, referti di laboratorio, imaging, prescrizioni e certificati vaccinali. Sono cifrati e ricercabili per tipo, patologia e anno.",
       "action": "Carica un primo documento",
       "noMatchesTitle": "Nessun documento corrispondente",
-      "noMatchesDescription": "Nulla corrisponde alla ricerca e ai filtri attuali.",
       "titleRecord": "L'archivio documenti di {name} è vuoto"
     },
     "detail": {
@@ -13429,8 +13432,7 @@
       },
       "pickMore": "Scegline altri",
       "finishedHint": "Cerca di nuovo o cambia un filtro per scegliere altri documenti.",
-      "maxReached": "Puoi importare al massimo {max, plural, one {# documento} other {# documenti}} alla volta.",
-      "noMatchHint": "Prova con parte del nome, oppure azzera etichetta e date."
+      "maxReached": "Puoi importare al massimo {max, plural, one {# documento} other {# documenti}} alla volta."
     },
     "customize": "Personalizza visualizzazione",
     "layout": {
@@ -13454,7 +13456,6 @@
       "entryLabel": "Eliminati di recente ({count})",
       "loadError": "Impossibile caricare Eliminati di recente.",
       "emptyTitle": "Niente in Eliminati di recente",
-      "emptyDescription": "Ciò che elimini resta qui per {days, plural, one {# giorno} other {# giorni}} prima di essere rimosso definitivamente.",
       "count": "Documenti eliminati ({count})",
       "restoreAll": "Ripristina tutto",
       "restore": "Ripristina",
@@ -13563,9 +13564,7 @@
     },
     "detail": {
       "title": "Metrica personalizzata",
-      "genericDescription": "Una misurazione che monitori. Aggiungi valori per seguirla nel tempo.",
       "emptyTitle": "Ancora nessun valore",
-      "emptyDescription": "Aggiungi il primo valore per iniziare a rappresentare questa metrica.",
       "valuesTitle": "{metric}: tutti i valori",
       "valuesDescription": "Tutti i valori registrati per questa metrica.",
       "backToMetric": "Torna a {metric}"
@@ -14158,7 +14157,6 @@
       "title": "Chi può aprire la mia cartella",
       "description": "Gli accessi terminati restano in elenco, così vedi sempre chi li ha avuti e quando.",
       "emptyTitle": "Nessun altro può aprire la tua cartella",
-      "emptyDescription": "Invita qualcuno qui sopra se vuoi che possa leggerla.",
       "loadError": "Non è stato possibile caricare l'elenco.",
       "revoke": "Termina accesso",
       "withdrawInvite": "Ritira",
@@ -14172,7 +14170,6 @@
       "title": "Cartelle che posso aprire",
       "description": "Un invito non ti dà nulla finché non lo accetti.",
       "emptyTitle": "Nessuno ha condiviso una cartella con te",
-      "emptyDescription": "Quando qualcuno ti invita, l'invito compare qui.",
       "loadError": "Non è stato possibile caricare l'elenco.",
       "accept": "Accetta",
       "accepting": "Accettazione…",
@@ -14190,7 +14187,6 @@
       "description": "Ogni volta che qualcun altro ha aperto la tua cartella.",
       "retention": "Copre {days, plural, =1 {l'ultimo giorno} other {gli ultimi # giorni}}. Le voci più vecchie vengono eliminate.",
       "emptyTitle": "Nessuno ha aperto la tua cartella",
-      "emptyDescription": "Le aperture da parte di altri compaiono qui, una riga per persona e giorno.",
       "loadError": "Non è stato possibile caricare l'attività.",
       "opened": "{name} ha aperto la tua cartella {count}×",
       "acted": "{name} ha fatto una modifica nella tua cartella",
@@ -14201,7 +14197,6 @@
       "hint": "Chi ha fatto cosa in questo profilo: le modifiche di ogni persona responsabile, comprese le tue.",
       "action": "Mostra attività",
       "emptyTitle": "Ancora niente di registrato",
-      "emptyDescription": "Le modifiche di una persona responsabile in questo profilo compaiono qui, e le aperture in una riga per persona responsabile e giorno.",
       "you": "Tu",
       "opened": "{name} ha aperto il profilo {count}×",
       "acted": "{name} ha modificato qualcosa nel profilo",
@@ -14589,11 +14584,9 @@
     },
     "bodySiteWithSide": "{site} ({side})",
     "sectionTitle": "Visite",
-    "sectionDescription": "Visite passate e prenotate in un unico posto.",
     "add": "Visita",
     "loadError": "Impossibile caricare le visite.",
     "emptyTitle": "Nessuna visita registrata",
-    "emptyDescription": "Basta una data. Tutto il resto è facoltativo.",
     "upcomingHeading": "In arrivo",
     "pastHeading": "Passati",
     "createTitle": "Registra una visita",
@@ -14691,9 +14684,7 @@
     "searchPlaceholder": "Cerca nome, studio o specializzazione",
     "loadError": "Impossibile caricare la rubrica.",
     "emptyTitle": "Nessuna voce",
-    "emptyDescription": "Aggiungi uno studio per poterlo scegliere quando registri una visita.",
     "noMatchTitle": "Nessuna corrispondenza",
-    "noMatchDescription": "Nessuna voce corrisponde a questa ricerca.",
     "createTitle": "Aggiungi una voce",
     "editTitle": "Modifica la voce",
     "formDescription": "Solo il nome è obbligatorio.",
@@ -15079,7 +15070,6 @@
   },
   "timeline": {
     "title": "Cronologia",
-    "subtitle": "Cosa è successo e quando, accanto ai tuoi valori.",
     "standing": "Permanente",
     "startUnknown": "inizio sconosciuto",
     "zoom": {
@@ -15569,13 +15559,6 @@
     "metricLink": "Da dove vengono questi valori"
   },
   "recordImport": {
-    "title": "Esami di laboratorio e farmaci da un foglio di calcolo",
-    "description": "Porta dentro anni di esami o un elenco di farmaci da un file CSV.",
-    "detail": "Scegli tu quale colonna contiene cosa; HealthLog controlla ogni riga prima e non importa nulla finché non confermi.",
-    "kind": {
-      "labs": "Esami di laboratorio",
-      "medications": "Farmaci"
-    },
     "sheetTitle": {
       "labs": "Importa esami",
       "medications": "Importa farmaci"
@@ -15667,7 +15650,12 @@
       "startsOn": "Inizio",
       "endsOn": "Fine"
     },
-    "unitlessHint": "Un rapporto o un indice senza unità (INR, colesterolo/HDL): scrivi 1 nella colonna dell'unità. Un'unità vuota resta un errore."
+    "unitlessHint": "Un rapporto o un indice senza unità (INR, colesterolo/HDL): scrivi 1 nella colonna dell'unità. Un'unità vuota resta un errore.",
+    "row": {
+      "labs": "Esami di laboratorio (CSV)",
+      "medications": "Farmaci (CSV)"
+    },
+    "rowMeta": "Assegni tu le colonne"
   },
   "seizures": {
     "ilae": {
@@ -15870,7 +15858,6 @@
       "seizureDaysValue": "in {count, plural, one {# giorno} other {# giorni}}"
     },
     "title": "Diario delle crisi",
-    "subtitle": "Le crisi come sono state osservate, con tipo, durata e farmaco di soccorso somministrato.",
     "loadError": "Impossibile caricare il diario delle crisi.",
     "saveError": "Impossibile salvare. Riprova.",
     "untyped": "Nessun tipo",
@@ -16060,7 +16047,6 @@
     "types": {
       "title": "Tipi di crisi",
       "emptyTitle": "Ancora nessun tipo di crisi",
-      "emptyDescription": "Imposta una volta i tipi di crisi della persona, idealmente con l'équipe di cura.",
       "newTitle": "Aggiungi un tipo di crisi",
       "editTitle": "Modifica tipo di crisi",
       "description": "La classificazione la scegli tu o l'équipe di cura; HealthLog non classifica.",

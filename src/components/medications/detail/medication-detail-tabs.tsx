@@ -481,7 +481,6 @@ export function MedicationDetailTabs({
               ) : (
                 <EmptyState
                   variant="plain"
-                  size="compact"
                   title={t("medications.detail.uebersicht.complianceEmpty")}
                 />
               )}

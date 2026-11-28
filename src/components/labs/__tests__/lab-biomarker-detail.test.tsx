@@ -160,7 +160,7 @@ describe("<LabBiomarkerDetail>", () => {
   it("keeps the catalog description one tap away beside the title", () => {
     // "LDL Cholesterol" resolves to the `ldl` catalog slug (case-insensitive);
     // its explainer sits in the (i) beside the title, not as a subtitle.
-    expect(html).toContain('data-slot="lab-biomarker-about"');
+    expect(html).toContain('data-hint="page-header-info"');
     expect(html).not.toContain(
       "A lab biomarker you track. Add readings to follow",
     );

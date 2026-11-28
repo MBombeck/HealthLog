@@ -99,7 +99,6 @@ export function DashboardTiles({
       <EmptyState
         icon={<Activity className="size-6" />}
         title={t("dashboard.emptyTitle")}
-        description={t("dashboard.emptyDescription")}
         action={
           canAddMeasurement ? (
             <Button size="sm" onClick={onAddMeasurement}>

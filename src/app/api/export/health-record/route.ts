@@ -34,7 +34,10 @@ import { parseJsonBody } from "@/lib/api/body";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { prisma, toJson } from "@/lib/db";
-import { decrypt } from "@/lib/crypto";
+import {
+  INSURANCE_IDENTITY_SELECT,
+  readInsuranceIdentity,
+} from "@/lib/profile/insurance-identity";
 import { toAllergyDTO, toFamilyHistoryEntryDTO } from "@/lib/records/dto";
 import {
   collectDoctorReportData,
@@ -169,7 +172,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     prisma.user.findUnique({
       where: { id: user.id },
       select: {
-        insuranceNumberEncrypted: true,
+        ...INSURANCE_IDENTITY_SELECT,
         timeFormat: true,
         // Issue #922 — the exported PDF is spelled the way the person
         // who exported it reads dates, not the locale default.
@@ -200,18 +203,13 @@ export const POST = apiHandler(async (request: NextRequest) => {
     familyHistory: familyHistoryRows.map(toFamilyHistoryEntryDTO),
   };
 
-  // The KVNR is encrypted at rest and is its own leaf. It is neither read nor
+  // The insurance number is encrypted at rest and is its own leaf. It is neither read nor
   // decrypted unless the insurance leaf was chosen. The decrypt is fail-soft:
   // a key-rotation gap on one row omits the value rather than 500-ing the
   // export.
-  let insuranceNumber: string | null = null;
-  if (selection.has("INSURANCE") && userRow?.insuranceNumberEncrypted) {
-    try {
-      insuranceNumber = decrypt(userRow.insuranceNumberEncrypted);
-    } catch {
-      insuranceNumber = null;
-    }
-  }
+  const insurance = readInsuranceIdentity(
+    selection.has("INSURANCE") ? userRow : null,
+  );
 
   // eslint-disable-next-line healthlog/no-utc-day-key -- UTC by design: file name stamp, not a day shown or compared
   const stamp = new Date().toISOString().slice(0, 10);
@@ -219,7 +217,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const artefact: ArtefactInputs = {
     data,
-    insuranceNumber,
+    insurance,
     records: fhirRecords,
     germanAtc,
     includeCharts,

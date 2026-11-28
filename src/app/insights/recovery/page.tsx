@@ -28,7 +28,7 @@ export default function InsightsRecoveryPage() {
   return (
     <SubPageShell
       title={t("insights.deviceScores.title")}
-      description={t("insights.deviceScores.description")}
+      info={t("insights.deviceScores.description")}
       explainerMetric="recoveryPage"
       coachLaunch
     >

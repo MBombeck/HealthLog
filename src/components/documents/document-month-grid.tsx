@@ -58,7 +58,7 @@ export function estimatedRowHeight(
 
 export function DocumentMonthHeading({ label }: { label: string }) {
   return (
-    <h2 className="text-muted-foreground pt-2 pb-3 text-xs font-medium tracking-wide uppercase">
+    <h2 className="text-muted-foreground pt-2 pb-3 text-xs font-medium">
       {label}
     </h2>
   );
@@ -76,7 +76,7 @@ function FlowMonthMarker({ label }: { label: string }) {
       data-slot="document-flow-month"
       className="absolute inset-x-0 -top-6 flex h-6 items-center gap-2"
     >
-      <span className="text-muted-foreground min-w-0 truncate text-xs font-medium tracking-wide uppercase">
+      <span className="text-muted-foreground min-w-0 truncate text-xs font-medium">
         {label}
       </span>
       <span aria-hidden className="bg-border h-px flex-1" />

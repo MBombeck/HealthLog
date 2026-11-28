@@ -99,7 +99,6 @@ export function MoodWhatStandsOut({
         {!isLoading && !isError && data && !hasDiscovered ? (
           <EmptyState
             variant="plain"
-            size="compact"
             title={t("insights.pattern.empty")}
             data-slot="mood-discovery-empty"
           />

@@ -122,7 +122,7 @@ export function MedicationDetailSummary({
 
   return (
     <div className="space-y-1.5" data-slot="medication-detail-summary">
-      <PageHeader title={name} description={dose} />
+      <PageHeader title={name} meta={dose} />
       <div
         className="text-muted-foreground flex items-center gap-2 text-xs"
         data-slot="medication-detail-status-row"

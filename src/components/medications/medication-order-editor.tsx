@@ -154,11 +154,7 @@ export function MedicationOrderEditor({
     // itself scrollable (second scrollbar — ui-standards.md §9 one-scroll-floor).
     <div className="relative space-y-4" data-slot="medication-order-editor">
       {medications.length === 0 && (
-        <EmptyState
-          variant="plain"
-          size="compact"
-          title={t("medications.emptyTitle")}
-        />
+        <EmptyState variant="plain" title={t("medications.emptyTitle")} />
       )}
       {activeIds.length > 0 && (
         <ReorderSection

@@ -144,11 +144,7 @@ export function ProviderHealthSection() {
           onRetry={() => void refetch()}
         />
       ) : providers.length === 0 ? (
-        <EmptyState
-          variant="plain"
-          size="compact"
-          title={t("admin.providerHealth.empty")}
-        />
+        <EmptyState variant="plain" title={t("admin.providerHealth.empty")} />
       ) : (
         <ul className="flex flex-col gap-3" data-testid="provider-health-list">
           {providers.map((p) => (

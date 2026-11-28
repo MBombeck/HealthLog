@@ -359,7 +359,7 @@ export function MedicationGroupHeader({
             !open && "-rotate-90",
           )}
         />
-        <span className="text-muted-foreground min-w-0 truncate text-xs font-medium tracking-wide uppercase">
+        <span className="text-muted-foreground min-w-0 truncate text-xs font-medium">
           {category.label}
         </span>
         <TagChip className="shrink-0 tabular-nums">{count}</TagChip>

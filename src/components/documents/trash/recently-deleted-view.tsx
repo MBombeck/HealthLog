@@ -30,6 +30,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { InlineAction } from "@/components/ui/inline-action";
 import { ListCapNotice } from "@/components/ui/list-cap-notice";
+import { Hint } from "@/components/ui/hint";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -92,13 +93,17 @@ export function RecentlyDeletedView() {
     <div className="space-y-6">
       <PageHeader
         title={t("documents.trash.title")}
-        description={t("documents.trash.subtitle", { days: graceDays })}
         backLink={{
           href: "/documents",
           label: t("documents.trash.back"),
           dataSlot: "documents-trash-back",
         }}
       />
+      {/* The one sentence the page keeps: when a deleted document is gone
+          for good. */}
+      <Hint reason="safety">
+        {t("documents.trash.subtitle", { days: graceDays })}
+      </Hint>
 
       {list.isPending ? (
         <div data-slot="documents-trash-loading" className="space-y-4">
@@ -116,9 +121,6 @@ export function RecentlyDeletedView() {
         <EmptyState
           icon={<Trash2 className="size-6" aria-hidden />}
           title={t("documents.trash.emptyTitle")}
-          description={t("documents.trash.emptyDescription", {
-            days: graceDays,
-          })}
           action={
             <Button asChild variant="outline" className="min-h-11 sm:min-h-9">
               <Link href="/documents">{t("documents.trash.back")}</Link>

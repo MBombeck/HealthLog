@@ -358,9 +358,7 @@ function TargetReferencePanel({
           }
         />
         {heading ? (
-          <p className="text-muted-foreground text-xs font-medium tracking-[0.06em] uppercase">
-            {heading}
-          </p>
+          <p className="text-muted-foreground text-xs font-medium">{heading}</p>
         ) : null}
       </CardHeader>
       <CardContent className="space-y-3">

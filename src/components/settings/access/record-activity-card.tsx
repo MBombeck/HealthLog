@@ -88,7 +88,6 @@ export function RecordActivityCard() {
           <EmptyState
             icon={<History className="size-6" />}
             title={t("recordSharing.activity.emptyTitle")}
-            description={t("recordSharing.activity.emptyDescription")}
           />
         )}
         {entries.length > 0 && (

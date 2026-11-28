@@ -122,6 +122,8 @@ export const SOURCE_PROFILES: Record<ConnectionKey, SourceProfile> = {
   // that exported nothing new is ordinary. Errors only, like Dawarich.
   "health-connect-remote": { kind: "on_demand", silenceWindowMs: DAY_MS },
   "apple-health": { kind: "continuous", silenceWindowMs: 2 * DAY_MS },
+  // An Android phone syncs in the background like an iPhone.
+  "health-connect-app": { kind: "continuous", silenceWindowMs: 2 * DAY_MS },
 };
 
 /** Incident reason codes. The silence one is the watchdog's own. */

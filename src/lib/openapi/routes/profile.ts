@@ -585,7 +585,23 @@ export const profileUpdateRequest = z
       .string()
       .nullable()
       .optional()
-      .describe("German KVNR. Empty/null clears it; mod-10 check enforced."),
+      .describe(
+        "The insurance number, checked under the rule of `insuranceNumberCountry` (sent in the same request, else stored, else DE) and stored normalised. Empty/null clears it. A value that fails the rule is not written and comes back in `rejectedFields` with code `invalid_kvnr`, `invalid_svnr`, `invalid_ahv`, `invalid_bsn`, `invalid_nir` or `invalid_member_id`.",
+      ),
+    insuranceNumberCountry: z
+      .string()
+      .nullable()
+      .optional()
+      .describe(
+        "ISO 3166-1 alpha-2 country whose rule the insurance number follows: DE (KVNR), AT (SVNR), CH (AHV number), NL (BSN) and FR (NIR) are checked against their check digit; every other country takes 3 to 30 letters, digits, spaces, hyphens or dots, as entered. A number stored without a country follows DE. Case-insensitive; empty/null clears it. A change the stored number would fail, sent without a new number, is refused with the stored number's rejection code.",
+      ),
+    insuranceGroupNumber: z
+      .string()
+      .nullable()
+      .optional()
+      .describe(
+        "The plan's group number beside a US member ID: 3 to 30 letters, digits, spaces, hyphens or dots. Kept only while the country is US; any other country clears it. Empty/null clears it.",
+      ),
     insurerIkNumber: z
       .string()
       .nullable()
@@ -604,7 +620,7 @@ export const profileUpdateRequest = z
   .meta({
     id: "ProfileUpdateRequest",
     description:
-      "Partial profile update. Every field is optional and an omitted field is left untouched. An explicit null clears any nullable field; an empty string also clears `displayName`, `dateOfBirth`, `gender`, `fullName`, `insurerName`, `insuranceNumber` and `insurerIkNumber`. `email` is not among them — it is validated as an address, so send null to clear it. `locale`, `timezone`, `timeFormat` and `dateFormat` are not clearable. `userId` is never accepted — it is narrowed from the session/token.",
+      "Partial profile update. Every field is optional and an omitted field is left untouched. An explicit null clears any nullable field; an empty string also clears `displayName`, `dateOfBirth`, `gender`, `fullName`, `insurerName`, `insuranceNumber`, `insuranceNumberCountry`, `insuranceGroupNumber` and `insurerIkNumber`. `email` is not among them — it is validated as an address, so send null to clear it. `locale`, `timezone`, `timeFormat` and `dateFormat` are not clearable. `userId` is never accepted — it is narrowed from the session/token.",
   });
 
 const profileResponse = z
@@ -641,7 +657,27 @@ const profileResponse = z
     insuranceNumber: z
       .string()
       .nullable()
-      .describe("German KVNR, decrypted for the form prefill."),
+      .describe(
+        "The insurance number as stored (compact for a checked country), decrypted for the form prefill.",
+      ),
+    insuranceNumberCountry: z
+      .string()
+      .nullable()
+      .describe(
+        "ISO 3166-1 alpha-2 country whose rule the insurance number follows: DE (KVNR), AT (SVNR), CH (AHV number), NL (BSN) and FR (NIR) are checked against their check digit; every other country takes 3 to 30 letters, digits, spaces, hyphens or dots, as entered. A number stored without a country follows DE. Null when no number and no country is stored.",
+      ),
+    insuranceNumberDisplay: z
+      .string()
+      .nullable()
+      .describe(
+        "The number written the way its country writes it (AT `NNNN DDMMYY`, CH `756.XXXX.XXXX.XX`, FR `S AA MM DD CCC OOO KK`, every other country as stored). Show this, never a format of the client's own.",
+      ),
+    insuranceGroupNumber: z
+      .string()
+      .nullable()
+      .describe(
+        "The plan's group number beside a US member ID: 3 to 30 letters, digits, spaces, hyphens or dots. Kept only while the country is US; any other country clears it. Null for every other country.",
+      ),
     // v1.18.0 — resolved module enable/disable map, identical to the
     // /api/auth/me projection. The native client reads this alias, so it
     // must carry the same server-authoritative module flags.
@@ -688,7 +724,19 @@ const profileUpdateResponse = z
       .describe("German insurer institution number (IKNR), 9 digits."),
     hasInsuranceNumber: z
       .boolean()
-      .describe("Whether a KVNR is on file (the value itself is not echoed)."),
+      .describe(
+        "Whether an insurance number is on file (the value itself is not echoed).",
+      ),
+    insuranceNumberCountry: z
+      .string()
+      .nullable()
+      .describe(
+        "The country the stored number follows, as GET reports it: DE for a number stored without one, null when there is neither.",
+      ),
+    insuranceGroupNumber: z
+      .string()
+      .nullable()
+      .describe("The US plan's group number; null for every other country."),
     rejectedFields: z
       .array(validationIssue)
       .optional()
@@ -699,7 +747,7 @@ const profileUpdateResponse = z
   .meta({
     id: "ProfileUpdateResponse",
     description:
-      "Profile echo returned by PATCH /api/user/profile. Reports KVNR presence as a boolean rather than re-emitting the decrypted value. NOT the shape `PUT /api/auth/profile` returns — the two share a handler but project it differently (see `AuthProfileUpdateResponse`), which is why this is no longer described as covering both.",
+      "Profile echo returned by PATCH /api/user/profile. Reports insurance-number presence as a boolean rather than re-emitting the decrypted value. NOT the shape `PUT /api/auth/profile` returns — the two share a handler but project it differently (see `AuthProfileUpdateResponse`), which is why this is no longer described as covering both.",
   });
 
 // v1.16.16 — AI-provider read surface. iOS gates Coach visibility off
@@ -1766,7 +1814,7 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Auth"],
       summary: "Update the calling user's profile",
       description:
-        "Partial profile update — every field is optional. An explicit null (or empty string) clears a field. A non-empty `insurerIkNumber` must be exactly 9 digits (422 otherwise); a non-empty `insuranceNumber` (KVNR) must pass the mod-10 check. `userId` is never accepted from the body.",
+        "Partial profile update — every field is optional. An explicit null (or empty string) clears a field. A non-empty `insurerIkNumber` must be exactly 9 digits (422 otherwise); a non-empty `insuranceNumber` must pass the rule of its country (`insuranceNumberCountry`). `userId` is never accepted from the body.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: profileUpdateRequest } },

@@ -65,7 +65,6 @@ export function ProfileSummary({
           ) : (
             <EmptyState
               variant="plain"
-              size="compact"
               title={t("records.allergies.emptyTitle")}
             />
           )}
@@ -94,7 +93,6 @@ export function ProfileSummary({
           ) : (
             <EmptyState
               variant="plain"
-              size="compact"
               title={t("records.family.emptyTitle")}
             />
           )}
@@ -120,7 +118,6 @@ export function ProfileSummary({
           ) : (
             <EmptyState
               variant="plain"
-              size="compact"
               title={t("records.profileFacts.notRecorded")}
             />
           )}

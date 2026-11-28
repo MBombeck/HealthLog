@@ -92,7 +92,6 @@ function ManagedProfileActivityList({ profileId }: { profileId: string }) {
         <EmptyState
           icon={<History className="size-6" />}
           title={t("recordSharing.managedActivity.emptyTitle")}
-          description={t("recordSharing.managedActivity.emptyDescription")}
         />
       )}
       {entries.length > 0 && (

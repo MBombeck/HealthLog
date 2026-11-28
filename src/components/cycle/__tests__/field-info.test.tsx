@@ -22,7 +22,7 @@ describe("<FieldInfo>", () => {
     expect(html).toContain('type="button"');
     expect(html).toContain('aria-label="What is basal body temperature?"');
     // The e2e hook the cycle sheet asserts on.
-    expect(html).toContain('data-slot="cycle-field-info"');
+    expect(html).toContain('data-hint="cycle-field-info"');
   });
 
   it("starts closed so the explainer opens on tap/focus, not hover-only", () => {

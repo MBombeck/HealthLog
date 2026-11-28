@@ -137,7 +137,6 @@ export default function MoodPageClient() {
       <PullToRefreshIndicator {...pull} />
       <PageHeader
         title={<span data-tour-id="mood-hero">{t("mood.title")}</span>}
-        description={t("mood.subtitle")}
         actions={
           <>
             {/* v1.17 — the wrench is the one customize entry point: it

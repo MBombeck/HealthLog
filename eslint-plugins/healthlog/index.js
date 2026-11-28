@@ -27,6 +27,10 @@
  *                              height, width and place from SettingsCardActions.
  *   - `switch-row`           — a switch with a name is a SwitchRow; the rest
  *                              are counted per file, and the count only falls.
+ *   - `no-free-hint`         — explanatory text inside a card stands in the
+ *                              sanctioned hint element, not a muted <p>.
+ *   - `type-scale`           — no arbitrary text-[…] sizes, and no uppercase
+ *                              outside the nav group labels.
  */
 
 "use strict";
@@ -45,6 +49,8 @@ const noRawCardShell = require("./no-raw-card-shell.js");
 const importBoundaries = require("./import-boundaries.js");
 const cardActionRow = require("./card-action-row.js");
 const switchRow = require("./switch-row.js");
+const noFreeHint = require("./no-free-hint.js");
+const typeScale = require("./type-scale.js");
 
 module.exports = {
   rules: {
@@ -67,5 +73,7 @@ module.exports = {
     "import-boundaries": importBoundaries,
     "card-action-row": cardActionRow,
     "switch-row": switchRow,
+    "no-free-hint": noFreeHint,
+    "type-scale": typeScale,
   },
 };

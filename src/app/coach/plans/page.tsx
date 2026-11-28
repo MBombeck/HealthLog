@@ -217,11 +217,7 @@ function CoachPlansBody({ readOnly }: { readOnly: boolean }) {
         title={
           <span data-slot="coach-plans-heading">{t("coach.plans.title")}</span>
         }
-        description={
-          readOnly
-            ? t("coach.plans.readOnlyNote")
-            : t("coach.plans.pageDescription")
-        }
+        info={readOnly ? t("coach.plans.readOnlyNote") : undefined}
         actions={
           <Button asChild variant="outline" size="sm">
             <Link
@@ -269,7 +265,7 @@ function CoachPlansBody({ readOnly }: { readOnly: boolean }) {
               data-group={group.id}
               className="flex flex-col gap-1.5"
             >
-              <h2 className="text-muted-foreground px-1 text-xs font-medium tracking-wide uppercase">
+              <h2 className="text-muted-foreground px-1 text-xs font-medium">
                 {t(group.labelKey)}
               </h2>
               <ul className="flex flex-col gap-2">{group.plans.map(row)}</ul>

@@ -111,7 +111,7 @@ describe("<VorsorgeSection> loading + empty", () => {
     remindersMock.mockReturnValue({ data: [], isLoading: false });
     const html = render(<VorsorgeSection />);
     expect(html).toContain('data-slot="empty-state"');
-    expect(html).toContain("border-dashed");
+    expect(html).toContain('data-slot="empty-state-title"');
     expect(html).not.toContain('data-slot="vorsorge-loading"');
   });
 

@@ -332,7 +332,6 @@ export function InviteTokensSection() {
           <EmptyState
             icon={<Ticket className="size-6" aria-hidden="true" />}
             title={t("admin.invites.emptyTitle")}
-            description={t("admin.invites.emptyDescription")}
           />
         </div>
       )}

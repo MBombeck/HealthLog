@@ -266,9 +266,7 @@ function SeriesBlock({
             data-stat={cell.key}
             className="space-y-0.5"
           >
-            <p className="text-muted-foreground text-xs tracking-wide uppercase">
-              {cell.label}
-            </p>
+            <p className="text-muted-foreground text-xs">{cell.label}</p>
             {holding ? (
               <Skeleton className="h-6 w-16" />
             ) : (

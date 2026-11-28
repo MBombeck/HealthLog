@@ -207,7 +207,7 @@ describe("<RecoverySection> data-gating", () => {
     expect(html).toContain('data-slot="recovery-empty"');
     // Routed through the shared <EmptyState> (dashed bordered card), not the
     // old hand-rolled div — the empty title comes from the unified primitive.
-    expect(html).toContain("border-dashed");
+    expect(html).toContain('data-slot="empty-state-title"');
     expect(html).not.toContain('data-slot="recovery-block-DAY_STRAIN"');
     expect(html).not.toContain("Connect a WHOOP, Polar or Oura account");
     expect(html).toContain("WHOOP or Polar");

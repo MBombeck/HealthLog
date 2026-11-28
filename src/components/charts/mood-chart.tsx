@@ -470,7 +470,7 @@ export function MoodChart({
         data-slot="chart-mini"
         className="bg-card border-border rounded-md border p-2"
       >
-        <div className="text-muted-foreground text-2xs mb-1 font-medium tracking-wider uppercase">
+        <div className="text-muted-foreground text-2xs mb-1 font-medium">
           {displayTitle}
         </div>
         {chartBody}
@@ -489,7 +489,7 @@ export function MoodChart({
           <div className="flex flex-wrap items-center gap-2">
             <TileHeader title={displayTitle} />
             {activeBucket !== "day" && (
-              <TagChip className="hidden tracking-wide uppercase sm:inline-flex">
+              <TagChip className="hidden sm:inline-flex">
                 {t(
                   activeBucket === "week"
                     ? "charts.bucketWeekly"
@@ -501,7 +501,7 @@ export function MoodChart({
                 v1.4.19 — hidden on mobile to free up the title row. */}
             {effectiveCompareBaseline !== "none" && hasComparisonData && (
               <span
-                className="text-dose-accent bg-dose-accent/10 text-2xs hidden rounded-md border border-current/30 px-1.5 py-0.5 font-medium tracking-wide uppercase sm:inline-flex"
+                className="text-dose-accent bg-dose-accent/10 text-2xs hidden rounded-md border border-current/30 px-1.5 py-0.5 font-medium sm:inline-flex"
                 data-slot="chart-compare-caption"
               >
                 {t(

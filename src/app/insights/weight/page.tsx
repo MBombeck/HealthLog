@@ -108,13 +108,12 @@ export default function InsightsGewichtPage() {
     return (
       <SubPageShell
         title={t("insights.weightSectionTitle")}
-        description={t("insights.subPage.gewichtDescription")}
+        info={t("insights.subPage.gewichtDescription")}
         explainerMetric="weight"
       >
         <MetricEmptyState
           icon={<Scale className="size-6" />}
           title={t("insights.emptyState.weight.title")}
-          description={t("insights.emptyState.weight.description")}
           cta={
             <Button size="sm" asChild>
               <Link href="/measurements?add=WEIGHT">
@@ -150,7 +149,7 @@ export default function InsightsGewichtPage() {
   return (
     <SubPageShell
       title={t("insights.weightSectionTitle")}
-      description={t("insights.subPage.gewichtDescription")}
+      info={t("insights.subPage.gewichtDescription")}
       explainerMetric="weight"
       chartContext
       statStrip={

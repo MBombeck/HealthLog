@@ -248,7 +248,6 @@ export function AttachmentPicker({
         ) : documents.length === 0 ? (
           <EmptyState
             variant="plain"
-            size="compact"
             title={t("insights.coach.attach.pickerEmpty")}
           />
         ) : (

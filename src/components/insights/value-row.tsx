@@ -65,9 +65,7 @@ export function ValueRow({
             item.selected && "bg-primary/10 ring-primary/30 ring-1",
           )}
         >
-          <dt className="text-muted-foreground text-xs tracking-wide uppercase">
-            {item.label}
-          </dt>
+          <dt className="text-muted-foreground text-xs">{item.label}</dt>
           <dd className="flex items-baseline gap-1 text-base font-semibold tabular-nums">
             <span>{item.value}</span>
             {item.unit ? (

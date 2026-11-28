@@ -284,6 +284,25 @@ function headingText(
   return { title: t(section.titleKey) };
 }
 
+/**
+ * The rail's groups in order, each with the entries it shows. A group whose
+ * entries are all hidden (module-gated, or not offered inside a shared
+ * record) is left out, so no heading ever stands over nothing. Entries of
+ * one group that are not adjacent in the list still render under one
+ * heading, in their list order.
+ */
+export function settingsNavGroups<T extends { group: SettingsSectionGroup }>(
+  sections: readonly T[],
+): Array<{ group: SettingsSectionGroup; sections: T[] }> {
+  const groups: Array<{ group: SettingsSectionGroup; sections: T[] }> = [];
+  for (const section of sections) {
+    const existing = groups.find((g) => g.group === section.group);
+    if (existing) existing.sections.push(section);
+    else groups.push({ group: section.group, sections: [section] });
+  }
+  return groups.filter((g) => g.sections.length > 0);
+}
+
 export interface SettingsShellProps {
   /**
    * Optional override for the active section. When omitted the shell reads
@@ -442,20 +461,14 @@ export function SettingsShell({
         }
       : null);
 
-  // The shell paints the heading twice — above the mobile chip strip and
-  // inside the desktop grid row — so only the desktop copy may be a real
-  // `<h1>`. Both go through `PageHeader`: the block used to be hand-rolled
-  // here and in `admin-shell.tsx`, which is how Settings and Admin ended up
-  // a step off every module page (and off each other).
-  const headingBlock = (mobile = false) =>
+  // The desktop heading. On a phone the title is the section switcher
+  // (`SettingsMobileNav`, a `role="heading"` copy), so only this one is a
+  // real `<h1>`. Both go through `PageHeader`, as Admin's do.
+  const headingBlock = () =>
     resolvedHeading ? (
       <PageHeader
-        headingAs={mobile ? "div" : "h1"}
-        titleId={
-          mobile
-            ? `${resolvedHeading.headingId}-mobile`
-            : resolvedHeading.headingId
-        }
+        headingAs="h1"
+        titleId={resolvedHeading.headingId}
         title={resolvedHeading.title}
         topSlot={resolvedHeading.topSlot}
         actions={resolvedHeading.headingAccessory}
@@ -473,18 +486,23 @@ export function SettingsShell({
       data-active-record-id={activeRecord?.accountId}
       data-record-kind={activeRecord?.recordKind}
     >
-      {/* v1.18.6.1 — on mobile the heading sits above the chip strip; on
-          desktop it is rendered inside the grid (row 1 / content column) so
-          it does not paint twice. */}
-      {resolvedHeading ? (
-        <div className="mb-4 md:hidden">{headingBlock(true)}</div>
-      ) : null}
-
       <SettingsAnchorForward />
-      {/* Below `md`: one button naming the current section, opening the
-          grouped section sheet. Hidden on md+, where the sidebar shows. */}
+      {/* Below `md` the page title is the section switcher: one heading that
+          names the section and opens the grouped section sheet, instead of a
+          title, a button with the same name and a heading under it. Hidden on
+          md+, where the sidebar shows and the title is the desktop H1. */}
       <SettingsMobileNav
         activeSlug={activeSlug}
+        heading={
+          resolvedHeading
+            ? {
+                title: resolvedHeading.title,
+                titleId: `${resolvedHeading.headingId}-mobile`,
+                topSlot: resolvedHeading.topSlot,
+                actions: resolvedHeading.headingAccessory,
+              }
+            : undefined
+        }
         entries={visibleSections.map((section) => ({
           slug: section.slug,
           title: t(section.titleKey),
@@ -528,52 +546,49 @@ export function SettingsShell({
             offset `top-6` to clear the scroll viewport's padding — keeps the
             nav fixed while only the content column scrolls. `max-h` +
             `overflow-y-auto` let a long section list scroll within the
-            pinned panel on short viewports. */}
+            pinned panel on short viewports; the scrollbar stays visible
+            (thin), because with it hidden a list cut at the panel's edge
+            read as a group heading with nothing under it. */}
         <aside
           aria-label={t("settings.shell.sectionsNav")}
-          className="no-scrollbar hidden max-h-[calc(100dvh-5.5rem-var(--floating-action-clearance))] overflow-y-auto md:sticky md:top-6 md:col-start-1 md:row-span-2 md:row-start-1 md:block md:self-start"
+          className="hidden max-h-[calc(100dvh-5.5rem-var(--floating-action-clearance))] [scrollbar-width:thin] overflow-y-auto md:sticky md:top-6 md:col-start-1 md:row-span-2 md:row-start-1 md:block md:self-start"
         >
           <ul className="space-y-1">
-            {visibleSections.map((section, index) => {
-              const isActive = section.slug === activeSlug;
-              const Icon = section.icon;
-              // A non-interactive header
-              // precedes the first VISIBLE entry of each group so a
-              // module-gated entry never leaves an orphan header above an
-              // empty cluster.
-              const startsNewGroup =
-                index === 0 ||
-                visibleSections[index - 1].group !== section.group;
-              return (
-                <React.Fragment key={section.slug}>
-                  {startsNewGroup ? (
-                    <li
-                      className={cn(
-                        "text-muted-foreground px-3 pb-1 text-xs font-medium tracking-wide uppercase",
-                        index === 0 ? "" : "pt-4",
-                      )}
-                    >
-                      {t(SETTINGS_SECTION_GROUP_LABEL_KEYS[section.group])}
-                    </li>
-                  ) : null}
-                  <li>
-                    <Link
-                      href={`/settings/${section.slug}`}
-                      aria-current={isActive ? "page" : undefined}
-                      className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                        isActive
-                          ? "bg-primary/10 text-primary"
-                          : "text-foreground hover:bg-accent",
-                      )}
-                    >
-                      <Icon className="h-4 w-4" aria-hidden="true" />
-                      {t(section.titleKey)}
-                    </Link>
+            {settingsNavGroups(visibleSections).map(
+              ({ group, sections }, groupIndex) => (
+                <React.Fragment key={group}>
+                  <li
+                    className={cn(
+                      "text-muted-foreground px-3 pb-1 text-xs font-medium tracking-wide uppercase",
+                      groupIndex === 0 ? "" : "pt-4",
+                    )}
+                  >
+                    {t(SETTINGS_SECTION_GROUP_LABEL_KEYS[group])}
                   </li>
+                  {sections.map((section) => {
+                    const isActive = section.slug === activeSlug;
+                    const Icon = section.icon;
+                    return (
+                      <li key={section.slug}>
+                        <Link
+                          href={`/settings/${section.slug}`}
+                          aria-current={isActive ? "page" : undefined}
+                          className={cn(
+                            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                            isActive
+                              ? "bg-primary/10 text-primary"
+                              : "text-foreground hover:bg-accent",
+                          )}
+                        >
+                          <Icon className="h-4 w-4" aria-hidden="true" />
+                          {t(section.titleKey)}
+                        </Link>
+                      </li>
+                    );
+                  })}
                 </React.Fragment>
-              );
-            })}
+              ),
+            )}
           </ul>
         </aside>
 

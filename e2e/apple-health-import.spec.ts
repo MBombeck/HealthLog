@@ -73,7 +73,7 @@ async function clearImportUploadBucket(): Promise<void> {
   }
 }
 
-/** Open the import surface and hand back the Apple Health card. */
+/** Open the import surface and hand back the Apple Health row. */
 async function openImportCard(page: Page) {
   await page.goto("/settings/export", { waitUntil: "domcontentloaded" });
   const card = page.getByTestId("import-card-apple-health");
@@ -82,9 +82,9 @@ async function openImportCard(page: Page) {
 }
 
 /**
- * Hand the archive to the card's own file input, which is what a drop or a
- * click on "Choose file" ends up doing. The upload itself then runs through
- * the card's `fetch`, so the spec seeds nothing the page would not have sent.
+ * Hand the archive to the row's own file input, which is what "Choose" ends
+ * up doing; the sheet then opens on the upload. The upload runs through the
+ * source's `fetch`, so the spec seeds nothing the page would not have sent.
  */
 async function uploadArchive(
   page: Page,

@@ -272,13 +272,13 @@ describe("<TrendCard> valueAdornment slot", () => {
       />,
     );
     expect(html).toContain('data-slot="trend-card-value-adornment"');
-    expect(html).toContain('data-slot="sleep-source-discrepancy"');
+    expect(html).toContain('data-hint="sleep-source-discrepancy"');
   });
 
   it("renders no adornment slot when the annotation is absent", () => {
     const html = render(<TrendCard {...baseProps} />);
     expect(html).not.toContain('data-slot="trend-card-value-adornment"');
-    expect(html).not.toContain('data-slot="sleep-source-discrepancy"');
+    expect(html).not.toContain('data-hint="sleep-source-discrepancy"');
   });
 });
 

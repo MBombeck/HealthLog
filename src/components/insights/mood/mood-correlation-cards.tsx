@@ -204,10 +204,15 @@ function MoodCorrelationCard({
         ) : (
           <EmptyState
             variant="plain"
-            size="compact"
             icon={<Activity className="size-5" />}
             title={emptyCopy.title}
-            description={emptyCopy.description}
+            // How far the pairing has come, or how many days showed no
+            // link: the count is the state, so it stays as the meta line.
+            meta={
+              data.suppressed === "notSignificant" || data.n > 0
+                ? emptyCopy.description
+                : undefined
+            }
           />
         )}
       </CardContent>

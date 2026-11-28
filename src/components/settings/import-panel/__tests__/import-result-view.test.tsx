@@ -25,7 +25,7 @@ import {
   CsvImportResultView,
   type CsvImportResult,
 } from "../import-result-view";
-import { CsvImportCard } from "../csv-import-card";
+import { ImportPasteBody } from "../import-paste";
 
 function render(node: React.ReactElement) {
   return renderToStaticMarkup(
@@ -169,12 +169,30 @@ describe("<CsvImportResultView> — skip reasons", () => {
   });
 });
 
-describe("<CsvImportCard> — announcement", () => {
+describe("<ImportPasteBody> — announcement", () => {
   it("keeps the result slot inside the polite live region", () => {
-    const html = render(<CsvImportCard />);
+    const html = render(
+      <ImportPasteBody
+        slug="csv"
+        fileMeta=".csv"
+        accept=".csv"
+        fileInputLabel="CSV file"
+        placeholder=""
+        text=""
+        onTextChange={() => {}}
+        onReadFailed={() => {}}
+        guideTitle="Example and columns"
+        guide={null}
+        status={null}
+      />,
+    );
     expect(html).toContain('aria-live="polite"');
     // No result yet: the region is present and empty, so the first outcome to
     // land is announced rather than being read as initial content.
     expect(html).not.toContain('data-testid="import-csv-result"');
+    // File, paste and the guide row, in that order.
+    expect(html).toContain('data-testid="import-csv-choose-file"');
+    expect(html).toContain('data-testid="import-csv-textarea"');
+    expect(html).toContain('data-testid="import-csv-guide"');
   });
 });

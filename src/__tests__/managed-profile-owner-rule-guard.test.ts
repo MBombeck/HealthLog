@@ -115,6 +115,10 @@ const SELF_ROUTES: Record<string, Reason> = {
     kind: "identity",
     why: "Minting a measurements token, a credential.",
   },
+  "health-connect/pairing": {
+    kind: "identity",
+    why: "Minting a pairing code for an Android device, which turns into a credential on the caller's own account.",
+  },
   "tokens/workouts": {
     kind: "identity",
     why: "Minting a workouts token, a credential.",

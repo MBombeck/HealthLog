@@ -127,7 +127,7 @@ function McpConnectionsCard() {
         ) : isLoading ? (
           <Skeleton className="h-24 w-full rounded-lg" />
         ) : list.length === 0 ? (
-          <EmptyState size="compact" title={t("settings.mcp.noConnections")} />
+          <EmptyState title={t("settings.mcp.noConnections")} />
         ) : (
           <ul className="space-y-2">
             {list.map((conn) => (
@@ -204,7 +204,7 @@ function McpEnableCard() {
     >
       <p className="text-sm">{t("settings.mcp.offKeepsTokens")}</p>
       <div>
-        <p className="text-muted-foreground mb-1 text-xs tracking-wide uppercase">
+        <p className="text-muted-foreground mb-1 text-xs">
           {t("settings.mcp.endpointLabel")}
         </p>
         <code className="bg-muted block rounded p-2 font-mono text-xs break-all">
@@ -405,7 +405,7 @@ function McpTokensCard() {
           ) : isLoading ? (
             <Skeleton className="h-24 w-full rounded-lg" />
           ) : activeTokens.length === 0 ? (
-            <EmptyState size="compact" title={t("settings.noActiveTokens")} />
+            <EmptyState title={t("settings.noActiveTokens")} />
           ) : (
             <ul className="space-y-2">
               {activeTokens.map((tok) => {

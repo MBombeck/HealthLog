@@ -155,6 +155,7 @@ const LEGIT_IDENTICAL = new Set<string>([
   "settings.ai.providerChain.types.codex",
   "settings.ai.providerSelect.anthropic",
   "settings.sections.export.import.appleHealth.title",
+  "settings.sections.export.import.healthConnect.title",
   "settings.sections.sources.sourceLabels.APPLE_HEALTH",
   "settings.sections.sources.sourceLabels.GOOGLE_HEALTH",
   "settings.sections.sources.sourceLabels.HEALTH_CONNECT",

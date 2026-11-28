@@ -53,42 +53,35 @@ function useVerdictLabel(): (verdict: string) => string {
   return (verdict: string) => labels[verdict] ?? verdict;
 }
 
+/** Every column of the export and what the importer does with it. */
 export function DoseHistoryColumnRulings() {
   const { t } = useTranslations();
   const noteFor = useColumnNote();
   const verdictFor = useVerdictLabel();
 
   return (
-    <details
-      className="group border-border rounded-md border px-3 py-2"
-      data-testid="dose-history-columns"
-    >
-      <summary className="cursor-pointer text-xs font-medium">
-        {t("settings.sections.export.import.doseHistory.columnsHeading")}
-      </summary>
-      <dl className="mt-2 space-y-2">
-        {AUTO_EXPORT_COLUMN_RULINGS.map((ruling) => (
-          <div key={ruling.column} data-testid="dose-history-column-ruling">
-            <dt className="text-foreground flex flex-wrap items-baseline gap-x-2 text-xs">
-              <code className="font-mono">{ruling.column}</code>
-              <span
-                className="text-muted-foreground text-2xs uppercase"
-                data-verdict={ruling.verdict}
-              >
-                {verdictFor(ruling.verdict)}
+    <dl className="space-y-2" data-testid="dose-history-columns">
+      {AUTO_EXPORT_COLUMN_RULINGS.map((ruling) => (
+        <div key={ruling.column} data-testid="dose-history-column-ruling">
+          <dt className="text-foreground flex flex-wrap items-baseline gap-x-2 text-xs">
+            <code className="font-mono">{ruling.column}</code>
+            <span
+              className="text-muted-foreground text-2xs"
+              data-verdict={ruling.verdict}
+            >
+              {verdictFor(ruling.verdict)}
+            </span>
+            {ruling.jsonOnly && (
+              <span className="text-muted-foreground text-2xs">
+                {t("settings.sections.export.import.doseHistory.jsonOnly")}
               </span>
-              {ruling.jsonOnly && (
-                <span className="text-muted-foreground text-2xs">
-                  {t("settings.sections.export.import.doseHistory.jsonOnly")}
-                </span>
-              )}
-            </dt>
-            <dd className="text-muted-foreground text-xs">
-              {noteFor(ruling.noteKey)}
-            </dd>
-          </div>
-        ))}
-      </dl>
-    </details>
+            )}
+          </dt>
+          <dd className="text-muted-foreground text-xs">
+            {noteFor(ruling.noteKey)}
+          </dd>
+        </div>
+      ))}
+    </dl>
   );
 }

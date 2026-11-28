@@ -68,14 +68,15 @@ describe("UserManagementSection — empty state", () => {
     // Polite live region marker from the primitive.
     expect(html).toContain('role="status"');
     expect(html).toContain('aria-live="polite"');
-    // Dashed border = card variant of EmptyState.
-    expect(html).toContain("border-dashed");
+    expect(html).toContain('data-slot="empty-state-title"');
   });
 
-  it("carries the localized title and description", () => {
+  it("says it with the localized title alone", () => {
     const html = render();
     expect(html).toContain("No users in this view");
-    expect(html).toContain("There are no users matching the current filter.");
+    expect(html).not.toContain(
+      "There are no users matching the current filter.",
+    );
   });
 
   it("does not render the reset CTA when the default filter is active", () => {

@@ -1,5 +1,6 @@
 /**
- * A status in Settings goes through `StatusChip` (`src/components/ui/status-chip.tsx`).
+ * A status goes through `StatusChip` (`src/components/ui/status-chip.tsx`),
+ * everywhere under `src/components` and `src/app`.
  *
  * Integrations, delivery channels, AI providers and module states said their
  * state five ways: "Working", "On", "Active", "Configured", "Auto-disabled",
@@ -7,7 +8,12 @@
  * nothing at all. Each surface painted its own `Badge` with its own wash and
  * its own word. This guard keeps a new one from appearing beside the chip.
  *
- * Matched, under `components/settings/`:
+ * The guard started in Settings; outside it, admin said "Configured" in a
+ * green wash of its own, and the same idiom stood in the catalogue, the
+ * token overview and the provider health card. `RATCHET` holds the files
+ * that still paint one, with their count; it may only shrink.
+ *
+ * Matched, under `src/components/` and `src/app/`:
  *   - a `<Badge …>…</Badge>` whose text is a translation key ending in a
  *     status word (`status…`, `state…`, `active`, `connected`, `configured`,
  *     `enabled`, `expired`, `on`, `off`, …);
@@ -22,7 +28,7 @@ import { describe, expect, it } from "vitest";
 
 import { readSource, readSourceFolder } from "./helpers/source-files";
 
-/** Status badges that are not an integration, channel, provider or module. */
+/** Settings badges that are not an integration, channel, provider or module. */
 const ALLOWED: Record<string, string> = {
   "components/settings/sharing-section.tsx":
     "a share link's lifecycle and protection, not a connection",
@@ -32,37 +38,84 @@ const ALLOWED: Record<string, string> = {
     "token expiry in the API token table (the table moves in 1.51)",
 };
 
+/**
+ * Hand-rolled status badges outside Settings today, per file. A count may
+ * only fall: a file that paints more fails, and a file that paints fewer
+ * fails until its number here is lowered (or its line deleted).
+ */
+const RATCHET: Record<string, number> = {
+  // A run or a health state that StatusChip should say.
+  "components/admin/central-codex-section.tsx": 1, // connected / expired / disconnected
+  "components/admin/provider-health-section.tsx": 3, // healthy / paused / failing with counts
+  "components/admin/recovery-kit-card.tsx": 1, // not configured / new
+  "components/admin/glitchtip-section.tsx": 1, // "unproven" warning wash
+  "components/admin/encryption-section.tsx": 1, // "safe to drop" success wash
+  // Token lifecycle, as in the settings token tables (moves in 1.51).
+  "components/admin/api-token-overview-section.tsx": 2,
+  // A record's course, not works or fails: TagChip or ScorePill, not here.
+  "components/illness/illness-episode-detail.tsx": 1,
+  "components/illness/illness-view.tsx": 2,
+  "components/medications/card-parts/medication-state-badges.tsx": 1,
+  "components/medications/intake-history-list-v2.tsx": 1,
+  "app/insights/catalog/page.tsx": 1,
+};
+
 const BADGE_RE = /<Badge\b([^>]*)>([\s\S]*?)<\/Badge>/g;
 const KEY_RE = /\bt\(\s*["'`]([\w.-]+)["'`]/g;
 const STATUS_KEY =
   /(?:^|\.)(?:status\w*|state\w*|\w*(?:Active|Inactive|Connected|Disconnected|Configured|Enabled|Disabled|Expired|Running|Working)\w*|active|inactive|connected|disconnected|configured|enabled|disabled|expired|running|working|on|off)$/;
 const STATUS_WASH = /\bbg-(?:success|warning|destructive|info)\/1[05]\b/;
 
-function findStatusBadges(files: { path: string; source: string }[]): string[] {
-  const hits = new Set<string>();
+/** Hand-rolled status badges per file (one per matching `<Badge>`). */
+function countStatusBadges(
+  files: { path: string; source: string }[],
+): Record<string, number> {
+  const counts: Record<string, number> = {};
   for (const { path, source } of files) {
-    for (const match of source.matchAll(BADGE_RE)) {
-      const [, attrs, body] = match;
-      if (STATUS_WASH.test(attrs)) hits.add(path);
-      for (const key of body.matchAll(KEY_RE)) {
-        if (STATUS_KEY.test(key[1])) hits.add(path);
-      }
+    for (const [, attrs, body] of source.matchAll(BADGE_RE)) {
+      const keyed = [...body.matchAll(KEY_RE)].some((k) =>
+        STATUS_KEY.test(k[1]),
+      );
+      if (STATUS_WASH.test(attrs) || keyed)
+        counts[path] = (counts[path] ?? 0) + 1;
     }
   }
-  return [...hits].sort();
+  return counts;
 }
 
-describe("status in Settings goes through StatusChip", () => {
-  const files = readSourceFolder("src/components/settings", {
-    floor: 150,
-    include: (p) => !p.includes("__tests__/"),
-  }).map(([path, source]) => ({
-    path: `components/settings/${path}`,
-    source,
-  }));
+const findStatusBadges = (files: { path: string; source: string }[]) =>
+  Object.keys(countStatusBadges(files)).sort();
 
-  it("walks the Settings tree", () => {
+const readTree = (dir: "components" | "app", floor: number) =>
+  readSourceFolder(`src/${dir}`, {
+    floor,
+    include: (p) => !p.includes("__tests__/") && !/\.test\.tsx?$/.test(p),
+  }).map(([path, source]) => ({ path: `${dir}/${path}`, source }));
+
+describe("status goes through StatusChip", () => {
+  const all = [...readTree("components", 800), ...readTree("app", 400)];
+  const files = all.filter((f) => f.path.startsWith("components/settings/"));
+  const outside = all.filter((f) => !f.path.startsWith("components/settings/"));
+
+  it("walks the Settings tree and the rest of components and app", () => {
     expect(files.length).toBeGreaterThan(150);
+    expect(outside.length).toBeGreaterThan(1000);
+  });
+
+  it("paints no hand-rolled status badge outside Settings beyond the ratchet", () => {
+    const counts = countStatusBadges(outside);
+    const over = Object.entries(counts)
+      .filter(([path, n]) => n > (RATCHET[path] ?? 0))
+      .map(([path, n]) => `${path}: ${n} (ratchet ${RATCHET[path] ?? 0})`);
+    expect(over).toEqual([]);
+  });
+
+  it("lets the ratchet only shrink (lower a count once a badge moves)", () => {
+    const counts = countStatusBadges(outside);
+    const stale = Object.entries(RATCHET)
+      .filter(([path, n]) => (counts[path] ?? 0) < n)
+      .map(([path, n]) => `${path}: ${counts[path] ?? 0} < ${n}`);
+    expect(stale).toEqual([]);
   });
 
   it("has no hand-rolled status badge outside the allowlist", () => {
@@ -101,12 +154,12 @@ describe("status in Settings goes through StatusChip", () => {
     expect(sample(`<StatusChip tone="active" />`)).toEqual([]);
   });
 
-  it("gives every surface the same three words", () => {
+  it("gives every surface the same five words", () => {
     const chip = readSource(
       "src/components/ui/status-chip.tsx",
       "export function StatusChip",
     );
-    for (const word of ["active", "error", "off"])
+    for (const word of ["active", "error", "off", "running", "done"])
       expect(chip).toContain(`t("common.status.${word}")`);
   });
 });

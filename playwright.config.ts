@@ -238,6 +238,12 @@ export default defineConfig({
         // layout is covered by `settings-export.spec.ts`, which measures its
         // tap targets there; this journey is about the artefact.
         "doctor-report.spec.ts",
+        // The activity file journey uploads to the one shared account, which
+        // runs one import at a time, and reads per-file verdicts that depend
+        // on what is already stored. A second project would import the same
+        // activity first and turn "imported" into "already imported". It
+        // proves the upload chain, not a mobile layout, so it runs once.
+        "fit-import-multi.spec.ts",
         // Its delegate half MOVES the session's record selector, so it runs in
         // exactly one project for the reason written above the fence specs.
         "doctor-report-delegate.spec.ts",

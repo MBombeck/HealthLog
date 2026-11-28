@@ -108,7 +108,6 @@ export function SleepOverview() {
       <EmptyState
         icon={<Moon className="size-6" />}
         title={t("insights.sleep.empty.title")}
-        description={t("insights.sleep.empty.description")}
         action={
           <Button size="sm" variant="outline" asChild>
             <Link href="/settings/integrations">

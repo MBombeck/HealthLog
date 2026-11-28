@@ -95,9 +95,10 @@ describe("<Stepper>", () => {
     expect(html).toContain("forced-colors:border-2");
   });
 
-  it("shows the count at the top right on every width", () => {
+  it("names the step once: the count is the band's name, never painted", () => {
     const html = render();
-    expect(html).toMatch(/data-slot="stepper-count">Step 3 of 4</);
-    expect(html).not.toMatch(/data-slot="stepper-count"[^>]*md:hidden/);
+    expect(html).toMatch(/<nav[^>]*aria-label="Step 3 of 4"/);
+    expect(html).not.toContain('data-slot="stepper-count"');
+    expect(html.match(/>Step 3 of 4</g)).toBeNull();
   });
 });

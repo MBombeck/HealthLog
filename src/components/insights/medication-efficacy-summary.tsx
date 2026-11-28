@@ -82,7 +82,6 @@ export function MedicationEfficacySummary({
         {rows.length === 0 ? (
           <EmptyState
             variant="plain"
-            size="compact"
             title={t("medications.efficacy.insights.empty")}
           />
         ) : (

@@ -475,7 +475,7 @@ export function SymptomsSection() {
 
         {hidden.length > 0 && canManage ? (
           <div className="space-y-1">
-            <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+            <p className="text-muted-foreground text-xs font-medium">
               {tCount("symptoms.section.hidden", hidden.length)}
             </p>
             <ul className="divide-border divide-y">
@@ -499,13 +499,12 @@ export function SymptomsSection() {
         ) : null}
 
         <div className="space-y-2">
-          <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+          <p className="text-muted-foreground text-xs font-medium">
             {t("symptoms.section.recent")}
           </p>
           {days.length === 0 ? (
             <EmptyState
               variant="plain"
-              size="compact"
               title={t("symptoms.section.recentEmpty")}
             />
           ) : (

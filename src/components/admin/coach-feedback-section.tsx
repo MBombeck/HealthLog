@@ -108,16 +108,12 @@ export function CoachFeedbackSection() {
           onRetry={() => void query.refetch()}
         />
       ) : !hasData ? (
-        <EmptyState
-          variant="plain"
-          size="compact"
-          title={t("admin.coachFeedback.empty")}
-        />
+        <EmptyState variant="plain" title={t("admin.coachFeedback.empty")} />
       ) : (
         <div className="relative overflow-x-auto">
           <table className="w-full text-sm" data-slot="coach-feedback-table">
             <thead>
-              <tr className="text-muted-foreground border-border border-b text-left text-xs tracking-wider uppercase">
+              <tr className="text-muted-foreground border-border border-b text-left text-xs">
                 <th className="py-2 pr-3 font-medium">
                   {t("admin.coachFeedback.colPromptVersion")}
                 </th>
