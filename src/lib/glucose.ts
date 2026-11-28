@@ -37,6 +37,21 @@ export function convertGlucose(value: number, to: GlucoseUnit): number {
 }
 
 /**
+ * A glucose value in a data file's unit (CSV and JSON exports). mmol/L gets
+ * three places, not the one the screens show: at one place 100 mg/dL left as
+ * 5.5 and came back through the import as 99.1, so every export and
+ * re-import moved the readings. At three places the mmol/L figure converts
+ * back to the stored value at the tenth of a mg/dL the import keeps. mg/dL
+ * is the stored unit and is written as stored, not rounded to the whole
+ * number the screens show.
+ */
+export function glucoseForFile(mgdl: number, to: GlucoseUnit): number {
+  return to === "mmol/L"
+    ? Math.round((mgdl / MGDL_PER_MMOL) * 1000) / 1000
+    : mgdl;
+}
+
+/**
  * Convert a value the user typed in their display unit back to the
  * canonical mg/dL HealthLog stores. The inverse of {@link convertGlucose}
  * for the editor write path: a `5.5 mmol/L` target the user enters must
